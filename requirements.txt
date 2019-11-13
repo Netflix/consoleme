@@ -16,9 +16,9 @@ attrs==19.3.0             # via jsonschema
 backcall==0.1.0           # via ipython
 billiard==3.6.1.0         # via celery
 bleach==3.1.0
-boto3==1.10.16
+boto3==1.10.17
 boto==2.49.0              # via cloudaux
-botocore==1.13.16         # via boto3, cloudaux, s3transfer
+botocore==1.13.17         # via boto3, cloudaux, s3transfer
 cachetools==3.1.1         # via google-auth
 cchardet==2.1.4
 celery[redis]==4.3.0
@@ -36,7 +36,7 @@ flagpole==1.1.1           # via cloudaux
 google-api-core==1.14.3   # via google-cloud-core
 google-api-python-client==1.7.11
 google-auth-httplib2==0.0.3
-google-auth==1.7.0        # via google-api-core, google-api-python-client, google-auth-httplib2, google-cloud-storage
+google-auth==1.7.1        # via google-api-core, google-api-python-client, google-auth-httplib2, google-cloud-storage
 google-cloud-core==1.0.3  # via google-cloud-storage
 google-cloud-storage==1.23.0
 google-resumable-media==0.5.0  # via google-cloud-storage
