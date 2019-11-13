@@ -1,0 +1,39 @@
+{% include "header.html" %}
+<div id="wrapper" class="container">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.5.2/css/buttons.dataTables.min.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.19/js/dataTables.semanticui.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/1.5.2/js/dataTables.buttons.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.36/vfs_fonts.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/1.5.2/js/buttons.html5.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="/static/js/groups.js"></script>
+    <h2 class="ui header">
+        <i class="users icon"></i>
+        <div class="content">
+            <p id="title">All Groups</p>
+        </div>
+    </h2>
+
+    <p id="heading"></p>
+
+    <div id="loading" class="ui active inverted dimmer">
+        <div class="ui text loader">Loading</div>
+    </div>
+    <div id="hide" style="display:none" />
+    <table id="groups" class="display:block" style="width:100%" style="tfoot input {
+        width: 100%;
+        padding: 3px;
+        box-sizing: border-box;
+    }">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Access</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+{% include "footer.html" %}

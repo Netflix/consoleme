@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 3.1.1 (Python 3.7.2 on darwin)" generated="20190331 19:06:55.806" rpa="false">
+<suite id="s1" name="Test Index" source="/Users/ccastrapel/localrepos/consoleme/tests/robot_framework/test_index.robot">
+<test id="s1-t1" name="User should see an error message when logging in with no headers">
+<kw name="Open Browser" library="SeleniumLibrary">
+<doc>Opens a new browser instance to the given ``url``.</doc>
+<arguments>
+<arg>http://127.0.0.1:8081</arg>
+<arg>firefox</arg>
+</arguments>
+<msg timestamp="20190331 19:06:55.970" level="INFO">Opening browser 'firefox' to base url 'http://127.0.0.1:8081'.</msg>
+<status status="PASS" starttime="20190331 19:06:55.970" endtime="20190331 19:06:59.667"></status>
+</kw>
+<kw name="Wait Until Page Contains" library="SeleniumLibrary">
+<doc>Waits until ``text`` appears on current page.</doc>
+<arguments>
+<arg>No user detected. Check configuration.</arg>
+</arguments>
+<status status="PASS" starttime="20190331 19:06:59.668" endtime="20190331 19:06:59.693"></status>
+</kw>
+<kw name="Close Browser" library="SeleniumLibrary">
+<doc>Closes the current browser.</doc>
+<status status="PASS" starttime="20190331 19:06:59.694" endtime="20190331 19:07:00.287"></status>
+</kw>
+<doc>Ensures that a user will see applicable error message when they do not have headers defined</doc>
+<tags>
+<tag>Smoke</tag>
+</tags>
+<status status="PASS" starttime="20190331 19:06:55.969" endtime="20190331 19:07:00.287" critical="yes"></status>
+</test>
+<test id="s1-t2" name="User should see a list of eligible roles">
+<kw name="Create Dictionary" library="BuiltIn">
+<doc>Creates and returns a dictionary based on the given ``items``.</doc>
+<arguments>
+<arg>Oidc_claim_sub</arg>
+<arg>testuser@netflix.com</arg>
+</arguments>
+<assign>
+<var>${headers}</var>
+</assign>
+<msg timestamp="20190331 19:07:00.291" level="INFO">${headers} = {'Oidc_claim_sub': 'testuser@netflix.com'}</msg>
+<status status="PASS" starttime="20190331 19:07:00.290" endtime="20190331 19:07:00.291"></status>
+</kw>
+<kw name="Set Request Header">
+<arguments>
+<arg>Oidc_claim_sub</arg>
+<arg>testuser@netflix.com</arg>
+</arguments>
+<msg timestamp="20190331 19:07:00.295" level="FAIL">No keyword with name 'Set Request Header' found.</msg>
+<status status="FAIL" starttime="20190331 19:07:00.295" endtime="20190331 19:07:00.295"></status>
+</kw>
+<doc>Ensures that a logged in user with eligible groups can see the applicable roles</doc>
+<tags>
+<tag>Smoke</tag>
+</tags>
+<status status="FAIL" starttime="20190331 19:07:00.288" endtime="20190331 19:07:00.296" critical="yes">No keyword with name 'Set Request Header' found.</status>
+</test>
+<doc>This tests the Index (/) page in ConsoleMe</doc>
+<status status="FAIL" starttime="20190331 19:06:55.807" endtime="20190331 19:07:00.296"></status>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="1">Critical Tests</stat>
+<stat pass="1" fail="1">All Tests</stat>
+</total>
+<tag>
+<stat pass="1" fail="1">Smoke</stat>
+</tag>
+<suite>
+<stat pass="1" fail="1" id="s1" name="Test Index">Test Index</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

@@ -1,0 +1,1 @@
+"""Docstring in public package."""

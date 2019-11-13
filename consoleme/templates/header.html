@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+{% set contractor = config.config_plugin().is_contractor(escape(user)) %}
+<head>
+    <meta charset="utf-8">
+    <title>{{ page_title }}</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Consoleme">
+    <meta name="author" content="Curtis Castrapel">
+    <script type="text/javascript" charset="utf8" src="/static/js/common.js"></script>
+    <script type="text/javascript" charset="utf8" src="/static/js/jquery-3.3.1.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="/static/js/semantic.min.js"></script>
+    <script src="/static/js/chosen.jquery.js" type="text/javascript"></script>
+
+    <script src="/static/js/consoleme.js"></script>
+    <link rel="stylesheet" href="/static/css/chosen.css">
+    <link rel="manifest" href="/static/site.webmanifest">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="shortcut icon" href="/static/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
+    <link rel="stylesheet" href="/static/screenplay/screenplay.css">
+    <link rel="stylesheet" href="/static/screenplay/screenplay-semantic.css">
+    <link rel="stylesheet" href="/static/css/screenplay-consoleme.css">
+
+    <style media="screen">
+        #searchbox-wrapper {
+            margin: 0;
+            margin-right: 1rem;
+        }
+
+        .searchbox {
+            width: 30rem;
+        }
+
+        .ui.form {
+            max-width: 400px;
+        }
+
+        .buttons {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .buttons .button {
+            margin-bottom: 5px;
+        }
+    </style>
+    <script>
+      $(document).ready(function () {
+        $('.ui.dropdown')
+          .dropdown({autofocus: false})
+        ;
+      });
+    </script>
+    {% if config.get("google_analytics.tracking_id") %}
+    <script async
+            src="https://www.googletagmanager.com/gtag/js?id={{ config.get("google_analytics.tracking_id") }}"></script>
+    <script>
+
+      window.dataLayer = window.dataLayer || [];
+
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+
+      gtag('js', new Date());
+
+      gtag('config', '{{ config.get("google_analytics.tracking_id") }}');
+      gtag('set', {'user_id': '{{ escape(user) }}'});
+    </script>
+    {% end %}
+</head>
+<body>
+{% from consoleme.lib.generic import is_in_group %}
+<div id="header">
+
+    <a class="brand" href="/">Consoleme</a>
+    <div class="content">
+
+        <div class="ui secondary pointing menu">
+            <a class="ui item {% if current_page in ['index'] %}active{% end %}" href="/">
+                AWS Console Roles
+            </a>
+            {% if config.get("headers.group_access.enabled", True) %}
+            <div class="ui dropdown link item {% if current_page in ['accessui', 'groups', 'users', 'pending'] %}partial_active{% end %}">
+                <span class="text">Group Access</span>
+                <i class="dropdown icon"></i>
+                <div class="menu transition hidden">
+                    <a class="item" href="/accessui/groups?requestable=true">Request Access</a>
+                    <a class="item" href="/accessui/groups">Groups</a>
+                    <a class="item" href="/accessui/users">Users</a>
+                    <a class="item" href="/accessui/pending">Pending</a>
+                </div>
+            </div>
+            {% end %}
+            {% if config.get("headers.policies.enabled", True) and not contractor %}
+            <div class="ui dropdown link item {% if current_page in ['policies', 'api_health'] %}partial_active{% end %}">
+                <span class="text">Roles and Policies</span>
+                <i class="dropdown icon"></i>
+                <div class="menu transition hidden">
+                    <a class="item" href="/policies">Policies</a>
+                    {% if config.get("enable_self_service") %}
+                    <a class="item" href="/self_service">Self Service Permissions</a>
+                    {% end %}
+                    {% if is_in_group(user_groups, config.get("groups.can_edit_health_alert", [])) %}
+                    <a class="item" href="/api_health">API Health</a>
+                    {% end %}
+                </div>
+            </div>
+            {% end %}
+            {% if config.get("headers.config.enabled", True) and (is_in_group(user_groups, config.get("groups.can_edit_config", [])) or is_in_group(user_groups, config.get("groups.can_audit", []))) %}
+            <div class="ui dropdown link item {% if current_page in ['audit', 'config'] %}partial_active{% end %}">
+                <span class="text">Advanced</span>
+                <i class="dropdown icon"></i>
+                <div class="menu transition hidden">
+                    {% if is_in_group(user_groups, config.get("groups.can_audit", [])) %}
+                    <a class="item" href="/audit">Audit</a>
+                    {% end %}
+                    {% if is_in_group(user_groups, config.get("groups.can_edit_config", [])) %}
+                    <a class="item" href="/config">Config</a>
+                    {% end %}
+                </div>
+            </div>
+            {% end %}
+            {% if "get_employee_info_url" in config.dir_ref(config.config_plugin) %}
+            <div class="right menu">
+                <a class="ui item" href="{{ config.config_plugin().get_employee_info_url(escape(user)) }}">
+                    {% if "get_employee_photo_url" in config.dir_ref(config.config_plugin) %}
+                    <img class="ui mini spaced image"
+                         src="{{ config.config_plugin().get_employee_photo_url(escape(user)) }}"/> {{ escape(user) }}
+                    {% end %}
+                </a>
+            </div>
+            {% end %}
+        </div>
+    </div>
+</div>
+
+
+<div id="primary">
+    <nav class="sidebar">
+        <ul>
+            <div id="RoleHistory">
+            </div>
+            <h4>Help</h4>
+            {% if config.get("documentation_page") %}
+            <li>
+                <a href="{{ config.get("documentation_page") }}" target="_blank">
+                    <i class="icon book"></i>
+                    Documentation
+                </a>
+            </li>
+            {% end %}
+            {% if config.get("support_contact") %}
+            <li>
+                <a href="mailto:{{ config.get("support_contact") }}">
+                    <i class="icon envelope"></i>
+                    Email us
+                </a>
+            </li>
+            {% end %}
+            {% if config.get("support_slack") %}
+            <li>
+                <a target="_blank" href="{{ config.get("support_slack") }}">
+                    <i class="icon slack"></i>
+                    Find us on Slack
+                </a>
+            </li>
+            {% end %}
+        </ul>
+        <footer>
+            <div id="consoleme_logo">
+                {% from datetime import datetime %}
+                {% from random import randint %}
+                {% set month=datetime.now().month %}
+                {% set summer=True if month in [6,7,8] else False %}
+                {% set dir="sunglasses" if summer else "nosunglasses" %}
+                {% set file = f"{randint(1, 3)}.png" %}
+                <img id="consoleme_logo" src="/static/logos/{{ dir }}/{{ file }}">
+            </div>
+            {% if config.get("security_logo") %}
+            <a class="security-logo" target="_blank" href="{{ config.get("security_logo.url") }}"
+               style="background: url({{ config.get("security_logo.image") }}) no-repeat 50%;">
+            </a>
+            {% end %}
+        </footer>
+    </nav>
+    <main class="container">

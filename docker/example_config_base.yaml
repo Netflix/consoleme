@@ -1,0 +1,129 @@
+access_requests:
+  default_approver: admin@example.com
+api_auth:
+  valid_entities:
+    - fake_api_entity
+application_admin: admin@example.com
+application_name: consoleme
+dynamodb_server: http://localhost:8005
+account_ids_to_name:
+  123456789012: default_account
+
+aws:
+  console_url: 'https://{}.console.aws.amazon.com'
+  federation_url: 'https://signin.aws.amazon.com/federation'
+  iamroles_dynamo_table: consoleme_iamroles_global
+  iamroles_redis_key: IAM_ROLE_CACHE
+  issuer: YourCompany
+  requests_dynamo_table: consoleme_requests_global
+  session_duration: 43200
+celery:
+  active_region: us-west-2 # Some jobs should only run in one region.
+challenge:
+  token_expiration: 3600
+cli_auth:
+  certificate_header: certificate_header
+  required_headers:
+    - RequiredMTLSHeader: RequiredMTLSHeaderValue
+
+consoleme:
+  recently_used_cookie_name: consoleme_activity
+  show_recently_used_roles: true
+errors:
+  custom_max_cert_age_message: "Please refresh your certificate."
+get_eligible_roles:
+  from_config: true
+  from_prefix: false
+
+headers:
+  group_access:
+    enabled: false
+  policies:
+    enabled: false
+
+dynamic_config:
+  group_mapping:
+    groupa@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/roleA
+        - arn:aws:iam::123456789012:role/roleB
+
+groups:
+  can_edit_config:
+    - configeditors@example.com
+#google:
+#  admin_scopes:
+#    - 'https://www.googleapis.com/auth/admin.directory.group'
+#  credential_subject:
+#    example.com: exampleapiuser@example.com
+#    example2.com: exampleapiuser@example2.com
+#group_mapping_config:
+#  recent_users_key: RECENT_USERS
+#  role_cache_expiration: 21600
+#  role_cache_redis_key: 'ROLE_CACHE_{}'
+#  update_frequency: 300
+#groups:
+#  attributes:
+#    boolean:
+#      - label: Requestable
+#        name: requestable
+#        sensitive: false
+#    list:
+#      - label: Secondary Approvers
+#        name: secondary_approvers
+#        placeholder: 'group1@example.com,group2@example.com'
+#        sensitive: false
+#      - label: Self-approval Groups
+#        name: self_approval_groups
+#        placeholder: 'group1@example.com,group2@example.com'
+#        sensitive: false
+#      - label: Emails to notify when users are added
+#        name: alert_on_changes
+#        placeholder: 'group1@example.com,group2@example.com'
+#        sensitive: false
+#      - label: Owners
+#        name: owner
+#        placeholder: 'group1@example.com,group2@example.com'
+#        sensitive: false
+#  can_admin:
+#    - admin@example.com
+#  can_admin_policies:
+#    - admin@example.com
+#  developement_notification_emails:
+#    - developer@example.com
+#  can_audit:
+#    - auditors@example.com
+#  can_edit_config:
+#    - configeditors@example.com
+#  can_edit_policies:
+#    - policyeditors@example.com
+#  can_edit_sensitive_attributes:
+#    - sensitiveattributeeditors@example.com
+#  require_bg_check:
+#    - sensitivegroup@example.com
+
+plugins:
+  auth: default_auth
+  aws: default_aws
+  group_mapping: default_group_mapping
+  internal_celery_tasks: default_celery_tasks
+  internal_celery_tasks_functions: default_celery_tasks_functions
+  metrics: default_metrics
+  internal_config: config
+  internal_routes: default_internal_routes
+
+#policies:
+#  role_name: ConsoleMeRole
+
+#sso:
+#  enabled: true
+#  jwk_url: https://provider.example.com/ext/oauth/something/jwks
+#  jwk_schema:
+#    header:
+#      alg:
+#        enum:
+#          - RS512
+#    payload:
+#      iss:
+#        enum:
+#          - https://provider.example.com

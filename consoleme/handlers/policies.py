@@ -1,0 +1,1047 @@
+import sys
+from urllib.parse import quote_plus
+
+import re
+import time
+import tornado.escape
+import ujson as json
+from datetime import datetime, timedelta
+from policyuniverse.expander_minimizer import _expand_wildcard_action
+
+from consoleme.config import config
+from consoleme.exceptions.exceptions import (
+    InvalidRequestParameter,
+    MustBeFte,
+    Unauthorized,
+)
+from consoleme.handlers.base import BaseHandler
+from consoleme.lib.aws import (
+    fetch_resource_details,
+    get_all_iam_managed_policies_for_account,
+)
+from consoleme.lib.dynamo import UserDynamoHandler
+from consoleme.lib.generic import write_json_error
+from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.policies import (
+    can_manage_policy_requests,
+    can_move_back_to_pending,
+    can_update_requests,
+    escape_json,
+    parse_policy_change_request,
+    update_resource_policy,
+    update_role_policy,
+    should_auto_approve_policy,
+    get_formatted_policy_changes,
+)
+from consoleme.lib.redis import redis_get, redis_hgetall
+from consoleme.lib.timeout import Timeout
+
+log = config.get_logger()
+stats = get_plugin_by_name(config.get("plugins.metrics"))()
+aws = get_plugin_by_name(config.get("plugins.aws"))()
+group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
+auth = get_plugin_by_name(config.get("plugins.auth"))()
+
+account_ids_to_names = group_mapping.get_account_ids_to_names()
+
+
+class PolicyViewHandler(BaseHandler):
+    async def get(self):
+        """
+        /policies - User endpoint used to render page that will list all accounts, technologies, and names in tabular format.
+        ---
+        post:
+            description: Renders page that will make XHR request to get technology information
+            responses:
+                200:
+                    description: Renders page that will make subsequent XHR requests
+                403:
+                    description: User has failed authn/authz.
+        """
+
+        if not self.user:
+            return
+
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+        stats.count("policies.get", tags={"user": self.user, "ip": self.ip})
+
+        log_data = {
+            "user": self.user,
+            "ip": self.ip,
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Incoming request",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+
+        log.debug(log_data)
+        await self.render(
+            "policies.html",
+            page_title="ConsoleMe - Policies",
+            current_page="policies",
+            user=self.user,
+            user_groups=self.groups,
+            config=config,
+        )
+
+
+def filter_policies(filter, policies):
+    if filter.get("filter"):
+        regexp = re.compile(r"{}".format(filter.get("filter").strip()), re.IGNORECASE)
+        results = []
+        for policy in policies:
+            try:
+                if regexp.search(str(policy.get(filter.get("field")))):
+                    results.append(policy)
+            except re.error:
+                # Regex error. Return no results
+                pass
+        return results
+    else:
+        return policies
+
+
+class GetPoliciesHandler(BaseHandler):
+    """Endpoint for parsing policy information."""
+
+    async def get(self):
+        """
+        /get_policies/ - Filters and returns items from redis that have policy information.
+        ---
+        post:
+            description: Returns items for which we have a policy view
+            responses:
+                200:
+                    description: returns JSON with filtered items.
+                403:
+                    description: User has failed authn/authz.
+        """
+
+        if not self.user:
+            return
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+        draw = int(self.request.arguments.get("draw")[0])
+        length = int(self.request.arguments.get("length")[0])
+        start = int(self.request.arguments.get("start")[0])
+        finish = start + length
+        account_id_search = self.request.arguments.get("columns[0][search][value]")[
+            0
+        ].decode("utf-8")
+        account_name_search = self.request.arguments.get("columns[1][search][value]")[
+            0
+        ].decode("utf-8")
+        name_search = self.request.arguments.get("columns[2][search][value]")[0].decode(
+            "utf-8"
+        )
+        technology_search = self.request.arguments.get("columns[3][search][value]")[
+            0
+        ].decode("utf-8")
+        template_search = self.request.arguments.get("columns[4][search][value]")[
+            0
+        ].decode("utf-8")
+        error_search = self.request.arguments.get("columns[5][search][value]")[
+            0
+        ].decode("utf-8")
+        policies = await redis_get(
+            config.get("policies.redis_policies_key", "ALL_POLICIES")
+        )
+        policies_d = json.loads(policies)
+
+        data = []
+
+        results = policies_d
+
+        if error_search == "errors":
+            results = sorted(results, key=lambda i: i["errors"], reverse=True)
+            error_search = ""
+
+        filters = [
+            {"field": "account_name", "filter": account_name_search},
+            {"field": "account_id", "filter": account_id_search},
+            {"field": "arn", "filter": name_search},
+            {"field": "technology", "filter": technology_search},
+            {"field": "templated", "filter": template_search},
+            {"field": "errors", "filter": error_search},
+        ]
+
+        try:
+            with Timeout(seconds=5):
+                for f in filters:
+                    results = filter_policies(f, results)
+        except TimeoutError:
+            self.write("Query took too long to run. Check your filter.")
+            await self.finish()
+            raise
+
+        for policy in results[start:finish]:
+            data.append(
+                [
+                    policy.get("account_id"),
+                    policy.get("account_name"),
+                    policy.get("arn"),
+                    policy.get("technology"),
+                    policy.get("templated"),
+                    policy.get("errors"),
+                ]
+            )
+            if len(data) == length:
+                break
+
+        response = {
+            "draw": draw,
+            "recordsTotal": len(policies_d),
+            "recordsFiltered": len(results),
+            "data": data,
+        }
+        self.write(response)
+        await self.finish()
+
+
+class PolicyEditHandler(BaseHandler):
+    async def get(self, account_id, role_name):
+
+        if not self.user:
+            return
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+        read_only = False
+
+        can_save_delete = await can_manage_policy_requests(self.groups)
+
+        arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+
+        stats.count("policy.get", tags={"user": self.user, "ip": self.ip, "arn": arn})
+
+        log_data = {
+            "user": self.user,
+            "ip": self.ip,
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Incoming request",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "arn": arn,
+        }
+
+        log.debug(log_data)
+
+        force_refresh = (
+            True if self.request.arguments.get("refresh", [False])[0] else False
+        )
+
+        role = await aws.fetch_iam_role(account_id, arn, force_refresh=force_refresh)
+
+        cloudtrail_topic = config.get("redis.cloudtrail_errors", "CLOUDTRAIL_ERRORS")
+        all_cloudtrail_errors = self.red.get(cloudtrail_topic)
+        cloudtrail_errors = {}
+        if all_cloudtrail_errors:
+            cloudtrail_errors = json.loads(all_cloudtrail_errors).get(arn, {})
+        end_time = int(time.time()) * 1000
+        start_time = end_time - 86400000
+
+        cloudtrail_error_uri = config.get(
+            "cloudtrail_errors.error_messages_by_role_uri"
+        ).format(
+            account_id=account_id,
+            role_name=role_name,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        yesterday = (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")
+        s3_query_url = config.get("s3.query_url").format(
+            yesterday=yesterday,
+            role_name=f"'{role_name}'",
+            account_id=f"'{account_id}'",
+        )
+
+        s3_error_topic = config.get("redis.s3_errors", "S3_ERRORS")
+        all_s3_errors = self.red.get(s3_error_topic)
+        s3_errors = []
+        if all_s3_errors:
+            s3_errors = json.loads(all_s3_errors).get(arn, [])
+
+        all_account_managed_policies = await get_all_iam_managed_policies_for_account(
+            account_id
+        )
+
+        account_name = account_ids_to_names.get(account_id, [""])[0]
+
+        await self.render(
+            "policy_editor.html",
+            page_title="ConsoleMe - Policy Editor",
+            current_page="policies",
+            role=role,
+            account_id=account_id,
+            account_name=account_name,
+            cloudtrail_errors=cloudtrail_errors,
+            cloudtrail_error_uri=cloudtrail_error_uri,
+            user=self.user,
+            user_groups=self.groups,
+            config=config,
+            read_only=read_only,
+            can_save_delete=can_save_delete,
+            s3_errors=s3_errors,
+            s3_query_url=s3_query_url,
+            url_encode=quote_plus,
+            all_account_managed_policies=all_account_managed_policies,
+        )
+
+    async def post(self, account_id, role_name):
+        if not self.user:
+            return
+
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+
+        can_save_delete = await can_manage_policy_requests(self.groups)
+
+        if not can_save_delete:
+            raise Unauthorized("You are not authorized to edit policies.")
+
+        arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+
+        stats.count("policy.post", tags={"user": self.user, "ip": self.ip, "arn": arn})
+
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "account_id": account_id,
+            "role_name": role_name,
+            "arn": arn,
+            "user": self.user,
+            "ip": self.ip,
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+        log.debug(log_data)
+        role = await aws.fetch_iam_role(account_id, arn)
+
+        data_list = tornado.escape.json_decode(self.request.body)
+
+        result = await parse_policy_change_request(self.user, arn, role, data_list)
+
+        if result["status"] == "error":
+            await write_json_error(json.dumps(result), obj=self)
+            return
+
+        events = result["events"]
+
+        result: dict = await update_role_policy(events)
+
+        if result["status"] == "success":
+            await aws.fetch_iam_role(account_id, arn, force_refresh=True)
+
+        self.write(result)
+        await self.finish()
+        return
+
+
+class ResourcePolicyEditHandler(BaseHandler):
+    async def get(self, account_id, resource_type, region=None, resource_name=None):
+        if not self.user:
+            return
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+        read_only = False
+
+        can_save_delete = await can_manage_policy_requests(self.groups)
+
+        account_id_for_arn: str = account_id
+        if resource_type == "s3":
+            account_id_for_arn = ""
+        arn = f"arn:aws:{resource_type}:{region or ''}:{account_id_for_arn}:{resource_name}"
+
+        stats.count("policy.get", tags={"user": self.user, "ip": self.ip, "arn": arn})
+
+        log_data = {
+            "user": self.user,
+            "ip": self.ip,
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Incoming request",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "arn": arn,
+        }
+
+        log.debug(log_data)
+
+        resource_details = await fetch_resource_details(
+            account_id, resource_type, resource_name, region
+        )
+
+        # TODO: Get S3 errors for s3 buckets only, else CT errors
+        yesterday = (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")
+        s3_query_url = config.get("s3.bucket_query_url")
+        all_s3_errors = None
+
+        if s3_query_url:
+            s3_query_url = s3_query_url.format(
+                yesterday=yesterday, bucket_name=f"'{resource_name}'"
+            )
+            s3_error_topic = config.get("redis.s3_errors", "S3_ERRORS")
+            all_s3_errors = self.red.get(s3_error_topic)
+
+        s3_errors = []
+        if all_s3_errors:
+            s3_errors = json.loads(all_s3_errors).get(arn, [])
+
+        await self.render(
+            "resource_policy_editor.html",
+            page_title="ConsoleMe - Resource Policy Editor",
+            current_page="policies",
+            arn=arn,
+            resource_details=resource_details,
+            account_id=account_id,
+            user=self.user,
+            user_groups=self.groups,
+            config=config,
+            read_only=read_only,
+            can_save_delete=can_save_delete,
+            s3_errors=s3_errors,
+            s3_query_url=s3_query_url,
+            url_encode=quote_plus,
+        )
+
+    async def post(self, account_id, resource_type, region=None, resource_name=None):
+        if not self.user:
+            return
+
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+
+        can_save_delete = await can_manage_policy_requests(self.groups)
+
+        if not can_save_delete:
+            raise Unauthorized("You are not authorized to edit policies.")
+
+        account_id_for_arn: str = account_id
+        if resource_type == "s3":
+            account_id_for_arn = ""
+        arn = f"arn:aws:{resource_type}:{region or ''}:{account_id_for_arn}:{resource_name}"
+
+        stats.count("policy.post", tags={"user": self.user, "ip": self.ip, "arn": arn})
+
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "account_id": account_id,
+            "arn": arn,
+            "user": self.user,
+            "ip": self.ip,
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+        log.debug(log_data)
+        resource_details = await fetch_resource_details(
+            account_id, resource_type, resource_name, region
+        )
+
+        data_list = tornado.escape.json_decode(self.request.body)
+
+        result: dict = await update_resource_policy(
+            arn, resource_type, account_id, region, data_list, resource_details
+        )
+        self.write(result)
+        await self.finish()
+        return
+
+
+class PolicyReviewSubmitHandler(BaseHandler):
+    async def post(self):
+
+        if not self.user:
+            return
+
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+
+        data: dict = tornado.escape.json_decode(self.request.body)
+
+        arn = data.get("arn")
+        account_id = data.get("account_id")
+        justification = data.get("justification")
+        if not justification:
+            await write_json_error(
+                "Justification is required to submit a policy change request.", obj=self
+            )
+            return
+        data_list = data.get("data_list")
+        if len(data_list) > 1:
+            raise InvalidRequestParameter("Only one change is supported at a time.")
+        policy_name: str = data_list[0].get("name")
+
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "arn": arn,
+            "user": self.user,
+            "ip": self.ip,
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+        log.debug(log_data)
+
+        stats.count(
+            log_data["function"], tags={"user": self.user, "ip": self.ip, "arn": arn}
+        )
+
+        role = await aws.fetch_iam_role(account_id, arn)
+
+        parsed_policy_change = await parse_policy_change_request(
+            self.user, arn, role, data_list
+        )
+
+        if parsed_policy_change["status"] == "error":
+            await write_json_error(json.dumps(parsed_policy_change), obj=self)
+            return
+
+        events = parsed_policy_change["events"]
+        policy_status = "pending"
+        should_auto_approve_request = await should_auto_approve_policy(
+            events, self.user, self.groups
+        )
+        if should_auto_approve_request is not False:
+            policy_status = "approved"
+        dynamo = UserDynamoHandler(self.user)
+        request = await dynamo.write_policy_request(
+            self.user, justification, arn, policy_name, events
+        )
+        if policy_status == "approved":
+            formatted_policy_changes = await get_formatted_policy_changes(
+                account_id, arn, request
+            )
+            original_policy_document = formatted_policy_changes["changes"][0]["old"]
+            request["old_policy"] = json.dumps([original_policy_document])
+            result: dict = await update_role_policy(events)
+            if result["status"] == "success":
+                request["status"] = "approved"
+                request[
+                    "updated_by"
+                ] = f"Auto-Approve Probe: {should_auto_approve_request['approving_probe']}"
+                # if approved, Make sure current policy is the same as the one the user thinks they are updating
+                await dynamo.update_policy_request(request)
+                await aws.fetch_iam_role(account_id, arn, force_refresh=True)
+            else:
+                await write_json_error(result, obj=self)
+                await self.finish()
+                return
+        await aws.send_communications_policy_change_request(request, send_sns=True)
+        request["status"] = "success"
+        self.write(request)
+        await self.finish()
+        return
+
+
+class PolicyReviewHandler(BaseHandler):
+    async def get(self, request_id):
+
+        if not self.user:
+            return
+        dynamo: UserDynamoHandler = UserDynamoHandler(self.user)
+        requests: list[dict] = await dynamo.get_policy_requests(request_id=request_id)
+
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+
+        if len(requests) == 0:
+            raise Exception("No request found with that ID")
+        if len(requests) > 1:
+            raise Exception("Duplicate requests found")
+        request = requests[0]
+
+        arn: str = request.get("arn")
+        role_name: str = arn.split("/")[1]
+        account_id: str = arn.split(":")[4]
+        role_uri: str = f"/policies/edit/{account_id}/iamrole/{role_name}"
+        justification: str = request.get("justification")
+        status: str = request.get("status")
+
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "arn": arn,
+            "user": self.user,
+            "ip": self.ip,
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": request.get("request_id"),
+        }
+        log.debug(log_data)
+
+        stats.count(
+            log_data["function"],
+            tags={
+                "user": self.user,
+                "ip": self.ip,
+                "arn": arn,
+                "request_id": request.get("request_id"),
+            },
+        )
+
+        formatted_policy_changes = await get_formatted_policy_changes(
+            account_id, arn, request
+        )
+        requestor_info = await auth.get_user_info(request["username"])
+        show_approve_reject_buttons = False
+        can_cancel = False
+        show_update_button = False
+        read_only = True
+
+        if status == "pending":
+            show_approve_reject_buttons = await can_manage_policy_requests(self.groups)
+            show_update_button: bool = await can_update_requests(
+                request, self.user, self.groups
+            )
+            can_cancel: bool = show_update_button
+            read_only = False
+
+        show_pending_button = await can_move_back_to_pending(request, self.groups)
+        await self.render(
+            "policy_review.html",
+            page_title="ConsoleMe - Policy Review",
+            current_page="policies",
+            arn=arn,
+            account_id=account_id,
+            justification=justification,
+            changes=formatted_policy_changes["changes"],
+            status=status,
+            can_cancel=can_cancel,
+            user=self.user,
+            user_groups=self.groups,
+            config=config,
+            show_approve_reject_buttons=show_approve_reject_buttons,
+            show_cancel_button=can_cancel,
+            show_pending_button=show_pending_button,
+            show_update_button=show_update_button,
+            request=request,
+            requestor_info=requestor_info,
+            policy_name=formatted_policy_changes["changes"][0][
+                "name"
+            ],  # TODO: Support multiple policy changes
+            role=formatted_policy_changes["role"],
+            new_policy=formatted_policy_changes["changes"][0][
+                "new_policy"
+            ],  # TODO: Support multiple policy changes
+            read_only=read_only,
+            role_uri=role_uri,
+            escape_json=escape_json,
+        )
+
+    async def post(self, request_id):
+
+        if not self.user:
+            return
+
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+
+        data = tornado.escape.json_decode(self.request.body)
+
+        dynamo: UserDynamoHandler = UserDynamoHandler(self.user)
+        requests: list[dict] = await dynamo.get_policy_requests(request_id=request_id)
+        original_policy_document: dict = json.loads(
+            data.get("original_policy_document")
+        )
+        updated_policy_document: dict = json.loads(data.get("updated_policy_document"))
+        policy_name: str = data.get("policy_name")
+        reviewer_comments: str = data.get("reviewer_comments")
+        send_email = True
+
+        if len(requests) == 0:
+            raise Exception("No request found with that ID")
+        if len(requests) > 1:
+            raise Exception("Duplicate requests found")
+        request: dict = requests[0]
+        arn: str = request["arn"]
+        account_id: str = arn.split(":")[4]
+        current_role = await aws.fetch_iam_role(account_id, arn, force_refresh=True)
+        updated_status: str = data.get("updated_status")
+
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "arn": arn,
+            "user": self.user,
+            "ip": self.ip,
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": request.get("request_id"),
+            "updated_status": updated_status,
+        }
+        log.debug(log_data)
+
+        stats.count(
+            log_data["function"],
+            tags={
+                "user": self.user,
+                "ip": self.ip,
+                "arn": arn,
+                "request_id": request.get("request_id"),
+                "updated_status": updated_status,
+            },
+        )
+
+        can_approve_reject = await can_manage_policy_requests(self.groups)
+        can_change_to_pending = await can_move_back_to_pending(request, self.groups)
+        result: dict = {"status": "success"}
+
+        can_update_request: bool = await can_update_requests(
+            request, self.user, self.groups
+        )
+        can_cancel: bool = can_update_request
+        if updated_status not in [
+            "approved",
+            "rejected",
+            "pending",
+            "update",
+            "cancelled",
+        ]:
+            raise Exception("Invalid status")
+
+        if updated_status == request.get("status"):
+            raise Exception(
+                f"Status is already equal to {updated_status}. Unable to update request."
+            )
+
+        # Prepare to update with the appropriate details. This doesn't mean the request is authorized yet.
+        if updated_status != "update":
+            request["status"] = updated_status
+        if updated_status == "update":
+            send_email = False
+            if policy_name == "Assume Role Policy Document":
+                edited_document = json.loads(request["policy_changes"])[0][
+                    "assume_role_policy_document"
+                ]["assume_role_policy_document"]
+            else:
+                edited_document = json.loads(request["policy_changes"])[0][
+                    "inline_policies"
+                ][0]["policy_document"]
+            if updated_policy_document == edited_document:
+                await write_json_error(
+                    "No changes were detected in the proposed policy.", obj=self
+                )
+                return
+        request["updated_by"] = self.user
+
+        if updated_status in ["approved", "rejected", "update"]:
+            if policy_name == "Assume Role Policy Document":
+                policy_changes = [
+                    {
+                        "arn": arn,
+                        "assume_role_policy_document": {
+                            "assume_role_policy_document": updated_policy_document
+                        },
+                        "requester": request.get("username"),
+                    }
+                ]
+            else:
+                policy_changes = [
+                    {
+                        "arn": arn,
+                        "inline_policies": [
+                            {
+                                "policy_name": policy_name,
+                                "policy_document": updated_policy_document,
+                            }
+                        ],
+                        "requester": request.get("username"),
+                    }
+                ]
+            request["policy_changes"] = json.dumps(policy_changes)
+            request["reviewer_comments"] = reviewer_comments
+
+        # Keep a record of the policy as it was at the time of the change, for historical record
+        if updated_status == "approved":
+            request["old_policy"] = json.dumps([original_policy_document])
+
+        if updated_status == "cancelled":
+            if not can_cancel:
+                raise Unauthorized("Unauthorized to cancel request.")
+
+        elif updated_status in ["approved", "rejected"]:
+            if not can_approve_reject:
+                raise Unauthorized("Unauthorized to approve or reject request.")
+
+        elif updated_status == "pending":
+            if not can_change_to_pending:
+                raise Unauthorized("Unauthorized to make request pending.")
+        elif updated_status == "update":
+            if not can_update_request:
+                raise Unauthorized("Unauthorized to update request.")
+
+        if updated_status == "approved":
+            # Send any emails with the policy that was applied?
+            data_type = (
+                "AssumeRolePolicyDocument"
+                if policy_name == "Assume Role Policy Document"
+                else "InlinePolicy"
+            )
+            data_list = [
+                {
+                    "type": data_type,
+                    "name": policy_name,
+                    "value": json.dumps(updated_policy_document),
+                }
+            ]
+            # Commit policy
+            parsed_policy = await parse_policy_change_request(
+                self.user, arn, current_role, data_list
+            )
+
+            if parsed_policy["status"] == "error":
+                await write_json_error(json.dumps(parsed_policy), obj=self)
+                return
+
+            events = parsed_policy["events"]
+
+            result: dict = await update_role_policy(events)
+
+            if result["status"] == "success":
+                # if approved, Make sure current policy is the same as the one the user thinks they are updating
+                await dynamo.update_policy_request(request)
+
+                await aws.fetch_iam_role(account_id, arn, force_refresh=True)
+            else:
+                await write_json_error(result, obj=self)
+                await self.finish()
+                return
+            self.write(result)
+            await self.finish()
+            return
+
+        elif updated_status == "rejected":
+            request = await dynamo.update_policy_request(request)
+        elif updated_status in ["update", "cancelled", "pending"]:
+            request = await dynamo.update_policy_request(request)
+        if send_email:
+            await aws.send_communications_policy_change_request(request)
+        self.write(result)
+
+
+class SelfServiceHandler(BaseHandler):
+    async def get(self):
+        """
+        /self_service
+        ---
+        get:
+            description: Entry point to Self Service IAM Wizard
+            responses:
+                200:
+                    description: Returns Self Service IAM Wizard
+        """
+
+        await self.render(
+            "self_service.html",
+            page_title="ConsoleMe - Self Service",
+            current_page="policies",
+            user=self.user,
+            user_groups=self.groups,
+            config=config,
+        )
+
+
+class AutocompleteHandler(BaseHandler):
+    async def get(self):
+        """
+        /api/v1/policyuniverse/autocomplete/?prefix=
+        ---
+        get:
+            description: Supplies autocompleted permissions for the ace code editor.
+            responses:
+                200:
+                    description: Returns a list of the matching permissions.
+        """
+
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+
+        prefix = self.request.arguments.get("prefix")[0].decode("utf-8") + "*"
+        results = _expand_wildcard_action(prefix)
+        results = [dict(permission=r) for r in results]
+        self.write(json.dumps(results))
+        await self.finish()
+
+
+async def filter_resources(filter, resources, max=20):
+    if filter:
+        regexp = re.compile(r"{}".format(filter.strip()), re.IGNORECASE)
+        results = []
+        for resource in resources:
+            try:
+                if regexp.search(str(resource.get(filter))):
+                    if len(results) == max:
+                        return results
+                    results.append(resource)
+            except re.error:
+                # Regex error. Return no results
+                pass
+        return results
+    else:
+        return resources
+
+
+class ResourceTypeAheadHandler(BaseHandler):
+    async def get(self):
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+
+        try:
+            search_string: str = self.request.arguments.get("search")[0].decode("utf-8")
+        except TypeError:
+            self.send_error(400, message=f"`search` parameter must be defined")
+            return
+
+        try:
+            resource_type: str = self.request.arguments.get("resource")[0].decode(
+                "utf-8"
+            )
+        except TypeError:
+            self.send_error(400, message=f"`resource_type` parameter must be defined")
+            return
+
+        account_id = None
+        topic_is_hash = True
+        account_id_optional: str = self.request.arguments.get("account_id")
+        if account_id_optional:
+            account_id = account_id_optional[0].decode("utf-8")
+
+        limit: int = 10
+        limit_optional: str = self.request.arguments.get("limit")
+        if limit_optional:
+            limit = int(limit_optional[0].decode("utf-8"))
+
+        role_name = False
+        if resource_type == "s3":
+            topic = config.get("redis.s3_bucket_key", "S3_BUCKETS")
+        elif resource_type == "sqs":
+            topic = config.get("redis.sqs_queues_key", "SQS_QUEUES")
+        elif resource_type == "sns":
+            topic = config.get("redis.sns_topics_key ", "SNS_TOPICS")
+        elif resource_type == "iam_arn":
+            topic = config.get("aws.iamroles_redis_key ", "IAM_ROLE_CACHE")
+        elif resource_type == "iam_role":
+            topic = config.get("aws.iamroles_redis_key ", "IAM_ROLE_CACHE")
+            role_name = True
+        elif resource_type == "account":
+            topic = config.get("swag.redis_key", "SWAG_SETTINGSv2")
+            topic_is_hash = False
+        elif resource_type == "app":
+            topic = config.get(
+                "spinnaker.app_to_roles.redis_key", "SPINNAKER_SETTINGS_APP_TO_ROLE"
+            )
+            topic_is_hash = False
+        else:
+            self.send_error(404, message=f"Invalid resource_type: {resource_type}")
+            return
+
+        if not topic:
+            raise InvalidRequestParameter("Invalid resource_type specified")
+
+        if topic_is_hash:
+            data = await redis_hgetall(topic)
+        else:
+            data = await redis_get(topic)
+
+        results = []
+
+        unique_roles = []
+
+        if resource_type == "account":
+            account_and_id_list = []
+            if not data:
+                data = "{}"
+            accounts = json.loads(data)
+            for k, v in accounts.items():
+                account_and_id_list.append(f"{k} ({v})")
+            for account in account_and_id_list:
+                if search_string.lower() in account.lower():
+                    results.append({"title": account})
+        elif resource_type == "app":
+            results = {}
+            # ConsoleMe (Account: Test, Arn: arn)
+            try:
+                accounts = json.loads(
+                    await redis_get(
+                        config.get(
+                            "swag.redis_id_name_key", "SWAG_SETTINGS_ID_TO_NAMEv2"
+                        )
+                    )
+                )
+            except Exception as e:  # noqa
+                accounts = {}
+            app_to_role_map = json.loads(data)
+            seen = {}
+            for app_name, roles in app_to_role_map.items():
+                if len(results.keys()) > 9:
+                    break
+                if search_string.lower() in app_name.lower():
+                    results[app_name] = {"name": app_name, "results": []}
+                    for role in roles:
+                        account_id = role.split(":")[4]
+                        account = accounts.get(account_id, [""])[0]
+                        parsed_app_name = (
+                            f"{app_name} on {account} ({account_id}) ({role})]"
+                        )
+                        if seen.get(parsed_app_name):
+                            continue
+                        seen[parsed_app_name] = True
+                        results[app_name]["results"].append(
+                            {"title": role, "description": account}
+                        )
+
+        else:
+            for k, v in data.items():
+                if account_id and k != account_id:
+                    continue
+                if role_name:
+                    try:
+                        r = k.split("role/")[1]
+                    except IndexError:
+                        continue
+                    if search_string.lower() in r.lower():
+                        if r not in unique_roles:
+                            unique_roles.append(r)
+                            results.append({"title": r})
+                elif (
+                    resource_type == "iam_arn"
+                    and k.startswith("arn:")
+                    and search_string.lower() in k.lower()
+                ):
+                    results.append({"title": k})
+                else:
+                    list_of_items = json.loads(v)
+                    for item in list_of_items:
+                        if search_string.lower() in item.lower():
+                            results.append({"title": item, "account_id": k})
+                        if len(results) > limit:
+                            break
+                if len(results) > limit:
+                    break
+        self.write(json.dumps(results))

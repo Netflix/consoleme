@@ -1,0 +1,146 @@
+{% include "header.html" %}
+<div id="wrapper" class="container">
+    <h2 class="ui header">
+        <i class="info circle icon"></i>
+        <div class="content">
+            Group Information
+        </div>
+    </h2>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.19/js/dataTables.semanticui.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="/static/js/group.js"></script>
+    <script type="text/javascript" charset="utf8" src="/static/js/common.js"></script>
+
+    <div class="ui dimmer">
+        <div class="ui medium text loader">Loading</div>
+    </div>
+
+    <div class="ui basic modal">
+        <div id="error_div" class="ui hidden error message">
+            <div class="header">
+                Oops!
+            </div>
+            <p id="error_response"></p>
+        </div>
+        <div id="success_div" class="ui hidden positive message">
+            <div class="header">
+                Success!
+            </div>
+            <p id="success_response"></p>
+        </div>
+        <div class="scrolling content">
+            <div id="modal_content"></div>
+        </div>
+    </div>
+    <form class="ui form" id="group_modify_form" name="group_modify_form" autocomplete="off">
+        {% module xsrf_form_html() %}
+        <div class="field">
+            <label>Name</label>
+            <input type="text" name="name" placeholder="Group Name" value="{{ escape(group.name) }}" disabled>
+        </div>
+
+        <div class="field">
+            <label>Friendly Name</label>
+            <input type="text" name="friendlyName" placeholder="Friendly group Name"
+                   value="{{ escape(group.get("friendly_name", "")) }}" disabled>
+        </div>
+
+        <div class="field">
+            <label>Description</label>
+            <input type="text" name="description" placeholder="Description"
+                   value="{{ escape(group.get("description", "")) }}"
+                   disabled>
+        </div>
+
+
+        {% for bool_attr in config.get("groups.attributes.boolean", []) %}
+            {% set name = bool_attr.get("name") %}
+            {% set sensitive = bool_attr.get("sensitive") %}
+            {% set label = bool_attr.get("label") %}
+            <input type="hidden" name="{{ name }}" value="off"/>
+            <div class="field">
+                <div class="ui checkbox">
+                    <input type="checkbox" name="{{ name }}" tabindex="0"
+                           {% if not can_edit or group.automated_group or ((group.restricted or group.compliance_restricted or sensitive) and not can_edit_sensitive_attrs) %}disabled{% end %}
+                            {% if group.get(name) %} checked {% end %}"/>
+                    <label>{{ label }} {% if name == "requestable" and group.get(name) %} - <a target="_blank"
+                                                                                               href="{{ escape(request_url) }}">Link</a>{% end %}
+                    </label>
+
+                </div>
+            </div>
+        {% end %}
+
+        {% for list_attr in config.get("groups.attributes.list", []) %}
+            {% set name = list_attr.get("name") %}
+            {% set sensitive = list_attr.get("sensitive") %}
+            {% set label = list_attr.get("label") %}
+            {% set placeholder = list_attr.get("placeholder") %}
+            <div class="field">
+                <label>{{ label }}</label>
+                <input type="text" name="{{ name }}" placeholder="{{ placeholder }}"
+                       value="{{ escape(",".join(group.get(name))) }}"
+                       {% if not can_edit or (group.automated_group and name not in ["alert_on_changes"]) or ((group.restricted or group.compliance_restricted or sensitive) and not can_edit_sensitive_attrs) %}disabled{% end %}>
+            </div>
+        {% end %}
+
+        <h2 class="ui header">
+            <i class="child icon"></i>
+            <div class="content">
+                Members
+            </div>
+        </h2>
+        <div class="field">
+            <label>Add members</label>
+            <textarea rows="2" name="add_members" placeholder="usera@example.com,userb@example.com"
+                   {% if not can_modify_members or group.automated_group %}disabled{% end %}></textarea>
+        </div>
+
+        <div class="field">
+            <label>Remove members</label>
+            <textarea rows="2" name="remove_members" placeholder="usera@example.com,userb@example.com"
+                   {% if not can_modify_members or group.automated_group %} disabled{% end %}></textarea>
+        </div>
+        <br/>
+        <button class="ui primary button" type="submit" {% if not can_modify_members and not can_edit %} disabled{% end %} >
+            Submit
+        </button>
+        <br/><br/>
+    </form>
+    <label><b>Existing members</b></label>
+    <br/><br/>
+    <table id="members" class="ui celled table" style="width:100%">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Remove</th>
+            </tr>
+        </thead>
+        <tbody>
+            <form class="ui form" id="remove" name="remove_user_form" autocomplete="off">
+            {% module xsrf_form_html() %}
+                {% for m in group.members %}
+                    <tr>
+                        <td>{{ escape(m.get("name")) }}</td>
+                        <td>
+                            {% if escape(m.get("type")) == "USER" %}
+                                <p hidden>U</p><i class="user icon"></i>
+                            {% elif escape(m.get("type")) == "GROUP" %}
+                                <p hidden>G</p><i class="users icon"></i>
+                            {% end %}
+                        </td>
+                        <td>
+                            <button class="ui negative button" name="remove_members" value="{{ escape(m.get("name")) }}"
+                                    onclick='removeUser(this.value);' {% if not can_modify_members %}disabled{% end %}>REMOVE
+                            </button>
+                        </td>
+                    </tr>
+                {% end %}
+            </form>
+        </tbody>
+    </table>
+</div>
+<script type="text/javascript" charset="utf8" src="/static/js/group_footer.js"></script>
+{% include "footer.html" %}
