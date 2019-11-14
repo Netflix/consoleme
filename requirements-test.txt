@@ -15,9 +15,9 @@ aws-xray-sdk==2.4.2       # via moto
 bandit==1.6.2
 black==19.10b0
 bleach==3.1.0             # via readme-renderer
-boto3==1.10.16            # via aws-sam-translator, moto
+boto3==1.10.17            # via aws-sam-translator, moto
 boto==2.49.0              # via moto
-botocore==1.13.16         # via aws-xray-sdk, boto3, moto, s3transfer
+botocore==1.13.17         # via aws-xray-sdk, boto3, moto, s3transfer
 certifi==2019.9.11        # via requests
 cffi==1.13.2              # via cryptography
 cfgv==2.0.1               # via pre-commit
