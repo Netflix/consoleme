@@ -18,4 +18,6 @@ class SetEncoder(json.JSONEncoder):
             return float(obj)
         if isinstance(obj, datetime):
             return obj.timestamp()
+        if isinstance(obj, Exception):
+            return str(obj)
         return json.JSONEncoder.default(self, obj)

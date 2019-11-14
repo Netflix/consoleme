@@ -2,10 +2,12 @@ import sys
 
 import tornado.escape
 import tornado.web
+import json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.dynamo import UserDynamoHandler
+from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 
 ddb = UserDynamoHandler()
@@ -78,7 +80,7 @@ class DynamicConfigHandler(BaseHandler):
         except Exception as e:
             result["status"] = "error"
             result["error"] = e
-            self.write(result)
+            self.write(json.dumps(result, cls=SetEncoder))
             await self.finish()
             return
 

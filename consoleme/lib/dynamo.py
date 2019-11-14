@@ -422,6 +422,8 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     async def update_dynamic_config(self, config: str, updated_by: str) -> None:
         """Take a YAML config and writes to DDB (The reason we use YAML instead of JSON is to preserve comments)."""
+        # Validate that config loads as yaml, raises exception if not
+        yaml.safe_load(config)
         stats.count("update_dynamic_config", tags={"updated_by": updated_by})
         current_config_entry = self.dynamic_config.get_item(Key={"id": "master"})
         if current_config_entry.get("Item"):
