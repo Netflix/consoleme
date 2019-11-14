@@ -12,35 +12,34 @@ edit inline policies, and submit these to administrators to be approved and comm
 
 ## To build ConsoleMe
 
-1. Setup prerequisites
-   1. Set up Python 3.7.2+
+1. Setup prerequisites (Mac)
+   1. Set up Python 3.7.2+ (`brew install python@3.7`)
    2. Ensure xcode is installed
    3. `brew install pkgconfig`
    4. `brew install libxmlsec1`
 
-2. Clone the ConsoleMe repo
+2. Clone the ConsoleMe repo: `git clone git@github.com:Netflix-Skunkworks/consoleme.git`
 
 3. A local set of Redis and DynamoDB (local) instances need to be set up. This is provided as a Docker container.
-In a separate terminal window, start the local redis and dynamodb instances: docker-compose up.
+In a separate terminal window, start the local redis and dynamodb instances: `docker-compose up`.
 
-4. Create the virtualenv and activate it: python -m venv env && source env/bin/activate
+4. Create the virtualenv and activate it: `python3.7 -m venv env && source env/bin/activate`
 
 5. You will need to have AWS credentials for the installation to work (they need to be valid credentials for any
 account or user for the AWS SDK to communicate with the local DynamoDB container).
 
-6. In repo root run `make install`
+6. In repo root run `make install`. You may also want to install the default plugins if you have not developed internal plugins: `pip install -e default_plugins`
+
+7. Run ConsoleMe with the default configuration: `CONSOLEME_CONFIG_ENTRYPOINT=default_config CONFIG_LOCATION=docker/example_config_header_auth.yaml python consoleme/__main__.py`
 
    * Note: ConsoleMe requires Python 3.6+. We recommend running on 3.7. If your virtualenv was installed under Python2.x
 this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing
 virtualenv and creating a new one with Python 3: `python3 -m venv env`.
 When the make install command is running, it will install all the dependencies, and it will also run ConsoleMe
-Celery jobs to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists
+Celery tasks to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists
 data on disk. This command will need to be run anytime you want to update your local cache.
 
-7. Run the local Tornado server with a configuration YAML of your choice:
-`CONFIG_LOCATION=/location/to/config.yaml python3 consoleme/__main__.py`
-
-8. Configure your browser header injector (Requestly is recommended) to inject user / group headers. Your group
+8. Configure your browser header injector ([Requestly](https://www.requestly.in/) is recommended) to inject user / group headers. Your group
 headers should contain a comma-separated list of google groups. You can see which headers are being passed to ConsoleMe
 by visiting the `/myheaders` endpoint in ConsoleMe.
 
@@ -63,7 +62,7 @@ asyncio.get_event_loop().run_until_complete(<function>)
 * git checkout master
 * git pull
 * git branch -d my-branch ( This would delete the branch locally )
-* git push origin --delete my-branch ( This would delet the remote branch)
+* git push origin --delete my-branch ( This would delete the remote branch)
 
 ## To fetch a PR from BitBucket/Stash to test locally
 * Replace <branch_name> and <pr_number> in the below command appropriately.

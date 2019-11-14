@@ -40,6 +40,8 @@ headers:
     enabled: false
   policies:
     enabled: false
+  config:
+    enabled: false
 
 dynamic_config:
   group_mapping:
