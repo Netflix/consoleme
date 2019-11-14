@@ -36,6 +36,7 @@ raven
 redis
 requests
 retry
+retrying
 simplejson
 six
 tenacity
