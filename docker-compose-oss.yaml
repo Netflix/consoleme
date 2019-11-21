@@ -5,13 +5,14 @@ services:
     image: "redis:alpine"
     ports:
       - "6379:6379"
+    container_name: redis_oss
     command: ["redis-server", "--appendonly", "yes"]
 
   dynamodb:
     image: "cnadiminti/dynamodb-local"
     ports:
       - "8005:8005"
-    container_name: dynamodb
+    container_name: dynamodb_oss
     entrypoint: java
     command: "-jar DynamoDBLocal.jar -sharedDb -port 8005"
     restart: always
