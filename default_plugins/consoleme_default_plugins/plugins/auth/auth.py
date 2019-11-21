@@ -1,13 +1,114 @@
 import sys
 import time
+from typing import List
+
+import ujson as json
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidCertificateException, NoUserException
+from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
-
 
 log = config.get_logger("consoleme")
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
+
+
+class Group(object):
+    def __init__(self, **kwargs):
+        self.name: str = kwargs.get("name")
+        self.domain: str = kwargs.get("domain")
+        self.group_id: str = kwargs.get("groupId")
+        self.friendly_name: str = kwargs.get("friendlyName")
+        self.description: str = kwargs.get("description")
+        self.settings: str = kwargs.get("settings")
+        self.aliases: str = kwargs.get("aliases")
+        self.members: List = kwargs.get("members", [])
+        self.attributes: List = kwargs.get("attributes")
+        self.automated_group: bool = self.is_group_automated(self.description)
+
+        # Set all boolean attributes
+        for attr in config.get("groups.attributes.boolean", []):
+            attribute_name = attr.get("name")
+            setattr(self, attribute_name, str2bool(kwargs.get(attribute_name)))
+
+        # Set all list attributes
+        for attr in config.get("groups.attributes.list", []):
+            attribute_name = attr.get("name")
+            setattr(self, attribute_name, self.convert_to_list(kwargs, attribute_name))
+
+    def get(self, query, default=None):
+        result = self.__dict__.get(query)
+        if result is None:
+            result = default
+        return result
+
+    @staticmethod
+    def convert_to_list(kwargs, kwarg):
+        if kwargs.get(kwarg):
+            return kwargs[kwarg].split(",")
+        return []
+
+    @staticmethod
+    def is_group_automated(description):
+        return False
+
+
+class User(object):
+    def __init__(self, **kwargs):
+        self.username: str = kwargs.get("userName")
+        self.domain: str = kwargs.get("domain")
+        self.fullname: str = kwargs.get("name", {}).get("fullName")
+        self.status: str = kwargs.get("status")
+        self.created: str = kwargs.get("created", {}).get("onDate")
+        self.updated: str = kwargs.get("updated", {}).get("onDate")
+        self.groups: str = kwargs.get("members")
+        self.passed_background_check: bool = str2bool(
+            kwargs.get("passed_background_check", False)
+        )
+
+    def get(self, query):
+        return self.__dict__.get(query)
+
+    def to_json(self):
+        d = {
+            "username": self.username,
+            "domain": self.domain,
+            "fullname": self.fullname,
+            "status": self.status,
+            "created": self.created,
+            "updated": self.updated,
+            "groups": self.groups,
+            "passed_background_check": self.passed_background_check,
+        }
+        return json.dumps(d)
+
+
+class ExtendedAttribute(object):
+    def __init__(self, **kwargs):
+        self.name = kwargs.get("name")
+        self.type = kwargs.get("attributeType", "string")
+        self.value = kwargs.get("attributeValue")
+        if self.value is True:
+            self.value = "true"
+        elif self.value is False:
+            self.value = "false"
+        self.sensitive = kwargs.get("sensitive", False)
+        self.immutable = kwargs.get("immutable", False)
+
+    def get(self, query):
+        return self.__dict__.get(query)
+
+    def to_json(self):
+        if isinstance(self.value, list):
+            self.value = ",".join(self.value)
+        d = {
+            "name": self.name,
+            "attributeType": self.type,
+            "attributeValue": self.value,
+            "sensitive": self.sensitive,
+            "immutable": self.immutable,
+        }
+        return json.dumps(d)
 
 
 class Auth:
@@ -43,7 +144,7 @@ class Auth:
         return user
 
     async def get_groups(
-        self, user: str, headers=None, get_header_groups=False, only_direct=True
+            self, user: str, headers=None, get_header_groups=False, only_direct=True
     ):
         """Get the user's groups."""
         groups = []
@@ -161,12 +262,12 @@ class Auth:
         raise NotImplementedError()
 
     async def get_groups_with_attribute_name_value(
-        self, attribute_name, attribute_value
+            self, attribute_name, attribute_value
     ):
         raise NotImplementedError()
 
     async def get_users_with_attribute_name_value(
-        self, attribute_name, attribute_value
+            self, attribute_name, attribute_value
     ):
         raise NotImplementedError()
 
@@ -195,6 +296,11 @@ class Auth:
     async def generate_and_store_user_role_name(self, user):
         (username, domain) = user.split("@")
         return f"{username}-{domain}"
+
+
+Auth.Group = Group
+Auth.User = User
+Auth.ExtendedAttribute = ExtendedAttribute
 
 
 def init():

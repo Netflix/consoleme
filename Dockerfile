@@ -10,3 +10,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r requirements-test.txt
 RUN pip install -e .
 RUN pip install -e default_plugins
+RUN pip install watchdog

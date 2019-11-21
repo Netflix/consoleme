@@ -9,36 +9,46 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - .:/apps/consoleme-repo
+      - .:/apps/consoleme
       - ~/.aws:/root/.aws
       - ~/.ssh:/root/.ssh
     # entrypoint: watchmedo auto-restart --recursive --pattern="*.py" --directory="."
-    entrypoint: python consoleme/__main__.py
+    entrypoint: >
+      bash -c 'pip install watchdog;
+      watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py'
     environment:
       - CONFIG_LOCATION=/apps/consoleme/docker/example_config_test.yaml
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
     command: /bin/sh -c "while true; do sleep 1; done"
     depends_on:
-      - redis_test
-      - dynamodb_test
+      - redis_oss_test
+      - dynamodb_oss_test
     links:
-      - redis_test
-      - dynamodb_test
+      - redis_oss_test
+      - dynamodb_oss_test
   python-tests:
     build: .
+    environment:
+      - CONFIG_LOCATION=/apps/consoleme/docker/example_config_test.yaml
+    volumes:
+      - .:/apps/consoleme
+      - ~/.aws:/root/.aws
+      - ~/.ssh:/root/.ssh
     # entrypoint: watchmedo auto-restart --recursive --pattern="*.py" --directory="." pytest
-    entrypoint: pytest
+    entrypoint: >
+      bash -c 'pip install watchdog;
+      watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." make test'
     depends_on:
       - consoleme
 
 
-  redis_test:
-    container_name: redis_test
+  redis_oss_test:
+    container_name: redis_oss_test
     image: "redis:alpine"
 
-  dynamodb_test:
+  dynamodb_oss_test:
     image: "cnadiminti/dynamodb-local"
-    container_name: dynamodb_test
+    container_name: dynamodb_oss_test
     entrypoint: java
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data -port 8005"
     restart: always
