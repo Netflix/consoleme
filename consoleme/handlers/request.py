@@ -89,9 +89,7 @@ class RequestGroupHandler(BaseHandler):
         self, group_info: Any
     ) -> None:
         # Determine if user already has a request. and tell them where to see it.
-        existing_request = await get_existing_pending_request(
-            self.user, group_info
-        )
+        existing_request = await get_existing_pending_request(self.user, group_info)
         if existing_request is not None:
             request_url = get_request_review_url(existing_request.get("request_id"))
             self.write(
@@ -416,9 +414,7 @@ class JSONBaseRequestHandler(BaseJSONHandler):
 
         user_info = await auth.get_user_info(self.user, object=True)
         user_groups = await auth.get_groups(self.user)
-        existing_request = await get_existing_pending_request(
-            self.user, group_info
-        )
+        existing_request = await get_existing_pending_request(self.user, group_info)
 
         auth_error = None
         if group in user_groups:
@@ -456,7 +452,9 @@ class JSONBaseRequestHandler(BaseJSONHandler):
         if not group_info.secondary_approvers:
             status = "approved"
 
-        user_groups_including_indirect = await auth.get_groups(self.user, only_direct=False)
+        user_groups_including_indirect = await auth.get_groups(
+            self.user, only_direct=False
+        )
         # Status is approved if approver list includes user or group in user membership
         for g in group_info.secondary_approvers:
             if g in user_groups_including_indirect or g == self.user:

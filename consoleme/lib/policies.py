@@ -514,10 +514,7 @@ async def get_formatted_policy_changes(account_id, arn, request):
 
 async def should_auto_approve_policy(events, user, groups):
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    log_data  = {
-        "function": function,
-        "user": user
-    }
+    log_data = {"function": function, "user": user}
 
     try:
         if not config.get("dynamic_config.policy_request_autoapprove_probes.enabled"):

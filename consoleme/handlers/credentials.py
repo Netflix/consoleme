@@ -71,8 +71,12 @@ class GetCredentialsHandler(BaseMtlsHandler):
         except Exception as e:
             config.sentry.captureException()
             log_data["error"] = e
-            log_data["message"] = "Failed to get max MTLS certificate age. Returning default value of 1 day"
-            max_cert_age = 1  # Default to one day expiration if we fail to get max certificate age info
+            log_data[
+                "message"
+            ] = "Failed to get max MTLS certificate age. Returning default value of 1 day"
+            max_cert_age = (
+                1
+            )  # Default to one day expiration if we fail to get max certificate age info
         max_cert_age_seconds = max_cert_age * (24 * 60 * 60)  # Seconds in a day
         try:
             if self.current_cert_age > max_cert_age_seconds:
