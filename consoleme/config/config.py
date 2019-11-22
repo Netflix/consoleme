@@ -19,7 +19,7 @@ from raven.contrib.tornado import AsyncSentryClient
 
 from consoleme.lib.plugins import get_plugin_by_name
 
-config_plugin_entrypoint = os.environ.get("CONSOLEME_CONFIG_ENTRYPOINT", "default_config")
+config_plugin_entrypoint = os.environ.get("CONSOLEME_CONFIG_ENTRYPOINT", "config")
 config_plugin = get_plugin_by_name(config_plugin_entrypoint)
 
 
