@@ -189,6 +189,18 @@ async def get_existing_pending_approved_request(user: str, group_info: Any) -> N
     return None
 
 
+async def get_existing_pending_request(user: str, group_info: Any) -> None:
+    dynamo_handler = UserDynamoHandler(user)
+    existing_requests = await sync_to_async(dynamo_handler.get_requests_by_user)(user)
+    if existing_requests:
+        for request in existing_requests:
+            if group_info.get("name") == request.get("group") and request.get(
+                "status"
+            ) in ["pending"]:
+                return request
+    return None
+
+
 def get_pending_requests_url():
     return f"{config.get('url')}/accessui/pending"
 

@@ -66,7 +66,17 @@ class GetCredentialsHandler(BaseMtlsHandler):
 
     async def raise_if_certificate_too_old(self, role, log_data=None):
         log_data = {} if not log_data else log_data
-        max_cert_age = await group_mapping.get_max_cert_age_for_role(role)
+        try:
+            max_cert_age = await group_mapping.get_max_cert_age_for_role(role)
+        except Exception as e:
+            config.sentry.captureException()
+            log_data["error"] = e
+            log_data[
+                "message"
+            ] = "Failed to get max MTLS certificate age. Returning default value of 1 day"
+            max_cert_age = (
+                1
+            )  # Default to one day expiration if we fail to get max certificate age info
         max_cert_age_seconds = max_cert_age * (24 * 60 * 60)  # Seconds in a day
         try:
             if self.current_cert_age > max_cert_age_seconds:
