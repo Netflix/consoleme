@@ -33,7 +33,7 @@ from consoleme.lib.requests import (
     get_accessui_request_review_url,
     get_all_pending_requests,
     get_all_pending_requests_api,
-    get_existing_pending_approved_request,
+    get_existing_pending_request,
     get_pending_requests_url,
     get_request_by_id,
     get_request_review_url,
@@ -89,7 +89,7 @@ class RequestGroupHandler(BaseHandler):
         self, group_info: Any
     ) -> None:
         # Determine if user already has a request. and tell them where to see it.
-        existing_request = await get_existing_pending_approved_request(
+        existing_request = await get_existing_pending_request(
             self.user, group_info
         )
         if existing_request is not None:
@@ -416,7 +416,7 @@ class JSONBaseRequestHandler(BaseJSONHandler):
 
         user_info = await auth.get_user_info(self.user, object=True)
         user_groups = await auth.get_groups(self.user)
-        existing_request = await get_existing_pending_approved_request(
+        existing_request = await get_existing_pending_request(
             self.user, group_info
         )
 
@@ -455,6 +455,12 @@ class JSONBaseRequestHandler(BaseJSONHandler):
         # Status is approved if there is no secondary approver for group
         if not group_info.secondary_approvers:
             status = "approved"
+
+        user_groups_including_indirect = await auth.get_groups(self.user, only_direct=False)
+        # Status is approved if approver list includes user or group in user membership
+        for g in group_info.secondary_approvers:
+            if g in user_groups_including_indirect or g == self.user:
+                status = "approved"
 
         # Status is approved if user is member of self approval group
         if group_info.self_approval_groups:

@@ -267,14 +267,14 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
 
     @patch("consoleme.handlers.base.RedisHandler")
     @patch("consoleme.handlers.request.auth")
-    @patch("consoleme.handlers.request.get_existing_pending_approved_request")
+    @patch("consoleme.handlers.request.get_existing_pending_request")
     @patch("consoleme.handlers.request.can_user_request_group_based_on_domain")
     @patch("consoleme.handlers.request.does_group_require_bg_check")
     def test_request_create_403_in_group(
         self,
         mock_does_group_require_bg_check,
         mock_can_user_request_group_based_on_domain,
-        mock_get_existing_pending_approved_request,
+        mock_get_existing_pending_request,
         mock_auth,
         mock_redis_handler,
     ):
@@ -292,7 +292,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_auth.get_group_info.return_value = create_future(mock_group_info)
         mock_auth.get_user_info.return_value = create_future(mock_user)
         mock_auth.get_groups.return_value = create_future(mock_user_groups)
-        mock_get_existing_pending_approved_request.return_value = create_future(
+        mock_get_existing_pending_request.return_value = create_future(
             mock_existing_request
         )
         mock_can_user_request_group_based_on_domain.return_value = True
@@ -312,14 +312,14 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
 
     @patch("consoleme.handlers.base.RedisHandler")
     @patch("consoleme.handlers.request.auth")
-    @patch("consoleme.handlers.request.get_existing_pending_approved_request")
+    @patch("consoleme.handlers.request.get_existing_pending_request")
     @patch("consoleme.handlers.request.can_user_request_group_based_on_domain")
     @patch("consoleme.handlers.request.does_group_require_bg_check")
     def test_request_create_403_existing_request(
         self,
         mock_does_group_require_bg_check,
         mock_can_user_request_group_based_on_domain,
-        mock_get_existing_pending_approved_request,
+        mock_get_existing_pending_request,
         mock_auth,
         mock_redis_handler,
     ):
@@ -337,7 +337,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_auth.get_group_info.return_value = create_future(mock_group_info)
         mock_auth.get_user_info.return_value = create_future(mock_user)
         mock_auth.get_groups.return_value = create_future(mock_user_groups)
-        mock_get_existing_pending_approved_request.return_value = create_future(
+        mock_get_existing_pending_request.return_value = create_future(
             mock_existing_request
         )
         mock_can_user_request_group_based_on_domain.return_value = True
@@ -358,14 +358,14 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
 
     @patch("consoleme.handlers.base.RedisHandler")
     @patch("consoleme.handlers.request.auth")
-    @patch("consoleme.handlers.request.get_existing_pending_approved_request")
+    @patch("consoleme.handlers.request.get_existing_pending_request")
     @patch("consoleme.handlers.request.can_user_request_group_based_on_domain")
     @patch("consoleme.handlers.request.does_group_require_bg_check")
     def test_request_create_403_not_requestable(
         self,
         mock_does_group_require_bg_check,
         mock_can_user_request_group_based_on_domain,
-        mock_get_existing_pending_approved_request,
+        mock_get_existing_pending_request,
         mock_auth,
         mock_redis_handler,
     ):
@@ -383,7 +383,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_auth.get_group_info.return_value = create_future(mock_group_info)
         mock_auth.get_user_info.return_value = create_future(mock_user)
         mock_auth.get_groups.return_value = create_future(mock_user_groups)
-        mock_get_existing_pending_approved_request.return_value = create_future(
+        mock_get_existing_pending_request.return_value = create_future(
             mock_existing_request
         )
         mock_can_user_request_group_based_on_domain.return_value = True
@@ -400,14 +400,14 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
 
     @patch("consoleme.handlers.base.RedisHandler")
     @patch("consoleme.handlers.request.auth")
-    @patch("consoleme.handlers.request.get_existing_pending_approved_request")
+    @patch("consoleme.handlers.request.get_existing_pending_request")
     @patch("consoleme.handlers.request.can_user_request_group_based_on_domain")
     @patch("consoleme.handlers.request.does_group_require_bg_check")
     def test_request_create_403_restricted(
         self,
         mock_does_group_require_bg_check,
         mock_can_user_request_group_based_on_domain,
-        mock_get_existing_pending_approved_request,
+        mock_get_existing_pending_request,
         mock_auth,
         mock_redis_handler,
     ):
@@ -425,7 +425,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_auth.get_group_info.return_value = create_future(mock_group_info)
         mock_auth.get_user_info.return_value = create_future(mock_user)
         mock_auth.get_groups.return_value = create_future(mock_user_groups)
-        mock_get_existing_pending_approved_request.return_value = create_future(
+        mock_get_existing_pending_request.return_value = create_future(
             mock_existing_request
         )
         mock_can_user_request_group_based_on_domain.return_value = True
@@ -442,14 +442,14 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
 
     @patch("consoleme.handlers.base.RedisHandler")
     @patch("consoleme.handlers.request.auth")
-    @patch("consoleme.handlers.request.get_existing_pending_approved_request")
+    @patch("consoleme.handlers.request.get_existing_pending_request")
     @patch("consoleme.handlers.request.can_user_request_group_based_on_domain")
     @patch("consoleme.handlers.request.does_group_require_bg_check")
     def test_request_create_403_cross_domain(
         self,
         mock_does_group_require_bg_check,
         mock_can_user_request_group_based_on_domain,
-        mock_get_existing_pending_approved_request,
+        mock_get_existing_pending_request,
         mock_auth,
         mock_redis_handler,
     ):
@@ -467,7 +467,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_auth.get_group_info.return_value = create_future(mock_group_info)
         mock_auth.get_user_info.return_value = create_future(mock_user)
         mock_auth.get_groups.return_value = create_future(mock_user_groups)
-        mock_get_existing_pending_approved_request.return_value = create_future(
+        mock_get_existing_pending_request.return_value = create_future(
             mock_existing_request
         )
         mock_can_user_request_group_based_on_domain.return_value = False
@@ -487,14 +487,14 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
 
     @patch("consoleme.handlers.base.RedisHandler")
     @patch("consoleme.handlers.request.auth")
-    @patch("consoleme.handlers.request.get_existing_pending_approved_request")
+    @patch("consoleme.handlers.request.get_existing_pending_request")
     @patch("consoleme.handlers.request.can_user_request_group_based_on_domain")
     @patch("consoleme.handlers.request.does_group_require_bg_check")
     def test_request_create_403_bg_check(
         self,
         mock_does_group_require_bg_check,
         mock_can_user_request_group_based_on_domain,
-        mock_get_existing_pending_approved_request,
+        mock_get_existing_pending_request,
         mock_auth,
         mock_redis_handler,
     ):
@@ -512,7 +512,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_auth.get_group_info.return_value = create_future(mock_group_info)
         mock_auth.get_user_info.return_value = create_future(mock_user)
         mock_auth.get_groups.return_value = create_future(mock_user_groups)
-        mock_get_existing_pending_approved_request.return_value = create_future(
+        mock_get_existing_pending_request.return_value = create_future(
             mock_existing_request
         )
         mock_can_user_request_group_based_on_domain.return_value = True
@@ -533,7 +533,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
 
     @patch("consoleme.handlers.base.RedisHandler")
     @patch("consoleme.handlers.request.auth")
-    @patch("consoleme.handlers.request.get_existing_pending_approved_request")
+    @patch("consoleme.handlers.request.get_existing_pending_request")
     @patch("consoleme.handlers.request.can_user_request_group_based_on_domain")
     @patch("consoleme.handlers.request.does_group_require_bg_check")
     @patch("consoleme.handlers.request.get_accessui_request_review_url")
@@ -552,7 +552,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_get_accessui_request_review_url,
         mock_does_group_require_bg_check,
         mock_can_user_request_group_based_on_domain,
-        mock_get_existing_pending_approved_request,
+        mock_get_existing_pending_request,
         mock_auth,
         mock_redis_handler,
     ):
@@ -571,7 +571,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_auth.get_group_info.return_value = create_future(mock_group_info)
         mock_auth.get_user_info.return_value = create_future(mock_user)
         mock_auth.get_groups.return_value = create_future(mock_user_groups)
-        mock_get_existing_pending_approved_request.return_value = create_future(
+        mock_get_existing_pending_request.return_value = create_future(
             mock_existing_request
         )
         mock_can_user_request_group_based_on_domain.return_value = True
@@ -599,7 +599,73 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
 
     @patch("consoleme.handlers.base.RedisHandler")
     @patch("consoleme.handlers.request.auth")
-    @patch("consoleme.handlers.request.get_existing_pending_approved_request")
+    @patch("consoleme.handlers.request.get_existing_pending_request")
+    @patch("consoleme.handlers.request.can_user_request_group_based_on_domain")
+    @patch("consoleme.handlers.request.does_group_require_bg_check")
+    @patch("consoleme.handlers.request.get_accessui_request_review_url")
+    @patch("consoleme.handlers.request.send_request_created_to_user")
+    @patch("consoleme.handlers.request.send_request_to_secondary_approvers")
+    @patch("consoleme.handlers.request.add_user_to_group")
+    @patch("consoleme.handlers.request.send_access_email_to_user")
+    @patch("consoleme.lib.dynamo.UserDynamoHandler.add_request")
+    def test_request_create_approved_is_approver(
+        self,
+        mock_add_request,
+        mock_send_access_email_to_user,
+        mock_add_user_to_group,
+        mock_send_request_to_secondary_approvers,
+        mock_send_request_created_to_user,
+        mock_get_accessui_request_review_url,
+        mock_does_group_require_bg_check,
+        mock_can_user_request_group_based_on_domain,
+        mock_get_existing_pending_request,
+        mock_auth,
+        mock_redis_handler,
+    ):
+        mock_redis_handler.return_value.redis.return_value = create_future(
+            mock_strict_redis_client()
+        )
+
+        mock_request = {"request_id": 123456}
+        mock_user = User(**{"passed_background_check": True})
+        mock_user_groups = ["group1"]
+        mock_existing_request = None
+        mock_group_info = Group(
+            **{"secondary_approvers": "group1", "requestable": True, "restricted": False, "name": "myGroup"}
+        )
+
+        mock_auth.get_group_info.return_value = create_future(mock_group_info)
+        mock_auth.get_user_info.return_value = create_future(mock_user)
+        mock_auth.get_groups.return_value = create_future(mock_user_groups)
+        mock_get_existing_pending_request.return_value = create_future(
+            mock_existing_request
+        )
+        mock_can_user_request_group_based_on_domain.return_value = True
+        mock_does_group_require_bg_check.return_value = False
+        mock_add_request.return_value = mock_request
+        mock_get_accessui_request_review_url.return_value = ""
+        mock_send_access_email_to_user.return_value = create_future()
+        mock_add_user_to_group.return_value = create_future()
+        mock_send_request_to_secondary_approvers.return_value = create_future()
+        mock_send_request_created_to_user.return_value = create_future()
+
+        request_body = b'{"justification": "because", "group": "myGroup"}'
+        response = self.fetch(
+            f"/api/v1/requests", headers=headers, method="POST", body=request_body
+        )
+        body = json_decode(response.body)
+
+        self.assertEqual(
+            mock_send_request_created_to_user.call_count, 0, "pending email"
+        )
+        self.assertEqual(mock_add_user_to_group.call_count, 1, "add user to group")
+        self.assertEqual(mock_send_access_email_to_user.call_count, 1, "success email")
+        self.assertEqual(response.code, 200)
+        self.assertEqual(body, mock_request)
+
+    @patch("consoleme.handlers.base.RedisHandler")
+    @patch("consoleme.handlers.request.auth")
+    @patch("consoleme.handlers.request.get_existing_pending_request")
     @patch("consoleme.handlers.request.can_user_request_group_based_on_domain")
     @patch("consoleme.handlers.request.does_group_require_bg_check")
     @patch("consoleme.handlers.request.get_accessui_request_review_url")
@@ -618,7 +684,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_get_accessui_request_review_url,
         mock_does_group_require_bg_check,
         mock_can_user_request_group_based_on_domain,
-        mock_get_existing_pending_approved_request,
+        mock_get_existing_pending_request,
         mock_auth,
         mock_redis_handler,
     ):
@@ -642,7 +708,7 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_auth.get_group_info.return_value = create_future(mock_group_info)
         mock_auth.get_user_info.return_value = create_future(mock_user)
         mock_auth.get_groups.return_value = create_future(mock_user_groups)
-        mock_get_existing_pending_approved_request.return_value = create_future(
+        mock_get_existing_pending_request.return_value = create_future(
             mock_existing_request
         )
         mock_can_user_request_group_based_on_domain.return_value = True

@@ -514,67 +514,79 @@ async def get_formatted_policy_changes(account_id, arn, request):
 
 async def should_auto_approve_policy(events, user, groups):
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    if not config.get("dynamic_config.policy_request_autoapprove_probes.enabled"):
-        return False
-    for event in events:
-        log_data = {
-            "function": function,
-            "requested_policy": event,
-            "user": user,
-            "arn": event.get("arn"),
-        }
+    log_data  = {
+        "function": function,
+        "user": user
+    }
 
-        inline_policies = event.get("inline_policies", [])
-        approving_probe = None
-        # We only support inline policies at this time
-        if not inline_policies:
+    try:
+        if not config.get("dynamic_config.policy_request_autoapprove_probes.enabled"):
             return False
+        for event in events:
+            log_data = {
+                "function": function,
+                "requested_policy": event,
+                "user": user,
+                "arn": event.get("arn"),
+            }
 
-        # We only want to analyze update and attach events
-        for policy in inline_policies:
-            policy_result = False
-            if policy.get("action") not in ["update", "attach"]:
+            inline_policies = event.get("inline_policies", [])
+            approving_probe = None
+            # We only support inline policies at this time
+            if not inline_policies:
                 return False
 
-            if not zelkova:
-                return False
+            # We only want to analyze update and attach events
+            for policy in inline_policies:
+                policy_result = False
+                if policy.get("action") not in ["update", "attach"]:
+                    return False
 
-            for probe in config.get(
-                "dynamic_config.policy_request_autoapprove_probes.probes"
-            ):
-                log_data["probe"] = probe["name"]
-                log_data["requested_policy"] = policy
-                log_data["message"] = "Running probe on requested policy"
-                probe_result = False
-                requested_policy_text = policy["policy_document"]
-                if isinstance(requested_policy_text, dict):
-                    requested_policy_text = json.dumps(requested_policy_text)
-                zelkova_result = zelkova.compare_policies(
-                    Items=[
-                        {
-                            "Policy0": requested_policy_text,
-                            "Policy1": probe["policy"],
-                            "ResourceType": "IAM",
-                        }
-                    ]
-                )
-                comparison = zelkova_result["Items"][0]["Comparison"]
-                if comparison == "LESS_PERMISSIVE":
-                    probe_result = True
-                    policy_result = True
-                    approving_probe = probe["name"]
-                log_data["probe_result"] = probe_result
-                log.debug(log_data)
-            if not policy_result:
-                # If one of the policies in the request fails to auto-approve, everything fails
-                log_data["result"] = False
-                log_data["message"] = "Successfully ran all probes"
-                log.debug(log_data)
-                stats.count(f"{function}.called", tags={"result": False})
-                return False
+                if not zelkova:
+                    return False
 
-        log_data["result"] = True
-        log_data["message"] = "Successfully ran all probes"
-        log.debug(log_data)
-        stats.count(f"{function}.called", tags={"result": True})
-        return {"approved": True, "approving_probe": approving_probe}
+                for probe in config.get(
+                    "dynamic_config.policy_request_autoapprove_probes.probes"
+                ):
+                    log_data["probe"] = probe["name"]
+                    log_data["requested_policy"] = policy
+                    log_data["message"] = "Running probe on requested policy"
+                    probe_result = False
+                    requested_policy_text = policy["policy_document"]
+                    if isinstance(requested_policy_text, dict):
+                        requested_policy_text = json.dumps(requested_policy_text)
+                    zelkova_result = zelkova.compare_policies(
+                        Items=[
+                            {
+                                "Policy0": requested_policy_text,
+                                "Policy1": probe["policy"],
+                                "ResourceType": "IAM",
+                            }
+                        ]
+                    )
+                    comparison = zelkova_result["Items"][0]["Comparison"]
+                    if comparison == "LESS_PERMISSIVE":
+                        probe_result = True
+                        policy_result = True
+                        approving_probe = probe["name"]
+                    log_data["probe_result"] = probe_result
+                    log.debug(log_data)
+                if not policy_result:
+                    # If one of the policies in the request fails to auto-approve, everything fails
+                    log_data["result"] = False
+                    log_data["message"] = "Successfully ran all probes"
+                    log.debug(log_data)
+                    stats.count(f"{function}.called", tags={"result": False})
+                    return False
+
+            log_data["result"] = True
+            log_data["message"] = "Successfully ran all probes"
+            log.debug(log_data)
+            stats.count(f"{function}.called", tags={"result": True})
+            return {"approved": True, "approving_probe": approving_probe}
+    except Exception as e:
+        config.sentry.captureException()
+        log_data["error"] = e
+        log_data["message"] = "Exception in function"
+        log.error(log_data)
+        return False
