@@ -729,7 +729,10 @@ class PolicyReviewHandler(BaseHandler):
             request["status"] = updated_status
         if updated_status == "update":
             send_email = False
-            if policy_name == "Assume Role Policy Document":
+            if policy_name in [
+                "Assume Role Policy Document",
+                "AssumeRolePolicyDocument",
+            ]:
                 edited_document = json.loads(request["policy_changes"])[0][
                     "assume_role_policy_document"
                 ]["assume_role_policy_document"]
@@ -745,7 +748,10 @@ class PolicyReviewHandler(BaseHandler):
         request["updated_by"] = self.user
 
         if updated_status in ["approved", "rejected", "update"]:
-            if policy_name == "Assume Role Policy Document":
+            if policy_name in [
+                "Assume Role Policy Document",
+                "AssumeRolePolicyDocument",
+            ]:
                 policy_changes = [
                     {
                         "arn": arn,
@@ -794,7 +800,8 @@ class PolicyReviewHandler(BaseHandler):
             # Send any emails with the policy that was applied?
             data_type = (
                 "AssumeRolePolicyDocument"
-                if policy_name == "Assume Role Policy Document"
+                if policy_name
+                in ["Assume Role Policy Document", "AssumeRolePolicyDocument"]
                 else "InlinePolicy"
             )
             data_list = [
