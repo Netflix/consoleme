@@ -489,6 +489,7 @@ async def get_formatted_policy_changes(account_id, arn, request):
             if (
                 assume_role_policy_document.get("assume_role_policy_document")
                 == existing_ar_policy
+                and request.get("status") == "pending"
             ):
                 raise Exception(
                     "Requested Assume Role Policy Document is equivalent to existing Assume Role Policy Document"
@@ -550,9 +551,19 @@ async def should_auto_approve_policy(events, user, groups):
                     log_data["message"] = "Running probe on requested policy"
                     probe_result = False
                     requested_policy_text = policy["policy_document"]
+
+                    # Do not approve "Deny" policies automatically
+                    if isinstance(requested_policy_text, dict):
+                        statements = requested_policy_text.get("Statement", [])
+                        for statement in statements:
+                            if not isinstance(statement, dict):
+                                continue
+                            if statement.get("Effect") == "Deny":
+                                return False
+
                     if isinstance(requested_policy_text, dict):
                         requested_policy_text = json.dumps(requested_policy_text)
-                    zelkova_result = zelkova.compare_policies(
+                    zelkova_result = await sync_to_async(zelkova.compare_policies)(
                         Items=[
                             {
                                 "Policy0": requested_policy_text,
