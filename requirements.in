@@ -18,6 +18,7 @@ hiredis
 ipython
 isodate
 jmespath
+jsonnet
 jsonschema
 kombu
 marshmallow<3
