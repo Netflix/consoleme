@@ -1,6 +1,7 @@
 import tornado.escape
 import tornado.web
 import ujson as json
+from asgiref.sync import sync_to_async
 from marshmallow import fields, Schema, validates_schema, ValidationError
 
 from consoleme.config import config
@@ -51,7 +52,7 @@ class CredentialsSchema(Schema):
         return data
 
 
-credentials_schema = CredentialsSchema()
+credentials_schema = CredentialsSchema(strict=True)
 
 
 class GetCredentialsHandler(BaseMtlsHandler):
@@ -172,7 +173,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
         # Validate the input:
         data = tornado.escape.json_decode(self.request.body)
         try:
-            request = credentials_schema.load(data).data
+            request = (await sync_to_async(credentials_schema.load)(data)).data
         except ValidationError as ve:
             stats.count(
                 "GetCredentialsHandler.post",
