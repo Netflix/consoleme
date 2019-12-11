@@ -18,7 +18,7 @@ import ujson
 from asgiref.sync import async_to_sync
 from celery.schedules import crontab
 from celery.signals import task_received, task_success, task_failure
-from cloudaux.aws.iam import get_all_managed_policies, get_account_authorization_details
+from cloudaux.aws.iam import get_all_managed_policies, get_account_authorization_details, get_user_access_keys
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sqs import list_queues
@@ -772,6 +772,61 @@ if config.get("development", False):
     schedule_30_minute = dev_schedule
     schedule_45_minute = dev_schedule
     schedule_6_hours = dev_schedule
+
+
+@app.task(soft_time_limit=1800)
+def get_inventory_of_iam_keys(account_id: str) -> bool:
+    """
+    This function will get all the AWS IAM Keys for all the IAM users in all the Netflix AWS accounts.
+
+    - Create an Array of the AWS IAM Keys
+    - Write to an S3 bucket : swag.mgmt.netflix.net/data/dirtylaundry.json
+    - This will be picked up by DirtyLaundry
+    """
+    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
+    # First, get list of accounts
+    if config.region == config.get("celery.active_region"):
+        key_data = []
+        accounts_d: list = aws.get_account_ids_to_names()
+        users: list = []
+        for account_id in accounts_d.keys():
+            iam_users = get_account_authorization_details(
+                account_number=account_id,
+                assume_role=config.get("policies.role_name"),
+                region=config.region,
+                filter="User",
+            )
+
+            for user in iam_users:
+                kd = get_user_access_keys(account_number=account_id,
+                                   assume_role=config.get("policies.role_name"),
+                                   region=config.region, user=user)
+                for key_details in kd:
+                    key_data.append(key_details.get("AccessKeyId"))
+        put_object(
+            Bucket=config.get("get_inventory_of_iam_keys.Bucket"),
+            assume_role=config.get("get_inventory_of_iam_keys.assume_role"),
+            account_number=config.get("get_inventory_of_iam_keys.account_number"),
+            region=config.get("get_inventory_of_iam_keys.region"),
+            Key=config.get("get_inventory_of_iam_keys.Key"),
+            Body=json.dumps(key_data),
+            session_name='consoleme_dirtylaundry'
+        )
+    log_data = {
+        "function": function,
+        "message": "Successfully written to the S3 bucket"
+    }
+    log.debug(log_data)
+    stats.count(f"{function}.success")
+    return True
+
+
+@rate_limited()
+@sts_conn('s3')
+def put_object(client=None, **kwargs):
+    """Create an S3 object -- calls wrapped with CloudAux."""
+    client.put_object(**kwargs)
+
 
 schedule = {
     "alert_on_group_changes": {
