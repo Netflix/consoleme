@@ -765,6 +765,7 @@ schedule_45_minute = timedelta(seconds=2700)
 schedule_6_hours = timedelta(hours=6)
 schedule_minute = timedelta(minutes=1)
 schedule_5_minutes = timedelta(minutes=5)
+schedule_24_hours = timedelta(hours=24)
 
 if config.get("development", False):
     # If debug mode, we will set up the schedule to run the next minute after the job starts
@@ -778,11 +779,9 @@ if config.get("development", False):
 @app.task(soft_time_limit=1800)
 def get_inventory_of_iam_keys(account_id: str) -> bool:
     """
-    This function will get all the AWS IAM Keys for all the IAM users in all the Netflix AWS accounts.
-
-    - Create an Array of the AWS IAM Keys
-    - Write to an S3 bucket : swag.mgmt.netflix.net/data/dirtylaundry.json
-    - This will be picked up by DirtyLaundry
+    This function will get all the AWS IAM Keys for all the IAM users in all the AWS accounts.
+    - Create an Array of IAM Access key ID
+    - Write this data to an S3 bucket
     """
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     log_data = {
@@ -791,40 +790,41 @@ def get_inventory_of_iam_keys(account_id: str) -> bool:
     }
     # First, get list of accounts
     key_data = []
-    if config.region == config.get("celery.active_region") and config.get("environment") == "prod":
-        accounts_d: list = aws.get_account_ids_to_names()
-        users: list = []
-        for account_id in accounts_d.keys():
-            try:
-                iam_users = get_account_authorization_details(
-                    account_number=account_id,
-                    assume_role=config.get("policies.role_name"),
-                    region=config.region,
-                    filter="User",
-                )
+    if get_inventory_of_iam_keys.enabled:
+        if config.region == config.get("celery.active_region") and config.get("environment") == "prod":
+            accounts_d: list = aws.get_account_ids_to_names()
+            users: list = []
+            for account_id in accounts_d.keys():
+                try:
+                    iam_users = get_account_authorization_details(
+                        account_number=account_id,
+                        assume_role=config.get("policies.role_name"),
+                        region=config.region,
+                        filter="User",
+                    )
 
-                for user in iam_users:
-                    kd = get_user_access_keys(account_number=account_id,
-                                              assume_role=config.get("policies.role_name"),
-                                              region=config.region, user=user)
-                    for key_details in kd:
-                        key_data.append(key_details.get("AccessKeyId"))
-            except Exception as e:
-                log_data["error"] = e
-                log.error(log_data, exc_info=True)
-        put_object(
-            Bucket=config.get("get_inventory_of_iam_keys.Bucket"),
-            assume_role=config.get("get_inventory_of_iam_keys.assume_role"),
-            account_number=config.get("get_inventory_of_iam_keys.account_number"),
-            region=config.get("get_inventory_of_iam_keys.region"),
-            Key=config.get("get_inventory_of_iam_keys.Key"),
-            Body=json.dumps(key_data),
-            session_name=config.get("get_inventory_of_iam_keys.session_name")
-        )
-    log_data["total_iam_access_key_id"] = len(key_data)
-    log.debug(log_data)
-    stats.count(f"{function}.success")
-    return log_data
+                    for user in iam_users:
+                        kd = get_user_access_keys(account_number=account_id,
+                                                  assume_role=config.get("policies.role_name"),
+                                                  region=config.region, user=user)
+                        for key_details in kd:
+                            key_data.append(key_details.get("AccessKeyId"))
+                except Exception as e:
+                    log_data["error"] = e
+                    log.error(log_data, exc_info=True)
+            put_object(
+                Bucket=config.get("get_inventory_of_iam_keys.Bucket"),
+                assume_role=config.get("get_inventory_of_iam_keys.assume_role"),
+                account_number=config.get("get_inventory_of_iam_keys.account_number"),
+                region=config.get("get_inventory_of_iam_keys.region"),
+                Key=config.get("get_inventory_of_iam_keys.Key"),
+                Body=json.dumps(key_data),
+                session_name=config.get("get_inventory_of_iam_keys.session_name")
+            )
+        log_data["total_iam_access_key_id"] = len(key_data)
+        log.debug(log_data)
+        stats.count(f"{function}.success")
+        return log_data
 
 
 schedule = {
@@ -877,6 +877,11 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.cache_audit_table_details",
         "options": {"expires": 1000},
         "schedule": schedule_5_minutes,
+    },
+    "get_iam_access_key_id": {
+        "task": "consoleme.celery.celery_tasks.get_iam_access_key_id",
+        "options": {"expires": 1000},
+        "schedule": schedule_24_hours,
     },
 }
 
