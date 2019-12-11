@@ -760,22 +760,6 @@ def clear_old_redis_iam_cache() -> bool:
     return True
 
 
-schedule_30_minute = timedelta(seconds=1800)
-schedule_45_minute = timedelta(seconds=2700)
-schedule_6_hours = timedelta(hours=6)
-schedule_minute = timedelta(minutes=1)
-schedule_5_minutes = timedelta(minutes=5)
-schedule_24_hours = timedelta(hours=24)
-
-if config.get("development", False):
-    # If debug mode, we will set up the schedule to run the next minute after the job starts
-    time_to_start = datetime.utcnow() + timedelta(minutes=1)
-    dev_schedule = crontab(hour=time_to_start.hour, minute=time_to_start.minute)
-    schedule_30_minute = dev_schedule
-    schedule_45_minute = dev_schedule
-    schedule_6_hours = dev_schedule
-
-
 @app.task(soft_time_limit=1800)
 def get_inventory_of_iam_keys(account_id: str) -> bool:
     """
@@ -826,6 +810,21 @@ def get_inventory_of_iam_keys(account_id: str) -> bool:
         stats.count(f"{function}.success")
         return log_data
 
+
+schedule_30_minute = timedelta(seconds=1800)
+schedule_45_minute = timedelta(seconds=2700)
+schedule_6_hours = timedelta(hours=6)
+schedule_minute = timedelta(minutes=1)
+schedule_5_minutes = timedelta(minutes=5)
+schedule_24_hours = timedelta(hours=24)
+
+if config.get("development", False):
+    # If debug mode, we will set up the schedule to run the next minute after the job starts
+    time_to_start = datetime.utcnow() + timedelta(minutes=1)
+    dev_schedule = crontab(hour=time_to_start.hour, minute=time_to_start.minute)
+    schedule_30_minute = dev_schedule
+    schedule_45_minute = dev_schedule
+    schedule_6_hours = dev_schedule
 
 schedule = {
     "alert_on_group_changes": {
