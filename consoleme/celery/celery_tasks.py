@@ -26,6 +26,7 @@ from raven.contrib.celery import register_signal, register_logger_signal
 from retrying import retry
 
 from consoleme.config import config
+from consoleme.lib.aws import put_object
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.groups import get_group_url
 from consoleme.lib.json_encoder import SetEncoder
@@ -275,8 +276,8 @@ def alert_on_group_changes() -> dict:
 
         # Send an e-mail with membership changes only in the primary region
         if (
-            config.region == config.get("celery.active_region")
-            and config.get("environment") == "prod"
+                config.region == config.get("celery.active_region")
+                and config.get("environment") == "prod"
         ):
             if added_members and current_members:
                 async_to_sync(send_group_modification_notification)(
@@ -479,7 +480,7 @@ def cache_roles_for_account(account_id: str) -> bool:
 
     # Only query IAM and put data in Dynamo if we're in the active region
     if config.region == config.get("celery.active_region") or config.get(
-        "unit_testing.override_true"
+            "unit_testing.override_true"
     ):
         # Get the roles:
         iam_roles = get_account_authorization_details(
@@ -517,7 +518,7 @@ def cache_roles_for_account(account_id: str) -> bool:
 def cache_roles_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     if config.region == config.get("celery.active_region") or config.get(
-        "unit_testing.override_true"
+            "unit_testing.override_true"
     ):
         # First, get list of accounts
         accounts_d = aws.get_account_ids_to_names()
@@ -688,7 +689,7 @@ def cache_s3_buckets_for_account(account_id: str) -> bool:
     wait_exponential_max=1000,
 )
 def _scan_redis_iam_cache(
-    cache_key: str, index: int, count: int
+        cache_key: str, index: int, count: int
 ) -> Tuple[int, Dict[str, str]]:
     return red.hscan(cache_key, index, count=count)
 
@@ -784,25 +785,33 @@ def get_inventory_of_iam_keys(account_id: str) -> bool:
     - This will be picked up by DirtyLaundry
     """
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {
+        "function": function,
+        "message": "Get inventory of IAM Keys"
+    }
     # First, get list of accounts
-    if config.region == config.get("celery.active_region"):
-        key_data = []
+    key_data = []
+    if config.region == config.get("celery.active_region") and config.get("environment") == "prod":
         accounts_d: list = aws.get_account_ids_to_names()
         users: list = []
         for account_id in accounts_d.keys():
-            iam_users = get_account_authorization_details(
-                account_number=account_id,
-                assume_role=config.get("policies.role_name"),
-                region=config.region,
-                filter="User",
-            )
+            try:
+                iam_users = get_account_authorization_details(
+                    account_number=account_id,
+                    assume_role=config.get("policies.role_name"),
+                    region=config.region,
+                    filter="User",
+                )
 
-            for user in iam_users:
-                kd = get_user_access_keys(account_number=account_id,
-                                   assume_role=config.get("policies.role_name"),
-                                   region=config.region, user=user)
-                for key_details in kd:
-                    key_data.append(key_details.get("AccessKeyId"))
+                for user in iam_users:
+                    kd = get_user_access_keys(account_number=account_id,
+                                              assume_role=config.get("policies.role_name"),
+                                              region=config.region, user=user)
+                    for key_details in kd:
+                        key_data.append(key_details.get("AccessKeyId"))
+            except Exception as e:
+                log_data["error"] = e
+                log.error(log_data, exc_info=True)
         put_object(
             Bucket=config.get("get_inventory_of_iam_keys.Bucket"),
             assume_role=config.get("get_inventory_of_iam_keys.assume_role"),
@@ -810,22 +819,12 @@ def get_inventory_of_iam_keys(account_id: str) -> bool:
             region=config.get("get_inventory_of_iam_keys.region"),
             Key=config.get("get_inventory_of_iam_keys.Key"),
             Body=json.dumps(key_data),
-            session_name='consoleme_dirtylaundry'
+            session_name=config.get("get_inventory_of_iam_keys.session_name")
         )
-    log_data = {
-        "function": function,
-        "message": "Successfully written to the S3 bucket"
-    }
+    log_data["total_iam_access_key_id"] = len(key_data)
     log.debug(log_data)
     stats.count(f"{function}.success")
-    return True
-
-
-@rate_limited()
-@sts_conn('s3')
-def put_object(client=None, **kwargs):
-    """Create an S3 object -- calls wrapped with CloudAux."""
-    client.put_object(**kwargs)
+    return log_data
 
 
 schedule = {
