@@ -807,7 +807,7 @@ def get_inventory_of_iam_keys() -> dict:
                 Body=json.dumps(key_data),
                 session_name=config.get("get_inventory_of_iam_keys.session_name")
             )
-    log_data["total_iam_access_key_id"] = len(key_data)
+    log_data["total_iam_access_key_ids"] = len(key_data)
     log.debug(log_data)
     stats.count(f"{function}.success")
     return log_data
