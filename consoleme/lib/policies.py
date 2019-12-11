@@ -513,7 +513,7 @@ async def get_formatted_policy_changes(account_id, arn, request):
     return {"changes": formatted_policy_changes, "role": existing_role}
 
 
-async def should_auto_approve_policy(events, user, groups):
+async def should_auto_approve_policy(events, user, user_groups):
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     log_data = {"function": function, "user": user}
 
@@ -521,11 +521,13 @@ async def should_auto_approve_policy(events, user, groups):
         if not config.get("dynamic_config.policy_request_autoapprove_probes.enabled"):
             return False
         for event in events:
+            arn = event.get("arn")
+            account_id = arn.split(":")[4]
             log_data = {
                 "function": function,
                 "requested_policy": event,
                 "user": user,
-                "arn": event.get("arn"),
+                "arn": arn,
             }
 
             inline_policies = event.get("inline_policies", [])
@@ -567,16 +569,48 @@ async def should_auto_approve_policy(events, user, groups):
                         Items=[
                             {
                                 "Policy0": requested_policy_text,
-                                "Policy1": probe["policy"],
+                                "Policy1": probe["policy"].replace(
+                                    "{account_id}", account_id
+                                ),
                                 "ResourceType": "IAM",
                             }
                         ]
                     )
+
                     comparison = zelkova_result["Items"][0]["Comparison"]
+
+                    allow_listed = False
+                    allowed_group = False
+
+                    # Probe will fail if ARN account ID is not in the probe's account allow-list. Default allow-list is
+                    # *
+                    for account in probe.get("accounts", {}).get("allowlist", ["*"]):
+                        if account == "*" or account_id == str(account):
+                            allow_listed = True
+                            break
+
+                    if not allow_listed:
+                        comparison = "DENIED_BY_ALLOWLIST"
+
+                    # Probe will fail if ARN account ID is in the probe's account blocklist
+                    for account in probe.get("accounts", {}).get("blocklist", []):
+                        if account_id == str(account):
+                            comparison = "DENIED_BY_BLOCKLIST"
+
+                    for group in probe.get("required_user_or_group", ["*"]):
+                        for g in user_groups:
+                            if group == "*" or group == g or group == user:
+                                allowed_group = True
+                                break
+
+                    if not allowed_group:
+                        comparison = "DENIED_BY_ALLOWEDGROUPS"
+
                     if comparison == "LESS_PERMISSIVE":
                         probe_result = True
                         policy_result = True
                         approving_probe = probe["name"]
+                    log_data["comparison"] = comparison
                     log_data["probe_result"] = probe_result
                     log.debug(log_data)
                 if not policy_result:
