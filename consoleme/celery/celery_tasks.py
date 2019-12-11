@@ -761,7 +761,7 @@ def clear_old_redis_iam_cache() -> bool:
 
 
 @app.task(soft_time_limit=1800)
-def get_inventory_of_iam_keys(account_id: str) -> bool:
+def get_inventory_of_iam_keys(account_id: str) -> dict:
     """
     This function will get all the AWS IAM Keys for all the IAM users in all the AWS accounts.
     - Create an Array of IAM Access key ID
@@ -774,8 +774,10 @@ def get_inventory_of_iam_keys(account_id: str) -> bool:
     }
     # First, get list of accounts
     key_data = []
-    if get_inventory_of_iam_keys.enabled:
-        if config.region == config.get("celery.active_region") and config.get("environment") == "prod":
+    if not config.get("get_inventory_of_iam_keys.enabled"):
+        stats.count(f"{function}.success")
+        return {}
+    if config.region == config.get("celery.active_region") and config.get("environment") == "prod":
             accounts_d: list = aws.get_account_ids_to_names()
             users: list = []
             for account_id in accounts_d.keys():
@@ -797,18 +799,18 @@ def get_inventory_of_iam_keys(account_id: str) -> bool:
                     log_data["error"] = e
                     log.error(log_data, exc_info=True)
             put_object(
-                Bucket=config.get("get_inventory_of_iam_keys.Bucket"),
+                Bucket=config.get("get_inventory_of_iam_keys.bucket"),
                 assume_role=config.get("get_inventory_of_iam_keys.assume_role"),
                 account_number=config.get("get_inventory_of_iam_keys.account_number"),
                 region=config.get("get_inventory_of_iam_keys.region"),
-                Key=config.get("get_inventory_of_iam_keys.Key"),
+                Key=config.get("get_inventory_of_iam_keys.key"),
                 Body=json.dumps(key_data),
                 session_name=config.get("get_inventory_of_iam_keys.session_name")
             )
-        log_data["total_iam_access_key_id"] = len(key_data)
-        log.debug(log_data)
-        stats.count(f"{function}.success")
-        return log_data
+    log_data["total_iam_access_key_id"] = len(key_data)
+    log.debug(log_data)
+    stats.count(f"{function}.success")
+    return log_data
 
 
 schedule_30_minute = timedelta(seconds=1800)
