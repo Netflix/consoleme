@@ -761,7 +761,7 @@ def clear_old_redis_iam_cache() -> bool:
 
 
 @app.task(soft_time_limit=1800)
-def get_inventory_of_iam_keys(account_id: str) -> dict:
+def get_inventory_of_iam_keys() -> dict:
     """
     This function will get all the AWS IAM Keys for all the IAM users in all the AWS accounts.
     - Create an Array of IAM Access key ID
@@ -807,7 +807,7 @@ def get_inventory_of_iam_keys(account_id: str) -> dict:
                 Body=json.dumps(key_data),
                 session_name=config.get("get_inventory_of_iam_keys.session_name")
             )
-    log_data["total_iam_access_key_id"] = len(key_data)
+    log_data["total_iam_access_key_ids"] = len(key_data)
     log.debug(log_data)
     stats.count(f"{function}.success")
     return log_data
@@ -880,7 +880,7 @@ schedule = {
         "schedule": schedule_5_minutes,
     },
     "get_iam_access_key_id": {
-        "task": "consoleme.celery.celery_tasks.get_iam_access_key_id",
+        "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
         "options": {"expires": 1000},
         "schedule": schedule_24_hours,
     },
