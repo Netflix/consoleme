@@ -14,9 +14,9 @@ aws-xray-sdk==2.4.3       # via moto
 bandit==1.6.2
 black==19.10b0
 bleach==3.1.0             # via readme-renderer
-boto3==1.10.35            # via aws-sam-translator, moto
+boto3==1.10.36            # via aws-sam-translator, moto
 boto==2.49.0              # via moto
-botocore==1.13.35         # via aws-xray-sdk, boto3, moto, s3transfer
+botocore==1.13.36         # via aws-xray-sdk, boto3, moto, s3transfer
 certifi==2019.11.28       # via requests
 cffi==1.13.2              # via cryptography
 cfgv==2.0.1               # via pre-commit
@@ -35,12 +35,12 @@ filelock==3.0.12          # via tox
 flake8-docstrings==1.5.0
 flake8-import-order==0.18.1
 flake8==3.7.9
-future==0.18.2            # via aws-xray-sdk, python-jose
+future==0.18.2            # via aws-xray-sdk
 gitdb2==2.0.6             # via gitpython
 gitpython==3.0.5          # via bandit
 identify==1.4.8           # via pre-commit
 idna==2.8                 # via moto, requests
-importlib-metadata==1.2.0  # via jsonschema, pluggy, pre-commit, pytest, tox
+importlib-metadata==1.3.0  # via jsonschema, pluggy, pre-commit, pytest, tox
 jinja2==2.10.3            # via moto
 jmespath==0.9.4           # via boto3, botocore
 jsondiff==1.1.2           # via moto
@@ -64,7 +64,7 @@ pillow==6.2.1
 pluggy==0.13.1            # via pytest, tox
 pre-commit==1.20.0
 py==1.8.0                 # via pytest, tox
-pyasn1==0.4.8             # via rsa
+pyasn1==0.4.8             # via python-jose, rsa
 pycodestyle==2.5.0        # via flake8, flake8-import-order
 pycparser==2.19           # via cffi
 pydocstyle==5.0.1         # via flake8-docstrings
@@ -80,7 +80,7 @@ pytest-tornado==0.8.0
 pytest-xdist==1.30.0
 pytest==5.3.1
 python-dateutil==2.8.0    # via botocore, moto
-python-jose==3.0.1        # via moto
+python-jose==3.1.0        # via moto
 pytz==2019.3              # via moto
 pyyaml==5.2               # via aspy.yaml, bandit, cfn-lint, moto, pre-commit
 readme-renderer==24.0
