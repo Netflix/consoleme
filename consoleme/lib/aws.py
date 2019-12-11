@@ -5,6 +5,7 @@ import time
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
+from cloudaux import sts_conn
 from cloudaux.aws.decorators import rate_limited
 from cloudaux.aws.s3 import get_bucket_policy, get_bucket_tagging
 from cloudaux.aws.sns import get_topic_attributes
@@ -279,3 +280,10 @@ async def raise_if_background_check_required_and_no_background_check(role, user)
                         "{role}.",
                     ).format(role=role)
                 )
+
+
+@rate_limited()
+@sts_conn('s3')
+def put_object(client=None, **kwargs):
+    """Create an S3 object -- calls wrapped with CloudAux."""
+    client.put_object(**kwargs)
