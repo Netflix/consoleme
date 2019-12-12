@@ -815,6 +815,7 @@ def get_inventory_of_iam_keys() -> dict:
         )
     log_data["total_iam_access_key_id"] = len(key_data)
     log.debug(log_data)
+    red.set(f"{function}.last_success", int(time.time()))
     stats.count(f"{function}.success")
     return log_data
 
@@ -886,7 +887,7 @@ schedule = {
         "schedule": schedule_5_minutes,
     },
     "get_iam_access_key_id": {
-        "task": "consoleme.celery.celery_tasks.get_iam_access_key_id",
+        "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
         "options": {"expires": 1000},
         "schedule": schedule_24_hours,
     },
