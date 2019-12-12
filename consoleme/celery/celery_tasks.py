@@ -809,6 +809,7 @@ def get_inventory_of_iam_keys() -> dict:
             )
     log_data["total_iam_access_key_ids"] = len(key_data)
     log.debug(log_data)
+    red.set(f"{function}.last_success", int(time.time()))
     stats.count(f"{function}.success")
     return log_data
 
