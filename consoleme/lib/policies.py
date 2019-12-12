@@ -606,7 +606,7 @@ async def should_auto_approve_policy(events, user, user_groups):
                     if not allowed_group:
                         comparison = "DENIED_BY_ALLOWEDGROUPS"
 
-                    if comparison == "LESS_PERMISSIVE":
+                    if comparison in ["LESS_PERMISSIVE", "EQUIVALENT"]:
                         probe_result = True
                         policy_result = True
                         approving_probe = probe["name"]

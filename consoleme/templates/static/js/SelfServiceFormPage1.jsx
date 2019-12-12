@@ -1,6 +1,6 @@
 import {Field, reduxForm} from "redux-form";
 import React from "react";
-import {Dropdown, Form} from 'semantic-ui-react';
+import {Dropdown, Form, Button, Icon} from 'semantic-ui-react';
 import SelfServiceFormAppSearch from "./SelfServiceFormAppSearch";
 
 const supportedServices = [
@@ -14,7 +14,6 @@ const supportedServices = [
   {key: 'SNS', value: 'SNS', text: 'SNS Topic'},
   {key: 'SQS', value: 'SQS', text: 'SQS Queue'},
   {key: 'STS', value: 'STS', text: 'STS AssumeRole'},
-  // {key: 'APIP', value:'APIP', text:'API Protect' },
 ];
 
 const required = value => value ? undefined : 'Required field';
@@ -53,6 +52,8 @@ function DetermineArn(props) {
   }
   return (
   <div>
+    <div>For Help, visit <a href={"http://go/selfserviceiamtldr"} target={"_blank"}>go/selfserviceiamtldr</a></div>
+    <br />
     <div className="field" style={{width: "100%"}}>
       <label style={{width: "100%"}}>Search for your application and select an account to fill in your role identifier:</label>
       <div>
