@@ -46,13 +46,15 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
     def get_app(self):
         return make_app()
 
+    @patch("consoleme.handlers.policies.internal_policies")
+    @patch("consoleme.handlers.policies.aws.fetch_iam_role")
     @patch(
         "consoleme.handlers.policies.PolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
-    @patch("consoleme.handlers.policies.aws.fetch_iam_role")
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
-    def test_policy_pageload(self, mock_fetch_iam_role):
+    def test_policy_pageload(self, mock_fetch_iam_role, mock_internal_policies):
+        mock_internal_policies.return_value.get_errors_by_role.return_value = {}
         mock_fetch_iam_role_rv = Future()
         mock_fetch_iam_role_rv.set_result(MOCK_ROLE)
         mock_fetch_iam_role.return_value = mock_fetch_iam_role_rv

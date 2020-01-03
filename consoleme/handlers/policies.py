@@ -1,11 +1,10 @@
+import re
 import sys
+from datetime import datetime, timedelta
 from urllib.parse import quote_plus
 
-import re
-import time
 import tornado.escape
 import ujson as json
-from datetime import datetime, timedelta
 from policyuniverse.expander_minimizer import _expand_wildcard_action
 
 from consoleme.config import config
@@ -41,8 +40,7 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
 group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
-
-account_ids_to_names = group_mapping.get_account_ids_to_names()
+internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
 
 
 class PolicyViewHandler(BaseHandler):
@@ -206,6 +204,9 @@ class GetPoliciesHandler(BaseHandler):
 
 
 class PolicyEditHandler(BaseHandler):
+    def initialize(self):
+        self.account_ids_to_names = group_mapping.get_account_ids_to_names()
+
     async def get(self, account_id, role_name):
 
         if not self.user:
@@ -241,24 +242,20 @@ class PolicyEditHandler(BaseHandler):
 
         role = await aws.fetch_iam_role(account_id, arn, force_refresh=force_refresh)
 
-        cloudtrail_topic = config.get("redis.cloudtrail_errors", "CLOUDTRAIL_ERRORS")
-        all_cloudtrail_errors = self.red.get(cloudtrail_topic)
-        cloudtrail_errors = {}
-        if all_cloudtrail_errors:
-            cloudtrail_errors = json.loads(all_cloudtrail_errors).get(arn, {})
-        end_time = int(time.time()) * 1000
-        start_time = end_time - 86400000
+        cloudtrail_errors = await internal_policies.get_errors_by_role(
+            arn, config.get("policies.number_cloudtrail_errors_to_display", 5)
+        )
 
         cloudtrail_error_uri = config.get(
             "cloudtrail_errors.error_messages_by_role_uri"
-        ).format(
-            account_id=account_id,
-            role_name=role_name,
-            start_time=start_time,
-            end_time=end_time,
-        )
+        ).format(arn=arn)
         yesterday = (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")
-        s3_query_url = config.get("s3.query_url").format(
+        s3_query_url = config.get("s3.query_url", "").format(
+            yesterday=yesterday,
+            role_name=f"'{role_name}'",
+            account_id=f"'{account_id}'",
+        )
+        s3_non_error_query_url = config.get("s3.non_error_query_url", "").format(
             yesterday=yesterday,
             role_name=f"'{role_name}'",
             account_id=f"'{account_id}'",
@@ -273,8 +270,7 @@ class PolicyEditHandler(BaseHandler):
         all_account_managed_policies = await get_all_iam_managed_policies_for_account(
             account_id
         )
-
-        account_name = account_ids_to_names.get(account_id, [""])[0]
+        account_name = self.account_ids_to_names.get(account_id, [""])[0]
 
         await self.render(
             "policy_editor.html",
@@ -292,6 +288,7 @@ class PolicyEditHandler(BaseHandler):
             can_save_delete=can_save_delete,
             s3_errors=s3_errors,
             s3_query_url=s3_query_url,
+            s3_non_error_query_url=s3_non_error_query_url,
             url_encode=quote_plus,
             all_account_managed_policies=all_account_managed_policies,
         )
