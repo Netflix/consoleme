@@ -21,7 +21,10 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 
 
 def main():
-    app = make_app()
+    if config.get("sso.create_mock_jwk"):
+        app = make_app(jwt_validator=lambda x: {})
+    else:
+        app = make_app()
     return app
 
 
