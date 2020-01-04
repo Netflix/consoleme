@@ -14,7 +14,7 @@ from consoleme.exceptions.exceptions import (
     MustBeFte,
     Unauthorized,
 )
-from consoleme.handlers.base import BaseHandler
+from consoleme.handlers.base import BaseHandler, NotFoundError
 from consoleme.lib.aws import (
     fetch_resource_details,
     get_all_iam_managed_policies_for_account,
@@ -240,6 +240,9 @@ class PolicyEditHandler(BaseHandler):
         )
 
         role = await aws.fetch_iam_role(account_id, arn, force_refresh=force_refresh)
+
+        if not role:
+            raise NotFoundError(reason="Role not found")
 
         cloudtrail_topic = config.get("redis.cloudtrail_errors", "CLOUDTRAIL_ERRORS")
         all_cloudtrail_errors = self.red.get(cloudtrail_topic)
