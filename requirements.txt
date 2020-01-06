@@ -16,9 +16,9 @@ attrs==19.3.0             # via jsonschema
 backcall==0.1.0           # via ipython
 billiard==3.6.1.0         # via celery
 bleach==3.1.0
-boto3==1.10.46
+boto3==1.10.47
 boto==2.49.0              # via cloudaux
-botocore==1.13.46         # via boto3, cloudaux, s3transfer
+botocore==1.13.47         # via boto3, cloudaux, s3transfer
 cachetools==4.0.0         # via google-auth
 cchardet==2.1.5
 celery[redis]==4.4.0
@@ -85,11 +85,11 @@ pygments==2.5.2           # via ipython
 pyjwt==1.7.1
 pylint==2.4.4
 pyrsistent==0.15.6        # via jsonschema
-python-dateutil==2.8.1    # via botocore, elasticsearch-dsl, pandas
+python-dateutil==2.8.0
 python-json-logger==0.1.11  # via logmatic-python
 python3-saml==1.9.0
 pytz==2019.3
-pyyaml==5.2               # via apispec
+pyyaml==5.3               # via apispec
 raven==6.10.0
 redis==3.3.11
 requests==2.22.0
