@@ -38,14 +38,6 @@ class WebAuthNError(tornado.web.HTTPError):
         super().__init__(**kwargs)
 
 
-class NotFoundError(tornado.web.HTTPError):
-    """Not Found Error"""
-
-    def __init__(self, **kwargs):
-        kwargs["status_code"] = 404
-        super().__init__(**kwargs)
-
-
 class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
     def __init__(self, *args, **kwargs):
         self.jwt_validator = kwargs.pop("jwt_validator", None)
