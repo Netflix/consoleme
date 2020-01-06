@@ -92,6 +92,10 @@ To update the `pip` Python dependencies, run this command:
 make up-reqs
 ```
 
+If you're using Python 3.8 and trying to run this command on Mac, you may need to run
+`PKG_CONFIG_PATH="/usr/local/opt/libxml2/lib/pkgconfig" make up-reqs` which forces pkgconfig to use
+brew's xmlsec instead of the MacOS xmlsec (Details: https://github.com/mehcode/python-xmlsec/issues/111)
+
 
 ## PyCharm Unit Testing
 To run tests in PyCharm, the clearly superior Python development environment, you need to update your Debug

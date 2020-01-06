@@ -8,7 +8,7 @@
 
 amqp==2.5.2               # via kombu
 apispec-webframeworks==0.5.2
-apispec[yaml]==3.1.0
+apispec[yaml]==3.2.0
 appnope==0.1.0            # via ipython
 asgiref==3.2.3
 astroid==2.3.3            # via pylint
@@ -16,12 +16,12 @@ attrs==19.3.0             # via jsonschema
 backcall==0.1.0           # via ipython
 billiard==3.6.1.0         # via celery
 bleach==3.1.0
-boto3==1.10.36
+boto3==1.10.46
 boto==2.49.0              # via cloudaux
-botocore==1.13.36         # via boto3, cloudaux, s3transfer
-cachetools==3.1.1         # via google-auth
+botocore==1.13.46         # via boto3, cloudaux, s3transfer
+cachetools==4.0.0         # via google-auth
 cchardet==2.1.5
-celery[redis]==4.3.0
+celery[redis]==4.4.0
 certifi==2019.11.28       # via requests
 chardet==3.0.4            # via requests
 click==7.0                # via presto-python-client
@@ -31,27 +31,28 @@ deepdiff[murmur]==4.0.9
 defusedxml==0.6.0
 docutils==0.15.2          # via botocore
 ed25519==1.5
+elasticsearch-dsl==7.1.0
 elasticsearch==7.1.0
 flagpole==1.1.1           # via cloudaux
-google-api-core==1.14.3   # via google-cloud-core
+google-api-core==1.15.0   # via google-cloud-core
 google-api-python-client==1.7.11
 google-auth-httplib2==0.0.3
-google-auth==1.8.1        # via google-api-core, google-api-python-client, google-auth-httplib2, google-cloud-storage
+google-auth==1.10.0       # via google-api-core, google-api-python-client, google-auth-httplib2, google-cloud-storage
 google-cloud-core==1.1.0  # via google-cloud-storage
-google-cloud-storage==1.23.0
+google-cloud-storage==1.24.1
 google-resumable-media==0.5.0  # via google-cloud-storage
 googleapis-common-protos==1.6.0  # via google-api-core
 gunicorn==20.0.4
 hiredis==1.0.1
-httplib2==0.14.0          # via google-api-python-client, google-auth-httplib2
+httplib2==0.15.0          # via google-api-python-client, google-auth-httplib2
 idna==2.8                 # via requests
 importlib-metadata==1.3.0  # via jsonschema, kombu
 inflection==0.3.1         # via cloudaux
 ipython-genutils==0.2.0   # via traitlets
-ipython==7.10.1
+ipython==7.11.1
 isodate==0.6.0
 isort==4.3.21             # via pylint
-jedi==0.15.1              # via ipython
+jedi==0.15.2              # via ipython
 jmespath==0.9.4
 joblib==0.14.1            # via cloudaux
 jsonpickle==1.2           # via deepdiff
@@ -64,19 +65,19 @@ marshmallow==2.20.5
 mccabe==0.6.1             # via pylint
 mmh3==2.5.1               # via deepdiff
 more-itertools==8.0.2     # via zipp
-numpy==1.17.4             # via pandas
+numpy==1.18.0             # via pandas
 ordered-set==3.1.1        # via deepdiff
 pandas==0.25.3
-parso==0.5.1              # via jedi
+parso==0.5.2              # via jedi
 pexpect==4.7.0            # via ipython
 pickleshare==0.7.5        # via ipython
 pkgconfig==1.5.1
 policyuniverse==1.3.2.1
 presto-python-client==0.7.0
 prompt-toolkit==3.0.2     # via ipython
-protobuf==3.11.1          # via google-api-core, googleapis-common-protos
+protobuf==3.11.2          # via google-api-core, googleapis-common-protos
 ptyprocess==0.6.0         # via pexpect
-py==1.8.0                 # via retry
+py==1.8.1                 # via retry
 pyasn1-modules==0.2.7     # via google-auth
 pyasn1==0.4.8             # via pyasn1-modules, rsa
 pycurl==7.43.0.3
@@ -84,7 +85,7 @@ pygments==2.5.2           # via ipython
 pyjwt==1.7.1
 pylint==2.4.4
 pyrsistent==0.15.6        # via jsonschema
-python-dateutil==2.8.0    # via botocore, pandas
+python-dateutil==2.8.1    # via botocore, elasticsearch-dsl, pandas
 python-json-logger==0.1.11  # via logmatic-python
 python3-saml==1.9.0
 pytz==2019.3
@@ -103,12 +104,12 @@ tornado==6.0.3
 traitlets==4.3.3          # via ipython
 typed-ast==1.4.0          # via astroid
 ujson==1.35
-uritemplate==3.0.0        # via google-api-python-client
+uritemplate==3.0.1        # via google-api-python-client
 urllib3==1.25.7           # via botocore, elasticsearch, requests
 uvloop==0.14.0
 validate-email==1.3
 vine==1.3.0               # via amqp, celery
-wcwidth==0.1.7            # via prompt-toolkit
+wcwidth==0.1.8            # via prompt-toolkit
 webencodings==0.5.1       # via bleach
 wrapt==1.11.2             # via astroid
 xmlsec==1.3.3

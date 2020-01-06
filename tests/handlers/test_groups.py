@@ -34,7 +34,7 @@ Group = auth.Group
 
 class TestGroupsHandler(AsyncHTTPTestCase):
     def get_app(self):
-        return make_app()
+        return make_app(jwt_validator=lambda x: {})
 
     @patch(
         "consoleme.handlers.groups.GroupsHandler.authorization_flow",

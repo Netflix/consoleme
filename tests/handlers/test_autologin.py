@@ -17,7 +17,7 @@ sys.path.append(os.path.join(APP_ROOT, ".."))
 
 class TestAutologinHandler(AsyncHTTPTestCase):
     def get_app(self):
-        return make_app()
+        return make_app(jwt_validator=lambda x: {})
 
     @patch("consoleme_internal.plugins.group_mapping.group_mapping.RedisHandler")
     @patch("consoleme.handlers.base.RedisHandler")

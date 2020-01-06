@@ -29,7 +29,7 @@ sys.path.append(os.path.join(APP_ROOT, ".."))
 
 class TestRequestHandler(AsyncHTTPTestCase):
     def get_app(self):
-        return make_app()
+        return make_app(jwt_validator=lambda x: {})
 
     def get_new_ioloop(self):
         return IOLoop.instance()
@@ -631,7 +631,12 @@ class TestJSONBaseRequestHandler(AsyncHTTPTestCase):
         mock_user_groups = ["group1"]
         mock_existing_request = None
         mock_group_info = Group(
-            **{"secondary_approvers": "group1", "requestable": True, "restricted": False, "name": "myGroup"}
+            **{
+                "secondary_approvers": "group1",
+                "requestable": True,
+                "restricted": False,
+                "name": "myGroup",
+            }
         )
 
         mock_auth.get_group_info.return_value = create_future(mock_group_info)

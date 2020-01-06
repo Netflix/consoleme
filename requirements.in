@@ -10,6 +10,7 @@ deepdiff[murmur]
 defusedxml
 ed25519
 elasticsearch
+elasticsearch_dsl
 google-api-python-client
 google-auth-httplib2
 google-cloud-storage

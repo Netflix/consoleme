@@ -1,4 +1,3 @@
-import os
 import sys
 
 import boto3
@@ -16,7 +15,7 @@ log = config.get_logger()
 async def duo_mfa_user(username, message="ConsoleMe Authorization Request"):
     """Send a DUO mfa push request to user."""
     # Create session for the region deployed in.
-    session = boto3.Session(region_name=os.environ.get("EC2_REGION", "us-east-1"))
+    session = boto3.Session(region_name=config.region)
 
     # Create lambda client
     client = session.client("lambda")

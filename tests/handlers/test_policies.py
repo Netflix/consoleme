@@ -29,7 +29,7 @@ mock_policy_redis = MagicMock(
 
 class TestPoliciesHandler(AsyncHTTPTestCase):
     def get_app(self):
-        return make_app()
+        return make_app(jwt_validator=lambda x: {})
 
     @patch(
         "consoleme.handlers.policies.PolicyViewHandler.authorization_flow",
@@ -44,15 +44,17 @@ class TestPoliciesHandler(AsyncHTTPTestCase):
 
 class TestPolicyEditHandler(AsyncHTTPTestCase):
     def get_app(self):
-        return make_app()
+        return make_app(jwt_validator=lambda x: {})
 
+    @patch("consoleme.handlers.policies.internal_policies")
+    @patch("consoleme.handlers.policies.aws.fetch_iam_role")
     @patch(
         "consoleme.handlers.policies.PolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
-    @patch("consoleme.handlers.policies.aws.fetch_iam_role")
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
-    def test_policy_pageload(self, mock_fetch_iam_role):
+    def test_policy_pageload(self, mock_fetch_iam_role, mock_internal_policies):
+        mock_internal_policies.return_value.get_errors_by_role.return_value = {}
         mock_fetch_iam_role_rv = Future()
         mock_fetch_iam_role_rv.set_result(MOCK_ROLE)
         mock_fetch_iam_role.return_value = mock_fetch_iam_role_rv
@@ -72,7 +74,7 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
 
 class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     def get_app(self):
-        return make_app()
+        return make_app(jwt_validator=lambda x: {})
 
     @patch(
         "consoleme.handlers.policies.ResourcePolicyEditHandler.authorization_flow",

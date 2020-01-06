@@ -74,6 +74,7 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 internal_celery_tasks = get_plugin_by_name(config.get("plugins.internal_celery_tasks"))
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
+internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
 REDIS_IAM_COUNT = 1000
 
 
@@ -368,11 +369,7 @@ def cache_policies_table_details() -> bool:
     accounts_d = aws.get_account_ids_to_names()
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
-    cloudtrail_topic = config.get("redis.cloudtrail_errors", "CLOUDTRAIL_ERRORS")
-    all_cloudtrail_errors = red.get(cloudtrail_topic)
-    cloudtrail_errors = {}
-    if all_cloudtrail_errors:
-        cloudtrail_errors = json.loads(all_cloudtrail_errors)
+    cloudtrail_errors = internal_policies.error_count_by_arn()
 
     s3_error_topic = config.get("redis.s3_errors", "S3_ERRORS")
     all_s3_errors = red.get(s3_error_topic)
@@ -381,13 +378,8 @@ def cache_policies_table_details() -> bool:
         s3_errors = json.loads(all_s3_errors)
 
     for arn in arns:
-        errors = cloudtrail_errors.get(arn, {})
-        error_count = 0
-        for _, c in errors.items():
-            error_count += int(c.get("count"))
-
+        error_count = cloudtrail_errors.get(arn, 0)
         s3_errors_for_arn = s3_errors.get(arn, [])
-        error_count = 0
         for error in s3_errors_for_arn:
             error_count += int(error.get("count"))
 
@@ -846,12 +838,12 @@ schedule = {
     },
     "cache_roles_across_accounts": {
         "task": "consoleme.celery.celery_tasks.cache_roles_across_accounts",
-        "options": {"expires": 1800},
+        "options": {"expires": 180},
         "schedule": schedule_45_minute,
     },
     "clear_old_redis_iam_cache": {
         "task": "consoleme.celery.celery_tasks.clear_old_redis_iam_cache",
-        "options": {"expires": 1000},
+        "options": {"expires": 180},
         "schedule": schedule_6_hours,
     },
     "cache_policies_table_details": {
@@ -861,7 +853,7 @@ schedule = {
     },
     "report_celery_last_success_metrics": {
         "task": "consoleme.celery.celery_tasks.report_celery_last_success_metrics",
-        "options": {"expires": 1000},
+        "options": {"expires": 60},
         "schedule": schedule_minute,
     },
     "cache_managed_policies_across_accounts": {
@@ -871,27 +863,27 @@ schedule = {
     },
     "cache_s3_buckets_across_accounts": {
         "task": "consoleme.celery.celery_tasks.cache_s3_buckets_across_accounts",
-        "options": {"expires": 1000},
+        "options": {"expires": 300},
         "schedule": schedule_45_minute,
     },
     "cache_sqs_queues_across_accounts": {
         "task": "consoleme.celery.celery_tasks.cache_sqs_queues_across_accounts",
-        "options": {"expires": 1000},
+        "options": {"expires": 300},
         "schedule": schedule_45_minute,
     },
     "cache_sns_topics_across_accounts": {
         "task": "consoleme.celery.celery_tasks.cache_sns_topics_across_accounts",
-        "options": {"expires": 1000},
+        "options": {"expires": 300},
         "schedule": schedule_45_minute,
     },
     "cache_audit_table_details": {
         "task": "consoleme.celery.celery_tasks.cache_audit_table_details",
-        "options": {"expires": 1000},
+        "options": {"expires": 300},
         "schedule": schedule_5_minutes,
     },
     "get_iam_access_key_id": {
         "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
-        "options": {"expires": 1000},
+        "options": {"expires": 300},
         "schedule": schedule_24_hours,
     },
 }

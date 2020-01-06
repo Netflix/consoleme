@@ -39,7 +39,7 @@ MagicMock.__await__ = lambda x: async_magic().__await__()
 
 class TestUsersHandler(AsyncHTTPTestCase):
     def get_app(self):
-        return make_app()
+        return make_app(jwt_validator=lambda x: {})
 
     def get_new_ioloop(self):
         return IOLoop.instance()
