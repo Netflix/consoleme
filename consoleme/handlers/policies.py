@@ -240,7 +240,6 @@ class PolicyEditHandler(BaseHandler):
         )
 
         role = await aws.fetch_iam_role(account_id, arn, force_refresh=force_refresh)
-
         if not role:
             self.send_error(
                 404, message=f"Unable to retrieve the specified role: {role_name}"
