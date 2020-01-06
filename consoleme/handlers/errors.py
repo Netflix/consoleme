@@ -4,6 +4,7 @@ import random
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
+from consoleme.lib.generic import render_404
 from consoleme.lib.plugins import get_plugin_by_name
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -37,16 +38,5 @@ class Consolme404Handler(BaseHandler):
         }
 
         log.debug(log_data)
-        not_found_path = (
-            f"{os.path.dirname(os.path.realpath(__file__))}/../templates/static/404"
-        )
 
-        await self.render(
-            "error.html",
-            page_title="ConsoleMe - 404",
-            current_page="error",
-            user=self.user,
-            random_404_image=random.choice(os.listdir(not_found_path)),  # nosec
-            user_groups=self.groups,
-            config=config,
-        )
+        render_404(self, config)

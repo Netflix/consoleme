@@ -71,6 +71,25 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
         self.assertIn(b"New Policy", response.body)
         self.assertIn(b"iam:GetAccountAuthorizationDetails", response.body)
 
+    @patch(
+        "consoleme.handlers.policies.PolicyEditHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    @patch("consoleme.handlers.policies.aws.fetch_iam_role")
+    @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
+    def test_policy_notfound(self, mock_fetch_iam_role):
+        mock_fetch_iam_role_rv = Future()
+        mock_fetch_iam_role_rv.set_result(None)
+        mock_fetch_iam_role.return_value = mock_fetch_iam_role_rv
+        headers = {
+            "Oidc_claim_sub": "user@github.com",
+            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+        }
+        response = self.fetch(
+            "/policies/edit/123456789012/iamrole/FakeRole", headers=headers
+        )
+        self.assertEqual(response.code, 404)
+
 
 class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     def get_app(self):

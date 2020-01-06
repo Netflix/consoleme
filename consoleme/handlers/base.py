@@ -21,6 +21,7 @@ from consoleme.exceptions.exceptions import (
     NoGroupsException,
     NoUserException,
 )
+from consoleme.lib.generic import render_404
 from consoleme.lib.auth import AuthenticationError
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -116,14 +117,18 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                 self.write(line)
             self.finish()
         else:
-            self.finish(
-                "<html><title>%(code)d: %(message)s</title>"
-                "<body>%(code)d: %(message)s</body></html>"
-                % {
-                    "code": status_code,
-                    "message": f"{self._reason} - {config.get('errors.custom_website_error_message', '')}",
-                }
-            )
+            if status_code == 404:
+                render_404(self, config)
+                return
+            else:
+                self.finish(
+                    "<html><title>%(code)d: %(message)s</title>"
+                    "<body>%(code)d: %(message)s</body></html>"
+                    % {
+                        "code": status_code,
+                        "message": f"{self._reason} - {config.get('errors.custom_website_error_message', '')}",
+                    }
+                )
 
     def data_received(self, chunk):
         """Receives the data."""
