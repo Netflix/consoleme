@@ -25,7 +25,7 @@ celery[redis]==4.3.0
 certifi==2019.11.28       # via requests
 chardet==3.0.4            # via requests
 click==7.0                # via presto-python-client
-cloudaux==1.7.2
+cloudaux==1.8.0
 decorator==4.4.1          # via ipython, retry, traitlets
 deepdiff[murmur]==4.0.9
 defusedxml==0.6.0

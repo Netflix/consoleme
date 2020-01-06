@@ -641,6 +641,7 @@ def cache_sqs_queues_for_account(account_id: str) -> bool:
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=region,
+            read_only=True
         )
         for queue in queues:
             arn = f"arn:aws:sqs:{region}:{account_id}:{queue.split('/')[4]}"
@@ -661,6 +662,7 @@ def cache_sns_topics_for_account(account_id: str) -> bool:
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=region,
+            read_only=True
         )
         for topic in topics:
             all_topics.add(topic["TopicArn"])
@@ -677,6 +679,7 @@ def cache_s3_buckets_for_account(account_id: str) -> bool:
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=config.region,
+        read_only=True
     )
     buckets: list = []
     for bucket in s3_buckets["Buckets"]:
