@@ -51,6 +51,10 @@ def map_operation_to_api(operation, default):
         "REST.PUT.OBJECT_TAGGING": "s3:PutObjectTagging",
         "REST.POST.RESTORE": "s3:RestoreObject",
         "REST.PUT.ACL": "s3:PutBucketAcl|s3:PutObjectAcl",
+        "REST.GET.ACCELERATE": "s3:GetAccelerateConfiguration",
+        "REST.GET.REQUEST_PAYMENT": "s3:GetBucketRequestPayment",
+        "REST.GET.OBJECT_LOCK_CONFIGURATION": "s3:GetObjectLockConfiguration",
+        "REST.GET.LOGGING_STATUS": "s3:GetBucketLogging",
     }
     api_call = operations_map.get(operation, None)
     if api_call is None:
