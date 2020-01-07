@@ -102,3 +102,10 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Dev environment stuff:
+.DS_Store
+.vscode/
+.idea/
+dynamodb-data/
+redis-data/
