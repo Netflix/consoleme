@@ -105,8 +105,11 @@ def report_celery_last_success_metrics() -> bool:
         f"{function}.last_success", int(time.time())
     )  # Alert if this metric is not seen
     with app.pool.acquire() as conn:
-        number_of_pending_tasks = conn.default_channel.client.llen("celery")
-        stats.gauge("celery.pending_tasks", number_of_pending_tasks)
+        try:
+            number_of_pending_tasks = conn.default_channel.client.llen("celery")
+            stats.gauge("celery.pending_tasks", number_of_pending_tasks)
+        except TypeError:
+            pass
     stats.count(f"{function}.success")
     stats.timer("worker.healthy")
     return True
@@ -633,7 +636,7 @@ def cache_sqs_queues_for_account(account_id: str) -> bool:
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=region,
-            read_only=True
+            read_only=True,
         )
         for queue in queues:
             arn = f"arn:aws:sqs:{region}:{account_id}:{queue.split('/')[4]}"
@@ -654,7 +657,7 @@ def cache_sns_topics_for_account(account_id: str) -> bool:
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=region,
-            read_only=True
+            read_only=True,
         )
         for topic in topics:
             all_topics.add(topic["TopicArn"])
@@ -671,7 +674,7 @@ def cache_s3_buckets_for_account(account_id: str) -> bool:
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=config.region,
-        read_only=True
+        read_only=True,
     )
     buckets: list = []
     for bucket in s3_buckets["Buckets"]:
