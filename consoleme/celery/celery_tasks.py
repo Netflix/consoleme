@@ -221,7 +221,7 @@ def alert_on_group_changes() -> dict:
     # {set(alert_on_changes): group_name: [users]}]}
     # Example:
     # {
-    #   ("infrasec@netflix.com",): {
+    #   "coolpeople@netflix.com": {
     #       "awesome_group@netflix.com": [{"name": "tswift@netflix.com", "type": "USER"}]
     #   },
     # }
@@ -298,7 +298,8 @@ def alert_on_group_changes() -> dict:
             and config.get("environment") == "prod"
         ):
             if added_members and current_members:
-                group_changes[tuple(group_info.alert_on_changes)][group] = added_members
+                for recipient in group_info.alert_on_changes:
+                    group_changes[recipient][group] = added_members
             elif added_members and not current_members:
                 log_data[
                     "message"
@@ -316,10 +317,10 @@ def alert_on_group_changes() -> dict:
         # Update redis cache
         red.set(group_members_key, json.dumps(current_members))
 
-    for recipients, groups in group_changes.items():
+    for recipient, groups in group_changes.items():
         async_to_sync(send_group_modification_notification)(
             groups,
-            recipients
+            recipient
         )
 
     stats.count("alert_on_group_changes.success")

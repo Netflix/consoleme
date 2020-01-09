@@ -43,6 +43,10 @@ async def send_email(
         log_data["new_to_addresses"] = to_addresses
         log.debug(log_data)
 
+    # Handle non-list recipients
+    if not isinstance(to_addresses, list):
+        to_addresses = [to_addresses]
+
     try:
         response = await sync_to_async(client.send_email)(
             Destination={"ToAddresses": to_addresses},  # This should be a list
