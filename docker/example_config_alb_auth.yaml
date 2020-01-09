@@ -11,6 +11,7 @@ auth:
   get_user_by_saml: false
   groups_header_name: group_header
   user_header_name: user_header
+  set_auth_cookie: true
 
 get_user_by_aws_alb_auth_settings:
   jwt_email_key: preferred_username

@@ -67,8 +67,10 @@ async def authenticate_user_by_oauth2(request):
         decoded_token = jwt.decode(access_token, verify=jwt_verify)
         email = decoded_token[config.get("get_user_by_oidc_settings.jwt_email_key")]
         groups = decoded_token[config.get("get_user_by_oidc_settings.jwt_groups_key")]
-        encoded_cookie = await generate_jwt_token(email, groups)
-        request.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
+
+        if config.get("auth.set_auth_cookie"):
+            encoded_cookie = await generate_jwt_token(email, groups)
+            request.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
         redirect_uri = urlparse(redirect_uri)
         query = parse_qs(redirect_uri.query, keep_blank_values=True)
         query.pop("session_state", None)

@@ -9,6 +9,7 @@ auth:
   get_user_by_saml: true
   groups_header_name: group_header
   user_header_name: user_header
+  set_auth_cookie: true
 
 get_user_by_saml_settings:
   saml_path: docker/saml_example

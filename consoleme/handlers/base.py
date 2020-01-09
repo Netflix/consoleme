@@ -24,7 +24,7 @@ from consoleme.exceptions.exceptions import WebAuthNError
 from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
 from consoleme.lib.auth import AuthenticationError
 from consoleme.lib.generic import render_404
-from consoleme.lib.jwt import validate_and_return_jwt_token
+from consoleme.lib.jwt import validate_and_return_jwt_token, generate_jwt_token
 from consoleme.lib.oauth2 import authenticate_user_by_oauth2
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -334,6 +334,14 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                 )
             except redis.exceptions.ConnectionError:
                 pass
+
+        if (
+            config.get("auth.set_auth_cookie")
+            and config.get("auth_cookie_name")
+            and not self.get_cookie(config.get("auth_cookie_name"))
+        ):
+            encoded_cookie = await generate_jwt_token(self.user, self.groups)
+            self.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
 
     async def prepare_tornado_request_for_saml(self):
         dataDict = {}

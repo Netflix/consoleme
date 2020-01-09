@@ -1,10 +1,10 @@
-import jwt
-import requests
 import base64
 import json
 
+import jwt
+import requests
+
 from consoleme.config import config
-from consoleme.lib.jwt import generate_jwt_token
 
 
 async def authenticate_user_by_alb_auth(request):
@@ -26,6 +26,4 @@ async def authenticate_user_by_alb_auth(request):
     payload = jwt.decode(encoded_jwt, pub_key, algorithms=["ES256"])
     email = payload.get(config.get("get_user_by_aws_alb_auth_settings.jwt_email_key"))
     groups = payload.get(config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key"))
-    encoded_cookie = await generate_jwt_token(email, groups)
-    request.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
     return {"user": email, "groups": groups}
