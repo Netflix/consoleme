@@ -10,6 +10,7 @@ command: celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG
 import json  # We use a separate SetEncoder here so we cannot use ujson
 import sys
 import time
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 import celery
@@ -32,7 +33,6 @@ from retrying import retry
 from consoleme.config import config
 from consoleme.lib.aws import put_object
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
-from consoleme.lib.groups import get_group_url
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -217,6 +217,16 @@ def alert_on_group_changes() -> dict:
         "alert_on_changes", None
     )
 
+    # Dict used to send bulk emails to alert recipients
+    # {set(alert_on_changes): group_name: [users]}]}
+    # Example:
+    # {
+    #   ("infrasec@netflix.com",): {
+    #       "awesome_group@netflix.com": [{"name": "tswift@netflix.com", "type": "USER"}]
+    #   },
+    # }
+    group_changes = defaultdict(dict)
+
     log_data = {
         "function": function,
         "message": "Alerting stakeholders on group changes",
@@ -288,12 +298,7 @@ def alert_on_group_changes() -> dict:
             and config.get("environment") == "prod"
         ):
             if added_members and current_members:
-                async_to_sync(send_group_modification_notification)(
-                    group,
-                    group_info.alert_on_changes,
-                    added_members,
-                    group_url=get_group_url(group),
-                )
+                group_changes[tuple(group_info.alert_on_changes)][group] = added_members
             elif added_members and not current_members:
                 log_data[
                     "message"
@@ -310,6 +315,13 @@ def alert_on_group_changes() -> dict:
             log.debug(log_data)
         # Update redis cache
         red.set(group_members_key, json.dumps(current_members))
+
+    for recipients, groups in group_changes.items():
+        async_to_sync(send_group_modification_notification)(
+            groups,
+            recipients
+        )
+
     stats.count("alert_on_group_changes.success")
     red.set(f"{function}.last_success", int(time.time()))
     return log_data
