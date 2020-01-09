@@ -218,7 +218,7 @@ def alert_on_group_changes() -> dict:
     )
 
     # Dict used to send bulk emails to alert recipients
-    # {set(alert_on_changes): group_name: [users]}]}
+    # {recipient: {group_name: [users]}}
     # Example:
     # {
     #   "coolpeople@netflix.com": {
