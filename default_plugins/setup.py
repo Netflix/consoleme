@@ -81,6 +81,7 @@ setup(
             "default_metrics = consoleme_default_plugins.plugins.metrics.metrics:Metric",
             "default_group_mapping = consoleme_default_plugins.plugins.group_mapping.group_mapping:GroupMapping",
             "default_internal_routes = consoleme_default_plugins.plugins.internal_routes.internal_routes:InternalRoutes",
+            "default_policies = consoleme_default_plugins.plugins.policies.policies:Policies",
         ]
     },
     cmdclass={"cleanall": CleanAllCommand},

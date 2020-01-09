@@ -1,13 +1,11 @@
-from datetime import datetime, timedelta
+from asgiref.sync import sync_to_async
+from onelogin.saml2.utils import OneLogin_Saml2_Utils
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.crypto import Crypto
+from consoleme.lib.jwt import generate_jwt_token
 from consoleme.lib.plugins import get_plugin_by_name
-
-import jwt
-from asgiref.sync import sync_to_async
-from onelogin.saml2.utils import OneLogin_Saml2_Utils
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
@@ -19,7 +17,6 @@ class SamlHandler(BaseHandler):
     async def post(self, endpoint):
         req = await self.prepare_tornado_request_for_saml()
         auth = await self.init_saml_auth(req)
-        session = {}
 
         if "sso" in endpoint:
             return self.redirect(auth.login())
@@ -32,30 +29,20 @@ class SamlHandler(BaseHandler):
                 await self.finish()
                 return
             if len(errors) == 0:
-                session["samlUserdata"] = await sync_to_async(auth.get_attributes)()
-                session["samlNameId"] = await sync_to_async(auth.get_nameid)()
-                # Set an issued-at time
-                session["iat"] = datetime.utcnow()
-                # Set an expiration time
-                session["exp"] = datetime.utcnow() + timedelta(
-                    hours=config.get(
-                        "get_user_by_saml_settings.jwt.expiration_hours", 1
-                    )
-                )
-                # Set a not-before-time
-                session["nbf"] = datetime.utcnow() - timedelta(seconds=5)
-                session["samlSessionIndex"] = await sync_to_async(
-                    auth.get_session_index
-                )()
+                saml_attributes = await sync_to_async(auth.get_attributes)()
+                email = saml_attributes[
+                    config.get("get_user_by_saml_settings.attributes.email")
+                ]
+                if isinstance(email, list) and len(email) > 0:
+                    email = email[0]
+                groups = saml_attributes[
+                    config.get("get_user_by_saml_settings.attributes.groups")
+                ]
+
                 self_url = await sync_to_async(OneLogin_Saml2_Utils.get_self_url)(req)
-                saml_jwt_secret = config.get("saml_jwt_secret")
-                if not saml_jwt_secret:
-                    raise Exception("'saml_jwt_secret' configuration value is not set.")
-                # Set secure cookie here
-                encoded_cookie = await sync_to_async(jwt.encode)(
-                    session, saml_jwt_secret, algorithm="HS256"
-                )
-                self.set_cookie("consoleme_auth", encoded_cookie)
+
+                encoded_cookie = await generate_jwt_token(email, groups)
+                self.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
                 if "RelayState" in self.request.arguments and self_url != self.request.arguments[
                     "RelayState"
                 ][

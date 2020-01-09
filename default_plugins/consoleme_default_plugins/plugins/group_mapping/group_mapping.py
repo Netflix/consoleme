@@ -35,7 +35,7 @@ class GroupMapping:
                     username, groups, console_only
                 )
             )
-        return roles
+        return list(set(roles))
 
     @staticmethod
     async def filter_eligible_roles(query: str, obj: object) -> list:
@@ -122,7 +122,10 @@ class GroupMapping:
         """Get eligible roles from configuration."""
         stats.count("get_eligible_roles_from_config")
         roles = []
-        group_mapping = config.get("dynamic_config.group_mapping")
+        group_mapping = config.get("dynamic_config.group_mapping", {})
+        static_group_mapping = config.get("group_mapping")
+
+        group_mapping.update(static_group_mapping)
 
         if not group_mapping:
             return roles
@@ -167,12 +170,12 @@ class GroupMapping:
     def get_account_names_to_ids(self, force_refresh: bool = False) -> dict:
         """Get account name to id mapping"""
         stats.count("get_account_names_to_ids")
-        return {}
+        return {v: k for k, v in self.get_account_ids_to_names().items()}
 
     def get_account_ids_to_names(self, force_refresh: bool = False) -> str:
         """Get account id to name mapping"""
         stats.count("get_account_ids_to_names")
-        return {}
+        return config.get("account_ids_to_name")
 
     async def get_max_cert_age_for_role(self, role_name: str):
         """Retrieve the maximum allowed certificate age allowable to retrieve a particular

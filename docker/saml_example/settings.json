@@ -10,7 +10,7 @@
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
       "url": "http://localhost:8080/auth/realms/consoleme/protocol/saml"
     },
-    "x509cert": "MIICoTCCAYkCBgFrKHoLHzANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAljb25zb2xlbWUwHhcNMTkwNjA1MTYyODM1WhcNMjkwNjA1MTYzMDE1WjAUMRIwEAYDVQQDDAljb25zb2xlbWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAs/XG2VKXNMvBYeNGexbbjBL2JFRiAHsAZonnAkBKuDRvnoCBXKvovqpTDgOXAw10DokkhGD5rs+gVYMvHtSGowTvXYpK3I4Z4K57izX0+Ow71ZkyyGTrtLmO0+Sw6EXSkRY9auNdThYU0PXGnxs8f4KcwNA9cwEnA7JjnkdcxWgT7xZKbmE2Sl5ikKRHzAU+0fEP5K889cK6VbyB7icE0y3n88Nt1ke2gaDVVzQ/1UfSEeQExIpAWbMzb8gXoH1vtx/LphiPtjPgtMkUqv83nSKGIzPgQWcOloPyrr1aMmulb5XLl03LP4Nu5swsE1I+CHe3ecaqOMI4bdW+/EfPAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAHsmJJR01yExNni0fKDB1PyzgxbcxXtkUKSrpkb/e6n7/h5fn3U1tfyrXCw2ZEdGbSnfXa3djVv0XU24hpVUB14Q5Qysw01hMmMk2zdQUnl8f51WdmB0glHImfeDVNpgg1AM9jUeaZPF2S/9k7rJ2h3JPoVPQDCvVdUtLachC7Bp8KL/PQ3gkmN+/gPBB8UmYHtsFqoF4Jl247Qrfufc1hrzLbBxbHNlPApI+jaLCvkHU1/CAhHy67jMa0dooasm91Jc21jVKuE4blusZOKfIqOFmiKN419eChq+8mxytsI+VmTfzfE+O4pn4WVRi3TE669e+zaMIm/AHts3w4mQTXQ="
+    "x509cert": "MIICoTCCAYkCBgFvhmZuZTANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAljb25zb2xlbWUwHhcNMjAwMTA4MTgyMjM3WhcNMzAwMTA4MTgyNDE3WjAUMRIwEAYDVQQDDAljb25zb2xlbWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCaLQJbChzcS04Z1qt5/JKCExoOIBNqUyHsR+PKgPJVOpck8j+3nvnmSAKAqHqe5G2OiJnAlVaMpsmgjTBgcCkF0DGnwPRmFB2dbip6uKjkK+l5lSvMAW14F4ekDNb1Bmlo7rPECbm9Kq+op/Gl9llo/ne7e4xPNE8oFk/Rz5PlV3LgXjfw5LOZF3/CrfBX0QdNNz5u7X42pku+JKda4pUW4ijCynuJm0QGXTr9idaqsyuQ3m/vqRce8JnYPYxHAq+JuokvDpPbW4GFDZ03Xuhax+d0UrrqGVPWD/Io0eiMj9Em7IqzA2gtwnmnWQSVhuFUT5m6RxET1ZNwTOhkD0GDAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAEx9eJQrzQuTVmcvvjmUMAzs1hZCwHwNoaEB6/tXlhKudxfFW3um5VP67DoBiTAbDBUcsFxOgfapZzz9KeLR5UANK9EkuLcBTpsV+aWC8wkXGMUirUqM2DRfGiENaHOG9Sa8i4RJNyF19OUTVfJWpsUwB86aJgCSLY4rqKLrFx66kqdaBNKLFgrpXdujaMXmQF76+IYUFx4TxbaRhcKjgFIS5/r3cldUp6uK9mQiLLJ4echwB7e+lO/O9MOujllZ7uxVTxkmA4UABxdXJDANzJyeKGcvzeUBw+OyUlctVqzHBF3zavVpmTTNKLy0TzQoGjKnTigfvBgwGPtEwxHoAiI="
   },
   "sp": {
     "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
@@ -24,5 +24,5 @@
       "url": "https://127.0.0.1:8081/saml/sls"
     }
   },
-  "strict": true
+  "strict": false
 }

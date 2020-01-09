@@ -140,7 +140,7 @@ class TestPoliciesLibrary(AsyncTestCase):
             ]
             result = asyncio.get_event_loop().run_until_complete(
                 should_auto_approve_policy(
-                    events, "user@example.com", ["groupa@example.com"]
+                    events, "user@example.com", ["groupa@example.com"], {}
                 )
             )
             self.assertEqual(policy["expected_result"], result)

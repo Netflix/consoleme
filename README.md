@@ -23,7 +23,7 @@ edit inline policies, and submit these to administrators to be approved and comm
 3. A local set of Redis and DynamoDB (local) instances need to be set up. This is provided as a Docker container.
 In a separate terminal window, start the local redis and dynamodb instances: `docker-compose up`.
 
-4. Create the virtualenv and activate it: `python3.7 -m venv env && source env/bin/activate`
+4. Create the virtualenv and activate it using your preferred method. Here's the standard way: `python3.7 -m venv env && source env/bin/activate`
 
 5. You will need to have AWS credentials for the installation to work (they need to be valid credentials for any
 account or user for the AWS SDK to communicate with the local DynamoDB container).

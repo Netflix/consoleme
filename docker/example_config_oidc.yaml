@@ -6,18 +6,21 @@ auth:
   get_groups_by_header: false
   get_user_by_header: false
   get_user_by_oauth: false
-  get_user_by_saml: true
+  get_user_by_oidc: true
+  get_user_by_saml: false
   groups_header_name: group_header
   user_header_name: user_header
 
-get_user_by_saml_settings:
-  saml_path: docker/saml_example
-  jwt:
-    expiration_hours: 1
-  attributes:
-    user: user
-    groups: groups
-    email: email
+get_user_by_oidc_settings:
+  resource: consoleme-oidc
+  authorize_url: http://localhost:8080/auth/realms/consoleme/protocol/openid-connect/auth
+  issuer: http://localhost:8080/auth/realms/consoleme
+  token_endpoint: http://localhost:8080/auth/realms/consoleme/protocol/openid-connect/token
+  token_introspection_endpoint: http://localhost:8080/auth/realms/consoleme/protocol/openid-connect/token/introspect
+  userinfo_endpoint: http://localhost:8080/auth/realms/consoleme/protocol/openid-connect/userinfo
+  jwt_verify: false
+  jwt_email_key: email
+  jwt_groups_key: groups
 
 development: true
 

@@ -513,11 +513,13 @@ async def get_formatted_policy_changes(account_id, arn, request):
     return {"changes": formatted_policy_changes, "role": existing_role}
 
 
-async def should_auto_approve_policy(events, user, user_groups):
+async def should_auto_approve_policy(events, user, user_groups, role):
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     log_data = {"function": function, "user": user}
 
     try:
+        # tags = role.get("policy", {}).get("Tags", [])
+
         if not config.get("dynamic_config.policy_request_autoapprove_probes.enabled"):
             return False
         for event in events:

@@ -1,5 +1,7 @@
 """Custom exceptions."""
 
+import tornado.web
+
 from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -268,3 +270,11 @@ class KriegerError(BaseException):
     def __init__(self, msg=""):
         stats.count("InvalidRequestParameter")
         super().__init__(msg)
+
+
+class WebAuthNError(tornado.web.HTTPError):
+    """Authentication Error"""
+
+    def __init__(self, **kwargs):
+        kwargs["status_code"] = 401
+        super().__init__(**kwargs)

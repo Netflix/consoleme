@@ -1,0 +1,31 @@
+import jwt
+import requests
+import base64
+import json
+
+from consoleme.config import config
+from consoleme.lib.jwt import generate_jwt_token
+
+
+async def authenticate_user_by_alb_auth(request):
+    aws_alb_auth_header_name = "x-amzn-oidc-data"
+    encoded_jwt = request.request.headers.get(aws_alb_auth_header_name)
+    if not encoded_jwt:
+        raise Exception(f"Missing header: {aws_alb_auth_header_name}")
+
+    jwt_headers = encoded_jwt.split(".")[0]
+    decoded_jwt_headers = base64.b64decode(jwt_headers)
+    decoded_jwt_headers = decoded_jwt_headers.decode("utf-8")
+    decoded_json = json.loads(decoded_jwt_headers)
+    kid = decoded_json["kid"]
+    # Step 2: Get the public key from regional endpoint
+    url = "https://public-keys.auth.elb." + config.region + ".amazonaws.com/" + kid
+    req = requests.get(url)
+    pub_key = req.text
+    # Step 3: Get the payload
+    payload = jwt.decode(encoded_jwt, pub_key, algorithms=["ES256"])
+    email = payload.get(config.get("get_user_by_aws_alb_auth_settings.jwt_email_key"))
+    groups = payload.get(config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key"))
+    encoded_cookie = await generate_jwt_token(email, groups)
+    request.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
+    return {"user": email, "groups": groups}

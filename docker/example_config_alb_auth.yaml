@@ -6,18 +6,15 @@ auth:
   get_groups_by_header: false
   get_user_by_header: false
   get_user_by_oauth: false
-  get_user_by_saml: true
+  get_user_by_oidc: false
+  get_user_by_aws_alb_auth: true
+  get_user_by_saml: false
   groups_header_name: group_header
   user_header_name: user_header
 
-get_user_by_saml_settings:
-  saml_path: docker/saml_example
-  jwt:
-    expiration_hours: 1
-  attributes:
-    user: user
-    groups: groups
-    email: email
+get_user_by_aws_alb_auth_settings:
+  jwt_email_key: preferred_username
+  jwt_groups_key: groups
 
 development: true
 

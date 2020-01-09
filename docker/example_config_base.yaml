@@ -3,11 +3,14 @@ access_requests:
 api_auth:
   valid_entities:
     - fake_api_entity
+auth_cookie_name: consoleme_auth
 application_admin: admin@example.com
 application_name: consoleme
 dynamodb_server: http://localhost:8005
 account_ids_to_name:
   123456789012: default_account
+  123456789013: prod
+  123456789014: test
 
 aws:
   console_url: 'https://{}.console.aws.amazon.com'
@@ -43,16 +46,27 @@ headers:
   config:
     enabled: false
 
-dynamic_config:
-  group_mapping:
-    groupa@example.com:
-      roles:
-        - arn:aws:iam::123456789012:role/roleA
-        - arn:aws:iam::123456789012:role/roleB
+group_mapping:
+  groupa@example.com:
+    roles:
+      - arn:aws:iam::123456789012:role/roleA
+      - arn:aws:iam::123456789012:role/roleB
+  consoleme_admin@example.com:
+    roles:
+      - arn:aws:iam::123456789012:role/adminroleA
+      - arn:aws:iam::123456789012:role/adminroleB
+  consoleme_user@example.com:
+    roles:
+      - arn:aws:iam::123456789012:role/userroleA
+      - arn:aws:iam::123456789012:role/userroleB
 
 groups:
+  can_admin:
+    - consoleme_admin@example.com
   can_edit_config:
-    - configeditors@example.com
+    - consoleme_edit_config@example.com
+  can_edit_policies:
+    - consoleme_edit_policies@example.com
 #google:
 #  admin_scopes:
 #    - 'https://www.googleapis.com/auth/admin.directory.group'
@@ -113,7 +127,12 @@ plugins:
   metrics: default_metrics
   internal_config: config
   internal_routes: default_internal_routes
+  internal_policies: default_policies
 
+jwt:
+  groups_key: groups
+  email_key: email
+  expiration_hours: 1
 #policies:
 #  role_name: ConsoleMeRole
 

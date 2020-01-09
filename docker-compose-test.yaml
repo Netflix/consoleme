@@ -54,19 +54,26 @@ services:
     restart: always
     volumes:
       - ./dynamodb-data:/data
-#
-#  keycloak:
-#    image: "jboss/keycloak"
-#    container_name: keycloak
-#    ports:
-#      - "8080:8080"
+
+  keycloak:
+    image: "jboss/keycloak"
+    volumes:
+      - ./docker:/docker
+    container_name: keycloak
+    ports:
+      - "8080:8080"
 #    networks:
 #      - keycloak-network
-#    environment:
-#      - KEYCLOAK_USER=admin
-#      - KEYCLOAK_PASSWORD=admin
-#      - DB_VENDOR=mysql
-#
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - KEYCLOAK_IMPORT=/docker/keycloak_example_export/realm-export.json
+      #- DB_VENDOR=mysql
+#    depends_on:
+#      - mysql
+#    links:
+#      - mysql
+
 #  mysql:
 #    tty: true
 #    image: mysql:5.7
