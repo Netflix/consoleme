@@ -16,8 +16,9 @@ import celery
 import raven
 import ujson
 from asgiref.sync import async_to_sync
+from celery.app.task import Context
 from celery.schedules import crontab
-from celery.signals import task_received, task_success, task_failure
+from celery.signals import task_failure, task_received, task_revoked, task_success
 from cloudaux.aws.iam import (
     get_all_managed_policies,
     get_account_authorization_details,
@@ -124,7 +125,7 @@ def get_celery_request_tags(**kwargs):
             sender_hostname = sender.hostname
         except AttributeError:
             sender_hostname = vars(sender.request).get("origin", "unknown")
-    if request:
+    if request and not isinstance(request, Context):  # unlike others, task_revoked sends a Context for `request`
         task_name = request.name
         task_id = request.id
         receiver_hostname = request.hostname
@@ -149,6 +150,7 @@ def report_number_pending_tasks(**kwargs):
     """
     Report the number of pending tasks to our metrics broker every time a task is published. This metric can be used
     for autoscaling workers.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-received
 
     :param sender:
     :param headers:
@@ -163,10 +165,11 @@ def report_number_pending_tasks(**kwargs):
 
 
 @task_success.connect
-def report_succeessful_task(**kwargs):
+def report_successful_task(**kwargs):
     """
     Report a generic success metric as tasks to our metrics broker every time a task finished correctly.
     This metric can be used for autoscaling workers.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-success
 
     :param sender:
     :param headers:
@@ -174,14 +177,17 @@ def report_succeessful_task(**kwargs):
     :param kwargs:
     :return:
     """
-    stats.timer("celery.successful_task", tags=get_celery_request_tags(**kwargs))
+    tags = get_celery_request_tags(**kwargs)
+    red.set(f"{tags['task_name']}.last_success", int(time.time()))
+    stats.timer("celery.successful_task", tags=tags)
 
 
 @task_failure.connect
 def report_failed_task(**kwargs):
     """
-    Report a generic failure metric as tasks to our metrics broker every time a task finished correctly.
+    Report a generic failure metric as tasks to our metrics broker every time a task fails.
     This metric can be used for alerting.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-failure
 
     :param sender:
     :param headers:
@@ -194,11 +200,41 @@ def report_failed_task(**kwargs):
         "Message": "Celery Task Failure",
     }
 
+    # Add traceback if exception info is in the kwargs
+    einfo = kwargs.get("einfo")
+    if einfo:
+        log_data["traceback"] = einfo.traceback
+
     error_tags = get_celery_request_tags(**kwargs)
 
     log_data.update(error_tags)
     log.error(log_data)
     stats.timer("celery.failed_task", tags=error_tags)
+
+
+@task_revoked.connect
+def report_revoked_task(**kwargs):
+    """
+    Report a generic failure metric as tasks to our metrics broker every time a task is revoked.
+    This metric can be used for alerting.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-revoked
+
+    :param sender:
+    :param headers:
+    :param body:
+    :param kwargs:
+    :return:
+    """
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "Message": "Celery Task Revoked",
+    }
+
+    error_tags = get_celery_request_tags(**kwargs)
+
+    log_data.update(error_tags)
+    log.error(log_data)
+    stats.timer("celery.revoked_task", tags=error_tags)
 
 
 @app.task(soft_time_limit=1800)
@@ -311,7 +347,6 @@ def alert_on_group_changes() -> dict:
         # Update redis cache
         red.set(group_members_key, json.dumps(current_members))
     stats.count("alert_on_group_changes.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return log_data
 
 
@@ -361,7 +396,6 @@ def cache_audit_table_details() -> bool:
 
     topic = config.get("redis.audit_log_key", "CM_AUDIT_LOGS")
     red.set(topic, json.dumps(entries))
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -466,7 +500,6 @@ def cache_policies_table_details() -> bool:
     items_json = json.dumps(items, cls=SetEncoder)
     red.set(config.get("policies.redis_policies_key", "ALL_POLICIES"), items_json)
     stats.count("cache_policies_table_details.success", tags={"num_roles": len(arns)})
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -509,7 +542,6 @@ def cache_roles_for_account(account_id: str) -> bool:
             _add_role_to_redis(cache_key, role_entry)
 
     stats.count("cache_roles_for_account.success", tags={"account_id": account_id})
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -537,7 +569,6 @@ def cache_roles_across_accounts() -> bool:
             _add_role_to_redis(cache_key, role_entry)
 
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -555,7 +586,6 @@ def cache_managed_policies_for_account(account_id: str) -> bool:
 
     policy_key = config.get("redis.iam_managed_policies_key", "IAM_MANAGED_POLICIES")
     red.hset(policy_key, account_id, json.dumps(all_policies))
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -573,7 +603,6 @@ def cache_managed_policies_across_accounts() -> bool:
                 cache_managed_policies_for_account.delay(account_id)
 
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -590,7 +619,6 @@ def cache_s3_buckets_across_accounts() -> bool:
             if account_id in config.get("celery.test_account_ids", []):
                 cache_s3_buckets_for_account.delay(account_id)
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -607,7 +635,6 @@ def cache_sqs_queues_across_accounts() -> bool:
             if account_id in config.get("celery.test_account_ids", []):
                 cache_sqs_queues_for_account.delay(account_id)
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -623,7 +650,6 @@ def cache_sns_topics_across_accounts() -> bool:
             if account_id in config.get("celery.test_account_ids", []):
                 cache_sns_topics_for_account.delay(account_id)
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -643,7 +669,6 @@ def cache_sqs_queues_for_account(account_id: str) -> bool:
             all_queues.add(arn)
     sqs_queue_key: str = config.get("redis.sqs_queues_key", "SQS_QUEUES")
     red.hset(sqs_queue_key, account_id, json.dumps(list(all_queues)))
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -663,7 +688,6 @@ def cache_sns_topics_for_account(account_id: str) -> bool:
             all_topics.add(topic["TopicArn"])
     sns_topic_key: str = config.get("redis.sns_topics_key", "SNS_TOPICS")
     red.hset(sns_topic_key, account_id, json.dumps(list(all_topics)))
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -681,7 +705,6 @@ def cache_s3_buckets_for_account(account_id: str) -> bool:
         buckets.append(bucket["Name"])
     s3_bucket_key: str = config.get("redis.s3_buckets_key", "S3_BUCKETS")
     red.hset(s3_bucket_key, account_id, json.dumps(buckets))
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -710,7 +733,6 @@ def clear_old_redis_iam_cache() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     # Do not run if this is not in the active region:
     if config.region != config.get("celery.active_region"):
-        red.set(f"{function}.last_success", int(time.time()))
         return
 
     # Need to loop over all items in the set:
@@ -758,7 +780,6 @@ def clear_old_redis_iam_cache() -> bool:
         raise
 
     stats.count(f"{function}.success", tags={"expired_roles": len(roles_to_expire)})
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -813,7 +834,6 @@ def get_inventory_of_iam_keys() -> dict:
         )
     log_data["total_iam_access_key_id"] = len(key_data)
     log.debug(log_data)
-    red.set(f"{function}.last_success", int(time.time()))
     stats.count(f"{function}.success")
     return log_data
 
