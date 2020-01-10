@@ -167,8 +167,30 @@ async def send_request_to_secondary_approvers(
 
 
 async def send_group_modification_notification(
-    groups, to_addresses, sending_app="consoleme"
+    groups, to_address, sending_app="consoleme"
 ):
+    """
+    Send an email containing group changes to a notification address
+
+    Example of `groups` dict:
+    {
+        "awesome_group_1@netflix.com": [
+            {"name": "tswift@netflix.com", "type": "USER"},
+            {"name": "agrande@netflix.com", "type": "USER"},
+        ],
+        "awesome_group_2@netflix.com": [
+            {"name": "lizzo@netflix.com", "type": "USER"},
+            {"name": "beilish@netflix.com", "type": "USER"},
+        ],
+    }
+
+    :param groups: map of groups and added members
+    :type groups: dict
+    :param to_address: recipient of notification email
+    :type to_address: str
+    :param sending_app: name of application
+    :type sending_app: str
+    """
     app_name = config.get(f"ses.{sending_app}.name")
     subject = f"{app_name}: Groups modified"
     message = f"""Groups modified in {app_name}.<br>
@@ -196,7 +218,7 @@ async def send_group_modification_notification(
         <meta http-equiv="content-type" content="text/html; charset=UTF-8">
         </body>
         </html>"""
-    await send_email(to_addresses, subject, body, sending_app=sending_app)
+    await send_email(to_address, subject, body, sending_app=sending_app)
 
 
 async def send_new_aws_groups_notification(
