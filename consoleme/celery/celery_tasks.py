@@ -25,6 +25,7 @@ from cloudaux.aws.iam import (
     get_account_authorization_details,
     get_user_access_keys,
 )
+from cloudaux import sts_conn
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sqs import list_queues
@@ -330,8 +331,8 @@ def alert_on_group_changes() -> dict:
 
         # Send an e-mail with membership changes only in the primary region
         if (
-            config.region == config.get("celery.active_region")
-            and config.get("environment") == "prod"
+                config.region == config.get("celery.active_region")
+                and config.get("environment") == "prod"
         ):
             if added_members and current_members:
                 for recipient in group_info.alert_on_changes:
@@ -525,7 +526,7 @@ def cache_roles_for_account(account_id: str) -> bool:
 
     # Only query IAM and put data in Dynamo if we're in the active region
     if config.region == config.get("celery.active_region") or config.get(
-        "unit_testing.override_true"
+            "unit_testing.override_true"
     ):
         # Get the roles:
         iam_roles = get_account_authorization_details(
@@ -562,7 +563,7 @@ def cache_roles_for_account(account_id: str) -> bool:
 def cache_roles_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     if config.region == config.get("celery.active_region") or config.get(
-        "unit_testing.override_true"
+            "unit_testing.override_true"
     ):
         # First, get list of accounts
         accounts_d = aws.get_account_ids_to_names()
@@ -727,7 +728,7 @@ def cache_s3_buckets_for_account(account_id: str) -> bool:
     wait_exponential_max=1000,
 )
 def _scan_redis_iam_cache(
-    cache_key: str, index: int, count: int
+        cache_key: str, index: int, count: int
 ) -> Tuple[int, Dict[str, str]]:
     return red.hscan(cache_key, index, count=count)
 
@@ -811,8 +812,8 @@ def get_inventory_of_iam_keys() -> dict:
         stats.count(f"{function}.success")
         return {}
     if (
-        config.region == config.get("celery.active_region")
-        and config.get("environment") == "prod"
+            config.region == config.get("celery.active_region")
+            and config.get("environment") == "prod"
     ):
         accounts_d: list = aws.get_account_ids_to_names()
         for account_id in accounts_d.keys():
@@ -849,6 +850,57 @@ def get_inventory_of_iam_keys() -> dict:
     log.debug(log_data)
     stats.count(f"{function}.success")
     return log_data
+
+
+@app.task(soft_time_limit=1800)
+def get_iam_role_limit() -> bool:
+    """
+    This function will gather the number of existing IAM Roles and IAM Role quota in all the AWS accounts.
+    """
+
+    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
+    # First, get list of accounts
+
+    if not config.get("get_iam_role_limit.enabled"):
+        stats.count(f"{function}.success")
+        return {}
+    if (
+            config.region == config.get("celery.active_region")
+            and config.get("environment") == "prod"
+    ):
+
+        @sts_conn('iam')
+        def _get_delivery_channels(**kwargs) -> list:
+            """Gets the delivery channels in the account/region -- calls are wrapped with CloudAux"""
+            return kwargs.pop("client").get_account_summary(**kwargs)
+
+        if config.region == config.get("celery.active_region"):
+            accounts_d: list = aws.get_account_ids_to_names()
+            for account_id in accounts_d.keys():
+                iam_summary = _get_delivery_channels(
+                    account_number=account_id,
+                    assume_role=config.get("policies.role_name"),
+                    region=config.region,
+                )
+                log_data = {
+                    "function": function,
+                    "message": "Total number of IAM roles and IAM roles quota.",
+                    "iam_roles": iam_summary["SummaryMap"]["Roles"],
+                    "iam_quota": iam_summary["SummaryMap"]["RolesQuota"],
+                    "aws_account": account_id,
+                }
+                stats.count(f"{function}.success", tags={"total_iam_roles": iam_summary["SummaryMap"]["Roles"],
+                                                         "role_quota": iam_summary["SummaryMap"]["RolesQuota"],
+                                                         "account_id": account_id})
+                log.debug(log_data)
+
+    log_data = {
+        "function": function,
+        "message": "Completed : looking for IAM Role limits",
+    }
+    log.debug(log_data)
+    stats.count(f"{function}.success")
+    return True
 
 
 schedule_30_minute = timedelta(seconds=1800)
@@ -919,6 +971,11 @@ schedule = {
     },
     "get_iam_access_key_id": {
         "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
+        "options": {"expires": 300},
+        "schedule": schedule_24_hours,
+    },
+    "get_iam_roles_quota": {
+        "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
     },
