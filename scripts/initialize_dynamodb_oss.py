@@ -61,7 +61,7 @@ try:
     ddb.create_table(
         TableName="consoleme_policies_global",
         KeySchema=[{"AttributeName": "account_id", "KeyType": "HASH"}],  # Partition key
-        AttributeDefinitions=[{"AttributeName": "account_id", "AttributeType": "N"}],
+        AttributeDefinitions=[{"AttributeName": "account_id", "AttributeType": "S"}],
         ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
     )
 except ClientError as e:
