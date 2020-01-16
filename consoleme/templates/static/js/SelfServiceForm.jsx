@@ -71,6 +71,7 @@ class SelfServiceForm extends Component {
         <div className={gridClass}>
         <div className={columnClass}>
           {typeof arn !== 'undefined' && <StepProgress page={page}/>}
+          {page !== 1 && <label style={{width: "100%", marginBottom: "10px"}}><b>Role ARN:</b> {this.state.choices.arn}</label>}
           {page === 1 &&
           <SelfServiceFormPage1
             onSubmit={this.nextPage}
