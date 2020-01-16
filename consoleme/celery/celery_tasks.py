@@ -104,12 +104,7 @@ def report_celery_last_success_metrics() -> bool:
     red.set(
         f"{function}.last_success", int(time.time())
     )  # Alert if this metric is not seen
-    try:
-        with app.pool.acquire() as conn:
-            number_of_pending_tasks = conn.default_channel.client.llen("celery")
-            stats.gauge("celery.pending_tasks", number_of_pending_tasks)
-    except (TypeError, AttributeError):
-        pass
+
     stats.count(f"{function}.success")
     stats.timer("worker.healthy")
     return True
