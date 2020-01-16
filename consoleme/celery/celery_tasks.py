@@ -12,6 +12,7 @@ import sys
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
+from typing import Dict, Tuple
 
 import celery
 import raven
@@ -39,8 +40,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import get_request_review_url
 from consoleme.lib.ses import send_group_modification_notification
-
-from typing import Dict, Tuple
 
 region = config.region
 
@@ -105,12 +104,12 @@ def report_celery_last_success_metrics() -> bool:
     red.set(
         f"{function}.last_success", int(time.time())
     )  # Alert if this metric is not seen
-    with app.pool.acquire() as conn:
-        try:
+    try:
+        with app.pool.acquire() as conn:
             number_of_pending_tasks = conn.default_channel.client.llen("celery")
             stats.gauge("celery.pending_tasks", number_of_pending_tasks)
-        except TypeError:
-            pass
+    except (TypeError, AttributeError):
+        pass
     stats.count(f"{function}.success")
     stats.timer("worker.healthy")
     return True
@@ -125,7 +124,9 @@ def get_celery_request_tags(**kwargs):
             sender_hostname = sender.hostname
         except AttributeError:
             sender_hostname = vars(sender.request).get("origin", "unknown")
-    if request and not isinstance(request, Context):  # unlike others, task_revoked sends a Context for `request`
+    if request and not isinstance(
+        request, Context
+    ):  # unlike others, task_revoked sends a Context for `request`
         task_name = request.name
         task_id = request.id
         receiver_hostname = request.hostname
@@ -354,10 +355,7 @@ def alert_on_group_changes() -> dict:
         red.set(group_members_key, json.dumps(current_members))
 
     for recipient, groups in group_changes.items():
-        async_to_sync(send_group_modification_notification)(
-            groups,
-            recipient
-        )
+        async_to_sync(send_group_modification_notification)(groups, recipient)
 
     stats.count("alert_on_group_changes.success")
     return log_data
@@ -403,7 +401,6 @@ def _add_role_to_redis(redis_key: str, role_entry: dict) -> None:
 
 @app.task(soft_time_limit=180)
 def cache_audit_table_details() -> bool:
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
     d = UserDynamoHandler("consoleme")
     entries = async_to_sync(d.get_all_audit_logs)()
 
@@ -417,7 +414,6 @@ def cache_policies_table_details() -> bool:
     arns = red.hkeys("IAM_ROLE_CACHE")
     items = []
     accounts_d = aws.get_account_ids_to_names()
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
     cloudtrail_errors = internal_policies.error_count_by_arn()
 
@@ -521,7 +517,6 @@ def cache_roles_for_account(account_id: str) -> bool:
     # Get the DynamoDB handler:
     dynamo = IAMRoleDynamoHandler()
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
     # Only query IAM and put data in Dynamo if we're in the active region
     if config.region == config.get("celery.active_region") or config.get(
@@ -587,7 +582,6 @@ def cache_roles_across_accounts() -> bool:
 
 @app.task(soft_time_limit=1800)
 def cache_managed_policies_for_account(account_id: str) -> bool:
-    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     managed_policies: list[dict] = get_all_managed_policies(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
@@ -668,7 +662,6 @@ def cache_sns_topics_across_accounts() -> bool:
 
 @app.task(soft_time_limit=1800)
 def cache_sqs_queues_for_account(account_id: str) -> bool:
-    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     all_queues: set = set()
     for region in config.get("celery.sync_regions"):
         queues = list_queues(
@@ -688,7 +681,6 @@ def cache_sqs_queues_for_account(account_id: str) -> bool:
 @app.task(soft_time_limit=1800)
 def cache_sns_topics_for_account(account_id: str) -> bool:
     # Make sure it is regional
-    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     all_topics: set = set()
     for region in config.get("celery.sync_regions"):
         topics = list_topics(
@@ -706,7 +698,6 @@ def cache_sns_topics_for_account(account_id: str) -> bool:
 
 @app.task(soft_time_limit=1800)
 def cache_s3_buckets_for_account(account_id: str) -> bool:
-    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     s3_buckets: list = list_buckets(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
