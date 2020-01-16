@@ -155,9 +155,6 @@ def report_number_pending_tasks(**kwargs):
     :return:
     """
     stats.timer("celery.new_pending_task", tags=get_celery_request_tags(**kwargs))
-    with app.pool.acquire() as conn:
-        number_of_pending_tasks = conn.default_channel.client.llen("celery")
-        stats.gauge("celery.pending_tasks", number_of_pending_tasks)
 
 
 @task_success.connect
