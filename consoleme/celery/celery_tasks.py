@@ -18,6 +18,7 @@ import celery
 import raven
 import ujson
 from asgiref.sync import async_to_sync
+from botocore.exceptions import ClientError
 from celery.app.task import Context
 from celery.schedules import crontab
 from celery.signals import task_failure, task_received, task_revoked, task_success
@@ -26,6 +27,7 @@ from cloudaux.aws.iam import (
     get_account_authorization_details,
     get_user_access_keys,
 )
+from cloudaux import sts_conn
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sqs import list_queues
@@ -834,6 +836,81 @@ def get_inventory_of_iam_keys() -> dict:
     return log_data
 
 
+@app.task(soft_time_limit=1800)
+def get_iam_role_limit() -> dict:
+    """
+    This function will gather the number of existing IAM Roles and IAM Role quota in all owned AWS accounts.
+    """
+
+    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
+
+    if not config.get("celery.get_iam_role_limit.enabled"):
+        return {}
+    if config.region == config.get("celery.active_region") and config.get(
+        "environment"
+    ) in ["prod", "dev"]:
+
+        @sts_conn("iam")
+        def _get_delivery_channels(**kwargs) -> list:
+            """Gets the delivery channels in the account/region -- calls are wrapped with CloudAux"""
+            return kwargs.pop("client").get_account_summary(**kwargs)
+
+        if config.region == config.get("celery.active_region"):
+            # First, get list of accounts
+            accounts_d: list = aws.get_account_ids_to_names()
+            num_accounts = len(accounts_d.keys())
+            num_roles = 0
+            for account_id in accounts_d.keys():
+                try:
+                    iam_summary = _get_delivery_channels(
+                        account_number=account_id,
+                        assume_role=config.get("policies.role_name"),
+                        region=config.region,
+                    )
+                    num_iam_roles = iam_summary["SummaryMap"]["Roles"]
+                    iam_role_quota = iam_summary["SummaryMap"]["RolesQuota"]
+                    iam_role_quota_ratio = num_iam_roles / iam_role_quota
+
+                    num_roles += num_iam_roles
+                    log_data = {
+                        "function": function,
+                        "message": "IAM role quota for account",
+                        "num_iam_roles": num_iam_roles,
+                        "iam_role_quota": iam_role_quota,
+                        "iam_role_quota_ratio": iam_role_quota_ratio,
+                        "account_id": account_id,
+                    }
+                    stats.count(
+                        f"{function}.quota_ratio",
+                        tags={
+                            "num_iam_roles": num_iam_roles,
+                            "iam_role_quota": iam_role_quota,
+                            "iam_role_quota_ratio": iam_role_quota_ratio,
+                            "account_id": account_id,
+                        },
+                    )
+                    log.debug(log_data)
+                except ClientError as e:
+                    log_data = {
+                        "function": function,
+                        "message": "Error retrieving IAM quota",
+                        "account_id": account_id,
+                        "error": e,
+                    }
+                    stats.count(f"{function}.error", tags={"account_id": account_id})
+                    log.error(log_data, exc_info=True)
+                    config.sentry.captureException()
+
+    log_data = {
+        "function": function,
+        "num_accounts": num_accounts,
+        "num_roles": num_roles,
+        "message": "Task successfully completed",
+    }
+    log.debug(log_data)
+    return log_data
+
+
 schedule_30_minute = timedelta(seconds=1800)
 schedule_45_minute = timedelta(seconds=2700)
 schedule_6_hours = timedelta(hours=6)
@@ -902,6 +979,11 @@ schedule = {
     },
     "get_iam_access_key_id": {
         "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
+        "options": {"expires": 300},
+        "schedule": schedule_24_hours,
+    },
+    "get_iam_role_limit": {
+        "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
     },
