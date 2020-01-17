@@ -843,9 +843,13 @@ def get_iam_role_limit() -> dict:
     """
 
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
+    num_accounts = 0
+    num_roles = 0
 
     if not config.get("celery.get_iam_role_limit.enabled"):
         return {}
+
+    success_message = "Not running - Inactive region"
     if config.region == config.get("celery.active_region") and config.get(
         "environment"
     ) in ["prod", "dev"]:
@@ -855,57 +859,61 @@ def get_iam_role_limit() -> dict:
             """Gets the delivery channels in the account/region -- calls are wrapped with CloudAux"""
             return kwargs.pop("client").get_account_summary(**kwargs)
 
-        if config.region == config.get("celery.active_region"):
-            # First, get list of accounts
-            accounts_d: list = aws.get_account_ids_to_names()
-            num_accounts = len(accounts_d.keys())
-            num_roles = 0
-            for account_id in accounts_d.keys():
-                try:
-                    iam_summary = _get_delivery_channels(
-                        account_number=account_id,
-                        assume_role=config.get("policies.role_name"),
-                        region=config.region,
-                    )
-                    num_iam_roles = iam_summary["SummaryMap"]["Roles"]
-                    iam_role_quota = iam_summary["SummaryMap"]["RolesQuota"]
-                    iam_role_quota_ratio = num_iam_roles / iam_role_quota
+        success_message = "Task successfully completed"
 
-                    num_roles += num_iam_roles
-                    log_data = {
-                        "function": function,
-                        "message": "IAM role quota for account",
+        # First, get list of accounts
+        accounts_d: dict = aws.get_account_ids_to_names()
+        num_accounts = len(accounts_d.keys())
+        for account_id, account_aliases in accounts_d.items():
+            account_name = account_aliases[0]
+            try:
+                iam_summary = _get_delivery_channels(
+                    account_number=account_id,
+                    assume_role=config.get("policies.role_name"),
+                    region=config.region,
+                )
+                num_iam_roles = iam_summary["SummaryMap"]["Roles"]
+                iam_role_quota = iam_summary["SummaryMap"]["RolesQuota"]
+                iam_role_quota_ratio = num_iam_roles / iam_role_quota
+
+                num_roles += num_iam_roles
+                log_data = {
+                    "function": function,
+                    "message": "IAM role quota for account",
+                    "num_iam_roles": num_iam_roles,
+                    "iam_role_quota": iam_role_quota,
+                    "iam_role_quota_ratio": iam_role_quota_ratio,
+                    "account_id": account_id,
+                    "account_name": account_name,
+                }
+                stats.count(
+                    f"{function}.quota_ratio",
+                    tags={
                         "num_iam_roles": num_iam_roles,
                         "iam_role_quota": iam_role_quota,
                         "iam_role_quota_ratio": iam_role_quota_ratio,
                         "account_id": account_id,
-                    }
-                    stats.count(
-                        f"{function}.quota_ratio",
-                        tags={
-                            "num_iam_roles": num_iam_roles,
-                            "iam_role_quota": iam_role_quota,
-                            "iam_role_quota_ratio": iam_role_quota_ratio,
-                            "account_id": account_id,
-                        },
-                    )
-                    log.debug(log_data)
-                except ClientError as e:
-                    log_data = {
-                        "function": function,
-                        "message": "Error retrieving IAM quota",
-                        "account_id": account_id,
-                        "error": e,
-                    }
-                    stats.count(f"{function}.error", tags={"account_id": account_id})
-                    log.error(log_data, exc_info=True)
-                    config.sentry.captureException()
+                        "account_name": account_name,
+                    },
+                )
+                log.debug(log_data)
+            except ClientError as e:
+                log_data = {
+                    "function": function,
+                    "message": "Error retrieving IAM quota",
+                    "account_id": account_id,
+                    "account_name": account_name,
+                    "error": e,
+                }
+                stats.count(f"{function}.error", tags={"account_id": account_id})
+                log.error(log_data, exc_info=True)
+                config.sentry.captureException()
 
     log_data = {
         "function": function,
         "num_accounts": num_accounts,
         "num_roles": num_roles,
-        "message": "Task successfully completed",
+        "message": success_message,
     }
     log.debug(log_data)
     return log_data
