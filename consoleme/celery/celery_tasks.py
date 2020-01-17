@@ -17,6 +17,7 @@ import celery
 import raven
 import ujson
 from asgiref.sync import async_to_sync
+from botocore.exceptions import ClientError
 from celery.app.task import Context
 from celery.schedules import crontab
 from celery.signals import task_failure, task_received, task_revoked, task_success
@@ -126,7 +127,9 @@ def get_celery_request_tags(**kwargs):
             sender_hostname = sender.hostname
         except AttributeError:
             sender_hostname = vars(sender.request).get("origin", "unknown")
-    if request and not isinstance(request, Context):  # unlike others, task_revoked sends a Context for `request`
+    if request and not isinstance(
+        request, Context
+    ):  # unlike others, task_revoked sends a Context for `request`
         task_name = request.name
         task_id = request.id
         receiver_hostname = request.hostname
@@ -331,8 +334,8 @@ def alert_on_group_changes() -> dict:
 
         # Send an e-mail with membership changes only in the primary region
         if (
-                config.region == config.get("celery.active_region")
-                and config.get("environment") == "prod"
+            config.region == config.get("celery.active_region")
+            and config.get("environment") == "prod"
         ):
             if added_members and current_members:
                 for recipient in group_info.alert_on_changes:
@@ -355,10 +358,7 @@ def alert_on_group_changes() -> dict:
         red.set(group_members_key, json.dumps(current_members))
 
     for recipient, groups in group_changes.items():
-        async_to_sync(send_group_modification_notification)(
-            groups,
-            recipient
-        )
+        async_to_sync(send_group_modification_notification)(groups, recipient)
 
     stats.count("alert_on_group_changes.success")
     return log_data
@@ -526,7 +526,7 @@ def cache_roles_for_account(account_id: str) -> bool:
 
     # Only query IAM and put data in Dynamo if we're in the active region
     if config.region == config.get("celery.active_region") or config.get(
-            "unit_testing.override_true"
+        "unit_testing.override_true"
     ):
         # Get the roles:
         iam_roles = get_account_authorization_details(
@@ -563,7 +563,7 @@ def cache_roles_for_account(account_id: str) -> bool:
 def cache_roles_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     if config.region == config.get("celery.active_region") or config.get(
-            "unit_testing.override_true"
+        "unit_testing.override_true"
     ):
         # First, get list of accounts
         accounts_d = aws.get_account_ids_to_names()
@@ -728,7 +728,7 @@ def cache_s3_buckets_for_account(account_id: str) -> bool:
     wait_exponential_max=1000,
 )
 def _scan_redis_iam_cache(
-        cache_key: str, index: int, count: int
+    cache_key: str, index: int, count: int
 ) -> Tuple[int, Dict[str, str]]:
     return red.hscan(cache_key, index, count=count)
 
@@ -812,8 +812,8 @@ def get_inventory_of_iam_keys() -> dict:
         stats.count(f"{function}.success")
         return {}
     if (
-            config.region == config.get("celery.active_region")
-            and config.get("environment") == "prod"
+        config.region == config.get("celery.active_region")
+        and config.get("environment") == "prod"
     ):
         accounts_d: list = aws.get_account_ids_to_names()
         for account_id in accounts_d.keys():
@@ -853,54 +853,78 @@ def get_inventory_of_iam_keys() -> dict:
 
 
 @app.task(soft_time_limit=1800)
-def get_iam_role_limit() -> bool:
+def get_iam_role_limit() -> dict:
     """
-    This function will gather the number of existing IAM Roles and IAM Role quota in all the AWS accounts.
+    This function will gather the number of existing IAM Roles and IAM Role quota in all owned AWS accounts.
     """
 
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
-    # First, get list of accounts
 
-    if not config.get("get_iam_role_limit.enabled"):
-        stats.count(f"{function}.success")
+    if not config.get("celery.get_iam_role_limit.enabled"):
         return {}
-    if (
-            config.region == config.get("celery.active_region")
-            and config.get("environment") == "prod"
-    ):
+    if config.region == config.get("celery.active_region") and config.get(
+        "environment"
+    ) in ["prod", "dev"]:
 
-        @sts_conn('iam')
+        @sts_conn("iam")
         def _get_delivery_channels(**kwargs) -> list:
             """Gets the delivery channels in the account/region -- calls are wrapped with CloudAux"""
             return kwargs.pop("client").get_account_summary(**kwargs)
 
         if config.region == config.get("celery.active_region"):
+            # First, get list of accounts
             accounts_d: list = aws.get_account_ids_to_names()
+            num_accounts = len(accounts_d.keys())
+            num_roles = 0
             for account_id in accounts_d.keys():
-                iam_summary = _get_delivery_channels(
-                    account_number=account_id,
-                    assume_role=config.get("policies.role_name"),
-                    region=config.region,
-                )
-                log_data = {
-                    "function": function,
-                    "message": "Total number of IAM roles and IAM roles quota.",
-                    "iam_roles": iam_summary["SummaryMap"]["Roles"],
-                    "iam_quota": iam_summary["SummaryMap"]["RolesQuota"],
-                    "aws_account": account_id,
-                }
-                stats.count(f"{function}.success", tags={"total_iam_roles": iam_summary["SummaryMap"]["Roles"],
-                                                         "role_quota": iam_summary["SummaryMap"]["RolesQuota"],
-                                                         "account_id": account_id})
-                log.debug(log_data)
+                try:
+                    iam_summary = _get_delivery_channels(
+                        account_number=account_id,
+                        assume_role=config.get("policies.role_name"),
+                        region=config.region,
+                    )
+                    num_iam_roles = iam_summary["SummaryMap"]["Roles"]
+                    iam_role_quota = iam_summary["SummaryMap"]["RolesQuota"]
+                    iam_role_quota_ratio = num_iam_roles / iam_role_quota
+
+                    num_roles += num_iam_roles
+                    log_data = {
+                        "function": function,
+                        "message": "IAM role quota for account",
+                        "num_iam_roles": num_iam_roles,
+                        "iam_role_quota": iam_role_quota,
+                        "iam_role_quota_ratio": iam_role_quota_ratio,
+                        "account_id": account_id,
+                    }
+                    stats.count(
+                        f"{function}.quota_ratio",
+                        tags={
+                            "num_iam_roles": num_iam_roles,
+                            "iam_role_quota": iam_role_quota,
+                            "iam_role_quota_ratio": iam_role_quota_ratio,
+                            "account_id": account_id,
+                        },
+                    )
+                    log.debug(log_data)
+                except ClientError as e:
+                    log_data = {
+                        "function": function,
+                        "message": "Error retrieving IAM quota",
+                        "account_id": account_id,
+                        "error": e,
+                    }
+                    stats.count(f"{function}.error", tags={"account_id": account_id})
+                    log.error(log_data, exc_info=True)
+                    config.sentry.captureException()
 
     log_data = {
         "function": function,
-        "message": "Completed : looking for IAM Role limits",
+        "num_accounts": num_accounts,
+        "num_roles": num_roles,
+        "message": "Task successfully completed",
     }
     log.debug(log_data)
-    stats.count(f"{function}.success")
-    return True
+    return log_data
 
 
 schedule_30_minute = timedelta(seconds=1800)
@@ -974,7 +998,7 @@ schedule = {
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
     },
-    "get_iam_roles_quota": {
+    "get_iam_role_limit": {
         "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
