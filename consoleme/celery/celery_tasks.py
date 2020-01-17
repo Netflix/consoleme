@@ -11,6 +11,7 @@ import json  # We use a separate SetEncoder here so we cannot use ujson
 import sys
 import time
 from datetime import datetime, timedelta
+from typing import Dict, Tuple
 
 import celery
 import raven
@@ -38,8 +39,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import get_request_review_url
 from consoleme.lib.ses import send_group_modification_notification
-
-from typing import Dict, Tuple
 
 region = config.region
 
