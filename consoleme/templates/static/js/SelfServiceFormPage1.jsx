@@ -1,6 +1,7 @@
 import {Field, reduxForm} from "redux-form";
 import React from "react";
-import {Dropdown, Form, Button, Icon} from 'semantic-ui-react';
+import {Dropdown, Form} from 'semantic-ui-react';
+import {DateInput} from 'semantic-ui-calendar-react';
 import SelfServiceFormAppSearch from "./SelfServiceFormAppSearch";
 
 const supportedServices = [
@@ -72,6 +73,28 @@ function DetermineArn(props) {
   )
 }
 
+const semanticCheckbox = ({input, label}) => (
+    <div className="ui checkbox" style={{paddingTop: "5px"}}>
+        <input type="checkbox" readOnly="" tabIndex="0" {...input}/>
+        <label style={{width: "auto"}}>{label}</label>
+    </div>
+);
+
+const semanticDatePicker = ({input, label}) => (
+    <div>
+        <Form.Field>
+            <label style={{width: "auto", paddingTop: "10px"}}>{label}</label>
+            <DateInput
+                clearable {...input}
+                dateFormat="YYYY-MM-DD"
+                name="Foo"
+                value={input.value}
+                onChange={(param, data) => input.onChange(data.value)}
+                placeholder={input.placeholder}
+            />
+        </Form.Field>
+    </div>
+)
 
 const SelfServiceFormPage1 = props => {
   const {handleSubmit, cancelRequest} = props;
@@ -79,11 +102,37 @@ const SelfServiceFormPage1 = props => {
   if (window.location.href.endsWith("self_service")) {
     cancelButtonDisplayed = "none";
   }
+
   return (
-    <Form onSubmit={handleSubmit}>
-        <DetermineArn arn={props.state.arn} />
+    <Form onSubmit={handleSubmit} className="ui form">
+        <DetermineArn arn={props.arn} />
       <div>
-        <Field name="choose" component={DropdownFormField} label="Service" validate={required}/>
+          <Field name="choose" component={DropdownFormField} label="Service" validate={required}/>
+      </div>
+      <br />
+      <div>
+        <label><b>Temporary Policy</b></label>
+        <div>
+          <div>
+            <Field
+                name="is_temporary"
+                id="is_temporary"
+                label="This policy is temporary"
+                component={semanticCheckbox}
+                type="checkbox"
+                onChange={props.toggleCheckbox}/>
+          </div>
+          { props.is_temporary ? <Field
+              name="expiration_date"
+              id="expiration_date"
+              label="Policy expiration date:"
+              component={semanticDatePicker}
+              value={props.expiration_date}
+              iconPosition="left"
+              onChange={props.handleDateChange}
+              validate={required} />
+              : null}
+        </div>
       </div>
       <div>
         <button type="cancel" className="ui negative button cancel" onClick={cancelRequest} style={{margin: "10px", display: cancelButtonDisplayed}}>
