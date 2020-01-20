@@ -19,7 +19,7 @@ pep562==1.0               # via pymdown-extensions
 pygments==2.5.2           # via mkdocs-material
 pymdown-extensions==6.2.1  # via mkdocs-material
 pyyaml==5.3
-six==1.13.0               # via livereload
+six==1.14.0               # via livereload
 tornado==6.0.3            # via livereload, mkdocs
 
 # The following packages are considered to be unsafe in a requirements file:

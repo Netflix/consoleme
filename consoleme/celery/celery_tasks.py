@@ -886,12 +886,12 @@ def get_iam_role_limit() -> dict:
                     "account_id": account_id,
                     "account_name": account_name,
                 }
-                stats.count(
-                    f"{function}.quota_ratio",
+                stats.gauge(
+                    f"{function}.quota_ratio_gauge",
+                    iam_role_quota_ratio,
                     tags={
                         "num_iam_roles": num_iam_roles,
                         "iam_role_quota": iam_role_quota,
-                        "iam_role_quota_ratio": iam_role_quota_ratio,
                         "account_id": account_id,
                         "account_name": account_name,
                     },
