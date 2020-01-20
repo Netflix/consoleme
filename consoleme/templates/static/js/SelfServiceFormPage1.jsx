@@ -74,26 +74,26 @@ function DetermineArn(props) {
 }
 
 const semanticCheckbox = ({input, label}) => (
-    <div className="ui checkbox">
-        <input type="checkbox" readOnly="" tabIndex="0" {...input}/>
-        <label style={{width: "auto"}}>{label}</label>
-    </div>
+  <div className="ui checkbox">
+    <input type="checkbox" readOnly="" tabIndex="0" {...input}/>
+    <label style={{width: "auto"}}>{label}</label>
+  </div>
 );
 
 const semanticDatePicker = ({input, label}) => (
-    <div>
-        <Form.Field>
-            <label style={{width: "auto", paddingTop: "10px"}}>{label}</label>
-            <DateInput
-                clearable {...input}
-                dateFormat="YYYY-MM-DD"
-                name="Foo"
-                value={input.value}
-                onChange={(param, data) => input.onChange(data.value)}
-                placeholder={input.placeholder}
-            />
-        </Form.Field>
-    </div>
+  <div>
+    <Form.Field>
+      <label style={{width: "auto", paddingTop: "10px"}}>{label}</label>
+      <DateInput
+        clearable {...input}
+        dateFormat="YYYY-MM-DD"
+        name="Foo"
+        value={input.value}
+        onChange={(param, data) => input.onChange(data.value)}
+        placeholder={input.placeholder}
+      />
+    </Form.Field>
+  </div>
 )
 
 const SelfServiceFormPage1 = props => {
@@ -107,7 +107,7 @@ const SelfServiceFormPage1 = props => {
     <Form onSubmit={handleSubmit} className="ui form">
         <DetermineArn arn={props.arn} />
       <div>
-          <Field name="choose" component={DropdownFormField} label="Service" validate={required}/>
+        <Field name="choose" component={DropdownFormField} label="Service" validate={required}/>
       </div>
       <br />
       <div>
@@ -116,23 +116,23 @@ const SelfServiceFormPage1 = props => {
         <div>
           <div>
             <Field
-                name="is_temporary"
-                id="is_temporary"
-                label="This policy change is temporary"
-                component={semanticCheckbox}
-                type="checkbox"
-                onChange={props.toggleCheckbox}/>
+              name="is_temporary"
+              id="is_temporary"
+              label="This policy change is temporary"
+              component={semanticCheckbox}
+              type="checkbox"
+              onChange={props.toggleCheckbox}/>
           </div>
           { props.is_temporary ? <Field
-              name="expiration_date"
-              id="expiration_date"
-              label="Policy expiration date:"
-              component={semanticDatePicker}
-              value={props.expiration_date}
-              iconPosition="left"
-              onChange={props.handleDateChange}
-              validate={required} />
-              : null}
+            name="expiration_date"
+            id="expiration_date"
+            label="Policy expiration date:"
+            component={semanticDatePicker}
+            value={props.expiration_date}
+            iconPosition="left"
+            onChange={props.handleDateChange}
+            validate={required} />
+            : null}
         </div>
       </div>
       <div>

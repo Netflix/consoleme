@@ -79,36 +79,36 @@ class SelfServiceForm extends Component {
       <div>
         {typeof arn === 'undefined' && <StepProgress page={page}/>}
         <div className={gridClass}>
-        <div className={columnClass}>
-          {typeof arn !== 'undefined' && <StepProgress page={page}/>}
-          {page !== 1 && <label style={{width: "100%", marginBottom: "10px"}}><b>Role ARN:</b> {this.state.choices.arn}</label>}
-          {page === 1 &&
-          <SelfServiceFormPage1
-            onSubmit={this.nextPage}
-            cancelRequest={this.cancelRequest}
-            toggleCheckbox={this.handleTemporaryCheckboxChange}
-            handleDateChange={this.handleDateChange}
-            is_temporary={this.state.is_temporary}
-            expiration_date={this.state.expiration_date}
-            arn={this.state.arn}
-          />}
-          {page === 2 &&
-          <SelfServiceFormPage2
-            choices={this.state.choices}
-            previousPage={this.previousPage}
-            onSubmit={this.nextPage}
-          />}
-          {page === 3 &&
-          <SelfServiceFormPage3
-            choices={this.state.choices}
-            previousPage={this.previousPage}
-            disableButton={this.disableButton}
-            state={this.state}
-            onSubmit={async (e) => {
-              await this.setPolicy(e);
-            }}
-          />}
-        </div>
+          <div className={columnClass}>
+            {typeof arn !== 'undefined' && <StepProgress page={page}/>}
+            {page !== 1 && <label style={{width: "100%", marginBottom: "10px"}}><b>Role ARN:</b> {this.state.choices.arn}</label>}
+            {page === 1 &&
+            <SelfServiceFormPage1
+              onSubmit={this.nextPage}
+              cancelRequest={this.cancelRequest}
+              toggleCheckbox={this.handleTemporaryCheckboxChange}
+              handleDateChange={this.handleDateChange}
+              is_temporary={this.state.is_temporary}
+              expiration_date={this.state.expiration_date}
+              arn={this.state.arn}
+            />}
+            {page === 2 &&
+            <SelfServiceFormPage2
+              choices={this.state.choices}
+              previousPage={this.previousPage}
+              onSubmit={this.nextPage}
+            />}
+            {page === 3 &&
+            <SelfServiceFormPage3
+              choices={this.state.choices}
+              previousPage={this.previousPage}
+              disableButton={this.disableButton}
+              state={this.state}
+              onSubmit={async (e) => {
+                await this.setPolicy(e);
+              }}
+            />}
+          </div>
         </div>
       </div>
     );
