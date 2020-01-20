@@ -74,7 +74,7 @@ function DetermineArn(props) {
 }
 
 const semanticCheckbox = ({input, label}) => (
-    <div className="ui checkbox" style={{paddingTop: "5px"}}>
+    <div className="ui checkbox">
         <input type="checkbox" readOnly="" tabIndex="0" {...input}/>
         <label style={{width: "auto"}}>{label}</label>
     </div>
@@ -112,12 +112,13 @@ const SelfServiceFormPage1 = props => {
       <br />
       <div>
         <label><b>Temporary Policy</b></label>
+          <p>Temporary policies will automatically be removed on the specified date.</p>
         <div>
           <div>
             <Field
                 name="is_temporary"
                 id="is_temporary"
-                label="This policy is temporary"
+                label="This policy change is temporary"
                 component={semanticCheckbox}
                 type="checkbox"
                 onChange={props.toggleCheckbox}/>
