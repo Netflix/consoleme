@@ -403,7 +403,7 @@ def cache_audit_table_details() -> bool:
     return True
 
 
-@app.task(soft_time_limit=1800)
+@app.task(soft_time_limit=9600)
 def cache_policies_table_details() -> bool:
     arns = red.hkeys("IAM_ROLE_CACHE")
     items = []
@@ -953,7 +953,7 @@ schedule = {
     "cache_policies_table_details": {
         "task": "consoleme.celery.celery_tasks.cache_policies_table_details",
         "options": {"expires": 1000},
-        "schedule": schedule_45_minute,
+        "schedule": schedule_24_hours,
     },
     "report_celery_last_success_metrics": {
         "task": "consoleme.celery.celery_tasks.report_celery_last_success_metrics",
