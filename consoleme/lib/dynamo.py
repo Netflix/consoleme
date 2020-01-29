@@ -1,5 +1,6 @@
 import logging
 import sys
+import threading
 import time
 import uuid
 import zlib
@@ -55,6 +56,21 @@ for name in logging.Logger.manager.loggerDict.keys():
         or ("nose" in name)
     ):
         logging.getLogger(name).setLevel(logging.CRITICAL)
+
+
+def parallel_scan_table(table, total_threads=50):
+    def _scan_segment(segment):
+        response = table.scan(
+            FilterExpression="classification=:classification",
+            ExpressionAttributeValues={":classification": {"S": "DIRECT"}},
+            Segment=segment,
+            TotalSegments=total_threads,
+        )
+
+    thread_list = []
+    for i in range(total_threads):
+        thread = threading.Thread(target=scan_foo_table, args=(i, total_threads))
+        _scan_segment(i)
 
 
 class BaseDynamoHandler:

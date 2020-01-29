@@ -403,7 +403,7 @@ def cache_audit_table_details() -> bool:
     return True
 
 
-@app.task(soft_time_limit=9600)
+@app.task(soft_time_limit=2700)
 def cache_policies_table_details() -> bool:
     arns = red.hkeys("IAM_ROLE_CACHE")
     items = []
@@ -418,7 +418,7 @@ def cache_policies_table_details() -> bool:
         s3_errors = json.loads(all_s3_errors)
 
     for arn in arns:
-        error_count = cloudtrail_errors.get(arn, 0)
+        error_count = internal_policies.error_count_for_arn(arn)
         s3_errors_for_arn = s3_errors.get(arn, [])
         for error in s3_errors_for_arn:
             error_count += int(error.get("count"))
@@ -925,6 +925,7 @@ schedule_6_hours = timedelta(hours=6)
 schedule_minute = timedelta(minutes=1)
 schedule_5_minutes = timedelta(minutes=5)
 schedule_24_hours = timedelta(hours=24)
+schedule_1_hour = timedelta(hours=1)
 
 if config.get("development", False):
     # If debug mode, we will set up the schedule to run the next minute after the job starts
@@ -932,6 +933,7 @@ if config.get("development", False):
     dev_schedule = crontab(hour=time_to_start.hour, minute=time_to_start.minute)
     schedule_30_minute = dev_schedule
     schedule_45_minute = dev_schedule
+    schedule_1_hour = dev_schedule
     schedule_6_hours = dev_schedule
 
 schedule = {
@@ -953,7 +955,7 @@ schedule = {
     "cache_policies_table_details": {
         "task": "consoleme.celery.celery_tasks.cache_policies_table_details",
         "options": {"expires": 1000},
-        "schedule": schedule_24_hours,
+        "schedule": schedule_1_hour,
     },
     "report_celery_last_success_metrics": {
         "task": "consoleme.celery.celery_tasks.report_celery_last_success_metrics",

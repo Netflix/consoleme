@@ -55,6 +55,8 @@ def map_operation_to_api(operation, default):
         "REST.GET.REQUEST_PAYMENT": "s3:GetBucketRequestPayment",
         "REST.GET.OBJECT_LOCK_CONFIGURATION": "s3:GetObjectLockConfiguration",
         "REST.GET.LOGGING_STATUS": "s3:GetBucketLogging",
+        "REST.PUT.PUBLIC_ACCESS_BLOCK": "s3:PutBucketPublicAccessBlock",
+        "REST.PUT.BUCKETPOLICY": "s3:PutBucketPolicy",
     }
     api_call = operations_map.get(operation, None)
     if api_call is None:
