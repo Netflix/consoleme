@@ -1,21 +1,103 @@
 version: '3'
 # Never use this in a production environment.
+# Run with docker-compose -f docker-compose-test.yaml up
 services:
-  redis:
-    image: "redis:alpine"
+  consoleme_oss_web:
+    container_name: consoleme_oss_web
+    build: .
     ports:
-      - "6379:6379"
+      - "8081:8081"
+    tty: true
+    stdin_open: true
     volumes:
-      - ./redis-data:/data
-    command: ["redis-server", "--appendonly", "yes"]
+      - .:/apps/consoleme
+      - ~/.aws:/root/.aws
+      - ~/.ssh:/root/.ssh
+    # entrypoint: watchmedo auto-restart --recursive --pattern="*.py" --directory="."
+    entrypoint: >
+      bash -c 'pip install watchdog;
+      watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py'
+    environment:
+      - CONFIG_LOCATION=/apps/consoleme/docker/example_config_header_auth.yaml
+      - CONSOLEME_CONFIG_ENTRYPOINT=default_config
+    # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
+    command: /bin/sh -c "while true; do sleep 1; done"
+    depends_on:
+      - consoleme_redis_oss_test
+      - consoleme_dynamodb_oss_test
+    links:
+      - consoleme_redis_oss_test
+      - consoleme_dynamodb_oss_test
+  consoleme_pytest:
+    container_name: consoleme_pytest
+    build: .
+    environment:
+      - CONFIG_LOCATION=/apps/consoleme/docker/example_config_header_auth.yaml
+      - CONSOLEME_CONFIG_ENTRYPOINT=default_config
+    volumes:
+      - .:/apps/consoleme
+      - ~/.aws:/root/.aws
+      - ~/.ssh:/root/.ssh
+    # entrypoint: watchmedo auto-restart --recursive --pattern="*.py" --directory="." pytest
+    entrypoint: >
+      bash -c 'pip install watchdog;
+      watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." make test'
+    depends_on:
+      - consoleme_oss_web
 
-  dynamodb:
+
+  consoleme_redis_oss_test:
+    container_name: consoleme_redis_oss_test
+    image: "redis:alpine"
+
+  consoleme_dynamodb_oss_test:
     image: "cnadiminti/dynamodb-local"
-    ports:
-      - "8005:8005"
-    container_name: dynamodb
+    container_name: consoleme_dynamodb_oss_test
     entrypoint: java
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data -port 8005"
     restart: always
     volumes:
       - ./dynamodb-data:/data
+
+  consoleme_keycloak:
+    image: "jboss/keycloak"
+    volumes:
+      - ./docker:/docker
+    container_name: consoleme_keycloak
+    ports:
+      - "8080:8080"
+#    networks:
+#      - keycloak-network
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - KEYCLOAK_IMPORT=/docker/keycloak_example_export/realm-export.json
+      #- DB_VENDOR=mysql
+#    depends_on:
+#      - mysql
+#    links:
+#      - mysql
+
+#  mysql:
+#    tty: true
+#    image: mysql:5.7
+#    restart: always
+#    container_name: mysql
+#    volumes:
+#      - "./docker/mysql_db_data:/var/lib/mysql/data"
+#    networks:
+#      - keycloak-network
+#    environment:
+#      - MYSQL_DATABASE=keycloak
+#      - MYSQL_USER=keycloak
+#      - MYSQL_PASSWORD=password
+#      - MYSQL_ROOT_PASSWORD=root_password
+#    expose:
+#      # Opens port 3306 on the container
+#      - '3306'
+#    ports:
+#      - '3306:3306'
+#networks:
+#  keycloak-network:
+
+

@@ -1,18 +1,21 @@
 version: '3'
 # Never use this in a production environment.
 services:
-  consoleme_redis_oss:
+  redis:
     image: "redis:alpine"
     ports:
       - "6379:6379"
-    container_name: consoleme_redis_oss
+    volumes:
+      - ./redis-data:/data
     command: ["redis-server", "--appendonly", "yes"]
 
-  consoleme_dynamodb_oss:
+  dynamodb:
     image: "cnadiminti/dynamodb-local"
     ports:
       - "8005:8005"
-    container_name: consoleme_dynamodb_oss
+    container_name: dynamodb
     entrypoint: java
-    command: "-jar DynamoDBLocal.jar -sharedDb -port 8005"
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data -port 8005"
     restart: always
+    volumes:
+      - ./dynamodb-data:/data

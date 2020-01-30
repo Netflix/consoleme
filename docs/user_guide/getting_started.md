@@ -1,4 +1,49 @@
-## To build ConsoleMe
+## Feature List
+
+* Short-lived credentials
+
+TBD
+
+## Local Quick Start with Header Authentication (Docker)
+
+1. [Install Docker and Docker-Compose](https://github.com/Yelp/docker-compose/blob/master/docs/install.md)
+1. Run `docker-compose up`
+1. Visit [http://127.0.0.1:8081](http://127.0.0.1:8081). If everything is working as expected, you should see a message
+stating "No user detected. Check configuration.". This means that the web server is listening to requests.
+1. Inject a header to specify your e-mail address and groups. ([Requestly](https://www.requestly.in/) works well).
+
+    * The headers needed are specified under the `auth.user_header_name` and `auth.groups_header_name` keys in
+     docker/example_config_header_auth.yaml. By default, they are `user_header` and `groups_header` respectively.
+     You are encouraged to make own configuration file.
+
+    * If you set your user to `user@example.com` and your groups to
+    `groupa@example.com,groupb@example.com,configeditors@example.com,admin@example.com`, you should see a couple of
+    example roles in the UI.
+
+    * If you would like to use header authentication in a production environment, You *must* configure a web server or
+    load balancer to perform authentication on ConsoleMe's behalf. The server in front of ConsoleMe should drop the header
+    you use for authentication from incoming requests (To prevent users from forging their identity), authenticate the user,
+    then set the header for ConsoleMe to consume.
+1. That's it! Check out the `Configuration Guide` for customizing ConsoleMe # TODO: Create and link to configuration guide
+
+## Local Quick Start with SAML Authentication (Docker / KeyCloak)
+
+TBD
+
+## Local Quick Start with OAuth2/OIDC Authentication (Docker / KeyCloak)
+
+TBD
+
+## Deploy to AWS with ALB Authentication
+
+TBD
+
+## Configuration Guide
+
+TBD
+
+
+## Building ConsoleMe Locally
 
 # OS X
 1. Setup prerequisites
