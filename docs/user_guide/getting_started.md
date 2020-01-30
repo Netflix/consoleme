@@ -40,7 +40,23 @@ TBD
 
 ## Configuration Guide
 
-TBD
+
+
+## Plugin Guide
+
+ConsoleMe uses entry points to load various internal plugins for your internal-only business logic. We have included some
+default plugins for reference, but as you start using more features in ConsoleMe, you'll probably find the default 
+plugins insufficient for your needs. We suggest that you copy the contents of the `default_plugins` folder into a
+separate (private) repository and customize the included functions with logic custom to your organization. For example,
+how should ConsoleMe determine the groups that your users are members of? How should ConsoleMe map these groups to 
+IAM roles? What type of session policy should ConsoleMe pass when logging a user in to a role? How should ConsoleMe figure
+out where its configuration file is located?
+The first entry poing 
+ 
+that you  you'll probably want to copy this as a reference point 
+
+the `CONSOLEME_CONFIG_ENTRYPOINT` to determine the entry point for your internal configuration plugin.
+This plugin will be consulted to determine which configuration file to use, 
 
 
 ## Building ConsoleMe Locally
