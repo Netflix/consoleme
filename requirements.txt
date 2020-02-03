@@ -65,7 +65,7 @@ mccabe==0.6.1             # via pylint
 mmh3==2.5.1               # via deepdiff
 numpy==1.18.1             # via pandas
 ordered-set==3.1.1        # via deepdiff
-pandas==1.0.0
+pandas==0.25.3
 parso==0.6.0              # via jedi
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
