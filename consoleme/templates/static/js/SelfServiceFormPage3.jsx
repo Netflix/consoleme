@@ -48,12 +48,20 @@ const Permissions = {
 
 let ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-function generate_id() {
+function random_id() {
   let rtn = '';
   for (let i = 0; i < 8; i++) {
     rtn += ALPHABET.charAt(Math.floor(Math.random() * ALPHABET.length));
   }
-  return "ConsoleMe" + rtn;
+  return rtn
+}
+
+function generate_id() {
+  return "ConsoleMe" + random_id();
+}
+
+function generate_temp_id(expiration_date) {
+  return "temp_" + expiration_date + "_" + random_id();
 }
 
 function generatePolicy(choices, policy_sid, state) {
@@ -203,7 +211,12 @@ function WizardAceEditor(policy_value, choices) {
 
 let SelfServiceFormPage3 = props => {
   const {handleSubmit, pristine, previousPage, submitting, choices, state} = props;
-  const policy_sid = generate_id();
+  let policy_sid;
+  if (choices.is_temporary) {
+    policy_sid = generate_temp_id(choices.expiration_date);
+  } else {
+    policy_sid = generate_id();
+  }
   let policy_value = generatePolicy(choices, policy_sid, state);
   choices.policy_sid = policy_sid;
   choices.wizard_policy_editor = WizardAceEditor(policy_value, choices);
