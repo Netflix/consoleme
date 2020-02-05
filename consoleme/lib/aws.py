@@ -283,7 +283,7 @@ async def raise_if_background_check_required_and_no_background_check(role, user)
 
 
 @rate_limited()
-@sts_conn('s3')
+@sts_conn("s3")
 def put_object(client=None, **kwargs):
     """Create an S3 object -- calls wrapped with CloudAux."""
     client.put_object(**kwargs)

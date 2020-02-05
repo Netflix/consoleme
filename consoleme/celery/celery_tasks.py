@@ -10,6 +10,7 @@ command: celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG
 import json  # We use a separate SetEncoder here so we cannot use ujson
 import sys
 import time
+from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, Tuple
 
@@ -17,13 +18,16 @@ import celery
 import raven
 import ujson
 from asgiref.sync import async_to_sync
+from botocore.exceptions import ClientError
+from celery.app.task import Context
 from celery.schedules import crontab
-from celery.signals import task_received, task_success, task_failure
+from celery.signals import task_failure, task_received, task_revoked, task_success
 from cloudaux.aws.iam import (
     get_all_managed_policies,
     get_account_authorization_details,
     get_user_access_keys,
 )
+from cloudaux import sts_conn
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sqs import list_queues
@@ -33,7 +37,6 @@ from retrying import retry
 from consoleme.config import config
 from consoleme.lib.aws import put_object
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
-from consoleme.lib.groups import get_group_url
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -103,12 +106,7 @@ def report_celery_last_success_metrics() -> bool:
     red.set(
         f"{function}.last_success", int(time.time())
     )  # Alert if this metric is not seen
-    with app.pool.acquire() as conn:
-        try:
-            number_of_pending_tasks = conn.default_channel.client.llen("celery")
-            stats.gauge("celery.pending_tasks", number_of_pending_tasks)
-        except (AttributeError, TypeError):
-            pass
+
     stats.count(f"{function}.success")
     stats.timer("worker.healthy")
     return True
@@ -123,7 +121,9 @@ def get_celery_request_tags(**kwargs):
             sender_hostname = sender.hostname
         except AttributeError:
             sender_hostname = vars(sender.request).get("origin", "unknown")
-    if request:
+    if request and not isinstance(
+        request, Context
+    ):  # unlike others, task_revoked sends a Context for `request`
         task_name = request.name
         task_id = request.id
         receiver_hostname = request.hostname
@@ -148,6 +148,7 @@ def report_number_pending_tasks(**kwargs):
     """
     Report the number of pending tasks to our metrics broker every time a task is published. This metric can be used
     for autoscaling workers.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-received
 
     :param sender:
     :param headers:
@@ -156,16 +157,14 @@ def report_number_pending_tasks(**kwargs):
     :return:
     """
     stats.timer("celery.new_pending_task", tags=get_celery_request_tags(**kwargs))
-    with app.pool.acquire() as conn:
-        number_of_pending_tasks = conn.default_channel.client.llen("celery")
-        stats.gauge("celery.pending_tasks", number_of_pending_tasks)
 
 
 @task_success.connect
-def report_succeessful_task(**kwargs):
+def report_successful_task(**kwargs):
     """
     Report a generic success metric as tasks to our metrics broker every time a task finished correctly.
     This metric can be used for autoscaling workers.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-success
 
     :param sender:
     :param headers:
@@ -173,14 +172,17 @@ def report_succeessful_task(**kwargs):
     :param kwargs:
     :return:
     """
-    stats.timer("celery.successful_task", tags=get_celery_request_tags(**kwargs))
+    tags = get_celery_request_tags(**kwargs)
+    red.set(f"{tags['task_name']}.last_success", int(time.time()))
+    stats.timer("celery.successful_task", tags=tags)
 
 
 @task_failure.connect
 def report_failed_task(**kwargs):
     """
-    Report a generic failure metric as tasks to our metrics broker every time a task finished correctly.
+    Report a generic failure metric as tasks to our metrics broker every time a task fails.
     This metric can be used for alerting.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-failure
 
     :param sender:
     :param headers:
@@ -193,11 +195,41 @@ def report_failed_task(**kwargs):
         "Message": "Celery Task Failure",
     }
 
+    # Add traceback if exception info is in the kwargs
+    einfo = kwargs.get("einfo")
+    if einfo:
+        log_data["traceback"] = einfo.traceback
+
     error_tags = get_celery_request_tags(**kwargs)
 
     log_data.update(error_tags)
     log.error(log_data)
     stats.timer("celery.failed_task", tags=error_tags)
+
+
+@task_revoked.connect
+def report_revoked_task(**kwargs):
+    """
+    Report a generic failure metric as tasks to our metrics broker every time a task is revoked.
+    This metric can be used for alerting.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-revoked
+
+    :param sender:
+    :param headers:
+    :param body:
+    :param kwargs:
+    :return:
+    """
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "Message": "Celery Task Revoked",
+    }
+
+    error_tags = get_celery_request_tags(**kwargs)
+
+    log_data.update(error_tags)
+    log.error(log_data)
+    stats.timer("celery.revoked_task", tags=error_tags)
 
 
 @app.task(soft_time_limit=1800)
@@ -215,6 +247,16 @@ def alert_on_group_changes() -> dict:
     alert_groups = async_to_sync(auth.get_groups_with_attribute_name_value)(
         "alert_on_changes", None
     )
+
+    # Dict used to send bulk emails to alert recipients
+    # {recipient: {group_name: [users]}}
+    # Example:
+    # {
+    #   "coolpeople@netflix.com": {
+    #       "awesome_group@netflix.com": [{"name": "tswift@netflix.com", "type": "USER"}]
+    #   },
+    # }
+    group_changes = defaultdict(dict)
 
     log_data = {
         "function": function,
@@ -287,12 +329,8 @@ def alert_on_group_changes() -> dict:
             and config.get("environment") == "prod"
         ):
             if added_members and current_members:
-                async_to_sync(send_group_modification_notification)(
-                    group,
-                    group_info.alert_on_changes,
-                    added_members,
-                    group_url=get_group_url(group),
-                )
+                for recipient in group_info.alert_on_changes:
+                    group_changes[recipient][group] = added_members
             elif added_members and not current_members:
                 log_data[
                     "message"
@@ -309,8 +347,11 @@ def alert_on_group_changes() -> dict:
             log.debug(log_data)
         # Update redis cache
         red.set(group_members_key, json.dumps(current_members))
+
+    for recipient, groups in group_changes.items():
+        async_to_sync(send_group_modification_notification)(groups, recipient)
+
     stats.count("alert_on_group_changes.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return log_data
 
 
@@ -354,13 +395,27 @@ def _add_role_to_redis(redis_key: str, role_entry: dict) -> None:
 
 @app.task(soft_time_limit=180)
 def cache_audit_table_details() -> bool:
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
     d = UserDynamoHandler("consoleme")
     entries = async_to_sync(d.get_all_audit_logs)()
 
     topic = config.get("redis.audit_log_key", "CM_AUDIT_LOGS")
     red.set(topic, json.dumps(entries))
-    red.set(f"{function}.last_success", int(time.time()))
+    return True
+
+
+@app.task(soft_time_limit=3600)
+def cache_cloudtrail_errors_by_arn() -> bool:
+    cloudtrail_errors = internal_policies.error_count_by_arn()
+    if not cloudtrail_errors:
+        cloudtrail_errors = {}
+    red.setex(
+        config.get(
+            "celery.cache_cloudtrail_errors_by_arn.redis_key",
+            "CLOUDTRAIL_ERRORS_BY_ARN",
+        ),
+        86400,
+        json.dumps(cloudtrail_errors),
+    )
     return True
 
 
@@ -369,9 +424,18 @@ def cache_policies_table_details() -> bool:
     arns = red.hkeys("IAM_ROLE_CACHE")
     items = []
     accounts_d = aws.get_account_ids_to_names()
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
-    cloudtrail_errors = internal_policies.error_count_by_arn()
+    cloudtrail_errors = {}
+    cloudtrail_errors_j = red.get(
+        config.get(
+            "celery.cache_cloudtrail_errors_by_arn.redis_key",
+            "CLOUDTRAIL_ERRORS_BY_ARN",
+        )
+    )
+
+    if cloudtrail_errors_j:
+        cloudtrail_errors = json.loads(cloudtrail_errors_j)
+    del cloudtrail_errors_j
 
     s3_error_topic = config.get("redis.s3_errors", "S3_ERRORS")
     all_s3_errors = red.get(s3_error_topic)
@@ -465,7 +529,6 @@ def cache_policies_table_details() -> bool:
     items_json = json.dumps(items, cls=SetEncoder)
     red.set(config.get("policies.redis_policies_key", "ALL_POLICIES"), items_json)
     stats.count("cache_policies_table_details.success", tags={"num_roles": len(arns)})
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -474,7 +537,6 @@ def cache_roles_for_account(account_id: str) -> bool:
     # Get the DynamoDB handler:
     dynamo = IAMRoleDynamoHandler()
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
     # Only query IAM and put data in Dynamo if we're in the active region
     if config.region == config.get("celery.active_region") or config.get(
@@ -508,7 +570,6 @@ def cache_roles_for_account(account_id: str) -> bool:
             _add_role_to_redis(cache_key, role_entry)
 
     stats.count("cache_roles_for_account.success", tags={"account_id": account_id})
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -536,13 +597,11 @@ def cache_roles_across_accounts() -> bool:
             _add_role_to_redis(cache_key, role_entry)
 
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
 @app.task(soft_time_limit=1800)
 def cache_managed_policies_for_account(account_id: str) -> bool:
-    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     managed_policies: list[dict] = get_all_managed_policies(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
@@ -554,7 +613,6 @@ def cache_managed_policies_for_account(account_id: str) -> bool:
 
     policy_key = config.get("redis.iam_managed_policies_key", "IAM_MANAGED_POLICIES")
     red.hset(policy_key, account_id, json.dumps(all_policies))
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -572,7 +630,6 @@ def cache_managed_policies_across_accounts() -> bool:
                 cache_managed_policies_for_account.delay(account_id)
 
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -589,7 +646,6 @@ def cache_s3_buckets_across_accounts() -> bool:
             if account_id in config.get("celery.test_account_ids", []):
                 cache_s3_buckets_for_account.delay(account_id)
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -606,7 +662,6 @@ def cache_sqs_queues_across_accounts() -> bool:
             if account_id in config.get("celery.test_account_ids", []):
                 cache_sqs_queues_for_account.delay(account_id)
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -622,13 +677,11 @@ def cache_sns_topics_across_accounts() -> bool:
             if account_id in config.get("celery.test_account_ids", []):
                 cache_sns_topics_for_account.delay(account_id)
     stats.count(f"{function}.success")
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
 @app.task(soft_time_limit=1800)
 def cache_sqs_queues_for_account(account_id: str) -> bool:
-    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     all_queues: set = set()
     for region in config.get("celery.sync_regions"):
         queues = list_queues(
@@ -642,14 +695,12 @@ def cache_sqs_queues_for_account(account_id: str) -> bool:
             all_queues.add(arn)
     sqs_queue_key: str = config.get("redis.sqs_queues_key", "SQS_QUEUES")
     red.hset(sqs_queue_key, account_id, json.dumps(list(all_queues)))
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
 @app.task(soft_time_limit=1800)
 def cache_sns_topics_for_account(account_id: str) -> bool:
     # Make sure it is regional
-    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     all_topics: set = set()
     for region in config.get("celery.sync_regions"):
         topics = list_topics(
@@ -662,13 +713,11 @@ def cache_sns_topics_for_account(account_id: str) -> bool:
             all_topics.add(topic["TopicArn"])
     sns_topic_key: str = config.get("redis.sns_topics_key", "SNS_TOPICS")
     red.hset(sns_topic_key, account_id, json.dumps(list(all_topics)))
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
 @app.task(soft_time_limit=1800)
 def cache_s3_buckets_for_account(account_id: str) -> bool:
-    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     s3_buckets: list = list_buckets(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
@@ -680,7 +729,6 @@ def cache_s3_buckets_for_account(account_id: str) -> bool:
         buckets.append(bucket["Name"])
     s3_bucket_key: str = config.get("redis.s3_buckets_key", "S3_BUCKETS")
     red.hset(s3_bucket_key, account_id, json.dumps(buckets))
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -709,7 +757,6 @@ def clear_old_redis_iam_cache() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     # Do not run if this is not in the active region:
     if config.region != config.get("celery.active_region"):
-        red.set(f"{function}.last_success", int(time.time()))
         return
 
     # Need to loop over all items in the set:
@@ -757,7 +804,6 @@ def clear_old_redis_iam_cache() -> bool:
         raise
 
     stats.count(f"{function}.success", tags={"expired_roles": len(roles_to_expire)})
-    red.set(f"{function}.last_success", int(time.time()))
     return True
 
 
@@ -812,8 +858,90 @@ def get_inventory_of_iam_keys() -> dict:
         )
     log_data["total_iam_access_key_id"] = len(key_data)
     log.debug(log_data)
-    red.set(f"{function}.last_success", int(time.time()))
     stats.count(f"{function}.success")
+    return log_data
+
+
+@app.task(soft_time_limit=1800)
+def get_iam_role_limit() -> dict:
+    """
+    This function will gather the number of existing IAM Roles and IAM Role quota in all owned AWS accounts.
+    """
+
+    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
+    num_accounts = 0
+    num_roles = 0
+
+    if not config.get("celery.get_iam_role_limit.enabled"):
+        return {}
+
+    success_message = "Not running - Inactive region"
+    if config.region == config.get("celery.active_region") and config.get(
+        "environment"
+    ) in ["prod", "dev"]:
+
+        @sts_conn("iam")
+        def _get_delivery_channels(**kwargs) -> list:
+            """Gets the delivery channels in the account/region -- calls are wrapped with CloudAux"""
+            return kwargs.pop("client").get_account_summary(**kwargs)
+
+        success_message = "Task successfully completed"
+
+        # First, get list of accounts
+        accounts_d: dict = aws.get_account_ids_to_names()
+        num_accounts = len(accounts_d.keys())
+        for account_id, account_aliases in accounts_d.items():
+            account_name = account_aliases[0]
+            try:
+                iam_summary = _get_delivery_channels(
+                    account_number=account_id,
+                    assume_role=config.get("policies.role_name"),
+                    region=config.region,
+                )
+                num_iam_roles = iam_summary["SummaryMap"]["Roles"]
+                iam_role_quota = iam_summary["SummaryMap"]["RolesQuota"]
+                iam_role_quota_ratio = num_iam_roles / iam_role_quota
+
+                num_roles += num_iam_roles
+                log_data = {
+                    "function": function,
+                    "message": "IAM role quota for account",
+                    "num_iam_roles": num_iam_roles,
+                    "iam_role_quota": iam_role_quota,
+                    "iam_role_quota_ratio": iam_role_quota_ratio,
+                    "account_id": account_id,
+                    "account_name": account_name,
+                }
+                stats.gauge(
+                    f"{function}.quota_ratio_gauge",
+                    iam_role_quota_ratio,
+                    tags={
+                        "num_iam_roles": num_iam_roles,
+                        "iam_role_quota": iam_role_quota,
+                        "account_id": account_id,
+                        "account_name": account_name,
+                    },
+                )
+                log.debug(log_data)
+            except ClientError as e:
+                log_data = {
+                    "function": function,
+                    "message": "Error retrieving IAM quota",
+                    "account_id": account_id,
+                    "account_name": account_name,
+                    "error": e,
+                }
+                stats.count(f"{function}.error", tags={"account_id": account_id})
+                log.error(log_data, exc_info=True)
+                config.sentry.captureException()
+
+    log_data = {
+        "function": function,
+        "num_accounts": num_accounts,
+        "num_roles": num_roles,
+        "message": success_message,
+    }
+    log.debug(log_data)
     return log_data
 
 
@@ -823,6 +951,7 @@ schedule_6_hours = timedelta(hours=6)
 schedule_minute = timedelta(minutes=1)
 schedule_5_minutes = timedelta(minutes=5)
 schedule_24_hours = timedelta(hours=24)
+schedule_1_hour = timedelta(hours=1)
 
 if config.get("development", False):
     # If debug mode, we will set up the schedule to run the next minute after the job starts
@@ -830,6 +959,7 @@ if config.get("development", False):
     dev_schedule = crontab(hour=time_to_start.hour, minute=time_to_start.minute)
     schedule_30_minute = dev_schedule
     schedule_45_minute = dev_schedule
+    schedule_1_hour = dev_schedule
     schedule_6_hours = dev_schedule
 
 schedule = {
@@ -887,6 +1017,16 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
+    },
+    "get_iam_role_limit": {
+        "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
+        "options": {"expires": 300},
+        "schedule": schedule_24_hours,
+    },
+    "cache_cloudtrail_errors_by_arn": {
+        "task": "consoleme.celery.celery_tasks.cache_cloudtrail_errors_by_arn",
+        "options": {"expires": 300},
+        "schedule": schedule_1_hour,
     },
 }
 

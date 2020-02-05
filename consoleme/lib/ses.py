@@ -6,6 +6,7 @@ from asgiref.sync import sync_to_async
 
 from consoleme.config import config
 from consoleme.lib.generic import generate_html
+from consoleme.lib.groups import get_group_url
 from consoleme.lib.plugins import get_plugin_by_name
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -41,6 +42,10 @@ async def send_email(
         to_addresses = config.get("ses.override_receivers_for_dev")
         log_data["new_to_addresses"] = to_addresses
         log.debug(log_data)
+
+    # Handle non-list recipients
+    if not isinstance(to_addresses, list):
+        to_addresses = [to_addresses]
 
     try:
         response = await sync_to_async(client.send_email)(
@@ -162,19 +167,43 @@ async def send_request_to_secondary_approvers(
 
 
 async def send_group_modification_notification(
-    group, to_addresses, added_members, group_url, sending_app="consoleme"
+    groups, to_address, sending_app="consoleme"
 ):
+    """
+    Send an email containing group changes to a notification address
+
+    Example of `groups` dict:
+    {
+        "awesome_group_1@netflix.com": [
+            {"name": "tswift@netflix.com", "type": "USER"},
+            {"name": "agrande@netflix.com", "type": "USER"},
+        ],
+        "awesome_group_2@netflix.com": [
+            {"name": "lizzo@netflix.com", "type": "USER"},
+            {"name": "beilish@netflix.com", "type": "USER"},
+        ],
+    }
+
+    :param groups: map of groups and added members
+    :type groups: dict
+    :param to_address: recipient of notification email
+    :type to_address: str
+    :param sending_app: name of application
+    :type sending_app: str
+    """
     app_name = config.get(f"ses.{sending_app}.name")
-    subject = f"{app_name}: Group {group} was modified"
-    group_link = f"<a href={group_url}>{group}</a>"
-    message = f"""Group {app_name} was modified.<br>
+    subject = f"{app_name}: Groups modified"
+    message = f"""Groups modified in {app_name}.<br>
     You or a group you belong to are configured to receive a notification when new members are added to this group.<br>
-    {group_link} admins may click the group link above to view and modify this configuration."""
+    Admins may click the group link below to view and modify this configuration."""
     added_members_snippet = ""
-    if added_members:
-        added_members_snippet = f"""<b>Users added</b>: <br>
-        {generate_html(added_members)}<br>
-        """
+    for group, added_members in groups.items():
+        group_url = get_group_url(group)
+        group_link = f"<a href={group_url}>{group}</a>"
+        if added_members:
+            added_members_snippet += f"""<b>Users added to {group_link}</a></b>: <br>
+            {generate_html(added_members)}<br>
+            """
     body = f"""<html>
         <head>
         <meta http-equiv="content-type" content="text/html; charset=UTF-8">
@@ -189,7 +218,7 @@ async def send_group_modification_notification(
         <meta http-equiv="content-type" content="text/html; charset=UTF-8">
         </body>
         </html>"""
-    await send_email(to_addresses, subject, body, sending_app=sending_app)
+    await send_email(to_address, subject, body, sending_app=sending_app)
 
 
 async def send_new_aws_groups_notification(
