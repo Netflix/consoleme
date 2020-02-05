@@ -994,6 +994,12 @@ class ResourceTypeAheadHandler(BaseHandler):
                     results.append({"title": account})
         elif resource_type == "app":
             results = {}
+            all_role_arns = []
+            all_role_arns_j = await redis_hgetall(
+                (config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"))
+            )
+            if all_role_arns_j:
+                all_role_arns = all_role_arns_j.keys()
             # ConsoleMe (Account: Test, Arn: arn)
             try:
                 accounts = json.loads(
@@ -1007,6 +1013,7 @@ class ResourceTypeAheadHandler(BaseHandler):
                 accounts = {}
             app_to_role_map = json.loads(data)
             seen = {}
+            seen_roles = {}
             for app_name, roles in app_to_role_map.items():
                 if len(results.keys()) > 9:
                     break
@@ -1021,10 +1028,22 @@ class ResourceTypeAheadHandler(BaseHandler):
                         if seen.get(parsed_app_name):
                             continue
                         seen[parsed_app_name] = True
+                        seen_roles[role] = True
                         results[app_name]["results"].append(
                             {"title": role, "description": account}
                         )
-
+            for role in all_role_arns:
+                if len(results.keys()) > 9:
+                    break
+                if search_string.lower() in role.lower():
+                    if seen_roles.get(role):
+                        continue
+                    account_id = role.split(":")[4]
+                    account = accounts.get(account_id, [""])[0]
+                    results[role] = {
+                        "name": role.replace("arn:aws:iam::", "").replace(":role", ""),
+                        "results": [{"title": role, "description": account}],
+                    }
         else:
             for k, v in data.items():
                 if account_id and k != account_id:
