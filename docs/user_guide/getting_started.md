@@ -3,7 +3,7 @@
 
 * Promotes security hygiene through the use of IAM roles
 
-IAM roles are more secure than IAM users because they do not 
+IAM roles are more secure than IAM users because they do not
 provide a method to get long-term credentials that might accidentally be leaked or committed to code. ConsoleMe assumes
 roles in your environment and provides temporary one-hour credentials to authorized users.
 
@@ -52,18 +52,18 @@ TBD
 ## Plugin Guide
 
 ConsoleMe uses entry points to load various internal plugins for your internal-only business logic. We have included some
-default plugins for reference, but as you start using more features in ConsoleMe, you'll probably find the default 
+default plugins for reference, but as you start using more features in ConsoleMe, you'll probably find the default
 plugins insufficient for your needs. We suggest that you copy the contents of the `default_plugins` folder into a
 separate (private) repository and customize the included functions with logic custom to your organization. For example,
-how should ConsoleMe determine the groups that your users are members of? How should ConsoleMe map these groups to 
+how should ConsoleMe determine the groups that your users are members of? How should ConsoleMe map these groups to
 IAM roles? What type of session policy should ConsoleMe pass when logging a user in to a role? How should ConsoleMe figure
 out where its configuration file is located?
-The first entry poing 
- 
-that you  you'll probably want to copy this as a reference point 
+The first entry poing
+
+that you  you'll probably want to copy this as a reference point
 
 the `CONSOLEME_CONFIG_ENTRYPOINT` to determine the entry point for your internal configuration plugin.
-This plugin will be consulted to determine which configuration file to use, 
+This plugin will be consulted to determine which configuration file to use,
 
 
 ## Building ConsoleMe Locally
@@ -111,15 +111,15 @@ You can see which headers are being passed to ConsoleMe by visiting the `/myhead
 
 ## Definitions
 
-**ARN**: An Amazon Resource Name is a unique identifier to an Amazon Resource. Most, if not all AWS resources are provided a unique ARN that can be used in an IAM role policy to grant or restrict access to the resource. Each S3 bucket, SQS queue, SNS topic, RDS database, KMS key, IAM role, and more have unique ARNs. ARNs are also used in libraries to take an action on a resource. 
+**ARN**: An Amazon Resource Name is a unique identifier to an Amazon Resource. Most, if not all AWS resources are provided a unique ARN that can be used in an IAM role policy to grant or restrict access to the resource. Each S3 bucket, SQS queue, SNS topic, RDS database, KMS key, IAM role, and more have unique ARNs. ARNs are also used in libraries to take an action on a resource.
 
 **EC2 Instance Metadata Service**: A service that runs locally on EC2 instances, accessible through a link-local IP address. All AWS SDKs will automatically try to fetch details about the instance, including role credentials, from the EC2 Instance Metadata service if it is accessible. For more details, check out “Instance Metadata”. For more details about the order in which AWS SDKs will try to find credentials, take a look at “Working with AWS Credentials”.
 
 **IAM**: AWS Identity and Access Management (IAM) allows us to manage a role’s access to AWS services and resources with a fine-grained set of permissions.
 
-**IAM Instance Profile**: An instance profile is a logical unit that maps to an IAM role. As far as most users are concerned, IAM instance profiles and roles can be thought of as the same construct. For more details, see “Managing Instance Profiles”. 
+**IAM Instance Profile**: An instance profile is a logical unit that maps to an IAM role. As far as most users are concerned, IAM instance profiles and roles can be thought of as the same construct. For more details, see “Managing Instance Profiles”.
 
-**IAM Role**: An IAM role is an identity in an AWS account with a set of permissions that define what actions are allowed and denied by an entity in AWS console. A role in IAM can be accessed by any entity (an individual or AWS service). For more details, check out “Roles Terms and Concepts”. 
+**IAM Role**: An IAM role is an identity in an AWS account with a set of permissions that define what actions are allowed and denied by an entity in AWS console. A role in IAM can be accessed by any entity (an individual or AWS service). For more details, check out “Roles Terms and Concepts”.
 
 
 ## To run an async python function syncronously in a shell for testing
