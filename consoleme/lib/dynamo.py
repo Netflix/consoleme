@@ -1,6 +1,6 @@
+import asyncio
 import logging
 import sys
-import threading
 import time
 import uuid
 import zlib
@@ -58,19 +58,32 @@ for name in logging.Logger.manager.loggerDict.keys():
         logging.getLogger(name).setLevel(logging.CRITICAL)
 
 
-def parallel_scan_table(table, total_threads=50):
-    def _scan_segment(segment):
-        response = table.scan(
-            FilterExpression="classification=:classification",
-            ExpressionAttributeValues={":classification": {"S": "DIRECT"}},
-            Segment=segment,
-            TotalSegments=total_threads,
-        )
+def parallel_scan_table(table, total_threads=10):
+    async def _scan_segment(segment, total_segments):
+        response = table.scan(Segment=segment, TotalSegments=total_segments)
+        items = response.get("Items", [])
 
-    thread_list = []
+        while "LastEvaluatedKey" in response:
+            response = table.scan(
+                ExclusiveStartKey=response["LastEvaluatedKey"],
+                Segment=segment,
+                TotalSegments=total_segments,
+            )
+            items.extend(response.get("Items", []))
+
+        return items
+
+    loop = asyncio.get_event_loop()
+    tasks = []
     for i in range(total_threads):
-        thread = threading.Thread(target=scan_foo_table, args=(i, total_threads))
-        _scan_segment(i)
+        task = asyncio.ensure_future(_scan_segment(i, total_threads))
+        tasks.append(task)
+
+    results = loop.run_until_complete(asyncio.gather(*tasks))
+    items = []
+    for result in results:
+        items.extend(result)
+    return items
 
 
 class BaseDynamoHandler:

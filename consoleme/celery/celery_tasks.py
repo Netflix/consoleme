@@ -403,13 +403,39 @@ def cache_audit_table_details() -> bool:
     return True
 
 
-@app.task(soft_time_limit=2700)
+@app.task(soft_time_limit=3600)
+def cache_cloudtrail_errors_by_arn() -> bool:
+    cloudtrail_errors = internal_policies.error_count_by_arn()
+    if not cloudtrail_errors:
+        cloudtrail_errors = {}
+    red.setex(
+        config.get(
+            "celery.cache_cloudtrail_errors_by_arn.redis_key",
+            "CLOUDTRAIL_ERRORS_BY_ARN",
+        ),
+        86400,
+        json.dumps(cloudtrail_errors),
+    )
+    return True
+
+
+@app.task(soft_time_limit=1800)
 def cache_policies_table_details() -> bool:
     arns = red.hkeys("IAM_ROLE_CACHE")
     items = []
     accounts_d = aws.get_account_ids_to_names()
 
-    cloudtrail_errors = internal_policies.error_count_by_arn()
+    cloudtrail_errrors = {}
+    cloudtrail_errors_j = red.get(
+        config.get(
+            "celery.cache_cloudtrail_errors_by_arn.redis_key",
+            "CLOUDTRAIL_ERRORS_BY_ARN",
+        )
+    )
+
+    if cloudtrail_errors_j:
+        cloudtrail_errrors = json.loads(cloudtrail_errors_j)
+    del cloudtrail_errors_j
 
     s3_error_topic = config.get("redis.s3_errors", "S3_ERRORS")
     all_s3_errors = red.get(s3_error_topic)
@@ -418,7 +444,7 @@ def cache_policies_table_details() -> bool:
         s3_errors = json.loads(all_s3_errors)
 
     for arn in arns:
-        error_count = internal_policies.error_count_for_arn(arn)
+        error_count = cloudtrail_errrors.get(arn, 0)
         s3_errors_for_arn = s3_errors.get(arn, [])
         for error in s3_errors_for_arn:
             error_count += int(error.get("count"))
@@ -955,7 +981,7 @@ schedule = {
     "cache_policies_table_details": {
         "task": "consoleme.celery.celery_tasks.cache_policies_table_details",
         "options": {"expires": 1000},
-        "schedule": schedule_1_hour,
+        "schedule": schedule_45_minute,
     },
     "report_celery_last_success_metrics": {
         "task": "consoleme.celery.celery_tasks.report_celery_last_success_metrics",
@@ -996,6 +1022,11 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
+    },
+    "cache_cloudtrail_errors_by_arn": {
+        "task": "consoleme.celery.celery_tasks.cache_cloudtrail_errors_by_arn",
+        "options": {"expires": 300},
+        "schedule": schedule_1_hour,
     },
 }
 
