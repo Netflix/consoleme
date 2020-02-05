@@ -425,7 +425,7 @@ def cache_policies_table_details() -> bool:
     items = []
     accounts_d = aws.get_account_ids_to_names()
 
-    cloudtrail_errrors = {}
+    cloudtrail_errors = {}
     cloudtrail_errors_j = red.get(
         config.get(
             "celery.cache_cloudtrail_errors_by_arn.redis_key",
@@ -434,7 +434,7 @@ def cache_policies_table_details() -> bool:
     )
 
     if cloudtrail_errors_j:
-        cloudtrail_errrors = json.loads(cloudtrail_errors_j)
+        cloudtrail_errors = json.loads(cloudtrail_errors_j)
     del cloudtrail_errors_j
 
     s3_error_topic = config.get("redis.s3_errors", "S3_ERRORS")
@@ -444,7 +444,7 @@ def cache_policies_table_details() -> bool:
         s3_errors = json.loads(all_s3_errors)
 
     for arn in arns:
-        error_count = cloudtrail_errrors.get(arn, 0)
+        error_count = cloudtrail_errors.get(arn, 0)
         s3_errors_for_arn = s3_errors.get(arn, [])
         for error in s3_errors_for_arn:
             error_count += int(error.get("count"))
