@@ -4,10 +4,10 @@
 #
 #    pip-compile --no-index --output-file=requirements-docs.txt requirements-docs.in
 #
-apispec[yaml]==3.2.0
+apispec==3.2.0
 click==7.0                # via mkdocs
 htmlmin==0.1.12           # via mkdocs-minify-plugin
-jinja2==2.10.3            # via mkdocs
+jinja2==2.11.1            # via mkdocs
 jsmin==2.2.2              # via mkdocs-minify-plugin
 livereload==2.6.1         # via mkdocs
 markdown==3.1.1           # via mkdocs, mkdocs-material, pymdown-extensions

@@ -24,7 +24,7 @@ kombu
 marshmallow<3
 logmatic-python
 lxml
-pandas
+pandas<1
 pkgconfig
 policyuniverse
 presto-python-client
