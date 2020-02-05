@@ -403,13 +403,39 @@ def cache_audit_table_details() -> bool:
     return True
 
 
-@app.task(soft_time_limit=9600)
+@app.task(soft_time_limit=3600)
+def cache_cloudtrail_errors_by_arn() -> bool:
+    cloudtrail_errors = internal_policies.error_count_by_arn()
+    if not cloudtrail_errors:
+        cloudtrail_errors = {}
+    red.setex(
+        config.get(
+            "celery.cache_cloudtrail_errors_by_arn.redis_key",
+            "CLOUDTRAIL_ERRORS_BY_ARN",
+        ),
+        86400,
+        json.dumps(cloudtrail_errors),
+    )
+    return True
+
+
+@app.task(soft_time_limit=1800)
 def cache_policies_table_details() -> bool:
     arns = red.hkeys("IAM_ROLE_CACHE")
     items = []
     accounts_d = aws.get_account_ids_to_names()
 
-    cloudtrail_errors = internal_policies.error_count_by_arn()
+    cloudtrail_errors = {}
+    cloudtrail_errors_j = red.get(
+        config.get(
+            "celery.cache_cloudtrail_errors_by_arn.redis_key",
+            "CLOUDTRAIL_ERRORS_BY_ARN",
+        )
+    )
+
+    if cloudtrail_errors_j:
+        cloudtrail_errors = json.loads(cloudtrail_errors_j)
+    del cloudtrail_errors_j
 
     s3_error_topic = config.get("redis.s3_errors", "S3_ERRORS")
     all_s3_errors = red.get(s3_error_topic)
@@ -925,6 +951,7 @@ schedule_6_hours = timedelta(hours=6)
 schedule_minute = timedelta(minutes=1)
 schedule_5_minutes = timedelta(minutes=5)
 schedule_24_hours = timedelta(hours=24)
+schedule_1_hour = timedelta(hours=1)
 
 if config.get("development", False):
     # If debug mode, we will set up the schedule to run the next minute after the job starts
@@ -932,6 +959,7 @@ if config.get("development", False):
     dev_schedule = crontab(hour=time_to_start.hour, minute=time_to_start.minute)
     schedule_30_minute = dev_schedule
     schedule_45_minute = dev_schedule
+    schedule_1_hour = dev_schedule
     schedule_6_hours = dev_schedule
 
 schedule = {
@@ -953,7 +981,7 @@ schedule = {
     "cache_policies_table_details": {
         "task": "consoleme.celery.celery_tasks.cache_policies_table_details",
         "options": {"expires": 1000},
-        "schedule": schedule_24_hours,
+        "schedule": schedule_45_minute,
     },
     "report_celery_last_success_metrics": {
         "task": "consoleme.celery.celery_tasks.report_celery_last_success_metrics",
@@ -994,6 +1022,11 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
+    },
+    "cache_cloudtrail_errors_by_arn": {
+        "task": "consoleme.celery.celery_tasks.cache_cloudtrail_errors_by_arn",
+        "options": {"expires": 300},
+        "schedule": schedule_1_hour,
     },
 }
 
