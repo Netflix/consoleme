@@ -1,0 +1,68 @@
+{
+  "builders": [
+    {
+      "ami_name": "consoleme {{timestamp}}",
+      "instance_type": "t2.micro",
+      "region": "us-east-1",
+      "source_ami_filter": {
+        "filters": {
+          "name": "ubuntu/images/*ubuntu-bionic-18.04-amd64-server-*",
+          "root-device-type": "ebs",
+          "virtualization-type": "hvm"
+        },
+        "most_recent": true,
+        "owners": [
+          "099720109477"
+        ]
+      },
+      "ssh_username": "ubuntu",
+      "type": "amazon-ebs"
+    }
+  ],
+  "provisioners": [
+    {
+      "inline": [
+        "export CONFIG_LOCATION={{user `CONFIG_LOCATION`}}",
+        "export CONSOLEME_CONFIG_ENTRYPOINT={{user `CONSOLEME_CONFIG_ENTRYPOINT`}}",
+        "sudo mkdir -p /apps/consoleme",
+        "sudo chown -R ubuntu /apps/"
+      ],
+      "type": "shell"
+    },
+    {
+      "destination": "{{user `app_archive`}}",
+      "source": "{{user `app_archive`}}",
+      "type": "file"
+    },
+    {
+      "inline": [
+        "tar -xf {{user `app_archive`}} -C /apps/consoleme/",
+        "rm {{user `app_archive`}}"
+      ],
+      "type": "shell"
+    },
+    {
+      "inline": [
+        "sudo apt install -y python3-pip virtualenv libcurl4-openssl-dev libssl-dev pkg-config libxmlsec1-dev docker.io",
+        "sudo systemctl start docker",
+        "sudo systemctl enable docker",
+        "sudo usermod -aG docker $USER",
+        "newgrp docker"
+      ],
+      "type": "shell"
+    },
+    {
+      "inline": [
+        "cd /apps/consoleme",
+        "sudo apt install make",
+        "make packer_ubuntu_oss"
+      ],
+      "type": "shell"
+    }
+  ],
+  "variables": {
+    "CONFIG_LOCATION": "{{env `CONFIG_LOCATION`}}",
+    "CONSOLEME_CONFIG_ENTRYPOINT": "{{env `CONSOLEME_CONFIG_ENTRYPOINT`}}",
+    "app_archive": ""
+  }
+}

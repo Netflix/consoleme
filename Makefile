@@ -32,6 +32,39 @@ install: clean
 	make env_install
 	make bootstrap
 
+.PHONY: create_ami
+create_ami:
+ifdef CONFIG_LOCATION
+	@echo "--> Using configuration at $(CONFIG_LOCATION)"
+	export CONFIG_LOCATION=$(CONFIG_LOCATION)
+endif
+ifdef CONSOLEME_CONFIG_ENTRYPOINT
+	@echo "--> Using configuration entrypoint at at $(CONSOLEME_CONFIG_ENTRYPOINT)"
+	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT)
+endif
+	# Tar contents of the current directory
+	tar --exclude='env*' --exclude='venv*' -cf /tmp/consoleme.tar consoleme # TODO: Change 'consoleme' to .
+	# Call Packer to build AMI
+	packer build -var 'app_archive=/tmp/consoleme.tar' packer/create_consoleme_ami.json
+	# Remove Temporary Tar file
+	rm /tmp/consoleme.tar
+
+.PHONY: packer_ubuntu_oss
+packer_ubuntu_oss:
+ifdef CONFIG_LOCATION
+	@echo "--> Using configuration at $(CONFIG_LOCATION)"
+	export CONFIG_LOCATION=$(CONFIG_LOCATION)
+endif
+ifdef CONSOLEME_CONFIG_ENTRYPOINT
+	@echo "--> Using configuration entrypoint at at $(CONSOLEME_CONFIG_ENTRYPOINT)"
+	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT)
+endif
+	apt-get install redis-server
+	systemctl enable redis-server.service
+	systemctl restart redis-server.service
+	install
+	pip install -e default_plugins
+
 .PHONY: bootstrap
 bootstrap:
 	docker volume create dynamodb-data
@@ -42,13 +75,13 @@ bootstrap:
 dynamo:
 	@echo "--> Configuring Dynamo (Make sure local dynamo is enabled on port 8000)"
 	. env/bin/activate || source activate consoleme;\
-	python ../consoleme-internal/scripts/initialize_dynamodb_dev.py
+	python scripts/initialize_dynamodb_oss.py
 
 .PHONY: redis
 redis:
 	@echo "--> Configuring Redis"
 	. env/bin/activate || source activate consoleme;\
-	python ../consoleme-internal/scripts/initialize_redis_dev.py
+	python scripts/initialize_redis_oss.py
 
 .PHONY: test
 test: clean
@@ -116,7 +149,7 @@ endif
 	pip install --upgrade pip
 	pip install --upgrade pip-tools
 	pip install --upgrade setuptools
-	pip-compile --output-file requirements.txt requirements.in -U
+	pip-compile --output-file requirements.txt requirements.in -U --no-index
 	pip-compile --output-file requirements-test.txt requirements-test.in -U --no-index
 	pip-compile --output-file requirements-docs.txt requirements-docs.in -U --no-index
 	@echo "--> Done updating Python requirements"

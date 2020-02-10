@@ -1,8 +1,21 @@
+import os
+
+
 class Config:
     @staticmethod
     def get_config_location():
-        path = "docker/example_config_test.yaml"
-        return path
+        load_config_paths = [
+            os.path.join(os.getcwd(), "config.yaml"),
+            "/etc/consoleme/config.yaml",
+            "/apps/consoleme/config.yaml",
+            "docker/example_config_test.yaml",
+        ]
+        for path in load_config_paths:
+            if os.path.exists(path):
+                return path
+        raise Exception(
+            f"Unable to find ConsoleMe Config file. Search locations: {', '.join(load_config_paths)}"
+        )
 
     @staticmethod
     def internal_functions(cfg={}):
