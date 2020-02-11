@@ -402,7 +402,7 @@ class BaseMtlsHandler(BaseHandler):
                 message = "Missing Certificate in Header."
             else:
                 stats.count("GetCredentialsHandler.post.invalid_mtls_certificate")
-                message = "Invalid Mtld Certificate."
+                message = "Invalid Mtls Certificate."
             self.set_status(400)
             self.write({"code": "400", "message": message})
             await self.finish()

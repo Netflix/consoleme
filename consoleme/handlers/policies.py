@@ -13,7 +13,7 @@ from consoleme.exceptions.exceptions import (
     MustBeFte,
     Unauthorized,
 )
-from consoleme.handlers.base import BaseHandler
+from consoleme.handlers.base import BaseHandler, BaseMtlsHandler
 from consoleme.lib.aws import (
     fetch_resource_details,
     get_all_iam_managed_policies_for_account,
@@ -913,6 +913,165 @@ async def filter_resources(filter, resources, max=20):
         return resources
 
 
+async def handle_resource_type_ahead_request(cls):
+    try:
+        search_string: str = cls.request.arguments.get("search")[0].decode("utf-8")
+    except TypeError:
+        cls.send_error(400, message=f"`search` parameter must be defined")
+        return
+
+    try:
+        resource_type: str = cls.request.arguments.get("resource")[0].decode("utf-8")
+    except TypeError:
+        cls.send_error(400, message=f"`resource_type` parameter must be defined")
+        return
+
+    account_id = None
+    topic_is_hash = True
+    account_id_optional: str = cls.request.arguments.get("account_id")
+    if account_id_optional:
+        account_id = account_id_optional[0].decode("utf-8")
+
+    limit: int = 10
+    limit_optional: str = cls.request.arguments.get("limit")
+    if limit_optional:
+        limit = int(limit_optional[0].decode("utf-8"))
+
+    role_name = False
+    if resource_type == "s3":
+        topic = config.get("redis.s3_bucket_key", "S3_BUCKETS")
+    elif resource_type == "sqs":
+        topic = config.get("redis.sqs_queues_key", "SQS_QUEUES")
+    elif resource_type == "sns":
+        topic = config.get("redis.sns_topics_key ", "SNS_TOPICS")
+    elif resource_type == "iam_arn":
+        topic = config.get("aws.iamroles_redis_key ", "IAM_ROLE_CACHE")
+    elif resource_type == "iam_role":
+        topic = config.get("aws.iamroles_redis_key ", "IAM_ROLE_CACHE")
+        role_name = True
+    elif resource_type == "account":
+        topic = config.get("swag.redis_key", "SWAG_SETTINGSv2")
+        topic_is_hash = False
+    elif resource_type == "app":
+        topic = config.get(
+            "spinnaker.app_to_roles.redis_key", "SPINNAKER_SETTINGS_APP_TO_ROLE"
+        )
+        topic_is_hash = False
+    else:
+        cls.send_error(404, message=f"Invalid resource_type: {resource_type}")
+        return
+
+    if not topic:
+        raise InvalidRequestParameter("Invalid resource_type specified")
+
+    if topic_is_hash:
+        data = await redis_hgetall(topic)
+    else:
+        data = await redis_get(topic)
+
+    results = []
+
+    unique_roles = []
+
+    if resource_type == "account":
+        account_and_id_list = []
+        if not data:
+            data = "{}"
+        accounts = json.loads(data)
+        for k, v in accounts.items():
+            account_and_id_list.append(f"{k} ({v})")
+        for account in account_and_id_list:
+            if search_string.lower() in account.lower():
+                results.append({"title": account})
+    elif resource_type == "app":
+        results = {}
+        all_role_arns = []
+        all_role_arns_j = await redis_hgetall(
+            (config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"))
+        )
+        if all_role_arns_j:
+            all_role_arns = all_role_arns_j.keys()
+        # ConsoleMe (Account: Test, Arn: arn)
+        try:
+            accounts = json.loads(
+                await redis_get(
+                    config.get("swag.redis_id_name_key", "SWAG_SETTINGS_ID_TO_NAMEv2")
+                )
+            )
+        except Exception as e:  # noqa
+            accounts = {}
+        app_to_role_map = json.loads(data)
+        seen = {}
+        seen_roles = {}
+        for app_name, roles in app_to_role_map.items():
+            if len(results.keys()) > 9:
+                break
+            if search_string.lower() in app_name.lower():
+                results[app_name] = {"name": app_name, "results": []}
+                for role in roles:
+                    account_id = role.split(":")[4]
+                    account = accounts.get(account_id, [""])[0]
+                    parsed_app_name = (
+                        f"{app_name} on {account} ({account_id}) ({role})]"
+                    )
+                    if seen.get(parsed_app_name):
+                        continue
+                    seen[parsed_app_name] = True
+                    seen_roles[role] = True
+                    results[app_name]["results"].append(
+                        {"title": role, "description": account}
+                    )
+        for role in all_role_arns:
+            if len(results.keys()) > 9:
+                break
+            if search_string.lower() in role.lower():
+                if seen_roles.get(role):
+                    continue
+                account_id = role.split(":")[4]
+                account = accounts.get(account_id, [""])[0]
+                results[role] = {
+                    "name": role.replace("arn:aws:iam::", "").replace(":role", ""),
+                    "results": [{"title": role, "description": account}],
+                }
+    else:
+        for k, v in data.items():
+            if account_id and k != account_id:
+                continue
+            if role_name:
+                try:
+                    r = k.split("role/")[1]
+                except IndexError:
+                    continue
+                if search_string.lower() in r.lower():
+                    if r not in unique_roles:
+                        unique_roles.append(r)
+                        results.append({"title": r})
+            elif (
+                resource_type == "iam_arn"
+                and k.startswith("arn:")
+                and search_string.lower() in k.lower()
+            ):
+                results.append({"title": k})
+            else:
+                list_of_items = json.loads(v)
+                for item in list_of_items:
+                    if search_string.lower() in item.lower():
+                        results.append({"title": item, "account_id": k})
+                    if len(results) > limit:
+                        break
+            if len(results) > limit:
+                break
+    return results
+
+
+class ApiResourceTypeAheadHandler(BaseMtlsHandler):
+    async def get(self):
+        if self.requester["name"] not in config.get("api_auth.valid_entities"):
+            raise Exception("Call does not originate from a valid API caller")
+        results = await handle_resource_type_ahead_request(self)
+        self.write(json.dumps(results))
+
+
 class ResourceTypeAheadHandler(BaseHandler):
     async def get(self):
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
@@ -920,156 +1079,5 @@ class ResourceTypeAheadHandler(BaseHandler):
                 "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
-
-        try:
-            search_string: str = self.request.arguments.get("search")[0].decode("utf-8")
-        except TypeError:
-            self.send_error(400, message=f"`search` parameter must be defined")
-            return
-
-        try:
-            resource_type: str = self.request.arguments.get("resource")[0].decode(
-                "utf-8"
-            )
-        except TypeError:
-            self.send_error(400, message=f"`resource_type` parameter must be defined")
-            return
-
-        account_id = None
-        topic_is_hash = True
-        account_id_optional: str = self.request.arguments.get("account_id")
-        if account_id_optional:
-            account_id = account_id_optional[0].decode("utf-8")
-
-        limit: int = 10
-        limit_optional: str = self.request.arguments.get("limit")
-        if limit_optional:
-            limit = int(limit_optional[0].decode("utf-8"))
-
-        role_name = False
-        if resource_type == "s3":
-            topic = config.get("redis.s3_bucket_key", "S3_BUCKETS")
-        elif resource_type == "sqs":
-            topic = config.get("redis.sqs_queues_key", "SQS_QUEUES")
-        elif resource_type == "sns":
-            topic = config.get("redis.sns_topics_key ", "SNS_TOPICS")
-        elif resource_type == "iam_arn":
-            topic = config.get("aws.iamroles_redis_key ", "IAM_ROLE_CACHE")
-        elif resource_type == "iam_role":
-            topic = config.get("aws.iamroles_redis_key ", "IAM_ROLE_CACHE")
-            role_name = True
-        elif resource_type == "account":
-            topic = config.get("swag.redis_key", "SWAG_SETTINGSv2")
-            topic_is_hash = False
-        elif resource_type == "app":
-            topic = config.get(
-                "spinnaker.app_to_roles.redis_key", "SPINNAKER_SETTINGS_APP_TO_ROLE"
-            )
-            topic_is_hash = False
-        else:
-            self.send_error(404, message=f"Invalid resource_type: {resource_type}")
-            return
-
-        if not topic:
-            raise InvalidRequestParameter("Invalid resource_type specified")
-
-        if topic_is_hash:
-            data = await redis_hgetall(topic)
-        else:
-            data = await redis_get(topic)
-
-        results = []
-
-        unique_roles = []
-
-        if resource_type == "account":
-            account_and_id_list = []
-            if not data:
-                data = "{}"
-            accounts = json.loads(data)
-            for k, v in accounts.items():
-                account_and_id_list.append(f"{k} ({v})")
-            for account in account_and_id_list:
-                if search_string.lower() in account.lower():
-                    results.append({"title": account})
-        elif resource_type == "app":
-            results = {}
-            all_role_arns = []
-            all_role_arns_j = await redis_hgetall(
-                (config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"))
-            )
-            if all_role_arns_j:
-                all_role_arns = all_role_arns_j.keys()
-            # ConsoleMe (Account: Test, Arn: arn)
-            try:
-                accounts = json.loads(
-                    await redis_get(
-                        config.get(
-                            "swag.redis_id_name_key", "SWAG_SETTINGS_ID_TO_NAMEv2"
-                        )
-                    )
-                )
-            except Exception as e:  # noqa
-                accounts = {}
-            app_to_role_map = json.loads(data)
-            seen = {}
-            seen_roles = {}
-            for app_name, roles in app_to_role_map.items():
-                if len(results.keys()) > 9:
-                    break
-                if search_string.lower() in app_name.lower():
-                    results[app_name] = {"name": app_name, "results": []}
-                    for role in roles:
-                        account_id = role.split(":")[4]
-                        account = accounts.get(account_id, [""])[0]
-                        parsed_app_name = (
-                            f"{app_name} on {account} ({account_id}) ({role})]"
-                        )
-                        if seen.get(parsed_app_name):
-                            continue
-                        seen[parsed_app_name] = True
-                        seen_roles[role] = True
-                        results[app_name]["results"].append(
-                            {"title": role, "description": account}
-                        )
-            for role in all_role_arns:
-                if len(results.keys()) > 9:
-                    break
-                if search_string.lower() in role.lower():
-                    if seen_roles.get(role):
-                        continue
-                    account_id = role.split(":")[4]
-                    account = accounts.get(account_id, [""])[0]
-                    results[role] = {
-                        "name": role.replace("arn:aws:iam::", "").replace(":role", ""),
-                        "results": [{"title": role, "description": account}],
-                    }
-        else:
-            for k, v in data.items():
-                if account_id and k != account_id:
-                    continue
-                if role_name:
-                    try:
-                        r = k.split("role/")[1]
-                    except IndexError:
-                        continue
-                    if search_string.lower() in r.lower():
-                        if r not in unique_roles:
-                            unique_roles.append(r)
-                            results.append({"title": r})
-                elif (
-                    resource_type == "iam_arn"
-                    and k.startswith("arn:")
-                    and search_string.lower() in k.lower()
-                ):
-                    results.append({"title": k})
-                else:
-                    list_of_items = json.loads(v)
-                    for item in list_of_items:
-                        if search_string.lower() in item.lower():
-                            results.append({"title": item, "account_id": k})
-                        if len(results) > limit:
-                            break
-                if len(results) > limit:
-                    break
+        results = await handle_resource_type_ahead_request(self)
         self.write(json.dumps(results))
