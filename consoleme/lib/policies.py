@@ -425,6 +425,16 @@ async def get_policy_request_uri(request):
     return f"{config.get('url')}/policies/request/{request['request_id']}"
 
 
+async def validate_policy_name(policy_name):
+    p = re.compile("^[a-zA-Z0-9+=,.@\\-_]+$")
+    match = p.match(policy_name)
+    if not match:
+        raise InvalidRequestParameter(
+            "The specified value for policyName is invalid. "
+            "It must contain only alphanumeric characters and/or the following: +=,.@_-"
+        )
+
+
 async def get_formatted_policy_changes(account_id, arn, request):
     aws = get_plugin_by_name(config.get("plugins.aws"))()
     existing_role: dict = await aws.fetch_iam_role(account_id, arn, force_refresh=True)
@@ -449,6 +459,7 @@ async def get_formatted_policy_changes(account_id, arn, request):
 
         for inline_policy in policy_change.get("inline_policies"):
             policy_name = inline_policy.get("policy_name")
+            await validate_policy_name(policy_name)
             policy_document = inline_policy.get("policy_document")
             old_policy = {}
             new_policy: bool = False
@@ -484,16 +495,11 @@ async def get_formatted_policy_changes(account_id, arn, request):
 
         assume_role_policy_document = policy_change.get("assume_role_policy_document")
         if assume_role_policy_document:
-            policy_name = "Assume Role Policy Document"
             existing_ar_policy = existing_role["policy"]["AssumeRolePolicyDocument"]
-            if (
-                assume_role_policy_document.get("assume_role_policy_document")
-                == existing_ar_policy
-                and request.get("status") == "pending"
-            ):
-                raise Exception(
-                    "Requested Assume Role Policy Document is equivalent to existing Assume Role Policy Document"
-                )
+            old_policy = request.get("old_policy", {})
+            if old_policy:
+                existing_ar_policy = json.loads(old_policy)[0]
+
             diff = DeepDiff(
                 existing_ar_policy,
                 assume_role_policy_document.get("assume_role_policy_document"),

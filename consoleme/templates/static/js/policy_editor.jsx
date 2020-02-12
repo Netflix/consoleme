@@ -54,6 +54,7 @@ export async function removeManagedPolicy(policy_name, policy_arn, role_arn) {
 }
 
 export async function editPolicy(policy_type, policy_name, editor_value, is_new=false) {
+
   if(typeof policy_name == 'undefined' || policy_name === "") {
       Swal.fire(
         'Policy Error',
@@ -62,6 +63,7 @@ export async function editPolicy(policy_type, policy_name, editor_value, is_new=
       );
       return false;
   }
+
   let lint_errors = editor_value.getSession().getAnnotations();
   if (lint_errors.length > 0) {
     Swal.fire(
