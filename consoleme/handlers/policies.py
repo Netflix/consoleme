@@ -528,9 +528,14 @@ class PolicyReviewSubmitHandler(BaseHandler):
             self.user, justification, arn, policy_name, events
         )
         if policy_status == "approved":
-            formatted_policy_changes = await get_formatted_policy_changes(
-                account_id, arn, request
-            )
+            try:
+                formatted_policy_changes = await get_formatted_policy_changes(
+                    account_id, arn, request
+                )
+            except Exception as e:
+                await write_json_error(e, obj=self)
+                await self.finish()
+                return
             original_policy_document = formatted_policy_changes["changes"][0]["old"]
             request["old_policy"] = json.dumps([original_policy_document])
             result: dict = await update_role_policy(events)
@@ -600,9 +605,14 @@ class PolicyReviewHandler(BaseHandler):
             },
         )
 
-        formatted_policy_changes = await get_formatted_policy_changes(
-            account_id, arn, request
-        )
+        try:
+            formatted_policy_changes = await get_formatted_policy_changes(
+                account_id, arn, request
+            )
+        except Exception as e:
+            await write_json_error(e, obj=self)
+            await self.finish()
+            return
         requestor_info = await auth.get_user_info(request["username"])
         show_approve_reject_buttons = False
         can_cancel = False
