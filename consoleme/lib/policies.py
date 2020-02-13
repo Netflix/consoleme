@@ -2,6 +2,7 @@ import base64
 import re
 import sys
 import time
+from typing import Dict, List
 
 import boto3
 import ujson as json
@@ -85,8 +86,8 @@ async def parse_policy_change_request(
             if value:
                 value = json.loads(value)
             log_data["message"] = "Update inline policy"
-            log_data["policy_name"]: name
-            log_data["policy_value"]: data["value"]
+            log_data["policy_name"] = name
+            log_data["policy_value"] = data["value"]
             log.debug(log_data)
 
             # Check if policy being updated is the same as existing policy.
@@ -163,7 +164,7 @@ async def parse_policy_change_request(
             action = "update"
             value = json.loads(data["value"])
             log_data["message"] = "Update AssumeRolePolicyDocument"
-            log_data["policy_value"]: data["value"]
+            log_data["policy_value"] = data["value"]
             log.debug(log_data)
 
             # Check if policy being updated is the same as existing policy
@@ -433,6 +434,16 @@ async def validate_policy_name(policy_name):
             "The specified value for policyName is invalid. "
             "It must contain only alphanumeric characters and/or the following: +=,.@_-"
         )
+
+
+async def get_resources_from_policy_changes(policy_changes: List[Dict]) -> List[str]:
+    """Returns a list of resources affected by a list of policy changes."""
+    resource_arns: List[str] = []
+    for policy_change in policy_changes:
+        policy = policy_change.get('new')
+        for statement in policy.get('Statement', []):
+            resource_arns.extend(statement.get('Resource', []))
+    return list(set(resource_arns))
 
 
 async def get_formatted_policy_changes(account_id, arn, request):

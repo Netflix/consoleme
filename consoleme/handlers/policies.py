@@ -31,6 +31,7 @@ from consoleme.lib.policies import (
     update_role_policy,
     should_auto_approve_policy,
     get_formatted_policy_changes,
+    get_resources_from_policy_changes,
 )
 from consoleme.lib.redis import redis_get, redis_hgetall
 from consoleme.lib.timeout import Timeout
@@ -614,17 +615,18 @@ class PolicyReviewHandler(BaseHandler):
             await self.finish()
             return
         requestor_info = await auth.get_user_info(request["username"])
+        resources = await get_resources_from_policy_changes(formatted_policy_changes["changes"])
         show_approve_reject_buttons = False
-        can_cancel = False
-        show_update_button = False
+        can_cancel: bool = False
+        show_update_button: bool = False
         read_only = True
 
         if status == "pending":
             show_approve_reject_buttons = await can_manage_policy_requests(self.groups)
-            show_update_button: bool = await can_update_requests(
+            show_update_button = await can_update_requests(
                 request, self.user, self.groups
             )
-            can_cancel: bool = show_update_button
+            can_cancel = show_update_button
             read_only = False
 
         show_pending_button = await can_move_back_to_pending(request, self.groups)
@@ -657,6 +659,7 @@ class PolicyReviewHandler(BaseHandler):
             read_only=read_only,
             role_uri=role_uri,
             escape_json=escape_json,
+            resources=resources,
         )
 
     async def post(self, request_id):

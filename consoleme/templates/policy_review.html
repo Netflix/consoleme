@@ -160,6 +160,10 @@
                 <td><span style="copendinglor: red;"><a href="{{ role_uri }}">{{ arn }}</a></span>
                 </td>
             </tr>
+            <tr>
+                <td>Resources</td>
+                <td><span style="copendinglor: red;">{% for r in resources %} {{ r }} <br/> {% end %}</span>
+            </tr>
         </tbody>
     </table>
 
