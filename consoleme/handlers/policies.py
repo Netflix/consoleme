@@ -31,7 +31,7 @@ from consoleme.lib.policies import (
     update_role_policy,
     should_auto_approve_policy,
     get_formatted_policy_changes,
-    get_resources_from_policy_changes,
+    get_resources_from_events,
 )
 from consoleme.lib.redis import redis_get, redis_hgetall
 from consoleme.lib.timeout import Timeout
@@ -480,7 +480,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
 
         data: dict = tornado.escape.json_decode(self.request.body)
 
-        arn = data.get("arn")
+        arn = data.get("arn", "")
         account_id = data.get("account_id")
         justification = data.get("justification")
         if not justification:
@@ -488,9 +488,9 @@ class PolicyReviewSubmitHandler(BaseHandler):
                 "Justification is required to submit a policy change request.", obj=self
             )
             return
-        data_list = data.get("data_list")
-        if len(data_list) > 1:
-            raise InvalidRequestParameter("Only one change is supported at a time.")
+        data_list = data.get("data_list", [])
+        if len(data_list) != 1:
+            raise InvalidRequestParameter("Exactly one change is required per request.")
         policy_name: str = data_list[0].get("name")
 
         log_data = {
@@ -524,9 +524,10 @@ class PolicyReviewSubmitHandler(BaseHandler):
         )
         if should_auto_approve_request is not False:
             policy_status = "approved"
+        resources = await get_resources_from_events(events)
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
-            self.user, justification, arn, policy_name, events
+            self.user, justification, arn, policy_name, events, resources
         )
         if policy_status == "approved":
             try:
@@ -615,7 +616,6 @@ class PolicyReviewHandler(BaseHandler):
             await self.finish()
             return
         requestor_info = await auth.get_user_info(request["username"])
-        resources = await get_resources_from_policy_changes(formatted_policy_changes["changes"])
         show_approve_reject_buttons = False
         can_cancel: bool = False
         show_update_button: bool = False
@@ -659,7 +659,6 @@ class PolicyReviewHandler(BaseHandler):
             read_only=read_only,
             role_uri=role_uri,
             escape_json=escape_json,
-            resources=resources,
         )
 
     async def post(self, request_id):

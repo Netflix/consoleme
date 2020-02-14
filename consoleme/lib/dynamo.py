@@ -5,6 +5,7 @@ import time
 import uuid
 import zlib
 from datetime import datetime
+from typing import List
 
 # used as a placeholder for empty SID to work around this:
 # https://github.com/aws/aws-sdk-js/issues/833
@@ -341,6 +342,7 @@ class UserDynamoHandler(BaseDynamoHandler):
         arn: str,
         policy_name: str,
         policy_changes: dict,
+        resources: List[str],
         request_time: int = None,
         request_uuid=None,
         policy_status="pending",
@@ -367,6 +369,7 @@ class UserDynamoHandler(BaseDynamoHandler):
             "username": user_email,
             "policy_name": policy_name,
             "policy_changes": json.dumps(policy_changes),
+            "resources": resources,
         }
 
         try:
