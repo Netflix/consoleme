@@ -5,6 +5,7 @@ from urllib.parse import quote_plus
 
 import tornado.escape
 import ujson as json
+from policy_sentry.util.arns import parse_arn
 from policyuniverse.expander_minimizer import _expand_wildcard_action
 
 from consoleme.config import config
@@ -17,6 +18,7 @@ from consoleme.handlers.base import BaseHandler, BaseMtlsHandler
 from consoleme.lib.aws import (
     fetch_resource_details,
     get_all_iam_managed_policies_for_account,
+    get_resource_policies,
 )
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.generic import write_json_error
@@ -524,7 +526,9 @@ class PolicyReviewSubmitHandler(BaseHandler):
         )
         if should_auto_approve_request is not False:
             policy_status = "approved"
+        buckets = await redis_hgetall("S3_BUCKETS")
         resources = await get_resources_from_events(events)
+        resource_policies = await get_resource_policies(resources, account_id)
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
             self.user, justification, arn, policy_name, events, resources

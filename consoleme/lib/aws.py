@@ -2,7 +2,7 @@ import json
 import sys
 import time
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import pytz
 from asgiref.sync import sync_to_async
@@ -15,11 +15,12 @@ from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
+from policy_sentry.util.arns import get_account_from_arn, get_resource_from_arn, get_service_from_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.redis import RedisHandler
+from consoleme.lib.redis import RedisHandler, redis_hgetall
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
@@ -147,6 +148,47 @@ async def get_all_iam_managed_policies_for_account(account_id):
         ALL_IAM_MANAGED_POLICIES = await sync_to_async(red.hgetall)(policy_key)
         ALL_IAM_MANAGED_POLICIES_LAST_UPDATE = current_time
     return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
+
+
+async def get_resource_accounts(arns: List[str]) -> Dict:
+    """Return the AWS account ID that owns each resource.
+
+    In most cases, this will pull the ID directly from the ARN. For S3, we do 
+    a lookup in Redis to get the account ID.
+    """
+    results: Dict = {}
+    s3_bucket_key = config.get("redis.s3_bucket_key", "S3_BUCKETS")
+    s3_buckets: Dict = await redis_hgetall(s3_bucket_key)
+
+    for arn in arns:
+        resource_account: str = get_account_from_arn(arn)
+        if resource_account:
+            results[arn] = resource_account
+            break
+
+        resource_type: str = get_service_from_arn(arn)
+        resource_name: str = get_resource_from_arn(arn)
+        # TODO: Does this need to support other resource types that don't have an account in the ARN?
+        if resource_type == 's3':
+            for k, v in s3_buckets.items():
+                if resource_name in v:
+                    results[arn] = k
+                    break
+        else:
+            results[arn] = ""
+
+    return results
+
+
+async def get_resource_policies(arns: List[str], account: str) -> Dict:
+    resource_policies: Dict = {}
+    resource_owners = await get_resource_accounts(arns)
+    for arn, resource_account in resource_owners.items():
+        if resource_account != account:
+            # This is a cross-account request. Might need a resource policy.
+            resource_policies[arn] = "super awesome resource policy"
+
+    return resource_policies
 
 
 async def fetch_resource_details(
