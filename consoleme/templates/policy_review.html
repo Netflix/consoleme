@@ -160,6 +160,12 @@
                 <td><span style="copendinglor: red;"><a href="{{ role_uri }}">{{ arn }}</a></span>
                 </td>
             </tr>
+            {% if request.get("resources") %}
+                <tr>
+                    <td>Resources</td>
+                    <td><span style="copendinglor: red;">{% for resource in request.get("resources") %}{{ escape(resource) }} <br/> {% end %}</span>
+                </tr>
+            {% end %}
         </tbody>
     </table>
 
