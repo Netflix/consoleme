@@ -180,9 +180,9 @@ async def get_resource_accounts(arns: List[str]) -> Dict:
     return results
 
 
-async def get_resource_policies(arns: List[str], account: str) -> Dict:
+async def get_resource_policies(resource_actions: Dict[str, List[str]], account: str) -> Dict:
     resource_policies: Dict = {}
-    resource_owners = await get_resource_accounts(arns)
+    resource_owners = await get_resource_accounts(resource_actions.keys())
     for arn, resource_account in resource_owners.items():
         if resource_account != account:
             # This is a cross-account request. Might need a resource policy.
