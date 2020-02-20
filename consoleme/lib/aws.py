@@ -169,7 +169,6 @@ async def get_resource_accounts(arns: List[str]) -> Dict:
 
         resource_type: str = get_service_from_arn(arn)
         resource_name: str = get_resource_from_arn(arn)
-        # TODO: Does this need to support other resource types that don't have an account in the ARN?
         if resource_type == 's3':
             for k, v in s3_buckets.items():
                 if resource_name in v:
