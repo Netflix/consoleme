@@ -528,7 +528,8 @@ class PolicyReviewSubmitHandler(BaseHandler):
         if should_auto_approve_request is not False:
             policy_status = "approved"
         buckets = await redis_hgetall("S3_BUCKETS")
-        resources = await get_resources_from_events(events)
+        resource_actions = await get_resources_from_events(events)
+        resources = resource_actions.keys()
         resource_policies = await get_resource_policies(resources, account_id)
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(

@@ -2,6 +2,7 @@ import base64
 import re
 import sys
 import time
+from collections import defaultdict
 from typing import Dict, List
 
 import boto3
@@ -10,6 +11,8 @@ from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
+from policy_sentry.util.actions import get_service_from_action
+from policy_sentry.util.arns import get_service_from_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter
@@ -436,16 +439,32 @@ async def validate_policy_name(policy_name):
         )
 
 
-async def get_resources_from_events(policy_changes: List[Dict]) -> List[str]:
-    """Returns a list of resources affected by a list of policy changes."""
-    resource_arns: List[str] = []
+async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, List[str]]:
+    """Returns a dict of resources affected by a list of policy changes along with
+    the actions that are relevant to them.
+    """
+    resource_actions: Dict[str, List[str]] = defaultdict(list)
     for event in policy_changes:
         for policy_type in ['inline_policies', 'managed_policies']:
             for policy in event[policy_type]:
                 policy_document = policy['policy_document']
                 for statement in policy_document.get('Statement', []):
-                    resource_arns.extend(statement.get('Resource', []))
-    return list(set(resource_arns))
+                    for resource in statement.get('Resource', []):
+                        actions = get_actions_for_resources(resource, policy_document)
+                        resource_actions[resource].extend(actions)
+    return resource_actions
+
+
+def get_actions_for_resources(resource: str, policy_document: Dict) -> List[str]:
+    results: List[str] = []
+    # Get service from resource
+    resource_service = get_service_from_arn(resource)
+    # Get relevant actions from policy doc
+    for action in policy_document['Action']:
+        if get_service_from_action(action) == resource_service:
+            results.append(action)
+    
+    return list(set(results))
 
 
 async def get_formatted_policy_changes(account_id, arn, request):
