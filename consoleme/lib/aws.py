@@ -1,7 +1,10 @@
 import json
 import sys
 import time
+from datetime import datetime
+from typing import Dict, Optional
 
+import pytz
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
@@ -287,3 +290,99 @@ async def raise_if_background_check_required_and_no_background_check(role, user)
 def put_object(client=None, **kwargs):
     """Create an S3 object -- calls wrapped with CloudAux."""
     client.put_object(**kwargs)
+
+
+def apply_managed_policy_to_role(
+    role: Dict, policy_name: str, session_name: str
+) -> bool:
+    """
+    Apply a managed policy to a role.
+
+    :param role: An AWS role dictionary (from a boto3 get_role or get_account_authorization_details call)
+    :param policy_name: Name of managed policy to add to role
+    :param session_name: Name of session to assume role with. This is an identifier that will be logged in CloudTrail
+    :return:
+    """
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {
+        "function": function,
+        "role": role,
+        "policy_name": policy_name,
+        "session_name": session_name,
+    }
+    account_id = role.get("Arn").split(":")[4]
+    policy_arn = f"arn:aws:iam::{account_id}:policy/{policy_name}"
+    client = boto3_cached_conn(
+        "iam",
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        session_name=session_name,
+    )
+
+    client.attach_role_policy(RoleName=role.get("RoleName"), PolicyArn=policy_arn)
+    log_data["message"] = "Applied managed policy to role"
+    log.debug(log_data)
+    stats.count(
+        f"{function}.attach_role_policy",
+        tags={"role": role.get("Arn"), "policy": policy_arn},
+    )
+    return True
+
+
+def role_has_tag(role: Dict, key: str, value: Optional[str] = None) -> bool:
+    """
+    Checks a role dictionary and determine of the role has the specified tag. If `value` is passed,
+    This function will only return true if the tag's value matches the `value` variable.
+
+    :param role: An AWS role dictionary (from a boto3 get_role or get_account_authorization_details call)
+    :param key: key of the tag
+    :param value: optional value of the tag
+    :return:
+    """
+    for tag in role.get("Tags", []):
+        if tag.get("Key") == key:
+            if not value or tag.get("Value") == value:
+                return True
+    return False
+
+
+def role_has_managed_policy(role: Dict, managed_policy_name: str) -> bool:
+    """
+    Checks a role dictionary to determine if a managed policy is attached
+
+    :param role: An AWS role dictionary (from a boto3 get_role or get_account_authorization_details call)
+    :param managed_policy_name: the name of the managed policy
+    :return:
+    """
+
+    for managed_policy in role.get("AttachedManagedPolicies", []):
+        if managed_policy.get("PolicyName") == managed_policy_name:
+            return True
+    return False
+
+
+def role_newer_than_x_days(role: Dict, days: int) -> bool:
+    """
+    Checks a role dictionary to determine if it is newer than the specified number of days
+
+    :param role:  An AWS role dictionary (from a boto3 get_role or get_account_authorization_details call)
+    :param days: number of days
+    :return:
+    """
+    role_age = datetime.now(tz=pytz.utc) - role.get("CreateDate")
+    if role_age.days < days:
+        return True
+    return False
+
+
+def is_role_instance_profile(role: Dict) -> bool:
+    """
+    Checks a role naively to determine if it is associate with an instance profile.
+    We only check by name, and not the actual attached instance profiles.
+
+    :param role: An AWS role dictionary (from a boto3 get_role or get_account_authorization_details call)
+    :return:
+    """
+    if role.get("RoleName").endswith("InstanceProfile"):
+        return True
+    return False

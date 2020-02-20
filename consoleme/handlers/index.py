@@ -13,6 +13,12 @@ aws = get_plugin_by_name(config.get("plugins.aws"))()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 
 
+class IndexApiHandler:
+    async def get(self):
+        # Return everything the index page needs to render
+        pass
+
+
 class IndexHandler(BaseHandler):
     def initialize(self) -> None:
         """Initialize the Tornado RequestHandler."""

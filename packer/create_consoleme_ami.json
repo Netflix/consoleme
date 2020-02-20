@@ -22,6 +22,12 @@
   "provisioners": [
     {
       "inline": [
+        "sleep 30"
+      ],
+      "type": "shell"
+    },
+    {
+      "inline": [
         "export CONFIG_LOCATION={{user `CONFIG_LOCATION`}}",
         "export CONSOLEME_CONFIG_ENTRYPOINT={{user `CONSOLEME_CONFIG_ENTRYPOINT`}}",
         "sudo mkdir -p /apps/consoleme",
@@ -43,6 +49,7 @@
     },
     {
       "inline": [
+        "sudo apt update",
         "sudo apt install -y python3-pip virtualenv libcurl4-openssl-dev libssl-dev pkg-config libxmlsec1-dev docker.io",
         "sudo systemctl start docker",
         "sudo systemctl enable docker",
