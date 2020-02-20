@@ -1,6 +1,7 @@
 import re
 import sys
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional
 from urllib.parse import quote_plus
 
 import tornado.escape
@@ -335,7 +336,7 @@ class PolicyEditHandler(BaseHandler):
 
         data_list = tornado.escape.json_decode(self.request.body)
 
-        result = await parse_policy_change_request(self.user, arn, role, data_list)
+        result: dict = await parse_policy_change_request(self.user, arn, role, data_list)
 
         if result["status"] == "error":
             await write_json_error(json.dumps(result), obj=self)
@@ -343,7 +344,7 @@ class PolicyEditHandler(BaseHandler):
 
         events = result["events"]
 
-        result: dict = await update_role_policy(events)
+        result = await update_role_policy(events)
 
         if result["status"] == "success":
             await aws.fetch_iam_role(account_id, arn, force_refresh=True)
@@ -482,9 +483,9 @@ class PolicyReviewSubmitHandler(BaseHandler):
 
         data: dict = tornado.escape.json_decode(self.request.body)
 
-        arn = data.get("arn", "")
-        account_id = data.get("account_id")
-        justification = data.get("justification")
+        arn: str = data.get("arn", "")
+        account_id: str = data.get("account_id", "")
+        justification: str = data.get("justification", "")
         if not justification:
             await write_json_error(
                 "Justification is required to submit a policy change request.", obj=self
@@ -570,7 +571,7 @@ class PolicyReviewHandler(BaseHandler):
         if not self.user:
             return
         dynamo: UserDynamoHandler = UserDynamoHandler(self.user)
-        requests: list[dict] = await dynamo.get_policy_requests(request_id=request_id)
+        requests: List[dict] = await dynamo.get_policy_requests(request_id=request_id)
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
@@ -584,12 +585,12 @@ class PolicyReviewHandler(BaseHandler):
             raise Exception("Duplicate requests found")
         request = requests[0]
 
-        arn: str = request.get("arn")
+        arn: str = request.get("arn", "")
         role_name: str = arn.split("/")[1]
         account_id: str = arn.split(":")[4]
         role_uri: str = f"/policies/edit/{account_id}/iamrole/{role_name}"
-        justification: str = request.get("justification")
-        status: str = request.get("status")
+        justification: str = request.get("justification", "")
+        status: str = request.get("status", "")
 
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -679,7 +680,7 @@ class PolicyReviewHandler(BaseHandler):
         data = tornado.escape.json_decode(self.request.body)
 
         dynamo: UserDynamoHandler = UserDynamoHandler(self.user)
-        requests: list[dict] = await dynamo.get_policy_requests(request_id=request_id)
+        requests: List[dict] = await dynamo.get_policy_requests(request_id=request_id)
         original_policy_document: dict = json.loads(
             data.get("original_policy_document")
         )
@@ -722,7 +723,7 @@ class PolicyReviewHandler(BaseHandler):
 
         can_approve_reject = await can_manage_policy_requests(self.groups)
         can_change_to_pending = await can_move_back_to_pending(request, self.groups)
-        result: dict = {"status": "success"}
+        result: Dict = {"status": "success"}
 
         can_update_request: bool = await can_update_requests(
             request, self.user, self.groups
@@ -840,7 +841,7 @@ class PolicyReviewHandler(BaseHandler):
 
             events = parsed_policy["events"]
 
-            result: dict = await update_role_policy(events)
+            result = await update_role_policy(events)
 
             if result["status"] == "success":
                 # if approved, Make sure current policy is the same as the one the user thinks they are updating
@@ -914,7 +915,7 @@ class AutocompleteHandler(BaseHandler):
 async def filter_resources(filter, resources, max=20):
     if filter:
         regexp = re.compile(r"{}".format(filter.strip()), re.IGNORECASE)
-        results = []
+        results: List[str] = []
         for resource in resources:
             try:
                 if regexp.search(str(resource.get(filter))):
@@ -944,12 +945,12 @@ async def handle_resource_type_ahead_request(cls):
 
     account_id = None
     topic_is_hash = True
-    account_id_optional: str = cls.request.arguments.get("account_id")
+    account_id_optional: Optional[List[bytes]] = cls.request.arguments.get("account_id")
     if account_id_optional:
         account_id = account_id_optional[0].decode("utf-8")
 
     limit: int = 10
-    limit_optional: str = cls.request.arguments.get("limit")
+    limit_optional: Optional[List[bytes]] = cls.request.arguments.get("limit")
     if limit_optional:
         limit = int(limit_optional[0].decode("utf-8"))
 
@@ -985,9 +986,9 @@ async def handle_resource_type_ahead_request(cls):
     else:
         data = await redis_get(topic)
 
-    results = []
+    results: List[Dict] = []
 
-    unique_roles = []
+    unique_roles: List[str] = []
 
     if resource_type == "account":
         account_and_id_list = []
@@ -1000,7 +1001,6 @@ async def handle_resource_type_ahead_request(cls):
             if search_string.lower() in account.lower():
                 results.append({"title": account})
     elif resource_type == "app":
-        results = {}
         all_role_arns = []
         all_role_arns_j = await redis_hgetall(
             (config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"))
@@ -1017,10 +1017,10 @@ async def handle_resource_type_ahead_request(cls):
         except Exception as e:  # noqa
             accounts = {}
         app_to_role_map = json.loads(data)
-        seen = {}
+        seen: Dict = {}
         seen_roles = {}
         for app_name, roles in app_to_role_map.items():
-            if len(results.keys()) > 9:
+            if len(results) > 9:
                 break
             if search_string.lower() in app_name.lower():
                 results[app_name] = {"name": app_name, "results": []}
@@ -1038,7 +1038,7 @@ async def handle_resource_type_ahead_request(cls):
                         {"title": role, "description": account}
                     )
         for role in all_role_arns:
-            if len(results.keys()) > 9:
+            if len(results) > 9:
                 break
             if search_string.lower() in role.lower():
                 if seen_roles.get(role):
