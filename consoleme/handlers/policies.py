@@ -529,7 +529,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
             policy_status = "approved"
         buckets = await redis_hgetall("S3_BUCKETS")
         resource_actions = await get_resources_from_events(events)
-        resources = resource_actions.keys()
+        resources = list(resource_actions.keys())
         resource_policies = await get_resource_policies(resource_actions, account_id)
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
@@ -1002,6 +1002,7 @@ async def handle_resource_type_ahead_request(cls):
             if search_string.lower() in account.lower():
                 results.append({"title": account})
     elif resource_type == "app":
+        results = {}
         all_role_arns = []
         all_role_arns_j = await redis_hgetall(
             (config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"))
@@ -1021,7 +1022,7 @@ async def handle_resource_type_ahead_request(cls):
         seen: Dict = {}
         seen_roles = {}
         for app_name, roles in app_to_role_map.items():
-            if len(results) > 9:
+            if len(results.keys()) > 9:
                 break
             if search_string.lower() in app_name.lower():
                 results[app_name] = {"name": app_name, "results": []}
@@ -1039,7 +1040,7 @@ async def handle_resource_type_ahead_request(cls):
                         {"title": role, "description": account}
                     )
         for role in all_role_arns:
-            if len(results) > 9:
+            if len(results.keys()) > 9:
                 break
             if search_string.lower() in role.lower():
                 if seen_roles.get(role):

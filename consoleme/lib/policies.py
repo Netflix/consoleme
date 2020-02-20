@@ -450,17 +450,17 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
                 policy_document = policy['policy_document']
                 for statement in policy_document.get('Statement', []):
                     for resource in statement.get('Resource', []):
-                        actions = get_actions_for_resources(resource, policy_document)
+                        actions = get_actions_for_resources(resource, statement)
                         resource_actions[resource].extend(actions)
-    return resource_actions
+    return dict(resource_actions)
 
 
-def get_actions_for_resources(resource: str, policy_document: Dict) -> List[str]:
+def get_actions_for_resources(resource: str, statement: Dict) -> List[str]:
     results: List[str] = []
     # Get service from resource
     resource_service = get_service_from_arn(resource)
     # Get relevant actions from policy doc
-    for action in policy_document['Action']:
+    for action in statement['Action']:
         if get_service_from_action(action) == resource_service:
             results.append(action)
     
