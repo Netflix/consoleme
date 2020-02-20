@@ -5,7 +5,6 @@ import time
 import uuid
 import zlib
 from datetime import datetime
-from typing import List
 
 # used as a placeholder for empty SID to work around this:
 # https://github.com/aws/aws-sdk-js/issues/833
@@ -135,6 +134,9 @@ class BaseDynamoHandler:
 
         """
         if isinstance(obj, dict):
+            for k in ["aws:rep:deleting", "aws:rep:updateregion", "aws:rep:updatetime"]:
+                if k in obj.keys():
+                    del obj[k]
             return {k: self._data_from_dynamo_replace(v) for k, v in obj.items()}
         elif isinstance(obj, list):
             return [self._data_from_dynamo_replace(elem) for elem in obj]
@@ -156,6 +158,9 @@ class BaseDynamoHandler:
 
         """
         if isinstance(obj, dict):
+            for k in ["aws:rep:deleting", "aws:rep:updateregion", "aws:rep:updatetime"]:
+                if k in obj.keys():
+                    del obj[k]
             return {k: self._data_to_dynamo_replace(v) for k, v in obj.items()}
         elif isinstance(obj, list):
             return [self._data_to_dynamo_replace(elem) for elem in obj]
@@ -377,7 +382,7 @@ class UserDynamoHandler(BaseDynamoHandler):
                 Item=self._data_to_dynamo_replace(new_request)
             )
         except Exception:
-            error = f"Unable to add new policy request request: {new_request}"
+            error = f"Unable to add new policy request: {new_request}"
             log.error(error, exc_info=True)
             raise Exception(error)
 
@@ -395,7 +400,7 @@ class UserDynamoHandler(BaseDynamoHandler):
                 Item=self._data_to_dynamo_replace(updated_request)
             )
         except Exception:
-            error = f"Unable to add new policy request request: {updated_request}"
+            error = f"Unable to add updated policy request: {updated_request}"
             log.error(error, exc_info=True)
             raise Exception(error)
 

@@ -514,6 +514,10 @@ class Aws:
     def get_account_ids_to_names():
         return config.get("account_ids_to_name")
 
+    @staticmethod
+    def handle_detected_role():
+        pass
+
 
 def init():
     """Initialize the AWS plugin."""
