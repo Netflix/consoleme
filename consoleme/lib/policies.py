@@ -442,6 +442,12 @@ async def validate_policy_name(policy_name):
 async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, List[str]]:
     """Returns a dict of resources affected by a list of policy changes along with
     the actions that are relevant to them.
+
+    Returned dict format:
+    {
+        "arn:aws:service1:::resource": ["service1:action1", "service1:action2"],
+        "arn:aws:service2:::other_resource": ["service2:action1", "service2:action2"],
+    }
     """
     resource_actions: Dict[str, List[str]] = defaultdict(list)
     for event in policy_changes:
@@ -450,12 +456,15 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
                 policy_document = policy['policy_document']
                 for statement in policy_document.get('Statement', []):
                     for resource in statement.get('Resource', []):
-                        actions = get_actions_for_resources(resource, statement)
+                        actions = get_actions_for_resource(resource, statement)
                         resource_actions[resource].extend(actions)
     return dict(resource_actions)
 
 
-def get_actions_for_resources(resource: str, statement: Dict) -> List[str]:
+def get_actions_for_resource(resource: str, statement: Dict) -> List[str]:
+    """For the given resource and list of actions, return the actions that are
+    for that resource's service.
+    """
     results: List[str] = []
     # Get service from resource
     resource_service = get_service_from_arn(resource)

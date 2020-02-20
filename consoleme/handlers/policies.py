@@ -530,7 +530,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         buckets = await redis_hgetall("S3_BUCKETS")
         resource_actions = await get_resources_from_events(events)
         resources = list(resource_actions.keys())
-        resource_policies = await get_resource_policies(resource_actions, account_id)
+        resource_policies = await get_resource_policies(arn, resource_actions, account_id)
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
             self.user, justification, arn, policy_name, events, resources
