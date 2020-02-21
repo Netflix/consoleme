@@ -16,6 +16,7 @@ google-auth-httplib2
 google-cloud-storage
 gunicorn
 hiredis
+idna<2.9  # Required because moto has it pinned
 ipython
 isodate
 jmespath

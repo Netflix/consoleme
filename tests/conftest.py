@@ -1,15 +1,18 @@
 import asyncio
-import boto3
 import json
 import os
-import pytest
 import unittest
 from datetime import datetime, timedelta
+
+import boto3
+import fakeredis
+import pytest
 from mock import MagicMock
 from mock import patch, Mock
 from mockredis import mock_strict_redis_client
 from moto import mock_sts, mock_iam, mock_dynamodb2, mock_lambda
 from tornado.concurrent import Future
+
 from consoleme.config import config
 from consoleme.lib.dynamo import BaseDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
@@ -476,6 +479,17 @@ def www_user():
         "Tags": []
     }"""
     )
+
+
+@pytest.fixture(autouse=True)
+def redis(mocker):
+    mocker.patch("consoleme.lib.redis.redis.StrictRedis", fakeredis.FakeStrictRedis)
+    mocker.patch("consoleme.lib.redis.redis.Redis", fakeredis.FakeStrictRedis)
+    mocker.patch(
+        "consoleme.lib.redis.RedisHandler.redis_sync",
+        return_value=fakeredis.FakeStrictRedis(),
+    )
+    return True
 
 
 @pytest.fixture

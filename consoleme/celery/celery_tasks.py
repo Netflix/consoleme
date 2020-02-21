@@ -532,7 +532,7 @@ def cache_policies_table_details() -> bool:
     return True
 
 
-@app.task(name="cache_roles_for_account", soft_time_limit=1800)
+@app.task(name="cache_roles_for_account", soft_time_limit=2700)
 def cache_roles_for_account(account_id: str) -> bool:
     # Get the DynamoDB handler:
     dynamo = IAMRoleDynamoHandler()
@@ -568,6 +568,9 @@ def cache_roles_for_account(account_id: str) -> bool:
 
             # Redis:
             _add_role_to_redis(cache_key, role_entry)
+
+            # Run internal function on role. This can be used to inspect roles, add managed policies, or other actions
+            aws().handle_detected_role(role)
 
     stats.count("cache_roles_for_account.success", tags={"account_id": account_id})
     return True

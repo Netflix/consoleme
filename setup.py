@@ -69,7 +69,7 @@ setup(
     description="Consoleme",
     keywords="consoleme",
     url="https://github.com/Netflix/ConsoleMe",
-    python_requires=">=3.7",
+    python_requires=">=3.6",
     install_requires=reqs,
     tests_require=test_reqs,
     setup_requires=["setupmeta"],

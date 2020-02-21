@@ -42,13 +42,13 @@ bootstrap:
 dynamo:
 	@echo "--> Configuring Dynamo (Make sure local dynamo is enabled on port 8000)"
 	. env/bin/activate || source activate consoleme;\
-	python ../consoleme-internal/scripts/initialize_dynamodb_dev.py
+	python scripts/initialize_dynamodb_dev.py
 
 .PHONY: redis
 redis:
 	@echo "--> Configuring Redis"
 	. env/bin/activate || source activate consoleme;\
-	python ../consoleme-internal/scripts/initialize_redis_dev.py
+	python scripts/initialize_redis_oss.py
 
 .PHONY: test
 test: clean
@@ -116,7 +116,7 @@ endif
 	pip install --upgrade pip
 	pip install --upgrade pip-tools
 	pip install --upgrade setuptools
-	pip-compile --output-file requirements.txt requirements.in -U
+	pip-compile --output-file requirements.txt requirements.in -U --no-index
 	pip-compile --output-file requirements-test.txt requirements-test.in -U --no-index
 	pip-compile --output-file requirements-docs.txt requirements-docs.in -U --no-index
 	@echo "--> Done updating Python requirements"
