@@ -27,6 +27,7 @@ logmatic-python
 lxml
 pandas<1
 pkgconfig
+policy_sentry
 policyuniverse
 presto-python-client
 pycurl # For AsyncHTTPClient

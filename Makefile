@@ -42,7 +42,7 @@ bootstrap:
 dynamo:
 	@echo "--> Configuring Dynamo (Make sure local dynamo is enabled on port 8000)"
 	. env/bin/activate || source activate consoleme;\
-	python scripts/initialize_dynamodb_dev.py
+	python scripts/initialize_dynamodb_oss.py
 
 .PHONY: redis
 redis:
