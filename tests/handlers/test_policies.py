@@ -76,7 +76,6 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.handlers.policies.aws.fetch_iam_role")
-    @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
     def test_policy_notfound(self, mock_fetch_iam_role):
         mock_fetch_iam_role_rv = Future()
         mock_fetch_iam_role_rv.set_result(None)
