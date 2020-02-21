@@ -378,6 +378,4 @@ def is_role_instance_profile(role: Dict) -> bool:
     :param role: An AWS role dictionary (from a boto3 get_role or get_account_authorization_details call)
     :return:
     """
-    if role.get("RoleName").endswith("InstanceProfile"):
-        return True
-    return False
+    return role.get("RoleName").endswith("InstanceProfile")
