@@ -4,7 +4,6 @@
 #
 #    pip-compile --no-index --output-file=requirements.txt requirements.in
 #
-
 amqp==2.5.2               # via kombu
 apispec-webframeworks==0.5.2  # via -r requirements.in (line 2)
 apispec[yaml]==3.3.0      # via -r requirements.in (line 1), apispec-webframeworks
@@ -13,18 +12,21 @@ asgiref==3.2.3            # via -r requirements.in (line 3)
 astroid==2.3.3            # via pylint
 attrs==19.3.0             # via jsonschema
 backcall==0.1.0           # via ipython
+beautifulsoup4==4.8.2     # via bs4
 billiard==3.6.2.0         # via celery
 bleach==3.1.1             # via -r requirements.in (line 4)
 boto3==1.12.4             # via -r requirements.in (line 5), cloudaux
 boto==2.49.0              # via cloudaux
 botocore==1.15.4          # via boto3, cloudaux, s3transfer
+bs4==0.0.1                # via policy-sentry
 cachetools==4.0.0         # via google-auth
 cchardet==2.1.5           # via -r requirements.in (line 6)
 celery[redis]==4.4.0      # via -r requirements.in (line 7)
 certifi==2019.11.28       # via requests
 chardet==3.0.4            # via requests
-click==7.0                # via presto-python-client
+click==7.0                # via policy-sentry, presto-python-client
 cloudaux==1.8.1           # via -r requirements.in (line 8)
+contextlib2==0.5.5        # via schema
 decorator==4.4.1          # via ipython, retry, traitlets
 deepdiff[murmur]==4.2.0   # via -r requirements.in (line 9)
 defusedxml==0.6.0         # via -r requirements.in (line 10), cloudaux, python3-saml
@@ -43,6 +45,7 @@ google-resumable-media==0.5.0  # via google-cloud-storage
 googleapis-common-protos==1.51.0  # via google-api-core
 gunicorn==20.0.4          # via -r requirements.in (line 17)
 hiredis==1.0.1            # via -r requirements.in (line 18)
+html5lib==1.0.1           # via policy-sentry
 httplib2==0.17.0          # via google-api-python-client, google-auth-httplib2
 idna==2.8                 # via -r requirements.in (line 19), requests
 importlib-metadata==1.5.0  # via jsonschema, kombu
@@ -52,65 +55,68 @@ ipython==7.12.0           # via -r requirements.in (line 20)
 isodate==0.6.0            # via -r requirements.in (line 21), python3-saml
 isort==4.3.21             # via pylint
 jedi==0.16.0              # via ipython
+jinja2==2.11.1            # via policy-sentry
 jmespath==0.9.4           # via -r requirements.in (line 22), boto3, botocore
 joblib==0.14.1            # via cloudaux
 jsonschema==3.2.0         # via -r requirements.in (line 23)
 kombu==4.6.7              # via -r requirements.in (line 24), celery
 lazy-object-proxy==1.4.3  # via astroid
 logmatic-python==0.1.7    # via -r requirements.in (line 26)
-lxml==4.5.0               # via -r requirements.in (line 27), xmlsec
+lxml==4.5.0               # via -r requirements.in (line 27), policy-sentry, xmlsec
+markupsafe==1.1.1         # via jinja2
 marshmallow==2.20.5       # via -r requirements.in (line 25)
 mccabe==0.6.1             # via pylint
 mmh3==2.5.1               # via deepdiff
 numpy==1.18.1             # via pandas
 ordered-set==3.1.1        # via deepdiff
-pandas==0.25.3            # via -r requirements.in (line 28)
+pandas==0.25.3            # via -r requirements.in (line 28), policy-sentry
 parso==0.6.1              # via jedi
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
 pkgconfig==1.5.1          # via -r requirements.in (line 29), xmlsec
-policyuniverse==1.3.2.1   # via -r requirements.in (line 30)
-presto-python-client==0.7.0  # via -r requirements.in (line 31)
+policy-sentry==0.7.1      # via -r requirements.in (line 30)
+policyuniverse==1.3.2.1   # via -r requirements.in (line 31), policy-sentry
+presto-python-client==0.7.0  # via -r requirements.in (line 32)
 prompt-toolkit==3.0.3     # via ipython
 protobuf==3.11.3          # via google-api-core, googleapis-common-protos
 ptyprocess==0.6.0         # via pexpect
 py==1.8.1                 # via retry
 pyasn1-modules==0.2.8     # via google-auth
 pyasn1==0.4.8             # via pyasn1-modules, rsa
-pycurl==7.43.0.5          # via -r requirements.in (line 32)
+pycurl==7.43.0.5          # via -r requirements.in (line 33)
 pygments==2.5.2           # via ipython
-pyjwt==1.7.1              # via -r requirements.in (line 33)
-pylint==2.4.4             # via -r requirements.in (line 34)
+pyjwt==1.7.1              # via -r requirements.in (line 34)
+pylint==2.4.4             # via -r requirements.in (line 35)
 pyrsistent==0.15.7        # via jsonschema
-python-dateutil==2.8.0    # via -r requirements.in (line 35), botocore, elasticsearch-dsl, pandas
+python-dateutil==2.8.0    # via -r requirements.in (line 36), botocore, elasticsearch-dsl, pandas
 python-json-logger==0.1.11  # via logmatic-python
-python3-saml==1.9.0       # via -r requirements.in (line 36)
-pytz==2019.3              # via -r requirements.in (line 37), celery, google-api-core, pandas
-pyyaml==5.3               # via apispec
-raven==6.10.0             # via -r requirements.in (line 38)
-redis==3.4.1              # via -r requirements.in (line 39), celery
-requests==2.23.0          # via -r requirements.in (line 40), google-api-core, presto-python-client
-retry==0.9.2              # via -r requirements.in (line 41)
-retrying==1.3.3           # via -r requirements.in (line 42)
+python3-saml==1.9.0       # via -r requirements.in (line 37)
+pytz==2019.3              # via -r requirements.in (line 38), celery, google-api-core, pandas
+pyyaml==5.3               # via apispec, policy-sentry
+raven==6.10.0             # via -r requirements.in (line 39)
+redis==3.4.1              # via -r requirements.in (line 40), celery
+requests==2.23.0          # via -r requirements.in (line 41), google-api-core, policy-sentry, presto-python-client
+retry==0.9.2              # via -r requirements.in (line 42)
+retrying==1.3.3           # via -r requirements.in (line 43)
 rsa==4.0                  # via google-auth
 s3transfer==0.3.3         # via boto3
-simplejson==3.17.0        # via -r requirements.in (line 43)
-six==1.14.0               # via -r requirements.in (line 44), astroid, bleach, cloudaux, elasticsearch-dsl, google-api-core, google-api-python-client, google-auth, google-resumable-media, isodate, jsonschema, presto-python-client, protobuf, pyrsistent, python-dateutil, retrying, tenacity, traitlets
-tenacity==6.0.0           # via -r requirements.in (line 45)
-tornado==6.0.3            # via -r requirements.in (line 46)
+schema==0.7.1             # via policy-sentry
+simplejson==3.17.0        # via -r requirements.in (line 44)
+six==1.14.0               # via -r requirements.in (line 45), astroid, bleach, cloudaux, elasticsearch-dsl, google-api-core, google-api-python-client, google-auth, google-resumable-media, html5lib, isodate, jsonschema, presto-python-client, protobuf, pyrsistent, python-dateutil, retrying, tenacity, traitlets
+soupsieve==1.9.5          # via beautifulsoup4
+sqlalchemy==1.3.13        # via policy-sentry
+tenacity==6.0.0           # via -r requirements.in (line 46)
+tornado==6.0.3            # via -r requirements.in (line 47)
 traitlets==4.3.3          # via ipython
 typed-ast==1.4.1          # via astroid
-ujson==1.35               # via -r requirements.in (line 47)
+ujson==1.35               # via -r requirements.in (line 48)
 uritemplate==3.0.1        # via google-api-python-client
 urllib3==1.25.8           # via botocore, elasticsearch, requests
-uvloop==0.14.0            # via -r requirements.in (line 48)
-validate-email==1.3       # via -r requirements.in (line 49)
+uvloop==0.14.0            # via -r requirements.in (line 49)
+validate-email==1.3       # via -r requirements.in (line 50)
 vine==1.3.0               # via amqp, celery
 wcwidth==0.1.8            # via prompt-toolkit
-webencodings==0.5.1       # via bleach
+webencodings==0.5.1       # via bleach, html5lib
 wrapt==1.11.2             # via astroid
-xmlsec==1.3.3             # via -r requirements.in (line 50), python3-saml
+xmlsec==1.3.3             # via -r requirements.in (line 51), python3-saml
 zipp==3.0.0               # via importlib-metadata
-
-# The following packages are considered to be unsafe in a requirements file:
-# setuptools

@@ -1,8 +1,9 @@
 import json
 import sys
 import time
+from collections import defaultdict
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import pytz
 from asgiref.sync import sync_to_async
@@ -15,11 +16,12 @@ from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
+from policy_sentry.util.arns import get_account_from_arn, get_region_from_arn, get_resource_from_arn, get_service_from_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.redis import RedisHandler
+from consoleme.lib.redis import RedisHandler, redis_hgetall
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
@@ -149,6 +151,56 @@ async def get_all_iam_managed_policies_for_account(account_id):
     return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
 
 
+async def get_resource_accounts(arns: List[str]) -> Dict:
+    """Return the AWS account ID that owns each resource.
+
+    In most cases, this will pull the ID directly from the ARN. For S3, we do 
+    a lookup in Redis to get the account ID.
+    """
+    results: Dict = {}
+    s3_bucket_key = config.get("redis.s3_bucket_key", "S3_BUCKETS")
+    s3_buckets: Dict = await redis_hgetall(s3_bucket_key)
+
+    for arn in arns:
+        resource_account: str = get_account_from_arn(arn)
+        if resource_account:
+            results[arn] = resource_account
+            break
+
+        resource_type: str = get_service_from_arn(arn)
+        resource_name: str = get_resource_from_arn(arn)
+        if resource_type == 's3':
+            for k, v in s3_buckets.items():
+                if resource_name in v:
+                    results[arn] = k
+                    break
+        else:
+            results[arn] = ""
+
+    return results
+
+
+async def get_resource_policies(principal_arn: str, resource_actions: Dict[str, List[str]], account: str) -> Dict:
+    resource_policies: Dict = defaultdict(dict)
+    resource_owners = await get_resource_accounts(resource_actions.keys())
+    for arn, resource_account in resource_owners.items():
+        if resource_account != account:
+            # This is a cross-account request. Might need a resource policy.
+            resource_type: str = get_service_from_arn(arn)
+            resource_name: str = get_resource_from_arn(arn)
+            resource_region: str = get_region_from_arn(arn)
+            details = await fetch_resource_details(
+                resource_account,
+                resource_type,
+                resource_name,
+                resource_region
+            )
+            resource_policies[arn]['existing'] = details['Policy']
+            resource_policies[arn]['new'] = f'super awesome policy for {principal_arn} to access {resource_name}!'
+
+    return dict(resource_policies)
+
+
 async def fetch_resource_details(
     account_id: str, resource_type: str, resource_name: str, region: str
 ) -> dict:
@@ -158,6 +210,8 @@ async def fetch_resource_details(
         return await fetch_sqs_queue(account_id, region, resource_name)
     elif resource_type == "sns":
         return await fetch_sns_topic(account_id, region, resource_name)
+    else:
+        return {}
 
 
 async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> dict:
@@ -169,14 +223,14 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
         region=region,
     )
 
-    result: dict = await sync_to_async(get_topic_attributes)(
+    result: Dict = await sync_to_async(get_topic_attributes)(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         TopicArn=arn,
         region=region,
     )
 
-    tags: dict = await sync_to_async(client.list_tags_for_resource)(ResourceArn=arn)
+    tags: Dict = await sync_to_async(client.list_tags_for_resource)(ResourceArn=arn)
     result["TagSet"] = tags["Tags"]
     if not isinstance(result["Policy"], dict):
         result["Policy"] = json.loads(result["Policy"])
@@ -191,7 +245,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         QueueName=resource_name,
     )
 
-    result: dict = await sync_to_async(get_queue_attributes)(
+    result: Dict = await sync_to_async(get_queue_attributes)(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=region,
@@ -199,7 +253,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         AttributeNames=["Policy", "QueueArn"],
     )
 
-    tags: dict = await sync_to_async(list_queue_tags)(
+    tags: Dict = await sync_to_async(list_queue_tags)(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=region,
@@ -221,7 +275,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
         :return:
     """
 
-    log_data: dict = {
+    log_data: Dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "bucket_name": bucket_name,
         "account_id": account_id,
@@ -229,7 +283,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     log.debug(log_data)
 
     try:
-        policy: dict = await sync_to_async(get_bucket_policy)(
+        policy: Dict = await sync_to_async(get_bucket_policy)(
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
@@ -241,7 +295,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
         else:
             raise
     try:
-        tags: dict = await sync_to_async(get_bucket_tagging)(
+        tags: Dict = await sync_to_async(get_bucket_tagging)(
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
@@ -253,7 +307,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
         else:
             raise
 
-    result: dict = {**policy, **tags}
+    result: Dict = {**policy, **tags}
     result["Policy"] = json.loads(result["Policy"])
 
     return result
