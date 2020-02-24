@@ -12,14 +12,10 @@ from mock import patch, Mock
 from mockredis import mock_strict_redis_client
 from moto import mock_sts, mock_iam, mock_dynamodb2, mock_lambda
 from tornado.concurrent import Future
-
-from consoleme.config import config
-from consoleme.lib.dynamo import BaseDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
-
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-
-Group = auth.Group
+from consoleme.lib.dynamo import BaseDynamoHandler
+from tests.mock_plugins.mock_metrics import MockDefaultMetrics
+from tests.mock_plugins.mock_auth import MockDefaultAuth
 
 MOCK_ROLE = {
     "arn": "arn:aws:iam::123456789012:role/FakeRole",
@@ -110,7 +106,7 @@ class AioTestCase(unittest.TestCase):
 
 class MockBaseHandler:
     async def authorization_flow(
-        self, user=None, console_only=True, refresh_cache=False
+            self, user=None, console_only=True, refresh_cache=False
     ):
         self.user = "test@domain.com"
         self.ip = "1.2.3.4"
@@ -121,7 +117,7 @@ class MockBaseHandler:
 
 class MockAuth:
     def __init__(
-        self, restricted=False, compliance_restricted=False, get_groups_val=[]
+            self, restricted=False, compliance_restricted=False, get_groups_val=[]
     ):
         self.restricted = restricted
         self.compliance_restricted = compliance_restricted
@@ -140,9 +136,6 @@ class MockAuth:
             "restricted": self.restricted,
             "compliance_restricted": self.compliance_restricted,
         }
-
-        mock_group = Group(**group_args)
-        return mock_group
 
     async def get_groups(self, *kvargs):
         return self.get_groups_val
@@ -529,13 +522,26 @@ def mock_celery_stats(mock_exception_stats):
 def mock_async_http_client():
     p_return_value = Mock()
     p_return_value.body = "{}"
-    p = patch("consoleme_internal.plugins.auth.auth.AsyncHTTPClient")
+    p = patch("tornado.httpclient.AsyncHTTPClient")
 
     p.return_value.fetch.return_value = create_future(p_return_value)
 
     yield p.start()
 
     p.stop()
+
+
+# def mock_plugins(plugin_name):
+#     return get_plugin_by_name(plugin_name)
+#     print(plugin_name)
+#
+#
+# @pytest.fixture(autouse=True)
+# def get_plugin_by_name_mock(mocker):
+#     p = mocker.patch("consoleme.lib.plugins.get_plugin_by_name")
+#     p.side_effect = mock_plugins
+#     yield p.start()
+#     p.stop()
 
 
 @pytest.fixture

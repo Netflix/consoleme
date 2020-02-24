@@ -52,11 +52,12 @@ redis:
 
 .PHONY: test
 test: clean
+ifndef VIRTUAL_ENV
+	$(error Please activate virtualenv first)
+endif
 ifndef CONFIG_LOCATION
-	. env/bin/activate || source activate consoleme;\
 	CONFIG_LOCATION=../consoleme-deploy/root/etc/consoleme/config/test.yaml $(pytest)
 else
-	. env/bin/activate || source activate consoleme;\
 	export CONFIG_LOCATION=$(CONFIG_LOCATION); $(pytest)
 endif
 

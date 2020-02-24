@@ -1,19 +1,19 @@
 """Docstring in public module."""
 
 import os
-import sys
-import jwt
 
+import jwt
+import sys
 import ujson as json
-from tornado.escape import json_decode
 from mock import MagicMock, patch
 from mockredis import mock_strict_redis_client
 from tornado.concurrent import Future
+from tornado.escape import json_decode
 from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
-from consoleme.lib.auth import mk_jwt_validator
 
-from consoleme.routes import make_app
+from consoleme.config import config
+from consoleme.lib.auth import mk_jwt_validator
 from tests.conftest import MockAuth, MockBaseHandler
 
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -39,6 +39,7 @@ MagicMock.__await__ = lambda x: async_magic().__await__()
 
 class TestUsersHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.routes import make_app
         return make_app(jwt_validator=lambda x: {})
 
     def get_new_ioloop(self):
@@ -54,8 +55,8 @@ class TestUsersHandler(AsyncHTTPTestCase):
         mock_redis.set_result(mock_strict_redis_client())
         mock_redis_handler.return_value.redis.return_value = mock_redis
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
 
         response = self.fetch("/accessui/users", headers=headers)
@@ -71,8 +72,8 @@ class TestUsersHandler(AsyncHTTPTestCase):
         CONFIG.config["dynamic_config"]["accessui"]["deprecate"] = True
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
 
         base_url = CONFIG.config.get("accessui_url")
@@ -109,8 +110,8 @@ class TestUsersHandler(AsyncHTTPTestCase):
         mock_redis.set_result(mock_strict_redis_client())
         mock_redis_handler.return_value.redis.return_value = mock_redis
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
 
         response = self.fetch("/accessui/user/test@example.com", headers=headers)
@@ -124,8 +125,8 @@ class TestUsersHandler(AsyncHTTPTestCase):
         CONFIG.config["dynamic_config"]["accessui"]["deprecate"] = True
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
 
         base_url = CONFIG.config.get("accessui_url")
@@ -153,7 +154,7 @@ class TestUsersHandler(AsyncHTTPTestCase):
     @patch("consoleme.lib.google.can_modify_members", return_value=False)
     @patch("consoleme.lib.google.auth", MockAuth())
     def test_user_add_remove_group(
-        self, mock_modify_members, mock_auth, mock_redis_handler
+            self, mock_modify_members, mock_auth, mock_redis_handler
     ):
         get_user_info = Future()
         get_user_info.set_result(fake_user)
@@ -170,8 +171,8 @@ class TestUsersHandler(AsyncHTTPTestCase):
 
         headers = {
             "content-type": "application/json",
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
 
         data = [
@@ -225,6 +226,7 @@ def create_future(ret_val=None):
 
 class TestJSONBulkUserMembershipHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.routes import make_app
         return make_app(jwt_validator=jwt_validator)
 
     @patch("consoleme.handlers.users.api_add_user_to_group_or_raise")

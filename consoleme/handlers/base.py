@@ -149,11 +149,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
     ) -> None:
         """Perform high level authorization flow."""
         self.request_uuid = str(uuid.uuid4())
-        # TODO(ccastrapel): For OSS plugin, Take user's SAML Role Assertions and determine
-        # eligible AWS roles from those
-
-        # TODO(ccastrapel): Separate out accessui and other handlers into internal plugin,
-        # figure out how to fix the routing on these.
         refresh_cache = (
             self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
         )

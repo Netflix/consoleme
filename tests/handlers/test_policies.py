@@ -1,14 +1,14 @@
 """Docstring in public module."""
 
 import os
-import sys
 
+import sys
 import ujson as json
 from mock import MagicMock, patch
 from tornado.concurrent import Future
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.routes import make_app
+from consoleme.config import config
 from tests.conftest import MockBaseHandler, MOCK_ROLE, MockRedisHandler
 from tests.conftest import create_future
 
@@ -29,6 +29,7 @@ mock_policy_redis = MagicMock(
 
 class TestPoliciesHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.routes import make_app
         return make_app(jwt_validator=lambda x: {})
 
     @patch(
@@ -44,6 +45,7 @@ class TestPoliciesHandler(AsyncHTTPTestCase):
 
 class TestPolicyEditHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.routes import make_app
         return make_app(jwt_validator=lambda x: {})
 
     @patch("consoleme.handlers.policies.internal_policies")
@@ -59,8 +61,8 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
         mock_fetch_iam_role_rv.set_result(MOCK_ROLE)
         mock_fetch_iam_role.return_value = mock_fetch_iam_role_rv
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/iamrole/FakeRole", headers=headers
@@ -81,8 +83,8 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
         mock_fetch_iam_role_rv.set_result(None)
         mock_fetch_iam_role.return_value = mock_fetch_iam_role_rv
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/iamrole/FakeRole", headers=headers
@@ -92,6 +94,7 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
 
 class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.routes import make_app
         return make_app(jwt_validator=lambda x: {})
 
     @patch(
@@ -103,7 +106,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.lib.aws.get_bucket_policy")
     @patch("consoleme.lib.aws.get_bucket_tagging")
     def test_s3_policy_pageload(
-        self, mock_get_bucket_tagging, mock_get_bucket_policy, mock_auth
+            self, mock_get_bucket_tagging, mock_get_bucket_policy, mock_auth
     ):
         mock_get_bucket_policy.return_value = {
             "Policy": json.dumps(
@@ -129,8 +132,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/s3/bucketname", headers=headers
@@ -150,11 +153,11 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.lib.aws.get_queue_attributes")
     @patch("consoleme.lib.aws.list_queue_tags")
     def test_sqs_queue_pageload(
-        self,
-        mock_list_queue_tags,
-        mock_get_queue_attributes,
-        mock_get_queue_url,
-        mock_auth,
+            self,
+            mock_list_queue_tags,
+            mock_get_queue_attributes,
+            mock_get_queue_url,
+            mock_auth,
     ):
         mock_list_queue_tags.return_value = []
         mock_get_queue_url.return_value = (
@@ -184,8 +187,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/sqs/us-east-1/queuename", headers=headers
@@ -204,7 +207,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.lib.aws.get_topic_attributes")
     @patch("consoleme.lib.aws.boto3_cached_conn")
     def test_sns_topic_pageload(
-        self, mock_boto3_cached_conn, mock_get_topic_attributes, mock_auth
+            self, mock_boto3_cached_conn, mock_get_topic_attributes, mock_auth
     ):
         mock_boto3_cached_conn.list_tags_for_resource.return_value = {"Tags": []}
         mock_get_topic_attributes.return_value = {
@@ -247,8 +250,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/sns/us-east-1/topicname", headers=headers
@@ -269,12 +272,12 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.handlers.policies.can_manage_policy_requests")
     @patch("consoleme.lib.policies.boto3_cached_conn")
     def test_s3_update_policy(
-        self,
-        mock_boto3_cached_conn,
-        mock_can_manage_policy_requests,
-        mock_get_bucket_tagging,
-        mock_get_bucket_policy,
-        mock_auth,
+            self,
+            mock_boto3_cached_conn,
+            mock_can_manage_policy_requests,
+            mock_get_bucket_tagging,
+            mock_get_bucket_policy,
+            mock_auth,
     ):
         mock_can_manage_policy_requests.return_value = create_future(True)
         mock_get_bucket_policy.return_value = {
@@ -301,8 +304,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         body = [
             {
@@ -356,13 +359,13 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.handlers.policies.can_manage_policy_requests")
     @patch("consoleme.lib.policies.boto3_cached_conn")
     def test_sqs_update_policy(
-        self,
-        mock_boto3_cached_conn,
-        mock_can_manage_policy_requests,
-        mock_list_queue_tags,
-        mock_get_queue_attributes,
-        mock_get_queue_url,
-        mock_auth,
+            self,
+            mock_boto3_cached_conn,
+            mock_can_manage_policy_requests,
+            mock_list_queue_tags,
+            mock_get_queue_attributes,
+            mock_get_queue_url,
+            mock_auth,
     ):
         mock_can_manage_policy_requests.return_value = create_future(True)
         mock_list_queue_tags.return_value = []
@@ -393,8 +396,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         body = [
             {
@@ -447,12 +450,12 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.lib.aws.boto3_cached_conn")
     @patch("consoleme.lib.policies.boto3_cached_conn")
     def test_sns_update_policy(
-        self,
-        mock_boto3_cached_conn_p,
-        mock_boto3_cached_conn,
-        mock_can_manage_policy_requests,
-        mock_get_topic_attributes,
-        mock_auth,
+            self,
+            mock_boto3_cached_conn_p,
+            mock_boto3_cached_conn,
+            mock_can_manage_policy_requests,
+            mock_get_topic_attributes,
+            mock_auth,
     ):
         mock_can_manage_policy_requests.return_value = create_future(True)
         mock_boto3_cached_conn.list_tags_for_resource.return_value = {"Tags": []}
@@ -496,8 +499,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         body = [
             {
@@ -548,8 +551,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.handlers.policies.redis_hgetall")
     def test_resource_typeahead(self, mock_redis_hgetall, mock_auth):
         headers = {
-            "Oidc_claim_sub": "user@example.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@example.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
 
         # Invalid resource, no search string

@@ -11,8 +11,6 @@ from tornado.httpclient import AsyncHTTPClient
 # from tornado.options import options
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme import __main__
-
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(APP_ROOT, ".."))
 
@@ -23,24 +21,25 @@ class TestMain(AsyncHTTPTestCase):
     def setUp(self):
         super(TestMain, self).setUp()
         self.client = AsyncHTTPClient(force_instance=True)
-        self.app = self.get_app()
 
     def get_app(self):
-        app = __main__.main()
+        from consoleme import __main__
+        self.__main__ = __main__
+        app = self.__main__.main()
         return app
 
     @patch("consoleme.__main__.asyncio.get_event_loop")
     def test_main(self, mock_ioloop):
         """Docstring in public method."""
-        __main__.app = Mock()
-        __main__.app.listen = Mock()
-        with patch.object(__main__, "main", return_value=42):
-            with patch.object(__main__, "__name__", "__main__"):
-                __main__.config = {}
+        self.__main__.app = Mock()
+        self.__main__.app.listen = Mock()
+        with patch.object(self.__main__, "main", return_value=42):
+            with patch.object(self.__main__, "__name__", "__main__"):
+                self.__main__.config = {}
                 mock_ioloop.run_forever = mock.Mock()
                 mock_ioloop.add_handler = mock.Mock()
                 mock_ioloop.start = mock.Mock()
-                __main__.init()
+                self.__main__.init()
 
     def test_health(self):
         """Docstring in public method."""

@@ -214,6 +214,20 @@ class GetCredentialsHandler(BaseMtlsHandler):
         log_data["custom_ip_restrictions"] = request.get("custom_ip_restrictions")
         log_data["request"] = json.dumps(request)
         log.debug(log_data)
+        arn_parts = requested_role.split(':')
+        if len(arn_parts) != 6 or arn_parts[0] != 'arn' or arn_parts[1] != 'aws' or arn_parts[2] != 'iam':
+            log_data["message"] = "Invalid Role ARN"
+            log.error(log_data)
+            error = {
+                "code": "899",
+                "message": "Invalid Role ARN. Applications must pass the full role ARN when requesting credentials",
+                "requested_role": requested_role,
+            }
+            self.set_status(403)
+            self.write(error)
+            await self.finish()
+            return
+        # Check if role is valid ARN
         authorized = await internal_config.is_context_authorized(app, requested_role)
 
         stats.count(
