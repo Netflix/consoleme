@@ -90,7 +90,7 @@ async def parse_policy_change_request(
                 value = json.loads(value)
             log_data["message"] = "Update inline policy"
             log_data["policy_name"] = name
-            log_data["policy_value"] = data["value"]
+            log_data["policy_value"] = value
             log.debug(log_data)
 
             # Check if policy being updated is the same as existing policy.
@@ -451,11 +451,11 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
     """
     resource_actions: Dict[str, List[str]] = defaultdict(list)
     for event in policy_changes:
-        for policy_type in ['inline_policies', 'managed_policies']:
+        for policy_type in ["inline_policies", "managed_policies"]:
             for policy in event[policy_type]:
-                policy_document = policy['policy_document']
-                for statement in policy_document.get('Statement', []):
-                    for resource in statement.get('Resource', []):
+                policy_document = policy["policy_document"]
+                for statement in policy_document.get("Statement", []):
+                    for resource in statement.get("Resource", []):
                         actions = get_actions_for_resource(resource, statement)
                         resource_actions[resource].extend(actions)
     return dict(resource_actions)
@@ -469,10 +469,10 @@ def get_actions_for_resource(resource: str, statement: Dict) -> List[str]:
     # Get service from resource
     resource_service = get_service_from_arn(resource)
     # Get relevant actions from policy doc
-    for action in statement['Action']:
+    for action in statement["Action"]:
         if get_service_from_action(action) == resource_service:
             results.append(action)
-    
+
     return list(set(results))
 
 
