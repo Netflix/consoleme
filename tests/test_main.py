@@ -24,6 +24,7 @@ class TestMain(AsyncHTTPTestCase):
 
     def get_app(self):
         from consoleme import __main__
+
         self.__main__ = __main__
         app = self.__main__.main()
         return app
@@ -40,6 +41,13 @@ class TestMain(AsyncHTTPTestCase):
                 mock_ioloop.add_handler = mock.Mock()
                 mock_ioloop.start = mock.Mock()
                 self.__main__.init()
+
+
+class TestHealth(AsyncHTTPTestCase):
+    def get_app(self):
+        from consoleme.routes import make_app
+
+        return make_app(jwt_validator=lambda x: {})
 
     def test_health(self):
         """Docstring in public method."""
