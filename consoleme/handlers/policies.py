@@ -255,9 +255,15 @@ class PolicyEditHandler(BaseHandler):
             arn, config.get("policies.number_cloudtrail_errors_to_display", 5)
         )
 
-        cloudtrail_error_uri = config.get(
+        cloudtrail_error_uri = None
+
+        cloudtrail_error_uri_base = config.get(
             "cloudtrail_errors.error_messages_by_role_uri"
-        ).format(arn=arn)
+        )
+
+        if cloudtrail_error_uri_base:
+            cloudtrail_error_uri = cloudtrail_error_uri_base.format(arn=arn)
+
         yesterday = (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")
         s3_query_url = config.get("s3.query_url", "").format(
             yesterday=yesterday,

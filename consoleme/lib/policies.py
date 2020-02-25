@@ -417,7 +417,7 @@ async def update_role_policy(events):
 
 
 async def can_manage_policy_requests(groups):
-    approval_groups = config.get("groups.can_admin_policies")
+    approval_groups = config.get("groups.can_admin_policies", [])
 
     for g in approval_groups:
         if g in groups:

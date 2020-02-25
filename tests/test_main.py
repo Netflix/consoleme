@@ -51,4 +51,5 @@ class TestHealth(AsyncHTTPTestCase):
 
     def test_health(self):
         """Docstring in public method."""
-        self.fetch("/healthcheck", method="GET", follow_redirects=False)
+        response = self.fetch("/healthcheck", method="GET", follow_redirects=False)
+        self.assertEqual(b"OK", response.body)

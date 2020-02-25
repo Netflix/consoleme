@@ -50,7 +50,7 @@ class TestAwsLib(TestCase):
         self.assertFalse(role_has_tag(ROLE, "tag2", "value1"))
         self.assertFalse(role_has_tag(ROLE, "tag1", "value2"))
 
-    @patch("consoleme.lib.aws.boto3_cached_conn")
+    @patch("cloudaux.aws.sts.boto3_cached_conn")
     def test_apply_managed_policy_to_role(self, mock_boto3_cached_conn):
         apply_managed_policy_to_role(ROLE, "test", "session")
         mock_boto3_cached_conn.assert_called_with(
