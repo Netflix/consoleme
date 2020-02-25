@@ -189,12 +189,16 @@ async def get_resource_policies(principal_arn: str, resource_actions: Dict[str, 
             resource_type: str = get_service_from_arn(arn)
             resource_name: str = get_resource_from_arn(arn)
             resource_region: str = get_region_from_arn(arn)
-            details = await fetch_resource_details(
-                resource_account,
-                resource_type,
-                resource_name,
-                resource_region
-            )
+            try:
+                details = await fetch_resource_details(
+                    resource_account,
+                    resource_type,
+                    resource_name,
+                    resource_region
+                )
+            except ClientError:
+                # We don't have access to this resource, so we can't get the policy.
+                details = {"Policy": "{}"}
             resource_policies[arn]['existing'] = details['Policy']
             resource_policies[arn]['new'] = f'super awesome policy for {principal_arn} to access {resource_name}!'
 
