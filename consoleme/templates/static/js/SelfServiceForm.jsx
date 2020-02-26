@@ -54,7 +54,7 @@ class SelfServiceForm extends Component {
     this.setState(
       {policy_value: choices.wizard_policy_editor.ref.current.editor.getValue()},
       async () => {
-        await submitPolicyForReview(choices.policy_type, choices.policy_sid, choices.wizard_policy_editor.ref.current.editor, arn, account_id, true)
+        await submitPolicyForReview(choices.policy_type, choices.policy_name, choices.wizard_policy_editor.ref.current.editor, arn, account_id, true)
       }
     );
   };
