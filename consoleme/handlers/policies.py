@@ -531,8 +531,9 @@ class PolicyReviewSubmitHandler(BaseHandler):
             resource_actions = await get_resources_from_events(events)
             resources = list(resource_actions.keys())
             resource_policies = await get_resource_policies(arn, resource_actions, account_id)
-        except Exception:
-            log.error('Something Patrick did blew up!', exc_info=True)
+        except Exception as e:
+            log_data["error"] = e
+            log.error(log_data, exc_info=True)
             resource_actions = {}
             resources = []
             resource_policies = {}
