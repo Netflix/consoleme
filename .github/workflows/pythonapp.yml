@@ -1,4 +1,4 @@
-name: Python application
+name: pre-commit
 
 on: [push]
 
