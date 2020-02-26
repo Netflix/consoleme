@@ -456,6 +456,8 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
                 policy_document = policy["policy_document"]
                 for statement in policy_document.get("Statement", []):
                     for resource in statement.get("Resource", []):
+                        if resource == "*":
+                            continue
                         actions = get_actions_for_resource(resource, statement)
                         resource_actions[resource].extend(actions)
     return dict(resource_actions)
