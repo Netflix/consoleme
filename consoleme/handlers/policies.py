@@ -1,13 +1,11 @@
 import re
 import sys
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
-from urllib.parse import quote_plus
-
 import tornado.escape
 import ujson as json
-from policy_sentry.util.arns import parse_arn
+from datetime import datetime, timedelta
 from policyuniverse.expander_minimizer import _expand_wildcard_action
+from typing import Dict, List, Optional
+from urllib.parse import quote_plus
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -342,7 +340,9 @@ class PolicyEditHandler(BaseHandler):
 
         data_list = tornado.escape.json_decode(self.request.body)
 
-        result: dict = await parse_policy_change_request(self.user, arn, role, data_list)
+        result: dict = await parse_policy_change_request(
+            self.user, arn, role, data_list
+        )
 
         if result["status"] == "error":
             await write_json_error(json.dumps(result), obj=self)
@@ -536,7 +536,9 @@ class PolicyReviewSubmitHandler(BaseHandler):
         buckets = await redis_hgetall("S3_BUCKETS")
         resource_actions = await get_resources_from_events(events)
         resources = list(resource_actions.keys())
-        resource_policies = await get_resource_policies(arn, resource_actions, account_id)
+        resource_policies = await get_resource_policies(
+            arn, resource_actions, account_id
+        )
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
             self.user, justification, arn, policy_name, events, resources

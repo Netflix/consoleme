@@ -167,9 +167,7 @@ class TestRequestsLibrary(AsyncTestCase):
         self.assertEqual(request, mock_requests[1], "Second request should match")
 
     @patch("consoleme.lib.requests.UserDynamoHandler")
-    def test_get_existing_pending_request_fail_status(
-        self, mock_user_dynamo_handler
-    ):
+    def test_get_existing_pending_request_fail_status(self, mock_user_dynamo_handler):
         """Chuck Norris has a request and is an secondary approver for group1"""
         mock_user = "cnorris"
         group_info = Group(**{"name": "group1"})
@@ -189,9 +187,7 @@ class TestRequestsLibrary(AsyncTestCase):
         self.assertEqual(request, None, "No matches - bad status")
 
     @patch("consoleme.lib.requests.UserDynamoHandler")
-    def test_get_existing_pending_request_fail_group(
-        self, mock_user_dynamo_handler
-    ):
+    def test_get_existing_pending_request_fail_group(self, mock_user_dynamo_handler):
         """Chuck Norris has a request and is an secondary approver for group1"""
         mock_user = "cnorris"
         group_info = Group(**{"name": "group1"})

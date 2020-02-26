@@ -21,6 +21,7 @@ red = mock_strict_redis_client()
 class TestIndexHandler(AsyncHTTPTestCase):
     def get_app(self):
         from consoleme.routes import make_app
+
         return make_app(jwt_validator=lambda x: {})
 
     def test_index_no_user(self):
@@ -65,6 +66,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
 
     def get_app(self):
         from consoleme.routes import make_app
+
         return make_app(jwt_validator=lambda x: {})
 
     def test_post_creds(self):
@@ -76,10 +78,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
 
         headers = {
             config.get("auth.user_header_name"): "someuser@example.com",
-            config.get("auth.groups_header_name"): (
-                "group1@example.com"
-            ),
-
+            config.get("auth.groups_header_name"): ("group1@example.com"),
         }
 
         body = {
@@ -100,7 +99,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
         self.assertIn(
             "https://signin.aws.amazon.com/federation?Action=login&Issuer=YourCompany&Destination=https%3A%2F%2Fus-east-1.console.aws.amazon.com&SigninToken=",
             result.headers["Location"],
-            "Should contain AWS login URI"
+            "Should contain AWS login URI",
         )
 
         body["role"] = f"arn:aws:iam::123456789012:role/userrolename"
@@ -117,7 +116,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
         self.assertIn(
             "https://signin.aws.amazon.com/federation?Action=login&Issuer=YourCompany&Destination=https%3A%2F%2Fus-east-1.console.aws.amazon.com&SigninToken=",
             result.headers["Location"],
-            "Should contain AWS login URI"
+            "Should contain AWS login URI",
         )
 
         # And an account that doesn't exist:

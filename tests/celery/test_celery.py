@@ -51,6 +51,7 @@ class TestCelerySync(TestCase):
             "arn:aws:iam::123456789012:role/ConsoleMe",
             "arn:aws:iam::123456789012:role/cm_someuser_N",
             "arn:aws:iam::123456789012:role/awsaccount_user",
+            "arn:aws:iam::123456789012:role/TestInstanceProfile",
         ] + [f"arn:aws:iam::123456789012:role/RoleNumber{num}" for num in range(0, 10)]
 
         self.assertEqual(results["Count"], len(remaining_roles))
@@ -74,7 +75,7 @@ class TestCelerySync(TestCase):
         self.assertEqual(remaining_roles, [])
 
         # We should have the same data in redis on all regions, this time coming from DDB
-        old_conf_region = celery.config.region
+        old_conf_region = self.celery.config.region
         self.celery.config.region = "us-east-1"
         CONFIG.config["unit_testing"]["override_true"] = False
 
@@ -124,7 +125,7 @@ class TestCelerySync(TestCase):
                 "ttl": old_ttl,
                 "policy": "{}",
             }
-            celery._add_role_to_redis(
+            self.celery._add_role_to_redis(
                 "test_cache_roles_for_account_expiration", role_entry
             )
 
@@ -141,7 +142,7 @@ class TestCelerySync(TestCase):
         )
 
         # Nothing should happen if we are not in us-west-2:
-        old_conf_region = celery.config.region
+        old_conf_region = self.celery.config.region
         self.celery.config.region = "us-east-1"
 
         self.celery.clear_old_redis_iam_cache()

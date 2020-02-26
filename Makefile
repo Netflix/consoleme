@@ -55,10 +55,10 @@ test: clean
 ifndef VIRTUAL_ENV
 	$(error Please activate virtualenv first)
 endif
-ifndef CONFIG_LOCATION
-	CONFIG_LOCATION=../consoleme-deploy/root/etc/consoleme/config/test.yaml $(pytest)
+ifndef CONSOLEME_CONFIG_ENTRYPOINT
+	CONSOLEME_CONFIG_ENTRYPOINT=default_config $(pytest)
 else
-	export CONFIG_LOCATION=$(CONFIG_LOCATION); $(pytest)
+	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT); $(pytest)
 endif
 
 .PHONY: bandit

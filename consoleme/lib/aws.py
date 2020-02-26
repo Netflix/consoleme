@@ -16,7 +16,12 @@ from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
-from policy_sentry.util.arns import get_account_from_arn, get_region_from_arn, get_resource_from_arn, get_service_from_arn
+from policy_sentry.util.arns import (
+    get_account_from_arn,
+    get_region_from_arn,
+    get_resource_from_arn,
+    get_service_from_arn,
+)
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException
@@ -154,7 +159,7 @@ async def get_all_iam_managed_policies_for_account(account_id):
 async def get_resource_accounts(arns: List[str]) -> Dict:
     """Return the AWS account ID that owns each resource.
 
-    In most cases, this will pull the ID directly from the ARN. For S3, we do 
+    In most cases, this will pull the ID directly from the ARN. For S3, we do
     a lookup in Redis to get the account ID.
     """
     results: Dict = {}
@@ -169,7 +174,7 @@ async def get_resource_accounts(arns: List[str]) -> Dict:
 
         resource_type: str = get_service_from_arn(arn)
         resource_name: str = get_resource_from_arn(arn)
-        if resource_type == 's3':
+        if resource_type == "s3":
             for k, v in s3_buckets.items():
                 if resource_name in v:
                     results[arn] = k
@@ -180,7 +185,9 @@ async def get_resource_accounts(arns: List[str]) -> Dict:
     return results
 
 
-async def get_resource_policies(principal_arn: str, resource_actions: Dict[str, List[str]], account: str) -> Dict:
+async def get_resource_policies(
+    principal_arn: str, resource_actions: Dict[str, List[str]], account: str
+) -> Dict:
     resource_policies: Dict = defaultdict(dict)
     resource_owners = await get_resource_accounts(resource_actions.keys())
     for arn, resource_account in resource_owners.items():
@@ -191,16 +198,15 @@ async def get_resource_policies(principal_arn: str, resource_actions: Dict[str, 
             resource_region: str = get_region_from_arn(arn)
             try:
                 details = await fetch_resource_details(
-                    resource_account,
-                    resource_type,
-                    resource_name,
-                    resource_region
+                    resource_account, resource_type, resource_name, resource_region
                 )
             except ClientError:
                 # We don't have access to this resource, so we can't get the policy.
                 details = {"Policy": "{}"}
-            resource_policies[arn]['existing'] = details['Policy']
-            resource_policies[arn]['new'] = f'super awesome policy for {principal_arn} to access {resource_name}!'
+            resource_policies[arn]["existing"] = details["Policy"]
+            resource_policies[arn][
+                "new"
+            ] = f"super awesome policy for {principal_arn} to access {resource_name}!"
 
     return dict(resource_policies)
 

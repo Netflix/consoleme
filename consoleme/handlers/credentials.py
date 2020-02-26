@@ -214,8 +214,13 @@ class GetCredentialsHandler(BaseMtlsHandler):
         log_data["custom_ip_restrictions"] = request.get("custom_ip_restrictions")
         log_data["request"] = json.dumps(request)
         log.debug(log_data)
-        arn_parts = requested_role.split(':')
-        if len(arn_parts) != 6 or arn_parts[0] != 'arn' or arn_parts[1] != 'aws' or arn_parts[2] != 'iam':
+        arn_parts = requested_role.split(":")
+        if (
+            len(arn_parts) != 6
+            or arn_parts[0] != "arn"
+            or arn_parts[1] != "aws"
+            or arn_parts[2] != "iam"
+        ):
             log_data["message"] = "Invalid Role ARN"
             log.error(log_data)
             error = {
