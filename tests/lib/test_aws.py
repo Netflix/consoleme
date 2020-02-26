@@ -1,8 +1,8 @@
-from datetime import datetime, timedelta
 from unittest import TestCase
 
+import pytest
 import pytz
-from mock import patch
+from datetime import datetime, timedelta
 
 from consoleme.lib.aws import (
     apply_managed_policy_to_role,
@@ -21,6 +21,7 @@ ROLE = {
 }
 
 
+@pytest.mark.usefixtures("iam", "iam_sync_roles")
 class TestAwsLib(TestCase):
     def test_is_role_instance_profile(self):
         self.assertTrue(is_role_instance_profile(ROLE))
@@ -50,16 +51,5 @@ class TestAwsLib(TestCase):
         self.assertFalse(role_has_tag(ROLE, "tag2", "value1"))
         self.assertFalse(role_has_tag(ROLE, "tag1", "value2"))
 
-    @patch("consoleme.lib.aws.boto3_cached_conn")
-    def test_apply_managed_policy_to_role(self, mock_boto3_cached_conn):
-        apply_managed_policy_to_role(ROLE, "test", "session")
-        mock_boto3_cached_conn.assert_called_with(
-            "iam",
-            account_number="123456789012",
-            assume_role="ConsoleMe",
-            session_name="session",
-        )
-        mock_boto3_cached_conn().attach_role_policy.assert_called_with(
-            RoleName=ROLE.get("RoleName"),
-            PolicyArn="arn:aws:iam::123456789012:policy/test",
-        )
+    def test_apply_managed_policy_to_role(self):
+        apply_managed_policy_to_role(ROLE, "policy-one", "session")

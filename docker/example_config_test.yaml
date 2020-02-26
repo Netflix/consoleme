@@ -14,6 +14,18 @@ tornado:
 google:
   service_key_file: docker/test_google_secret.json
 
+get_eligible_roles:
+  from_config: true
+
+dynamic_config:
+  group_mapping:
+    someuser@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/userrolename
+    group1@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/rolename
+
 duo:
   lambda_arn: arn:aws:lambda:{}:123456789012:function:duo_lambda
 

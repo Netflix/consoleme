@@ -10,7 +10,6 @@ import pytest
 from mock import patch
 from mockredis import mock_strict_redis_client
 
-from consoleme.celery import celery_tasks as celery
 from consoleme.lib.dynamo import IAMRoleDynamoHandler
 
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -21,6 +20,11 @@ sys.path.append(os.path.join(APP_ROOT, ".."))
     "retry", "mock_celery_stats", "sts", "iam_sync_roles", "iamrole_table"
 )
 class TestCelerySync(TestCase):
+    def setUp(self):
+        from consoleme.celery import celery_tasks as celery
+
+        self.celery = celery
+
     def test_cache_roles_for_account(self):
         mock_red = mock_strict_redis_client()
 
@@ -36,7 +40,7 @@ class TestCelerySync(TestCase):
         # Clear out the existing cache from Redis:
         mock_red.delete("test_cache_roles_for_account")
         # Run it:
-        celery.cache_roles_for_account("123456789012")
+        self.celery.cache_roles_for_account("123456789012")
 
         # Verify that everything is there:
         dynamo = IAMRoleDynamoHandler()
@@ -47,6 +51,7 @@ class TestCelerySync(TestCase):
             "arn:aws:iam::123456789012:role/ConsoleMe",
             "arn:aws:iam::123456789012:role/cm_someuser_N",
             "arn:aws:iam::123456789012:role/awsaccount_user",
+            "arn:aws:iam::123456789012:role/TestInstanceProfile",
         ] + [f"arn:aws:iam::123456789012:role/RoleNumber{num}" for num in range(0, 10)]
 
         self.assertEqual(results["Count"], len(remaining_roles))
@@ -70,20 +75,20 @@ class TestCelerySync(TestCase):
         self.assertEqual(remaining_roles, [])
 
         # We should have the same data in redis on all regions, this time coming from DDB
-        old_conf_region = celery.config.region
-        celery.config.region = "us-east-1"
+        old_conf_region = self.celery.config.region
+        self.celery.config.region = "us-east-1"
         CONFIG.config["unit_testing"]["override_true"] = False
 
         # Clear out the existing cache from Redis:
         mock_red.delete("test_cache_roles_for_account")
 
         # nothing should happen
-        celery.cache_roles_across_accounts()
+        self.celery.cache_roles_across_accounts()
 
         self.assertTrue(mock_red.exists("test_cache_roles_for_account"))
 
         # Reset the config value:
-        celery.config.region = old_conf_region
+        self.celery.config.region = old_conf_region
         if not old_value:
             del CONFIG.config["aws"]["iamroles_redis_key"]
         else:
@@ -97,7 +102,7 @@ class TestCelerySync(TestCase):
         redis_patch.start()
         from consoleme.config.config import CONFIG
 
-        celery.REDIS_IAM_COUNT = 3
+        self.celery.REDIS_IAM_COUNT = 3
 
         # Clear out the existing cache from Redis:
         mock_red.delete("test_cache_roles_for_account_expiration")
@@ -120,7 +125,7 @@ class TestCelerySync(TestCase):
                 "ttl": old_ttl,
                 "policy": "{}",
             }
-            celery._add_role_to_redis(
+            self.celery._add_role_to_redis(
                 "test_cache_roles_for_account_expiration", role_entry
             )
 
@@ -132,18 +137,20 @@ class TestCelerySync(TestCase):
             "ttl": int(datetime.utcnow().timestamp()),
             "policy": "{}",
         }
-        celery._add_role_to_redis("test_cache_roles_for_account_expiration", role_entry)
+        self.celery._add_role_to_redis(
+            "test_cache_roles_for_account_expiration", role_entry
+        )
 
         # Nothing should happen if we are not in us-west-2:
-        old_conf_region = celery.config.region
-        celery.config.region = "us-east-1"
+        old_conf_region = self.celery.config.region
+        self.celery.config.region = "us-east-1"
 
-        celery.clear_old_redis_iam_cache()
+        self.celery.clear_old_redis_iam_cache()
         self.assertEqual(mock_red.hlen("test_cache_roles_for_account_expiration"), 14)
 
         # With the proper region:
-        celery.config.region = "us-west-2"
-        celery.clear_old_redis_iam_cache()
+        self.celery.config.region = "us-west-2"
+        self.celery.clear_old_redis_iam_cache()
 
         # Verify:
         self.assertEqual(mock_red.hlen("test_cache_roles_for_account_expiration"), 1)
@@ -158,8 +165,8 @@ class TestCelerySync(TestCase):
         mock_red.delete("test_cache_roles_for_account_expiration")
 
         # Reset the config values:
-        celery.config.region = old_conf_region
-        celery.REDIS_IAM_COUNT = 1000
+        self.celery.config.region = old_conf_region
+        self.celery.REDIS_IAM_COUNT = 1000
         if not old_value:
             del CONFIG.config["aws"]["iamroles_redis_key"]
         else:

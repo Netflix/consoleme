@@ -1,22 +1,22 @@
 {
+  "autoInstall": false,
   "base": "consoleme/templates/static/js/semantic/",
   "paths": {
+    "clean": "dist/",
+    "output": {
+      "compressed": "dist/components/",
+      "packaged": "dist/",
+      "themes": "dist/themes/",
+      "uncompressed": "dist/components/"
+    },
     "source": {
       "config": "src/theme.config",
       "definitions": "src/definitions/",
       "site": "src/site/",
       "themes": "src/themes/"
-    },
-    "output": {
-      "packaged": "dist/",
-      "uncompressed": "dist/components/",
-      "compressed": "dist/components/",
-      "themes": "dist/themes/"
-    },
-    "clean": "dist/"
+    }
   },
   "permission": false,
-  "autoInstall": false,
   "rtl": false,
   "version": "2.4.2"
 }

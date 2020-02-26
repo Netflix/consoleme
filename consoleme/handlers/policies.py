@@ -1,13 +1,11 @@
 import re
 import sys
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
-from urllib.parse import quote_plus
-
 import tornado.escape
 import ujson as json
-from policy_sentry.util.arns import parse_arn
+from datetime import datetime, timedelta
 from policyuniverse.expander_minimizer import _expand_wildcard_action
+from typing import Dict, List, Optional
+from urllib.parse import quote_plus
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -255,9 +253,15 @@ class PolicyEditHandler(BaseHandler):
             arn, config.get("policies.number_cloudtrail_errors_to_display", 5)
         )
 
-        cloudtrail_error_uri = config.get(
+        cloudtrail_error_uri = None
+
+        cloudtrail_error_uri_base = config.get(
             "cloudtrail_errors.error_messages_by_role_uri"
-        ).format(arn=arn)
+        )
+
+        if cloudtrail_error_uri_base:
+            cloudtrail_error_uri = cloudtrail_error_uri_base.format(arn=arn)
+
         yesterday = (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")
         s3_query_url = config.get("s3.query_url", "").format(
             yesterday=yesterday,
@@ -336,7 +340,9 @@ class PolicyEditHandler(BaseHandler):
 
         data_list = tornado.escape.json_decode(self.request.body)
 
-        result: dict = await parse_policy_change_request(self.user, arn, role, data_list)
+        result: dict = await parse_policy_change_request(
+            self.user, arn, role, data_list
+        )
 
         if result["status"] == "error":
             await write_json_error(json.dumps(result), obj=self)
@@ -530,13 +536,17 @@ class PolicyReviewSubmitHandler(BaseHandler):
         try:
             resource_actions = await get_resources_from_events(events)
             resources = list(resource_actions.keys())
-            resource_policies = await get_resource_policies(arn, resource_actions, account_id)
+            resource_policies = await get_resource_policies(
+                arn, resource_actions, account_id
+            )
         except Exception as e:
             log_data["error"] = e
             log.error(log_data, exc_info=True)
             resource_actions = {}
             resources = []
             resource_policies = {}
+        log_data["resource_actions"] = resource_actions
+        log_data["resource_policies"] = resource_policies
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
             self.user, justification, arn, policy_name, events, resources
@@ -568,6 +578,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         await aws.send_communications_policy_change_request(request, send_sns=True)
         request["status"] = "success"
         self.write(request)
+        log.debug(log_data)
         await self.finish()
         return
 

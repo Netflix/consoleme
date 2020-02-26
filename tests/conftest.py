@@ -1,25 +1,19 @@
-import asyncio
 import json
 import os
-import unittest
-from datetime import datetime, timedelta
 
+import asyncio
 import boto3
 import fakeredis
 import pytest
+import unittest
+from datetime import datetime, timedelta
 from mock import MagicMock
 from mock import patch, Mock
 from mockredis import mock_strict_redis_client
 from moto import mock_sts, mock_iam, mock_dynamodb2, mock_lambda
 from tornado.concurrent import Future
 
-from consoleme.config import config
 from consoleme.lib.dynamo import BaseDynamoHandler
-from consoleme.lib.plugins import get_plugin_by_name
-
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-
-Group = auth.Group
 
 MOCK_ROLE = {
     "arn": "arn:aws:iam::123456789012:role/FakeRole",
@@ -127,23 +121,6 @@ class MockAuth:
         self.compliance_restricted = compliance_restricted
         self.get_groups_val = get_groups_val
 
-    async def get_group_info(self, group, members=True):
-        group_args = {
-            "name": group,
-            "friendly_name": "friendly_name",
-            "domain": group.split("@")[1],
-            "requestable": True,
-            "secondary_approvers": "groupapprover1,groupapprover2",
-            "self_approval_groups": "groupselfapproval1@domain.com,groupselfapproval2@domain.com",
-            "backgroundcheck_required": True,
-            "allow_cross_domain_users": False,
-            "restricted": self.restricted,
-            "compliance_restricted": self.compliance_restricted,
-        }
-
-        mock_group = Group(**group_args)
-        return mock_group
-
     async def get_groups(self, *kvargs):
         return self.get_groups_val
 
@@ -191,21 +168,21 @@ def aws_credentials():
     os.environ["AWS_SESSION_TOKEN"] = "testing"
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def sts(aws_credentials):
     """Mocked STS Fixture."""
     with mock_sts():
         yield boto3.client("sts", region_name="us-east-1")
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def iam(aws_credentials):
     """Mocked IAM Fixture."""
     with mock_iam():
         yield boto3.client("iam", region_name="us-east-1")
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def dynamodb(aws_credentials):
     """Mocked DynamoDB Fixture."""
     with mock_dynamodb2():
@@ -347,6 +324,8 @@ def iam_sync_roles(iam):
 
     # Create the role that CloudAux will assume:
     iam.create_role(RoleName="ConsoleMe", AssumeRolePolicyDocument="{}")
+    # Create a generic test instance profile
+    iam.create_role(RoleName="TestInstanceProfile", AssumeRolePolicyDocument="{}")
 
     # Create a managed policy:
     policy_one = iam.create_policy(
@@ -529,7 +508,7 @@ def mock_celery_stats(mock_exception_stats):
 def mock_async_http_client():
     p_return_value = Mock()
     p_return_value.body = "{}"
-    p = patch("consoleme_internal.plugins.auth.auth.AsyncHTTPClient")
+    p = patch("tornado.httpclient.AsyncHTTPClient")
 
     p.return_value.fetch.return_value = create_future(p_return_value)
 

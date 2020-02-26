@@ -79,6 +79,7 @@ setup(
             "default_celery_tasks = consoleme_default_plugins.plugins.celery_tasks.celery_tasks:internal_schedule",
             "default_celery_tasks_functions = consoleme_default_plugins.plugins.celery_tasks.celery_tasks:CeleryTasks",
             "default_metrics = consoleme_default_plugins.plugins.metrics.metrics:Metric",
+            "default_policies = consoleme_default_plugins.plugins.policies.policies:Policies",
             "default_group_mapping = consoleme_default_plugins.plugins.group_mapping.group_mapping:GroupMapping",
             "default_internal_routes = consoleme_default_plugins.plugins.internal_routes.internal_routes:InternalRoutes",
         ]

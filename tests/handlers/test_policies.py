@@ -1,14 +1,14 @@
 """Docstring in public module."""
 
 import os
-import sys
 
+import sys
 import ujson as json
 from mock import MagicMock, patch
 from tornado.concurrent import Future
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.routes import make_app
+from consoleme.config import config
 from tests.conftest import MockBaseHandler, MOCK_ROLE, MockRedisHandler
 from tests.conftest import create_future
 
@@ -29,6 +29,8 @@ mock_policy_redis = MagicMock(
 
 class TestPoliciesHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.routes import make_app
+
         return make_app(jwt_validator=lambda x: {})
 
     @patch(
@@ -44,23 +46,23 @@ class TestPoliciesHandler(AsyncHTTPTestCase):
 
 class TestPolicyEditHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.routes import make_app
+
         return make_app(jwt_validator=lambda x: {})
 
-    @patch("consoleme.handlers.policies.internal_policies")
     @patch("consoleme.handlers.policies.aws.fetch_iam_role")
     @patch(
         "consoleme.handlers.policies.PolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
-    def test_policy_pageload(self, mock_fetch_iam_role, mock_internal_policies):
-        mock_internal_policies.return_value.get_errors_by_role.return_value = {}
+    def test_policy_pageload(self, mock_fetch_iam_role):
         mock_fetch_iam_role_rv = Future()
         mock_fetch_iam_role_rv.set_result(MOCK_ROLE)
         mock_fetch_iam_role.return_value = mock_fetch_iam_role_rv
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/iamrole/FakeRole", headers=headers
@@ -81,8 +83,8 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
         mock_fetch_iam_role_rv.set_result(None)
         mock_fetch_iam_role.return_value = mock_fetch_iam_role_rv
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/iamrole/FakeRole", headers=headers
@@ -92,6 +94,8 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
 
 class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.routes import make_app
+
         return make_app(jwt_validator=lambda x: {})
 
     @patch(
@@ -129,8 +133,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/s3/bucketname", headers=headers
@@ -184,8 +188,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/sqs/us-east-1/queuename", headers=headers
@@ -247,8 +251,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/policies/edit/123456789012/sns/us-east-1/topicname", headers=headers
@@ -301,8 +305,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         body = [
             {
@@ -393,8 +397,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         body = [
             {
@@ -496,8 +500,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         mock_auth.is_user_contractor.return_value = create_future(False)
 
         headers = {
-            "Oidc_claim_sub": "user@github.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         body = [
             {
@@ -548,8 +552,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.handlers.policies.redis_hgetall")
     def test_resource_typeahead(self, mock_redis_hgetall, mock_auth):
         headers = {
-            "Oidc_claim_sub": "user@example.com",
-            "Oidc_claim_googlegroups": "groupa,groupb,groupc",
+            config.get("auth.user_header_name"): "user@example.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
 
         # Invalid resource, no search string

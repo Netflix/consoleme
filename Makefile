@@ -52,12 +52,13 @@ redis:
 
 .PHONY: test
 test: clean
-ifndef CONFIG_LOCATION
-	. env/bin/activate || source activate consoleme;\
-	CONFIG_LOCATION=../consoleme-deploy/root/etc/consoleme/config/test.yaml $(pytest)
+ifndef VIRTUAL_ENV
+	$(error Please activate virtualenv first)
+endif
+ifndef CONSOLEME_CONFIG_ENTRYPOINT
+	CONSOLEME_CONFIG_ENTRYPOINT=default_config $(pytest)
 else
-	. env/bin/activate || source activate consoleme;\
-	export CONFIG_LOCATION=$(CONFIG_LOCATION); $(pytest)
+	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT); $(pytest)
 endif
 
 .PHONY: bandit
@@ -67,7 +68,7 @@ bandit: clean
 .PHONY: testhtml
 testhtml: clean
 	. env/bin/activate || source activate consoleme;\
-	CONFIG_LOCATION=../consoleme-deploy/root/etc/consoleme/config/test.yaml $(pytest) $(html_report) && open htmlcov/index.html
+	CONSOLEME_CONFIG_ENTRYPOINT=default_config $(pytest) $(html_report) && open htmlcov/index.html
 
 .PHONY: clean
 clean:

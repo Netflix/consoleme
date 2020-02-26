@@ -19,7 +19,9 @@ from raven.contrib.tornado import AsyncSentryClient
 
 from consoleme.lib.plugins import get_plugin_by_name
 
-config_plugin_entrypoint = os.environ.get("CONSOLEME_CONFIG_ENTRYPOINT", "config")
+config_plugin_entrypoint = os.environ.get(
+    "CONSOLEME_CONFIG_ENTRYPOINT", "default_config"
+)
 config_plugin = get_plugin_by_name(config_plugin_entrypoint)
 
 
@@ -69,10 +71,8 @@ class Configuration(object):
             time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
 
     async def load_config(self):
-        """Load configuration from file referenced in config env variable CONFIG_LOCATION."""
-        path = os.environ.get("CONFIG_LOCATION")
-        if not path:
-            path = config_plugin.get_config_location()
+        """Load configuration from the location given to us by config_plugin"""
+        path = config_plugin.get_config_location()
         with open(path, "r") as ymlfile:
             self.config = yaml.safe_load(ymlfile)
 
