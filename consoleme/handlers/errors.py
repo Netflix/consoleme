@@ -1,7 +1,4 @@
 """Error handler."""
-import os
-import random
-
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.generic import render_404

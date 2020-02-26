@@ -545,6 +545,8 @@ class PolicyReviewSubmitHandler(BaseHandler):
             resource_actions = {}
             resources = []
             resource_policies = {}
+        log_data["resource_actions"] = resource_actions
+        log_data["resource_policies"] = resource_policies
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
             self.user, justification, arn, policy_name, events, resources
@@ -576,6 +578,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         await aws.send_communications_policy_change_request(request, send_sns=True)
         request["status"] = "success"
         self.write(request)
+        log.debug(log_data)
         await self.finish()
         return
 

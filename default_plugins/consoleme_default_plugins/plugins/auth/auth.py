@@ -144,7 +144,7 @@ class Auth:
         return user
 
     async def get_groups(
-            self, user: str, headers=None, get_header_groups=False, only_direct=True
+        self, user: str, headers=None, get_header_groups=False, only_direct=True
     ):
         """Get the user's groups."""
         groups = []
@@ -262,12 +262,12 @@ class Auth:
         raise NotImplementedError()
 
     async def get_groups_with_attribute_name_value(
-            self, attribute_name, attribute_value
+        self, attribute_name, attribute_value
     ):
         raise NotImplementedError()
 
     async def get_users_with_attribute_name_value(
-            self, attribute_name, attribute_value
+        self, attribute_name, attribute_value
     ):
         raise NotImplementedError()
 

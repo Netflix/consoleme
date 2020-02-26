@@ -48,8 +48,8 @@ Vagrant.configure("2") do |config|
     /apps/env/bin/pip install --upgrade setuptools
     /apps/env/bin/pip install docker-py
     . /apps/env/bin/activate; pip install -e /apps/consoleme-internal; cd /apps/consoleme; pip install -e .; pip install -r /apps/consoleme/requirements.txt; pip install -r /apps/consoleme/requirements-test.txt
-    systemctl start docker  
-    systemctl enable docker  
+    systemctl start docker
+    systemctl enable docker
     curl -L "https://github.com/docker/compose/releases/download/1.24.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
     sudo chmod +x /usr/local/bin/docker-compose
     cd /apps/consoleme
