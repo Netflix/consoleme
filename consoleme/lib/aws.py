@@ -188,7 +188,7 @@ async def get_resource_accounts(arns: List[str]) -> Dict:
 async def get_resource_policies(
     principal_arn: str, resource_actions: Dict[str, List[str]], account: str
 ) -> Dict:
-    resource_policies: Dict = defaultdict(dict)
+    resource_policies: List[Dict] = []
     resource_owners = await get_resource_accounts(resource_actions.keys())
     for arn, resource_account in resource_owners.items():
         if resource_account != account:
@@ -203,12 +203,18 @@ async def get_resource_policies(
             except ClientError:
                 # We don't have access to this resource, so we can't get the policy.
                 details = {"Policy": "{}"}
-            resource_policies[arn]["existing"] = details["Policy"]
-            resource_policies[arn][
-                "new"
-            ] = f"super awesome policy for {principal_arn} to access {resource_name}!"
 
-    return dict(resource_policies)
+            policy_data = {
+                'existing': details['Policy'],
+                'new': f'super awesome policy for {principal_arn} to access {resource_name}!'
+            }
+            result = {
+                'arn': arn,
+                'resource_policies': policy_data
+            }
+            resource_policies.append(result)
+
+    return resource_policies
 
 
 async def fetch_resource_details(

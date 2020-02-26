@@ -484,16 +484,10 @@ async def get_formatted_policy_changes(account_id, arn, request):
     policy_changes: list = json.loads(request.get("policy_changes"))
     formatted_policy_changes = []
 
-    if len(policy_changes) > 1:  # TODO: Support multiple policy changes
-        raise InvalidRequestParameter(
-            "Only one policy change can be included in a policy change request"
-        )
     # Parse request json and figure out how to present to the page
     for policy_change in policy_changes:
         if not policy_change.get("inline_policies"):
             policy_change["inline_policies"] = []
-        if policy_change.get("arn") != arn:
-            raise InvalidRequestParameter("Only one role can be changed in a request")
 
         if len(policy_change.get("inline_policies")) > 1:
             raise InvalidRequestParameter(
@@ -501,6 +495,8 @@ async def get_formatted_policy_changes(account_id, arn, request):
             )
 
         for inline_policy in policy_change.get("inline_policies"):
+            if policy_change.get("arn") != arn:
+                raise InvalidRequestParameter("Only one role can be changed in a request")
             policy_name = inline_policy.get("policy_name")
             await validate_policy_name(policy_name)
             policy_document = inline_policy.get("policy_document")
@@ -538,6 +534,8 @@ async def get_formatted_policy_changes(account_id, arn, request):
 
         assume_role_policy_document = policy_change.get("assume_role_policy_document")
         if assume_role_policy_document:
+            if policy_change.get("arn") != arn:
+                raise InvalidRequestParameter("Only one role can be changed in a request")
             existing_ar_policy = existing_role["policy"]["AssumeRolePolicyDocument"]
             old_policy = request.get("old_policy", {})
             if old_policy:
@@ -555,6 +553,22 @@ async def get_formatted_policy_changes(account_id, arn, request):
                     "new": assume_role_policy_document.get(
                         "assume_role_policy_document"
                     ),
+                    "new_policy": False,
+                    "diff": diff,
+                }
+            )
+
+        resource_policy_document = policy_change.get("resource_policies")
+        if resource_policy_document:
+            existing_policy_document = resource_policy_document['existing']
+            new_policy_document = resource_policy_document['new']
+            diff = DeepDiff(existing_policy_document, new_policy_document)
+
+            formatted_policy_changes.append(
+                {
+                    "name": "ResourcePolicy",
+                    "old": existing_policy_document,
+                    "new": new_policy_document,
                     "new_policy": False,
                     "diff": diff,
                 }
