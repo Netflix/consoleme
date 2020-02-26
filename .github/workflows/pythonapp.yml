@@ -4,7 +4,6 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -15,6 +14,7 @@ jobs:
         python-version: 3.8
     - name: Install dependencies
       run: |
+        sudo apt-get install libssl-dev libcurl4-openssl-dev python3-dev
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-test.txt
