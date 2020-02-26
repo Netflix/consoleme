@@ -965,7 +965,6 @@ if config.get("development", False):
     schedule_1_hour = dev_schedule
     schedule_6_hours = dev_schedule
 
-cache_roles_for_account("179727101194")
 schedule = {
     "alert_on_group_changes": {
         "task": "consoleme.celery.celery_tasks.alert_on_group_changes",

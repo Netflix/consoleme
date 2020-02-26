@@ -68,7 +68,7 @@ bandit: clean
 .PHONY: testhtml
 testhtml: clean
 	. env/bin/activate || source activate consoleme;\
-	CONFIG_LOCATION=../consoleme-deploy/root/etc/consoleme/config/test.yaml $(pytest) $(html_report) && open htmlcov/index.html
+	CONSOLEME_CONFIG_ENTRYPOINT=default_config $(pytest) $(html_report) && open htmlcov/index.html
 
 .PHONY: clean
 clean:

@@ -58,12 +58,6 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
         self.mock_moto_lambda = None
         self.aws_return_string = None
 
-    # def setUp(self) -> None:
-    #     self.aws_return_string = aws_return_string = (
-    #         "https://us-east-1.signin.aws.amazon.com/oauth?SignatureVersion=4&X-Amz-Algorithm"
-    #         "=AWS4-HMAC-SHA256&X-Amz-Credential=ACCESS-KEY-ID..."
-    #     )
-
     def get_app(self):
         from consoleme.routes import make_app
 

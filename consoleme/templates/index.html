@@ -80,7 +80,6 @@
         let redirect = document.createElement("input");
         redirect.setAttribute("type", "hidden");
         redirect.setAttribute("name", "redirect");
-        console.log("Redirect: ", redirect)
         {% if globals().get("redirect") and redirect %}
             redirect.setAttribute("value", "{{ escape(redirect) }}");
         {% end %}

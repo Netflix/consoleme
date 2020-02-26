@@ -517,19 +517,6 @@ def mock_async_http_client():
     p.stop()
 
 
-# def mock_plugins(plugin_name):
-#     return get_plugin_by_name(plugin_name)
-#     print(plugin_name)
-#
-#
-# @pytest.fixture(autouse=True)
-# def get_plugin_by_name_mock(mocker):
-#     p = mocker.patch("consoleme.lib.plugins.get_plugin_by_name")
-#     p.side_effect = mock_plugins
-#     yield p.start()
-#     p.stop()
-
-
 @pytest.fixture
 def user_role_lambda(aws_lambda):
     aws_lambda.create_function(
