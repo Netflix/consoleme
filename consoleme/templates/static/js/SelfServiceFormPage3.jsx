@@ -211,14 +211,17 @@ function WizardAceEditor(policy_value, choices) {
 
 let SelfServiceFormPage3 = props => {
   const {handleSubmit, pristine, previousPage, submitting, choices, state} = props;
+  let policy_name;
   let policy_sid;
   if (choices.is_temporary) {
-    policy_sid = generate_temp_id(choices.expiration_date);
+    policy_name = generate_temp_id(choices.expiration_date);
   } else {
-    policy_sid = generate_id();
+    policy_name = generate_id();
   }
-  let policy_value = generatePolicy(choices, policy_sid, state);
+  policy_sid = policy_name.replace(/[^0-9a-z]/gi, '');
+  choices.policy_name = policy_name;
   choices.policy_sid = policy_sid;
+  let policy_value = generatePolicy(choices, policy_sid, state);
   choices.wizard_policy_editor = WizardAceEditor(policy_value, choices);
 
   return (
