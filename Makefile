@@ -19,6 +19,9 @@ else
     VIRTUAL_ENV := $(shell which python3)
 endif
 
+# Set CONSOLEME_CONFIG_ENTRYPOINT make variable to CONSOLEME_CONFIG_ENTRYPOINT env variable, or "default_config"
+CONSOLEME_CONFIG_ENTRYPOINT := $(or ${CONSOLEME_CONFIG_ENTRYPOINT},${CONSOLEME_CONFIG_ENTRYPOINT},default_config)
+
 prod_install:
 env_install: env/bin/activate
 	# Activate either the virtualenv in env/ or tell conda to activate
@@ -55,11 +58,8 @@ test: clean
 ifndef VIRTUAL_ENV
 	$(error Please activate virtualenv first)
 endif
-ifndef CONSOLEME_CONFIG_ENTRYPOINT
-	CONSOLEME_CONFIG_ENTRYPOINT=default_config $(pytest)
-else
-	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT); $(pytest)
-endif
+
+CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) $(pytest)
 
 .PHONY: bandit
 bandit: clean
