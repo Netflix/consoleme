@@ -12,10 +12,11 @@ from botocore.exceptions import ClientError
 from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
 from policy_sentry.util.actions import get_service_from_action
-from policy_sentry.util.arns import get_service_from_arn
+from policy_sentry.util.arns import get_region_from_arn, get_resource_from_arn, get_service_from_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter
+from consoleme.lib.aws import get_resource_account
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger()
@@ -449,7 +450,8 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
         "arn:aws:service2:::other_resource": ["service2:action1", "service2:action2"],
     }
     """
-    resource_actions: Dict[str, List[str]] = defaultdict(list)
+    default_resource = lambda: {"actions": [], "arns": [], "owner": "", "type": "", "region": ""}
+    resource_actions: Dict[str, Dict] = defaultdict(default_resource)
     for event in policy_changes:
         for policy_type in ["inline_policies", "managed_policies"]:
             for policy in event[policy_type]:
@@ -458,8 +460,16 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
                     for resource in statement.get("Resource", []):
                         if resource == "*":
                             continue
+                        resource_name = get_resource_from_arn(resource)
+                        if not resource_actions[resource_name]['owner']:
+                            resource_actions[resource_name]['owner'] = await get_resource_account(resource)
+                        if not resource_actions[resource_name]['type']:
+                            resource_actions[resource_name]['type'] = get_service_from_arn(resource)
+                        if not resource_actions[resource_name]['region']:
+                            resource_actions[resource_name]['region'] = get_region_from_arn(resource)
+                        resource_actions[resource_name]['arns'].append(resource)
                         actions = get_actions_for_resource(resource, statement)
-                        resource_actions[resource].extend(actions)
+                        resource_actions[resource_name]['actions'].extend(actions)
     return dict(resource_actions)
 
 

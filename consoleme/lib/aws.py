@@ -2,6 +2,7 @@ import json
 import sys
 import time
 from collections import defaultdict
+from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Optional
 
@@ -156,65 +157,76 @@ async def get_all_iam_managed_policies_for_account(account_id):
     return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
 
 
-async def get_resource_accounts(arns: List[str]) -> Dict:
-    """Return the AWS account ID that owns each resource.
+async def get_resource_account(arn: str) -> str:
+    """Return the AWS account ID that owns a resource.
 
     In most cases, this will pull the ID directly from the ARN. For S3, we do
     a lookup in Redis to get the account ID.
     """
-    results: Dict = {}
     s3_bucket_key = config.get("redis.s3_bucket_key", "S3_BUCKETS")
     s3_buckets: Dict = await redis_hgetall(s3_bucket_key)
 
-    for arn in arns:
-        resource_account: str = get_account_from_arn(arn)
-        if resource_account:
-            results[arn] = resource_account
-            break
+    resource_account: str = get_account_from_arn(arn)
+    if resource_account:
+        return resource_account
 
-        resource_type: str = get_service_from_arn(arn)
-        resource_name: str = get_resource_from_arn(arn)
-        if resource_type == "s3":
-            for k, v in s3_buckets.items():
-                if resource_name in v:
-                    results[arn] = k
-                    break
-        else:
-            results[arn] = ""
+    resource_type: str = get_service_from_arn(arn)
+    resource_name: str = get_resource_from_arn(arn)
+    if resource_type == 's3':
+        for k, v in s3_buckets.items():
+            if resource_name in v:
+                return k
+    else:
+        return ""
 
-    return results
 
 
 async def get_resource_policies(
     principal_arn: str, resource_actions: Dict[str, List[str]], account: str
 ) -> Dict:
     resource_policies: List[Dict] = []
-    resource_owners = await get_resource_accounts(resource_actions.keys())
-    for arn, resource_account in resource_owners.items():
-        if resource_account != account:
+    for resource_name, resource_info in resource_actions.items():
+        if resource_info.get('owner') != account:
             # This is a cross-account request. Might need a resource policy.
-            resource_type: str = get_service_from_arn(arn)
-            resource_name: str = get_resource_from_arn(arn)
-            resource_region: str = get_region_from_arn(arn)
+            resource_account: str = resource_info.get('owner')
+            resource_type: str = resource_info.get('type')
+            resource_region: str = resource_info.get('region')
             try:
                 details = await fetch_resource_details(
                     resource_account, resource_type, resource_name, resource_region
                 )
             except ClientError:
                 # We don't have access to this resource, so we can't get the policy.
-                details = {"Policy": "{}"}
+                details = {}
+            # Default to a blank policy
+            old_policy = details.get("Policy", {"Version": "2012-10-17", "Statement": []})
+            arns = resource_info.get('arns', [])
+            actions = resource_info.get('actions', [])
+            new_policy = await update_resource_policy(old_policy, principal_arn, arns, actions)
 
-            policy_data = {
-                'existing': details['Policy'],
-                'new': f'super awesome policy for {principal_arn} to access {resource_name}!'
-            }
             result = {
-                'arn': arn,
-                'resource_policies': policy_data
+                'resource': resource_name,
+                'policies': {'existing': old_policy, 'new': new_policy}
             }
             resource_policies.append(result)
 
     return resource_policies
+
+
+async def update_resource_policy(existing: Dict, principal_arn: str, resource_arns: List[str], actions: List[str]) -> Dict:
+    policy_dict = deepcopy(existing)
+    new_statement = {
+        "Effect": "Allow",
+        "Principal": {
+            "AWS": [
+                principal_arn,
+            ],
+        },
+        "Action": list(set(actions)),
+        "Resource": resource_arns,
+    }
+    policy_dict["Statement"].append(new_statement)
+    return policy_dict
 
 
 async def fetch_resource_details(
