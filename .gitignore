@@ -110,3 +110,4 @@ venv.bak/
 dynamodb-data/
 redis-data/
 node_modules/
+**/node_modules/

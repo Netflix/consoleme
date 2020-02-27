@@ -1,0 +1,108 @@
+.btn input[type=radio], .button input[type=radio] {
+  position: absolute;
+  clip: rect(0,0,0,0);
+}
+
+nav.sidebar li a, nav.sidebar li a * {
+  cursor: pointer
+}
+
+[data-toggle=buttons] .button {
+  width: 256px;
+}
+
+.ui.basic.negative.button {
+  background-color: #db2828!important;
+}
+
+.ui.blue.btn {
+    box-shadow: rgba(34, 36, 38, 0.15) 0px 0px 0px 0px inset;
+    box-sizing: border-box;
+    color: rgb(255, 255, 255);
+    cursor: pointer;
+    display: inline-block;
+    height: 36px;
+    min-height: 14px;
+    text-align: center;
+    text-decoration: none solid rgb(255, 255, 255);
+    text-size-adjust: 100%;
+    width: 256px;
+    column-rule-color: rgb(255, 255, 255);
+    perspective-origin: 128px 18px;
+    transform-origin: 128px 18px;
+    user-select: none;
+    caret-color: rgb(255, 255, 255);
+    background: rgb(33, 133, 208) none repeat scroll 0% 0% / auto padding-box border-box;
+    border: 0px none rgb(255, 255, 255);
+    border-radius: 4px 4px 4px 4px;
+    font: normal normal 700 normal 14px / 14px Lato, "Helvetica Neue", Arial, Helvetica, sans-serif;
+    margin: 0px 3.5px 0px 0px;
+    outline: rgb(255, 255, 255) none 0px;
+    padding: 11px 21px;
+    transition: opacity 0.1s ease 0s, background-color 0.1s ease 0s, color 0.1s ease 0s, box-shadow 0.1s ease 0s, background 0.1s ease 0s, -webkit-box-shadow 0.1s ease 0s;
+}
+
+.ui.blue.btn:after {
+    box-sizing: border-box;
+    color: rgb(255, 255, 255);
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none solid rgb(255, 255, 255);
+    text-size-adjust: 100%;
+    column-rule-color: rgb(255, 255, 255);
+    user-select: none;
+    caret-color: rgb(255, 255, 255);
+    border: 0px none rgb(255, 255, 255);
+    font: normal normal 700 normal 14px / 14px Lato, "Helvetica Neue", Arial, Helvetica, sans-serif;
+    outline: rgb(255, 255, 255) none 0px;
+}
+
+.ui.blue.btn:before {
+    box-sizing: border-box;
+    color: rgb(255, 255, 255);
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none solid rgb(255, 255, 255);
+    text-size-adjust: 100%;
+    column-rule-color: rgb(255, 255, 255);
+    user-select: none;
+    caret-color: rgb(255, 255, 255);
+    border: 0px none rgb(255, 255, 255);
+    font: normal normal 700 normal 14px / 14px Lato, "Helvetica Neue", Arial, Helvetica, sans-serif;
+    outline: rgb(255, 255, 255) none 0px;
+}
+
+label {
+  width:200px;
+  display: inline-block;
+}
+#header{
+    box-shadow: none;
+}
+.ui.secondary.pointing.menu{
+    width: 100%;
+    font-size:16px;
+}
+#consoleme_logo {
+    opacity: 0.9;
+    max-width: 90%;
+}
+.ui.pointing.dropdown.link.item.partial_active{
+    border-color: #1b1c1d;
+    color: rgba(0,0,0,.95);
+    font-weight:700;
+}
+.dropdown .item{
+    width:100%;
+    display: inline-block;
+}
+
+
+.ui.dropdown.link.item.partial_active{
+    background: rgba(0,0,0,.05);
+    background-color: transparent;
+    box-shadow: none;
+    font-weight: 700;
+    border-color: #1b1c1d;
+    color: rgba(0,0,0,.95);
+}
