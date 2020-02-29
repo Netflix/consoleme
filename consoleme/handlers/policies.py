@@ -546,6 +546,8 @@ class PolicyReviewSubmitHandler(BaseHandler):
             resources = []
             resource_policies = []
 
+        log_data["resource_actions"] = resource_actions
+        log_data["resource_policies"] = resource_policies
         events.extend(resource_policies)
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(

@@ -1,7 +1,6 @@
 import json
 import sys
 import time
-from collections import defaultdict
 from copy import deepcopy
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -19,7 +18,6 @@ from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
 from policy_sentry.util.arns import (
     get_account_from_arn,
-    get_region_from_arn,
     get_resource_from_arn,
     get_service_from_arn,
 )
@@ -172,7 +170,7 @@ async def get_resource_account(arn: str) -> str:
 
     resource_type: str = get_service_from_arn(arn)
     resource_name: str = get_resource_from_arn(arn)
-    if resource_type == 's3':
+    if resource_type == "s3":
         for k, v in s3_buckets.items():
             if resource_name in v:
                 return k
@@ -180,17 +178,16 @@ async def get_resource_account(arn: str) -> str:
         return ""
 
 
-
 async def get_resource_policies(
     principal_arn: str, resource_actions: Dict[str, List[str]], account: str
 ) -> Dict:
     resource_policies: List[Dict] = []
     for resource_name, resource_info in resource_actions.items():
-        if resource_info.get('owner') != account:
+        if resource_info.get("account") != account:
             # This is a cross-account request. Might need a resource policy.
-            resource_account: str = resource_info.get('owner')
-            resource_type: str = resource_info.get('type')
-            resource_region: str = resource_info.get('region')
+            resource_account: str = resource_info.get("account")
+            resource_type: str = resource_info.get("type")
+            resource_region: str = resource_info.get("region")
             try:
                 details = await fetch_resource_details(
                     resource_account, resource_type, resource_name, resource_region
@@ -199,29 +196,31 @@ async def get_resource_policies(
                 # We don't have access to this resource, so we can't get the policy.
                 details = {}
             # Default to a blank policy
-            old_policy = details.get("Policy", {"Version": "2012-10-17", "Statement": []})
-            arns = resource_info.get('arns', [])
-            actions = resource_info.get('actions', [])
-            new_policy = await update_resource_policy(old_policy, principal_arn, arns, actions)
+            old_policy = details.get(
+                "Policy", {"Version": "2012-10-17", "Statement": []}
+            )
+            arns = resource_info.get("arns", [])
+            actions = resource_info.get("actions", [])
+            new_policy = await update_resource_policy(
+                old_policy, principal_arn, arns, actions
+            )
 
             result = {
-                'resource': resource_name,
-                'policies': {'existing': old_policy, 'new': new_policy}
+                "resource": resource_name,
+                "policy_document": new_policy,
             }
             resource_policies.append(result)
 
     return resource_policies
 
 
-async def update_resource_policy(existing: Dict, principal_arn: str, resource_arns: List[str], actions: List[str]) -> Dict:
+async def update_resource_policy(
+    existing: Dict, principal_arn: str, resource_arns: List[str], actions: List[str]
+) -> Dict:
     policy_dict = deepcopy(existing)
     new_statement = {
         "Effect": "Allow",
-        "Principal": {
-            "AWS": [
-                principal_arn,
-            ],
-        },
+        "Principal": {"AWS": [principal_arn]},
         "Action": list(set(actions)),
         "Resource": resource_arns,
     }
