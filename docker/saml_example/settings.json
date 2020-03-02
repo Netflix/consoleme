@@ -1,16 +1,16 @@
 {
   "debug": true,
   "idp": {
-    "entityId": "http://localhost:8080/auth/realms/consoleme",
+    "entityId": "http://localhost:8080/simplesaml/saml2/idp/metadata.php",
     "singleLogoutService": {
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
-      "url": "http://localhost:8080/auth/realms/consoleme/protocol/saml"
+      "url": "http://localhost:8080/simplesaml/saml2/idp/SingleLogoutService.php"
     },
     "singleSignOnService": {
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
-      "url": "http://localhost:8080/auth/realms/consoleme/protocol/saml"
+      "url": "http://localhost:8080/simplesaml/saml2/idp/SSOService.php"
     },
-    "x509cert": "MIICoTCCAYkCBgFrKHoLHzANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAljb25zb2xlbWUwHhcNMTkwNjA1MTYyODM1WhcNMjkwNjA1MTYzMDE1WjAUMRIwEAYDVQQDDAljb25zb2xlbWUwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDAs/XG2VKXNMvBYeNGexbbjBL2JFRiAHsAZonnAkBKuDRvnoCBXKvovqpTDgOXAw10DokkhGD5rs+gVYMvHtSGowTvXYpK3I4Z4K57izX0+Ow71ZkyyGTrtLmO0+Sw6EXSkRY9auNdThYU0PXGnxs8f4KcwNA9cwEnA7JjnkdcxWgT7xZKbmE2Sl5ikKRHzAU+0fEP5K889cK6VbyB7icE0y3n88Nt1ke2gaDVVzQ/1UfSEeQExIpAWbMzb8gXoH1vtx/LphiPtjPgtMkUqv83nSKGIzPgQWcOloPyrr1aMmulb5XLl03LP4Nu5swsE1I+CHe3ecaqOMI4bdW+/EfPAgMBAAEwDQYJKoZIhvcNAQELBQADggEBAHsmJJR01yExNni0fKDB1PyzgxbcxXtkUKSrpkb/e6n7/h5fn3U1tfyrXCw2ZEdGbSnfXa3djVv0XU24hpVUB14Q5Qysw01hMmMk2zdQUnl8f51WdmB0glHImfeDVNpgg1AM9jUeaZPF2S/9k7rJ2h3JPoVPQDCvVdUtLachC7Bp8KL/PQ3gkmN+/gPBB8UmYHtsFqoF4Jl247Qrfufc1hrzLbBxbHNlPApI+jaLCvkHU1/CAhHy67jMa0dooasm91Jc21jVKuE4blusZOKfIqOFmiKN419eChq+8mxytsI+VmTfzfE+O4pn4WVRi3TE669e+zaMIm/AHts3w4mQTXQ="
+    "x509cert": "MIIDXTCCAkWgAwIBAgIJALmVVuDWu4NYMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNVBAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQwHhcNMTYxMjMxMTQzNDQ3WhcNNDgwNjI1MTQzNDQ3WjBFMQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzUCFozgNb1h1M0jzNRSCjhOBnR+uVbVpaWfXYIR+AhWDdEe5ryY+CgavOg8bfLybyzFdehlYdDRgkedEB/GjG8aJw06l0qF4jDOAw0kEygWCu2mcH7XOxRt+YAH3TVHa/Hu1W3WjzkobqqqLQ8gkKWWM27fOgAZ6GieaJBN6VBSMMcPey3HWLBmc+TYJmv1dbaO2jHhKh8pfKw0W12VM8P1PIO8gv4Phu/uuJYieBWKixBEyy0lHjyixYFCR12xdh4CA47q958ZRGnnDUGFVE1QhgRacJCOZ9bd5t9mr8KLaVBYTCJo5ERE8jymab5dPqe5qKfJsCZiqWglbjUo9twIDAQABo1AwTjAdBgNVHQ4EFgQUxpuwcs/CYQOyui+r1G+3KxBNhxkwHwYDVR0jBBgwFoAUxpuwcs/CYQOyui+r1G+3KxBNhxkwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAAiWUKs/2x/viNCKi3Y6blEuCtAGhzOOZ9EjrvJ8+COH3Rag3tVBWrcBZ3/uhhPq5gy9lqw4OkvEws99/5jFsX1FJ6MKBgqfuy7yh5s1YfM0ANHYczMmYpZeAcQf2CGAaVfwTTfSlzNLsF2lW/ly7yapFzlYSJLGoVE+OHEu8g5SlNACUEfkXw+5Eghh+KzlIN7R6Q7r2ixWNFBC/jWf7NKUfJyX8qIG5md1YUeT6GBW9Bm2/1/RiO24JTaYlfLdKK9TYb8sG5B+OLab2DImG99CJ25RkAcSobWNF5zD0O6lgOo3cEdB/ksCq3hmtlC/DlLZ/D8CJ+7VuZnS1rR2naQ=="
   },
   "sp": {
     "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
@@ -18,11 +18,11 @@
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
       "url": "http://127.0.0.1:8081/saml/acs"
     },
-    "entityId": "consoleme",
+    "entityId": "http://127.0.0.1:8081",
     "singleLogoutService": {
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
       "url": "https://127.0.0.1:8081/saml/sls"
     }
   },
-  "strict": true
+  "strict": false
 }

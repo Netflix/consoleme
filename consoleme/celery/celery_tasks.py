@@ -586,11 +586,12 @@ def cache_roles_across_accounts() -> bool:
         accounts_d = aws.get_account_ids_to_names()
         # Second, call tasks to enumerate all the roles across all accounts
         for account_id in accounts_d.keys():
-            if config.get("environment") == "prod":
-                cache_roles_for_account.delay(account_id)
-            else:
-                if account_id in config.get("celery.test_account_ids", []):
-                    cache_roles_for_account.delay(account_id)
+            cache_roles_for_account.delay(account_id) # TODO: UNDO!
+            # if config.get("environment") == "prod":
+            #     cache_roles_for_account.delay(account_id)
+            # else:
+            #     if account_id in config.get("celery.test_account_ids", []):
+            #         cache_roles_for_account.delay(account_id)
     else:
         cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
         dynamo = IAMRoleDynamoHandler()
@@ -965,72 +966,74 @@ if config.get("development", False):
     schedule_1_hour = dev_schedule
     schedule_6_hours = dev_schedule
 
+cache_roles_across_accounts.delay()
+
 schedule = {
-    "alert_on_group_changes": {
-        "task": "consoleme.celery.celery_tasks.alert_on_group_changes",
-        "options": {"expires": 600},
-        "schedule": schedule_30_minute,
-    },
-    "cache_roles_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_roles_across_accounts",
-        "options": {"expires": 180},
-        "schedule": schedule_45_minute,
-    },
-    "clear_old_redis_iam_cache": {
-        "task": "consoleme.celery.celery_tasks.clear_old_redis_iam_cache",
-        "options": {"expires": 180},
-        "schedule": schedule_6_hours,
-    },
-    "cache_policies_table_details": {
-        "task": "consoleme.celery.celery_tasks.cache_policies_table_details",
-        "options": {"expires": 1000},
-        "schedule": schedule_45_minute,
-    },
-    "report_celery_last_success_metrics": {
-        "task": "consoleme.celery.celery_tasks.report_celery_last_success_metrics",
-        "options": {"expires": 60},
-        "schedule": schedule_minute,
-    },
-    "cache_managed_policies_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_managed_policies_across_accounts",
-        "options": {"expires": 1000},
-        "schedule": schedule_45_minute,
-    },
-    "cache_s3_buckets_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_s3_buckets_across_accounts",
-        "options": {"expires": 300},
-        "schedule": schedule_45_minute,
-    },
-    "cache_sqs_queues_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_sqs_queues_across_accounts",
-        "options": {"expires": 300},
-        "schedule": schedule_45_minute,
-    },
-    "cache_sns_topics_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_sns_topics_across_accounts",
-        "options": {"expires": 300},
-        "schedule": schedule_45_minute,
-    },
-    "cache_audit_table_details": {
-        "task": "consoleme.celery.celery_tasks.cache_audit_table_details",
-        "options": {"expires": 300},
-        "schedule": schedule_5_minutes,
-    },
-    "get_iam_access_key_id": {
-        "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
-        "options": {"expires": 300},
-        "schedule": schedule_24_hours,
-    },
-    "get_iam_role_limit": {
-        "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
-        "options": {"expires": 300},
-        "schedule": schedule_24_hours,
-    },
-    "cache_cloudtrail_errors_by_arn": {
-        "task": "consoleme.celery.celery_tasks.cache_cloudtrail_errors_by_arn",
-        "options": {"expires": 300},
-        "schedule": schedule_1_hour,
-    },
+    # "alert_on_group_changes": {
+    #     "task": "consoleme.celery.celery_tasks.alert_on_group_changes",
+    #     "options": {"expires": 600},
+    #     "schedule": schedule_30_minute,
+    # },
+    # "cache_roles_across_accounts": {
+    #     "task": "consoleme.celery.celery_tasks.cache_roles_across_accounts",
+    #     "options": {"expires": 180},
+    #     "schedule": schedule_45_minute,
+    # },
+    # "clear_old_redis_iam_cache": {
+    #     "task": "consoleme.celery.celery_tasks.clear_old_redis_iam_cache",
+    #     "options": {"expires": 180},
+    #     "schedule": schedule_6_hours,
+    # },
+    # "cache_policies_table_details": {
+    #     "task": "consoleme.celery.celery_tasks.cache_policies_table_details",
+    #     "options": {"expires": 1000},
+    #     "schedule": schedule_45_minute,
+    # },
+    # "report_celery_last_success_metrics": {
+    #     "task": "consoleme.celery.celery_tasks.report_celery_last_success_metrics",
+    #     "options": {"expires": 60},
+    #     "schedule": schedule_minute,
+    # },
+    # "cache_managed_policies_across_accounts": {
+    #     "task": "consoleme.celery.celery_tasks.cache_managed_policies_across_accounts",
+    #     "options": {"expires": 1000},
+    #     "schedule": schedule_45_minute,
+    # },
+    # "cache_s3_buckets_across_accounts": {
+    #     "task": "consoleme.celery.celery_tasks.cache_s3_buckets_across_accounts",
+    #     "options": {"expires": 300},
+    #     "schedule": schedule_45_minute,
+    # },
+    # "cache_sqs_queues_across_accounts": {
+    #     "task": "consoleme.celery.celery_tasks.cache_sqs_queues_across_accounts",
+    #     "options": {"expires": 300},
+    #     "schedule": schedule_45_minute,
+    # },
+    # "cache_sns_topics_across_accounts": {
+    #     "task": "consoleme.celery.celery_tasks.cache_sns_topics_across_accounts",
+    #     "options": {"expires": 300},
+    #     "schedule": schedule_45_minute,
+    # },
+    # "cache_audit_table_details": {
+    #     "task": "consoleme.celery.celery_tasks.cache_audit_table_details",
+    #     "options": {"expires": 300},
+    #     "schedule": schedule_5_minutes,
+    # },
+    # "get_iam_access_key_id": {
+    #     "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
+    #     "options": {"expires": 300},
+    #     "schedule": schedule_24_hours,
+    # },
+    # "get_iam_role_limit": {
+    #     "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
+    #     "options": {"expires": 300},
+    #     "schedule": schedule_24_hours,
+    # },
+    # "cache_cloudtrail_errors_by_arn": {
+    #     "task": "consoleme.celery.celery_tasks.cache_cloudtrail_errors_by_arn",
+    #     "options": {"expires": 300},
+    #     "schedule": schedule_1_hour,
+    # },
 }
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):

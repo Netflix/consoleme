@@ -1,0 +1,14 @@
+version: '3'
+# Never use this in a production environment.
+# Run with docker-compose -f docker-compose-saml.yaml up
+services:
+  consoleme_simple_oidc_provider:
+    image: "qlik/simple-oidc-provider"
+    volumes:
+      - ./docker/simple-oidc-provider:/simple-oidc-provider-settings
+    container_name: consoleme_simple_oidc_provider
+    ports:
+      - "9000:9000"
+    environment:
+      - CONFIG_FILE=/simple-oidc-provider-settings/idp_config.json
+      - USERS_FILE=/simple-oidc-provider-settings/idp_users.json

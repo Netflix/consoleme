@@ -1,4 +1,5 @@
 """Custom exceptions."""
+import tornado.web
 
 from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
@@ -20,6 +21,14 @@ class BaseException(Exception):
     def __str__(self):
         """Stringifies the message."""
         return self.msg
+
+
+class WebAuthNError(tornado.web.HTTPError):
+    """Authentication Error"""
+
+    def __init__(self, **kwargs):
+        kwargs["status_code"] = 401
+        super().__init__(**kwargs)
 
 
 class MissingDataException(BaseException):
