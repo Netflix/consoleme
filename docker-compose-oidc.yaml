@@ -1,5 +1,6 @@
 version: '3'
 # Never use this in a production environment.
+# Run with docker-compose -f docker-compose-saml.yaml up
 services:
   consoleme:
     build: .
@@ -12,7 +13,7 @@ services:
       - ~/.aws:/root/.aws
       - ~/.ssh:/root/.ssh
     environment:
-      - CONFIG_LOCATION=/apps/consoleme/docker/example_config_test.yaml
+      - CONFIG_LOCATION=/apps/consoleme/docker/example_config_oidc.yaml
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
     command: >
       bash -c 'pip install argh watchdog; pip install -e /apps/consoleme/default_plugins;
@@ -24,6 +25,16 @@ services:
       - consoleme_redis
       - consoleme_dynamodb
 
+  consoleme_oidc:
+    image: "qlik/simple-oidc-provider"
+    volumes:
+      - ./docker/simple-oidc-provider:/simple-oidc-provider-settings
+    container_name: consoleme_oidc
+    ports:
+      - "9000:9000"
+    environment:
+      - CONFIG_FILE=/simple-oidc-provider-settings/idp_config.json
+      - USERS_FILE=/simple-oidc-provider-settings/idp_users.json
   consoleme_redis:
     container_name: consoleme_redis
     image: "redis:alpine"
@@ -36,4 +47,3 @@ services:
     restart: always
     volumes:
       - ./dynamodb-data:/data
-

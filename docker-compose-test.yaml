@@ -2,29 +2,6 @@ version: '3'
 # Never use this in a production environment.
 # Run with docker-compose -f docker-compose-test.yaml up
 services:
-  consoleme:
-    build: .
-    ports:
-      - "8081:8081"
-    tty: true
-    stdin_open: true
-    volumes:
-      - .:/apps/consoleme
-      - ~/.aws:/root/.aws
-      - ~/.ssh:/root/.ssh
-    # entrypoint: watchmedo auto-restart --recursive --pattern="*.py" --directory="."
-    environment:
-      - CONFIG_LOCATION=/apps/consoleme/docker/example_config_test.yaml
-    # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
-    command: >
-      bash -c 'pip install argh watchdog; pip install -e /apps/consoleme/default_plugins;
-      watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py'
-    depends_on:
-      - redis_oss_test
-      - dynamodb_oss_test
-    links:
-      - redis_oss_test
-      - dynamodb_oss_test
   python-tests:
     build: .
     environment:
@@ -37,55 +14,19 @@ services:
     entrypoint: >
       bash -c 'pip install argh watchdog; pip install -e /apps/consoleme/default_plugins;
       watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." make test'
-    depends_on:
-      - consoleme
 
-
-  redis_oss_test:
-    container_name: redis_oss_test
+  consoleme_redis:
+    container_name: consoleme_redis
     image: "redis:alpine"
 
-  dynamodb_oss_test:
+  consoleme_dynamodb:
     image: "cnadiminti/dynamodb-local"
-    container_name: dynamodb_oss_test
+    container_name: consoleme_dynamodb
     entrypoint: java
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data -port 8005"
     restart: always
     volumes:
       - ./dynamodb-data:/data
-#
-#  keycloak:
-#    image: "jboss/keycloak"
-#    container_name: keycloak
-#    ports:
-#      - "8080:8080"
-#    networks:
-#      - keycloak-network
-#    environment:
-#      - KEYCLOAK_USER=admin
-#      - KEYCLOAK_PASSWORD=admin
-#      - DB_VENDOR=mysql
-#
-#  mysql:
-#    tty: true
-#    image: mysql:5.7
-#    restart: always
-#    container_name: mysql
-#    volumes:
-#      - "./docker/mysql_db_data:/var/lib/mysql/data"
-#    networks:
-#      - keycloak-network
-#    environment:
-#      - MYSQL_DATABASE=keycloak
-#      - MYSQL_USER=keycloak
-#      - MYSQL_PASSWORD=password
-#      - MYSQL_ROOT_PASSWORD=root_password
-#    expose:
-#      # Opens port 3306 on the container
-#      - '3306'
-#    ports:
-#      - '3306:3306'
-#networks:
-#  keycloak-network:
+
 
 
