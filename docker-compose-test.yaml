@@ -13,13 +13,12 @@ services:
       - ~/.aws:/root/.aws
       - ~/.ssh:/root/.ssh
     # entrypoint: watchmedo auto-restart --recursive --pattern="*.py" --directory="."
-    entrypoint: >
-      bash -c 'pip install watchdog;
-      watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py'
     environment:
       - CONFIG_LOCATION=/apps/consoleme/docker/example_config_test.yaml
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
-    command: /bin/sh -c "while true; do sleep 1; done"
+    command: >
+      bash -c 'pip install argh watchdog; pip install -e /apps/consoleme/default_plugins;
+      watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py'
     depends_on:
       - redis_oss_test
       - dynamodb_oss_test
@@ -36,7 +35,7 @@ services:
       - ~/.ssh:/root/.ssh
     # entrypoint: watchmedo auto-restart --recursive --pattern="*.py" --directory="." pytest
     entrypoint: >
-      bash -c 'pip install watchdog;
+      bash -c 'pip install argh watchdog; pip install -e /apps/consoleme/default_plugins;
       watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." make test'
     depends_on:
       - consoleme
