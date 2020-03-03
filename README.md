@@ -123,9 +123,9 @@ You can start ConsoleMe and point it to this IDP with the following command:
 
 `CONFIG_LOCATION=docker/example_config_saml.yaml python consoleme/__main__.py`
 
-The configuration in `docker-compose-saml.yaml` specifies the expected service provider Acs location (`http://127.0.0.1:8081/saml/acs`) and the entity ID it expects to receive ('http://127.0.0.1:8081'). 
+The configuration in `docker-compose-saml.yaml` specifies the expected service provider Acs location (`http://127.0.0.1:8081/saml/acs`) and the entity ID it expects to receive ('http://127.0.0.1:8081').
 
-A simple configuration for SimpleSaml users exists at `docker/simplesamlphp/authsources.php`. It specifies an example user (consoleme_user:consoleme_user), and an admin user (consoleme_admin:consoleme_admin). 
+A simple configuration for SimpleSaml users exists at `docker/simplesamlphp/authsources.php`. It specifies an example user (consoleme_user:consoleme_user), and an admin user (consoleme_admin:consoleme_admin).
 
 ConsoleMe's configuration (`docker/example_config_saml.yaml`) specifies the following configuration:
 

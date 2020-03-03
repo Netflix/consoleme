@@ -1,28 +1,28 @@
 [
   {
-    "id": "SIMPLE_OIDC_USER_CONSOLEME_USER",
     "email": "consoleme_user@example.com",
     "email_verified": true,
-    "name": "ConsoleMe User",
-    "nickname": "user",
-    "password": "consoleme_user",
     "groups": [
       "consoleme_user@example.com",
       "groupa@example.com",
       "groupb@example.com"
-    ]
+    ],
+    "id": "SIMPLE_OIDC_USER_CONSOLEME_USER",
+    "name": "ConsoleMe User",
+    "nickname": "user",
+    "password": "consoleme_user"
   },
   {
-    "id": "SIMPLE_OIDC_USER_CONSOLEME_ADMIN",
     "email": "consoleme_admin@example.com",
     "email_verified": true,
-    "name": "ConsoleMe Admin",
-    "nickname": "admin",
-    "password": "consoleme_admin",
     "groups": [
       "consoleme_admin@example.com",
       "groupa@example.com",
       "groupb@example.com"
-    ]
+    ],
+    "id": "SIMPLE_OIDC_USER_CONSOLEME_ADMIN",
+    "name": "ConsoleMe Admin",
+    "nickname": "admin",
+    "password": "consoleme_admin"
   }
 ]
