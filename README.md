@@ -106,3 +106,9 @@ configuration to include the following environment variables to assist with debu
 Run `make test` or `make testhtml` to run unit tests
 
 Recommended: Run with the `Additional Arguments` set to `-n 4` to add some concurrency to the unit test execution.
+
+## Local development with Docker (PyCharm specific instructions)  # TODO: Docs with screenshots
+
+It is possible to use Docker `docker-compose-test.yaml` to run ConsoleMe and its dependencies locally
+in Docker with the default plugin set. Configure a new Docker Python interpreter to run __main__.py with your
+working directory set to `/apps/consoleme` (on the container). This flow was tested on Windows 10. 
