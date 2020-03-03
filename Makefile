@@ -55,11 +55,7 @@ redis:
 
 .PHONY: test
 test: clean
-ifndef VIRTUAL_ENV
-	$(error Please activate virtualenv first)
-endif
-
-CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) $(pytest)
+    CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) $(pytest)
 
 .PHONY: bandit
 bandit: clean

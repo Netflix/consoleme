@@ -135,3 +135,10 @@ ConsoleMe's configuration (`docker/example_config_saml.yaml`) specifies the foll
 `get_user_by_saml_settings.jwt`: After the user has authenticated, ConsoleMe will give them a jwt valid for the time specified in this configuration, along with the jwt attribute names for the user's email and groups.
 
 `get_user_by_saml_settings.attributes`: Specifies the attributes that we expect to see in the SAML response, including the user's username, groups, and e-mail address
+
+## Local development with Docker (PyCharm specific instructions)  # TODO: Docs with screenshots
+
+It is possible to use Docker `docker-compose-test.yaml` to run ConsoleMe and its dependencies locally
+in Docker with the default plugin set. Configure a new Docker Python interpreter to run __main__.py with your
+working directory set to `/apps/consoleme` (on the container). This flow was tested on Windows 10. 
+
