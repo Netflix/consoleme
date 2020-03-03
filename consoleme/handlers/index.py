@@ -174,6 +174,7 @@ class IndexHandler(BaseHandler):
             return
         if redirect:
             redirect = redirect.replace("|HASHSYMBOL|", "#")
+            redirect = redirect.replace("|SEMICOLON|", ";")
             parsed_url = urlparse(url)
             parsed_url_query = parse_qs(parsed_url.query)
             parsed_url_query["Destination"] = redirect

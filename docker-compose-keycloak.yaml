@@ -1,0 +1,17 @@
+version: '3'
+# Never use this in a production environment.
+# Run with docker-compose -f docker-compose-test.yaml up
+services:
+  consoleme_keycloak:
+    image: "jboss/keycloak"
+    volumes:
+      - ./docker:/docker
+    container_name: consoleme_keycloak
+    ports:
+      - "8080:8080"
+#    networks:
+#      - keycloak-network
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      # - KEYCLOAK_IMPORT=/docker/keycloak_example_export/realm-export.json

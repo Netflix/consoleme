@@ -22,12 +22,12 @@ from botocore.exceptions import ClientError
 from celery.app.task import Context
 from celery.schedules import crontab
 from celery.signals import task_failure, task_received, task_revoked, task_success
+from cloudaux import sts_conn
 from cloudaux.aws.iam import (
     get_all_managed_policies,
     get_account_authorization_details,
     get_user_access_keys,
 )
-from cloudaux import sts_conn
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sqs import list_queues
@@ -984,7 +984,7 @@ schedule = {
     "cache_policies_table_details": {
         "task": "consoleme.celery.celery_tasks.cache_policies_table_details",
         "options": {"expires": 1000},
-        "schedule": schedule_45_minute,
+        "schedule": schedule_30_minute,
     },
     "report_celery_last_success_metrics": {
         "task": "consoleme.celery.celery_tasks.report_celery_last_success_metrics",

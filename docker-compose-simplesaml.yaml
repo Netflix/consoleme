@@ -1,0 +1,15 @@
+version: '3'
+# Never use this in a production environment.
+# Run with docker-compose -f docker-compose-saml.yaml up
+services:
+  consoleme_simplesaml:
+    image: "kristophjunge/test-saml-idp"
+    volumes:
+      - ./docker/simplesamlphp/authsources.php:/var/www/simplesamlphp/config/authsources.php
+    container_name: consoleme_simplesaml
+    ports:
+      - "8080:8080"
+      - "8443:8443"
+    environment:
+      - SIMPLESAMLPHP_SP_ENTITY_ID=http://127.0.0.1:8081
+      - SIMPLESAMLPHP_SP_ASSERTION_CONSUMER_SERVICE=http://127.0.0.1:8081/saml/acs

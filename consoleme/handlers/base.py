@@ -1,18 +1,17 @@
 """Handle the base."""
 import traceback
-import uuid
-from typing import Any
 
-import jwt
 import redis
+import tornado.httpclient
 import tornado.httputil
 import tornado.web
 import ujson as json
+import uuid
 from asgiref.sync import sync_to_async
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
-from onelogin.saml2.errors import OneLogin_Saml2_Error
 from raven.contrib.tornado import SentryMixin
 from tornado import httputil
+from typing import Any
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -21,22 +20,19 @@ from consoleme.exceptions.exceptions import (
     NoGroupsException,
     NoUserException,
 )
-from consoleme.lib.generic import render_404
+from consoleme.exceptions.exceptions import WebAuthNError
+from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
 from consoleme.lib.auth import AuthenticationError
+from consoleme.lib.generic import render_404
+from consoleme.lib.jwt import validate_and_return_jwt_token, generate_jwt_token
+from consoleme.lib.oauth2 import authenticate_user_by_oauth2
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
+from consoleme.lib.saml import authenticate_user_by_saml
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
-
-
-class WebAuthNError(tornado.web.HTTPError):
-    """Authentication Error"""
-
-    def __init__(self, **kwargs):
-        kwargs["status_code"] = 401
-        super().__init__(**kwargs)
 
 
 class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
@@ -170,7 +166,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         self.groups = None
         self.user_role_name = None
         self.legacy_user_role_mapping = {}
-        decoded_jwt = None
 
         log_data = {
             "function": "Basehandler.authorization_flow",
@@ -183,51 +178,41 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
 
         log.debug(log_data)
 
+        # Check to see if user has a valid auth cookie
+        if config.get("auth_cookie_name"):
+            auth_cookie = self.get_cookie(config.get("auth_cookie_name"))
+            if auth_cookie:
+                res = await validate_and_return_jwt_token(auth_cookie)
+                if res and isinstance(res, dict):
+                    self.user = res.get("user")
+                    self.groups = res.get("groups")
+
         if not self.user:
             # SAML flow. If user has a JWT signed by ConsoleMe, and SAML is enabled in configuration, user will go
             # through this flow.
 
             if config.get("auth.get_user_by_saml"):
-                saml_jwt_secret = config.get("saml_jwt_secret")
-                if not saml_jwt_secret:
-                    raise Exception("'saml_jwt_secret' configuration value is not set.")
-                # Get secure cookie here
-                auth_cookie = self.get_cookie("consoleme_auth")
+                res = await authenticate_user_by_saml(self)
+                if not res:
+                    return
 
-                if auth_cookie:
-                    try:
-                        decoded_jwt = jwt.decode(
-                            auth_cookie, saml_jwt_secret, algorithm="HS256"
-                        )
-                        user_list = decoded_jwt.get("samlUserdata", {}).get(
-                            config.get(
-                                "get_user_by_saml_settings.jwt.email_key", "email"
-                            ),
-                            [],
-                        )
-                        if len(user_list) > 0:
-                            self.user = user_list[0]
-                        self.groups = decoded_jwt.get("samlUserdata", {}).get(
-                            config.get(
-                                "get_user_by_saml_settings.jwt.groups_key", "groups"
-                            ),
-                            [],
-                        )
-                    except jwt.ExpiredSignatureError:
-                        # Force user to reauth.
-                        pass
-                if not decoded_jwt:
-                    saml_req = await self.prepare_tornado_request_for_saml()
-                    auth = await self.init_saml_auth(saml_req)
-                    try:
-                        await sync_to_async(auth.process_response)()
-                    except OneLogin_Saml2_Error:
-                        return self.redirect(auth.login())
+        if not self.user:
+            if config.get("auth.get_user_by_oidc"):
+                res = await authenticate_user_by_oauth2(self)
+                if not res:
+                    return
+                if res and isinstance(res, dict):
+                    self.user = res.get("user")
+                    self.groups = res.get("groups")
 
-                    await sync_to_async(auth.get_errors)()
-                    not_auth_warn = not await sync_to_async(auth.is_authenticated)()
-                    if not_auth_warn:
-                        return self.redirect(auth.login())
+        if not self.user:
+            if config.get("auth.get_user_by_aws_alb_auth"):
+                res = await authenticate_user_by_alb_auth(self)
+                if not res:
+                    return
+                if res and isinstance(res, dict):
+                    self.user = res.get("user")
+                    self.groups = res.get("groups")
 
         if not self.user:
             try:
@@ -344,6 +329,13 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                 )
             except redis.exceptions.ConnectionError:
                 pass
+        if (
+            config.get("auth.set_auth_cookie")
+            and config.get("auth_cookie_name")
+            and not self.get_cookie(config.get("auth_cookie_name"))
+        ):
+            encoded_cookie = await generate_jwt_token(self.user, self.groups)
+            self.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
 
     async def prepare_tornado_request_for_saml(self):
         dataDict = {}

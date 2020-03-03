@@ -3,11 +3,14 @@ access_requests:
 api_auth:
   valid_entities:
     - fake_api_entity
+auth_cookie_name: consoleme_auth
 application_admin: admin@example.com
 application_name: consoleme
 dynamodb_server: http://localhost:8005
 account_ids_to_name:
   123456789012: default_account
+  123456789013: prod
+  123456789014: test
 
 auth:
   get_groups_by_header: true
@@ -61,6 +64,11 @@ dynamic_config:
 groups:
   can_edit_config:
     - configeditors@example.com
+
+jwt:
+  groups_key: groups
+  email_key: email
+  expiration_hours: 1
 #google:
 #  admin_scopes:
 #    - 'https://www.googleapis.com/auth/admin.directory.group'

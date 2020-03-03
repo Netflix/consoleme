@@ -107,8 +107,38 @@ Run `make test` or `make testhtml` to run unit tests
 
 Recommended: Run with the `Additional Arguments` set to `-n 4` to add some concurrency to the unit test execution.
 
+## SAML
+
+We're using the wonderful `kristophjunge/test-saml-idp` docker container to demonstrate an example SAML flow through ConsoleMe performed locally. The SimpleSaml configuration is not secure, and you should not use this in any sort of production environment. this is purely used as a demonstration of SAML auth within ConsoleMe.
+
+The configuration for the SAML exists in `docker-compose-simplesaml.yaml` You can start the IDP locally with the following command ran from your `consoleme` directory:
+
+`docker-compose -f docker-compose-saml.yaml up`
+
+You will need to browse to the [Simplesaml metadata url](http://localhost:8080/simplesaml/saml2/idp/metadata.php?output=xml) and copy the x509 certificate
+for the IDP (The first one), and replace the x509cert value specified in `docker/saml_example/settings.json`.
+
+
+You can start ConsoleMe and point it to this IDP with the following command:
+
+`CONFIG_LOCATION=docker/example_config_saml.yaml python consoleme/__main__.py`
+
+The configuration in `docker-compose-saml.yaml` specifies the expected service provider Acs location (`http://127.0.0.1:8081/saml/acs`) and the entity ID it expects to receive ('http://127.0.0.1:8081').
+
+A simple configuration for SimpleSaml users exists at `docker/simplesamlphp/authsources.php`. It specifies an example user (consoleme_user:consoleme_user), and an admin user (consoleme_admin:consoleme_admin).
+
+ConsoleMe's configuration (`docker/example_config_saml.yaml`) specifies the following configuration:
+
+`get_user_by_saml_settings.saml_path`: Location of SAML settings used by the OneLoginSaml2 library
+	- You'll need to configure the entity ID, IdP Binding urls, and ACS urls in this file
+
+`get_user_by_saml_settings.jwt`: After the user has authenticated, ConsoleMe will give them a jwt valid for the time specified in this configuration, along with the jwt attribute names for the user's email and groups.
+
+`get_user_by_saml_settings.attributes`: Specifies the attributes that we expect to see in the SAML response, including the user's username, groups, and e-mail address
+
 ## Local development with Docker (PyCharm specific instructions)  # TODO: Docs with screenshots
 
 It is possible to use Docker `docker-compose-test.yaml` to run ConsoleMe and its dependencies locally
 in Docker with the default plugin set. Configure a new Docker Python interpreter to run __main__.py with your
-working directory set to `/apps/consoleme` (on the container). This flow was tested on Windows 10. 
+working directory set to `/apps/consoleme` (on the container). This flow was tested on Windows 10.
+

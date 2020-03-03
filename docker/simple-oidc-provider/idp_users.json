@@ -1,0 +1,28 @@
+[
+  {
+    "email": "consoleme_user@example.com",
+    "email_verified": true,
+    "groups": [
+      "consoleme_user@example.com",
+      "groupa@example.com",
+      "groupb@example.com"
+    ],
+    "id": "SIMPLE_OIDC_USER_CONSOLEME_USER",
+    "name": "ConsoleMe User",
+    "nickname": "user",
+    "password": "consoleme_user"
+  },
+  {
+    "email": "consoleme_admin@example.com",
+    "email_verified": true,
+    "groups": [
+      "consoleme_admin@example.com",
+      "groupa@example.com",
+      "groupb@example.com"
+    ],
+    "id": "SIMPLE_OIDC_USER_CONSOLEME_ADMIN",
+    "name": "ConsoleMe Admin",
+    "nickname": "admin",
+    "password": "consoleme_admin"
+  }
+]
