@@ -10,7 +10,8 @@ class Config:
         return path
 
     @staticmethod
-    def internal_functions(cfg={}):
+    def internal_functions(cfg=None):
+        cfg = cfg or {}
         pass
 
     @staticmethod

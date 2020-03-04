@@ -1,7 +1,7 @@
 # ConsoleMe
 
-ConsoleMe is designed to consolidate tooling for the most common use cases around requesting access, self-service IAM,
-AWS credentials, and logging into the AWS console. It was developed to improve user experience and insights around
+ConsoleMe makes it easier to manage multiple AWS accounts. It is designed to consolidate tooling for the most common use cases around requesting access, self-service IAM,
+AWS credentials, and logging into the AWS console. ConsoleMe improves user experience and insights around
 console login and access requests. It offers a web interface where users can search and login to the AWS IAM roles
 they have access to, and it saves previously selected roles for quicker access. It also provides a mechanism for users
 to request access to Google groups. Google groups may have attributes defining who the owners and approvers of the group
@@ -10,7 +10,10 @@ are. If these are appropriately set, ConsoleMe will e-mail approvers when a requ
 Editing IAM policies across multiple accounts is possible for administrators. End-users have the ability to write or
 edit inline policies, and submit these to administrators to be approved and committed.
 
-## To build ConsoleMe
+## Quick Start
+Check out our Quick start guide
+
+## To build ConsoleMe on Mac
 
 1. Setup prerequisites (Mac)
    1. Set up Python 3.7.2+ (`brew install python@3.7`)

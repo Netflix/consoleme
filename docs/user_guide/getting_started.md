@@ -8,8 +8,45 @@ provide a method to get long-term credentials that might accidentally be leaked 
 roles in your environment and provides temporary one-hour credentials to authorized users.
 
 
+We've included some quick-start docker-compose files that showcase some of the authentication methods supported
+in ConsoleMe. You can also run ConsoleMe on Mac or Docker without Linux.
 
-TBD
+# Docker-Compose Instructions
+You must install [Docker and Docker-Compose](https://github.com/Yelp/docker-compose/blob/master/docs/install.md) before
+following the steps outlined in this section.
+
+## SAML Demo
+1. Run `docker-compose -f docker-compose-saml.yaml up` from the root directory of the `consoleme` repo.
+1. Visit [Simplesaml metadata url](http://localhost:8080/simplesaml/saml2/idp/metadata.php?output=xml) and copy the
+x509 certificate for the IDP (The first `ds:X509Certificate` value), and replace the x509cert value specified in
+`docker/saml_example/settings.json`.
+1. Visit [http://localhost:8081](http://localhost:8081)
+1. Log in with username: `consoleme_user` and password `consoleme_user`.
+1. You are redirected to ConsoleMe as an authenticated user.
+
+To learn how to configure your own SAML provider, visit [SAML Configuration](saml.md).
+Do not use the sample configurations provided here in a production environment, as they are insecure.
+
+## OpenID Connect/OAuth 2.0 Demo
+1. Run `docker-compose -f docker-compose-oidc.yaml up` from the root directory of the `consoleme` repo.
+1. Visit [http://localhost:8081](http://localhost:8081)
+1. Log in with username: `consoleme_user@example.com` and password `consoleme_user`.
+1. You are redirected to ConsoleMe as an authenticated user.
+
+To learn how to configure your own OIDC provider, visit [OpenID Connect/OAuth 2.0 Configuration](oidc.md).
+Do not use the sample configurations provided here in a production environment, as they are insecure.
+
+## Header Authentication Demo
+If you run in an environment where authentication is handled for you, and ConsoleMe will receive trusted headers
+indicating the user and the groups they are a member of, header authentication is an option for you.
+
+A word of caution: In a production
+
+## UserName and Password authentication
+To make it easy to get started with ConsoleMe, we've added support for standalone authentication within ConsoleMe.
+ConsoleMe will securely store user credentials with a salted hash
+
+<TBD>
 
 ## Local Quick Start with Header Authentication (Docker)
 
