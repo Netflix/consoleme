@@ -17,12 +17,14 @@ get_user_by_oidc_settings:
   resource: consoleme-oidc
   authorize_url: http://localhost:9000/auth
   issuer: http://simple-oidc-provider
-  token_endpoint: http://localhost:9000/token
+  token_endpoint: http://consoleme_oidc:9000/token
   token_introspection_endpoint: http://localhost:9000/token/introspection
   userinfo_endpoint: http://localhost:9000/me
   jwt_verify: false
   jwt_email_key: email
   jwt_groups_key: groups
+  grant_type: authorization_code
+  token_response_key: id_token
 
 development: true
 

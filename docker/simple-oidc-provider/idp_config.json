@@ -4,6 +4,9 @@
       "email",
       "email_verified"
     ],
+    "groups": [
+      "groups"
+    ],
     "openid": [
       "sub"
     ],
@@ -17,8 +20,8 @@
       "client_id": "foo",
       "client_secret": "bar",
       "redirect_uris": [
-        "http://127.0.0.1:8081",
-        "http://localhost:8081"
+        "http://127.0.0.1:8081/",
+        "http://localhost:8081/"
       ]
     }
   ],

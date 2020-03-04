@@ -13,7 +13,7 @@
     "en-US": {
       "displayname": "ConsoleMe",
       "name": "ConsoleMe",
-      "url": "http://127.0.0.1:8081"
+      "url": "http://localhost:8081"
     }
   },
   "security": {

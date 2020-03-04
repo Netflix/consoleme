@@ -19,9 +19,7 @@ async def authenticate_user_by_oauth2(request):
     code = request.get_argument("code", None)
     client_id = config.get("oidc_secrets.client_id")
     client_secret = config.get("oidc_secrets.secret")
-    redirect_uri = (
-        f"{request.request.protocol}://{request.request.host}{request.request.uri}"
-    )
+    redirect_uri = f"{request.request.protocol}://{request.request.host}/"
     if code is None:
         args = {"response_type": "code"}
         client_scope = config.get("oidc_secrets.client_scope")
@@ -40,7 +38,9 @@ async def authenticate_user_by_oauth2(request):
     try:
         # exchange the authorization code with the access token
         http_client = tornado.httpclient.AsyncHTTPClient()
-        grant_type = "authorization_code"
+        grant_type = config.get(
+            "get_user_by_oidc_settings.grant_type", "authorization_code"
+        )
         authorization_header = f"{client_id}:{client_secret}"
         authorization_header_encoded = base64.b64encode(
             authorization_header.encode("UTF-8")
@@ -60,7 +60,9 @@ async def authenticate_user_by_oauth2(request):
 
         token_exchange_response_body_dict = json.loads(token_exchange_response.body)
 
-        access_token = token_exchange_response_body_dict.get("access_token")
+        access_token = token_exchange_response_body_dict.get(
+            config.get("get_user_by_oidc_settings.token_response_key", "access_token")
+        )
         jwt_verify = config.get("get_user_by_oidc_settings.jwt_verify")
         if jwt_verify:
             raise NotImplementedError("JWT verification not implemented yet.")
