@@ -34,8 +34,8 @@ services:
       - "8080:8080"
       - "8443:8443"
     environment:
-      - SIMPLESAMLPHP_SP_ENTITY_ID=http://127.0.0.1:8081
-      - SIMPLESAMLPHP_SP_ASSERTION_CONSUMER_SERVICE=http://127.0.0.1:8081/saml/acs
+      - SIMPLESAMLPHP_SP_ENTITY_ID=http://localhost:8081
+      - SIMPLESAMLPHP_SP_ASSERTION_CONSUMER_SERVICE=http://localhost:8081/saml/acs
   consoleme_redis:
     container_name: consoleme_redis
     image: "redis:alpine"

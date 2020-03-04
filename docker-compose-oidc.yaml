@@ -21,9 +21,11 @@ services:
     depends_on:
       - consoleme_redis
       - consoleme_dynamodb
+      - consoleme_oidc
     links:
       - consoleme_redis
       - consoleme_dynamodb
+      - consoleme_oidc
 
   consoleme_oidc:
     image: "qlik/simple-oidc-provider"
@@ -35,6 +37,7 @@ services:
     environment:
       - CONFIG_FILE=/simple-oidc-provider-settings/idp_config.json
       - USERS_FILE=/simple-oidc-provider-settings/idp_users.json
+      - DEBUG=oidc-provider:*
   consoleme_redis:
     container_name: consoleme_redis
     image: "redis:alpine"

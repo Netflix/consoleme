@@ -16,12 +16,12 @@
     "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
     "assertionConsumerService": {
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
-      "url": "http://127.0.0.1:8081/saml/acs"
+      "url": "http://localhost:8081/saml/acs"
     },
-    "entityId": "http://127.0.0.1:8081",
+    "entityId": "http://localhost:8081",
     "singleLogoutService": {
       "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
-      "url": "https://127.0.0.1:8081/saml/sls"
+      "url": "https://localhost:8081/saml/sls"
     }
   },
   "strict": false
