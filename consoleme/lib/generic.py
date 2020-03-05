@@ -1,13 +1,12 @@
 import os
 import random
-import re
-from typing import Dict, List, Optional, Union
-
-from tornado.web import RequestHandler
 
 import pandas as pd
+import re
 import ujson as json
 from dateutil import parser
+from tornado.web import RequestHandler
+from typing import Dict, List, Optional, Union
 
 
 def str2bool(v: Optional[Union[bool, str]]) -> bool:
@@ -134,3 +133,24 @@ async def sort_nested_dictionary_lists(d):
         if isinstance(v, dict):
             d[k] = await sort_nested_dictionary_lists(v)
     return d
+
+
+def is_in_time_range(t, time_range):
+    valid_days = time_range.get("days")
+    if t.weekday() not in valid_days:
+        return False
+    valid_start_time = t.replace(
+        hour=time_range.get("hour_start", 0),
+        minute=time_range.get("minute_start", 0),
+        second=0,
+        microsecond=0,
+    )
+    valid_end_time = t.replace(
+        hour=time_range.get("hour_end", 0),
+        minute=time_range.get("minute_end", 0),
+        second=0,
+        microsecond=0,
+    )
+    if t < valid_start_time or t > valid_end_time:
+        return False
+    return True
