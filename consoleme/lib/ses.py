@@ -29,6 +29,7 @@ async def send_email(
         "region": region,
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "sender": sender,
+        "subject": subject,
     }
 
     if not config.get("ses.arn"):

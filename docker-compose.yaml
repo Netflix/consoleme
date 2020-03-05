@@ -26,6 +26,8 @@ services:
 
   consoleme_redis:
     container_name: consoleme_redis
+    ports:
+      - "6379:6379"
     image: "redis:alpine"
 
   consoleme_dynamodb:
@@ -33,6 +35,8 @@ services:
     container_name: consoleme_dynamodb
     entrypoint: java
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data -port 8005"
+    ports:
+      - "8005:8005"
     restart: always
     volumes:
       - ./dynamodb-data:/data
