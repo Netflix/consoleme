@@ -4,22 +4,22 @@
 #
 #    pip-compile --no-index --output-file=requirements-docs.txt requirements-docs.in
 #
-apispec==3.3.0            # via -c requirements.txt (line 9), -r requirements-docs.in (line 3)
-click==7.0                # via -c requirements-test.txt (line 24), -c requirements.txt (line 27), mkdocs
-future==0.18.2            # via -c requirements-test.txt (line 38), lunr
-jinja2==2.11.1            # via -c requirements-test.txt (line 43), -c requirements.txt (line 57), mkdocs
+apispec==3.3.0            # via -c requirements.txt, -r requirements-docs.in
+click==7.0                # via -c requirements-test.txt, -c requirements.txt, mkdocs
+future==0.18.2            # via -c requirements-test.txt, lunr
+jinja2==2.11.1            # via -c requirements-test.txt, -c requirements.txt, mkdocs
 livereload==2.6.1         # via mkdocs
 lunr[languages]==0.5.6    # via mkdocs
 markdown==3.2.1           # via mkdocs, mkdocs-material, pymdown-extensions
-markupsafe==1.1.1         # via -c requirements-test.txt (line 50), -c requirements.txt (line 65), jinja2
-mkdocs-material==4.6.3    # via -r requirements-docs.in (line 5)
-mkdocs==1.1               # via -r requirements-docs.in (line 4), mkdocs-material
+markupsafe==1.1.1         # via -c requirements-test.txt, -c requirements.txt, jinja2
+mkdocs-material==4.6.3    # via -r requirements-docs.in
+mkdocs==1.1               # via -r requirements-docs.in, mkdocs-material
 nltk==3.4.5               # via lunr
-pygments==2.5.2           # via -c requirements-test.txt (line 71), -c requirements.txt (line 86), mkdocs-material
+pygments==2.5.2           # via -c requirements-test.txt, -c requirements.txt, mkdocs-material
 pymdown-extensions==6.3   # via mkdocs-material
-pyyaml==5.3               # via -c requirements-test.txt (line 85), -c requirements.txt (line 94), -r requirements-docs.in (line 6), apispec, mkdocs
-six==1.14.0               # via -c requirements-test.txt (line 94), -c requirements.txt (line 104), livereload, lunr
-tornado==6.0.3            # via -c requirements-test.txt (line 101), -c requirements.txt (line 108), livereload, mkdocs
+pyyaml==5.3               # via -c requirements-test.txt, -c requirements.txt, -r requirements-docs.in, apispec, mkdocs
+six==1.14.0               # via -c requirements-test.txt, -c requirements.txt, livereload, lunr
+tornado==6.0.4            # via -c requirements-test.txt, -c requirements.txt, livereload, mkdocs
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

@@ -55,7 +55,7 @@ redis:
 
 .PHONY: test
 test: clean
-    CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) $(pytest)
+	CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) $(pytest)
 
 .PHONY: bandit
 bandit: clean
