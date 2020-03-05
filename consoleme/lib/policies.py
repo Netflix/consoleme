@@ -472,7 +472,7 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
     resource_actions: Dict[str, Dict] = defaultdict(default_resource)
     for event in policy_changes:
         for policy_type in ["inline_policies", "managed_policies"]:
-            for policy in event[policy_type]:
+            for policy in event.get(policy_type, []):
                 policy_document = policy["policy_document"]
                 for statement in policy_document.get("Statement", []):
                     for resource in statement.get("Resource", []):
@@ -493,12 +493,16 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
                             ] = get_region_from_arn(resource)
                         resource_actions[resource_name]["arns"].append(resource)
                         actions = get_actions_for_resource(resource, statement)
-                        resource_actions[resource_name]["actions"].extend(actions)
+                        resource_actions[resource_name]["actions"].extend(
+                            x
+                            for x in actions
+                            if x not in resource_actions[resource_name]["actions"]
+                        )
     return dict(resource_actions)
 
 
 def get_actions_for_resource(resource: str, statement: Dict) -> List[str]:
-    """For the given resource and list of actions, return the actions that are
+    """For the given resource and policy statement, return the actions that are
     for that resource's service.
     """
     results: List[str] = []
@@ -507,9 +511,10 @@ def get_actions_for_resource(resource: str, statement: Dict) -> List[str]:
     # Get relevant actions from policy doc
     for action in statement["Action"]:
         if get_service_from_action(action) == resource_service:
-            results.append(action)
+            if action not in results:
+                results.append(action)
 
-    return list(set(results))
+    return results
 
 
 async def get_formatted_policy_changes(account_id, arn, request):

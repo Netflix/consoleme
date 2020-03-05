@@ -171,16 +171,17 @@ async def get_resource_account(arn: str) -> str:
     resource_type: str = get_service_from_arn(arn)
     resource_name: str = get_resource_from_arn(arn)
     if resource_type == "s3":
-        for k, v in s3_buckets.items():
-            if resource_name in v:
-                return k
-    else:
-        return ""
+        if s3_buckets:
+            for k, v in s3_buckets.items():
+                if resource_name in v:
+                    return k
+
+    return ""
 
 
 async def get_resource_policies(
     principal_arn: str, resource_actions: Dict[str, List[str]], account: str
-) -> Dict:
+) -> List[Dict]:
     resource_policies: List[Dict] = []
     for resource_name, resource_info in resource_actions.items():
         if resource_info.get("account") != account:
