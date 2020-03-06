@@ -184,9 +184,9 @@ async def get_resource_policies(
 ) -> List[Dict]:
     resource_policies: List[Dict] = []
     for resource_name, resource_info in resource_actions.items():
-        if resource_info.get("account") != account:
+        resource_account: str = resource_info.get("account")
+        if resource_account and resource_account != account:
             # This is a cross-account request. Might need a resource policy.
-            resource_account: str = resource_info.get("account")
             resource_type: str = resource_info.get("type")
             resource_region: str = resource_info.get("region")
             try:
