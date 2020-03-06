@@ -14,7 +14,7 @@ from consoleme.lib.aws import (
     role_has_tag,
     role_newer_than_x_days,
 )
-from tests.conftest import MockRedisHandler, create_future
+from tests.conftest import create_future
 
 ROLE = {
     "Arn": "arn:aws:iam::123456789012:role/TestInstanceProfile",

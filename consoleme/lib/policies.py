@@ -475,7 +475,11 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
             for policy in event.get(policy_type, []):
                 policy_document = policy["policy_document"]
                 for statement in policy_document.get("Statement", []):
-                    for resource in statement.get("Resource", []):
+                    resources = statement.get("Resource", [])
+                    resources = (
+                        resources if isinstance(resources, list) else [resources]
+                    )
+                    for resource in resources:
                         if resource == "*":
                             continue
                         resource_name = get_resource_from_arn(resource)
@@ -501,15 +505,17 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
     return dict(resource_actions)
 
 
-def get_actions_for_resource(resource: str, statement: Dict) -> List[str]:
+def get_actions_for_resource(resource_arn: str, statement: Dict) -> List[str]:
     """For the given resource and policy statement, return the actions that are
     for that resource's service.
     """
     results: List[str] = []
     # Get service from resource
-    resource_service = get_service_from_arn(resource)
+    resource_service = get_service_from_arn(resource_arn)
     # Get relevant actions from policy doc
-    for action in statement["Action"]:
+    actions = statement.get("Action", [])
+    actions = actions if isinstance(actions, list) else [actions]
+    for action in actions:
         if get_service_from_action(action) == resource_service:
             if action not in results:
                 results.append(action)
