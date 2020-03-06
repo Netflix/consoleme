@@ -483,6 +483,8 @@ async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, Lis
                         if resource == "*":
                             continue
                         resource_name = get_resource_from_arn(resource)
+                        if resource_name == "*":
+                            continue
                         if not resource_actions[resource_name]["account"]:
                             resource_actions[resource_name][
                                 "account"
@@ -516,9 +518,12 @@ def get_actions_for_resource(resource_arn: str, statement: Dict) -> List[str]:
     actions = statement.get("Action", [])
     actions = actions if isinstance(actions, list) else [actions]
     for action in actions:
-        if get_service_from_action(action) == resource_service:
-            if action not in results:
-                results.append(action)
+        if action == "*":
+            results.append(action)
+        else:
+            if get_service_from_action(action) == resource_service:
+                if action not in results:
+                    results.append(action)
 
     return results
 

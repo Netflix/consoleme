@@ -7,7 +7,9 @@ from consoleme.lib.policies import get_actions_for_resource, get_resources_from_
 from tests.conftest import create_future
 
 mock_s3_bucket_redis = MagicMock(
-    return_value=create_future({"123456789012": ["foobar", "bazbang"]})
+    return_value=create_future(
+        {"123456789012": ["foobar", "bazbang", "bangbar", "heewon"]}
+    )
 )
 
 
@@ -52,6 +54,7 @@ class TestPoliciesLib(TestCase):
                     {
                         "policy_document": {
                             "Statement": [
+                                # Most common structure, with an added non-s3 action.
                                 {
                                     "Action": [
                                         "s3:PutObject",
@@ -64,9 +67,30 @@ class TestPoliciesLib(TestCase):
                                     ],
                                     "Effect": "Allow",
                                 },
+                                # Make sure we properly handle non-list actions and resources.
                                 {
                                     "Action": "s3:PutObject",
                                     "Resource": "arn:aws:s3:::bazbang",
+                                    "Effect": "Allow",
+                                },
+                                # Wildcard actions should show up in results.
+                                {
+                                    "Action": "*",
+                                    "Resource": "arn:aws:s3:::bangbar",
+                                    "Effect": "Allow",
+                                },
+                                # Partial wildcard actions should show up in results.
+                                {
+                                    "Action": "s3:Get*",
+                                    "Resource": "arn:aws:s3:::heewon",
+                                    "Effect": "Allow",
+                                },
+                                # Wildcard resource ARN shouldn't show up in results.
+                                {"Action": "*", "Resource": "*", "Effect": "Allow"},
+                                # Wildcard resource name shouldn't show up in results.
+                                {
+                                    "Action": "s3:PutObject",
+                                    "Resource": "arn:aws:s3:::*",
                                     "Effect": "Allow",
                                 },
                             ],
@@ -90,7 +114,22 @@ class TestPoliciesLib(TestCase):
                 "type": "s3",
                 "region": "",
             },
+            "bangbar": {
+                "actions": ["*"],
+                "arns": ["arn:aws:s3:::bangbar"],
+                "account": "123456789012",
+                "type": "s3",
+                "region": "",
+            },
+            "heewon": {
+                "actions": ["s3:Get*"],
+                "arns": ["arn:aws:s3:::heewon"],
+                "account": "123456789012",
+                "type": "s3",
+                "region": "",
+            },
         }
+        self.maxDiff = None
         loop = asyncio.get_event_loop()
         result = loop.run_until_complete(get_resources_from_events(policy_changes))
         self.assertDictEqual(expected, result)
