@@ -540,6 +540,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
                 arn, resource_actions, account_id
             )
         except Exception as e:
+            config.sentry.captureException()
             log_data["error"] = e
             log.error(log_data, exc_info=True)
             resource_actions = {}
@@ -820,6 +821,7 @@ class PolicyReviewHandler(BaseHandler):
                     arn, resource_actions, account_id
                 )
             except Exception as e:
+                config.sentry.captureException()
                 log_data["error"] = e
                 log.error(log_data, exc_info=True)
                 resource_actions = {}
