@@ -1036,5 +1036,8 @@ schedule = {
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
 
+if config.get("celery.clear_tasks_for_development", False):
+    schedule = {}
+
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"
