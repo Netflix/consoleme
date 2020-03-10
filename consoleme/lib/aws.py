@@ -429,6 +429,7 @@ def role_newer_than_x_days(role: Dict, days: int) -> bool:
     :param days: number of days
     :return:
     """
+
     role_age = datetime.now(tz=pytz.utc) - role.get("CreateDate")
     if role_age.days < days:
         return True
