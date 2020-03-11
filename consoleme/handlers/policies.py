@@ -540,13 +540,16 @@ class PolicyReviewSubmitHandler(BaseHandler):
                 arn, resource_actions, account_id
             )
         except Exception as e:
+            config.sentry.captureException()
             log_data["error"] = e
             log.error(log_data, exc_info=True)
             resource_actions = {}
             resources = []
-            resource_policies = {}
+            resource_policies = []
+
         log_data["resource_actions"] = resource_actions
         log_data["resource_policies"] = resource_policies
+        events.extend(resource_policies)
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
             self.user, justification, arn, policy_name, events, resources
@@ -682,6 +685,7 @@ class PolicyReviewHandler(BaseHandler):
             read_only=read_only,
             role_uri=role_uri,
             escape_json=escape_json,
+            policy_changes=formatted_policy_changes,
         )
 
     async def post(self, request_id):
@@ -811,6 +815,23 @@ class PolicyReviewHandler(BaseHandler):
                         "requester": request.get("username"),
                     }
                 ]
+            try:
+                resource_actions = await get_resources_from_events(policy_changes)
+                resource_policies = await get_resource_policies(
+                    arn, resource_actions, account_id
+                )
+            except Exception as e:
+                config.sentry.captureException()
+                log_data["error"] = e
+                log.error(log_data, exc_info=True)
+                resource_actions = {}
+                resource_policies = []
+
+            log_data["resource_actions"] = resource_actions
+            log_data["resource_policies"] = resource_policies
+            log.debug(log_data)
+            policy_changes.extend(resource_policies)
+            dynamo = UserDynamoHandler(self.user)
             request["policy_changes"] = json.dumps(policy_changes)
             request["reviewer_comments"] = reviewer_comments
 

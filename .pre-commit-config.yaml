@@ -3,7 +3,6 @@ repos:
     rev: v1.4.0  # Use the ref you want to point at
     hooks:
     -   id: trailing-whitespace
-    -   id: autopep8-wrapper
     -   id: check-ast
     -   id: check-case-conflict
     -   id: check-yaml
