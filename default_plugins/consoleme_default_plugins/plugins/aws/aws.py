@@ -399,6 +399,9 @@ class Aws:
                 credentials = await sync_to_async(client.assume_role)(
                     RoleArn=role, RoleSessionName=user.lower(), Policy=policy
                 )
+                credentials["Credentials"]["Expiration"] = int(
+                    credentials["Credentials"]["Expiration"].timestamp()
+                )
                 return credentials
             if custom_ip_restrictions:
                 policy = json.dumps(
@@ -423,10 +426,16 @@ class Aws:
                 credentials = await sync_to_async(client.assume_role)(
                     RoleArn=role, RoleSessionName=user.lower(), Policy=policy
                 )
+                credentials["Credentials"]["Expiration"] = int(
+                    credentials["Credentials"]["Expiration"].timestamp()
+                )
                 return credentials
 
             credentials = await sync_to_async(client.assume_role)(
                 RoleArn=role, RoleSessionName=user.lower()
+            )
+            credentials["Credentials"]["Expiration"] = int(
+                credentials["Credentials"]["Expiration"].timestamp()
             )
             log.debug(log_data)
             return credentials
