@@ -1,11 +1,10 @@
 import base64
+from collections import defaultdict
+
+import boto3
 import re
 import sys
 import time
-from collections import defaultdict
-from typing import Dict, List
-
-import boto3
 import ujson as json
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
@@ -13,6 +12,7 @@ from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
 from policy_sentry.util.actions import get_service_from_action
 from policy_sentry.util.arns import get_service_from_arn
+from typing import Dict, List
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter
@@ -20,11 +20,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
-try:
-    zelkova = boto3.client("zelkova", region_name=config.region)
-except Exception as e:  # noqa
-    zelkova = None
-    config.sentry.captureException()
 
 
 async def invalid_characters_in_policy(policy_value):
@@ -180,7 +175,6 @@ async def parse_policy_change_request(
                 log.error(log_data)
                 return result
 
-            # Todo(ccastrapel): Integrate Zelkova
             # Todo(ccastrapel): Validate AWS syntax
 
             event["assume_role_policy_document"] = {
@@ -563,121 +557,5 @@ async def get_formatted_policy_changes(account_id, arn, request):
 
 
 async def should_auto_approve_policy(events, user, user_groups):
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    log_data = {"function": function, "user": user}
-
-    try:
-        if not config.get("dynamic_config.policy_request_autoapprove_probes.enabled"):
-            return False
-        for event in events:
-            arn = event.get("arn")
-            account_id = arn.split(":")[4]
-            log_data = {
-                "function": function,
-                "requested_policy": event,
-                "user": user,
-                "arn": arn,
-            }
-
-            inline_policies = event.get("inline_policies", [])
-            approving_probe = None
-            # We only support inline policies at this time
-            if not inline_policies:
-                return False
-
-            # We only want to analyze update and attach events
-            for policy in inline_policies:
-                policy_result = False
-                if policy.get("action") not in ["update", "attach"]:
-                    return False
-
-                if not zelkova:
-                    return False
-
-                for probe in config.get(
-                    "dynamic_config.policy_request_autoapprove_probes.probes"
-                ):
-                    log_data["probe"] = probe["name"]
-                    log_data["requested_policy"] = policy
-                    log_data["message"] = "Running probe on requested policy"
-                    probe_result = False
-                    requested_policy_text = policy["policy_document"]
-
-                    # Do not approve "Deny" policies automatically
-                    if isinstance(requested_policy_text, dict):
-                        statements = requested_policy_text.get("Statement", [])
-                        for statement in statements:
-                            if not isinstance(statement, dict):
-                                continue
-                            if statement.get("Effect") == "Deny":
-                                return False
-
-                    if isinstance(requested_policy_text, dict):
-                        requested_policy_text = json.dumps(requested_policy_text)
-                    zelkova_result = await sync_to_async(zelkova.compare_policies)(
-                        Items=[
-                            {
-                                "Policy0": requested_policy_text,
-                                "Policy1": probe["policy"].replace(
-                                    "{account_id}", account_id
-                                ),
-                                "ResourceType": "IAM",
-                            }
-                        ]
-                    )
-
-                    comparison = zelkova_result["Items"][0]["Comparison"]
-
-                    allow_listed = False
-                    allowed_group = False
-
-                    # Probe will fail if ARN account ID is not in the probe's account allow-list. Default allow-list is
-                    # *
-                    for account in probe.get("accounts", {}).get("allowlist", ["*"]):
-                        if account == "*" or account_id == str(account):
-                            allow_listed = True
-                            break
-
-                    if not allow_listed:
-                        comparison = "DENIED_BY_ALLOWLIST"
-
-                    # Probe will fail if ARN account ID is in the probe's account blocklist
-                    for account in probe.get("accounts", {}).get("blocklist", []):
-                        if account_id == str(account):
-                            comparison = "DENIED_BY_BLOCKLIST"
-
-                    for group in probe.get("required_user_or_group", ["*"]):
-                        for g in user_groups:
-                            if group == "*" or group == g or group == user:
-                                allowed_group = True
-                                break
-
-                    if not allowed_group:
-                        comparison = "DENIED_BY_ALLOWEDGROUPS"
-
-                    if comparison in ["LESS_PERMISSIVE", "EQUIVALENT"]:
-                        probe_result = True
-                        policy_result = True
-                        approving_probe = probe["name"]
-                    log_data["comparison"] = comparison
-                    log_data["probe_result"] = probe_result
-                    log.debug(log_data)
-                if not policy_result:
-                    # If one of the policies in the request fails to auto-approve, everything fails
-                    log_data["result"] = False
-                    log_data["message"] = "Successfully ran all probes"
-                    log.debug(log_data)
-                    stats.count(f"{function}.called", tags={"result": False})
-                    return False
-
-            log_data["result"] = True
-            log_data["message"] = "Successfully ran all probes"
-            log.debug(log_data)
-            stats.count(f"{function}.called", tags={"result": True})
-            return {"approved": True, "approving_probe": approving_probe}
-    except Exception as e:
-        config.sentry.captureException()
-        log_data["error"] = e
-        log_data["message"] = "Exception in function"
-        log.error(log_data)
-        return False
+    aws = get_plugin_by_name(config.get("plugins.aws"))()
+    return await aws.should_auto_approve_policy(events, user, user_groups)
