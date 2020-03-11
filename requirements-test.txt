@@ -13,15 +13,15 @@ aws-xray-sdk==2.4.3       # via moto
 bandit==1.6.2             # via -r requirements-test.in
 black==19.10b0            # via -r requirements-test.in
 bleach==3.1.1             # via -c requirements.txt, readme-renderer
-boto3==1.12.16            # via -c requirements.txt, aws-sam-translator, moto
+boto3==1.12.18            # via -c requirements.txt, aws-sam-translator, moto
 boto==2.49.0              # via -c requirements.txt, moto
-botocore==1.15.16         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
+botocore==1.15.18         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
 certifi==2019.11.28       # via -c requirements.txt, requests
 cffi==1.14.0              # via cryptography
 cfgv==3.1.0               # via pre-commit
 cfn-lint==0.28.4          # via moto
 chardet==3.0.4            # via -c requirements.txt, requests
-click==7.1                # via -c requirements.txt, black
+click==7.1.1              # via -c requirements.txt, black
 coverage==5.0.3           # via -r requirements-test.in, pytest-cov
 cryptography==2.8         # via moto, sshpubkeys
 distlib==0.3.0            # via virtualenv
@@ -54,7 +54,7 @@ mockredispy==2.9.3        # via -r requirements-test.in
 more-itertools==8.2.0     # via pytest
 moto==1.3.14              # via -r requirements-test.in
 mypy-extensions==0.4.3    # via mypy
-mypy==0.761               # via -r requirements-test.in
+mypy==0.770               # via -r requirements-test.in
 nodeenv==1.3.5            # via pre-commit
 packaging==20.3           # via pytest, tox
 pathspec==0.7.0           # via black
@@ -103,7 +103,7 @@ tox==3.14.5               # via -r requirements-test.in
 typed-ast==1.4.1          # via black, mypy
 typing-extensions==3.7.4.1  # via mypy
 urllib3==1.25.8           # via -c requirements.txt, botocore, requests, selenium
-virtualenv==20.0.9        # via pre-commit, tox
+virtualenv==20.0.10       # via pre-commit, tox
 wcwidth==0.1.8            # via -c requirements.txt, pytest
 webencodings==0.5.1       # via -c requirements.txt, bleach
 websocket-client==0.57.0  # via docker
