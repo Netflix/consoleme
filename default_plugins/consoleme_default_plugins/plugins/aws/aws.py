@@ -527,6 +527,9 @@ class Aws:
     def handle_detected_role(role):
         pass
 
+    async def should_auto_approve_policy(self, events, user, user_groups):
+        return False
+
 
 def init():
     """Initialize the AWS plugin."""
