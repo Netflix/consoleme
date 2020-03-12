@@ -13,9 +13,9 @@ aws-xray-sdk==2.4.3       # via moto
 bandit==1.6.2             # via -r requirements-test.in
 black==19.10b0            # via -r requirements-test.in
 bleach==3.1.1             # via -c requirements.txt, readme-renderer
-boto3==1.12.18            # via -c requirements.txt, aws-sam-translator, moto
+boto3==1.12.19            # via -c requirements.txt, aws-sam-translator, moto
 boto==2.49.0              # via -c requirements.txt, moto
-botocore==1.15.18         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
+botocore==1.15.19         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
 certifi==2019.11.28       # via -c requirements.txt, requests
 cffi==1.14.0              # via cryptography
 cfgv==3.1.0               # via pre-commit
@@ -61,7 +61,7 @@ pathspec==0.7.0           # via black
 pbr==5.4.4                # via stevedore
 pillow==7.0.0             # via -r requirements-test.in
 pluggy==0.13.1            # via pytest, tox
-pre-commit==2.1.1         # via -r requirements-test.in
+pre-commit==2.2.0         # via -r requirements-test.in
 py==1.8.1                 # via -c requirements.txt, pytest, tox
 pyasn1==0.4.8             # via -c requirements.txt, python-jose, rsa
 pycodestyle==2.5.0        # via flake8, flake8-import-order
@@ -78,7 +78,7 @@ pytest-mock==2.0.0        # via -r requirements-test.in
 pytest-timeout==1.3.4     # via -r requirements-test.in
 pytest-tornado==0.8.0     # via -r requirements-test.in
 pytest-xdist==1.31.0      # via -r requirements-test.in
-pytest==5.3.5             # via -r requirements-test.in, pytest-asyncio, pytest-cov, pytest-forked, pytest-mock, pytest-timeout, pytest-tornado, pytest-xdist
+pytest==5.4.0             # via -r requirements-test.in, pytest-asyncio, pytest-cov, pytest-forked, pytest-mock, pytest-timeout, pytest-tornado, pytest-xdist
 python-dateutil==2.8.0    # via -c requirements.txt, botocore, moto
 python-jose==3.1.0        # via moto
 pytz==2019.3              # via -c requirements.txt, moto
