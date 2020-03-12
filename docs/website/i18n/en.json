@@ -18,14 +18,26 @@
       "Docs": {
         "title": "Docs"
       },
+      "OIDC": {
+        "title": "OpenID Connect/OAuth 2.0 Configuration"
+      },
       "QuickStart": {
         "title": "Quick Start"
+      },
+      "SAML": {
+        "title": "SAML Configuration"
+      },
+      "alb_auth": {
+        "title": "alb_auth"
       },
       "building": {
         "title": "building"
       },
       "configuration_guide": {
         "title": "configuration_guide"
+      },
+      "header": {
+        "title": "header"
       }
     },
     "links": {

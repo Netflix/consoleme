@@ -259,7 +259,7 @@ class GroupHandler(BaseHandler):
         # Configure string values for certain attributes if they are sent in the POST request
         for l in list_attributes:
             var = l.get("name")
-            if data.get(var):
+            if data.get(var) is not None:
                 modifications[var] = data[var]
 
         add_members = []
@@ -548,7 +548,7 @@ class JSONGroupHandler(BaseJSONHandler):
         for attr in list_attributes:
             name = attr.get("name")
             value = data.get(name)
-            if value:
+            if value is not None:
                 for u in value.split(","):
                     u = u.strip()
                     if not validate_email(u):
