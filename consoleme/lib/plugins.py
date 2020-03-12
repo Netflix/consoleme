@@ -20,5 +20,7 @@ def get_plugin_by_name(plugin_name: str) -> Any:
             return ep.load()
     raise Exception(
         f"Could not find the specified plugin: {plugin_name}. "
-        f"Plugins found: {', '.join(plugins)}"
+        f"Plugins found: {', '.join(plugins)}. "
+        f"Make sure you've set the environment variable CONSOLEME_CONFIG_ENTRYPOINT to the name of your configuration "
+        f"entrypoint, otherwise it will default to `default_config`."
     )

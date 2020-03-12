@@ -60,11 +60,4 @@ class ApiHeaderHandler(BaseMtlsHandler):
         log.debug(log_data)
         stats.count("apimyheaders.get")
 
-        response_html = []
-
-        for k, v in dict(self.request.headers).items():
-            response_html.append(
-                f"<p><strong>{xhtml_escape(k)}</strong>: {xhtml_escape(v)}</p>"
-            )
-
-        self.write("{}".format("\n".join(response_html)))
+        self.write(dict(self.request.headers))

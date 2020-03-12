@@ -20,6 +20,7 @@ import ujson
 from asgiref.sync import async_to_sync
 from botocore.exceptions import ClientError
 from celery.app.task import Context
+from celery.concurrency import asynpool
 from celery.schedules import crontab
 from celery.signals import task_failure, task_received, task_revoked, task_success
 from cloudaux import sts_conn
@@ -43,6 +44,7 @@ from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import get_request_review_url
 from consoleme.lib.ses import send_group_modification_notification
 
+asynpool.PROC_ALIVE_TIMEOUT = config.get("celessry.asynpool_proc_alive_timeout", 60.0)
 region = config.region
 
 

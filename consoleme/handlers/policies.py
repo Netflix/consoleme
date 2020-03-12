@@ -560,6 +560,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
                     account_id, arn, request
                 )
             except Exception as e:
+                config.sentry.captureException()
                 await write_json_error(e, obj=self)
                 await self.finish()
                 return
@@ -575,6 +576,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
                 await dynamo.update_policy_request(request)
                 await aws.fetch_iam_role(account_id, arn, force_refresh=True)
             else:
+                config.sentry.captureException()
                 await write_json_error(result, obj=self)
                 await self.finish()
                 return
