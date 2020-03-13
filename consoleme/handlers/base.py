@@ -11,7 +11,7 @@ from asgiref.sync import sync_to_async
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from raven.contrib.tornado import SentryMixin
 from tornado import httputil
-from typing import Any
+from typing import Any, Union
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -136,9 +136,33 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         )
 
     async def prepare(self) -> None:
+        self.responses = []
         self.request_uuid = str(uuid.uuid4())
         stats.timer("base_handler.incoming_request")
         return await self.authorization_flow()
+
+    def write(self, chunk: Union[str, bytes, dict]) -> None:
+        if config.get("_security_risk_full_debugging.enabled"):
+            self.responses.append(chunk)
+        super(BaseHandler, self).write(chunk)
+
+    def on_finish(self) -> None:
+        if config.get("_security_risk_full_debugging.enabled"):
+            request_details = {
+                "path": self.request.path,
+                "method": self.request.method,
+                "body": self.request.body,
+                "arguments": self.request.arguments,
+                "body_arguments": self.request.body_arguments,
+                "headers": dict(self.request.headers.items()),
+                "query": self.request.query,
+                "query_arguments": self.request.query_arguments,
+                "uri": self.request.uri,
+                "cookies": dict(self.request.cookies.items()),
+                "response": self.responses,
+            }
+            with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
+                f.write(json.dumps(request_details))
 
     async def authorization_flow(
         self, user: str = None, console_only: bool = True, refresh_cache: bool = False
@@ -367,6 +391,7 @@ class BaseMtlsHandler(BaseHandler):
         self.kwargs = kwargs
 
     async def prepare(self):
+        self.responses = []
         self.request_uuid = str(uuid.uuid4())
         stats.timer("base_handler.incoming_request")
         try:
@@ -398,6 +423,29 @@ class BaseMtlsHandler(BaseHandler):
             "X-Forwarded-For", self.request.remote_ip
         ).split(",")[0]
         self.current_cert_age = await auth.get_cert_age_seconds(self.request.headers)
+
+    def write(self, chunk: Union[str, bytes, dict]) -> None:
+        if config.get("_security_risk_full_debugging.enabled"):
+            self.responses.append(chunk)
+        super(BaseMtlsHandler, self).write(chunk)
+
+    def on_finish(self) -> None:
+        if config.get("_security_risk_full_debugging.enabled"):
+            request_details = {
+                "path": self.request.path,
+                "method": self.request.method,
+                "body": self.request.body,
+                "arguments": self.request.arguments,
+                "body_arguments": self.request.body_arguments,
+                "headers": dict(self.request.headers.items()),
+                "query": self.request.query,
+                "query_arguments": self.request.query_arguments,
+                "uri": self.request.uri,
+                "cookies": dict(self.request.cookies.items()),
+                "response": self.responses,
+            }
+            with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
+                f.write(json.dumps(request_details))
 
 
 class NoCacheStaticFileHandler(tornado.web.StaticFileHandler):
