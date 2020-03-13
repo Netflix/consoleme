@@ -70,6 +70,20 @@ class Configuration(object):
                 self.config["dynamic_config"] = dynamic_config
             time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
 
+    async def merge_extended_paths(self, extends, dir_path):
+        for s in extends:
+            try:
+                extend_path = os.path.join(dir_path, s)
+                with open(extend_path, "r") as ymlfile:
+                    extend_config = yaml.safe_load(ymlfile)
+                dict_merge(self.config, extend_config)
+                if extend_config.get("extends"):
+                    await self.merge_extended_paths(
+                        extend_config.get("extends"), dir_path
+                    )
+            except FileNotFoundError:
+                logging.error(f"Unable to open file: {s}", exc_info=True)
+
     async def load_config(self):
         """Load configuration from the location given to us by config_plugin"""
         path = config_plugin.get_config_location()
@@ -79,14 +93,8 @@ class Configuration(object):
         extends = self.get("extends")
         dir_path = os.path.dirname(path)
 
-        for s in extends:
-            try:
-                extend_path = os.path.join(dir_path, s)
-                with open(extend_path, "r") as ymlfile:
-                    extend_config = yaml.safe_load(ymlfile)
-                dict_merge(self.config, extend_config)
-            except FileNotFoundError:
-                logging.error(f"Unable to open file: {s}", exc_info=True)
+        if extends:
+            await self.merge_extended_paths(extends, dir_path)
 
         if self.get("config.load_from_dynamo"):
             Timer(0, self.load_config_from_dynamo, ()).start()
