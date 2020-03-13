@@ -548,7 +548,7 @@ class JSONGroupHandler(BaseJSONHandler):
         for attr in list_attributes:
             name = attr.get("name")
             value = data.get(name)
-            if value is not None:
+            if value:
                 for u in value.split(","):
                     u = u.strip()
                     if not validate_email(u):
