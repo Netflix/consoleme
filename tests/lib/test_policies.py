@@ -19,11 +19,7 @@ class TestPoliciesLib(TestCase):
             {
                 "arn": "arn:aws:s3:::foobar",
                 "statement": {
-                    "Action": [
-                        "s3:PutObject",
-                        "s3:GetObject",
-                        "ec2:DescribeInstances",
-                    ],
+                    "Action": ["s3:PutObject", "s3:GetObject", "ec2:DescribeInstances"],
                     "Resource": ["arn:aws:s3:::foobar", "arn:aws:s3:::foobar/*"],
                     "Effect": "Allow",
                 },
@@ -93,11 +89,11 @@ class TestPoliciesLib(TestCase):
                                     "Resource": "arn:aws:s3:::*",
                                     "Effect": "Allow",
                                 },
-                            ],
-                        },
-                    },
-                ],
-            },
+                            ]
+                        }
+                    }
+                ]
+            }
         ]
         expected = {
             "foobar": {
