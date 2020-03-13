@@ -45,7 +45,6 @@ from consoleme.lib.requests import get_request_review_url
 from consoleme.lib.ses import send_group_modification_notification
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
-
 region = config.region
 
 
