@@ -7,6 +7,7 @@
 amqp==2.5.2               # via kombu
 apispec-webframeworks==0.5.2  # via -r requirements.in
 apispec[yaml]==3.3.0      # via -r requirements.in, apispec-webframeworks
+appnope==0.1.0            # via ipython
 asgiref==3.2.5            # via -r requirements.in
 astroid==2.3.3            # via pylint
 attrs==19.3.0             # via jsonschema
@@ -14,9 +15,9 @@ backcall==0.1.0           # via ipython
 beautifulsoup4==4.8.2     # via policy-sentry
 billiard==3.6.3.0         # via celery
 bleach==3.1.1             # via -r requirements.in
-boto3==1.12.19            # via -r requirements.in, cloudaux
+boto3==1.12.20            # via -r requirements.in, cloudaux
 boto==2.49.0              # via cloudaux
-botocore==1.15.19         # via boto3, cloudaux, s3transfer
+botocore==1.15.20         # via boto3, cloudaux, s3transfer
 cachetools==4.0.0         # via google-auth
 cchardet==2.1.5           # via -r requirements.in
 celery[redis]==4.4.1      # via -r requirements.in
