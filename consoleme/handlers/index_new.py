@@ -1,0 +1,65 @@
+from consoleme.handlers.base import BaseHandler
+from consoleme.config import config
+from consoleme.lib.loader import WebpackLoader
+
+# TODO, move followings to util file
+def _filter_by_extension(bundle, extension):
+    '''Return only files with the given extension'''
+    for chunk in bundle:
+        if chunk['name'].endswith('.{0}'.format(extension)):
+            yield chunk
+
+
+def _get_bundle(name, extension, config):
+    loader = WebpackLoader(name=name, config=config)
+    bundle = loader.get_bundle(name)
+    if extension:
+        bundle = _filter_by_extension(bundle, extension)
+    return bundle
+
+
+def get_as_tags(name='main', extension=None, config=config, attrs=''):
+    '''
+    Get a list of formatted <script> & <link> tags for the assets in the
+    named bundle.
+
+    :param bundle_name: The name of the bundle
+    :param extension: (optional) filter by extension, eg. 'js' or 'css'
+    :param config: (optional) the name of the configuration
+    :return: a list of formatted tags as strings
+    '''
+
+    bundle = _get_bundle(name, extension, config)
+    tags = []
+    for chunk in bundle:
+        if chunk['name'].endswith(('.js', '.js.gz')):
+            tags.append((
+                '<script type="text/javascript" src="{0}" {1}></script>'
+            ).format(chunk['url'], attrs))
+        elif chunk['name'].endswith(('.css', '.css.gz')):
+            tags.append((
+                '<link type="text/css" href="{0}" rel="stylesheet" {1}/>'
+            ).format(chunk['url'], attrs))
+    return tags
+
+
+class IndexNewHandler(BaseHandler):
+    async def get(self) -> None:
+        """
+        Get the index endpoint
+        ---
+        description: Get the index endpoint.
+        responses:
+            200:
+                description: Index page
+        """
+        # [
+        #     "http://localhost:3000/static/js/bundle.js",
+        #     "http://localhost:3000/static/js/0.chunk.js",
+        #     "http://localhost:3000/static/js/main.chunk.js",
+        # ]
+        await self.render(
+            "index_new.html",
+            page_title="ConsoleMe - Console Access",
+            bundles=get_as_tags(name='main', config=config),
+        )

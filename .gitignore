@@ -111,3 +111,8 @@ dynamodb-data/
 redis-data/
 node_modules/
 **/node_modules/
+
+# FrontEnd Ignores
+**/static/bundles/
+webpack-stats.*.json
+**/yarn.lock

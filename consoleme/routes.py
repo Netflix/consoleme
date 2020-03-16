@@ -20,7 +20,8 @@ from consoleme.handlers.dynamic_config import DynamicConfigHandler
 from consoleme.handlers.errors import Consolme404Handler
 from consoleme.handlers.headers import ApiHeaderHandler, HeaderHandler
 from consoleme.handlers.health import HealthHandler
-from consoleme.handlers.index import IndexHandler
+# from consoleme.handlers.index import IndexHandler
+from consoleme.handlers.index_new import IndexNewHandler
 from consoleme.handlers.policies import (
     AutocompleteHandler,
     GetPoliciesHandler,
@@ -72,7 +73,8 @@ def make_app(jwt_validator=None):
     path = pkg_resources.resource_filename("consoleme", "templates")
 
     routes = [
-        (r"/", IndexHandler),
+        # (r"/", IndexHandler),
+        (r"/", IndexNewHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),
         (
