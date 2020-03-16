@@ -9,6 +9,8 @@ import ujson as json
 import uuid
 from asgiref.sync import sync_to_async
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
+from onelogin.saml2.settings import OneLogin_Saml2_Settings
 from raven.contrib.tornado import SentryMixin
 from tornado import httputil
 from typing import Any, Union
@@ -380,10 +382,18 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
 
     @staticmethod
     async def init_saml_auth(req):
-        auth = await sync_to_async(OneLogin_Saml2_Auth)(
-            req, custom_base_path=config.get("get_user_by_saml_settings.saml_path")
-        )
-        return auth
+        if config.get("get_user_by_saml_settings.saml_path"):
+            settings = await sync_to_async(OneLogin_Saml2_Settings)(
+                custom_base_path=config.get("get_user_by_saml_settings.saml_path")
+            )
+        elif config.get("get_user_by_saml_settings.metadata_url"):
+            settings = await sync_to_async(
+                OneLogin_Saml2_IdPMetadataParser.parse_remote
+            )(config.get("get_user_by_saml_settings.metadata_url"))
+        else:
+            raise Exception("Invalid SAML Settings")
+        saml_auth = await sync_to_async(OneLogin_Saml2_Auth)(req, settings)
+        return saml_auth
 
 
 class BaseMtlsHandler(BaseHandler):
