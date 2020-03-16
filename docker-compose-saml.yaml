@@ -21,9 +21,11 @@ services:
     depends_on:
       - consoleme_redis
       - consoleme_dynamodb
+      - consoleme_saml
     links:
       - consoleme_redis
       - consoleme_dynamodb
+      - consoleme_saml
 
   consoleme_saml:
     image: "kristophjunge/test-saml-idp"

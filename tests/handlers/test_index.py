@@ -36,7 +36,7 @@ class TestIndexHandler(AsyncHTTPTestCase):
 
         response = self.fetch("/", headers=headers)
         self.assertEqual(response.code, 200)
-        self.assertIn(b"reset_aws_auth_cookie", response.body)
+        self.assertIn(b"static/js/bundle.js", response.body)
 
 
 @pytest.mark.usefixtures(
