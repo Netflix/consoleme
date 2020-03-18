@@ -1,9 +1,11 @@
 import os
 import random
+from random import randint
 
 import pandas as pd
 import re
 import ujson as json
+from datetime import datetime
 from dateutil import parser
 from tornado.web import RequestHandler
 from typing import Dict, List, Optional, Union
@@ -154,3 +156,11 @@ def is_in_time_range(t, time_range):
     if t < valid_start_time or t > valid_end_time:
         return False
     return True
+
+
+async def get_random_security_logo():
+    month = datetime.now().month
+    summer = True if month in [6, 7, 8] else False
+    dir = "sunglasses" if summer else "nosunglasses"
+    file = f"{randint(1, 3)}.png"  # nosec
+    return f"/static/logos/{dir}/{file}"
