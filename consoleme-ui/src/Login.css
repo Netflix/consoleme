@@ -1,0 +1,770 @@
+@font-face {
+  font-family: 'HelveticaNeue';
+  src: url('fonts/HelveticaNeue.ttf');
+}
+
+.font-helveticaNeue {
+  font-family: 'HelveticaNeue', -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+}
+
+.App { /* Base font style */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+  font-size: 15.2px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: rgba(0, 0, 0, 0.8500);
+  background-color: #f6f6f6;
+}
+
+.App .baseFont * { /* Base font style override for UI framework components */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+  font-size: 15.2px;
+}
+
+.App .appBg {
+  background-color: #f6f6f6;
+}
+
+.App .cardBg {
+  background-color: white;
+}
+
+.App .baseTextBg { /* Base text color as background */
+  background-color: rgba(0, 0, 0, 0.8500);
+}
+
+.App .secondaryTextColor {
+  color: rgba(0, 0, 0, 0.5000);
+}
+
+.App .secondaryTextBg {
+  background-color: rgba(0, 0, 0, 0.5000);
+}
+
+.App .primaryTextColor {
+  color: #bee9ee;
+}
+
+.App .primaryBg {
+  background-color: #bee9ee;
+}
+
+.App .highlightTextColor {
+  color: #0093d5;
+}
+
+.App .highlightBg {
+  background-color: #0093d5;
+}
+
+@media (display-mode: standalone) {
+  .App {
+    user-select: none;
+  }
+}
+
+/* Styles to customize the UI framework plugin (MUI, https://muicss.com) */
+.mui-btn {
+    padding-left: 0;
+    padding-right: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+.mui-btn--primary {
+    background-color: #bee9ee;
+}
+.mui-btn--primary:active, .mui-btn--primary:focus, .mui-btn--primary:hover {
+    background-color: #c3ebf0;
+}
+.mui-btn--accent {
+    background-color: #0093d5;
+}
+.mui-btn--accent:active, .mui-btn--accent:focus, .mui-btn--accent:hover {
+    background-color: #069fda;
+}
+.mui-textfield {  /* Reset UI framework styling that affects layout */
+    padding-top: 0;
+    margin-bottom: 0;
+}
+.mui-checkbox, .mui-radio {  /* Reset UI framework styling that affects layout */
+    margin-top: 0;
+    margin-bottom: 0;
+}
+.mui-select {  /* Reset UI framework styling that affects layout */
+    padding-top: 0;
+    margin-bottom: 0;
+}
+.mui-btn+.mui-btn {  /* Reset UI framework styling that affects layout */
+    margin-left: 0;
+}
+.mui-btn--fab {  /* Reset UI framework styling that breaks compositing */
+    z-index: auto;
+}
+
+@keyframes fadeIn {
+    0%   { opacity: 0.0; }
+    100% { opacity: 1.0; }
+}
+@keyframes slideIn_right {
+    0%   { transform: translateX(100%); }
+    100% { transform: translateX(0); }
+}
+@keyframes slideIn_bottom {
+    0%   { transform: translateY(100%); }
+    100% { transform: translateY(0); }
+}
+
+/* System font classes */
+
+.App .systemFontRegular {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+}
+.App .systemFontBold {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+  font-weight: 600;
+}
+.App .systemFontItalic {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+  font-style: italic;
+}
+.App .systemFontBoldItalic {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.App .actionFont {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+  font-size: 14.2px;
+  font-weight: 400;
+}
+.App .actionFont * {
+  font-size: 14.2px;
+}
+.App .headlineFont {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+  font-size: 19.0px;
+  font-weight: 600;
+}
+.App .headlineFont * {
+  font-size: 19.0px;
+}
+.App .navBar {
+  background-color: #bee9ee;
+  color: black;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 50px;
+  min-height: 50px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+  font-size: 18px;
+}
+
+.App .navBar a {
+  color: black;
+}
+
+.App .navBar .title {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  padding: 4px;
+}
+
+.App .navBar .backBtn {
+  position: absolute;
+  padding: 4px;
+  margin-left: 14px;
+  cursor: pointer;
+}
+
+.App .navBar > div {
+  margin-top: 7px;
+}
+
+@media (min-width: 568px) {
+  .App .navBar {
+    height: 50px;
+    min-height: 50px;
+  }
+  .App .navBar > div {
+    margin-top: 7px;
+  }
+}
+@media (min-width: 768px) {
+  .App .navBar {
+    height: 50px;
+    min-height: 50px;
+  }
+  .App .navBar > div {
+    margin-top: 7px;
+  }
+}
+@media (min-width: 1024px) {
+  .App .navBar {
+    height: 50px;
+    min-height: 50px;
+  }
+  .App .navBar > div {
+    margin-top: 7px;
+  }
+}
+@media (min-width: 320px) {
+  .mui-container {
+    max-width: 320px;
+  }
+}
+@media (min-width: 568px) {
+  .mui-container {
+    max-width: 568px;
+  }
+}
+@media (min-width: 768px) {
+  .mui-container {
+    max-width: 768px;
+  }
+}
+@media (min-width: 1024px) {
+  .mui-container {
+    max-width: 1024px;
+  }
+}
+
+.AppScreen {
+  padding-left: 0;
+  padding-right: 0;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto;
+}
+
+.App .background {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.App .layoutFlow {
+  position: relative;
+  width: 100%;
+  pointer-events: none;
+}
+.App .layoutFlow:before {  /* Prevent margin collapse */
+  content: "";
+  display: table;
+  clear: both;
+}
+.App .layoutFlow .flowRow {
+  position: relative;
+  width: 100%;
+}
+
+.App .screenFgContainer {
+  /* Items in the foreground group within a screen are placed with fixed positioning */
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.App .foreground {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.App ul {
+  margin: 0;
+  padding: 0;
+}
+.App li {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  position: relative;
+}
+.App .hasNestedComps {
+  position: relative;
+}
+.App .hasNestedComps:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+.App .hasNestedComps .background {
+  position: absolute;
+}
+.App .hasNestedComps .layoutFlow {
+  position: relative;
+}
+.App .bottomAlignedContent {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
+.App .blockInputOverlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: auto;
+  z-index: 99999999;
+}
+
+.App .marker {
+  width: 0px;
+  height: 0px;
+}
+
+.App .drawer {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+}
+
+.App .drawerOpen {
+  transform: translateX(0%);
+  transition: 0.3s;
+}
+
+.App .drawerClosedLeft {
+  transform: translateX(-100%);
+  transition: 0.3s;
+}
+
+.App .drawerClosedRight {
+  transform: translateX(100%);
+  transition: 0.3s;
+}
+
+.App .drawerContent {
+  position: fixed;
+  height: 100%;
+  overflow: hidden;
+}
+
+.App .drawerContent > * {
+  height: 100%;
+}
+
+.StartScreen {
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+
+
+  .StartScreen > .background > .elBackground {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    width: 100.0%;
+    height: 100%;
+  }
+
+
+/* Narrowest size for this element's responsive layout */
+  .LoginPageScreen > .background > .elBackground {
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    width: 100.0%;
+    height: 100%;
+  }
+@media (min-width: 568px) {
+  .LoginPageScreen > .background > .elBackground {
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    width: 100.0%;
+    height: 100%;
+  }
+}
+@media (min-width: 768px) {
+  .LoginPageScreen > .background > .elBackground {
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    width: 100.0%;
+    height: 100%;
+  }
+}
+@media (min-width: 1024px) {
+  .LoginPageScreen > .background > .elBackground {
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    width: 100.0%;
+    height: 100%;
+  }
+}
+
+
+/* Narrowest size for this element's responsive layout */
+  .LoginPageScreen > .layoutFlow > .elUsername {
+    position: relative;
+    margin-top: 102px;
+    width: 246px;
+    margin-left: calc(51.6% - 123px);
+  }
+  .LoginPageScreen > .layoutFlow > .elUsername > * {
+  width: 246px;
+  height: 34px;
+  }
+
+@media (min-width: 568px) {
+  .LoginPageScreen > .layoutFlow > .elUsername {
+    position: relative;
+    margin-top: 102px;
+    width: 245px;
+    margin-left: calc(51.6% - 123px);
+  }
+  .LoginPageScreen > .layoutFlow > .elUsername > * {
+  width: 245px;
+  height: 34px;
+  }
+
+}
+@media (min-width: 768px) {
+  .LoginPageScreen > .layoutFlow > .elUsername {
+    position: relative;
+    margin-top: 102px;
+    width: 244px;
+    margin-left: calc(51.6% - 122px);
+  }
+  .LoginPageScreen > .layoutFlow > .elUsername > * {
+  width: 244px;
+  height: 34px;
+  }
+
+}
+@media (min-width: 1024px) {
+  .LoginPageScreen > .layoutFlow > .elUsername {
+    position: relative;
+    margin-top: 102px;
+    width: 244px;
+    margin-left: calc(51.6% - 122px);
+  }
+  .LoginPageScreen > .layoutFlow > .elUsername > * {
+  width: 244px;
+  height: 34px;
+  }
+
+}
+
+
+/* Narrowest size for this element's responsive layout */
+  .LoginPageScreen > .layoutFlow > .elText {
+    overflow: hidden;
+    position: relative;
+    margin-top: -63px;
+    width: 238px;
+    margin-left: calc(51.6% - 119px);
+  }
+  .LoginPageScreen > .layoutFlow > .elText > * {
+  width: 238px;
+  }
+
+@media (min-width: 568px) {
+  .LoginPageScreen > .layoutFlow > .elText {
+    overflow: hidden;
+    position: relative;
+    margin-top: -63px;
+    width: 238px;
+    margin-left: calc(51.6% - 119px);
+  }
+  .LoginPageScreen > .layoutFlow > .elText > * {
+  width: 238px;
+  }
+
+}
+@media (min-width: 768px) {
+  .LoginPageScreen > .layoutFlow > .elText {
+    overflow: hidden;
+    position: relative;
+    margin-top: -62px;
+    width: 236px;
+    margin-left: calc(51.6% - 118px);
+  }
+  .LoginPageScreen > .layoutFlow > .elText > * {
+  width: 236px;
+  }
+
+}
+@media (min-width: 1024px) {
+  .LoginPageScreen > .layoutFlow > .elText {
+    overflow: hidden;
+    position: relative;
+    margin-top: -62px;
+    width: 236px;
+    margin-left: calc(51.6% - 118px);
+  }
+  .LoginPageScreen > .layoutFlow > .elText > * {
+  width: 236px;
+  }
+
+}
+
+
+/* Narrowest size for this element's responsive layout */
+  .LoginPageScreen > .layoutFlow > .elPassword {
+    position: relative;
+    margin-top: 92px;
+    width: 243px;
+    margin-left: calc(51.6% - 121px);
+  }
+  .LoginPageScreen > .layoutFlow > .elPassword > * {
+  width: 243px;
+  height: 34px;
+  }
+
+@media (min-width: 568px) {
+  .LoginPageScreen > .layoutFlow > .elPassword {
+    position: relative;
+    margin-top: 92px;
+    width: 243px;
+    margin-left: calc(51.6% - 121px);
+  }
+  .LoginPageScreen > .layoutFlow > .elPassword > * {
+  width: 243px;
+  height: 34px;
+  }
+
+}
+@media (min-width: 768px) {
+  .LoginPageScreen > .layoutFlow > .elPassword {
+    position: relative;
+    margin-top: 91px;
+    width: 241px;
+    margin-left: calc(51.6% - 121px);
+  }
+  .LoginPageScreen > .layoutFlow > .elPassword > * {
+  width: 241px;
+  height: 34px;
+  }
+
+}
+@media (min-width: 1024px) {
+  .LoginPageScreen > .layoutFlow > .elPassword {
+    position: relative;
+    margin-top: 91px;
+    width: 241px;
+    margin-left: calc(51.6% - 121px);
+  }
+  .LoginPageScreen > .layoutFlow > .elPassword > * {
+  width: 241px;
+  height: 34px;
+  }
+
+}
+
+.LoginPageScreen .elSignin button {
+  cursor: pointer;
+  border: 0.0px solid transparent;
+  border-radius: 3.4px;
+}
+
+.LoginPageScreen .elSignin button:focus {
+  box-shadow: 0 0 5px rgba(0, 149, 214, 0.5000);
+  outline: none;
+}
+
+
+
+/* Narrowest size for this element's responsive layout */
+  .LoginPageScreen > .layoutFlow > .elSignin {
+    line-height: 35px;
+    position: relative;
+    margin-top: 46px;
+    width: 145px;
+    margin-left: calc(51.3% - 72px);
+  }
+  .LoginPageScreen > .layoutFlow > .elSignin > * {
+  width: 145px;
+  height: 35px;
+  }
+
+@media (min-width: 568px) {
+  .LoginPageScreen > .layoutFlow > .elSignin {
+    line-height: 35px;
+    position: relative;
+    margin-top: 46px;
+    width: 145px;
+    margin-left: calc(51.4% - 72px);
+  }
+  .LoginPageScreen > .layoutFlow > .elSignin > * {
+  width: 145px;
+  height: 35px;
+  }
+
+}
+@media (min-width: 768px) {
+  .LoginPageScreen > .layoutFlow > .elSignin {
+    line-height: 35px;
+    position: relative;
+    margin-top: 46px;
+    width: 144px;
+    margin-left: calc(51.5% - 72px);
+  }
+  .LoginPageScreen > .layoutFlow > .elSignin > * {
+  width: 144px;
+  height: 35px;
+  }
+
+}
+@media (min-width: 1024px) {
+  .LoginPageScreen > .layoutFlow > .elSignin {
+    line-height: 35px;
+    position: relative;
+    margin-top: 46px;
+    width: 237px;
+    margin-left: calc(51.5% - 119px);
+  }
+  .LoginPageScreen > .layoutFlow > .elSignin > * {
+  width: 237px;
+  height: 35px;
+  }
+
+}
+
+.LoginPageScreen .elSignin_sso button {
+  cursor: pointer;
+  border: 0.0px solid transparent;
+  border-radius: 3.4px;
+}
+
+.LoginPageScreen .elSignin_sso button:focus {
+  box-shadow: 0 0 5px rgba(0, 149, 214, 0.5000);
+  outline: none;
+}
+
+
+
+/* Narrowest size for this element's responsive layout */
+  .LoginPageScreen > .layoutFlow > .elSignin_sso {
+    line-height: 67px;
+    position: relative;
+    margin-top: 40px;
+    width: 181px;
+    margin-left: calc(51.5% - 90px);
+  }
+  .LoginPageScreen > .layoutFlow > .elSignin_sso > * {
+  width: 181px;
+  height: 67px;
+  }
+
+@media (min-width: 568px) {
+  .LoginPageScreen > .layoutFlow > .elSignin_sso {
+    line-height: 67px;
+    position: relative;
+    margin-top: 40px;
+    width: 181px;
+    margin-left: calc(51.5% - 90px);
+  }
+  .LoginPageScreen > .layoutFlow > .elSignin_sso > * {
+  width: 181px;
+  height: 67px;
+  }
+
+}
+@media (min-width: 768px) {
+  .LoginPageScreen > .layoutFlow > .elSignin_sso {
+    line-height: 67px;
+    position: relative;
+    margin-top: 40px;
+    width: 180px;
+    margin-left: calc(51.6% - 90px);
+  }
+  .LoginPageScreen > .layoutFlow > .elSignin_sso > * {
+  width: 180px;
+  height: 67px;
+  }
+
+}
+@media (min-width: 1024px) {
+  .LoginPageScreen > .layoutFlow > .elSignin_sso {
+    line-height: 67px;
+    position: relative;
+    margin-top: 40px;
+    width: 239px;
+    margin-left: calc(51.6% - 120px);
+  }
+  .LoginPageScreen > .layoutFlow > .elSignin_sso > * {
+  width: 239px;
+  height: 67px;
+  }
+
+}
+
+
+/* Narrowest size for this element's responsive layout */
+  .LoginPageScreen > .layoutFlow > .elTextCopy {
+    overflow: hidden;
+    position: relative;
+    margin-top: -254px;
+    width: 238px;
+    margin-left: calc(51.6% - 119px);
+  }
+  .LoginPageScreen > .layoutFlow > .elTextCopy > * {
+  width: 238px;
+  }
+
+@media (min-width: 568px) {
+  .LoginPageScreen > .layoutFlow > .elTextCopy {
+    overflow: hidden;
+    position: relative;
+    margin-top: -254px;
+    width: 238px;
+    margin-left: calc(51.6% - 119px);
+  }
+  .LoginPageScreen > .layoutFlow > .elTextCopy > * {
+  width: 238px;
+  }
+
+}
+@media (min-width: 768px) {
+  .LoginPageScreen > .layoutFlow > .elTextCopy {
+    overflow: hidden;
+    position: relative;
+    margin-top: -252px;
+    width: 236px;
+    margin-left: calc(51.6% - 118px);
+  }
+  .LoginPageScreen > .layoutFlow > .elTextCopy > * {
+  width: 236px;
+  }
+
+}
+@media (min-width: 1024px) {
+  .LoginPageScreen > .layoutFlow > .elTextCopy {
+    overflow: hidden;
+    position: relative;
+    margin-top: -252px;
+    width: 236px;
+    margin-left: calc(51.6% - 118px);
+  }
+  .LoginPageScreen > .layoutFlow > .elTextCopy > * {
+  width: 236px;
+  }
+
+}
+

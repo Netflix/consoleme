@@ -14,12 +14,14 @@ from raven.contrib.tornado import AsyncSentryClient
 
 from consoleme.config import config
 from consoleme.handlers.autologin import AutoLoginHandler
+from consoleme.handlers.auth import AuthHandler
 from consoleme.handlers.base import NoCacheStaticFileHandler
 from consoleme.handlers.credentials import GetCredentialsHandler
 from consoleme.handlers.dynamic_config import DynamicConfigHandler
 from consoleme.handlers.errors import Consolme404Handler
 from consoleme.handlers.headers import ApiHeaderHandler, HeaderHandler
 from consoleme.handlers.health import HealthHandler
+
 # from consoleme.handlers.index import IndexHandler
 from consoleme.handlers.index_new import IndexNewHandler
 from consoleme.handlers.policies import (
@@ -75,6 +77,8 @@ def make_app(jwt_validator=None):
     routes = [
         # (r"/", IndexHandler),
         (r"/", IndexNewHandler),
+        (r"/login", IndexNewHandler),
+        (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),
         (
