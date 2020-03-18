@@ -1,10 +1,9 @@
 """Handle the base."""
-import traceback
-
 import redis
 import tornado.httpclient
 import tornado.httputil
 import tornado.web
+import traceback
 import ujson as json
 import uuid
 from asgiref.sync import sync_to_async
@@ -24,7 +23,8 @@ from consoleme.exceptions.exceptions import (
 )
 from consoleme.exceptions.exceptions import WebAuthNError
 from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
-from consoleme.lib.auth import AuthenticationError
+from consoleme.lib.credential_auth import authenticate_user_by_credentials
+from consoleme.lib.auth import AuthenticationError, AuthenticatedResponse
 from consoleme.lib.generic import render_404
 from consoleme.lib.jwt import validate_and_return_jwt_token, generate_jwt_token
 from consoleme.lib.oauth2 import authenticate_user_by_oauth2
@@ -234,6 +234,15 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         if not self.user:
             if config.get("auth.get_user_by_aws_alb_auth"):
                 res = await authenticate_user_by_alb_auth(self)
+                if not res:
+                    return
+                if res and isinstance(res, dict):
+                    self.user = res.get("user")
+                    self.groups = res.get("groups")
+
+        if not self.user:
+            if config.get("auth.get_user_by_credentials"):
+                res = await authenticate_user_by_credentials(self)
                 if not res:
                     return
                 if res and isinstance(res, dict):

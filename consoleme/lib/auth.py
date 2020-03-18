@@ -17,6 +17,27 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
 
+class AuthenticatedResponse:
+    def __init__(self, **kwargs):
+        self.authenticated: bool = kwargs.get("authenticated", False)
+        self.redirect: str = kwargs.get("redirect", "")
+
+    def get(self, query):
+        return self.__dict__.get(query)
+
+    def to_json(self):
+        if isinstance(self.value, list):
+            self.value = ",".join(self.value)
+        d = {
+            "name": self.name,
+            "attributeType": self.type,
+            "attributeValue": self.value,
+            "sensitive": self.sensitive,
+            "immutable": self.immutable,
+        }
+        return json.dumps(d)
+
+
 async def generate_auth_token(
     user, ip, challenge_uuid, expiration=config.get("challenge.token_expiration", 3600)
 ):
