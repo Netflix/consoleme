@@ -18,7 +18,11 @@ from consoleme.handlers.base import NoCacheStaticFileHandler
 from consoleme.handlers.credentials import GetCredentialsHandler
 from consoleme.handlers.dynamic_config import DynamicConfigHandler
 from consoleme.handlers.errors import Consolme404Handler
-from consoleme.handlers.headers import ApiHeaderHandler, HeaderHandler
+from consoleme.handlers.headers import (
+    ApiHeaderHandler,
+    HeaderHandler,
+    PageHeaderHandler,
+)
 from consoleme.handlers.health import HealthHandler
 from consoleme.handlers.index import IndexHandler
 from consoleme.handlers.policies import (
@@ -92,6 +96,7 @@ def make_app(jwt_validator=None):
         # Used to autocomplete s3:get to all matching permissions
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
         (r"/api/v1/get_roles", GetRolesHandler),
+        (r"/api/v1/pageheader/?", PageHeaderHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/config/?", DynamicConfigHandler),
