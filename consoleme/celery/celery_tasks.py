@@ -7,15 +7,11 @@ beat scheduler and a worker simultaneously, and to have jobs kick off starting a
 command: celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG -B
 
 """
+import celery
 import json  # We use a separate SetEncoder here so we cannot use ujson
+import raven
 import sys
 import time
-from collections import defaultdict
-from datetime import datetime, timedelta
-from typing import Dict, Tuple
-
-import celery
-import raven
 import ujson
 from asgiref.sync import async_to_sync
 from botocore.exceptions import ClientError
@@ -32,8 +28,11 @@ from cloudaux.aws.iam import (
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sqs import list_queues
+from collections import defaultdict
+from datetime import datetime, timedelta
 from raven.contrib.celery import register_signal, register_logger_signal
 from retrying import retry
+from typing import Dict, Tuple
 
 from consoleme.config import config
 from consoleme.lib.aws import put_object
@@ -66,6 +65,8 @@ app = Celery(
 )
 
 app.conf.result_expires = config.get("celery.result_expires", 60)
+app.conf.worker_prefetch_multiplier = config.get("celery.worker_prefetch_multiplier", 4)
+app.conf.task_acks_late = config.get("celery.task_acks_late", True)
 
 if config.get("celery.purge"):
     # Useful to clear celery queue in development
