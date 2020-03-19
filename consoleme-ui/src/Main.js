@@ -9,10 +9,19 @@ export default class Main extends Component {
   constructor(props) {
     super(props);
 
-    this.state = {};
+    this.state = {
+      headers: {}
+    };
   }
+
+  async componentWillMount() {
+    const headerData = await this.getHeaderData()
+    await this.setState({headers: headerData});
+    console.log(this.state)
+  }
+
   async componentDidMount() {
-    this.state = await this.getHeaderData()
+
   }
 
   getHeaderData = async (event) => {
@@ -21,6 +30,64 @@ export default class Main extends Component {
   };
 
   render() {
+    const {headers} = this.state.headers
+    let groupsPages = "";
+    let policiesPages = "";
+    let configPages = "";
+    let consoleMeLogo = "";
+    console.log(headers)
+    if (headers.pages.groups.enabled === true) {
+      groupsPages = (
+        <Dropdown text='Group Access' pointing className='link item'>
+          <Dropdown.Menu>
+            <Dropdown.Item>Request Access</Dropdown.Item>
+            <Dropdown.Item>Groups</Dropdown.Item>
+            <Dropdown.Item>Users</Dropdown.Item>
+            <Dropdown.Item>Pending</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+      )
+    }
+    if (headers.pages.policies.enabled === true) {
+      policiesPages = (
+        <Dropdown text='Roles and Policies' pointing className='link item'>
+          <Dropdown.Menu>
+            <Dropdown.Item>Policies</Dropdown.Item>
+            <Dropdown.Item>Self Service Permissions</Dropdown.Item>
+            <Dropdown.Item>API Health</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+      )
+    }
+    // TODO: Check both audit and config
+    if (headers.pages.config.enabled === true) {
+      configPages = (
+        <Dropdown text='Advanced' pointing className='link item'>
+          <Dropdown.Menu>
+            <Dropdown.Item>Audit</Dropdown.Item>
+            <Dropdown.Item>Config</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+      )
+    }
+
+    if (headers.consoleme_logo) {
+      consoleMeLogo = (<footer>
+        <div id="consoleme_logo">
+          <img id="consoleme_logo" src={logo}/>
+        </div>
+        <a
+          className="security-logo"
+          target="_blank"
+          href="http://go/infrasec"
+          style={{
+            background: 'url(' + security_logo + ') no-repeat 50%'
+          }}
+        />
+      </footer>)
+
+    }
+
     return (
       <div className="App">
         <div id={"header"}>
@@ -33,27 +100,9 @@ export default class Main extends Component {
               >
                 AWS Console Roles
               </Menu.Item>
-              <Dropdown text='Group Access' pointing className='link item'>
-                <Dropdown.Menu>
-                  <Dropdown.Item>Request Access</Dropdown.Item>
-                  <Dropdown.Item>Groups</Dropdown.Item>
-                  <Dropdown.Item>Users</Dropdown.Item>
-                  <Dropdown.Item>Pending</Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
-              <Dropdown text='Roles and Policies' pointing className='link item'>
-                <Dropdown.Menu>
-                  <Dropdown.Item>Policies</Dropdown.Item>
-                  <Dropdown.Item>Self Service Permissions</Dropdown.Item>
-                  <Dropdown.Item>API Health</Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
-              <Dropdown text='Advanced' pointing className='link item'>
-                <Dropdown.Menu>
-                  <Dropdown.Item>Audit</Dropdown.Item>
-                  <Dropdown.Item>Config</Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
+              {{groupsPages}}
+              {{policiesPages}}
+              {{configPages}}
               <Menu.Menu position='right'>
                 <Menu.Item
                   name='logout'
@@ -132,19 +181,7 @@ export default class Main extends Component {
                   </li>
                 </ul>
               </div>
-              <footer>
-                <div id="consoleme_logo">
-                  <img id="consoleme_logo" src={logo}/>
-                </div>
-                <a
-                  className="security-logo"
-                  target="_blank"
-                  href="http://go/infrasec"
-                  style={{
-                    background: 'url(' + security_logo + ') no-repeat 50%'
-                  }}
-                />
-              </footer>
+              {{consoleMeLogo}}
             </nav>
           </Sidebar>
           <Container id={"wrapper"}>
