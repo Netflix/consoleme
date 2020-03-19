@@ -56,6 +56,7 @@ class PageHeaderHandler(BaseHandler):
                 },
             },
         }
+        self.set_header("Content-Type", "application/json")
         self.write(page_header_details)
 
 

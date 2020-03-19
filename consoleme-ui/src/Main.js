@@ -1,7 +1,5 @@
 import React, {Component} from 'react';
-import {Container, Dropdown, Icon, Menu, Sidebar,} from 'semantic-ui-react';
-import logo from './static/logos/nosunglasses/1.png'
-import security_logo from './static/screenplay/assets/netflix-security-dark-bg-tight.5f1eba5edb.svg'
+import {Container, Dropdown, Icon, Menu, Sidebar, Image} from 'semantic-ui-react';
 import './App.css';
 
 export default class Main extends Component {
@@ -10,34 +8,40 @@ export default class Main extends Component {
     super(props);
 
     this.state = {
+      loading: 'true',
       headers: {}
     };
   }
 
   async componentWillMount() {
     const headerData = await this.getHeaderData()
-    await this.setState({headers: headerData});
+    this.setState(
+      {
+        headers: headerData,
+        loading: 'false'
+      }
+    );
     console.log(this.state)
   }
 
   async componentDidMount() {
+    await this.setState({loading: 'true'})
 
   }
 
   getHeaderData = async (event) => {
-    const PageHeaderDataReq = await fetch("/api/v1/pageheader");
-    return await PageHeaderDataReq.json()
+    const PageHeaderDataReq = await fetch(
+      "/api/v1/pageheader", {
+        mode: 'no-cors',
+        credentials: 'include',
+      });
+    const PageHeaderData = await PageHeaderDataReq.json();
+    return PageHeaderData
   };
 
-  render() {
-    const {headers} = this.state.headers
-    let groupsPages = "";
-    let policiesPages = "";
-    let configPages = "";
-    let consoleMeLogo = "";
-    console.log(headers)
-    if (headers.pages.groups.enabled === true) {
-      groupsPages = (
+  generateGroupsDropDown() {
+    if (this.state.headers.pages.groups.enabled === true) {
+      return (
         <Dropdown text='Group Access' pointing className='link item'>
           <Dropdown.Menu>
             <Dropdown.Item>Request Access</Dropdown.Item>
@@ -48,8 +52,12 @@ export default class Main extends Component {
         </Dropdown>
       )
     }
-    if (headers.pages.policies.enabled === true) {
-      policiesPages = (
+    return ''
+  }
+
+  generatePoliciesDropDown() {
+    if (this.state.headers.pages.policies.enabled === true) {
+      return (
         <Dropdown text='Roles and Policies' pointing className='link item'>
           <Dropdown.Menu>
             <Dropdown.Item>Policies</Dropdown.Item>
@@ -59,9 +67,12 @@ export default class Main extends Component {
         </Dropdown>
       )
     }
-    // TODO: Check both audit and config
-    if (headers.pages.config.enabled === true) {
-      configPages = (
+    return ''
+  }
+
+  generateAdvancedDropDown() {
+    if (this.state.headers.pages.config.enabled === true) {
+      return (
         <Dropdown text='Advanced' pointing className='link item'>
           <Dropdown.Menu>
             <Dropdown.Item>Audit</Dropdown.Item>
@@ -70,22 +81,87 @@ export default class Main extends Component {
         </Dropdown>
       )
     }
+    return ''
+  }
 
-    if (headers.consoleme_logo) {
-      consoleMeLogo = (<footer>
-        <div id="consoleme_logo">
-          <img id="consoleme_logo" src={logo}/>
-        </div>
-        <a
-          className="security-logo"
-          target="_blank"
-          href="http://go/infrasec"
-          style={{
-            background: 'url(' + security_logo + ') no-repeat 50%'
-          }}
-        />
-      </footer>)
+  getConsoleMeLogo() {
+    if (this.state.headers.consoleme_logo) {
+      return (
+        <footer>
+          <div id="consoleme_logo">
+            <img id="consoleme_logo" src={this.state.headers.consoleme_logo}/>
+          </div>
+          <a
+            className="security-logo"
+            target="_blank"
+            style={{
+              background: 'url(/static/screenplay/assets/netflix-security-dark-bg-tight.5f1eba5edb.svg) no-repeat 50%'
+            }}
+          />
+        </footer>
+      )
+    }
+    return ''
+  }
 
+  getDocumentation() {
+    if (this.state.headers.documentation_url) {
+      return (
+        <li>
+          <a href={this.state.headers.documentation_url} target={"_blank"}>
+            <Icon name={"book"}/>
+            Documentation
+          </a>
+        </li>
+      )
+    }
+    return ''
+  }
+
+  getSupportContact() {
+    if (this.state.headers.support_contact) {
+      return (
+        <li>
+          <a href={"mailto:" + this.state.headers.support_contact} target={"_blank"}>
+            <Icon name={"envelope"}/>
+            Email us
+          </a>
+        </li>
+      )
+    }
+    return ''
+  }
+
+  getChatLink() {
+    if (this.state.headers.support_slack) {
+      return (
+        <li>
+          <a href={this.state.headers.support_slack} target={"_blank"}>
+            <Icon name={"slack"}/>
+            Find us on Slack
+          </a>
+        </li>
+      )
+    }
+    return ''
+  }
+
+  getAvatarImage() {
+    if (this.state.headers.employee_photo_url) {
+      return (
+        <div>
+    <Image src={this.state.headers.employee_photo_url} avatar />
+    <span>{this.state.headers.user}</span>
+  </div>
+      )
+    }
+    return ''
+  }
+
+
+  render() {
+    if (this.state.loading !== 'false') {
+      return <h2>Loading...</h2>;
     }
 
     return (
@@ -100,13 +176,15 @@ export default class Main extends Component {
               >
                 AWS Console Roles
               </Menu.Item>
-              {{groupsPages}}
-              {{policiesPages}}
-              {{configPages}}
+              {this.generateGroupsDropDown()}
+              {this.generatePoliciesDropDown()}
+              {this.generateAdvancedDropDown()}
               <Menu.Menu position='right'>
                 <Menu.Item
                   name='logout'
-                />
+                >
+                  {this.getAvatarImage()}
+                </Menu.Item>
               </Menu.Menu>
             </Menu>
           </div>
@@ -161,27 +239,12 @@ export default class Main extends Component {
               <div id={"help"}>
                 <h3>Help</h3>
                 <ul>
-                  <li>
-                    <a href={"http://go/consolemedocs"} target={"_blank"}>
-                      <Icon name={"book"}/>
-                      Documentation
-                    </a>
-                  </li>
-                  <li>
-                    <a href={"mailto:infrasec@netflix.com"} target={"_blank"}>
-                      <Icon name={"envelope"}/>
-                      Email us
-                    </a>
-                  </li>
-                  <li>
-                    <a href={"https://netflix.slack.com/messages/C0ZQD445A/"} target={"_blank"}>
-                      <Icon name={"slack"}/>
-                      Find us on Slack
-                    </a>
-                  </li>
+                  {this.getDocumentation()}
+                  {this.getSupportContact()}
+                  {this.getChatLink()}
                 </ul>
               </div>
-              {{consoleMeLogo}}
+              {this.getConsoleMeLogo()}
             </nav>
           </Sidebar>
           <Container id={"wrapper"}>

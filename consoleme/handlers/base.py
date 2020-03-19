@@ -24,7 +24,7 @@ from consoleme.exceptions.exceptions import (
 from consoleme.exceptions.exceptions import WebAuthNError
 from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
 from consoleme.lib.credential_auth import authenticate_user_by_credentials
-from consoleme.lib.auth import AuthenticationError, AuthenticatedResponse
+from consoleme.lib.auth import AuthenticationError
 from consoleme.lib.generic import render_404
 from consoleme.lib.jwt import validate_and_return_jwt_token, generate_jwt_token
 from consoleme.lib.oauth2 import authenticate_user_by_oauth2
@@ -131,11 +131,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
     def data_received(self, chunk):
         """Receives the data."""
         pass
-
-    def set_default_headers(self) -> None:
-        self.set_header(
-            "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
-        )
 
     async def prepare(self) -> None:
         self.responses = []
