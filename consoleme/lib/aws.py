@@ -21,7 +21,7 @@ from policy_sentry.util.arns import (
     get_resource_from_arn,
     get_service_from_arn,
 )
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException
@@ -180,27 +180,31 @@ async def get_resource_account(arn: str) -> str:
     return ""
 
 
+async def get_resource_policy(account: str, resource_type: str, name: str, region: str):
+    try:
+        details = await fetch_resource_details(
+            resource_account, resource_type, resource_name, resource_region
+        )
+    except ClientError:
+        # We don't have access to this resource, so we can't get the policy.
+        details = {}
+    # Default to a blank policy
+    return details.get(
+        "Policy", {"Version": "2012-10-17", "Statement": []}
+    )
+
+
 async def get_resource_policies(
-    principal_arn: str, resource_actions: Dict[str, List[str]], account: str
+    principal_arn: str, resource_actions: Dict[str, Dict[str, Any]], account: str
 ) -> List[Dict]:
     resource_policies: List[Dict] = []
     for resource_name, resource_info in resource_actions.items():
-        resource_account: str = resource_info.get("account")
+        resource_account: str = resource_info.get("account", "")
         if resource_account and resource_account != account:
             # This is a cross-account request. Might need a resource policy.
-            resource_type: str = resource_info.get("type")
-            resource_region: str = resource_info.get("region")
-            try:
-                details = await fetch_resource_details(
-                    resource_account, resource_type, resource_name, resource_region
-                )
-            except ClientError:
-                # We don't have access to this resource, so we can't get the policy.
-                details = {}
-            # Default to a blank policy
-            old_policy = details.get(
-                "Policy", {"Version": "2012-10-17", "Statement": []}
-            )
+            resource_type: str = resource_info.get("type", "")
+            resource_region: str = resource_info.get("region", "")
+            old_policy = await get_resource_policy(resource_account, resource_type, resource_name, resource_region)
             arns = resource_info.get("arns", [])
             actions = resource_info.get("actions", [])
             new_policy = await update_resource_policy(

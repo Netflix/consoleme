@@ -348,6 +348,7 @@ class UserDynamoHandler(BaseDynamoHandler):
         policy_name: str,
         policy_changes: dict,
         resources: List[str],
+        resource_policies: List[Dict],
         request_time: int = None,
         request_uuid=None,
         policy_status="pending",
@@ -375,6 +376,7 @@ class UserDynamoHandler(BaseDynamoHandler):
             "policy_name": policy_name,
             "policy_changes": json.dumps(policy_changes),
             "resources": resources,
+            "resource_policies": resource_policies,
         }
 
         try:
