@@ -549,10 +549,15 @@ class PolicyReviewSubmitHandler(BaseHandler):
 
         log_data["resource_actions"] = resource_actions
         log_data["resource_policies"] = resource_policies
-        events.extend(resource_policies)
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
-            self.user, justification, arn, policy_name, events, resources
+            self.user,
+            justification,
+            arn,
+            policy_name,
+            events,
+            resources,
+            resource_policies,
         )
         if policy_status == "approved":
             try:
@@ -832,8 +837,8 @@ class PolicyReviewHandler(BaseHandler):
             log_data["resource_actions"] = resource_actions
             log_data["resource_policies"] = resource_policies
             log.debug(log_data)
-            policy_changes.extend(resource_policies)
             dynamo = UserDynamoHandler(self.user)
+            request["resource_policies"] = resource_policies
             request["policy_changes"] = json.dumps(policy_changes)
             request["reviewer_comments"] = reviewer_comments
 
