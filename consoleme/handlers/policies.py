@@ -551,7 +551,13 @@ class PolicyReviewSubmitHandler(BaseHandler):
         log_data["resource_policies"] = resource_policies
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
-            self.user, justification, arn, policy_name, events, resources, resource_policies
+            self.user,
+            justification,
+            arn,
+            policy_name,
+            events,
+            resources,
+            resource_policies,
         )
         if policy_status == "approved":
             try:

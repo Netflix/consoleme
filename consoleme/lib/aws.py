@@ -182,16 +182,12 @@ async def get_resource_account(arn: str) -> str:
 
 async def get_resource_policy(account: str, resource_type: str, name: str, region: str):
     try:
-        details = await fetch_resource_details(
-            resource_account, resource_type, resource_name, resource_region
-        )
+        details = await fetch_resource_details(account, resource_type, name, region)
     except ClientError:
         # We don't have access to this resource, so we can't get the policy.
         details = {}
     # Default to a blank policy
-    return details.get(
-        "Policy", {"Version": "2012-10-17", "Statement": []}
-    )
+    return details.get("Policy", {"Version": "2012-10-17", "Statement": []})
 
 
 async def get_resource_policies(
@@ -204,7 +200,9 @@ async def get_resource_policies(
             # This is a cross-account request. Might need a resource policy.
             resource_type: str = resource_info.get("type", "")
             resource_region: str = resource_info.get("region", "")
-            old_policy = await get_resource_policy(resource_account, resource_type, resource_name, resource_region)
+            old_policy = await get_resource_policy(
+                resource_account, resource_type, resource_name, resource_region
+            )
             arns = resource_info.get("arns", [])
             actions = resource_info.get("actions", [])
             new_policy = await update_resource_policy(
