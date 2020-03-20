@@ -7,8 +7,10 @@ beat scheduler and a worker simultaneously, and to have jobs kick off starting a
 command: celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG -B
 
 """
-import celery
 import json  # We use a separate SetEncoder here so we cannot use ujson
+from collections import defaultdict
+
+import celery
 import raven
 import sys
 import time
@@ -28,7 +30,6 @@ from cloudaux.aws.iam import (
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sqs import list_queues
-from collections import defaultdict
 from datetime import datetime, timedelta
 from raven.contrib.celery import register_signal, register_logger_signal
 from retrying import retry
@@ -407,8 +408,10 @@ def cache_audit_table_details() -> bool:
 
 
 @app.task(soft_time_limit=3600)
-def cache_cloudtrail_errors_by_arn() -> bool:
-    cloudtrail_errors = internal_policies.error_count_by_arn()
+def cache_cloudtrail_errors_by_arn() -> Dict:
+    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data: Dict = {"function": function}
+    cloudtrail_errors: Dict = internal_policies.error_count_by_arn()
     if not cloudtrail_errors:
         cloudtrail_errors = {}
     red.setex(
@@ -419,7 +422,9 @@ def cache_cloudtrail_errors_by_arn() -> bool:
         86400,
         json.dumps(cloudtrail_errors),
     )
-    return True
+    log_data["number_of_roles_with_errors"]: len(cloudtrail_errors.keys())
+    log.debug(log_data)
+    return log_data
 
 
 @app.task(soft_time_limit=1800)
