@@ -52,6 +52,10 @@ In a separate terminal window, start the local redis and dynamodb instances:
 
 1. In repo root run `make install`. You may also want to install the default plugins if you have not developed internal plugins: `pip install -e default_plugins`
 
+   ```bash
+   make install
+   ```
+
    > You will need to have AWS credentials for the installation to work (they need to be valid credentials for any
 account or user for the AWS SDK to communicate with the local DynamoDB container).
 
@@ -60,10 +64,15 @@ account or user for the AWS SDK to communicate with the local DynamoDB container
    ```bash
    # Activate virtualenv created by `make install`
    . env/bin/activate
+
+   # [Optional] Install default plugins
+   pip install -e default_plugins
+
+   # Run ConsoleMe 🎉
    CONFIG_LOCATION=docker/example_config_header_auth.yaml python consoleme/__main__.py
    ```
 
-   > ConsoleMe requires Python 3.8+. If your virtualenv was installed under Python2.x
+   > ConsoleMe requires Python 3.7+. If your virtualenv was installed under Python2.x
 this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing
 virtualenv and creating a new one with Python 3: `python3 -m venv env`.
 When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe
@@ -84,29 +93,17 @@ import asyncio
 asyncio.get_event_loop().run_until_complete(<function>)
 ```
 
-## To send a PR to consoleme
+## Development
+
+### Docker development
+
+ConsoleMe can be developed solely within a docker container. Using the following command, the container will automatically be built and run. Your AWS secrets from ~/.aws/credentials will be placed on volumes in the container.
 
 ```bash
-git clone <consoleme repo>
-cd consoleme
-git checkout -b my-branch
-# Make the changes
-git add {filename}
-git commit -m "Write about your changes"
-git push -u origin my-branch
-# Send the PR and once merged, delete the branch
-git checkout master
-git pull
-git branch -d my-branch  # This would delete the branch locally
-git push origin --delete my-branch  # This would delete the remote branch
+docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up
 ```
 
-## Docker development
-
-If you want to develop solely within a docker container, run "docker-compose up". The container will be built and run.
-Your AWS secrets from ~/.aws/credentials will be placed on volumes in the container.
-
-## Local DynamoDB
+### Local DynamoDB
 
 Running `docker-compose -f docker-compose-dependencies.yaml up` in the root directory will enable local dynamodb and local redis. To install a web interface
 to assist with managing local dynamodb, install dynamodb-admin with:
@@ -118,7 +115,7 @@ npm install dynamodb-admin -g
 DYNAMO_ENDPOINT=http://localhost:8005 dynamodb-admin
 ```
 
-## Update Dependencies
+### Update Dependencies
 
 To update the `pip` Python dependencies, run this command:
 
@@ -126,23 +123,24 @@ To update the `pip` Python dependencies, run this command:
 make up-reqs
 ```
 
-If you're using Python 3.8 and trying to run this command on Mac, you may need to run
+> If you're using Python 3.8 and trying to run this command on Mac, you may need to run
 `PKG_CONFIG_PATH="/usr/local/opt/libxml2/lib/pkgconfig" make up-reqs` which forces pkgconfig to use
 brew's xmlsec instead of the MacOS xmlsec (Details: https://github.com/mehcode/python-xmlsec/issues/111)
 
 
-## PyCharm Unit Testing
+### PyCharm Unit Testing
 
 To run tests in PyCharm, the clearly superior Python development environment, you need to update your Debug
 configuration to include the following environment variables to assist with debugging:
+
 - `CONFIG_LOCATION=/location/to/your/test.yaml` (Required)
 - `ASYNC_TEST_TIMEOUT=9999999` (Optional for debugging the RESTful code)
 
 Run `make test` or `make testhtml` to run unit tests
 
-Recommended: Run with the `Additional Arguments` set to `-n 4` to add some concurrency to the unit test execution.
+> Recommended: Run with the `Additional Arguments` set to `-n 4` to add some concurrency to the unit test execution.
 
-## SAML
+### SAML
 
 We're using the wonderful `kristophjunge/test-saml-idp` docker container to demonstrate an example SAML flow through ConsoleMe performed locally. The SimpleSaml configuration is not secure, and you should not use this in any sort of production environment. this is purely used as a demonstration of SAML auth within ConsoleMe.
 
@@ -171,7 +169,7 @@ ConsoleMe's configuration (`docker/example_config_saml.yaml`) specifies the foll
 
 `get_user_by_saml_settings.attributes`: Specifies the attributes that we expect to see in the SAML response, including the user's username, groups, and e-mail address
 
-## Local development with Docker (PyCharm specific instructions)  # TODO: Docs with screenshots
+### Local development with Docker (PyCharm specific instructions)  # TODO: Docs with screenshots
 
 It is possible to use Docker `docker-compose-test.yaml` to run ConsoleMe and its dependencies locally
 in Docker with the default plugin set. Configure a new Docker Python interpreter to run __main__.py with your
