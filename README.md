@@ -14,7 +14,7 @@ edit inline policies, and submit these to administrators to be approved and comm
 
 Check out our Quick start guide
 
-## To build ConsoleMe on Mac
+## Build and Run Instructions
 
 ### Prerequisites
 
