@@ -16,82 +16,88 @@ Check out our Quick start guide
 
 ## To build ConsoleMe on Mac
 
-1. Prerequisites
-   - MacOS
+### Prerequisites
 
-   ```bash
-   # Install Python
-   brew install python@3.7
+#### MacOS
 
-   # XCode Command-Line Tools
-   xcode-select --install
+```bash
+# Install Python
+brew install python@3.7
 
-   # Additional dependencies
-   brew install pkgconfig libxmlsec1
-   ```
+# XCode Command-Line Tools
+xcode-select --install
 
-   - Linux (Ubuntu disco/19.04+, Debian buster/10+) // TODO: Needs testing
+# Additional dependencies
+brew install pkgconfig libxmlsec1
+```
 
-   ```bash
-   # Additional dependencies
-   apt-get install libxmlsec1
-   ```
+#### Linux 
 
-1. Clone the ConsoleMe repo
+TODO: Needs testing
+
+Ubuntu disco/19.04+, Debian buster/10+
+
+```bash
+# Additional dependencies
+apt-get install libxmlsec1
+```
+
+### Clone the ConsoleMe repo
    
-   ```bash
-   git clone git@github.com:Netflix-Skunkworks/consoleme.git
-   ```
+```bash
+git clone git@github.com:Netflix-Skunkworks/consoleme.git
+```
 
-2. A local set of Redis and DynamoDB (local) instances need to be set up. This is provided as a Docker container.
-In a separate terminal window, start the local redis and dynamodb instances:
-   
-   ```bash
-   docker-compose -f docker-compose-dependencies.yaml up
-   ```
+### Run dependencies
 
-1. In repo root run `make install`. You may also want to install the default plugins if you have not developed internal plugins: `pip install -e default_plugins`
+A local set of Redis and DynamoDB (local) instances need to be set up. These are provided as Docker containers. In a separate terminal window, start the local redis and dynamodb instances:
 
-   ```bash
-   make install
-   ```
+```bash
+docker-compose -f docker-compose-dependencies.yaml up
+```
 
-   > You will need to have AWS credentials for the installation to work (they need to be valid credentials for any
+### Run install
+
+In repo root run `make install`. You may also want to install the default plugins if you have not developed internal plugins: `pip install -e default_plugins`
+
+```bash
+make install
+```
+
+> You will need to have AWS credentials for the installation to work (they need to be valid credentials for any
 account or user for the AWS SDK to communicate with the local DynamoDB container).
 
-2. Run ConsoleMe with the default configuration: 
+### Run ConsoleMe with the default configuration
    
-   ```bash
-   # Activate virtualenv created by `make install`
-   . env/bin/activate
+```bash
+# Activate virtualenv created by `make install`
+. env/bin/activate
 
-   # [Optional] Install default plugins
-   pip install -e default_plugins
+# [Optional] Install default plugins
+pip install -e default_plugins
 
-   # Run ConsoleMe 🎉
-   CONFIG_LOCATION=docker/example_config_header_auth.yaml python consoleme/__main__.py
-   ```
+# Run ConsoleMe
+CONFIG_LOCATION=docker/example_config_header_auth.yaml python consoleme/__main__.py
+```
 
-   > ConsoleMe requires Python 3.7+. If your virtualenv was installed under Python2.x
+> ConsoleMe requires Python 3.7+. If your virtualenv was installed under Python2.x
 this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing
 virtualenv and creating a new one with Python 3: `python3 -m venv env`.
 When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe
 Celery tasks to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists
 data on disk. This command will need to be run anytime you want to update your local cache.
 
-1. Configure your browser header injector ([Requestly](https://www.requestly.in/) is recommended) to inject user / group headers. Your group
+### Configure your browser
+
+Configure a header injector ([Requestly](https://www.requestly.in/) is recommended) to inject user / group headers. Your group
 headers should contain a comma-separated list of google groups. You can see which headers are being passed to ConsoleMe
 by visiting the `/myheaders` endpoint in ConsoleMe.
 
-   > Make sure you have at least two groups in your list, otherwise every time you visit your local consoleme Role page it will auto-login to the console with your one role.
+> Make sure you have at least two groups in your list, otherwise every time you visit your local consoleme Role page it will auto-login to the console with your one role.
 
+### Browse to ConsoleMe
 
-## To run an async python function syncronously in a shell for testing
-
-```python
-import asyncio
-asyncio.get_event_loop().run_until_complete(<function>)
-```
+You should now be able to access the ConsoleMe web UI at http://127.0.0.1:8081. Success! 🎉
 
 ## Development
 
@@ -126,6 +132,15 @@ make up-reqs
 > If you're using Python 3.8 and trying to run this command on Mac, you may need to run
 `PKG_CONFIG_PATH="/usr/local/opt/libxml2/lib/pkgconfig" make up-reqs` which forces pkgconfig to use
 brew's xmlsec instead of the MacOS xmlsec (Details: https://github.com/mehcode/python-xmlsec/issues/111)
+
+### Running async functions
+
+To run an async python function syncronously in a shell for testing:
+
+```python
+import asyncio
+asyncio.get_event_loop().run_until_complete(<function>)
+```
 
 
 ### PyCharm Unit Testing
