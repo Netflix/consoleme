@@ -8,19 +8,19 @@ amqp==2.5.2               # via kombu
 apispec-webframeworks==0.5.2  # via -r requirements.in
 apispec[yaml]==3.3.0      # via -r requirements.in, apispec-webframeworks
 appnope==0.1.0            # via ipython
-asgiref==3.2.5            # via -r requirements.in
+asgiref==3.2.6            # via -r requirements.in
 astroid==2.3.3            # via pylint
 attrs==19.3.0             # via jsonschema
 backcall==0.1.0           # via ipython
 beautifulsoup4==4.8.2     # via policy-sentry
 billiard==3.6.3.0         # via celery
-bleach==3.1.1             # via -r requirements.in
-boto3==1.12.20            # via -r requirements.in, cloudaux
+bleach==3.1.3             # via -r requirements.in
+boto3==1.12.27            # via -r requirements.in, cloudaux
 boto==2.49.0              # via cloudaux
-botocore==1.15.20         # via boto3, cloudaux, s3transfer
+botocore==1.15.27         # via boto3, cloudaux, s3transfer
 cachetools==4.0.0         # via google-auth
-cchardet==2.1.5           # via -r requirements.in
-celery[redis]==4.4.1      # via -r requirements.in
+cchardet==2.1.6           # via -r requirements.in
+celery[redis]==4.4.2      # via -r requirements.in
 certifi==2019.11.28       # via requests
 chardet==3.0.4            # via requests
 click-log==0.3.2          # via policy-sentry
@@ -28,17 +28,17 @@ click==7.1.1              # via click-log, policy-sentry, presto-python-client
 cloudaux==1.8.1           # via -r requirements.in
 contextlib2==0.5.5        # via schema
 decorator==4.4.2          # via ipython, retry, traitlets
-deepdiff[murmur]==4.3.1   # via -r requirements.in
+deepdiff[murmur]==4.3.2   # via -r requirements.in
 defusedxml==0.6.0         # via -r requirements.in, cloudaux, python3-saml
 docutils==0.15.2          # via botocore
 ed25519==1.5              # via -r requirements.in
 elasticsearch-dsl==7.1.0  # via -r requirements.in
-elasticsearch==7.5.1      # via -r requirements.in, elasticsearch-dsl
+elasticsearch==7.6.0      # via -r requirements.in, elasticsearch-dsl
 flagpole==1.1.1           # via cloudaux
-google-api-core==1.16.0   # via google-cloud-core
-google-api-python-client==1.7.12  # via -r requirements.in
+google-api-core==1.16.0   # via google-api-python-client, google-cloud-core
+google-api-python-client==1.8.0  # via -r requirements.in
 google-auth-httplib2==0.0.3  # via -r requirements.in, google-api-python-client
-google-auth==1.11.2       # via google-api-core, google-api-python-client, google-auth-httplib2, google-cloud-storage
+google-auth==1.11.3       # via google-api-core, google-api-python-client, google-auth-httplib2, google-cloud-storage
 google-cloud-core==1.3.0  # via google-cloud-storage
 google-cloud-storage==1.26.0  # via -r requirements.in
 google-resumable-media==0.5.0  # via google-cloud-storage
@@ -66,14 +66,14 @@ markupsafe==1.1.1         # via jinja2
 marshmallow==2.21.0       # via -r requirements.in
 mccabe==0.6.1             # via pylint
 mmh3==2.5.1               # via deepdiff
-numpy==1.18.1             # via pandas
+numpy==1.18.2             # via pandas
 ordered-set==3.1.1        # via deepdiff
 pandas==0.25.3            # via -r requirements.in, policy-sentry
 parso==0.6.2              # via jedi
 pexpect==4.8.0            # via ipython
 pickleshare==0.7.5        # via ipython
 pkgconfig==1.5.1          # via -r requirements.in, xmlsec
-policy-sentry==0.7.1.2    # via -r requirements.in
+policy-sentry==0.7.2.1    # via -r requirements.in
 policyuniverse==1.3.2.1   # via -r requirements.in, policy-sentry
 presto-python-client==0.7.0  # via -r requirements.in
 prompt-toolkit==3.0.4     # via ipython
@@ -91,7 +91,7 @@ python-dateutil==2.8.0    # via -r requirements.in, botocore, elasticsearch-dsl,
 python-json-logger==0.1.11  # via logmatic-python
 python3-saml==1.9.0       # via -r requirements.in
 pytz==2019.3              # via -r requirements.in, celery, google-api-core, pandas
-pyyaml==5.3               # via apispec, policy-sentry
+pyyaml==5.3.1             # via apispec, policy-sentry
 raven==6.10.0             # via -r requirements.in
 redis==3.4.1              # via -r requirements.in, celery
 requests==2.23.0          # via -r requirements.in, google-api-core, policy-sentry, presto-python-client
@@ -107,13 +107,13 @@ sqlalchemy==1.3.15        # via policy-sentry
 tenacity==6.1.0           # via -r requirements.in
 tornado==6.0.4            # via -r requirements.in
 traitlets==4.3.3          # via ipython
-ujson==2.0.1              # via -r requirements.in
+ujson==2.0.3              # via -r requirements.in
 uritemplate==3.0.1        # via google-api-python-client
 urllib3==1.25.8           # via botocore, elasticsearch, requests
 uvloop==0.14.0            # via -r requirements.in
 validate-email==1.3       # via -r requirements.in
 vine==1.3.0               # via amqp, celery
-wcwidth==0.1.8            # via prompt-toolkit
+wcwidth==0.1.9            # via prompt-toolkit
 webencodings==0.5.1       # via bleach, html5lib
 wrapt==1.11.2             # via astroid
 xmlsec==1.3.3             # via -r requirements.in, python3-saml
