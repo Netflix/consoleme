@@ -269,6 +269,26 @@
                 </form>
             </div>
         </div>
+        {% if request.get("resource_policies") %}
+        <div class="ui segment">
+            <h2>Resource Policy Changes</h2>
+            <p>You may need to update the resource policy for the following resource(s). We've tried to give you a head start by modifying the existing policy or creating a new one. Note that these will <em>not</em> be applied when this request is approved and committed.</em></p>
+            {% for idx, resource_policy in enumerate(request.get("resource_policies", [])) %}
+                <h3>{{ resource_policy.get('resource') }}</h3>
+                <div id="resourcePolicy{{ idx }}" class="ui segment" style="height: 500px;">
+                    {{ json.dumps(resource_policy.get('policy_document'), indent=4, sort_keys=True, escape_forward_slashes=False) }}
+                </div>
+                <script>
+                    var editor = ace.edit("resourcePolicy{{ idx }}");
+                    editor.setTheme("ace/theme/textmate");
+                    editor.session.setMode("ace/mode/json");
+                    editor.setOptions({
+                        editable: false,
+                    })
+                </script>
+            {% end %}
+        </div>
+        {% end %}
     </div>
 </div>
 
