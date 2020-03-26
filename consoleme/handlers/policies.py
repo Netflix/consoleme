@@ -653,6 +653,8 @@ class PolicyReviewHandler(BaseHandler):
         can_cancel: bool = False
         show_update_button: bool = False
         read_only = True
+        resource_policies: List = request.get("resource_policies", [])
+        cross_account: bool = True if resource_policies else False
 
         if status == "pending":
             show_approve_reject_buttons = await can_manage_policy_requests(self.groups)
@@ -693,6 +695,8 @@ class PolicyReviewHandler(BaseHandler):
             role_uri=role_uri,
             escape_json=escape_json,
             policy_changes=formatted_policy_changes,
+            resource_policies=resource_policies,
+            cross_account=cross_account,
         )
 
     async def post(self, request_id):
