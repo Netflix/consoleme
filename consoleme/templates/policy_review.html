@@ -168,7 +168,7 @@
             {% end %}
             <tr>
                 <td>Cross-Account</td>
-                <td><span style="copendinglor: red;">{{ cross_account }}</span>
+                <td><span style="copendinglor: red;">{{ request.get("cross_account_request", False) }}</span>
                 </td>
             </tr>
         </tbody>

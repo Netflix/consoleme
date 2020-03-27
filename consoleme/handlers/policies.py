@@ -536,7 +536,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         try:
             resource_actions = await get_resources_from_events(events)
             resources = list(resource_actions.keys())
-            resource_policies = await get_resource_policies(
+            resource_policies, is_cross_account = await get_resource_policies(
                 arn, resource_actions, account_id
             )
         except Exception as e:
@@ -546,6 +546,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
             resource_actions = {}
             resources = []
             resource_policies = []
+            is_cross_account = False
 
         log_data["resource_actions"] = resource_actions
         log_data["resource_policies"] = resource_policies
@@ -558,6 +559,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
             events,
             resources,
             resource_policies,
+            cross_account=is_cross_account,
         )
         if policy_status == "approved":
             try:
@@ -654,7 +656,6 @@ class PolicyReviewHandler(BaseHandler):
         show_update_button: bool = False
         read_only = True
         resource_policies: List = request.get("resource_policies", [])
-        cross_account: bool = True if resource_policies else False
 
         if status == "pending":
             show_approve_reject_buttons = await can_manage_policy_requests(self.groups)
@@ -696,7 +697,6 @@ class PolicyReviewHandler(BaseHandler):
             escape_json=escape_json,
             policy_changes=formatted_policy_changes,
             resource_policies=resource_policies,
-            cross_account=cross_account,
         )
 
     async def post(self, request_id):
@@ -828,7 +828,7 @@ class PolicyReviewHandler(BaseHandler):
                 ]
             try:
                 resource_actions = await get_resources_from_events(policy_changes)
-                resource_policies = await get_resource_policies(
+                resource_policies, is_cross_account = await get_resource_policies(
                     arn, resource_actions, account_id
                 )
             except Exception as e:
@@ -837,6 +837,7 @@ class PolicyReviewHandler(BaseHandler):
                 log.error(log_data, exc_info=True)
                 resource_actions = {}
                 resource_policies = []
+                is_cross_account = False
 
             log_data["resource_actions"] = resource_actions
             log_data["resource_policies"] = resource_policies
@@ -845,6 +846,7 @@ class PolicyReviewHandler(BaseHandler):
             request["resource_policies"] = resource_policies
             request["policy_changes"] = json.dumps(policy_changes)
             request["reviewer_comments"] = reviewer_comments
+            request["cross_account_request"] = is_cross_account
 
         # Keep a record of the policy as it was at the time of the change, for historical record
         if updated_status == "approved":
