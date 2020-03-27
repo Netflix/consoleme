@@ -536,7 +536,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         try:
             resource_actions = await get_resources_from_events(events)
             resources = list(resource_actions.keys())
-            resource_policies, is_cross_account = await get_resource_policies(
+            resource_policies, cross_account_request = await get_resource_policies(
                 arn, resource_actions, account_id
             )
         except Exception as e:
@@ -546,7 +546,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
             resource_actions = {}
             resources = []
             resource_policies = []
-            is_cross_account = False
+            cross_account_request = False
 
         log_data["resource_actions"] = resource_actions
         log_data["resource_policies"] = resource_policies
@@ -559,7 +559,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
             events,
             resources,
             resource_policies,
-            cross_account=is_cross_account,
+            cross_account_request=cross_account_request,
         )
         if policy_status == "approved":
             try:
@@ -828,7 +828,7 @@ class PolicyReviewHandler(BaseHandler):
                 ]
             try:
                 resource_actions = await get_resources_from_events(policy_changes)
-                resource_policies, is_cross_account = await get_resource_policies(
+                resource_policies, cross_account_request = await get_resource_policies(
                     arn, resource_actions, account_id
                 )
             except Exception as e:
@@ -837,7 +837,7 @@ class PolicyReviewHandler(BaseHandler):
                 log.error(log_data, exc_info=True)
                 resource_actions = {}
                 resource_policies = []
-                is_cross_account = False
+                cross_account_request = False
 
             log_data["resource_actions"] = resource_actions
             log_data["resource_policies"] = resource_policies
@@ -846,7 +846,7 @@ class PolicyReviewHandler(BaseHandler):
             request["resource_policies"] = resource_policies
             request["policy_changes"] = json.dumps(policy_changes)
             request["reviewer_comments"] = reviewer_comments
-            request["cross_account_request"] = is_cross_account
+            request["cross_account_request"] = cross_account_request
 
         # Keep a record of the policy as it was at the time of the change, for historical record
         if updated_status == "approved":

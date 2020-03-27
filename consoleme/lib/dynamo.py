@@ -352,7 +352,7 @@ class UserDynamoHandler(BaseDynamoHandler):
         request_time: int = None,
         request_uuid=None,
         policy_status="pending",
-        cross_account: bool = False,
+        cross_account_request: bool = False,
     ):
         """
             Writes a policy request to the appropriate DynamoDB table
@@ -378,7 +378,7 @@ class UserDynamoHandler(BaseDynamoHandler):
             "policy_changes": json.dumps(policy_changes),
             "resources": resources,
             "resource_policies": resource_policies,
-            "cross_account_request": cross_account,
+            "cross_account_request": cross_account_request,
         }
 
         try:
