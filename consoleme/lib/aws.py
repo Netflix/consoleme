@@ -21,7 +21,7 @@ from policy_sentry.util.arns import (
     get_resource_from_arn,
     get_service_from_arn,
 )
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException
@@ -192,12 +192,14 @@ async def get_resource_policy(account: str, resource_type: str, name: str, regio
 
 async def get_resource_policies(
     principal_arn: str, resource_actions: Dict[str, Dict[str, Any]], account: str
-) -> List[Dict]:
+) -> Tuple[List[Dict], bool]:
     resource_policies: List[Dict] = []
+    cross_account_request: bool = False
     for resource_name, resource_info in resource_actions.items():
         resource_account: str = resource_info.get("account", "")
         if resource_account and resource_account != account:
             # This is a cross-account request. Might need a resource policy.
+            cross_account_request = True
             resource_type: str = resource_info.get("type", "")
             resource_region: str = resource_info.get("region", "")
             old_policy = await get_resource_policy(
@@ -212,7 +214,7 @@ async def get_resource_policies(
             result = {"resource": resource_name, "policy_document": new_policy}
             resource_policies.append(result)
 
-    return resource_policies
+    return resource_policies, cross_account_request
 
 
 async def update_resource_policy(
