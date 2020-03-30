@@ -136,6 +136,13 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         )
 
     async def prepare(self) -> None:
+        if config.get("tornado.xsrf", True):
+            cookie_kwargs = config.get("tornado.xsrf_cookie_kwargs", {})
+            self.set_cookie(
+                config.get("xsrf_cookie_name", "_xsrf"),
+                self.xsrf_token,
+                **cookie_kwargs,
+            )
         self.responses = []
         self.request_uuid = str(uuid.uuid4())
         stats.timer("base_handler.incoming_request")
