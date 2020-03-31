@@ -8,9 +8,9 @@ services:
     tty: true
     stdin_open: true
     volumes:
-      - .:/apps/consoleme
-      - ~/.aws:/root/.aws
-      - ~/.ssh:/root/.ssh
+      - .:/apps/consoleme:delegated
+      - ~/.aws:/root/.aws:cached
+      - ~/.ssh:/root/.ssh:cached
     environment:
       - CONFIG_LOCATION=/apps/consoleme/docker/example_config_test.yaml
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
