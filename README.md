@@ -31,7 +31,7 @@ xcode-select --install
 brew install pkgconfig libxmlsec1
 ```
 
-#### Linux 
+#### Linux
 
 TODO: Needs testing
 
@@ -43,7 +43,7 @@ apt-get install libxmlsec1
 ```
 
 ### Clone the ConsoleMe repo
-   
+
 ```bash
 git clone git@github.com:Netflix-Skunkworks/consoleme.git
 ```
@@ -68,7 +68,7 @@ make install
 account or user for the AWS SDK to communicate with the local DynamoDB container).
 
 ### Run ConsoleMe with the default configuration
-   
+
 ```bash
 # Activate virtualenv created by `make install`
 . env/bin/activate

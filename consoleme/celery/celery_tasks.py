@@ -1024,7 +1024,7 @@ schedule = {
         "options": {"expires": 300},
         "schedule": schedule_5_minutes,
     },
-    "get_iam_access_key_id": {
+    "get_inventory_of_iam_keys": {
         "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
