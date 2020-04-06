@@ -2,6 +2,9 @@ from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.loader import WebpackLoader
 
+import json
+
+log = config.get_logger()
 
 # TODO, move followings to util file
 async def _filter_by_extension(bundle, extension):
@@ -58,14 +61,20 @@ class IndexNewHandler(BaseHandler):
             200:
                 description: Index page
         """
-        # [
-        #     "http://localhost:3000/static/js/bundle.js",
-        #     "http://localhost:3000/static/js/0.chunk.js",
-        #     "http://localhost:3000/static/js/main.chunk.js",
-        # ]
 
         await self.render(
             "index_new.html",
             page_title="ConsoleMe - Console Access",
             bundles=await get_as_tags(name="main", config=config),
         )
+
+
+class SelectRolesHandler(BaseHandler):
+    def initialize(self):
+        self.user: str = None
+        self.eligible_roles: list = []
+
+    async def get(self):
+        self.set_header("Content-Type", "application/json")
+        self.write(json.dumps(self.eligible_roles))
+        await self.finish()

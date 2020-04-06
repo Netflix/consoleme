@@ -1,101 +1,68 @@
 .App {
     height: 100%;
     width: 100%;
-    display: flex;
 }
 
-#header {
-    display: flex;
-    position: fixed;
-    z-index: 10;
-    width: 100%;
-    background: #fff;
-    align-items: center;
-}
-
-#header .brand {
-    display: flex;
-    align-items: center;
+.brand {
+    display: block;
     height: 70px;
-    width: 240px;
-    flex-shrink: 0;
-    padding: 0;
+    line-height: 70px;
+    align-items: center;
+    background: #e50914;
+    border: none!important;
+    justify-content: center;
+    text-align: center;
+}
+
+.brand a {
     font-size: 18px;
     letter-spacing: 1px;
     color: #fff!important;
-    background: #e50914;
     text-decoration: none;
     text-transform: uppercase;
-    border: none!important;
-    justify-content: center;
 }
 
-#header .content {
-    display: flex;
-    height: 70px;
-    align-items: center;
-    padding: 0 20px;
-    justify-content: space-between;
-    flex-grow: 1;
-}
-
-#header .content .ui.secondary.pointing.menu {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    font-size: 16px;
-}
-
-#primary {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    margin-top: 70px;
-}
-
-#primary .sidebar {
-    top: 70px;
-    width:240px;
-    min-height:100%;
+.sidebar {
+    display: block;
     justify-content:space-between;
     background-color:#262626;
-    font-size:14px
+    font-size:14px;
 }
 
-#primary .sidebar #RoleHistory {
+.sidebar #RoleHistory {
     display: block;
     width: 100%;
     margin: 1.5em 0 0;
 }
 
-#primary .sidebar #help {
+.sidebar #help {
     display: block;
     width: 100%;
     margin: 1.5em 0 0;
 }
 
-#primary .sidebar h1, h2, h3, h4, h5 {
+.sidebar h1, h2, h3, h4, h5 {
     color: #737373;
     text-align: center;
     font-weight: 400;
     font-size: 14px;
 }
 
-#primary .sidebar ul {
+.sidebar ul {
     display: flex;
     flex-direction: column;
     padding: 0;
     margin: 0;
 }
 
-#primary .sidebar ul li {
+.sidebar ul li {
     margin: 0;
     display: flex;
     flex-direction: column;
     background: #2e2e2e;
 }
 
-#primary .sidebar ul li a {
+.sidebar ul li a {
     height: 40px;
     padding: 0px 0px;
     cursor: pointer;
@@ -104,7 +71,7 @@
     background-color: transparent;
 }
 
-#primary .sidebar ul li a div {
+.sidebar ul li a div {
     display: block;
     margin-bottom: 2px;
     margin-left: 30px;
@@ -112,7 +79,7 @@
     cursor: pointer;
 }
 
-#primary .sidebar div#help ul li a {
+.sidebar div#help ul li a {
     display: inline-block;
     height: 40px;
     width: 200px;
@@ -120,7 +87,7 @@
     cursor: pointer;
 }
 
-#primary .sidebar ul li a div label {
+.sidebar ul li a div label {
     display: inline-block;
     height: 40px;
     width: 200px;
@@ -128,7 +95,7 @@
     cursor: pointer;
 }
 
-#primary .sidebar footer {
+.sidebar footer {
     display:flex;
     color:#595959;
     padding:1em;
@@ -141,13 +108,13 @@
     align-self: end;
 }
 
-#primary .sidebar div#consoleme_logo {
+.sidebar div#consoleme_logo {
     display: block;
     opacity: 0.9;
     max-width: 90%;
 }
 
-#primary .sidebar div#consoleme_logo img#consoleme_logo {
+.sidebar div#consoleme_logo img#consoleme_logo {
     width: 174px;
     height: 212px;
 }
@@ -162,4 +129,8 @@
 
 .sidebar footer a.security-logo:hover {
     opacity: 1;
+}
+
+.pusher {
+    margin-left: 260px;
 }

@@ -1,0 +1,14 @@
+.hidden {
+    display: none;
+}
+
+.logOutIframe {
+    width: 0;
+    height: 0;
+    border: 0;
+    border: none;
+}
+
+.rolesContainer {
+    width: 860px;
+}

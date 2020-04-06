@@ -27,7 +27,11 @@ from consoleme.handlers.headers import (
 from consoleme.handlers.health import HealthHandler
 
 # from consoleme.handlers.index import IndexHandler
-from consoleme.handlers.index_new import IndexNewHandler
+from consoleme.handlers.index_new import (
+    IndexNewHandler,
+    SelectRolesHandler,
+)
+
 from consoleme.handlers.policies import (
     AutocompleteHandler,
     GetPoliciesHandler,
@@ -103,6 +107,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
         (r"/api/v1/get_roles", GetRolesHandler),
         (r"/api/v1/pageheader/?", PageHeaderHandler),
+        (r"/api/v1/roles/?", SelectRolesHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/config/?", DynamicConfigHandler),
