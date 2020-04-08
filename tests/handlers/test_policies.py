@@ -34,7 +34,7 @@ class TestPoliciesHandler(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     @patch(
-        "consoleme.handlers.policies.PolicyViewHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.PolicyViewHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     def test_policies_pageload(self):
@@ -50,9 +50,9 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
 
         return make_app(jwt_validator=lambda x: {})
 
-    @patch("consoleme.handlers.policies.aws.fetch_iam_role")
+    @patch("consoleme.handlers.v1.policies.aws.fetch_iam_role")
     @patch(
-        "consoleme.handlers.policies.PolicyEditHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.PolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
@@ -74,10 +74,10 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
         self.assertIn(b"iam:GetAccountAuthorizationDetails", response.body)
 
     @patch(
-        "consoleme.handlers.policies.PolicyEditHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.PolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
-    @patch("consoleme.handlers.policies.aws.fetch_iam_role")
+    @patch("consoleme.handlers.v1.policies.aws.fetch_iam_role")
     def test_policy_notfound(self, mock_fetch_iam_role):
         mock_fetch_iam_role_rv = Future()
         mock_fetch_iam_role_rv.set_result(None)
@@ -99,7 +99,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     @patch(
-        "consoleme.handlers.policies.ResourcePolicyEditHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.ResourcePolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
@@ -145,7 +145,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         self.assertIn(b"Resource Policy Editor", response.body)
 
     @patch(
-        "consoleme.handlers.policies.ResourcePolicyEditHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.ResourcePolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
@@ -200,7 +200,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         self.assertIn(b"Resource Policy Editor", response.body)
 
     @patch(
-        "consoleme.handlers.policies.ResourcePolicyEditHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.ResourcePolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
@@ -263,14 +263,14 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         self.assertIn(b"Resource Policy Editor", response.body)
 
     @patch(
-        "consoleme.handlers.policies.ResourcePolicyEditHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.ResourcePolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
     @patch("consoleme.handlers.base.auth")
     @patch("consoleme.lib.aws.get_bucket_policy")
     @patch("consoleme.lib.aws.get_bucket_tagging")
-    @patch("consoleme.handlers.policies.can_manage_policy_requests")
+    @patch("consoleme.handlers.v1.policies.can_manage_policy_requests")
     @patch("consoleme.lib.policies.boto3_cached_conn")
     def test_s3_update_policy(
         self,
@@ -349,7 +349,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         self.assertIn(b'{"status": "success"}', response.body)
 
     @patch(
-        "consoleme.handlers.policies.ResourcePolicyEditHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.ResourcePolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
@@ -357,7 +357,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.lib.aws.get_queue_url")
     @patch("consoleme.lib.aws.get_queue_attributes")
     @patch("consoleme.lib.aws.list_queue_tags")
-    @patch("consoleme.handlers.policies.can_manage_policy_requests")
+    @patch("consoleme.handlers.v1.policies.can_manage_policy_requests")
     @patch("consoleme.lib.policies.boto3_cached_conn")
     def test_sqs_update_policy(
         self,
@@ -441,13 +441,13 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         self.assertIn(b'{"status": "success"}', response.body)
 
     @patch(
-        "consoleme.handlers.policies.ResourcePolicyEditHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.ResourcePolicyEditHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
     @patch("consoleme.handlers.base.auth")
     @patch("consoleme.lib.aws.get_topic_attributes")
-    @patch("consoleme.handlers.policies.can_manage_policy_requests")
+    @patch("consoleme.handlers.v1.policies.can_manage_policy_requests")
     @patch("consoleme.lib.aws.boto3_cached_conn")
     @patch("consoleme.lib.policies.boto3_cached_conn")
     def test_sns_update_policy(
@@ -544,12 +544,12 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         self.assertIn(b'{"status": "success"}', response.body)
 
     @patch(
-        "consoleme.handlers.policies.ResourceTypeAheadHandler.authorization_flow",
+        "consoleme.handlers.v1.policies.ResourceTypeAheadHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
     @patch("consoleme.handlers.base.auth")
-    @patch("consoleme.handlers.policies.redis_hgetall")
+    @patch("consoleme.handlers.v1.policies.redis_hgetall")
     def test_resource_typeahead(self, mock_redis_hgetall, mock_auth):
         headers = {
             config.get("auth.user_header_name"): "user@example.com",
