@@ -16,7 +16,7 @@ mkdocs-material==4.6.3    # via -r requirements-docs.in
 mkdocs==1.1               # via -r requirements-docs.in, mkdocs-material
 nltk==3.4.5               # via lunr
 pygments==2.6.1           # via -c requirements-test.txt, -c requirements.txt, mkdocs-material
-pymdown-extensions==6.3   # via mkdocs-material
+pymdown-extensions==7.0   # via mkdocs-material
 pyyaml==5.3.1             # via -c requirements-test.txt, -c requirements.txt, -r requirements-docs.in, apispec, mkdocs
 six==1.14.0               # via -c requirements-test.txt, -c requirements.txt, livereload, lunr
 tornado==6.0.4            # via -c requirements-test.txt, -c requirements.txt, livereload, mkdocs

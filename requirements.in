@@ -31,6 +31,7 @@ policy_sentry
 policyuniverse
 presto-python-client
 pycurl # For AsyncHTTPClient
+pydantic
 pyjwt
 pylint
 python-dateutil<2.8.1 # Required for moto: https://github.com/spulec/moto/commit/3a2abe3e95a171ec5cff672bdef70ad044e1763f

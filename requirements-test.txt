@@ -12,18 +12,18 @@ aws-sam-translator==1.22.0  # via cfn-lint
 aws-xray-sdk==2.4.3       # via moto
 bandit==1.6.2             # via -r requirements-test.in
 black==19.10b0            # via -r requirements-test.in
-bleach==3.1.3             # via -c requirements.txt, readme-renderer
-boto3==1.12.27            # via -c requirements.txt, aws-sam-translator, moto
+bleach==3.1.4             # via -c requirements.txt, readme-renderer
+boto3==1.12.37            # via -c requirements.txt, aws-sam-translator, moto
 boto==2.49.0              # via -c requirements.txt, moto
-botocore==1.15.27         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
-certifi==2019.11.28       # via -c requirements.txt, requests
+botocore==1.15.37         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
+certifi==2020.4.5.1       # via -c requirements.txt, requests
 cffi==1.14.0              # via cryptography
 cfgv==3.1.0               # via pre-commit
-cfn-lint==0.29.0          # via moto
+cfn-lint==0.29.4          # via moto
 chardet==3.0.4            # via -c requirements.txt, requests
 click==7.1.1              # via -c requirements.txt, black
 coverage==5.0.4           # via -r requirements-test.in, pytest-cov
-cryptography==2.8         # via moto, sshpubkeys
+cryptography==2.9         # via moto, sshpubkeys
 decorator==4.4.2          # via -c requirements.txt, networkx
 distlib==0.3.0            # via virtualenv
 docker==4.2.0             # via moto
@@ -31,7 +31,7 @@ docutils==0.15.2          # via -c requirements.txt, botocore, readme-renderer
 ecdsa==0.15               # via python-jose, sshpubkeys
 entrypoints==0.3          # via flake8
 execnet==1.7.1            # via pytest-xdist
-fakeredis==1.3.0          # via -r requirements-test.in
+fakeredis==1.4.0          # via -r requirements-test.in
 filelock==3.0.12          # via tox, virtualenv
 flake8-docstrings==1.5.0  # via -r requirements-test.in
 flake8-import-order==0.18.1  # via -r requirements-test.in
@@ -39,7 +39,7 @@ flake8==3.7.9             # via -r requirements-test.in, flake8-docstrings
 future==0.18.2            # via aws-xray-sdk
 gitdb==4.0.2              # via gitpython
 gitpython==3.1.0          # via bandit
-identify==1.4.13          # via pre-commit
+identify==1.4.14          # via pre-commit
 idna==2.8                 # via -c requirements.txt, moto, requests
 jinja2==2.11.1            # via -c requirements.txt, moto
 jmespath==0.9.5           # via -c requirements.txt, boto3, botocore
@@ -60,8 +60,8 @@ networkx==2.4             # via cfn-lint
 nodeenv==1.3.5            # via pre-commit
 packaging==20.3           # via pytest, tox
 pathspec==0.7.0           # via black
-pbr==5.4.4                # via stevedore
-pillow==7.0.0             # via -r requirements-test.in
+pbr==5.4.5                # via stevedore
+pillow==7.1.1             # via -r requirements-test.in
 pluggy==0.13.1            # via pytest, tox
 pre-commit==2.2.0         # via -r requirements-test.in
 py==1.8.1                 # via -c requirements.txt, pytest, tox
@@ -71,14 +71,14 @@ pycparser==2.20           # via cffi
 pydocstyle==5.0.2         # via flake8-docstrings
 pyflakes==2.1.1           # via flake8
 pygments==2.6.1           # via -c requirements.txt, readme-renderer
-pyparsing==2.4.6          # via packaging
-pyrsistent==0.15.7        # via -c requirements.txt, jsonschema
+pyparsing==2.4.7          # via packaging
+pyrsistent==0.16.0        # via -c requirements.txt, jsonschema
 pytest-asyncio==0.10.0    # via -r requirements-test.in
 pytest-cov==2.8.1         # via -r requirements-test.in
 pytest-forked==1.1.3      # via pytest-xdist
 pytest-html==2.1.1        # via -r requirements-test.in
 pytest-metadata==1.8.0    # via pytest-html
-pytest-mock==2.0.0        # via -r requirements-test.in
+pytest-mock==3.0.0        # via -r requirements-test.in
 pytest-timeout==1.3.4     # via -r requirements-test.in
 pytest-tornado==0.8.0     # via -r requirements-test.in
 pytest-xdist==1.31.0      # via -r requirements-test.in
@@ -89,7 +89,7 @@ pytz==2019.3              # via -c requirements.txt, moto
 pyyaml==5.3.1             # via -c requirements.txt, bandit, cfn-lint, moto, pre-commit
 readme-renderer==25.0     # via -r requirements-test.in
 redis==3.4.1              # via -c requirements.txt, fakeredis
-regex==2020.2.20          # via black
+regex==2020.4.4           # via black
 requests==2.23.0          # via -c requirements.txt, docker, moto, responses
 responses==0.10.12        # via moto
 rsa==4.0                  # via -c requirements.txt, python-jose
@@ -103,15 +103,15 @@ sshpubkeys==3.1.0         # via moto
 stevedore==1.32.0         # via bandit
 toml==0.10.0              # via black, pre-commit, tox
 tornado==6.0.4            # via -c requirements.txt, -r requirements-test.in, pytest-tornado
-tox==3.14.5               # via -r requirements-test.in
+tox==3.14.6               # via -r requirements-test.in
 typed-ast==1.4.1          # via black, mypy
-typing-extensions==3.7.4.1  # via mypy
+typing-extensions==3.7.4.2  # via mypy
 urllib3==1.25.8           # via -c requirements.txt, botocore, requests, selenium
-virtualenv==20.0.13       # via pre-commit, tox
+virtualenv==20.0.16       # via pre-commit, tox
 wcwidth==0.1.9            # via -c requirements.txt, pytest
 webencodings==0.5.1       # via -c requirements.txt, bleach
 websocket-client==0.57.0  # via docker
-werkzeug==1.0.0           # via moto
+werkzeug==1.0.1           # via moto
 wrapt==1.11.2             # via -c requirements.txt, aws-xray-sdk
 xmltodict==0.12.0         # via moto
 
