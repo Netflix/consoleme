@@ -160,7 +160,9 @@ def report_number_pending_tasks(**kwargs):
     :param kwargs:
     :return:
     """
-    stats.timer("celery.new_pending_task", tags=get_celery_request_tags(**kwargs))
+    tags = get_celery_request_tags(**kwargs)
+    tags.pop("task_id", None)
+    stats.timer("celery.new_pending_task", tags=tags)
 
 
 @task_success.connect
@@ -178,6 +180,8 @@ def report_successful_task(**kwargs):
     """
     tags = get_celery_request_tags(**kwargs)
     red.set(f"{tags['task_name']}.last_success", int(time.time()))
+    tags.pop("error", None)
+    tags.pop("task_id", None)
     stats.timer("celery.successful_task", tags=tags)
 
 
@@ -208,6 +212,8 @@ def report_failed_task(**kwargs):
 
     log_data.update(error_tags)
     log.error(log_data)
+    error_tags.pop("error", None)
+    error_tags.pop("task_id", None)
     stats.timer("celery.failed_task", tags=error_tags)
 
 
@@ -233,6 +239,8 @@ def report_revoked_task(**kwargs):
 
     log_data.update(error_tags)
     log.error(log_data)
+    error_tags.pop("error", None)
+    error_tags.pop("task_id", None)
     stats.timer("celery.revoked_task", tags=error_tags)
 
 
