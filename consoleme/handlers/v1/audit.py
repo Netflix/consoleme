@@ -1,6 +1,5 @@
 import datetime
 import sys
-import ujson as json
 
 import dateutil
 import pkg_resources
@@ -13,7 +12,6 @@ from consoleme.exceptions.exceptions import UnauthorizedToAccess
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.generic import is_in_group, regex_filter
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.redis import redis_get
 from consoleme.lib.timeout import Timeout
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()

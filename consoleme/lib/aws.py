@@ -1,14 +1,12 @@
 import json
 from copy import deepcopy
 
-import boto3
 import pytz
 import sys
 import time
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
-from cloudaux import sts_conn
 from cloudaux.aws.decorators import rate_limited
 from cloudaux.aws.s3 import get_bucket_policy, get_bucket_tagging
 from cloudaux.aws.sns import get_topic_attributes
@@ -16,14 +14,13 @@ from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tag
 from cloudaux.aws.sts import boto3_cached_conn
 from datetime import datetime
 
-from consoleme.lib.s3_helpers import get_object_async
 from deepdiff import DeepDiff
 from policy_sentry.util.arns import (
     get_account_from_arn,
     get_resource_from_arn,
     get_service_from_arn,
 )
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException

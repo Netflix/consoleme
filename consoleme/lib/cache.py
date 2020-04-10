@@ -15,7 +15,12 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 
 
 def store_json_results_in_redis_and_s3(
-    data: List[Union[Dict[str, Union[Union[str, int], Any]], Dict[str, Union[Union[str, None, int], Any]]]],
+    data: List[
+        Union[
+            Dict[str, Union[Union[str, int], Any]],
+            Dict[str, Union[Union[str, None, int], Any]],
+        ]
+    ],
     redis_key: str = None,
     redis_data_type: str = "str",
     s3_bucket: str = None,
@@ -36,7 +41,7 @@ def store_json_results_in_redis_and_s3(
 
     stats.count(
         f"{function}.called",
-        tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key,},
+        tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key},
     )
 
     if redis_key:
@@ -79,7 +84,7 @@ def retrieve_json_data_from_redis_or_s3(
 
     stats.count(
         f"{function}.called",
-        tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key,},
+        tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key},
     )
     data = None
     if redis_data_type == "str":
@@ -93,12 +98,12 @@ def retrieve_json_data_from_redis_or_s3(
 
     # Fall back to S3 if there's no data
     if not data and s3_bucket and s3_key:
-        data_object = get_object(Bucket=s3_bucket, Key=s3_key,)
+        data_object = get_object(Bucket=s3_bucket, Key=s3_key)
         data_object_content = data_object["Body"].read()
         data = json.loads(data_object_content)["data"]
         if redis_key and cache_to_redis_if_data_in_s3:
             store_json_results_in_redis_and_s3(
-                data, redis_key=redis_key, redis_data_type=redis_data_type,
+                data, redis_key=redis_key, redis_data_type=redis_data_type
             )
 
     if data is not None:

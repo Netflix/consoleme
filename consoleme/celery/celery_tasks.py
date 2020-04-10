@@ -414,15 +414,12 @@ def cache_audit_table_details() -> bool:
     s3_bucket = None
     s3_key = None
     if config.region == config.get("celery.active_region") or config.get(
-            "environment"
+        "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_audit_table_details.s3.bucket")
         s3_key = config.get("cache_audit_table_details.s3.file")
     store_json_results_in_redis_and_s3(
-        entries,
-        topic,
-        s3_bucket=s3_bucket,
-        s3_key=s3_key,
+        entries, topic, s3_bucket=s3_bucket, s3_key=s3_key
     )
     return True
 
