@@ -133,6 +133,28 @@ make up-reqs
 `PKG_CONFIG_PATH="/usr/local/opt/libxml2/lib/pkgconfig" make up-reqs` which forces pkgconfig to use
 brew's xmlsec instead of the MacOS xmlsec (Details: https://github.com/mehcode/python-xmlsec/issues/111)
 
+### Releases and Versioning
+
+ConsoleMe uses [setupmeta](https://github.com/zsimic/setupmeta) for versioning, utilizing the [`devcommit` strategy](https://github.com/zsimic/setupmeta/blob/master/docs/versioning.rst#devcommit). This project adheres to [SemVer standards](https://semver.org/#summary) for major, minor, and patch versions. `setupmeta` diverges from SemVer slightly for development versions.
+
+When you're ready to release **patch** changes on `master`:
+
+```bash
+setup.py version --bump minor --commit
+```
+
+When you're ready to release **minor** changes on `master`:
+
+```bash
+setup.py version --bump minor --commit
+```
+
+When you're ready to release **major** changes on `master` (rare, reserved for breaking changes):
+
+```bash
+setup.py version --bump major --commit
+```
+
 ### Running async functions
 
 To run an async python function syncronously in a shell for testing:
