@@ -140,19 +140,19 @@ ConsoleMe uses [setupmeta](https://github.com/zsimic/setupmeta) for versioning, 
 When you're ready to release **patch** changes on `master`:
 
 ```bash
-python setup.py version --bump minor --commit
+python setup.py version --bump minor --commit --push
 ```
 
 When you're ready to release **minor** changes on `master`:
 
 ```bash
-python setup.py version --bump minor --commit
+python setup.py version --bump minor --commit --push
 ```
 
 When you're ready to release **major** changes on `master` (rare, reserved for breaking changes):
 
 ```bash
-python setup.py version --bump major --commit
+python setup.py version --bump major --commit --push
 ```
 
 ### Running async functions
