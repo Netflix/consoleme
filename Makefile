@@ -29,7 +29,7 @@ env_install: env/bin/activate
 	pip install -e default_plugins ;\
 	pip install -r requirements.txt ;\
 	pip install -r requirements-test.txt ;\
-	python setup.py develop
+	pip install -e .
 
 .PHONY: install
 install: clean
