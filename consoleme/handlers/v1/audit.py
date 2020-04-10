@@ -5,6 +5,7 @@ import ujson as json
 import dateutil
 import pkg_resources
 from asgiref.sync import sync_to_async
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from tornado.template import Loader
 
 from consoleme.config import config
@@ -110,9 +111,11 @@ class GetAuditLogsHandler(BaseHandler):
             0
         ].decode("utf-8")
 
-        topic = config.get("redis.audit_log_key", "CM_AUDIT_LOGS")
-        entries_j = await redis_get(topic)
-        entries = json.loads(entries_j)
+        entries = await sync_to_async(retrieve_json_data_from_redis_or_s3)(
+            redis_key=config.get("redis.audit_log_key", "CM_AUDIT_LOGS"),
+            s3_bucket=config.get("cache_audit_table_details.s3.bucket"),
+            s3_key=config.get("cache_audit_table_details.s3.file"),
+        )
 
         for entry in entries:
             entry["updated_at"] = datetime.datetime.fromtimestamp(

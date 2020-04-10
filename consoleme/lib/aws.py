@@ -15,6 +15,8 @@ from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
 from datetime import datetime
+
+from consoleme.lib.s3_helpers import get_object_async
 from deepdiff import DeepDiff
 from policy_sentry.util.arns import (
     get_account_from_arn,
@@ -297,21 +299,6 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
     return result
 
 
-async def fetch_json_object_from_s3(
-    bucket: str, object: str
-) -> Union[Dict[str, Any], List[dict]]:
-    """
-    Fetch and load a JSON-formatted object in S3
-    :param bucket: S3 bucket
-    :param object: S3 Object
-    :return: Dict
-    """
-    s3_object = await get_object_async(Bucket=bucket, Key=object, region=config.region)
-    object_content = s3_object["Body"].read()
-    data = json.loads(object_content)
-    return data
-
-
 async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     """Fetch S3 Bucket and applicable policies
 
@@ -382,35 +369,6 @@ async def raise_if_background_check_required_and_no_background_check(role, user)
                         "{role}.",
                     ).format(role=role)
                 )
-
-
-@rate_limited()
-@sts_conn("s3")
-def put_object(client=None, **kwargs):
-    """Create an S3 object -- calls wrapped with CloudAux."""
-    return client.put_object(**kwargs)
-
-
-def get_object(**kwargs):
-    client = kwargs.get("client")
-    assume_role = kwargs.get("assume_role")
-    if not client:
-        if assume_role:
-            client = boto3_cached_conn(
-                "s3",
-                account_number=kwargs.get("account_number"),
-                assume_role=assume_role,
-                session_name=kwargs.get("session_name", "ConsoleMe"),
-                region=kwargs.get("region", config.region),
-            )
-        else:
-            client = boto3.client("s3")
-    return client.get_object(Bucket=kwargs.get("Bucket"), Key=kwargs.get("Key"))
-
-
-async def get_object_async(**kwargs):
-    """Get an S3 object Asynchronously"""
-    return await sync_to_async(get_object)(**kwargs)
 
 
 def apply_managed_policy_to_role(
