@@ -418,7 +418,7 @@ def cache_audit_table_details() -> bool:
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_audit_table_details.s3.bucket")
         s3_key = config.get("cache_audit_table_details.s3.file")
-    store_json_results_in_redis_and_s3(
+    async_to_sync(store_json_results_in_redis_and_s3)(
         entries, topic, s3_bucket=s3_bucket, s3_key=s3_key
     )
     return True
@@ -558,7 +558,7 @@ def cache_policies_table_details() -> bool:
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_policies_table_details.s3.bucket")
         s3_key = config.get("cache_policies_table_details.s3.file")
-    store_json_results_in_redis_and_s3(
+    async_to_sync(store_json_results_in_redis_and_s3)(
         items,
         redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
         s3_bucket=s3_bucket,

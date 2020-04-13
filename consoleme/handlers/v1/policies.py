@@ -4,7 +4,6 @@ import tornado.escape
 import ujson as json
 from datetime import datetime, timedelta
 
-from asgiref.sync import sync_to_async
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from policyuniverse.expander_minimizer import _expand_wildcard_action
 from typing import Dict, List, Optional
@@ -154,7 +153,7 @@ class GetPoliciesHandler(BaseHandler):
             0
         ].decode("utf-8")
 
-        policies_d = await sync_to_async(retrieve_json_data_from_redis_or_s3)(
+        policies_d = await retrieve_json_data_from_redis_or_s3(
             redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
             s3_bucket=config.get("cache_policies_table_details.s3.bucket"),
             s3_key=config.get("cache_policies_table_details.s3.file"),
@@ -518,7 +517,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         log.debug(log_data)
 
         stats.count(
-            log_data["function"], tags={"user": self.user, "ip": self.ip, "arn": arn}
+            "PolicyReviewSubmitHandler.post", tags={"user": self.user, "arn": arn}
         )
 
         role = await aws.fetch_iam_role(account_id, arn)
@@ -638,7 +637,7 @@ class PolicyReviewHandler(BaseHandler):
         log.debug(log_data)
 
         stats.count(
-            log_data["function"],
+            "PolicyReviewHandler.get",
             tags={
                 "user": self.user,
                 "ip": self.ip,
@@ -749,7 +748,7 @@ class PolicyReviewHandler(BaseHandler):
         log.debug(log_data)
 
         stats.count(
-            log_data["function"],
+            "PolicyReviewHandler.post",
             tags={
                 "user": self.user,
                 "ip": self.ip,

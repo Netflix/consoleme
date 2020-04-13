@@ -1,3 +1,4 @@
+aioredis
 apispec
 apispec-webframeworks
 asgiref # Allows sync_to_async call, executes synchronous code in its own threadpool.

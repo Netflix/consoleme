@@ -14,12 +14,15 @@ red = RedisHandler().redis_sync()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 
 
-def store_json_results_in_redis_and_s3(
-    data: List[
-        Union[
-            Dict[str, Union[Union[str, int], Any]],
-            Dict[str, Union[Union[str, None, int], Any]],
-        ]
+async def store_json_results_in_redis_and_s3(
+    data: Union[
+        Dict[str, set],
+        List[
+            Union[
+                Dict[str, Union[Union[str, int], Any]],
+                Dict[str, Union[Union[str, None, int], Any]],
+            ]
+        ],
     ],
     redis_key: str = None,
     redis_data_type: str = "str",
@@ -62,7 +65,7 @@ def store_json_results_in_redis_and_s3(
         )
 
 
-def retrieve_json_data_from_redis_or_s3(
+async def retrieve_json_data_from_redis_or_s3(
     redis_key: str = None,
     redis_data_type: str = "str",
     s3_bucket: str = None,
@@ -102,7 +105,7 @@ def retrieve_json_data_from_redis_or_s3(
         data_object_content = data_object["Body"].read()
         data = json.loads(data_object_content)["data"]
         if redis_key and cache_to_redis_if_data_in_s3:
-            store_json_results_in_redis_and_s3(
+            await store_json_results_in_redis_and_s3(
                 data, redis_key=redis_key, redis_data_type=redis_data_type
             )
 
