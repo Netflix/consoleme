@@ -67,7 +67,7 @@ class PolicyViewHandler(BaseHandler):
                 "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
-        stats.count("policies.get", tags={"user": self.user, "ip": self.ip})
+        stats.count("PolicyViewHandler.get", tags={"user": self.user})
 
         log_data = {
             "user": self.user,
@@ -224,7 +224,7 @@ class PolicyEditHandler(BaseHandler):
 
         arn = f"arn:aws:iam::{account_id}:role/{role_name}"
 
-        stats.count("policy.get", tags={"user": self.user, "ip": self.ip, "arn": arn})
+        stats.count("PolicyEditHandler.get", tags={"user": self.user, "arn": arn})
 
         log_data = {
             "user": self.user,
@@ -323,7 +323,7 @@ class PolicyEditHandler(BaseHandler):
 
         arn = f"arn:aws:iam::{account_id}:role/{role_name}"
 
-        stats.count("policy.post", tags={"user": self.user, "ip": self.ip, "arn": arn})
+        stats.count("PolicyEditHandler.post", tags={"user": self.user, "arn": arn})
 
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -378,7 +378,9 @@ class ResourcePolicyEditHandler(BaseHandler):
             account_id_for_arn = ""
         arn = f"arn:aws:{resource_type}:{region or ''}:{account_id_for_arn}:{resource_name}"
 
-        stats.count("policy.get", tags={"user": self.user, "ip": self.ip, "arn": arn})
+        stats.count(
+            "ResourcePolicyEditHandler.get", tags={"user": self.user, "arn": arn}
+        )
 
         log_data = {
             "user": self.user,
@@ -449,7 +451,9 @@ class ResourcePolicyEditHandler(BaseHandler):
             account_id_for_arn = ""
         arn = f"arn:aws:{resource_type}:{region or ''}:{account_id_for_arn}:{resource_name}"
 
-        stats.count("policy.post", tags={"user": self.user, "ip": self.ip, "arn": arn})
+        stats.count(
+            "ResourcePolicyEditHandler.post", tags={"user": self.user, "arn": arn}
+        )
 
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -513,7 +517,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         log.debug(log_data)
 
         stats.count(
-            log_data["function"], tags={"user": self.user, "ip": self.ip, "arn": arn}
+            "PolicyReviewSubmitHandler.post", tags={"user": self.user, "arn": arn}
         )
 
         role = await aws.fetch_iam_role(account_id, arn)
@@ -632,15 +636,7 @@ class PolicyReviewHandler(BaseHandler):
         }
         log.debug(log_data)
 
-        stats.count(
-            log_data["function"],
-            tags={
-                "user": self.user,
-                "ip": self.ip,
-                "arn": arn,
-                "request_id": request.get("request_id"),
-            },
-        )
+        stats.count("PolicyReviewHandler.get", tags={"user": self.user, "arn": arn})
 
         try:
             formatted_policy_changes = await get_formatted_policy_changes(
@@ -744,14 +740,8 @@ class PolicyReviewHandler(BaseHandler):
         log.debug(log_data)
 
         stats.count(
-            log_data["function"],
-            tags={
-                "user": self.user,
-                "ip": self.ip,
-                "arn": arn,
-                "request_id": request.get("request_id"),
-                "updated_status": updated_status,
-            },
+            "PolicyReviewHandler.post",
+            tags={"user": self.user, "arn": arn, "updated_status": updated_status},
         )
 
         can_approve_reject = await can_manage_policy_requests(self.groups)
