@@ -9,14 +9,14 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
 
-class PageHeaderHandler(BaseHandler):
+class UserProfileHandler(BaseHandler):
     async def get(self):
         """
-        Provide information about the user and page headers for the frontend
+        Provide information about the user profile for the frontend
         :return:
         """
         is_contractor = config.config_plugin().is_contractor(self.user)
-        page_header_details = {
+        user_profile = {
             "user": self.user,
             "is_contractor": is_contractor,
             "employee_photo_url": config.config_plugin().get_employee_photo_url(
@@ -25,18 +25,12 @@ class PageHeaderHandler(BaseHandler):
             "employee_info_url": config.config_plugin().get_employee_info_url(
                 self.user
             ),
-            "google_tracking_uri": config.get("google_analytics.tracking_url"),
-            "documentation_url": config.get("documentation_page"),
-            "support_contact": config.get("support_contact"),
-            "support_slack": config.get("support_slack"),
-            "security_logo": config.get("security_logo.url"),
-            "consoleme_logo": await get_random_security_logo(),
             "pages": {
                 "groups": {"enabled": config.get("headers.group_access.enabled", True)},
                 "users": {"enabled": config.get("headers.group_access.enabled", True)},
                 "policies": {
                     "enabled": config.get("headers.policies.enabled", True)
-                    and not is_contractor
+                               and not is_contractor
                 },
                 "self_service": {"enabled": config.get("enable_self_service")},
                 "api_health": {
@@ -57,7 +51,25 @@ class PageHeaderHandler(BaseHandler):
             },
         }
         self.set_header("Content-Type", "application/json")
-        self.write(page_header_details)
+        self.write(user_profile)
+
+
+class SiteConfigHandler(BaseHandler):
+    async def get(self):
+        """
+        Provide information about site configuration for the frontend
+        :return:
+        """
+        site_config = {
+            "consoleme_logo": await get_random_security_logo(),
+            "google_tracking_uri": config.get("google_analytics.tracking_url"),
+            "documentation_url": config.get("documentation_page"),
+            "support_contact": config.get("support_contact"),
+            "support_slack": config.get("support_slack"),
+            "security_logo": config.get("security_logo.url"),
+        }
+        self.set_header("Content-Type", "application/json")
+        self.write(site_config)
 
 
 class HeaderHandler(BaseHandler):

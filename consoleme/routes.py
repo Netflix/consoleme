@@ -22,7 +22,8 @@ from consoleme.handlers.errors import Consolme404Handler
 from consoleme.handlers.headers import (
     ApiHeaderHandler,
     HeaderHandler,
-    PageHeaderHandler,
+    SiteConfigHandler,
+    UserProfileHandler,
 )
 from consoleme.handlers.health import HealthHandler
 
@@ -85,6 +86,7 @@ def make_app(jwt_validator=None):
     routes = [
         # (r"/", IndexHandler),
         (r"/", IndexNewHandler),
+        (r"/selfservice", IndexNewHandler),
         (r"/login", IndexNewHandler),
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
@@ -106,7 +108,8 @@ def make_app(jwt_validator=None):
         # Used to autocomplete s3:get to all matching permissions
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
         (r"/api/v1/get_roles", GetRolesHandler),
-        (r"/api/v1/pageheader/?", PageHeaderHandler),
+        (r"/api/v1/siteconfig/?", SiteConfigHandler),
+        (r"/api/v1/profile/?", UserProfileHandler),
         (r"/api/v1/roles/?", SelectRolesHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
