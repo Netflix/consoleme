@@ -78,6 +78,6 @@ setup(
     entry_points={},
     cmdclass={"cleanall": CleanAllCommand},
     include_package_data=True,
-    versioning="build-id",
+    versioning="devcommit",
     zip_safe=False,
 )
