@@ -14,9 +14,6 @@ paths:
   /credentials:
     post:
       summary: generate a federation url for aws console signin
-  /policies:
-    get:
-      summary: get a list of policies
   /requests:
     get:
       summary: get a list of requests
@@ -27,6 +24,12 @@ paths:
       summary: get details about a request
     put:
       summary: update a request
+  /roles:
+    get:
+      summary: get a list of roles
+  /roles/{accountNumber}:
+    get:
+      summary: get a list of roles in an account
   /roles/{accountNumber}/{roleName}:
     get:
       summary: get details about a role
