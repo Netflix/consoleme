@@ -624,6 +624,8 @@ class UserDynamoHandler(BaseDynamoHandler):
       """
         request_time = request_time or int(time.time())
 
+        stats.count("new_group_request", tags={"user": user_email, "group": group})
+
         if self.affected_user.get("username") != user_email:
             self.affected_user = self.get_or_create_user(user_email)
         # Get current user. Create if they do not already exist
@@ -745,6 +747,15 @@ class UserDynamoHandler(BaseDynamoHandler):
         :param request_id:
         :return:
         """
+        stats.count(
+            "update_group_request",
+            tags={
+                "user": user_email,
+                "group": group,
+                "new_status": new_status,
+                "updated_by": updated_by,
+            },
+        )
         modified_request = None
         if self.affected_user.get("username") != user_email:
             self.affected_user = self.get_or_create_user(user_email)
