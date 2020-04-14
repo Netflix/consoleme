@@ -650,8 +650,30 @@ def cache_managed_policies_for_account(account_id: str) -> bool:
     for policy in managed_policies:
         all_policies.append(policy.get("Arn"))
 
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "account_id": account_id,
+        "number_managed_policies": len(all_policies),
+    }
+    log.debug(log_data)
+    stats.count(
+        "cache_managed_policies_for_account",
+        tags={"account_id": account_id, "num_managed_policies": len(all_policies)},
+    )
+
     policy_key = config.get("redis.iam_managed_policies_key", "IAM_MANAGED_POLICIES")
     red.hset(policy_key, account_id, json.dumps(all_policies))
+
+    if config.region == config.get("celery.active_region") or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("account_resource_cache.s3.bucket")
+        s3_key = config.get("account_resource_cache.s3.file").format(
+            resource_type="managed_policies", account_id=account_id
+        )
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            all_policies, s3_bucket=s3_bucket, s3_key=s3_key
+        )
     return True
 
 
@@ -734,7 +756,29 @@ def cache_sqs_queues_for_account(account_id: str) -> bool:
             all_queues.add(arn)
     sqs_queue_key: str = config.get("redis.sqs_queues_key", "SQS_QUEUES")
     red.hset(sqs_queue_key, account_id, json.dumps(list(all_queues)))
-    return True
+
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "account_id": account_id,
+        "number_sqs_queues": len(all_queues),
+    }
+    log.debug(log_data)
+    stats.count(
+        "cache_sqs_queues_for_account",
+        tags={"account_id": account_id, "number_sqs_queues": len(all_queues)},
+    )
+
+    if config.region == config.get("celery.active_region") or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("account_resource_cache.s3.bucket")
+        s3_key = config.get("account_resource_cache.s3.file").format(
+            resource_type="sqs_queues", account_id=account_id
+        )
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            all_queues, s3_bucket=s3_bucket, s3_key=s3_key
+        )
+    return log_data
 
 
 @app.task(soft_time_limit=1800)
@@ -752,7 +796,29 @@ def cache_sns_topics_for_account(account_id: str) -> bool:
             all_topics.add(topic["TopicArn"])
     sns_topic_key: str = config.get("redis.sns_topics_key", "SNS_TOPICS")
     red.hset(sns_topic_key, account_id, json.dumps(list(all_topics)))
-    return True
+
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "account_id": account_id,
+        "number_sns_topics": len(all_topics),
+    }
+    log.debug(log_data)
+    stats.count(
+        "cache_sns_topics_for_account",
+        tags={"account_id": account_id, "number_sns_topics": len(all_topics)},
+    )
+
+    if config.region == config.get("celery.active_region") or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("account_resource_cache.s3.bucket")
+        s3_key = config.get("account_resource_cache.s3.file").format(
+            resource_type="sns_topics", account_id=account_id
+        )
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            all_topics, s3_bucket=s3_bucket, s3_key=s3_key
+        )
+    return log_data
 
 
 @app.task(soft_time_limit=1800)
@@ -768,7 +834,29 @@ def cache_s3_buckets_for_account(account_id: str) -> bool:
         buckets.append(bucket["Name"])
     s3_bucket_key: str = config.get("redis.s3_buckets_key", "S3_BUCKETS")
     red.hset(s3_bucket_key, account_id, json.dumps(buckets))
-    return True
+
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "account_id": account_id,
+        "number_s3_buckets": len(buckets),
+    }
+    log.debug(log_data)
+    stats.count(
+        "cache_s3_buckets_for_account",
+        tags={"account_id": account_id, "number_sns_topics": len(buckets)},
+    )
+
+    if config.region == config.get("celery.active_region") or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("account_resource_cache.s3.bucket")
+        s3_key = config.get("account_resource_cache.s3.file").format(
+            resource_type="s3_buckets", account_id=account_id
+        )
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            buckets, s3_bucket=s3_bucket, s3_key=s3_key
+        )
+    return log_data
 
 
 @retry(

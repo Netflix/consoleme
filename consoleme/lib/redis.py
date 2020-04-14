@@ -10,6 +10,12 @@ region = config.region
 
 # ToDo - Switch to Aioredis
 class ConsoleMeRedis(redis.StrictRedis):
+    """
+    ConsoleMeRedis is a simple wrapper around redis.StrictRedis. It was created to allow Redis to be optional.
+    If Redis settings are not defined in ConsoleMe's configuration, we "disable" redis. If Redis is disabled, calls to
+    Redis will fail silently. If new Redis calls are added to ConsoleMe, they should be added to this class.
+    """
+
     def __init__(self, *args, **kwargs):
         self.enabled = True
         if kwargs["host"] is None or kwargs["port"] is None or kwargs["db"] is None:
@@ -19,32 +25,42 @@ class ConsoleMeRedis(redis.StrictRedis):
     def get(self, *args, **kwargs):
         if not self.enabled:
             return None
-        super(ConsoleMeRedis, self).get(*args, **kwargs)
+        return super(ConsoleMeRedis, self).get(*args, **kwargs)
 
     def set(self, *args, **kwargs):
         if not self.enabled:
             return False
-        super(ConsoleMeRedis, self).set(*args, **kwargs)
+        return super(ConsoleMeRedis, self).set(*args, **kwargs)
 
     def setex(self, *args, **kwargs):
         if not self.enabled:
             return False
-        super(ConsoleMeRedis, self).setex(*args, **kwargs)
+        return super(ConsoleMeRedis, self).setex(*args, **kwargs)
 
     def hmset(self, *args, **kwargs):
         if not self.enabled:
             return False
-        super(ConsoleMeRedis, self).hmset(*args, **kwargs)
+        return super(ConsoleMeRedis, self).hmset(*args, **kwargs)
+
+    def hset(self, *args, **kwargs):
+        if not self.enabled:
+            return False
+        return super(ConsoleMeRedis, self).hset(*args, **kwargs)
+
+    def hget(self, *args, **kwargs):
+        if not self.enabled:
+            return None
+        return super(ConsoleMeRedis, self).hget(*args, **kwargs)
 
     def hmget(self, *args, **kwargs):
         if not self.enabled:
             return None
-        super(ConsoleMeRedis, self).hmget(*args, **kwargs)
+        return super(ConsoleMeRedis, self).hmget(*args, **kwargs)
 
-    def hmgetall(self, *args, **kwargs):
+    def hgetall(self, *args, **kwargs):
         if not self.enabled:
             return None
-        super(ConsoleMeRedis, self).hgetall(*args, **kwargs)
+        return super(ConsoleMeRedis, self).hgetall(*args, **kwargs)
 
 
 class RedisHandler:

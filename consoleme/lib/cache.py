@@ -90,14 +90,15 @@ async def retrieve_json_data_from_redis_or_s3(
         tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key},
     )
     data = None
-    if redis_data_type == "str":
-        data_s = red.get(redis_key)
-        if data_s:
-            data = json.loads(data_s)
-    elif redis_data_type == "hash":
-        data = red.hgetall(redis_key)
-    else:
-        raise UnsupportedRedisDataType("Unsupported redis_data_type passed")
+    if redis_key:
+        if redis_data_type == "str":
+            data_s = red.get(redis_key)
+            if data_s:
+                data = json.loads(data_s)
+        elif redis_data_type == "hash":
+            data = red.hgetall(redis_key)
+        else:
+            raise UnsupportedRedisDataType("Unsupported redis_data_type passed")
 
     # Fall back to S3 if there's no data
     if not data and s3_bucket and s3_key:

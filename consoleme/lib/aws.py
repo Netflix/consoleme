@@ -14,6 +14,7 @@ from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tag
 from cloudaux.aws.sts import boto3_cached_conn
 from datetime import datetime
 
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from deepdiff import DeepDiff
 from policy_sentry.util.arns import (
     get_account_from_arn,
@@ -141,6 +142,7 @@ async def create_or_update_managed_policy(
 
 
 async def get_all_iam_managed_policies_for_account(account_id):
+    # Todo: Migrate this to use S3 / Redis cache
     global ALL_IAM_MANAGED_POLICIES_LAST_UPDATE
     global ALL_IAM_MANAGED_POLICIES
 
@@ -152,7 +154,17 @@ async def get_all_iam_managed_policies_for_account(account_id):
         red = await RedisHandler().redis()
         ALL_IAM_MANAGED_POLICIES = await sync_to_async(red.hgetall)(policy_key)
         ALL_IAM_MANAGED_POLICIES_LAST_UPDATE = current_time
-    return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
+
+    if ALL_IAM_MANAGED_POLICIES:
+        return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
+    else:
+        s3_bucket = config.get("cache_managed_policies_for_account.s3.bucket")
+        s3_key = config.get("cache_managed_policies_for_account.s3.file").format(
+            account_id=account_id
+        )
+        return await retrieve_json_data_from_redis_or_s3(
+            s3_bucket=s3_bucket, s3_key=s3_key
+        )
 
 
 async def get_resource_account(arn: str) -> str:
