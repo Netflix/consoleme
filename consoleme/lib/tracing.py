@@ -98,7 +98,7 @@ class ConsoleMeTracer:
             annotations = []
         zipkin_address = config.get(
             "tracing.zipkin_address", "http://127.0.0.1:9411/api/v2/spans"
-        )
+        ).format(region=config.region, environment=config.get("environment"))
 
         endpoint = az.create_endpoint(
             config.get("tracing.application_name", "consoleme")
