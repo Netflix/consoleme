@@ -33,6 +33,7 @@ from consoleme.lib.saml import authenticate_user_by_saml
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
+group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 
 
 class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
@@ -185,11 +186,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
             refresh_cache = True
 
         self.red = await RedisHandler().redis()
-
-        # Load auth plugin
-        auth = get_plugin_by_name(config.get("plugins.auth"))()
-        group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
-
         self.ip = self.request.headers.get(
             "X-Forwarded-For", self.request.remote_ip
         ).split(",")[0]
