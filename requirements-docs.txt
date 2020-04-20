@@ -5,21 +5,25 @@
 #    pip-compile --no-index --output-file=requirements-docs.txt requirements-docs.in
 #
 apispec==3.3.0            # via -c requirements.txt, -r requirements-docs.in
-click==7.1.1              # via -c requirements-test.txt, -c requirements.txt, mkdocs
+click==7.1.1              # via -c requirements-test.txt, -c requirements.txt, mkdocs, nltk
 future==0.18.2            # via -c requirements-test.txt, lunr
-jinja2==2.11.1            # via -c requirements-test.txt, -c requirements.txt, mkdocs
+jinja2==2.11.2            # via -c requirements-test.txt, mkdocs
+joblib==0.14.1            # via -c requirements.txt, nltk
 livereload==2.6.1         # via mkdocs
 lunr[languages]==0.5.6    # via mkdocs
 markdown==3.2.1           # via mkdocs, mkdocs-material, pymdown-extensions
-markupsafe==1.1.1         # via -c requirements-test.txt, -c requirements.txt, jinja2
-mkdocs-material==4.6.3    # via -r requirements-docs.in
+markupsafe==1.1.1         # via -c requirements-test.txt, jinja2
+mkdocs-material-extensions==1.0b2  # via mkdocs-material
+mkdocs-material==5.1.1    # via -r requirements-docs.in, mkdocs-material-extensions
 mkdocs==1.1               # via -r requirements-docs.in, mkdocs-material
-nltk==3.4.5               # via lunr
+nltk==3.5                 # via lunr
 pygments==2.6.1           # via -c requirements-test.txt, -c requirements.txt, mkdocs-material
-pymdown-extensions==7.0   # via mkdocs-material
+pymdown-extensions==7.1   # via mkdocs-material
 pyyaml==5.3.1             # via -c requirements-test.txt, -c requirements.txt, -r requirements-docs.in, apispec, mkdocs
+regex==2020.4.4           # via -c requirements-test.txt, nltk
 six==1.14.0               # via -c requirements-test.txt, -c requirements.txt, livereload, lunr
 tornado==6.0.4            # via -c requirements-test.txt, -c requirements.txt, livereload, mkdocs
+tqdm==4.45.0              # via nltk
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools

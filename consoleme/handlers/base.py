@@ -1,18 +1,15 @@
 """Handle the base."""
+import asyncio
 import traceback
+import uuid
+from typing import Any, Union
 
 import redis
 import tornado.httpclient
 import tornado.httputil
 import tornado.web
 import ujson as json
-import uuid
 from asgiref.sync import sync_to_async
-from onelogin.saml2.auth import OneLogin_Saml2_Auth
-from raven.contrib.tornado import SentryMixin
-from tornado import httputil
-from typing import Any, Union
-
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     InvalidCertificateException,
@@ -29,6 +26,10 @@ from consoleme.lib.oauth2 import authenticate_user_by_oauth2
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.saml import authenticate_user_by_saml
+from consoleme.lib.tracing import ConsoleMeTracer
+from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from raven.contrib.tornado import SentryMixin
+from tornado import httputil
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -57,7 +58,7 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
         self.set_status(204)
         self.finish()
 
-    def prepare(self):
+    async def prepare(self):
         stats.timer("base_handler.incoming_request")
         if self.request.method.lower() == "options":
             return
@@ -136,7 +137,12 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
             "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
         )
 
+    def initialize(self) -> None:
+        super(BaseHandler, self).initialize()
+
     async def prepare(self) -> None:
+        await self.configure_tracing()
+
         if config.get("tornado.xsrf", True):
             cookie_kwargs = config.get("tornado.xsrf_cookie_kwargs", {})
             self.set_cookie(
@@ -154,7 +160,37 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
             self.responses.append(chunk)
         super(BaseHandler, self).write(chunk)
 
+    async def configure_tracing(self):
+        self.tracer = ConsoleMeTracer()
+        primary_span_name = "{0} {1}".format(
+            self.request.method.upper(), self.request.path
+        )
+        tracer_tags = {
+            "http.host": config.hostname,
+            "http.method": self.request.method.upper(),
+            "http.path": self.request.path,
+            "ca": self.request.headers.get(
+                "X-Forwarded-For", self.request.remote_ip
+            ).split(",")[
+                0
+            ],  # Client IP
+            "http.url": self.request.full_url(),
+        }
+        tracer = await self.tracer.configure_tracing(
+            primary_span_name, tags=tracer_tags
+        )
+        if tracer:
+            for k, v in tracer.headers.items():
+                self.set_header(k, v)
+
     def on_finish(self) -> None:
+        if self.tracer:
+            asyncio.ensure_future(
+                self.tracer.set_additional_tags({"http.status_code": self.get_status()})
+            )
+            asyncio.ensure_future(self.tracer.finish_spans())
+            asyncio.ensure_future(self.tracer.disable_tracing())
+
         if config.get("_security_risk_full_debugging.enabled"):
             request_details = {
                 "path": self.request.path,
@@ -171,6 +207,7 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
             }
             with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
                 f.write(json.dumps(request_details))
+        super(BaseHandler, self).on_finish()
 
     async def authorization_flow(
         self, user: str = None, console_only: bool = True, refresh_cache: bool = False
@@ -363,6 +400,8 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         ):
             encoded_cookie = await generate_jwt_token(self.user, self.groups)
             self.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
+        if self.tracer:
+            await self.tracer.set_additional_tags({"USER": self.user})
 
     async def prepare_tornado_request_for_saml(self):
         dataDict = {}
@@ -394,6 +433,9 @@ class BaseMtlsHandler(BaseHandler):
         self.kwargs = kwargs
 
     async def prepare(self):
+        self.tracer = None
+        self.span = None
+        self.spans = {}
         self.responses = []
         self.request_uuid = str(uuid.uuid4())
         stats.timer("base_handler.incoming_request")
@@ -426,6 +468,7 @@ class BaseMtlsHandler(BaseHandler):
             "X-Forwarded-For", self.request.remote_ip
         ).split(",")[0]
         self.current_cert_age = await auth.get_cert_age_seconds(self.request.headers)
+        await self.configure_tracing()
 
     def write(self, chunk: Union[str, bytes, dict]) -> None:
         if config.get("_security_risk_full_debugging.enabled"):
@@ -449,6 +492,7 @@ class BaseMtlsHandler(BaseHandler):
             }
             with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
                 f.write(json.dumps(request_details))
+        super(BaseMtlsHandler, self).on_finish()
 
 
 class NoCacheStaticFileHandler(tornado.web.StaticFileHandler):

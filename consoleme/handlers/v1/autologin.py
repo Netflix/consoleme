@@ -19,6 +19,7 @@ class AutoLoginHandler(BaseHandler):
         self.eligible_roles = None
         self.eligible_accounts = None
         self.groups = None
+        super(AutoLoginHandler, self).initialize()
 
     async def head(self):
         """Return a 200 for HEAD requests.
