@@ -89,7 +89,7 @@ class ConsoleMeTracer:
         if not config.get("tracing.enabled"):
             return
 
-        if random() > config.get("tracing.sample_rate", ".01"):  # nosec
+        if random() * 100 <= config.get("tracing.sample_rate", 0.1):  # nosec
             return
 
         if not tags:
