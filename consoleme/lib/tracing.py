@@ -8,6 +8,7 @@ from consoleme.config import config
 from pydantic import BaseModel
 
 SERVER = "SERVER"
+log = config.get_logger()
 
 
 class ConsoleMeTracerObject(BaseModel):
@@ -23,6 +24,7 @@ class ConsoleMeTracer:
     def __init__(self):
         self.spans = {}
         self.headers = {}
+        self.log_data = {}
         self.tracer = None
         self.primary_span = None
 
@@ -99,7 +101,6 @@ class ConsoleMeTracer:
         zipkin_address = config.get(
             "tracing.zipkin_address", "http://127.0.0.1:9411/api/v2/spans"
         ).format(region=config.region, environment=config.get("environment"))
-
         endpoint = az.create_endpoint(
             config.get("tracing.application_name", "consoleme")
         )
@@ -107,6 +108,15 @@ class ConsoleMeTracer:
         self.tracer = await az.create(zipkin_address, endpoint, sample_rate=1.0)
         self.primary_span = self.tracer.new_trace(sampled=True)
         self.headers = self.primary_span.context.make_headers()
+        self.log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Starting trace",
+            "trace_id": self.primary_span.context.trace_id,
+            "zipkin_address": zipkin_address,
+            "tags": tags,
+            "hostname": config.hostname,
+        }
+        log.debug(self.log_data)
 
         self.primary_span.kind(span_kind)
         self.primary_span.start()
@@ -127,6 +137,8 @@ class ConsoleMeTracer:
         )
 
     async def disable_tracing(self):
+        self.log_data["message"] = "disabling tracing"
+        log.debug(self.log_data)
         sys.settrace(None)
         threading.settrace(None)
 
@@ -145,7 +157,8 @@ class ConsoleMeTracer:
         # We iterate through the dictionary of spans in a safe manner
         # to avoid a "Dictionary changed size during iteration" error as other asynchronous
         # callers modify self.spans
-
+        self.log_data["message"] = "finishing spans"
+        log.debug(self.log_data)
         for span_id in list(self.spans):
             span = self.spans.get(span_id)
             if span:
