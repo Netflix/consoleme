@@ -51,7 +51,12 @@ class ConsoleMeTracer:
         in_scope_function_calls = config.get(
             "tracing.in_scope_function_calls", ["/consoleme/"]
         )
-        if not any(x in frame.f_code.co_filename for x in in_scope_function_calls):
+        if not (
+            any(x in frame.f_code.co_filename for x in in_scope_function_calls)
+            or any(
+                x in frame.f_back.f_code.co_filename for x in in_scope_function_calls
+            )
+        ):
             if self.spans.get(span_name):
                 self.spans[span_name].finish()
             return
