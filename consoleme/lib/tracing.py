@@ -142,6 +142,8 @@ class ConsoleMeTracer:
         )
 
     async def disable_tracing(self):
+        if not config.get("tracing.enabled"):
+            return
         self.log_data["message"] = "disabling tracing"
         log.debug(self.log_data)
         sys.settrace(None)
@@ -162,6 +164,8 @@ class ConsoleMeTracer:
         # We iterate through the dictionary of spans in a safe manner
         # to avoid a "Dictionary changed size during iteration" error as other asynchronous
         # callers modify self.spans
+        if not config.get("tracing.enabled"):
+            return
         self.log_data["message"] = "finishing spans"
         log.debug(self.log_data)
         for span_id in list(self.spans):
