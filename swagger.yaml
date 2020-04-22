@@ -1,0 +1,133 @@
+openapi: 3.0.0
+servers:
+  - description: test
+    url: https://test.foo
+info:
+  description: ConsoleMe API definition
+  version: '2.0.0'
+  title: ConsoleMe v2 API
+  contact:
+    email: psanders@netflix.com
+  license:
+    name: License TBD
+tags:
+  - name: default
+    description: Cool stuff
+paths:
+  /credentials:
+    post:
+      summary: generate a federation url for aws console signin
+  /requests:
+    get:
+      summary: get a list of requests
+    post:
+      summary: submit a new request
+  /requests/{id}:
+    get:
+      summary: get details about a request
+    put:
+      summary: update a request
+  /resources:
+    get:
+      summary: get resources
+  /roles:
+    get:
+      summary: get a list of roles
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+  /roles/{accountNumber}:
+    get:
+      summary: get a list of roles in an account
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+  /roles/{accountNumber}/{roleName}:
+    get:
+      summary: get details about a role
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDetails'
+    put:
+      summary: update a role
+  /roles/{accountNumber}/{roleName}/requests:
+    get:
+      summary: get a list of requests for a role
+  /roles/{accountNumber}/{roleName}/requests/{id}:
+    get:
+      summary: get details about a request for a role
+  /user:
+    get:
+      summary: get details about current user
+components:
+  schemas:
+    Role:
+      type: object
+      properties:
+        name:
+          type: string
+          example: super_awesome_admin
+        account_id:
+          type: string
+          minLength: 12
+          maxLength: 12
+          example: '123456789012'
+        account_name:
+          type: string
+          example: super_awesome
+        arn:
+          type: string
+          example: arn:aws:iam::123456789012:role/super_awesome_admin
+    RoleDetails:
+      type: object
+      properties:
+        name:
+          type: string
+          example: super_awesome_admin
+        account_id:
+          type: string
+          minLength: 12
+          maxLength: 12
+          example: '123456789012'
+        account_name:
+          type: string
+          example: super_awesome
+        arn:
+          type: string
+          example: arn:aws:iam::123456789012:role/super_awesome_admin
+        inline_policies:
+          type: array
+          items:
+            type: object # TODO: make inline_policies schema
+        assume_role_policies:
+          type: array
+          items:
+            type: object # TODO: make assume_role_policies schema
+        managed_policies:
+          type: array
+          items:
+            type: object # TODO: make managed_policies schema
+        tags:
+          type: array
+          items:
+            type: object # TODO: make tags schema
+        templated:
+          type: boolean
+        template_link:
+          type: string

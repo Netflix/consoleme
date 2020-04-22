@@ -62,6 +62,7 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
         stats.timer("base_handler.incoming_request")
         if self.request.method.lower() == "options":
             return
+        self.request_uuid = str(uuid.uuid4())
         payload = self.get_current_user()
         self.auth_context = payload
         self.user = payload["email"]
@@ -76,21 +77,17 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
 
     def write_error(self, status_code, **kwargs):
         self.set_header("Content-Type", "application/problem+json")
-        kwargs.get("message")
+        self.set_status(status_code)
+        title = httputil.responses.get(status_code)
+        message = kwargs.get("message", title) or self._reason
         self.finish(
-            json.dumps(
-                {
-                    "status": status_code,
-                    "title": httputil.responses.get(status_code, "Unknown"),
-                    "message": kwargs.get("message", self._reason),
-                }
-            )
+            json.dumps({"status": status_code, "title": title, "message": message,})
         )
 
     def get_current_user(self):
         try:
             if config.get("development") and config.get("json_authentication_override"):
-                return config.get("json_authentication_override.email")
+                return config.get("json_authentication_override")
             tkn_header = self.request.headers["authorization"]
         except KeyError:
             raise WebAuthNError(reason="Missing Authorization Header")
