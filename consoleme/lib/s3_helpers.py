@@ -1,10 +1,61 @@
 import sys
+from typing import Union, Dict, Any, List
 
+import boto3
+import ujson as json
+from asgiref.sync import sync_to_async
+from cloudaux import sts_conn
+from cloudaux.aws.decorators import rate_limited
+from cloudaux.aws.sts import boto3_cached_conn
 from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger("consoleme")
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
+
+
+@rate_limited()
+@sts_conn("s3")
+def put_object(client=None, **kwargs):
+    """Create an S3 object -- calls wrapped with CloudAux."""
+    return client.put_object(**kwargs)
+
+
+def get_object(**kwargs):
+    client = kwargs.get("client")
+    assume_role = kwargs.get("assume_role")
+    if not client:
+        if assume_role:
+            client = boto3_cached_conn(
+                "s3",
+                account_number=kwargs.get("account_number"),
+                assume_role=assume_role,
+                session_name=kwargs.get("session_name", "ConsoleMe"),
+                region=kwargs.get("region", config.region),
+            )
+        else:
+            client = boto3.client("s3")
+    return client.get_object(Bucket=kwargs.get("Bucket"), Key=kwargs.get("Key"))
+
+
+async def get_object_async(**kwargs):
+    """Get an S3 object Asynchronously"""
+    return await sync_to_async(get_object)(**kwargs)
+
+
+async def fetch_json_object_from_s3(
+    bucket: str, object: str
+) -> Union[Dict[str, Any], List[dict]]:
+    """
+    Fetch and load a JSON-formatted object in S3
+    :param bucket: S3 bucket
+    :param object: S3 Object
+    :return: Dict
+    """
+    s3_object = await get_object_async(Bucket=bucket, Key=object, region=config.region)
+    object_content = s3_object["Body"].read()
+    data = json.loads(object_content)
+    return data
 
 
 def map_operation_to_api(operation, default):

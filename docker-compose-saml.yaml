@@ -19,11 +19,11 @@ services:
       bash -c 'pip install argh watchdog; pip install -e /apps/consoleme/default_plugins;
       watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py'
     depends_on:
-      - consoleme_redis
-      - consoleme_dynamodb
+      - consoleme-redis
+      - consoleme-dynamodb
     links:
-      - consoleme_redis
-      - consoleme_dynamodb
+      - consoleme-redis
+      - consoleme-dynamodb
 
   consoleme_saml:
     image: "kristophjunge/test-saml-idp"

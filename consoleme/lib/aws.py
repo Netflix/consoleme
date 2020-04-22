@@ -1,27 +1,27 @@
 import json
 from copy import deepcopy
 
-import boto3
 import pytz
 import sys
 import time
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
-from cloudaux import sts_conn
 from cloudaux.aws.decorators import rate_limited
 from cloudaux.aws.s3 import get_bucket_policy, get_bucket_tagging
 from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
 from datetime import datetime
+
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from deepdiff import DeepDiff
 from policy_sentry.util.arns import (
     get_account_from_arn,
     get_resource_from_arn,
     get_service_from_arn,
 )
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException
@@ -142,6 +142,7 @@ async def create_or_update_managed_policy(
 
 
 async def get_all_iam_managed_policies_for_account(account_id):
+    # Todo: Migrate this to use S3 / Redis cache
     global ALL_IAM_MANAGED_POLICIES_LAST_UPDATE
     global ALL_IAM_MANAGED_POLICIES
 
@@ -153,7 +154,17 @@ async def get_all_iam_managed_policies_for_account(account_id):
         red = await RedisHandler().redis()
         ALL_IAM_MANAGED_POLICIES = await sync_to_async(red.hgetall)(policy_key)
         ALL_IAM_MANAGED_POLICIES_LAST_UPDATE = current_time
-    return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
+
+    if ALL_IAM_MANAGED_POLICIES:
+        return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
+    else:
+        s3_bucket = config.get("cache_managed_policies_for_account.s3.bucket")
+        s3_key = config.get("cache_managed_policies_for_account.s3.file").format(
+            account_id=account_id
+        )
+        return await retrieve_json_data_from_redis_or_s3(
+            s3_bucket=s3_bucket, s3_key=s3_key
+        )
 
 
 async def get_resource_account(arn: str) -> str:
@@ -297,21 +308,6 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
     return result
 
 
-async def fetch_json_object_from_s3(
-    bucket: str, object: str
-) -> Union[Dict[str, Any], List[dict]]:
-    """
-    Fetch and load a JSON-formatted object in S3
-    :param bucket: S3 bucket
-    :param object: S3 Object
-    :return: Dict
-    """
-    s3_object = await get_object_async(Bucket=bucket, Key=object, region=config.region)
-    object_content = s3_object["Body"].read()
-    data = json.loads(object_content)
-    return data
-
-
 async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     """Fetch S3 Bucket and applicable policies
 
@@ -382,35 +378,6 @@ async def raise_if_background_check_required_and_no_background_check(role, user)
                         "{role}.",
                     ).format(role=role)
                 )
-
-
-@rate_limited()
-@sts_conn("s3")
-def put_object(client=None, **kwargs):
-    """Create an S3 object -- calls wrapped with CloudAux."""
-    return client.put_object(**kwargs)
-
-
-def get_object(**kwargs):
-    client = kwargs.get("client")
-    assume_role = kwargs.get("assume_role")
-    if not client:
-        if assume_role:
-            client = boto3_cached_conn(
-                "s3",
-                account_number=kwargs.get("account_number"),
-                assume_role=assume_role,
-                session_name=kwargs.get("session_name", "ConsoleMe"),
-                region=kwargs.get("region", config.region),
-            )
-        else:
-            client = boto3.client("s3")
-    return client.get_object(Bucket=kwargs.get("Bucket"), Key=kwargs.get("Key"))
-
-
-async def get_object_async(**kwargs):
-    """Get an S3 object Asynchronously"""
-    return await sync_to_async(get_object)(**kwargs)
 
 
 def apply_managed_policy_to_role(

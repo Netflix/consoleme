@@ -3,6 +3,8 @@ import sys
 import tornado.escape
 import ujson as json
 from datetime import datetime, timedelta
+
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from policyuniverse.expander_minimizer import _expand_wildcard_action
 from typing import Dict, List, Optional
 from urllib.parse import quote_plus
@@ -150,10 +152,12 @@ class GetPoliciesHandler(BaseHandler):
         error_search = self.request.arguments.get("columns[5][search][value]")[
             0
         ].decode("utf-8")
-        policies = await redis_get(
-            config.get("policies.redis_policies_key", "ALL_POLICIES")
+
+        policies_d = await retrieve_json_data_from_redis_or_s3(
+            redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
+            s3_bucket=config.get("cache_policies_table_details.s3.bucket"),
+            s3_key=config.get("cache_policies_table_details.s3.file"),
         )
-        policies_d = json.loads(policies)
 
         data = []
 
@@ -1051,6 +1055,7 @@ async def handle_resource_type_ahead_request(cls):
         if all_role_arns_j:
             all_role_arns = all_role_arns_j.keys()
         # ConsoleMe (Account: Test, Arn: arn)
+        # TODO: Make this OSS compatible and configurable
         try:
             accounts = json.loads(
                 await redis_get(
