@@ -77,9 +77,10 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
 
     def write_error(self, status_code, **kwargs):
         self.set_header("Content-Type", "application/problem+json")
+        title = httputil.responses.get(status_code, "Unknown")
+        message = kwargs.get("message", self._reason)
+        # self.set_status() modifies self._reason, so this call should come after we grab the reason
         self.set_status(status_code)
-        title = httputil.responses.get(status_code)
-        message = kwargs.get("message", title) or self._reason
         self.finish(
             json.dumps({"status": status_code, "title": title, "message": message,})
         )

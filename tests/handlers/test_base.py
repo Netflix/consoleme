@@ -40,6 +40,7 @@ class TestBaseJSONHandler(AsyncHTTPTestCase):
     def test_invalid_auth_header(self):
         response = self.fetch("/", headers={"Authorization": "foo"})
         self.assertEqual(response.code, 401)
+        self.assertEqual(json.loads(response.body)["title"], "Unauthorized")
         self.assertEqual(json.loads(response.body)["message"], "Invalid Token")
 
     def test_invalid_jwt(self):
@@ -47,6 +48,7 @@ class TestBaseJSONHandler(AsyncHTTPTestCase):
         tkn = jwt.encode(payload, "WRONG_SECRET", algorithm=TEST_ALG[0])
         response = self.fetch("/", headers={"Authorization": tkn})
         self.assertEqual(response.code, 401)
+        self.assertEqual(json.loads(response.body)["title"], "Unauthorized")
         self.assertEqual(
             json.loads(response.body)["message"], "Invalid Token Signature"
         )
