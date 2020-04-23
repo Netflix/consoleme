@@ -46,7 +46,7 @@ class AccountRolesHandler(BaseJSONHandler):
         self.set_status(204)
         self.finish()
 
-    async def get(self):
+    async def get(self, account_id):
         """
         GET /api/v2/roles/{accountNumber}
         """
@@ -71,7 +71,7 @@ class RoleDetailHandler(BaseJSONHandler):
         self.set_status(204)
         self.finish()
 
-    async def get(self):
+    async def get(self, account_id, role_name):
         """
         GET /api/v2/roles/{accountNumber}/{roleName}
         """
@@ -85,7 +85,7 @@ class RoleDetailHandler(BaseJSONHandler):
         log.debug(log_data)
         self.write_error(501, message="Get role details")
 
-    async def put(self):
+    async def put(self, account_id, role_name):
         """
         PUT /api/v2/roles/{accountNumber}/{roleName}
         """
