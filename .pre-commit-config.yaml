@@ -11,6 +11,18 @@ repos:
     -   id: pretty-format-json
         args: ["--autofix"]
 
+-   repo: https://github.com/asottile/seed-isort-config
+    rev: v1.9.3
+    hooks:
+    - id: seed-isort-config
+
+-   repo: https://github.com/timothycrosley/isort
+    rev: ''  # Use the revision sha / tag you want to point at
+    hooks:
+    - id: isort # Run `isort -rc <filepath>` to autofix
+      pass_filenames: true
+      args: ["--profile", "black"]
+
 -   repo: https://github.com/ambv/black
     rev: stable
     hooks:
