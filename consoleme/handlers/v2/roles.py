@@ -36,9 +36,6 @@ class RolesHandler(BaseJSONHandler):
     def options(self, *args):
         """
         OPTIONS /api/v2/roles
-        ---
-        options:
-            description: foo
         """
         self.set_header("Access-Control-Allow-Headers", "GET")
         self.set_header("Content-Length", "0")
@@ -48,9 +45,6 @@ class RolesHandler(BaseJSONHandler):
     async def get(self):
         """
         GET /api/v2/roles
-        ---
-        get:
-            description: foo
         """
         log_data = {
             "function": "RolesHandler.get",
@@ -66,37 +60,35 @@ class RolesHandler(BaseJSONHandler):
 class AccountRolesHandler(BaseJSONHandler):
     """
     Handler for /api/v2/roles/{account_number}
-    The following annotation only works if it's commented out. That bothers me so much. Help.
-    TODO(psanders): whyyyyyy
     ---
-    # options:
-    #     description: Endpoint options
-    #     parameters:
-    #         - in: path
-    #           name: accountNumber
-    #           required: true
-    #           example: 012345678901
-    #           schema:
-    #               type: string
-    #               pattern: '^\d{12}$'
-    #     responses:
-    #         200:
-    #             description: Options response
-    # get:
-    #     description: Returns a list of roles the current user can access in a given account.
-    #     parameters:
-    #         - in: path
-    #           name: accountNumber
-    #           required: true
-    #           example: 012345678901
-    #           schema:
-    #               type: string
-    #               pattern: '^\d{12}$'
-    #     responses:
-    #     200:
-    #         description: List of roles the current user can access in a given account
-    #     403:
-    #         description: Unauthorized
+    options:
+        description: Endpoint options
+        parameters:
+            - in: path
+              name: accountNumber
+              required: true
+              example: 012345678901
+              schema:
+                  type: string
+                  pattern: '^\d{12}$'
+        responses:
+            200:
+                description: Options response
+    get:
+        description: Returns a list of roles the current user can access in a given account.
+        parameters:
+            - in: path
+              name: accountNumber
+              required: true
+              example: 012345678901
+              schema:
+                  type: string
+                  pattern: '^\d{12}$'
+        responses:
+        200:
+            description: List of roles the current user can access in a given account
+        403:
+            description: Unauthorized
     """
 
     def __init__(self, *args, **kwargs):
@@ -106,9 +98,6 @@ class AccountRolesHandler(BaseJSONHandler):
     def options(self, *args):
         """
         OPTIONS /api/v2/roles/{account_number}
-        ---
-        options:
-            description: foo
         """
         self.set_header("Access-Control-Allow-Headers", "GET")
         self.set_header("Content-Length", "0")
@@ -118,9 +107,6 @@ class AccountRolesHandler(BaseJSONHandler):
     async def get(self, account_id):
         """
         GET /api/v2/roles/{account_id}
-        ---
-        get:
-            description: foo
         """
         log_data = {
             "function": "AccountRolesHandler.get",
@@ -207,9 +193,6 @@ class RoleDetailHandler(BaseJSONHandler):
     def options(self, *args):
         """
         OPTIONS /api/v2/roles/{account_number}/{role_name}
-        ---
-        options:
-            description: foo
         """
         self.set_header("Access-Control-Allow-Headers", "GET,PUT")
         self.set_header("Content-Length", "0")
@@ -219,9 +202,6 @@ class RoleDetailHandler(BaseJSONHandler):
     async def get(self, account_number, role_name):
         """
         GET /api/v2/roles/{account_number}/{role_name}
-        ---
-        get:
-            description: foo
         """
         log_data = {
             "function": "RoleDetailHandler.get",
@@ -236,9 +216,6 @@ class RoleDetailHandler(BaseJSONHandler):
     async def put(self, account_id, role_name):
         """
         PUT /api/v2/roles/{account_number}/{role_name}
-        ---
-        put:
-            description: foo
         """
         log_data = {
             "function": "RoleDetailHandler.put",
