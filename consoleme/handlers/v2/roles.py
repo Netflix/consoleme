@@ -12,6 +12,23 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 
 
 class RolesHandler(BaseJSONHandler):
+    """
+    Handler for /api/v2/roles
+    ---
+    get:
+        description: Returns a list of roles the current user can access.
+        responses:
+            200:
+                description: List of roles the current user can access
+            403:
+                description: Unauthorized
+    options:
+        description: Endpoint options
+        responses:
+            200:
+                description: Options response
+    """
+
     def __init__(self, *args, **kwargs):
         # TODO(psanders): Use actual JWT validator
         super().__init__(jwt_validator=lambda x: {}, *args, **kwargs)
@@ -21,10 +38,7 @@ class RolesHandler(BaseJSONHandler):
         OPTIONS /api/v2/roles
         ---
         options:
-            description: Endpoint options
-            responses:
-                200:
-                    description: Options response
+            description: foo
         """
         self.set_header("Access-Control-Allow-Headers", "GET")
         self.set_header("Content-Length", "0")
@@ -36,12 +50,7 @@ class RolesHandler(BaseJSONHandler):
         GET /api/v2/roles
         ---
         get:
-            description: Returns a list of roles the current user can access.
-            responses:
-                200:
-                    description: List of roles the current user can access
-                403:
-                    description: Unauthorized
+            description: foo
         """
         log_data = {
             "function": "RolesHandler.get",
@@ -55,52 +64,63 @@ class RolesHandler(BaseJSONHandler):
 
 
 class AccountRolesHandler(BaseJSONHandler):
+    """
+    Handler for /api/v2/roles/{account_number}
+    The following annotation only works if it's commented out. That bothers me so much. Help.
+    TODO(psanders): whyyyyyy
+    ---
+    # options:
+    #     description: Endpoint options
+    #     parameters:
+    #         - in: path
+    #           name: accountNumber
+    #           required: true
+    #           example: 012345678901
+    #           schema:
+    #               type: string
+    #               pattern: '^\d{12}$'
+    #     responses:
+    #         200:
+    #             description: Options response
+    # get:
+    #     description: Returns a list of roles the current user can access in a given account.
+    #     parameters:
+    #         - in: path
+    #           name: accountNumber
+    #           required: true
+    #           example: 012345678901
+    #           schema:
+    #               type: string
+    #               pattern: '^\d{12}$'
+    #     responses:
+    #     200:
+    #         description: List of roles the current user can access in a given account
+    #     403:
+    #         description: Unauthorized
+    """
+
     def __init__(self, *args, **kwargs):
         # TODO(psanders): Use actual JWT validator
         super().__init__(jwt_validator=lambda x: {}, *args, **kwargs)
 
     def options(self, *args):
         """
-        OPTIONS /api/v2/roles/{accountNumber}
+        OPTIONS /api/v2/roles/{account_number}
         ---
         options:
-            description: Endpoint options
-            parameters:
-                - in: path
-                  name: accountNumber
-                  required: true
-                  example: 012345678901
-                  schema:
-                      type: string
-                      pattern: '^\d{12}$'
-            responses:
-                200:
-                    description: Options response
+            description: foo
         """
         self.set_header("Access-Control-Allow-Headers", "GET")
         self.set_header("Content-Length", "0")
         self.set_status(204)
         self.finish()
 
-    async def get(self, account_id):
+    async def get(self, account_id: str):
         """
-        GET /api/v2/roles/{accountNumber}
+        GET /api/v2/roles/{account_number}
         ---
         get:
-            description: Returns a list of roles the current user can access in a given account.
-            parameters:
-                - in: path
-                  name: accountNumber
-                  required: true
-                  example: 012345678901
-                  schema:
-                      type: string
-                      pattern: '^\d{12}$'
-            responses:
-                200:
-                    description: List of roles the current user can access in a given account
-                403:
-                    description: Unauthorized
+            description: foo
         """
         log_data = {
             "function": "AccountRolesHandler.get",
@@ -114,64 +134,94 @@ class AccountRolesHandler(BaseJSONHandler):
 
 
 class RoleDetailHandler(BaseJSONHandler):
+    """
+    OPTIONS /api/v2/roles/{account_number}/{role_name}
+    ---
+    options:
+        description: Endpoint options
+        parameters:
+            - in: path
+              name: accountNumber
+              required: true
+              example: 012345678901
+              schema:
+                  type: string
+                  pattern: '^\d{12}$'
+            - in: path
+              name: roleName
+              required: true
+              example: fake_account_admin
+              schema:
+                  type: string
+        responses:
+            200:
+                description: Options response
+    get:
+        description: Returns details about a given role in an account.
+        parameters:
+            - in: path
+              name: accountNumber
+              required: true
+              example: 012345678901
+              schema:
+                  type: string
+                  pattern: '^\d{12}$'
+            - in: path
+              name: roleName
+              required: true
+              example: fake_account_admin
+              schema:
+                  type: string
+        responses:
+            200:
+                description: Details about a given role in an account.
+            403:
+                description: Unauthorized
+    put:
+        description: Update a given role in an account.
+        parameters:
+            - in: path
+              name: accountNumber
+              required: true
+              example: 012345678901
+              schema:
+                  type: string
+                  pattern: '^\d{12}$'
+            - in: path
+              name: roleName
+              required: true
+              example: fake_account_admin
+              schema:
+                  type: string
+        responses:
+            200:
+                description: Role updated successfully
+            403:
+                description: Unauthorized
+    """
+
     def __init__(self, *args, **kwargs):
         # TODO(psanders): Use actual JWT validator
         super().__init__(jwt_validator=lambda x: {}, *args, **kwargs)
 
     def options(self, *args):
         """
-        OPTIONS /api/v2/roles/{accountNumber}/{roleName}
+        OPTIONS /api/v2/roles/{account_number}/{role_name}
         ---
         options:
-            description: Endpoint options
-            parameters:
-                - in: path
-                  name: accountNumber
-                  required: true
-                  example: 012345678901
-                  schema:
-                      type: string
-                      pattern: '^\d{12}$'
-                - in: path
-                  name: roleName
-                  required: true
-                  example: fake_account_admin
-                  schema:
-                      type: string
-            responses:
-                200:
-                    description: Options response
+            description: foo
         """
         self.set_header("Access-Control-Allow-Headers", "GET,PUT")
         self.set_header("Content-Length", "0")
         self.set_status(204)
         self.finish()
 
-    async def get(self, account_id, role_name):
+    async def get(self, account_number: str, role_name: str):
         """
-        GET /api/v2/roles/{accountNumber}/{roleName}
+        GET /api/v2/roles/{account_number}/{role_name}
         ---
         get:
-            description: Returns details about a given role in an account.
-            parameters:
-                - in: path
-                  name: accountNumber
-                  required: true
-                  example: 012345678901
-                  schema:
-                      type: string
-                      pattern: '^\d{12}$'
-                - in: path
-                  name: roleName
-                  required: true
-                  example: fake_account_admin
-                  schema:
-                      type: string
-            responses:
-                200:
-                    description: Details about a given role in an account.
-                403:
-                    description: Unauthorized
+            description: foo
         """
         log_data = {
             "function": "RoleDetailHandler.get",
@@ -183,31 +233,12 @@ class RoleDetailHandler(BaseJSONHandler):
         log.debug(log_data)
         self.write_error(501, message="Get role details")
 
-    async def put(self, account_id, role_name):
+    async def put(self, account_id: str, role_name: str):
         """
-        PUT /api/v2/roles/{accountNumber}/{roleName}
+        PUT /api/v2/roles/{account_number}/{role_name}
         ---
         put:
-            description: Update a given role in an account.
-            parameters:
-                - in: path
-                  name: accountNumber
-                  required: true
-                  example: 012345678901
-                  schema:
-                      type: string
-                      pattern: '^\d{12}$'
-                - in: path
-                  name: roleName
-                  required: true
-                  example: fake_account_admin
-                  schema:
-                      type: string
-            responses:
-                200:
-                    description: Role updated successfully
-                403:
-                    description: Unauthorized
+            description: foo
         """
         log_data = {
             "function": "RoleDetailHandler.put",
