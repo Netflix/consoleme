@@ -18,18 +18,11 @@ class RolesHandler(BaseJSONHandler):
     limited to what the requesting user has access to.
     """
 
+    allowed_methods = ["GET"]
+
     def __init__(self, *args, **kwargs):
         # TODO(psanders): Use actual JWT validator
         super().__init__(jwt_validator=lambda x: {}, *args, **kwargs)
-
-    def options(self, *args):
-        """
-        OPTIONS /api/v2/roles
-        """
-        self.set_header("Access-Control-Allow-Headers", "GET")
-        self.set_header("Content-Length", "0")
-        self.set_status(204)
-        self.finish()
 
     async def get(self):
         """
@@ -53,18 +46,11 @@ class AccountRolesHandler(BaseJSONHandler):
     requesting user has access to.
     """
 
+    allowed_methods = ["GET"]
+
     def __init__(self, *args, **kwargs):
         # TODO(psanders): Use actual JWT validator
         super().__init__(jwt_validator=lambda x: {}, *args, **kwargs)
-
-    def options(self, *args):
-        """
-        OPTIONS /api/v2/roles/{account_number}
-        """
-        self.set_header("Access-Control-Allow-Headers", "GET")
-        self.set_header("Content-Length", "0")
-        self.set_status(204)
-        self.finish()
 
     async def get(self, account_id):
         """
@@ -87,18 +73,11 @@ class RoleDetailHandler(BaseJSONHandler):
     Allows read and update access to a specific role in an account.
     """
 
+    allowed_methods = ["GET", "PUT"]
+
     def __init__(self, *args, **kwargs):
         # TODO(psanders): Use actual JWT validator
         super().__init__(jwt_validator=lambda x: {}, *args, **kwargs)
-
-    def options(self, *args):
-        """
-        OPTIONS /api/v2/roles/{account_number}/{role_name}
-        """
-        self.set_header("Access-Control-Allow-Headers", "GET,PUT")
-        self.set_header("Content-Length", "0")
-        self.set_status(204)
-        self.finish()
 
     async def get(self, account_number, role_name):
         """

@@ -38,6 +38,10 @@ group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 
 
 class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
+    # These methods are returned in OPTIONS requests.
+    # Default methods can be overridden by setting this variable in child classes.
+    allowed_methods = ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]
+
     def __init__(self, *args, **kwargs):
         self.jwt_validator = kwargs.pop("jwt_validator", None)
         self.auth_required = kwargs.pop("auth_required", True)
@@ -69,9 +73,7 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
 
     def set_default_headers(self, *args, **kwargs):
         self.set_header("Access-Control-Allow-Origin", "*")
-        self.set_header(
-            "Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE"
-        )
+        self.set_header("Access-Control-Allow-Methods", ",".join(self.allowed_methods))
         self.set_header("Access-Control-Allow-Credentials", "true")
         self.set_header("Content-Type", "application/json")
 
