@@ -13,7 +13,7 @@ import sys
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import celery
 import raven
@@ -640,7 +640,7 @@ def cache_roles_across_accounts() -> bool:
 
 
 @app.task(soft_time_limit=1800)
-def cache_managed_policies_for_account(account_id: str) -> bool:
+def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     managed_policies: list[dict] = get_all_managed_policies(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
@@ -674,7 +674,7 @@ def cache_managed_policies_for_account(account_id: str) -> bool:
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_policies, s3_bucket=s3_bucket, s3_key=s3_key
         )
-    return True
+    return log_data
 
 
 @app.task(soft_time_limit=120)
@@ -742,7 +742,7 @@ def cache_sns_topics_across_accounts() -> bool:
 
 
 @app.task(soft_time_limit=1800)
-def cache_sqs_queues_for_account(account_id: str) -> bool:
+def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     all_queues: set = set()
     for region in config.get("celery.sync_regions"):
         queues = list_queues(
@@ -782,7 +782,7 @@ def cache_sqs_queues_for_account(account_id: str) -> bool:
 
 
 @app.task(soft_time_limit=1800)
-def cache_sns_topics_for_account(account_id: str) -> bool:
+def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     # Make sure it is regional
     all_topics: set = set()
     for region in config.get("celery.sync_regions"):
@@ -822,7 +822,7 @@ def cache_sns_topics_for_account(account_id: str) -> bool:
 
 
 @app.task(soft_time_limit=1800)
-def cache_s3_buckets_for_account(account_id: str) -> bool:
+def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     s3_buckets: list = list_buckets(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
@@ -884,7 +884,7 @@ def clear_old_redis_iam_cache() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     # Do not run if this is not in the active region:
     if config.region != config.get("celery.active_region"):
-        return
+        return False
 
     # Need to loop over all items in the set:
     cache_key: str = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")

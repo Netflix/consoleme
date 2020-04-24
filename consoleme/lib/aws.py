@@ -142,7 +142,6 @@ async def create_or_update_managed_policy(
 
 
 async def get_all_iam_managed_policies_for_account(account_id):
-    # Todo: Migrate this to use S3 / Redis cache
     global ALL_IAM_MANAGED_POLICIES_LAST_UPDATE
     global ALL_IAM_MANAGED_POLICIES
 
@@ -158,9 +157,9 @@ async def get_all_iam_managed_policies_for_account(account_id):
     if ALL_IAM_MANAGED_POLICIES:
         return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
     else:
-        s3_bucket = config.get("cache_managed_policies_for_account.s3.bucket")
-        s3_key = config.get("cache_managed_policies_for_account.s3.file").format(
-            account_id=account_id
+        s3_bucket = config.get("account_resource_cache.s3.bucket")
+        s3_key = config.get("account_resource_cache.s3.file").format(
+            resource_type="managed_policies", account_id=account_id
         )
         return await retrieve_json_data_from_redis_or_s3(
             s3_bucket=s3_bucket, s3_key=s3_key

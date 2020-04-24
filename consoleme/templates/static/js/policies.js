@@ -67,7 +67,8 @@ $(document).ready(function () {
             if (data == null) {
               data = 'N/A';
             } else {
-              data = '<a target="_blank" href="' + policy_repo + data + '">' + data + '</a>';
+              let template_uri = data.split("/");
+              data = '<a target="_blank" href="' + data + '">' + template_uri[template_uri.length -1] + '</a>';
             }
           }
 

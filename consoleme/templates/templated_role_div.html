@@ -2,7 +2,7 @@
     <div class="ui warning message">
         <i class="close icon"></i>
         <div class="header">
-          This role is managed (<a target="_blank" href="{{config.get('policies.policy_template_repo')}}{{role.get('templated')}}">{{ role.get('templated') }}</a>) and should not be edited in Consoleme.
+          This role is managed (<a target="_blank" href="{{role.get('templated')}}">{{ role.get('templated').split("/")[-1] }}</a>) and should not be edited in Consoleme.
         </div>
         <p>Any changes done here may be overwritten. Please submit a Pull Request to modify this role permanently.</p>
     </div>
