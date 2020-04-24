@@ -12,21 +12,10 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 
 
 class RolesHandler(BaseJSONHandler):
-    """
-    Handler for /api/v2/roles
-    ---
-    get:
-        description: Returns a list of roles the current user can access.
-        responses:
-            200:
-                description: List of roles the current user can access
-            403:
-                description: Unauthorized
-    options:
-        description: Endpoint options
-        responses:
-            200:
-                description: Options response
+    """Handler for /api/v2/roles
+
+    Allows read access to a list of roles across all accounts. Returned roles are
+    limited to what the requesting user has access to.
     """
 
     def __init__(self, *args, **kwargs):
@@ -58,37 +47,10 @@ class RolesHandler(BaseJSONHandler):
 
 
 class AccountRolesHandler(BaseJSONHandler):
-    """
-    Handler for /api/v2/roles/{account_number}
-    ---
-    options:
-        description: Endpoint options
-        parameters:
-            - in: path
-              name: accountNumber
-              required: true
-              example: 012345678901
-              schema:
-                  type: string
-                  pattern: '^\d{12}$'
-        responses:
-            200:
-                description: Options response
-    get:
-        description: Returns a list of roles the current user can access in a given account.
-        parameters:
-            - in: path
-              name: accountNumber
-              required: true
-              example: 012345678901
-              schema:
-                  type: string
-                  pattern: '^\d{12}$'
-        responses:
-        200:
-            description: List of roles the current user can access in a given account
-        403:
-            description: Unauthorized
+    """Handler for /api/v2/roles/{account_number}
+
+    Allows read access to a list of roles by account. Roles are limited to what the
+    requesting user has access to.
     """
 
     def __init__(self, *args, **kwargs):
@@ -120,70 +82,9 @@ class AccountRolesHandler(BaseJSONHandler):
 
 
 class RoleDetailHandler(BaseJSONHandler):
-    """
-    OPTIONS /api/v2/roles/{account_number}/{role_name}
-    ---
-    options:
-        description: Endpoint options
-        parameters:
-            - in: path
-              name: accountNumber
-              required: true
-              example: 012345678901
-              schema:
-                  type: string
-                  pattern: '^\d{12}$'
-            - in: path
-              name: roleName
-              required: true
-              example: fake_account_admin
-              schema:
-                  type: string
-        responses:
-            200:
-                description: Options response
-    get:
-        description: Returns details about a given role in an account.
-        parameters:
-            - in: path
-              name: accountNumber
-              required: true
-              example: 012345678901
-              schema:
-                  type: string
-                  pattern: '^\d{12}$'
-            - in: path
-              name: roleName
-              required: true
-              example: fake_account_admin
-              schema:
-                  type: string
-        responses:
-            200:
-                description: Details about a given role in an account.
-            403:
-                description: Unauthorized
-    put:
-        description: Update a given role in an account.
-        parameters:
-            - in: path
-              name: accountNumber
-              required: true
-              example: 012345678901
-              schema:
-                  type: string
-                  pattern: '^\d{12}$'
-            - in: path
-              name: roleName
-              required: true
-              example: fake_account_admin
-              schema:
-                  type: string
-        responses:
-            200:
-                description: Role updated successfully
-            403:
-                description: Unauthorized
+    """Handler for /api/v2/roles/{accountNumber}/{roleName}
+
+    Allows read and update access to a specific role in an account.
     """
 
     def __init__(self, *args, **kwargs):
