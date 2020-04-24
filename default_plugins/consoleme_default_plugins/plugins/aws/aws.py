@@ -259,7 +259,10 @@ class Aws:
                 "accountId": account_id,
                 "ttl": int((datetime.utcnow() + timedelta(hours=36)).timestamp()),
                 "policy": self.dynamo.convert_role_to_json(role),
-                "templated": self.red.hget("TEMPLATED_ROLES", role.get("Arn").lower()),
+                "templated": self.red.hget(
+                    config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
+                    role.get("Arn").lower(),
+                ),
             }
 
             # Sync with DDB:

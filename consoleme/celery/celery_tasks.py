@@ -482,7 +482,10 @@ def cache_policies_table_details() -> bool:
                 "account_name": account_name,
                 "arn": arn,
                 "technology": "iam",
-                "templated": red.hget("TEMPLATED_ROLES", arn.lower()),
+                "templated": red.hget(
+                    config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
+                    arn.lower(),
+                ),
                 "errors": error_count,
             }
         )
@@ -596,7 +599,10 @@ def cache_roles_for_account(account_id: str) -> bool:
                 "accountId": account_id,
                 "ttl": ttl,
                 "policy": dynamo.convert_role_to_json(role),
-                "templated": red.hget("TEMPLATED_ROLES", role.get("Arn").lower()),
+                "templated": red.hget(
+                    config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
+                    role.get("Arn").lower(),
+                ),
             }
 
             # DynamoDB:
