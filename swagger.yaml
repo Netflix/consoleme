@@ -11,8 +11,8 @@ info:
   license:
     name: License TBD
 tags:
-  - name: default
-    description: Cool stuff
+  - name: roles
+    description: Cool role stuff
 paths:
   /credentials:
     post:
@@ -31,8 +31,20 @@ paths:
     get:
       summary: get resources
   /roles:
+    options:
+      summary: get endpoint options
+      tags:
+        - roles
+      responses:
+        200:
+          description: OK
+          headers:
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/accessControlAllow'
     get:
       summary: get a list of roles
+      tags:
+        - roles
       responses:
         '200':
           description: OK
@@ -43,8 +55,24 @@ paths:
                 items:
                   $ref: '#/components/schemas/Role'
   /roles/{accountNumber}:
+    options:
+      summary: get endpoint options
+      tags:
+        - roles
+      parameters:
+        - $ref: '#/components/parameters/accountNumber'
+      responses:
+        200:
+          description: OK
+          headers:
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/accessControlAllow'
     get:
       summary: get a list of roles in an account
+      tags:
+        - roles
+      parameters:
+        - $ref: '#/components/parameters/accountNumber'
       responses:
         '200':
           description: OK
@@ -55,8 +83,26 @@ paths:
                 items:
                   $ref: '#/components/schemas/Role'
   /roles/{accountNumber}/{roleName}:
+    options:
+      summary: get endpoint options
+      tags:
+        - roles
+      parameters:
+        - $ref: '#/components/parameters/accountNumber'
+        - $ref: '#/components/parameters/roleName'
+      responses:
+        200:
+          description: OK
+          headers:
+            Access-Control-Allow-Headers:
+              $ref: '#/components/headers/accessControlAllow'
     get:
       summary: get details about a role
+      tags:
+        - roles
+      parameters:
+        - $ref: '#/components/parameters/accountNumber'
+        - $ref: '#/components/parameters/roleName'
       responses:
         '200':
           description: OK
@@ -66,16 +112,55 @@ paths:
                 $ref: '#/components/schemas/RoleDetails'
     put:
       summary: update a role
+      tags:
+        - roles
+      parameters:
+        - $ref: '#/components/parameters/accountNumber'
+        - $ref: '#/components/parameters/roleName'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleDetails'
   /roles/{accountNumber}/{roleName}/requests:
     get:
       summary: get a list of requests for a role
+      parameters:
+        - $ref: '#/components/parameters/accountNumber'
+        - $ref: '#/components/parameters/roleName'
   /roles/{accountNumber}/{roleName}/requests/{id}:
     get:
       summary: get details about a request for a role
+      parameters:
+        - $ref: '#/components/parameters/accountNumber'
+        - $ref: '#/components/parameters/roleName'
   /user:
     get:
       summary: get details about current user
 components:
+  headers:
+    accessControlAllow:
+      schema:
+        type: string
+      description: Allowed request headers
+  parameters:
+    accountNumber:
+      name: accountNumber
+      in: path
+      required: true
+      example: 012345678901
+      schema:
+        type: string
+        pattern: '^\d{12}$'
+    roleName:
+      name: roleName
+      in: path
+      required: true
+      example: fake_account_admin
+      schema:
+        type: string
   schemas:
     Role:
       type: object
