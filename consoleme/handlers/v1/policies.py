@@ -1,13 +1,12 @@
 import re
 import sys
-import tornado.escape
-import ujson as json
 from datetime import datetime, timedelta
-
-from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
-from policyuniverse.expander_minimizer import _expand_wildcard_action
 from typing import Dict, List, Optional
 from urllib.parse import quote_plus
+
+import tornado.escape
+import ujson as json
+from policyuniverse.expander_minimizer import _expand_wildcard_action
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -21,6 +20,7 @@ from consoleme.lib.aws import (
     get_all_iam_managed_policies_for_account,
     get_resource_policies,
 )
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.generic import write_json_error
 from consoleme.lib.plugins import get_plugin_by_name
@@ -29,12 +29,12 @@ from consoleme.lib.policies import (
     can_move_back_to_pending,
     can_update_requests,
     escape_json,
-    parse_policy_change_request,
-    update_resource_policy,
-    update_role_policy,
-    should_auto_approve_policy,
     get_formatted_policy_changes,
     get_resources_from_events,
+    parse_policy_change_request,
+    should_auto_approve_policy,
+    update_resource_policy,
+    update_role_policy,
 )
 from consoleme.lib.redis import redis_get, redis_hgetall
 from consoleme.lib.timeout import Timeout
@@ -591,7 +591,6 @@ class PolicyReviewSubmitHandler(BaseHandler):
                 await dynamo.update_policy_request(request)
                 await aws.fetch_iam_role(account_id, arn, force_refresh=True)
             else:
-                config.sentry.captureException()
                 await write_json_error(result, obj=self)
                 await self.finish()
                 return
