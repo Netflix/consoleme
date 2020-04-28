@@ -1,5 +1,4 @@
 """Configuration handling library."""
-
 import collections
 import datetime
 import logging
@@ -7,9 +6,9 @@ import os
 import socket
 import sys
 import time
-from logging import LogRecord, LoggerAdapter
+from logging import LoggerAdapter, LogRecord
 from threading import Timer
-from typing import Any, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import logmatic
 import yaml
@@ -105,7 +104,7 @@ class Configuration(object):
             ).start()
 
     def get(
-        self, key: str, default: Optional[Union[List[str], int, bool, str]] = None
+        self, key: str, default: Optional[Union[List[str], int, bool, str, Dict]] = None
     ) -> Any:
         """Get value for configuration entry in dot notation."""
         value = self.config
@@ -183,6 +182,10 @@ class Configuration(object):
         self.log = logging.LoggerAdapter(logger, extra)
         return self.log
 
+    def set_logging_levels(self):
+        for logger, level in self.get("logging_levels", {}).items():
+            logging.getLogger(logger).setLevel(level)
+
 
 class ContextFilter(logging.Filter):
     """Logging Filter for adding hostname to log entries."""
@@ -199,6 +202,10 @@ async_to_sync(CONFIG.load_config)()
 
 get = CONFIG.get
 get_logger = CONFIG.get_logger
+
+# Set logging levels
+CONFIG.set_logging_levels()
+
 values = CONFIG.config
 region = os.environ.get("EC2_REGION", "us-east-1")
 hostname = socket.gethostname()

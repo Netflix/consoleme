@@ -131,6 +131,21 @@ plugins:
   internal_routes: default_internal_routes
   internal_policies: default_policies
 
+logging_levels:
+  asyncio: WARNING
+  boto3: CRITICAL
+  boto: CRITICAL
+  botocore: CRITICAL
+  elasticsearch.trace: ERROR
+  elasticsearch: ERROR
+  nose: CRITICAL
+  parso.python.diff: WARNING
+  raven.base.client: WARNING
+  s3transfer: CRITICAL
+  spectator.HttpClient: WARNING
+  spectator.Registry: WARNING
+  urllib3: ERROR
+
 #policies:
 #  role_name: ConsoleMeRole
 
