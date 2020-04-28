@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import ssl
 import sys
 from datetime import datetime, timedelta
@@ -32,12 +31,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
-
-# TODO(ccastrapel): Make the logging level configurable
-logging.getLogger("boto").setLevel(logging.CRITICAL)
-logging.getLogger("boto3").setLevel(logging.CRITICAL)
-logging.getLogger("botocore").setLevel(logging.CRITICAL)
-logging.getLogger("nose").setLevel(logging.CRITICAL)
 
 log = config.get_logger(__name__)
 

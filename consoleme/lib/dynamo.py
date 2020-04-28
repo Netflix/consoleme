@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import sys
 import time
 import uuid
@@ -45,17 +44,6 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger("consoleme")
 crypto = Crypto()
 red = RedisHandler().redis_sync()
-
-for name in logging.Logger.manager.loggerDict.keys():
-    if (
-        ("boto" in name)
-        or ("urllib3" in name)
-        or ("s3transfer" in name)
-        or ("boto3" in name)
-        or ("botocore" in name)
-        or ("nose" in name)
-    ):
-        logging.getLogger(name).setLevel(logging.CRITICAL)
 
 
 def parallel_scan_table(table, total_threads=10):

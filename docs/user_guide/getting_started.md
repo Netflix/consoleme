@@ -15,8 +15,10 @@ in ConsoleMe. You can also run ConsoleMe on Mac or Docker without Linux.
 You must install [Docker and Docker-Compose](https://github.com/Yelp/docker-compose/blob/master/docs/install.md) before
 following the steps outlined in this section.
 
+Before continuing, clone the ConsoleMe repo: `git clone https://github.com/Netflix-Skunkworks/consoleme.git`
+
 ## SAML Demo
-1. Run `docker-compose -f docker-compose-saml.yaml up` from the root directory of the `consoleme` repo.
+1. Run `docker-compose -f docker-compose-saml.yaml -f docker-compose-dependencies.yaml up` from the root directory of the `consoleme` repo.
 1. Visit [Simplesaml metadata url](http://localhost:8080/simplesaml/saml2/idp/metadata.php?output=xml) and copy the
 x509 certificate for the IDP (The first `ds:X509Certificate` value), and replace the x509cert value specified in
 `docker/saml_example/settings.json`.
@@ -28,7 +30,7 @@ To learn how to configure your own SAML provider, visit [SAML Configuration](sam
 Do not use the sample configurations provided here in a production environment, as they are insecure.
 
 ## OpenID Connect/OAuth 2.0 Demo
-1. Run `docker-compose -f docker-compose-oidc.yaml up` from the root directory of the `consoleme` repo.
+1. Run `docker-compose -f docker-compose-oidc.yaml -f docker-compose-dependencies.yaml up` from the root directory of the `consoleme` repo.
 1. Visit [http://localhost:8081](http://localhost:8081)
 1. Log in with username: `consoleme_user@example.com` and password `consoleme_user`.
 1. You are redirected to ConsoleMe as an authenticated user.
@@ -37,22 +39,23 @@ To learn how to configure your own OIDC provider, visit [OpenID Connect/OAuth 2.
 Do not use the sample configurations provided here in a production environment, as they are insecure.
 
 ## Header Authentication Demo
-If you run in an environment where authentication is handled for you, and ConsoleMe will receive trusted headers
-indicating the user and the groups they are a member of, header authentication is an option for you.
+If you run in an environment where authentication is handled for you, and you can use your provider to set headers
+ for downstream application, this is probably the flow that you want. ConsoleMe can be configured to parse the user's
+ e-mail address and/or groups from the received headers.
 
-A word of caution: In a production
+A word of caution: Ensure that you are properly dropping trusted headers before authentication. You do not want external
+users to forge these headers.
 
 ## UserName and Password authentication
-To make it easy to get started with ConsoleMe, we've added support for standalone authentication within ConsoleMe.
-ConsoleMe will securely store user credentials with a salted hash
+To make it easy to get started with ConsoleMe, we will add support for standalone authentication within ConsoleMe.
+ConsoleMe will securely store user credentials with a salted hash. This is TBD.
 
-<TBD>
 
 ## Local Quick Start with Header Authentication (Docker)
 
 1. [Install Docker and Docker-Compose](https://github.com/Yelp/docker-compose/blob/master/docs/install.md)
 1. Run `docker-compose up`
-1. Visit [http://127.0.0.1:8081](http://127.0.0.1:8081). If everything is working as expected, you should see a message
+1. Visit [http://localhost:8081](http://localhost:8081). If everything is working as expected, you should see a message
 stating "No user detected. Check configuration.". This means that the web server is listening to requests.
 1. Inject a header to specify your e-mail address and groups. ([Requestly](https://www.requestly.in/) works well).
 
