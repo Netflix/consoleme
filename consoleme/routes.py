@@ -43,6 +43,12 @@ from consoleme.handlers.v1.saml import SamlHandler
 
 from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
 
+from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
+
+from consoleme.handlers.v2.roles import RolesHandler
+from consoleme.handlers.v2.roles import AccountRolesHandler
+from consoleme.handlers.v2.roles import RoleDetailHandler
+
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -99,6 +105,9 @@ def make_app(jwt_validator=None):
         (r"/api/v1/pageheader/?", PageHeaderHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
+        (r"/api/v2/roles", RolesHandler),
+        (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
+        (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
         (r"/config/?", DynamicConfigHandler),
         (r"/myheaders/?", HeaderHandler),
         (r"/policies/?", PolicyViewHandler),
@@ -125,6 +134,8 @@ def make_app(jwt_validator=None):
         internal_routes.get_internal_routes(make_jwt_validator, jwt_validator)
     )
 
+    # Return a JSON 404 for unmatched /api/v2/ requests
+    routes.append((r"/api/v2/.*", V2NotFoundHandler))
     routes.append((r".*", Consolme404Handler))
 
     app = tornado.web.Application(

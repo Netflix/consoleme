@@ -38,6 +38,10 @@ group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 
 
 class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
+    # These methods are returned in OPTIONS requests.
+    # Default methods can be overridden by setting this variable in child classes.
+    allowed_methods = ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]
+
     def __init__(self, *args, **kwargs):
         self.jwt_validator = kwargs.pop("jwt_validator", None)
         self.auth_required = kwargs.pop("auth_required", True)
@@ -62,35 +66,31 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
         stats.timer("base_handler.incoming_request")
         if self.request.method.lower() == "options":
             return
+        self.request_uuid = str(uuid.uuid4())
         payload = self.get_current_user()
         self.auth_context = payload
         self.user = payload["email"]
 
     def set_default_headers(self, *args, **kwargs):
         self.set_header("Access-Control-Allow-Origin", "*")
-        self.set_header(
-            "Access-Control-Allow-Methods", "GET,HEAD,PUT,PATCH,POST,DELETE"
-        )
+        self.set_header("Access-Control-Allow-Methods", ",".join(self.allowed_methods))
         self.set_header("Access-Control-Allow-Credentials", "true")
         self.set_header("Content-Type", "application/json")
 
     def write_error(self, status_code, **kwargs):
         self.set_header("Content-Type", "application/problem+json")
-        kwargs.get("message")
+        title = httputil.responses.get(status_code, "Unknown")
+        message = kwargs.get("message", self._reason)
+        # self.set_status() modifies self._reason, so this call should come after we grab the reason
+        self.set_status(status_code)
         self.finish(
-            json.dumps(
-                {
-                    "status": status_code,
-                    "title": httputil.responses.get(status_code, "Unknown"),
-                    "message": kwargs.get("message", self._reason),
-                }
-            )
+            json.dumps({"status": status_code, "title": title, "message": message,})
         )
 
     def get_current_user(self):
         try:
             if config.get("development") and config.get("json_authentication_override"):
-                return config.get("json_authentication_override.email")
+                return config.get("json_authentication_override")
             tkn_header = self.request.headers["authorization"]
         except KeyError:
             raise WebAuthNError(reason="Missing Authorization Header")
