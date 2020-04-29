@@ -307,3 +307,19 @@ class WebpackBundleLookupError(BaseWebpackLoaderException):
     """
     The bundle name was invalid.
     """
+
+
+class UnsupportedRedisDataType(BaseException):
+    """Unsupported Redis Data Type passed"""
+
+    def __init__(self, msg=""):
+        stats.count("UnsupportedRedisDataType")
+        super().__init__(msg)
+
+
+class DataNotRetrievable(BaseException):
+    """Data was expected but is not retrievable"""
+
+    def __init__(self, msg=""):
+        stats.count("DataNotRetrievable")
+        super().__init__(msg)

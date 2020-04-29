@@ -26,9 +26,10 @@ prod_install:
 env_install: env/bin/activate
 	# Activate either the virtualenv in env/ or tell conda to activate
 	. env/bin/activate || source activate consoleme;\
+	pip install -e default_plugins ;\
 	pip install -r requirements.txt ;\
 	pip install -r requirements-test.txt ;\
-	python setup.py develop
+	pip install -e .
 
 .PHONY: install
 install: clean

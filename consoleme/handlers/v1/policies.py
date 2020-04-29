@@ -1,11 +1,12 @@
 import re
 import sys
-import tornado.escape
-import ujson as json
 from datetime import datetime, timedelta
-from policyuniverse.expander_minimizer import _expand_wildcard_action
 from typing import Dict, List, Optional
 from urllib.parse import quote_plus
+
+import tornado.escape
+import ujson as json
+from policyuniverse.expander_minimizer import _expand_wildcard_action
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -19,6 +20,7 @@ from consoleme.lib.aws import (
     get_all_iam_managed_policies_for_account,
     get_resource_policies,
 )
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.generic import write_json_error
 from consoleme.lib.plugins import get_plugin_by_name
@@ -27,12 +29,12 @@ from consoleme.lib.policies import (
     can_move_back_to_pending,
     can_update_requests,
     escape_json,
-    parse_policy_change_request,
-    update_resource_policy,
-    update_role_policy,
-    should_auto_approve_policy,
     get_formatted_policy_changes,
     get_resources_from_events,
+    parse_policy_change_request,
+    should_auto_approve_policy,
+    update_resource_policy,
+    update_role_policy,
 )
 from consoleme.lib.redis import redis_get, redis_hgetall
 from consoleme.lib.timeout import Timeout
@@ -67,7 +69,7 @@ class PolicyViewHandler(BaseHandler):
                 "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
-        stats.count("policies.get", tags={"user": self.user, "ip": self.ip})
+        stats.count("PolicyViewHandler.get", tags={"user": self.user})
 
         log_data = {
             "user": self.user,
@@ -150,10 +152,12 @@ class GetPoliciesHandler(BaseHandler):
         error_search = self.request.arguments.get("columns[5][search][value]")[
             0
         ].decode("utf-8")
-        policies = await redis_get(
-            config.get("policies.redis_policies_key", "ALL_POLICIES")
+
+        policies_d = await retrieve_json_data_from_redis_or_s3(
+            redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
+            s3_bucket=config.get("cache_policies_table_details.s3.bucket"),
+            s3_key=config.get("cache_policies_table_details.s3.file"),
         )
-        policies_d = json.loads(policies)
 
         data = []
 
@@ -224,7 +228,7 @@ class PolicyEditHandler(BaseHandler):
 
         arn = f"arn:aws:iam::{account_id}:role/{role_name}"
 
-        stats.count("policy.get", tags={"user": self.user, "ip": self.ip, "arn": arn})
+        stats.count("PolicyEditHandler.get", tags={"user": self.user, "arn": arn})
 
         log_data = {
             "user": self.user,
@@ -323,7 +327,7 @@ class PolicyEditHandler(BaseHandler):
 
         arn = f"arn:aws:iam::{account_id}:role/{role_name}"
 
-        stats.count("policy.post", tags={"user": self.user, "ip": self.ip, "arn": arn})
+        stats.count("PolicyEditHandler.post", tags={"user": self.user, "arn": arn})
 
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -378,7 +382,9 @@ class ResourcePolicyEditHandler(BaseHandler):
             account_id_for_arn = ""
         arn = f"arn:aws:{resource_type}:{region or ''}:{account_id_for_arn}:{resource_name}"
 
-        stats.count("policy.get", tags={"user": self.user, "ip": self.ip, "arn": arn})
+        stats.count(
+            "ResourcePolicyEditHandler.get", tags={"user": self.user, "arn": arn}
+        )
 
         log_data = {
             "user": self.user,
@@ -449,7 +455,9 @@ class ResourcePolicyEditHandler(BaseHandler):
             account_id_for_arn = ""
         arn = f"arn:aws:{resource_type}:{region or ''}:{account_id_for_arn}:{resource_name}"
 
-        stats.count("policy.post", tags={"user": self.user, "ip": self.ip, "arn": arn})
+        stats.count(
+            "ResourcePolicyEditHandler.post", tags={"user": self.user, "arn": arn}
+        )
 
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -513,7 +521,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         log.debug(log_data)
 
         stats.count(
-            log_data["function"], tags={"user": self.user, "ip": self.ip, "arn": arn}
+            "PolicyReviewSubmitHandler.post", tags={"user": self.user, "arn": arn}
         )
 
         role = await aws.fetch_iam_role(account_id, arn)
@@ -536,7 +544,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         try:
             resource_actions = await get_resources_from_events(events)
             resources = list(resource_actions.keys())
-            resource_policies = await get_resource_policies(
+            resource_policies, cross_account_request = await get_resource_policies(
                 arn, resource_actions, account_id
             )
         except Exception as e:
@@ -546,13 +554,20 @@ class PolicyReviewSubmitHandler(BaseHandler):
             resource_actions = {}
             resources = []
             resource_policies = []
+            cross_account_request = False
 
         log_data["resource_actions"] = resource_actions
         log_data["resource_policies"] = resource_policies
-        events.extend(resource_policies)
         dynamo = UserDynamoHandler(self.user)
         request = await dynamo.write_policy_request(
-            self.user, justification, arn, policy_name, events, resources
+            self.user,
+            justification,
+            arn,
+            policy_name,
+            events,
+            resources,
+            resource_policies,
+            cross_account_request=cross_account_request,
         )
         if policy_status == "approved":
             try:
@@ -576,7 +591,6 @@ class PolicyReviewSubmitHandler(BaseHandler):
                 await dynamo.update_policy_request(request)
                 await aws.fetch_iam_role(account_id, arn, force_refresh=True)
             else:
-                config.sentry.captureException()
                 await write_json_error(result, obj=self)
                 await self.finish()
                 return
@@ -625,15 +639,7 @@ class PolicyReviewHandler(BaseHandler):
         }
         log.debug(log_data)
 
-        stats.count(
-            log_data["function"],
-            tags={
-                "user": self.user,
-                "ip": self.ip,
-                "arn": arn,
-                "request_id": request.get("request_id"),
-            },
-        )
+        stats.count("PolicyReviewHandler.get", tags={"user": self.user, "arn": arn})
 
         try:
             formatted_policy_changes = await get_formatted_policy_changes(
@@ -648,6 +654,7 @@ class PolicyReviewHandler(BaseHandler):
         can_cancel: bool = False
         show_update_button: bool = False
         read_only = True
+        resource_policies: List = request.get("resource_policies", [])
 
         if status == "pending":
             show_approve_reject_buttons = await can_manage_policy_requests(self.groups)
@@ -688,6 +695,7 @@ class PolicyReviewHandler(BaseHandler):
             role_uri=role_uri,
             escape_json=escape_json,
             policy_changes=formatted_policy_changes,
+            resource_policies=resource_policies,
         )
 
     async def post(self, request_id):
@@ -735,14 +743,8 @@ class PolicyReviewHandler(BaseHandler):
         log.debug(log_data)
 
         stats.count(
-            log_data["function"],
-            tags={
-                "user": self.user,
-                "ip": self.ip,
-                "arn": arn,
-                "request_id": request.get("request_id"),
-                "updated_status": updated_status,
-            },
+            "PolicyReviewHandler.post",
+            tags={"user": self.user, "arn": arn, "updated_status": updated_status},
         )
 
         can_approve_reject = await can_manage_policy_requests(self.groups)
@@ -819,7 +821,7 @@ class PolicyReviewHandler(BaseHandler):
                 ]
             try:
                 resource_actions = await get_resources_from_events(policy_changes)
-                resource_policies = await get_resource_policies(
+                resource_policies, cross_account_request = await get_resource_policies(
                     arn, resource_actions, account_id
                 )
             except Exception as e:
@@ -828,14 +830,16 @@ class PolicyReviewHandler(BaseHandler):
                 log.error(log_data, exc_info=True)
                 resource_actions = {}
                 resource_policies = []
+                cross_account_request = False
 
             log_data["resource_actions"] = resource_actions
             log_data["resource_policies"] = resource_policies
             log.debug(log_data)
-            policy_changes.extend(resource_policies)
             dynamo = UserDynamoHandler(self.user)
+            request["resource_policies"] = resource_policies
             request["policy_changes"] = json.dumps(policy_changes)
             request["reviewer_comments"] = reviewer_comments
+            request["cross_account_request"] = cross_account_request
 
         # Keep a record of the policy as it was at the time of the change, for historical record
         if updated_status == "approved":
@@ -1050,6 +1054,7 @@ async def handle_resource_type_ahead_request(cls):
         if all_role_arns_j:
             all_role_arns = all_role_arns_j.keys()
         # ConsoleMe (Account: Test, Arn: arn)
+        # TODO: Make this OSS compatible and configurable
         try:
             accounts = json.loads(
                 await redis_get(

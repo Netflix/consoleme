@@ -27,10 +27,14 @@ async function getCookie(name) {
 
 function formatRoleName(role, accounts) {
   // This will print the proper display name for the per-user roles.
-  if (!role.startsWith("cm-")) {
+  if (typeof role !== 'undefined') {
+    if (!role.startsWith("cm-")) {
+      return role;
+    }
+    return accounts[role.split("cm-")[1].split("-")[0]];
+  } else {
     return role;
   }
-  return accounts[role.split("cm-")[1].split("-")[0]];
 }
 
 async function handleResponse(res, redirect_uri = null, message = "Success! Refreshing cache and reloading the page.") {

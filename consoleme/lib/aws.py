@@ -1,27 +1,27 @@
 import json
 from copy import deepcopy
 
-import boto3
 import pytz
 import sys
 import time
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
-from cloudaux import sts_conn
 from cloudaux.aws.decorators import rate_limited
 from cloudaux.aws.s3 import get_bucket_policy, get_bucket_tagging
 from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
 from datetime import datetime
+
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from deepdiff import DeepDiff
 from policy_sentry.util.arns import (
     get_account_from_arn,
     get_resource_from_arn,
     get_service_from_arn,
 )
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException
@@ -153,7 +153,17 @@ async def get_all_iam_managed_policies_for_account(account_id):
         red = await RedisHandler().redis()
         ALL_IAM_MANAGED_POLICIES = await sync_to_async(red.hgetall)(policy_key)
         ALL_IAM_MANAGED_POLICIES_LAST_UPDATE = current_time
-    return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
+
+    if ALL_IAM_MANAGED_POLICIES:
+        return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
+    else:
+        s3_bucket = config.get("account_resource_cache.s3.bucket")
+        s3_key = config.get("account_resource_cache.s3.file").format(
+            resource_type="managed_policies", account_id=account_id
+        )
+        return await retrieve_json_data_from_redis_or_s3(
+            s3_bucket=s3_bucket, s3_key=s3_key
+        )
 
 
 async def get_resource_account(arn: str) -> str:
@@ -180,26 +190,30 @@ async def get_resource_account(arn: str) -> str:
     return ""
 
 
+async def get_resource_policy(account: str, resource_type: str, name: str, region: str):
+    try:
+        details = await fetch_resource_details(account, resource_type, name, region)
+    except ClientError:
+        # We don't have access to this resource, so we can't get the policy.
+        details = {}
+    # Default to a blank policy
+    return details.get("Policy", {"Version": "2012-10-17", "Statement": []})
+
+
 async def get_resource_policies(
-    principal_arn: str, resource_actions: Dict[str, List[str]], account: str
-) -> List[Dict]:
+    principal_arn: str, resource_actions: Dict[str, Dict[str, Any]], account: str
+) -> Tuple[List[Dict], bool]:
     resource_policies: List[Dict] = []
+    cross_account_request: bool = False
     for resource_name, resource_info in resource_actions.items():
-        resource_account: str = resource_info.get("account")
+        resource_account: str = resource_info.get("account", "")
         if resource_account and resource_account != account:
             # This is a cross-account request. Might need a resource policy.
-            resource_type: str = resource_info.get("type")
-            resource_region: str = resource_info.get("region")
-            try:
-                details = await fetch_resource_details(
-                    resource_account, resource_type, resource_name, resource_region
-                )
-            except ClientError:
-                # We don't have access to this resource, so we can't get the policy.
-                details = {}
-            # Default to a blank policy
-            old_policy = details.get(
-                "Policy", {"Version": "2012-10-17", "Statement": []}
+            cross_account_request = True
+            resource_type: str = resource_info.get("type", "")
+            resource_region: str = resource_info.get("region", "")
+            old_policy = await get_resource_policy(
+                resource_account, resource_type, resource_name, resource_region
             )
             arns = resource_info.get("arns", [])
             actions = resource_info.get("actions", [])
@@ -210,7 +224,7 @@ async def get_resource_policies(
             result = {"resource": resource_name, "policy_document": new_policy}
             resource_policies.append(result)
 
-    return resource_policies
+    return resource_policies, cross_account_request
 
 
 async def update_resource_policy(
@@ -293,15 +307,6 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
     return result
 
 
-async def fetch_json_object_from_s3(bucket, object):
-    client = await sync_to_async(boto3.client)("s3")
-    s3_object = await sync_to_async(client.get_object)(Bucket=bucket, Key=object)
-    object_content = s3_object["Body"].read()
-
-    data = json.loads(object_content)
-    return data
-
-
 async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     """Fetch S3 Bucket and applicable policies
 
@@ -372,13 +377,6 @@ async def raise_if_background_check_required_and_no_background_check(role, user)
                         "{role}.",
                     ).format(role=role)
                 )
-
-
-@rate_limited()
-@sts_conn("s3")
-def put_object(client=None, **kwargs):
-    """Create an S3 object -- calls wrapped with CloudAux."""
-    client.put_object(**kwargs)
 
 
 def apply_managed_policy_to_role(

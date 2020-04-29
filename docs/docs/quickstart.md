@@ -6,12 +6,14 @@ title: Quick Start
 ConsoleMe provides a unified AWS login experience across hundreds of accounts. Currently, we support OAuth,
 SAML, Google Groups, and LDAP for authentication. We encourage open source contributions for others.
 If you have a customized internal authentication system, ConsoleMe is pluggable and customizable. We encourage you to
-write internal plugins for your custom business logic.
+write internal plugins for any custom business logic.
+A basic set of plugins is introduced [here](https://github.com/Netflix-Skunkworks/consoleme/tree/master/default_plugins).
 
 ## Local Quick Start with Header Authentication (Docker)
 1. [Install Docker and Docker-Compose](https://github.com/Yelp/docker-compose/blob/master/docs/install.md)
-1. Run `docker-compose up`
-1. Visit [http://127.0.0.1:8081](http://127.0.0.1:8081). If everything is working as expected, you should see a message
+1. Clone the ConsoleMe Repo: `git clone https://github.com/Netflix-Skunkworks/consoleme.git`
+1. In the ConsoleMe directory, run the following command: `docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up`
+1. Visit [http://localhost:8081](http://localhost:8081). If everything is working as expected, you should see a message
 stating "No user detected. Check configuration.". This indicates that the web server is listening to requests.
 1. Inject a header to specify your e-mail address and groups. ([Requestly](https://www.requestly.in/) works well).
 
@@ -27,6 +29,7 @@ stating "No user detected. Check configuration.". This indicates that the web se
     load balancer to perform authentication on ConsoleMe's behalf. The server in front of ConsoleMe should drop the header
     you use for authentication from incoming requests (To prevent users from forging their identity), authenticate the user,
     then set the header for ConsoleMe to consume.
+
 1. That's it! Check out the `Configuration Guide` for customizing ConsoleMe # TODO: Create and link to configuration guide
 
 

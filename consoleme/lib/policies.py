@@ -600,23 +600,24 @@ async def get_formatted_policy_changes(account_id, arn, request):
                 }
             )
 
-        resource_policy_document = policy_change.get("resource_policies")
-        if resource_policy_document:
-            existing_policy_document = None
-            # TODO: make this actually fetch the resource policy
-            # existing_policy_document = aws.fetch_resource_policy()
-            new_policy_document = resource_policy_document["policy_document"]
-            diff = DeepDiff(existing_policy_document, new_policy_document)
+        resource_policy_documents = request.get("resource_policies")
+        if resource_policy_documents:
+            for resource in resource_policy_documents:
+                existing_policy_document = None
+                # TODO: make this actually fetch the resource policy
+                # existing_policy_document = aws.fetch_resource_policy()
+                new_policy_document = resource["policy_document"]
+                diff = DeepDiff(existing_policy_document, new_policy_document)
 
-            formatted_policy_changes.append(
-                {
-                    "name": "ResourcePolicy",
-                    "old": existing_policy_document,
-                    "new": new_policy_document,
-                    "new_policy": False,
-                    "diff": diff,
-                }
-            )
+                formatted_policy_changes.append(
+                    {
+                        "name": "ResourcePolicy",
+                        "old": existing_policy_document,
+                        "new": new_policy_document,
+                        "new_policy": False if existing_policy_document else True,
+                        "diff": diff,
+                    }
+                )
     return {"changes": formatted_policy_changes, "role": existing_role}
 
 

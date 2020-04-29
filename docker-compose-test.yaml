@@ -7,9 +7,9 @@ services:
     environment:
       - CONFIG_LOCATION=/apps/consoleme/docker/example_config_test.yaml
     volumes:
-      - .:/apps/consoleme
-      - ~/.aws:/root/.aws
-      - ~/.ssh:/root/.ssh
+      - .:/apps/consoleme:delegated
+      - ~/.aws:/root/.aws:cached
+      - ~/.ssh:/root/.ssh:cached
     # entrypoint: watchmedo auto-restart --recursive --pattern="*.py" --directory="." pytest
     entrypoint: >
       bash -c 'pip install argh watchdog; pip install -e /apps/consoleme/default_plugins;

@@ -1,40 +1,38 @@
 """Handle the base."""
+import asyncio
+import traceback
+import uuid
+from typing import Any, Union
+
 import redis
 import tornado.httpclient
 import tornado.httputil
 import tornado.web
-import traceback
 import ujson as json
-import uuid
 from asgiref.sync import sync_to_async
-from onelogin.saml2.auth import OneLogin_Saml2_Auth
-from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
-from onelogin.saml2.settings import OneLogin_Saml2_Settings
-from raven.contrib.tornado import SentryMixin
-from tornado import httputil
-from typing import Any, Union
-
 from consoleme.config import config
-from consoleme.exceptions.exceptions import (
-    InvalidCertificateException,
-    MissingCertificateException,
-    NoGroupsException,
-    NoUserException,
-)
-from consoleme.exceptions.exceptions import WebAuthNError
+from consoleme.exceptions.exceptions import InvalidCertificateException, MissingCertificateException, NoGroupsException, \
+    NoUserException, WebAuthNError
 from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
-from consoleme.lib.credential_auth import authenticate_user_by_credentials
 from consoleme.lib.auth import AuthenticationError
+from consoleme.lib.credential_auth import authenticate_user_by_credentials
 from consoleme.lib.generic import render_404
 from consoleme.lib.jwt import validate_and_return_jwt_token, generate_jwt_token
 from consoleme.lib.oauth2 import authenticate_user_by_oauth2
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.saml import authenticate_user_by_saml
+from consoleme.lib.tracing import ConsoleMeTracer
+from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
+from onelogin.saml2.settings import OneLogin_Saml2_Settings
+from raven.contrib.tornado import SentryMixin
+from tornado import httputil
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
+group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 
 
 class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
@@ -58,7 +56,7 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
         self.set_status(204)
         self.finish()
 
-    def prepare(self):
+    async def prepare(self):
         stats.timer("base_handler.incoming_request")
         if self.request.method.lower() == "options":
             return
@@ -132,272 +130,330 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         """Receives the data."""
         pass
 
-    async def prepare(self) -> None:
-        self.responses = []
-        self.request_uuid = str(uuid.uuid4())
-        stats.timer("base_handler.incoming_request")
-        return await self.authorization_flow()
 
-    def write(self, chunk: Union[str, bytes, dict]) -> None:
-        if config.get("_security_risk_full_debugging.enabled"):
-            self.responses.append(chunk)
-        super(BaseHandler, self).write(chunk)
+def set_default_headers(self) -> None:
+    self.set_header(
+        "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
+    )
 
-    def on_finish(self) -> None:
-        if config.get("_security_risk_full_debugging.enabled"):
-            request_details = {
-                "path": self.request.path,
-                "method": self.request.method,
-                "body": self.request.body,
-                "arguments": self.request.arguments,
-                "body_arguments": self.request.body_arguments,
-                "headers": dict(self.request.headers.items()),
-                "query": self.request.query,
-                "query_arguments": self.request.query_arguments,
-                "uri": self.request.uri,
-                "cookies": dict(self.request.cookies.items()),
-                "response": self.responses,
-            }
-            with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
-                f.write(json.dumps(request_details))
 
-    async def authorization_flow(
-        self, user: str = None, console_only: bool = True, refresh_cache: bool = False
-    ) -> None:
-        """Perform high level authorization flow."""
-        self.request_uuid = str(uuid.uuid4())
-        refresh_cache = (
-            self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
+def initialize(self) -> None:
+    super(BaseHandler, self).initialize()
+
+
+async def prepare(self) -> None:
+    await self.configure_tracing()
+
+    if config.get("tornado.xsrf", True):
+        cookie_kwargs = config.get("tornado.xsrf_cookie_kwargs", {})
+        self.set_cookie(
+            config.get("xsrf_cookie_name", "_xsrf"),
+            self.xsrf_token,
+            **cookie_kwargs,
         )
-        if not refresh_cache and config.get(
-            "dynamic_config.role_cache.always_refresh_roles_cache", False
-        ):
-            refresh_cache = True
+    self.responses = []
+    self.request_uuid = str(uuid.uuid4())
+    stats.timer("base_handler.incoming_request")
+    return await self.authorization_flow()
 
-        self.red = await RedisHandler().redis()
 
-        # Load auth plugin
-        auth = get_plugin_by_name(config.get("plugins.auth"))()
-        group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
+def write(self, chunk: Union[str, bytes, dict]) -> None:
+    if config.get("_security_risk_full_debugging.enabled"):
+        self.responses.append(chunk)
+    super(BaseHandler, self).write(chunk)
 
-        self.ip = self.request.headers.get(
+
+async def configure_tracing(self):
+    self.tracer = ConsoleMeTracer()
+    primary_span_name = "{0} {1}".format(
+        self.request.method.upper(), self.request.path
+    )
+    tracer_tags = {
+        "http.host": config.hostname,
+        "http.method": self.request.method.upper(),
+        "http.path": self.request.path,
+        "ca": self.request.headers.get(
             "X-Forwarded-For", self.request.remote_ip
-        ).split(",")[0]
-        self.user = user
-        self.groups = None
-        self.user_role_name = None
-        self.legacy_user_role_mapping = {}
+        ).split(",")[
+            0
+        ],  # Client IP
+        "http.url": self.request.full_url(),
+    }
+    tracer = await self.tracer.configure_tracing(
+        primary_span_name, tags=tracer_tags
+    )
+    if tracer:
+        for k, v in tracer.headers.items():
+            self.set_header(k, v)
 
-        log_data = {
-            "function": "Basehandler.authorization_flow",
-            "ip": self.ip,
-            "request_path": self.request.uri,
-            "user-agent": self.request.headers.get("User-Agent"),
-            "request_id": self.request_uuid,
-            "message": "Incoming request",
+
+def on_finish(self) -> None:
+    if self.tracer:
+        asyncio.ensure_future(
+            self.tracer.set_additional_tags({"http.status_code": self.get_status()})
+        )
+        asyncio.ensure_future(self.tracer.finish_spans())
+        asyncio.ensure_future(self.tracer.disable_tracing())
+
+    if config.get("_security_risk_full_debugging.enabled"):
+        request_details = {
+            "path": self.request.path,
+            "method": self.request.method,
+            "body": self.request.body,
+            "arguments": self.request.arguments,
+            "body_arguments": self.request.body_arguments,
+            "headers": dict(self.request.headers.items()),
+            "query": self.request.query,
+            "query_arguments": self.request.query_arguments,
+            "uri": self.request.uri,
+            "cookies": dict(self.request.cookies.items()),
+            "response": self.responses,
         }
+        with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
+            f.write(json.dumps(request_details))
+    super(BaseHandler, self).on_finish()
 
-        log.debug(log_data)
 
-        # Check to see if user has a valid auth cookie
-        if config.get("auth_cookie_name"):
-            auth_cookie = self.get_cookie(config.get("auth_cookie_name"))
-            if auth_cookie:
-                res = await validate_and_return_jwt_token(auth_cookie)
-                if res and isinstance(res, dict):
-                    self.user = res.get("user")
-                    self.groups = res.get("groups")
+async def authorization_flow(
+        self, user: str = None, console_only: bool = True, refresh_cache: bool = False
+) -> None:
+    """Perform high level authorization flow."""
+    self.request_uuid = str(uuid.uuid4())
+    refresh_cache = (
+            self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
+    )
+    if not refresh_cache and config.get(
+            "dynamic_config.role_cache.always_refresh_roles_cache", False
+    ):
+        refresh_cache = True
 
-        if not self.user:
-            # SAML flow. If user has a JWT signed by ConsoleMe, and SAML is enabled in configuration, user will go
-            # through this flow.
+    self.red = await RedisHandler().redis()
+    self.ip = self.request.headers.get(
+        "X-Forwarded-For", self.request.remote_ip
+    ).split(",")[0]
+    self.user = user
+    self.groups = None
+    self.user_role_name = None
+    self.legacy_user_role_mapping = {}
 
-            if config.get("auth.get_user_by_saml"):
-                res = await authenticate_user_by_saml(self)
-                if not res:
-                    return
+    log_data = {
+        "function": "Basehandler.authorization_flow",
+        "ip": self.ip,
+        "request_path": self.request.uri,
+        "user-agent": self.request.headers.get("User-Agent"),
+        "request_id": self.request_uuid,
+        "message": "Incoming request",
+    }
 
-        if not self.user:
-            if config.get("auth.get_user_by_oidc"):
-                res = await authenticate_user_by_oauth2(self)
-                if not res:
-                    return
-                if res and isinstance(res, dict):
-                    self.user = res.get("user")
-                    self.groups = res.get("groups")
+    log.debug(log_data)
 
-        if not self.user:
-            if config.get("auth.get_user_by_aws_alb_auth"):
-                res = await authenticate_user_by_alb_auth(self)
-                if not res:
-                    return
-                if res and isinstance(res, dict):
-                    self.user = res.get("user")
-                    self.groups = res.get("groups")
+    # Check to see if user has a valid auth cookie
+    if config.get("auth_cookie_name"):
+        auth_cookie = self.get_cookie(config.get("auth_cookie_name"))
+        if auth_cookie:
+            res = await validate_and_return_jwt_token(auth_cookie)
+            if res and isinstance(res, dict):
+                self.user = res.get("user")
+                self.groups = res.get("groups")
 
-        if not self.user:
-            if config.get("auth.get_user_by_credentials"):
-                res = await authenticate_user_by_credentials(self)
-                if not res:
-                    return
-                if res and isinstance(res, dict):
-                    self.user = res.get("user")
-                    self.groups = res.get("groups")
+    if not self.user:
+        if config.get("development") and config.get("_development_user_override"):
+            self.user = config.get("_development_user_override")
 
-        if not self.user:
-            try:
-                # Get user. Config options can specify getting username from headers or
-                # oauth, but custom plugins are also allowed to override this.
-                self.user = await auth.get_user(headers=self.request.headers)
-                if not self.user:
-                    raise NoUserException(
-                        f"User not detected. Headers: {self.request.headers}"
-                    )
-                log_data["user"] = self.user
-            except NoUserException:
-                self.clear()
-                self.set_status(403)
-                stats.count(
-                    "Basehandler.authorization_flow.no_user_detected",
-                    tags={
-                        "request_path": self.request.uri,
-                        "ip": self.ip,
-                        "user_agent": self.request.headers.get("User-Agent"),
-                    },
-                )
-                log_data["message"] = "No user detected. Check configuration."
-                log.error(log_data)
-                await self.finish(log_data["message"])
-                raise
+    if not self.user:
+        # SAML flow. If user has a JWT signed by ConsoleMe, and SAML is enabled in configuration, user will go
+        # through this flow.
 
-        self.contractor = await auth.is_user_contractor(self.user)
-
-        if not refresh_cache:
-            try:
-                cache_r = self.red.get(f"USER-{self.user}-CONSOLE-{console_only}")
-            except redis.exceptions.ConnectionError:
-                cache_r = None
-            if cache_r:
-                log_data["message"] = "Loading from cache"
-                log.debug(log_data)
-                cache = json.loads(cache_r)
-                self.groups = cache.get("groups")
-                self.eligible_roles = cache.get("eligible_roles")
-                self.eligible_accounts = cache.get("eligible_accounts")
-                self.user_role_name = cache.get("user_role_name")
-                self.legacy_user_role_mapping = cache.get("legacy_user_role_mapping")
+        if config.get("auth.get_user_by_saml"):
+            res = await authenticate_user_by_saml(self)
+            if not res:
                 return
 
-        try:
-            if not self.groups:
-                self.groups = await auth.get_groups(
-                    self.user, headers=self.request.headers
-                )
-            if not self.groups:
-                raise NoGroupsException(
-                    f"Groups not detected. Headers: {self.request.headers}"
-                )
+    if not self.user:
+        if config.get("auth.get_user_by_oidc"):
+            res = await authenticate_user_by_oauth2(self)
+            if not res:
+                return
+            if res and isinstance(res, dict):
+                self.user = res.get("user")
+                self.groups = res.get("groups")
 
-        except NoGroupsException:
+    if not self.user:
+        if config.get("auth.get_user_by_aws_alb_auth"):
+            res = await authenticate_user_by_alb_auth(self)
+            if not res:
+                return
+            if res and isinstance(res, dict):
+                self.user = res.get("user")
+                self.groups = res.get("groups")
+
+    if not self.user:
+        if config.get("auth.get_user_by_credentials"):
+            res = await authenticate_user_by_credentials(self)
+            if not res:
+                return
+            if res and isinstance(res, dict):
+                self.user = res.get("user")
+                self.groups = res.get("groups")
+
+    if not self.user:
+        try:
+            # Get user. Config options can specify getting username from headers or
+            # oauth, but custom plugins are also allowed to override this.
+            self.user = await auth.get_user(headers=self.request.headers)
+            if not self.user:
+                raise NoUserException(
+                    f"User not detected. Headers: {self.request.headers}"
+                )
+            log_data["user"] = self.user
+        except NoUserException:
             self.clear()
             self.set_status(403)
-            stats.count("Basehandler.authorization_flow.no_groups_detected")
-            log_data["message"] = "No groups detected. Check configuration."
+            stats.count(
+                "Basehandler.authorization_flow.no_user_detected",
+                tags={
+                    "request_path": self.request.uri,
+                    "ip": self.ip,
+                    "user_agent": self.request.headers.get("User-Agent"),
+                },
+            )
+            log_data["message"] = "No user detected. Check configuration."
             log.error(log_data)
             await self.finish(log_data["message"])
+            raise
+
+    self.contractor = await auth.is_user_contractor(self.user)
+
+    if not refresh_cache:
+        try:
+            cache_r = self.red.get(f"USER-{self.user}-CONSOLE-{console_only}")
+        except redis.exceptions.ConnectionError:
+            cache_r = None
+        if cache_r:
+            log_data["message"] = "Loading from cache"
+            log.debug(log_data)
+            cache = json.loads(cache_r)
+            self.groups = cache.get("groups")
+            self.eligible_roles = cache.get("eligible_roles")
+            self.eligible_accounts = cache.get("eligible_accounts")
+            self.user_role_name = cache.get("user_role_name")
+            self.legacy_user_role_mapping = cache.get("legacy_user_role_mapping")
             return
 
-        # Set User Role Name
+    try:
+        if not self.groups:
+            self.groups = await auth.get_groups(
+                self.user, headers=self.request.headers
+            )
+        if not self.groups:
+            raise NoGroupsException(
+                f"Groups not detected. Headers: {self.request.headers}"
+            )
 
-        if (
+    except NoGroupsException:
+        self.clear()
+        self.set_status(403)
+        stats.count("Basehandler.authorization_flow.no_groups_detected")
+        log_data["message"] = "No groups detected. Check configuration."
+        log.error(log_data)
+        await self.finish(log_data["message"])
+        return
+
+    # Set User Role Name
+
+    if (
             config.get("user_roles.opt_in_group")
             and config.get("user_roles.opt_in_group") in self.groups
-        ):
-            # Get or create user_role_name attribute
-            self.user_role_name = await auth.get_or_create_user_role_name(self.user)
+    ):
+        # Get or create user_role_name attribute
+        self.user_role_name = await auth.get_or_create_user_role_name(self.user)
 
-        self.eligible_roles = await group_mapping.get_eligible_roles(
-            self.user,
-            self.groups,
-            self.user_role_name,
-            legacy_mapping=self.legacy_user_role_mapping,
-            console_only=console_only,
+    self.eligible_roles = await group_mapping.get_eligible_roles(
+        self.user,
+        self.groups,
+        self.user_role_name,
+        legacy_mapping=self.legacy_user_role_mapping,
+        console_only=console_only,
+    )
+
+    if not self.eligible_roles:
+        log_data[
+            "message"
+        ] = "No eligible roles detected for user. But letting them continue"
+        log.error(log_data)
+    log_data["eligible_roles"] = len(self.eligible_roles)
+
+    try:
+        self.eligible_accounts = await group_mapping.get_eligible_accounts(
+            self.eligible_roles
         )
-
-        if not self.eligible_roles:
-            log_data[
-                "message"
-            ] = "No eligible roles detected for user. But letting them continue"
-            log.error(log_data)
-        log_data["eligible_roles"] = len(self.eligible_roles)
-
+        log_data["eligible_accounts"] = self.eligible_accounts
+        log_data["message"] = "Successfully authorized user."
+        log.debug(log_data)
+    except Exception:
+        stats.count("Basehandler.authorization_flow.exception")
+        log.error(log_data, exc_info=True)
+        raise
+    if self.groups and config.get("dynamic_config.role_cache.cache_roles", True):
         try:
-            self.eligible_accounts = await group_mapping.get_eligible_accounts(
-                self.eligible_roles
+            self.red.setex(
+                f"USER-{self.user}-CONSOLE-{console_only}",
+                config.get("dynamic_config.role_cache.cache_expiration", 500),
+                json.dumps(
+                    {
+                        "groups": self.groups,
+                        "eligible_roles": self.eligible_roles,
+                        "eligible_accounts": self.eligible_accounts,
+                        "user_role_name": self.user_role_name,
+                        "legacy_user_role_mapping": self.legacy_user_role_mapping,
+                    }
+                ),
             )
-            log_data["eligible_accounts"] = self.eligible_accounts
-            log_data["message"] = "Successfully authorized user."
-            log.debug(log_data)
-        except Exception:
-            stats.count("Basehandler.authorization_flow.exception")
-            log.error(log_data, exc_info=True)
-            raise
-        if self.groups and config.get("dynamic_config.role_cache.cache_roles", True):
-            try:
-                self.red.setex(
-                    f"USER-{self.user}-CONSOLE-{console_only}",
-                    config.get("dynamic_config.role_cache.cache_expiration", 500),
-                    json.dumps(
-                        {
-                            "groups": self.groups,
-                            "eligible_roles": self.eligible_roles,
-                            "eligible_accounts": self.eligible_accounts,
-                            "user_role_name": self.user_role_name,
-                            "legacy_user_role_mapping": self.legacy_user_role_mapping,
-                        }
-                    ),
-                )
-            except redis.exceptions.ConnectionError:
-                pass
-        if (
+        except redis.exceptions.ConnectionError:
+            pass
+    if (
             config.get("auth.set_auth_cookie")
             and config.get("auth_cookie_name")
             and not self.get_cookie(config.get("auth_cookie_name"))
-        ):
-            encoded_cookie = await generate_jwt_token(self.user, self.groups)
-            self.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
+    ):
+        encoded_cookie = await generate_jwt_token(self.user, self.groups)
+        self.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
+    if self.tracer:
+        await self.tracer.set_additional_tags({"USER": self.user})
 
-    async def prepare_tornado_request_for_saml(self):
-        dataDict = {}
 
-        for key in self.request.arguments:
-            dataDict[key] = self.request.arguments[key][0].decode("utf-8")
+async def prepare_tornado_request_for_saml(self):
+    dataDict = {}
 
-        result = {
-            "https": "on" if self.request == "https" else "off",
-            "http_host": tornado.httputil.split_host_and_port(self.request.host)[0],
-            "script_name": self.request.path,
-            "server_port": tornado.httputil.split_host_and_port(self.request.host)[1],
-            "get_data": dataDict,
-            "post_data": dataDict,
-            "query_string": self.request.query,
-        }
-        return result
+    for key in self.request.arguments:
+        dataDict[key] = self.request.arguments[key][0].decode("utf-8")
 
-    @staticmethod
-    async def init_saml_auth(req):
-        if config.get("get_user_by_saml_settings.saml_path"):
-            settings = await sync_to_async(OneLogin_Saml2_Settings)(
-                custom_base_path=config.get("get_user_by_saml_settings.saml_path")
-            )
-        elif config.get("get_user_by_saml_settings.metadata_url"):
-            settings = await sync_to_async(
-                OneLogin_Saml2_IdPMetadataParser.parse_remote
-            )(config.get("get_user_by_saml_settings.metadata_url"))
-        else:
-            raise Exception("Invalid SAML Settings")
-        saml_auth = await sync_to_async(OneLogin_Saml2_Auth)(req, settings)
-        return saml_auth
+    result = {
+        "https": "on" if self.request == "https" else "off",
+        "http_host": tornado.httputil.split_host_and_port(self.request.host)[0],
+        "script_name": self.request.path,
+        "server_port": tornado.httputil.split_host_and_port(self.request.host)[1],
+        "get_data": dataDict,
+        "post_data": dataDict,
+        "query_string": self.request.query,
+    }
+    return result
+
+
+@staticmethod
+async def init_saml_auth(req):
+    if config.get("get_user_by_saml_settings.saml_path"):
+        settings = await sync_to_async(OneLogin_Saml2_Settings)(
+            custom_base_path=config.get("get_user_by_saml_settings.saml_path")
+        )
+    elif config.get("get_user_by_saml_settings.metadata_url"):
+        settings = await sync_to_async(
+            OneLogin_Saml2_IdPMetadataParser.parse_remote
+        )(config.get("get_user_by_saml_settings.metadata_url"))
+    else:
+        raise Exception("Invalid SAML Settings")
+    saml_auth = await sync_to_async(OneLogin_Saml2_Auth)(req, settings)
+    return saml_auth
 
 
 class BaseMtlsHandler(BaseHandler):
@@ -405,6 +461,9 @@ class BaseMtlsHandler(BaseHandler):
         self.kwargs = kwargs
 
     async def prepare(self):
+        self.tracer = None
+        self.span = None
+        self.spans = {}
         self.responses = []
         self.request_uuid = str(uuid.uuid4())
         stats.timer("base_handler.incoming_request")
@@ -437,6 +496,7 @@ class BaseMtlsHandler(BaseHandler):
             "X-Forwarded-For", self.request.remote_ip
         ).split(",")[0]
         self.current_cert_age = await auth.get_cert_age_seconds(self.request.headers)
+        await self.configure_tracing()
 
     def write(self, chunk: Union[str, bytes, dict]) -> None:
         if config.get("_security_risk_full_debugging.enabled"):
@@ -460,6 +520,7 @@ class BaseMtlsHandler(BaseHandler):
             }
             with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
                 f.write(json.dumps(request_details))
+        super(BaseMtlsHandler, self).on_finish()
 
 
 class NoCacheStaticFileHandler(tornado.web.StaticFileHandler):

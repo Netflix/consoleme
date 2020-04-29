@@ -131,6 +131,35 @@ plugins:
   internal_routes: default_internal_routes
   internal_policies: default_policies
 
+logging_levels:
+  asyncio: WARNING
+  boto3: CRITICAL
+  boto: CRITICAL
+  botocore: CRITICAL
+  elasticsearch.trace: ERROR
+  elasticsearch: ERROR
+  nose: CRITICAL
+  parso.python.diff: WARNING
+  raven.base.client: WARNING
+  s3transfer: CRITICAL
+  spectator.HttpClient: WARNING
+  spectator.Registry: WARNING
+  urllib3: ERROR
+
+# Warning: Tracing has performance implications. We recommend against 100% sample_rate in a production environment.
+# Enabling tracing in development will also override your ability to debug in your IDE. If you're
+# running in docker, be sure to start Zipkin at the same time as your other containers
+# ex: `docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml -f docker-compose-zipkin.yaml up`
+# To test, browse to Local ConsoleMe and confirm you see the trace in Zipkin at http://localhost:9411
+tracing:
+  application_name: consoleme
+  enabled: false # False by default, override in account-specific configuration
+  sample_rate: 100 # Percentage of requests
+  zipkin_address: http://consoleme_zipkin:9411/api/v2/spans
+  in_scope_function_calls:
+    - /consoleme/
+    - /consoleme-internal/
+
 #policies:
 #  role_name: ConsoleMeRole
 

@@ -57,10 +57,14 @@ class CleanAllCommand(distutils.cmd.Command):
 
 
 requirements = parse_requirements("requirements.txt", session=PipSession())
-reqs = [str(ir.req) for ir in requirements]
-
 test_requirements = parse_requirements("requirements-test.txt", session=PipSession())
-test_reqs = [str(ir.req) for ir in test_requirements]
+
+if tuple(map(int, pip.__version__.split("."))) >= (20, 1):
+    reqs = [str(ir.requirement) for ir in requirements]
+    test_reqs = [str(ir.requirement) for ir in test_requirements]
+else:
+    reqs = [str(ir.req) for ir in requirements]
+    test_reqs = [str(ir.req) for ir in test_requirements]
 
 setup(
     name="consoleme",
@@ -78,6 +82,6 @@ setup(
     entry_points={},
     cmdclass={"cleanall": CleanAllCommand},
     include_package_data=True,
-    versioning="build-id",
+    versioning="devcommit",
     zip_safe=False,
 )

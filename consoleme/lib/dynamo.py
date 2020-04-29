@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import sys
 import time
 import uuid
@@ -45,17 +44,6 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger("consoleme")
 crypto = Crypto()
 red = RedisHandler().redis_sync()
-
-for name in logging.Logger.manager.loggerDict.keys():
-    if (
-        ("boto" in name)
-        or ("urllib3" in name)
-        or ("s3transfer" in name)
-        or ("boto3" in name)
-        or ("botocore" in name)
-        or ("nose" in name)
-    ):
-        logging.getLogger(name).setLevel(logging.CRITICAL)
 
 
 def parallel_scan_table(table, total_threads=10):
@@ -348,9 +336,11 @@ class UserDynamoHandler(BaseDynamoHandler):
         policy_name: str,
         policy_changes: dict,
         resources: List[str],
+        resource_policies: List[Dict],
         request_time: int = None,
         request_uuid=None,
         policy_status="pending",
+        cross_account_request: bool = False,
     ):
         """
             Writes a policy request to the appropriate DynamoDB table
@@ -375,6 +365,8 @@ class UserDynamoHandler(BaseDynamoHandler):
             "policy_name": policy_name,
             "policy_changes": json.dumps(policy_changes),
             "resources": resources,
+            "resource_policies": resource_policies,
+            "cross_account_request": cross_account_request,
         }
 
         try:
@@ -620,6 +612,8 @@ class UserDynamoHandler(BaseDynamoHandler):
       """
         request_time = request_time or int(time.time())
 
+        stats.count("new_group_request", tags={"user": user_email, "group": group})
+
         if self.affected_user.get("username") != user_email:
             self.affected_user = self.get_or_create_user(user_email)
         # Get current user. Create if they do not already exist
@@ -741,6 +735,15 @@ class UserDynamoHandler(BaseDynamoHandler):
         :param request_id:
         :return:
         """
+        stats.count(
+            "update_group_request",
+            tags={
+                "user": user_email,
+                "group": group,
+                "new_status": new_status,
+                "updated_by": updated_by,
+            },
+        )
         modified_request = None
         if self.affected_user.get("username") != user_email:
             self.affected_user = self.get_or_create_user(user_email)

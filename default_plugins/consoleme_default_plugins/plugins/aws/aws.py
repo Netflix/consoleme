@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import ssl
 import sys
 from datetime import datetime, timedelta
@@ -32,12 +31,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
-
-# TODO(ccastrapel): Make the logging level configurable
-logging.getLogger("boto").setLevel(logging.CRITICAL)
-logging.getLogger("boto3").setLevel(logging.CRITICAL)
-logging.getLogger("botocore").setLevel(logging.CRITICAL)
-logging.getLogger("nose").setLevel(logging.CRITICAL)
 
 log = config.get_logger(__name__)
 
@@ -259,7 +252,10 @@ class Aws:
                 "accountId": account_id,
                 "ttl": int((datetime.utcnow() + timedelta(hours=36)).timestamp()),
                 "policy": self.dynamo.convert_role_to_json(role),
-                "templated": self.red.hget("TEMPLATED_ROLES", role.get("Arn").lower()),
+                "templated": self.red.hget(
+                    config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
+                    role.get("Arn").lower(),
+                ),
             }
 
             # Sync with DDB:
