@@ -2,7 +2,6 @@
 import os
 import sys
 
-import consoleme
 import pkg_resources
 import requests
 import tornado.autoreload
@@ -10,14 +9,15 @@ import tornado.web
 from apispec import APISpec
 from apispec.exceptions import APISpecError
 from apispec_webframeworks.tornado import TornadoPlugin
+from raven.contrib.tornado import AsyncSentryClient
+
+import consoleme
 from consoleme.config import config
 from consoleme.handlers.auth import AuthHandler
 from consoleme.handlers.base import NoCacheStaticFileHandler
+
 # from consoleme.handlers.v1.index import IndexHandler
-from consoleme.handlers.index_new import (
-    IndexNewHandler,
-    SelectRolesHandler,
-)
+from consoleme.handlers.index_new import IndexNewHandler, SelectRolesHandler
 from consoleme.handlers.v1.autologin import AutoLoginHandler
 from consoleme.handlers.v1.credentials import GetCredentialsHandler
 from consoleme.handlers.v1.dynamic_config import DynamicConfigHandler
@@ -30,15 +30,15 @@ from consoleme.handlers.v1.headers import (
 )
 from consoleme.handlers.v1.health import HealthHandler
 from consoleme.handlers.v1.policies import (
+    ApiResourceTypeAheadHandler,
     AutocompleteHandler,
     GetPoliciesHandler,
     PolicyEditHandler,
     PolicyReviewHandler,
     PolicyReviewSubmitHandler,
-    ResourceTypeAheadHandler,
-    ApiResourceTypeAheadHandler,
     PolicyViewHandler,
     ResourcePolicyEditHandler,
+    ResourceTypeAheadHandler,
     SelfServiceHandler,
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
@@ -46,7 +46,6 @@ from consoleme.handlers.v1.saml import SamlHandler
 from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
-from raven.contrib.tornado import AsyncSentryClient
 
 internal_routes = get_plugin_by_name(config.get("plugins.internal_routes"))()
 

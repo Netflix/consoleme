@@ -2,7 +2,7 @@ from tornado.escape import xhtml_escape
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler, BaseMtlsHandler
-from consoleme.lib.generic import is_in_group, get_random_security_logo
+from consoleme.lib.generic import get_random_security_logo, is_in_group
 from consoleme.lib.plugins import get_plugin_by_name
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -30,7 +30,7 @@ class UserProfileHandler(BaseHandler):
                 "users": {"enabled": config.get("headers.group_access.enabled", True)},
                 "policies": {
                     "enabled": config.get("headers.policies.enabled", True)
-                               and not is_contractor
+                    and not is_contractor
                 },
                 "self_service": {"enabled": config.get("enable_self_service")},
                 "api_health": {

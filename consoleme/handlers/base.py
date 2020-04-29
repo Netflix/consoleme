@@ -10,24 +10,30 @@ import tornado.httputil
 import tornado.web
 import ujson as json
 from asgiref.sync import sync_to_async
-from consoleme.config import config
-from consoleme.exceptions.exceptions import InvalidCertificateException, MissingCertificateException, NoGroupsException, \
-    NoUserException, WebAuthNError
-from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
-from consoleme.lib.auth import AuthenticationError
-from consoleme.lib.credential_auth import authenticate_user_by_credentials
-from consoleme.lib.generic import render_404
-from consoleme.lib.jwt import validate_and_return_jwt_token, generate_jwt_token
-from consoleme.lib.oauth2 import authenticate_user_by_oauth2
-from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.redis import RedisHandler
-from consoleme.lib.saml import authenticate_user_by_saml
-from consoleme.lib.tracing import ConsoleMeTracer
 from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
 from onelogin.saml2.settings import OneLogin_Saml2_Settings
 from raven.contrib.tornado import SentryMixin
 from tornado import httputil
+
+from consoleme.config import config
+from consoleme.exceptions.exceptions import (
+    InvalidCertificateException,
+    MissingCertificateException,
+    NoGroupsException,
+    NoUserException,
+    WebAuthNError,
+)
+from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
+from consoleme.lib.auth import AuthenticationError
+from consoleme.lib.credential_auth import authenticate_user_by_credentials
+from consoleme.lib.generic import render_404
+from consoleme.lib.jwt import generate_jwt_token, validate_and_return_jwt_token
+from consoleme.lib.oauth2 import authenticate_user_by_oauth2
+from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.redis import RedisHandler
+from consoleme.lib.saml import authenticate_user_by_saml
+from consoleme.lib.tracing import ConsoleMeTracer
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -132,9 +138,7 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
 
 
 def set_default_headers(self) -> None:
-    self.set_header(
-        "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
-    )
+    self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
 
 
 def initialize(self) -> None:
@@ -147,9 +151,7 @@ async def prepare(self) -> None:
     if config.get("tornado.xsrf", True):
         cookie_kwargs = config.get("tornado.xsrf_cookie_kwargs", {})
         self.set_cookie(
-            config.get("xsrf_cookie_name", "_xsrf"),
-            self.xsrf_token,
-            **cookie_kwargs,
+            config.get("xsrf_cookie_name", "_xsrf"), self.xsrf_token, **cookie_kwargs
         )
     self.responses = []
     self.request_uuid = str(uuid.uuid4())
@@ -165,23 +167,19 @@ def write(self, chunk: Union[str, bytes, dict]) -> None:
 
 async def configure_tracing(self):
     self.tracer = ConsoleMeTracer()
-    primary_span_name = "{0} {1}".format(
-        self.request.method.upper(), self.request.path
-    )
+    primary_span_name = "{0} {1}".format(self.request.method.upper(), self.request.path)
     tracer_tags = {
         "http.host": config.hostname,
         "http.method": self.request.method.upper(),
         "http.path": self.request.path,
-        "ca": self.request.headers.get(
-            "X-Forwarded-For", self.request.remote_ip
-        ).split(",")[
+        "ca": self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
+            ","
+        )[
             0
         ],  # Client IP
         "http.url": self.request.full_url(),
     }
-    tracer = await self.tracer.configure_tracing(
-        primary_span_name, tags=tracer_tags
-    )
+    tracer = await self.tracer.configure_tracing(primary_span_name, tags=tracer_tags)
     if tracer:
         for k, v in tracer.headers.items():
             self.set_header(k, v)
@@ -215,22 +213,22 @@ def on_finish(self) -> None:
 
 
 async def authorization_flow(
-        self, user: str = None, console_only: bool = True, refresh_cache: bool = False
+    self, user: str = None, console_only: bool = True, refresh_cache: bool = False
 ) -> None:
     """Perform high level authorization flow."""
     self.request_uuid = str(uuid.uuid4())
     refresh_cache = (
-            self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
+        self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
     )
     if not refresh_cache and config.get(
-            "dynamic_config.role_cache.always_refresh_roles_cache", False
+        "dynamic_config.role_cache.always_refresh_roles_cache", False
     ):
         refresh_cache = True
 
     self.red = await RedisHandler().redis()
-    self.ip = self.request.headers.get(
-        "X-Forwarded-For", self.request.remote_ip
-    ).split(",")[0]
+    self.ip = self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
+        ","
+    )[0]
     self.user = user
     self.groups = None
     self.user_role_name = None
@@ -342,9 +340,7 @@ async def authorization_flow(
 
     try:
         if not self.groups:
-            self.groups = await auth.get_groups(
-                self.user, headers=self.request.headers
-            )
+            self.groups = await auth.get_groups(self.user, headers=self.request.headers)
         if not self.groups:
             raise NoGroupsException(
                 f"Groups not detected. Headers: {self.request.headers}"
@@ -362,8 +358,8 @@ async def authorization_flow(
     # Set User Role Name
 
     if (
-            config.get("user_roles.opt_in_group")
-            and config.get("user_roles.opt_in_group") in self.groups
+        config.get("user_roles.opt_in_group")
+        and config.get("user_roles.opt_in_group") in self.groups
     ):
         # Get or create user_role_name attribute
         self.user_role_name = await auth.get_or_create_user_role_name(self.user)
@@ -412,9 +408,9 @@ async def authorization_flow(
         except redis.exceptions.ConnectionError:
             pass
     if (
-            config.get("auth.set_auth_cookie")
-            and config.get("auth_cookie_name")
-            and not self.get_cookie(config.get("auth_cookie_name"))
+        config.get("auth.set_auth_cookie")
+        and config.get("auth_cookie_name")
+        and not self.get_cookie(config.get("auth_cookie_name"))
     ):
         encoded_cookie = await generate_jwt_token(self.user, self.groups)
         self.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
@@ -447,9 +443,9 @@ async def init_saml_auth(req):
             custom_base_path=config.get("get_user_by_saml_settings.saml_path")
         )
     elif config.get("get_user_by_saml_settings.metadata_url"):
-        settings = await sync_to_async(
-            OneLogin_Saml2_IdPMetadataParser.parse_remote
-        )(config.get("get_user_by_saml_settings.metadata_url"))
+        settings = await sync_to_async(OneLogin_Saml2_IdPMetadataParser.parse_remote)(
+            config.get("get_user_by_saml_settings.metadata_url")
+        )
     else:
         raise Exception("Invalid SAML Settings")
     saml_auth = await sync_to_async(OneLogin_Saml2_Auth)(req, settings)
