@@ -79,6 +79,7 @@ def make_app(jwt_validator=None):
     routes = [
         # (r"/", IndexHandler),
         (r"/", IndexNewHandler),
+        (r"/selfservice", IndexNewHandler),
         (r"/login", IndexNewHandler),
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
