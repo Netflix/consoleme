@@ -57,10 +57,10 @@ class CleanAllCommand(distutils.cmd.Command):
 
 
 requirements = parse_requirements("requirements.txt", session=PipSession())
-reqs = [str(ir.req) for ir in requirements]
+reqs = [str(ir.requirement) for ir in requirements]
 
 test_requirements = parse_requirements("requirements-test.txt", session=PipSession())
-test_reqs = [str(ir.req) for ir in test_requirements]
+test_reqs = [str(ir.requirement) for ir in test_requirements]
 
 setup(
     name="consoleme",
