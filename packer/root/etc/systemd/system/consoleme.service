@@ -1,0 +1,17 @@
+[Unit]
+Description=ConsoleMe Service
+After=network.target
+StartLimitIntervalSec=0
+StartLimitBurst=5
+StartLimitIntervalSec=0
+
+[Service]
+Environment=CONFIG_LOCATION=/apps/consoleme/docker/example_config_header_auth.yaml
+Type=simple
+Restart=always
+RestartSec=1
+User=ubuntu
+ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/consoleme/__main__.py
+
+[Install]
+WantedBy=multi-user.target
