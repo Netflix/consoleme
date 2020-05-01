@@ -31,7 +31,37 @@ class TestBaseJSONHandler(AsyncHTTPTestCase):
             def get(self):
                 self.write("hello")
 
-        return [("/", JSONHandlerExample)]
+        class JSONHandlerMethodOverride(BaseJSONHandler):
+            allowed_methods = ["GET", "PUT"]
+
+            def __init__(self, *args, **kwargs):
+                kwargs["jwt_validator"] = TEST_VALIDATOR
+                super().__init__(*args, **kwargs)
+
+            def get_app(self):
+                self.app = Application(self.get_handlers(), **self.get_app_kwargs())
+                return self.app
+
+            def get(self):
+                self.write("hello")
+
+        return [
+            ("/", JSONHandlerExample),
+            ("/methodOverride", JSONHandlerMethodOverride),
+        ]
+
+    def test_options_default(self):
+        response = self.fetch("/", method="OPTIONS")
+        self.assertEqual(
+            response.headers.get("Access-Control-Allow-Methods"),
+            "GET,HEAD,PUT,PATCH,POST,DELETE",
+        )
+
+    def test_options_override(self):
+        response = self.fetch("/methodOverride", method="OPTIONS")
+        self.assertEqual(
+            response.headers.get("Access-Control-Allow-Methods"), "GET,PUT"
+        )
 
     def test_missing_auth_header(self):
         response = self.fetch("/")
@@ -40,6 +70,7 @@ class TestBaseJSONHandler(AsyncHTTPTestCase):
     def test_invalid_auth_header(self):
         response = self.fetch("/", headers={"Authorization": "foo"})
         self.assertEqual(response.code, 401)
+        self.assertEqual(json.loads(response.body)["title"], "Unauthorized")
         self.assertEqual(json.loads(response.body)["message"], "Invalid Token")
 
     def test_invalid_jwt(self):
@@ -47,6 +78,7 @@ class TestBaseJSONHandler(AsyncHTTPTestCase):
         tkn = jwt.encode(payload, "WRONG_SECRET", algorithm=TEST_ALG[0])
         response = self.fetch("/", headers={"Authorization": tkn})
         self.assertEqual(response.code, 401)
+        self.assertEqual(json.loads(response.body)["title"], "Unauthorized")
         self.assertEqual(
             json.loads(response.body)["message"], "Invalid Token Signature"
         )
