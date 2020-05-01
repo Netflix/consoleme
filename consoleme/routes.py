@@ -1,5 +1,4 @@
 """Web routes."""
-# fmt: off
 import os
 import sys
 
@@ -56,7 +55,6 @@ from consoleme.handlers.v2.roles import (
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
-# fmt: on
 internal_routes = get_plugin_by_name(config.get("plugins.internal_routes"))()
 
 spec = APISpec(
