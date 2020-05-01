@@ -14,14 +14,19 @@ jobs:
         python-version: 3.8
     - name: Install dependencies
       run: |
+        curl -sL https://deb.nodesource.com/setup_10.x | bash
         sudo apt-get update
-        sudo apt-get install libssl-dev libcurl4-openssl-dev python3-dev build-essential libxml2-dev libxmlsec1-dev libxmlsec1-openssl musl-dev
+        sudo apt-get install libssl-dev libcurl4-openssl-dev python3-dev build-essential libxml2-dev libxmlsec1-dev libxmlsec1-openssl musl-dev nodejs
+        npm install yarn -g
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r requirements-test.txt
         pip install -r requirements-docs.txt
         pip install -e .
         pip install -e default_plugins
+        yarn --cwd consoleme-ui
+        yarn --cwd consoleme-ui install
+        yarn --cwd consoleme-ui build
         pre-commit install
     - name: Run pre-commit
       run: |
