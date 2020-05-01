@@ -31,12 +31,13 @@ class ConsoleMeHeader extends Component {
 
     generatePoliciesDropDown() {
         if (this.props.userSession.pages.policies.enabled === true) {
+            // TODO: UIREFACTOR: Remove V2 references when this new UI is done
             return (
                 <Dropdown text='Roles and Policies' pointing className='link item'>
                     <Dropdown.Menu>
-                        <Dropdown.Item as={NavLink} to="/policies">Policies</Dropdown.Item>
-                        <Dropdown.Item as={NavLink} to="/selfservice">Self Service Permissions</Dropdown.Item>
-                        <Dropdown.Item as={NavLink} to="/apihealth">API Health</Dropdown.Item>
+                        <Dropdown.Item as={NavLink} to="/v2/policies">Policies</Dropdown.Item>
+                        <Dropdown.Item as={NavLink} to="/v2/selfservice">Self Service Permissions</Dropdown.Item>
+                        <Dropdown.Item as={NavLink} to="/v2/apihealth">API Health</Dropdown.Item>
                     </Dropdown.Menu>
                 </Dropdown>
             );

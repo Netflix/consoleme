@@ -1,22 +1,21 @@
 import json
 import os
-
 import time
 
+from consoleme.config import config
 from consoleme.exceptions.exceptions import (
+    WebpackBundleLookupError,
     WebpackError,
     WebpackLoaderBadStatsError,
     WebpackLoaderTimeoutError,
-    WebpackBundleLookupError,
 )
 
 settings = {}
 
-# TODO, move followings into config yaml file
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEV_STATS = "webpack-stats.dev.json"
-PROD_STATS = "webpack-stats.prod.json"
-BUNDLE_DIR_NAME = "bundles/"
+BASE_DIR = config.get("webpack.loader.base_directory", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DEV_STATS = config.get("webpack.loader.dev_stats", "webpack-stats.dev.json")
+PROD_STATS = config.get("webpack.loader.prod_stats", "webpack-stats.prod.json")
+BUNDLE_DIR_NAME = config.get("webpack.loader.bundle_dir", "bundles/")
 
 
 class WebpackLoader(object):
@@ -29,15 +28,15 @@ class WebpackLoader(object):
     def load_assets(self):
         # TODO, get stats file path from config
         # TODO, select stats file based on development or production
+        ENV_STAT_FILE = DEV_STATS if self.config.get("development") else PROD_STATS
+        STATS_FILE = os.path.join(BASE_DIR, ENV_STAT_FILE)
         try:
-            ENV_STAT_FILE = DEV_STATS if self.config.get("development") else PROD_STATS
-            STATS_FILE = os.path.join(BASE_DIR, ENV_STAT_FILE)
             with open(STATS_FILE, encoding="utf-8") as f:
                 return json.load(f)
         except IOError:
             raise IOError(
-                "Error reading {0}. Are you sure webpack has generated "
-                "the file and the path is correct?".format(STATS_FILE)
+                f"Error reading {STATS_FILE}. Are you sure webpack has generated "
+                "the file and the path is correct?"
             )
 
     def get_assets(self):
@@ -76,8 +75,8 @@ class WebpackLoader(object):
 
             if timed_out:
                 raise WebpackLoaderTimeoutError(
-                    "Timed Out. Bundle took more than {1} seconds "
-                    "to compile.".format(timeout)
+                    f"Timed Out. Bundle took more than {timeout} seconds "
+                    "to compile."
                 )
 
         if assets.get("status") == "done":

@@ -15,9 +15,6 @@ import consoleme
 from consoleme.config import config
 from consoleme.handlers.auth import AuthHandler
 from consoleme.handlers.base import NoCacheStaticFileHandler
-
-# from consoleme.handlers.v1.index import IndexHandler
-from consoleme.handlers.index_new import IndexNewHandler, SelectRolesHandler
 from consoleme.handlers.v1.autologin import AutoLoginHandler
 from consoleme.handlers.v1.credentials import GetCredentialsHandler
 from consoleme.handlers.v1.dynamic_config import DynamicConfigHandler
@@ -29,6 +26,7 @@ from consoleme.handlers.v1.headers import (
     UserProfileHandler,
 )
 from consoleme.handlers.v1.health import HealthHandler
+from consoleme.handlers.v1.index import IndexHandler
 from consoleme.handlers.v1.policies import (
     ApiResourceTypeAheadHandler,
     AutocompleteHandler,
@@ -44,6 +42,10 @@ from consoleme.handlers.v1.policies import (
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
 from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
+from consoleme.handlers.v2.index import (
+    IndexHandler as IndexHandlerV2,
+)  # Todo: Remove reference to /v2 when new UI is complete
+from consoleme.handlers.v2.index import SelectRolesHandler
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -78,9 +80,21 @@ def make_app(jwt_validator=None):
 
     routes = [
         # (r"/", IndexHandler),
-        (r"/", IndexNewHandler),
-        (r"/selfservice", IndexNewHandler),
-        (r"/login", IndexNewHandler),
+        (r"/", IndexHandler),
+        (r"/selfservice", IndexHandler),
+        (r"/login", IndexHandler),
+        (
+            r"/v2",
+            IndexHandlerV2,
+        ),  # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
+        (
+            r"/v2/selfservice",
+            IndexHandlerV2,
+        ),  # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
+        (
+            r"/v2/login",
+            IndexHandlerV2,
+        ),  # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),

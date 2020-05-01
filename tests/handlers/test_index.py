@@ -1,11 +1,11 @@
 """Docstring in public module."""
 import json
 import os
+import sys
 import urllib
 
 import boto3
 import pytest
-import sys
 from mock import patch
 from mockredis import mock_strict_redis_client
 from tornado.testing import AsyncHTTPTestCase
@@ -35,6 +35,16 @@ class TestIndexHandler(AsyncHTTPTestCase):
         }
 
         response = self.fetch("/", headers=headers)
+        self.assertEqual(response.code, 200)
+        self.assertIn(b"reset_aws_auth_cookie", response.body)
+
+    def test_index_v2_pageload(self):
+        headers = {
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+        }
+
+        response = self.fetch("/v2", headers=headers)
         self.assertEqual(response.code, 200)
         self.assertIn(b"static/js/bundle.js", response.body)
 
