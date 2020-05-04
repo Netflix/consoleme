@@ -2,7 +2,7 @@ import tornado.escape
 import tornado.web
 import ujson as json
 from asgiref.sync import sync_to_async
-from marshmallow import fields, Schema, validates_schema, ValidationError
+from marshmallow import Schema, ValidationError, fields, validates_schema
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import CertTooOldException
@@ -29,7 +29,7 @@ class CredentialsSchema(Schema):
     custom_ip_restrictions = fields.List(fields.Str(), required=False)
 
     @validates_schema
-    def validate_minimum(self, data):
+    def validate_minimum(self, data, *args, **kwargs):
         """Validate that the minimum fields are supplied."""
         if not data.get("requested_role") and not data.get("user_role"):
             raise ValidationError(
@@ -39,7 +39,7 @@ class CredentialsSchema(Schema):
         return data
 
     @validates_schema
-    def validate_dynamic_role_request(self, data):
+    def validate_dynamic_role_request(self, data, *args, **kwargs):
         if data.get("user_role"):
             if data.get("requested_role"):
                 raise ValidationError(
@@ -52,7 +52,7 @@ class CredentialsSchema(Schema):
         return data
 
 
-credentials_schema = CredentialsSchema(strict=True)
+credentials_schema = CredentialsSchema()
 
 
 class GetCredentialsHandler(BaseMtlsHandler):
@@ -173,7 +173,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
         # Validate the input:
         data = tornado.escape.json_decode(self.request.body)
         try:
-            request = (await sync_to_async(credentials_schema.load)(data)).data
+            request = await sync_to_async(credentials_schema.load)(data)
         except ValidationError as ve:
             stats.count(
                 "GetCredentialsHandler.post",
