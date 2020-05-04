@@ -123,3 +123,42 @@ endif
 	pip install -r requirements-test.txt
 	pip install -r requirements-docs.txt
 	@echo "--> Done installing new dependencies"
+
+.PHONY: create_ami
+create_ami:
+ifdef CONFIG_LOCATION
+	@echo "--> Using configuration at $(CONFIG_LOCATION)"
+	export CONFIG_LOCATION=$(CONFIG_LOCATION)
+endif
+ifdef CONSOLEME_CONFIG_ENTRYPOINT
+	@echo "--> Using configuration entrypoint at at $(CONSOLEME_CONFIG_ENTRYPOINT)"
+	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT)
+endif
+	# Tar contents of the current directory
+	tar --exclude='env*' --exclude='venv*' -cf /tmp/consoleme.tar .
+	# Call Packer to build AMI
+	packer build -var 'app_archive=/tmp/consoleme.tar' packer/create_consoleme_ami.json
+	# Remove Temporary Tar file
+	rm /tmp/consoleme.tar
+
+.PHONY: packer_ubuntu_oss
+packer_ubuntu_oss: ubuntu_redis env_install default_plugins
+
+.PHONY: ubuntu_redis
+ubuntu_redis:
+ifdef CONFIG_LOCATION
+	@echo "--> Using configuration at $(CONFIG_LOCATION)"
+	export CONFIG_LOCATION=$(CONFIG_LOCATION)
+endif
+ifdef CONSOLEME_CONFIG_ENTRYPOINT
+	@echo "--> Using configuration entrypoint at at $(CONSOLEME_CONFIG_ENTRYPOINT)"
+	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT)
+endif
+	sudo apt-get install -y redis-server
+	sudo systemctl enable redis-server.service
+	sudo systemctl restart redis-server.service
+
+.PHONY: default_plugins
+default_plugins:
+	. env/bin/activate || source activate consoleme;\
+	pip install -e default_plugins
