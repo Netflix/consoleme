@@ -8,7 +8,9 @@ from consoleme.config import config
 
 
 async def authenticate_user_by_alb_auth(request):
-    aws_alb_auth_header_name = "x-amzn-oidc-data"
+    aws_alb_auth_header_name = config.get(
+        "get_user_by_aws_alb_auth_settings.aws_alb_auth_header_name", "X-Amzn-Oidc-Data"
+    )
     encoded_jwt = request.request.headers.get(aws_alb_auth_header_name)
     if not encoded_jwt:
         raise Exception(f"Missing header: {aws_alb_auth_header_name}")
