@@ -110,13 +110,13 @@ class App extends Component {
                         <Switch>
                             <PrivateRoute
                                 exact
-                                path="/"
+                                path="/v2"  // TODO: UIREFACTOR: Remove V2 when this new UI is done
                                 component={ConsoleMeMain}
                                 setRecentRole={this.setRecentRole.bind(this)}
                             />
                             <PrivateRoute
                                 exact
-                                path="/selfservice"
+                                path="/v2/selfservice" // TODO: UIREFACTOR: Remove V2 when this new UI is done
                                 component={ConsoleMeSelfService}
                             />
                             <PrivateRoute

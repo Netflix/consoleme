@@ -1,13 +1,12 @@
-from consoleme.config import config
-from consoleme.handlers.base import BaseHandler
-from consoleme.lib.loader import WebpackLoader
-from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.handler_utils import format_role_name
-
 import json
 from operator import itemgetter
 from urllib.parse import parse_qs, urlencode, urlparse
 
+from consoleme.config import config
+from consoleme.handlers.base import BaseHandler
+from consoleme.lib.handler_utils import format_role_name
+from consoleme.lib.loader import WebpackLoader
+from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
@@ -59,11 +58,7 @@ async def get_as_tags(name="main", extension=None, config=config, attrs=""):
     return tags
 
 
-class IndexNewHandler(BaseHandler):
-    # def check_xsrf_cookie(self):
-    #     # CSRF token is not needed since this is protected by raw OAuth2 tokens
-    #     pass
-
+class IndexHandler(BaseHandler):
     async def get(self) -> None:
         """
         Get the index endpoint
@@ -96,6 +91,7 @@ class IndexNewHandler(BaseHandler):
         arguments = json.loads(self.request.body)
         role = arguments.get("role")
         region = arguments.get("region")
+        redirect = arguments.get("redirect")
 
         user_role = False
         account_id = None
@@ -109,9 +105,7 @@ class IndexNewHandler(BaseHandler):
             self.user, role, region, user_role=user_role, account_id=account_id
         )
 
-        self.write({
-            "redirect": url
-        })
+        self.write({"redirect": url})
         return
 
         # if not role or role not in self.eligible_roles:
@@ -191,7 +185,7 @@ class SelectRolesHandler(BaseHandler):
         self.set_header("Content-Type", "application/json")
         payload = {
             "eligible_roles": self.eligible_roles,
-            "_xsrf": self.xsrf_token.decode("utf-8")
+            "_xsrf": self.xsrf_token.decode("utf-8"),
         }
         self.write(json.dumps(payload))
         await self.finish()
