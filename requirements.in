@@ -23,10 +23,10 @@ isodate
 jmespath
 jsonschema
 kombu
-marshmallow<3
+marshmallow
 logmatic-python
 lxml
-pandas<1
+pandas<1 #  Internal plugin depends on Pandas < 1
 pkgconfig
 policy_sentry
 policyuniverse
@@ -35,7 +35,7 @@ pycurl # For AsyncHTTPClient
 pydantic
 pyjwt
 pylint
-python-dateutil<2.8.1 # Required for moto: https://github.com/spulec/moto/commit/3a2abe3e95a171ec5cff672bdef70ad044e1763f
+python-dateutil
 python3-saml
 pytz
 raven
