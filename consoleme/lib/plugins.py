@@ -18,9 +18,18 @@ def get_plugin_by_name(plugin_name: str) -> Any:
         plugins.append(ep.name)
         if ep.name == plugin_name:
             return ep.load()
-    raise Exception(
-        f"Could not find the specified plugin: {plugin_name}. "
-        f"Plugins found: {', '.join(plugins)}. "
+    initial_exception_message = f"Could not find the specified plugin: {plugin_name}. "
+    if plugin_name == "default_config":
+        initial_exception_message = (
+            f"Could not find the specified plugin: {plugin_name}. "
+            "Please install it with `pip install -e default_plugins` "
+            "from the ConsoleMe directory. "
+        )
+
+    exception_message = (
+        initial_exception_message + f"Plugins found: {', '.join(plugins)}. "
         f"Make sure you've set the environment variable CONSOLEME_CONFIG_ENTRYPOINT to the name of your configuration "
         f"entrypoint, otherwise it will default to `default_config`."
     )
+
+    raise Exception(exception_message)
