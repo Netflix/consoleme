@@ -35,8 +35,9 @@ class ConsoleMeHeader extends Component {
             return (
                 <Dropdown text='Roles and Policies' pointing className='link item'>
                     <Dropdown.Menu>
+                        <Dropdown.Item as={NavLink} to="/catalog">Catalog</Dropdown.Item>
                         <Dropdown.Item as={NavLink} to="/v2/policies">Policies</Dropdown.Item>
-                        <Dropdown.Item as={NavLink} to="/v2/selfservice">Self Service Permissions</Dropdown.Item>
+                        <Dropdown.Item as={NavLink} to="/selfservice">Self Service Permissions</Dropdown.Item>
                         <Dropdown.Item as={NavLink} to="/v2/apihealth">API Health</Dropdown.Item>
                     </Dropdown.Menu>
                 </Dropdown>

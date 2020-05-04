@@ -103,7 +103,15 @@ const CatalogItems = () => (
                     </Label>
                     <Label size="tiny" color="blue">
                         <Icon name="tag" />
-                        Metadata
+                        IAM
+                    </Label>
+                    <Label size="tiny" color="blue">
+                        <Icon name="tag" />
+                        Role
+                    </Label>
+                    <Label size="tiny" color="blue">
+                        <Icon name="tag" />
+                        Permission
                     </Label>
                 </Item.Extra>
             </Item.Content>
@@ -332,7 +340,6 @@ class Landing extends Component {
                             })}
                             results={results}
                             value={value}
-                            {...this.props}
                         />
                     </Header>
                 </Segment>
