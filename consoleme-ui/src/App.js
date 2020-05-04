@@ -17,6 +17,7 @@ import ConsoleMeHeader from './components/Header';
 import ConsoleMeLogin from './Login';
 import ConsoleMeMain from './components/Main';
 import ConsoleMeSelfService from "./components/SelfService";
+import ConsoleMeLanding from "./components/Landing";
 
 import './App.css';
 
@@ -117,6 +118,11 @@ class App extends Component {
                                 exact
                                 path="/selfservice"
                                 component={ConsoleMeSelfService}
+                            />
+                            <PrivateRoute
+                                exact
+                                path="/catalog"
+                                component={ConsoleMeLanding}
                             />
                             <Route
                                 exact

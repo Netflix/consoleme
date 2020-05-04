@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'lodash';
 import React, {Component} from 'react';
 import {
     Button,
@@ -64,7 +64,10 @@ const FeedExampleIconLabel = (props) => (
                     Please reach out to #security-help for further requests with this details.
                 </Feed.Extra>
                 <Feed.Meta>
-                    <Label size="tiny" content="S3" />
+                    <Label size="tiny">
+                        <Icon name="tag" />
+                        S3
+                    </Label>
                     <Label size="tiny" content="Cross Account" />
                 </Feed.Meta>
             </Feed.Content>

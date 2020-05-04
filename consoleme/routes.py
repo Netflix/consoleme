@@ -80,6 +80,7 @@ def make_app(jwt_validator=None):
         # (r"/", IndexHandler),
         (r"/", IndexNewHandler),
         (r"/selfservice", IndexNewHandler),
+        (r"/catalog", IndexNewHandler),
         (r"/login", IndexNewHandler),
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
