@@ -26,6 +26,8 @@ from consoleme.handlers.v1.headers import (
     UserProfileHandler,
 )
 from consoleme.handlers.v1.health import HealthHandler
+from consoleme.handlers.v1.index import IndexHandler
+
 # from consoleme.handlers.v1.index import IndexHandler
 from consoleme.handlers.v1.policies import (
     ApiResourceTypeAheadHandler,
@@ -85,23 +87,22 @@ def make_app(jwt_validator=None):
     path = pkg_resources.resource_filename("consoleme", "templates")
 
     routes = [
-        # (r"/", IndexHandler),
-        (r"/", IndexHandlerV2),
-        (r"/selfservice", IndexHandlerV2),
+        (r"/", IndexHandler),
+        (r"/selfservice", IndexHandler),
+        (r"/login", IndexHandler),
         (r"/catalog", IndexHandlerV2),
-        (r"/login", IndexHandlerV2),
         (
-            r"/v2",
+            r"/ui",
             IndexHandlerV2,
-        ),  # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
+        ),  # Todo: UIREFACTOR: Remove reference to /ui when new UI is complete
         (
-            r"/v2/selfservice",
+            r"/ui/selfservice",
             IndexHandlerV2,
-        ),  # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
+        ),  # Todo: UIREFACTOR: Remove reference to /ui when new UI is complete
         (
-            r"/v2/login",
+            r"/ui/login",
             IndexHandlerV2,
-        ),  # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
+        ),  # Todo: UIREFACTOR: Remove reference to /ui when new UI is complete
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),

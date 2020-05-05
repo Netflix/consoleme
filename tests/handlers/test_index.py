@@ -44,7 +44,7 @@ class TestIndexHandler(AsyncHTTPTestCase):
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
 
-        response = self.fetch("/v2", headers=headers)
+        response = self.fetch("/ui", headers=headers)
         self.assertEqual(response.code, 200)
         self.assertIn(b"static/js/bundle.js", response.body)
 
