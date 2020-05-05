@@ -19,19 +19,19 @@ services:
       bash -c 'pip install argh watchdog; pip install -e /apps/consoleme/default_plugins;
       watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py'
     depends_on:
-      - consoleme_redis
-      - consoleme_dynamodb
-      - consoleme_saml
+      - consoleme-redis
+      - consoleme-dynamodb
+      - consoleme-saml
     links:
-      - consoleme_redis
-      - consoleme_dynamodb
-      - consoleme_saml
+      - consoleme-redis
+      - consoleme-dynamodb
+      - consoleme-saml
 
   consoleme_saml:
     image: "kristophjunge/test-saml-idp"
     volumes:
       - ./docker/simplesamlphp/authsources.php:/var/www/simplesamlphp/config/authsources.php:delegated
-    container_name: consoleme_simplesaml
+    container_name: consoleme-saml
     ports:
       - "8080:8080"
       - "8443:8443"
