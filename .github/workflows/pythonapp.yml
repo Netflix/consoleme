@@ -20,15 +20,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install yarn
         sudo apt-get install libssl-dev libcurl4-openssl-dev python3-dev build-essential libxml2-dev libxmlsec1-dev libxmlsec1-openssl musl-dev nodejs
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-test.txt
-        pip install -r requirements-docs.txt
-        pip install -e .
-        pip install -e default_plugins
+        python3 -m pip install --upgrade pip setuptools
+        pip3 install -r requirements.txt
+        pip3 install -r requirements-test.txt
+        pip3 install -r requirements-docs.txt
+        pip3 install -e .
+        pip3 install -e default_plugins
         yarn --cwd consoleme-ui
         yarn --cwd consoleme-ui install
-        CI=false yarn --cwd consoleme-ui build
+        CI=false yarn --cwd consoleme-ui start &
         pre-commit install
     - name: Run pre-commit
       run: |
