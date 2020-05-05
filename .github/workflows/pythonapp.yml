@@ -28,7 +28,7 @@ jobs:
         pip install -e default_plugins
         yarn --cwd consoleme-ui
         yarn --cwd consoleme-ui install
-        yarn --cwd consoleme-ui build
+        CI=false yarn --cwd consoleme-ui build
         pre-commit install
     - name: Run pre-commit
       run: |
