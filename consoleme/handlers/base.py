@@ -10,26 +10,27 @@ import tornado.httputil
 import tornado.web
 import ujson as json
 from asgiref.sync import sync_to_async
+from onelogin.saml2.auth import OneLogin_Saml2_Auth
+from raven.contrib.tornado import SentryMixin
+from tornado import httputil
+
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     InvalidCertificateException,
     MissingCertificateException,
     NoGroupsException,
     NoUserException,
+    WebAuthNError,
 )
-from consoleme.exceptions.exceptions import WebAuthNError
 from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
 from consoleme.lib.auth import AuthenticationError
 from consoleme.lib.generic import render_404
-from consoleme.lib.jwt import validate_and_return_jwt_token, generate_jwt_token
+from consoleme.lib.jwt import generate_jwt_token, validate_and_return_jwt_token
 from consoleme.lib.oauth2 import authenticate_user_by_oauth2
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.saml import authenticate_user_by_saml
 from consoleme.lib.tracing import ConsoleMeTracer
-from onelogin.saml2.auth import OneLogin_Saml2_Auth
-from raven.contrib.tornado import SentryMixin
-from tornado import httputil
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -84,7 +85,9 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
         # self.set_status() modifies self._reason, so this call should come after we grab the reason
         self.set_status(status_code)
         self.finish(
-            json.dumps({"status": status_code, "title": title, "message": message,})
+            json.dumps(
+                {"status": status_code, "title": title, "message": message}
+            )  # noqa
         )
 
     def get_current_user(self):

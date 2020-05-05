@@ -279,6 +279,56 @@ class KriegerError(BaseException):
         super().__init__(msg)
 
 
+class BaseWebpackLoaderException(BaseException):
+    """
+    Base exception for django-webpack-loader.
+    """
+
+    def __init__(self, msg=""):
+        stats.count("BaseWebpackLoaderException")
+        super().__init__(msg)
+
+
+class WebpackError(BaseWebpackLoaderException):
+    """
+    General webpack loader error.
+    """
+
+    def __init__(self, msg=""):
+        stats.count("WebpackLoaderBadStatsError")
+        super().__init__(msg)
+
+
+class WebpackLoaderBadStatsError(BaseWebpackLoaderException):
+    """
+    The stats file does not contain valid data.
+    """
+
+    def __init__(self, msg=""):
+        stats.count("WebpackLoaderBadStatsError")
+        super().__init__(msg)
+
+
+class WebpackLoaderTimeoutError(BaseWebpackLoaderException):
+    """
+    The bundle took too long to compile.
+    """
+
+    def __init__(self, msg=""):
+        stats.count("WebpackLoaderTimeoutError")
+        super().__init__(msg)
+
+
+class WebpackBundleLookupError(BaseWebpackLoaderException):
+    """
+    The bundle name was invalid.
+    """
+
+    def __init__(self, msg=""):
+        stats.count("WebpackBundleLookupError")
+        super().__init__(msg)
+
+
 class UnsupportedRedisDataType(BaseException):
     """Unsupported Redis Data Type passed"""
 

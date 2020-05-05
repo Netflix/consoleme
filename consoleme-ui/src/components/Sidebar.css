@@ -1,0 +1,124 @@
+.brand {
+    display: block;
+    height: 70px;
+    line-height: 70px;
+    align-items: center;
+    background: #e50914;
+    border: none!important;
+    justify-content: center;
+    text-align: center;
+}
+
+.brand a {
+    font-size: 18px;
+    letter-spacing: 1px;
+    color: #fff!important;
+    text-decoration: none;
+    text-transform: uppercase;
+}
+
+.sidebar {
+    display: block;
+    justify-content: space-between;
+    background-color: #262626;
+    font-size:14px;
+}
+
+.sidebar .roleHistory {
+    display: block;
+    width: 100%;
+    margin: 1.5em 0 0;
+}
+
+.sidebar .help {
+    display: block;
+    width: 100%;
+    margin: 1.5em 0 0;
+}
+
+.sidebar h1, h2, h3, h4, h5 {
+    color: #737373;
+    text-align: center;
+    font-weight: 400;
+    font-size: 14px;
+}
+
+.sidebar ul {
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar ul li {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    background: #2e2e2e;
+}
+
+.sidebar ul li a {
+    height: 40px;
+    padding: 0px 0px;
+    cursor: pointer;
+    color: #8c8c8c;
+    text-decoration: none;
+    background-color: transparent;
+}
+
+.sidebar ul li a div {
+    display: block;
+    margin-bottom: 2px;
+    margin-left: 30px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.sidebar .help ul li a {
+    display: inline-block;
+    height: 40px;
+    width: 200px;
+    margin: 10px 0 0 30px;
+    cursor: pointer;
+}
+
+.sidebar ul li a div label {
+    display: inline-block;
+    height: 40px;
+    width: 200px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.sidebar footer {
+    display:flex;
+    color:#595959;
+    padding:1em;
+    align-self:end;
+    width:100%;
+    flex-direction:column;
+    font-size:.9em;
+    align-items:center;
+    justify-content:center;
+    align-self: end;
+}
+
+.sidebar footer .consoleme_logo {
+    display: block;
+    opacity: 0.9;
+    max-width: 90%;
+    width: 174px;
+    height: 212px;
+}
+
+.sidebar footer .security-logo {
+    width: 60%;
+    height: 80px;
+    display: block;
+    opacity: .3;
+    transition: opacity 2s;
+}
+
+.sidebar footer .security-logo:hover {
+    opacity: 1;
+}

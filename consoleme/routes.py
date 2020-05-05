@@ -2,7 +2,6 @@
 import os
 import sys
 
-import consoleme
 import pkg_resources
 import requests
 import tornado.autoreload
@@ -12,7 +11,9 @@ from apispec.exceptions import APISpecError
 from apispec_webframeworks.tornado import TornadoPlugin
 from raven.contrib.tornado import AsyncSentryClient
 
+import consoleme
 from consoleme.config import config
+from consoleme.handlers.auth import AuthHandler
 from consoleme.handlers.base import NoCacheStaticFileHandler
 from consoleme.handlers.v1.autologin import AutoLoginHandler
 from consoleme.handlers.v1.credentials import GetCredentialsHandler
@@ -21,34 +22,38 @@ from consoleme.handlers.v1.errors import Consolme404Handler
 from consoleme.handlers.v1.headers import (
     ApiHeaderHandler,
     HeaderHandler,
-    PageHeaderHandler,
+    SiteConfigHandler,
+    UserProfileHandler,
 )
 from consoleme.handlers.v1.health import HealthHandler
 from consoleme.handlers.v1.index import IndexHandler
+
+# from consoleme.handlers.v1.index import IndexHandler
 from consoleme.handlers.v1.policies import (
+    ApiResourceTypeAheadHandler,
     AutocompleteHandler,
     GetPoliciesHandler,
     PolicyEditHandler,
     PolicyReviewHandler,
     PolicyReviewSubmitHandler,
-    ResourceTypeAheadHandler,
-    ApiResourceTypeAheadHandler,
     PolicyViewHandler,
     ResourcePolicyEditHandler,
+    ResourceTypeAheadHandler,
     SelfServiceHandler,
 )
-
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
-
 from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
-
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 
-from consoleme.handlers.v2.roles import RolesHandler
-from consoleme.handlers.v2.roles import AccountRolesHandler
-from consoleme.handlers.v2.roles import RoleDetailHandler
-
+# Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
+from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
+from consoleme.handlers.v2.index import SelectRolesHandler  # noqa
+from consoleme.handlers.v2.roles import (
+    AccountRolesHandler,
+    RoleDetailHandler,
+    RolesHandler,
+)
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -83,6 +88,22 @@ def make_app(jwt_validator=None):
 
     routes = [
         (r"/", IndexHandler),
+        (r"/selfservice", IndexHandler),
+        (r"/login", IndexHandler),
+        (r"/catalog", IndexHandlerV2),
+        (
+            r"/ui",
+            IndexHandlerV2,
+        ),  # Todo: UIREFACTOR: Remove reference to /ui when new UI is complete
+        (
+            r"/ui/selfservice",
+            IndexHandlerV2,
+        ),  # Todo: UIREFACTOR: Remove reference to /ui when new UI is complete
+        (
+            r"/ui/login",
+            IndexHandlerV2,
+        ),  # Todo: UIREFACTOR: Remove reference to /ui when new UI is complete
+        (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),
         (
@@ -102,7 +123,9 @@ def make_app(jwt_validator=None):
         # Used to autocomplete s3:get to all matching permissions
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
         (r"/api/v1/get_roles", GetRolesHandler),
-        (r"/api/v1/pageheader/?", PageHeaderHandler),
+        (r"/api/v1/siteconfig/?", SiteConfigHandler),
+        (r"/api/v1/profile/?", UserProfileHandler),
+        (r"/api/v1/roles/?", SelectRolesHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/roles", RolesHandler),

@@ -1,0 +1,19 @@
+body {
+  margin: 0px;
+  padding: 0px;
+  /* background: #E9E9E9 url(../bg01.png) repeat; */
+  font-family: 'Open Sans', sans-serif;
+  font-size: 11pt;
+  font-weight: 400;
+  color: #969696;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
