@@ -16,7 +16,7 @@ const serviceOptions = [
   {key: 'ses', text: 'SES - Send Email', value: 'ses'},
   {key: 'sns', text: 'SNS Topic', value: 'sns'},
   {key: 'sqs', text: 'SQS Queue', value: 'sqs'},
-  {key: 'sts', text: 'STS AssumeRole', value: 'sts'},
+  {key: 'sts', text: 'STS AssumeRole', value: 'iam_arn'},
 ];
 
 const FeedExampleIconLabel = (props) => (
@@ -267,10 +267,10 @@ class SelfService extends Component {
           placeholder="Choose Your Role"
         />
       );
-
-    const targetServiceSubInput = targetType === 's3'
-      ? (
-        <div>
+    let targetServiceSubInput = null;
+    switch(targetType) {
+      case "s3":
+        targetServiceSubInput = (<div>
           <Search
             loading={isLoadingTarget}
             onResultSelect={this.handleResultSelect.bind(this, targetType)}
@@ -291,9 +291,78 @@ class SelfService extends Component {
             <Form.Checkbox label='PUT Objects' onChange={this.handleInputChange}/>
             <Form.Checkbox label='DELETE Objects' onChange={this.handleInputChange}/>
           </Form.Field>
-        </div>
-      )
-      : null;
+        </div>)
+        break;
+      case "sqs":
+        targetServiceSubInput = (<div>
+          <Search
+            loading={isLoadingTarget}
+            onResultSelect={this.handleResultSelect.bind(this, targetType)}
+            onSearchChange={_.debounce(this.handleSearchChange.bind(this, targetType), 500, {
+              leading: true,
+            })}
+            results={targetResults}
+            value={targetValue}
+          />
+          <Form.Field>
+            <label>Desired Permissions</label>
+            <Form.Checkbox label='Get Queue Attributes/URL' onChange={this.handleInputChange}/>
+            <Form.Checkbox label='Receive Messages' onChange={this.handleInputChange}/>
+            <Form.Checkbox label='Send Messages' onChange={this.handleInputChange}/>
+            <Form.Checkbox label='Delete Messages' onChange={this.handleInputChange}/>
+            <Form.Checkbox label='Set Queue Attributes' onChange={this.handleInputChange}/>
+          </Form.Field>
+        </div>)
+        break;
+      case "sns":
+        targetServiceSubInput = (<div>
+          <Search
+            loading={isLoadingTarget}
+            onResultSelect={this.handleResultSelect.bind(this, targetType)}
+            onSearchChange={_.debounce(this.handleSearchChange.bind(this, targetType), 500, {
+              leading: true,
+            })}
+            results={targetResults}
+            value={targetValue}
+          />
+          <Form.Field>
+            <label>Desired Permissions</label>
+            <Form.Checkbox label='Get Topic/Endpoint Attributes' onChange={this.handleInputChange}/>
+            <Form.Checkbox label='Publish Messages' onChange={this.handleInputChange}/>
+            <Form.Checkbox label='Subscribe to Topic' onChange={this.handleInputChange}/>
+            <Form.Checkbox label='Unsubscribe from Topic' onChange={this.handleInputChange}/>
+          </Form.Field>
+        </div>)
+        break;
+      case "iam_arn":
+        targetServiceSubInput = (<Form.Field required>
+          <label>Role ARN That you wish to assume</label>
+          <Search
+            loading={isLoadingTarget}
+            onResultSelect={this.handleResultSelect.bind(this, targetType)}
+            onSearchChange={_.debounce(this.handleSearchChange.bind(this, targetType), 500, {
+              leading: true,
+            })}
+            results={targetResults}
+            value={targetValue}
+          />
+        </Form.Field>)
+        break;
+      case "ses":
+        targetServiceSubInput = (<div>
+          <Form.Field>
+            <label>Email Address to send from (Must end in "@saasmail.netflix.com")</label>
+            <Form.Input placeholder='fromaddress@saasmail.netflix.com' onChange={this.handleInputChange}/>
+          </Form.Field>
+        </div>)
+        break;
+      default:
+        targetServiceSubInput = null;
+        break;
+    }
+
+    // targetServiceSubInput = targetType === 'sqs'
+    //   ? (null):null;
 
 
     const formSourceInputs = (
