@@ -43,7 +43,6 @@ const S3Form = props => {
             resource_type="s3"
             placeholder="S3 Bucket Name"
             validate={[required]}
-            account_id={account_id}
             value={choices.bucket}
           />
         </div>

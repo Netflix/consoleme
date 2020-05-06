@@ -99,8 +99,13 @@ function generatePolicy(choices, policy_sid, state) {
       prefix = "/" + prefix
     }
 
+    if (choices.bucket.includes("arn:aws:s3:::") === true) {
+      resources = [choices.bucket + prefix];
+      resources.push(choices.bucket);
+    } else {
     resources = ["arn:aws:s3:::" + choices.bucket + prefix];
     resources.push("arn:aws:s3:::" + choices.bucket);
+    }
 
     if (choices.multiregion === true) {
       regions.forEach(region => {
