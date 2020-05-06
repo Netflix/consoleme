@@ -40,10 +40,12 @@ $(document).ready(function () {
           if (type === 'display') {
             let account_id = row[0];
             let resource_name = data.split(":")[5];
-            let iam_resource_name = resource_name.split("/")[1];
+            let split_resource_name = resource_name.split("/");
+            let is_service_role = (split_resource_name[1] === "aws-service-role");
+            let iam_resource_name = split_resource_name.slice(1).join("/");
             let resource_type = data.split(":")[2];
             let region = data.split(":")[3];
-            if (iam_resource_name !== "aws-service-role" && resource_type === "iam") {
+            if (!is_service_role && resource_type === "iam") {
               data = '<a target="_blank" href="/policies/edit/' + account_id + '/iamrole/' + iam_resource_name + '">' + data + '</a>';
             }
             else if (resource_type === "s3") {
