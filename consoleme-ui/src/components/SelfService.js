@@ -2,6 +2,7 @@ import _ from 'lodash';
 import React, {Component} from 'react';
 import {Button, Divider, Feed, Form, Header, Icon, Label, Search, Segment,} from 'semantic-ui-react';
 
+import AceEditor from 'react-ace';
 
 const sourceOptions = [
   {key: 'myApp', text: 'Application', value: 'app'},
@@ -18,6 +19,18 @@ const serviceOptions = [
   {key: 'sqs', text: 'SQS Queue', value: 'sqs'},
   {key: 'sts', text: 'STS AssumeRole', value: 'iam_arn'},
 ];
+
+const WizardAceEditor = (props) => (
+  <AceEditor
+    mode="json"
+    ref={React.createRef()}
+    //theme={editor_theme}
+    editorProps={{$blockScrolling: true}}
+    value={JSON.stringify(props.policy, null, 2)}
+    enableBasicAutocompletion={true}
+    enableLiveAutocompletion={true}
+  />
+)
 
 const FeedExampleIconLabel = (props) => (
   <Feed>
@@ -111,6 +124,16 @@ const FeedExampleIconLabel = (props) => (
 
 const ARN_REGEX = /^arn:aws:iam::(?<account>\d+):role\/(?<role>.+)$/;
 
+const defaultPolicy = {
+  "Statement": [
+    {
+      "Action": [],
+      "Effect": "Allow",
+      "Resource": [],
+    }
+  ]
+}
+
 class SelfService extends Component {
   state = {
     eligibleRoles: [],
@@ -125,6 +148,7 @@ class SelfService extends Component {
     targetValue: '',
     role: '',
     account: '',
+    policy: defaultPolicy,
   };
 
   componentDidMount() {
@@ -268,9 +292,10 @@ class SelfService extends Component {
         />
       );
     let targetServiceSubInput = null;
-    switch(targetType) {
+    switch (targetType) {
       case "s3":
         targetServiceSubInput = (<div>
+          <label>S3 Bucket</label>
           <Search
             loading={isLoadingTarget}
             onResultSelect={this.handleResultSelect.bind(this, targetType)}
@@ -295,6 +320,7 @@ class SelfService extends Component {
         break;
       case "sqs":
         targetServiceSubInput = (<div>
+          <label>SQS Queue</label>
           <Search
             loading={isLoadingTarget}
             onResultSelect={this.handleResultSelect.bind(this, targetType)}
@@ -316,6 +342,7 @@ class SelfService extends Component {
         break;
       case "sns":
         targetServiceSubInput = (<div>
+          <label>SNS Topic</label>
           <Search
             loading={isLoadingTarget}
             onResultSelect={this.handleResultSelect.bind(this, targetType)}
@@ -428,7 +455,10 @@ class SelfService extends Component {
           <FeedExampleIconLabel source={sourceValue} target={targetValue}/>
         </Segment>
         <Segment>
-          <Button content="Submit" fluid primary disabled/>
+          <WizardAceEditor policy={this.state.policy}/>
+        </Segment>
+        <Segment>
+          <Button content="Submit" fluid primary/>
         </Segment>
       </Segment.Group>
     );
