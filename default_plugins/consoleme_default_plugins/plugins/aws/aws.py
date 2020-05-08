@@ -186,7 +186,7 @@ class Aws:
             log.debug(log_data)
             try:
                 tasks = []
-                role_name = role_arn.split("/")[1]
+                role_name = role_arn.split("/")[-1]
                 # Instantiate a cached CloudAux client
                 client = await sync_to_async(boto3_cached_conn)(
                     "iam",
