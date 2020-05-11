@@ -1,0 +1,167 @@
+{% include "header.html" %}
+{% import ujson as json %}
+<div id="wrapper" class="container">
+    <script src="/static/js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" charset="utf8" src="/static/js/common.js"></script>
+    <div id="testformdiv"></div>
+    <script src="/static/js/ace/ext-language_tools.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/static/js/sweetalert2.js"></script>
+    <script>
+      // You can modify the editor theme by manually writing a localstorage variable for aceEditorTheme
+      let arn = null;
+      let ses_arn = "{{ config.get('ses.arn') }}"
+      let ses_from_address = "{{ config.get('ses.from_address_placeholder') }}"
+      let account_id = null;
+      let custom_s3_guidance = `{% raw config.get('policies.s3_support_guidance', '') %}`;
+      let custom_s3_bucket_name_header = `{% raw config.get('policies.s3_custom_bucket_name_header', 'Bucket Name') %}`;
+      let editor_theme = localStorage.getItem("aceEditorTheme");
+      if (editor_theme == null) {
+        editor_theme = "monokai";
+      }
+      // Also the keyboard handler! vim and emacs are available.
+      let keyboard_handler = localStorage.getItem("aceKeyboardHandler");
+
+      async function PolicyTypeahead(resource_type, value, account_id = null, limit = 20) {
+        let url = "/policies/typeahead?resource=" + resource_type + "&search=" + value + "&limit=" + limit
+        if (account_id) {
+          url += "&account_id=" + this.state.account_id
+        }
+
+        const resp = await fetch(url)
+        return JSON.parse(JSON.stringify(await resp.json()))
+      }
+
+      function insertMatch(insertEditor, data) {
+        let insertValue = data.value;
+        var lastPositon = editor.selection.getCursor();
+
+        insertEditor.jumpToMatching();
+        var startPosition = editor.selection.getCursor();
+
+        insertEditor.session.replace({
+          start: {row: startPosition.row, column: startPosition.column},
+          end: {row: lastPositon.row, column: lastPositon.column}
+        }, "");
+      }
+
+      let permissionCompleter = {
+        getCompletions: async function (editor, session, pos, prefix, callback) {
+          let resource = false
+          let action = false
+          const lines = editor.getValue().split("\n")
+          for (let i = pos.row; i >= 0; i--) {
+            if (lines[i].indexOf('"Resource"') > -1) {
+              resource = true
+              break
+            }
+
+            if (lines[i].indexOf('"Action"') > -1) {
+              action = true
+              break
+            }
+          }
+          // Check for other statements? The beginning of the statement? The curly bracket?
+          // if not action or resource do nothing?
+          if (prefix.length === 0 || (action === false && resource === false)) {
+            callback(null, []);
+            return
+          }
+          let resources = [
+            {"resource": "arn:aws:s3:::", "type": "s3"},
+            {"resource": "arn:aws:sqs:", "type": "sqs"},
+            {"resource": "arn:aws:sns:", "type": "sns"},
+            {"resource": "arn:aws:iam:", "type": "iam"}];
+
+          let regions = [
+            {"region": "us-east-1", "type": "region"},
+            {"region": "us-west-2", "type": "region"},
+            {"region": "eu-west-1", "type": "region"},
+          ]
+          let row = session.getDocument().getLine(pos["row"]).trim().replace(/\"/g, "");
+          if (action === true) {
+            $.getJSON(
+              "/api/v1/policyuniverse/autocomplete/?prefix=" + row,
+              function (wordList) {
+                // wordList like [{"permission":"s3:GetObject"}]
+                callback(null, wordList.map(function (ea) {
+                  let value = ea.permission;
+                  if (row.indexOf(":") > -1) {
+                    value = value.split(":")[1];
+                  }
+                  return {name: ea.permission, value: value, meta: "Permission", score: 1000}
+                }));
+              })
+            return
+          } else if (resource === true) {
+            // We know we're in the Resource section, so let's help type the ARN starting with the prefix
+            // of `arn:aws:<resource_type>`
+            if ("arn:aws:".indexOf(row) > -1 && row.length < 9) {
+              callback(null, resources.map(function (ea) {
+                return {name: ea.resource, value: ea.resource, meta: "Resource", score: 1000}
+              }));
+              return
+            } else if (row.indexOf("arn:aws:") > -1) {
+              // We have `arn:aws:<resource_type>`, now let's help type of the region if necessary
+              const splitted = row.split(":")
+              if (splitted.length === 4 && splitted[2] != "s3") {
+                callback(null, regions.map(function (ea) {
+                  return {name: ea.region, value: ea.region, meta: "Region", score: 1000}
+                }));
+                return
+              }
+              let resource_type = null
+              resources.forEach(function (r) {
+                if (row.indexOf(r.resource) > -1) {
+                  resource_type = r.type
+                }
+              });
+              if (resource_type !== null) {
+                row = row.replace("arn:aws:s3:::", "")
+                let results = await PolicyTypeahead(resource_type, row, null, 100)
+                let matching_resources = []
+                results.forEach(function (result) {
+                  // Strip out what the user has currently typed (`row`) from the full value returned from typeahead
+                  const v = result.title.replace(row, row[row.length - 1]);
+                  matching_resources.push({name: result.title, value: v, meta: "Resource", score: 1000})
+                })
+                callback(null, matching_resources)
+              }
+            }
+          }
+        }
+      };
+      let langTools = ace.require("ace/ext/language_tools");
+      langTools.addCompleter(permissionCompleter);
+      let permission_value = {};
+      {% for k, v in config.get('dynamic_config.permission_templates', {}).items() %}
+      permission_value["{{ k }}"] = {};
+      permission_value["{{ k }}"]["label"] = "{{ v["label"] }}";
+      permission_value["{{ k }}"]["policy"] = `{% raw v["policy"] %}`;
+      {% end %}
+    </script>
+    <div class="ui dimmer">
+        <div class="ui medium text loader">Loading</div>
+    </div>
+    <div class="ui basic modal">
+        <div id="error_div" class="ui hidden error message">
+            <div class="header">
+                Oops!
+            </div>
+            <p id="error_response"></p>
+        </div>
+        <div id="success_div" class="ui hidden positive message">
+            <div class="header">
+                Success!
+            </div>
+            <p id="success_response"></p>
+        </div>
+        <div class="scrolling content">
+            <div id="modal_content"></div>
+        </div>
+    </div>
+    <div id="new_policy_wizard" style="display: none;">
+    <script src="/static/js/dist/selfService.js"></script>
+<script>
+    setTimeout(function(){ selfService.renderIAMSelfServiceWizard(); }, 1000);
+</script>
+</div>
