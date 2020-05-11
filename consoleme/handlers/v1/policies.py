@@ -536,7 +536,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
 
         events = parsed_policy_change["events"]
         policy_status = "pending"
-        should_auto_approve_request = await should_auto_approve_policy(
+        should_auto_approve_request: bool = await should_auto_approve_policy(
             events, self.user, self.groups
         )
         if should_auto_approve_request is not False:
