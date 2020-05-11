@@ -935,7 +935,29 @@ class SelfServiceHandler(BaseHandler):
         )
 
 
-class AutocompleteHandler(BaseAPIV1Handler):
+class SelfServiceNewHandler(BaseHandler):
+    async def get(self):
+        """
+        /self_service
+        ---
+        get:
+            description: Entry point to Self Service IAM Wizard
+            responses:
+                200:
+                    description: Returns Self Service IAM Wizard
+        """
+
+        await self.render(
+            "self_service_new.html",
+            page_title="ConsoleMe - Self Service",
+            current_page="policies",
+            user=self.user,
+            user_groups=self.groups,
+            config=config,
+        )
+
+
+class AutocompleteHandler(BaseHandler):
     async def get(self):
         """
         /api/v1/policyuniverse/autocomplete/?prefix=

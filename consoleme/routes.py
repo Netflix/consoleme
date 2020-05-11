@@ -40,6 +40,7 @@ from consoleme.handlers.v1.policies import (
     ResourcePolicyEditHandler,
     ResourceTypeAheadHandler,
     SelfServiceHandler,
+    SelfServiceNewHandler,
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
@@ -93,19 +94,6 @@ def make_app(jwt_validator=None):
         (r"/", IndexHandler),
         (r"/selfservice", IndexHandler),
         (r"/login", IndexHandler),
-        (r"/catalog", IndexHandlerV2),
-        (
-            r"/ui",
-            IndexHandlerV2,
-        ),  # Todo: UIREFACTOR: Remove reference to /ui when new UI is complete
-        (
-            r"/ui/selfservice",
-            IndexHandlerV2,
-        ),  # Todo: UIREFACTOR: Remove reference to /ui when new UI is complete
-        (
-            r"/ui/login",
-            IndexHandlerV2,
-        ),  # Todo: UIREFACTOR: Remove reference to /ui when new UI is complete
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),
@@ -155,6 +143,7 @@ def make_app(jwt_validator=None):
         (r"/swagger.json", SwaggerJsonGenerator),
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service", SelfServiceHandler),
+        (r"/self_service_new", SelfServiceNewHandler),
     ]
 
     routes.extend(

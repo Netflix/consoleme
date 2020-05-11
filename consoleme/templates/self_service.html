@@ -139,6 +139,11 @@
       permission_value["{{ k }}"]["policy"] = `{% raw v["policy"] %}`;
       {% end %}
     </script>
+    <style media="screen">
+        .ui.form {
+            max-width: 400px;
+        }
+    </style>
     <div class="ui dimmer">
         <div class="ui medium text loader">Loading</div>
     </div>

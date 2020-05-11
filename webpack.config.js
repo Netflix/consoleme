@@ -3,7 +3,8 @@ const path = require('path');
 module.exports = {
   mode: "production",
   entry: {
-    policyEditor: './consoleme/templates/static/js/policy_editor.jsx'
+    policyEditor: './consoleme/templates/static/js/policy_editor.jsx',
+    selfService: './consoleme/templates/static/js/components/SelfService.js'
   },
   output: {
     path: path.resolve(__dirname, "consoleme/templates/static/js/dist"),
