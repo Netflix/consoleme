@@ -20,13 +20,56 @@ paths:
   /requests:
     get:
       summary: get a list of requests
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
     post:
       summary: submit a new request
-  /requests/{id}:
+      parameters:
+        - in: body
+          name: request
+          schema:
+            $ref: '#/components/schemas/RequestDetails'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetails'
+  /requests/{requestId}:
     get:
       summary: get details about a request
+      parameters:
+        - $ref: '#/components/parameters/requestId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetails'
     put:
       summary: update a request
+      parameters:
+        - $ref: '#/components/parameters/requestId'
+        - in: body
+          name: request
+          schema:
+            $ref: '#/components/schemas/RequestDetails'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetails'
   /resources:
     get:
       summary: get resources
@@ -130,12 +173,13 @@ paths:
       parameters:
         - $ref: '#/components/parameters/accountNumber'
         - $ref: '#/components/parameters/roleName'
-  /roles/{accountNumber}/{roleName}/requests/{id}:
+  /roles/{accountNumber}/{roleName}/requests/{requestId}:
     get:
       summary: get details about a request for a role
       parameters:
         - $ref: '#/components/parameters/accountNumber'
         - $ref: '#/components/parameters/roleName'
+        - $ref: '#/components/parameters/requestId'
   /user:
     get:
       summary: get details about current user
@@ -161,7 +205,108 @@ components:
       example: fake_account_admin
       schema:
         type: string
+    requestId:
+      name: requestId
+      in: path
+      required: true
+      example: 16fd2706-8baf-433b-82eb-8c7fada847da
+      schema:
+        type: string
   schemas:
+    Request:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        arn:
+          type: string
+          description: ARN of principal being modified
+          example: arn:aws:iam::123456789012:role/super_awesome_admin
+        timestamp:
+          type: string
+          format: date-time
+        justification:
+          type: string
+        requester_email:
+          type: string
+        approvers:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+    RequestDetails:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        arn:
+          type: string
+          description: ARN of principal being modified
+          example: arn:aws:iam::123456789012:role/super_awesome_admin
+        timestamp:
+          type: string
+          format: date-time
+        changes:
+          $ref: '#/components/schemas/PolicyChange'
+        justification:
+          type: string
+        requester_email:
+          type: string
+        requester_info:
+          $ref: '#/components/schemas/User'
+          readOnly: true
+        approvers:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        reviewer:
+          type: string
+        status:
+          type: string
+        comments:
+          $ref: '#/components/schemas/Comment'
+    PolicyChange:
+      type: object
+      properties:
+        arn:
+          type: string
+        policy_name:
+          type: string
+        old_policy:
+          $ref: '#/components/schemas/Policy'
+        new_policy:
+          $ref: '#/components/schemas/Policy'
+    Policy:
+      type: object
+      properties:
+        policy_document:
+          type: string
+          description: JSON policy document
+        policy_sha256:
+          type: string
+          description: hash of policy_document
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+        edited:
+          type: boolean
+        last_modified:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/User'
+        text:
+          type: string
     Role:
       type: object
       properties:
@@ -216,3 +361,10 @@ components:
           type: boolean
         template_link:
           type: string
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+        pandora_info:
+          type: object
