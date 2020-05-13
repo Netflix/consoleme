@@ -13,13 +13,14 @@ info:
 tags:
   - name: roles
     description: Cool role stuff
+  - name: requests
+    description: Cool request stuff
 paths:
-  /credentials:
-    post:
-      summary: generate a federation url for aws console signin
   /requests:
     get:
       summary: get a list of requests
+      tags:
+        - requests
       responses:
         '200':
           description: OK
@@ -31,6 +32,8 @@ paths:
                   $ref: '#/components/schemas/RequestModel'
     post:
       summary: submit a new request
+      tags:
+        - requests
       requestBody:
         required: true
         content:
@@ -47,6 +50,8 @@ paths:
   /requests/{requestId}:
     get:
       summary: get details about a request
+      tags:
+        - requests
       parameters:
         - $ref: '#/components/parameters/requestId'
       responses:
@@ -58,6 +63,8 @@ paths:
                 $ref: '#/components/schemas/ExtendedRequestModel'
     put:
       summary: update a request
+      tags:
+        - requests
       parameters:
         - $ref: '#/components/parameters/requestId'
       requestBody:
@@ -76,6 +83,17 @@ paths:
   /resources:
     get:
       summary: get resources
+      parameters:
+        - $ref: '#/components/parameters/AccountIdQueryString'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceModel'
   /roles:
     options:
       summary: get endpoint options
@@ -176,6 +194,15 @@ paths:
       parameters:
         - $ref: '#/components/parameters/accountNumber'
         - $ref: '#/components/parameters/roleName'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RequestModel'
   /roles/{accountNumber}/{roleName}/requests/{requestId}:
     get:
       summary: get details about a request for a role
@@ -183,9 +210,23 @@ paths:
         - $ref: '#/components/parameters/accountNumber'
         - $ref: '#/components/parameters/roleName'
         - $ref: '#/components/parameters/requestId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRequestModel'
   /user:
     get:
       summary: get details about current user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserModel'
 components:
   headers:
     accessControlAllow:
@@ -215,7 +256,32 @@ components:
       example: 16fd2706-8baf-433b-82eb-8c7fada847da
       schema:
         type: string
+    AccountIdQueryString:
+      name: account_id
+      in: query
+      example: 012345678901
+      schema:
+        type: string
+        pattern: '^\d{12}$'
   schemas:
+    ResourceModel:
+      type: object
+      properties:
+        arn:
+          type: string
+          readOnly: true
+        account_id:
+          type: string
+          readOnly: true
+        policy_sha256:
+          type: string
+          readOnly: true
+        owner:
+          type: string
+        approvers:
+          type: array
+          items:
+            type: string
     RequestModel:
       type: object
       properties:
@@ -234,6 +300,7 @@ components:
         requester_email:
           type: string
         approvers:
+          description: list of approvers, derived from approvers of `resource`s in `changes`
           type: array
           items:
             type: string
@@ -271,6 +338,8 @@ components:
             - inline_policy
             - managed_policy
             - resource_policy
+        resource:
+          $ref: '#/components/schemas/ResourceModel'
     InlinePolicyChangeModel:
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
