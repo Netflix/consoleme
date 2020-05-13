@@ -47,13 +47,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExtendedRequestModel'
-  /requests/{requestId}:
+  /requests/{request_id}:
     get:
       summary: get details about a request
       tags:
         - requests
       parameters:
-        - $ref: '#/components/parameters/requestId'
+        - $ref: '#/components/parameters/RequestId'
       responses:
         '200':
           description: OK
@@ -66,7 +66,7 @@ paths:
       tags:
         - requests
       parameters:
-        - $ref: '#/components/parameters/requestId'
+        - $ref: '#/components/parameters/RequestId'
       requestBody:
         required: true
         content:
@@ -118,13 +118,13 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RoleModel'
-  /roles/{accountNumber}:
+  /roles/{account_id}:
     options:
       summary: get endpoint options
       tags:
         - roles
       parameters:
-        - $ref: '#/components/parameters/accountNumber'
+        - $ref: '#/components/parameters/AccountId'
       responses:
         200:
           description: OK
@@ -136,7 +136,7 @@ paths:
       tags:
         - roles
       parameters:
-        - $ref: '#/components/parameters/accountNumber'
+        - $ref: '#/components/parameters/AccountId'
       responses:
         '200':
           description: OK
@@ -146,14 +146,33 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RoleModel'
-  /roles/{accountNumber}/{roleName}:
+    post:
+      summary: create a role
+      tags:
+        - roles
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtendedRoleModel'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRoleModel'
+  /roles/{account_id}/{role_name}:
     options:
       summary: get endpoint options
       tags:
         - roles
       parameters:
-        - $ref: '#/components/parameters/accountNumber'
-        - $ref: '#/components/parameters/roleName'
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
       responses:
         200:
           description: OK
@@ -165,8 +184,8 @@ paths:
       tags:
         - roles
       parameters:
-        - $ref: '#/components/parameters/accountNumber'
-        - $ref: '#/components/parameters/roleName'
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
       responses:
         '200':
           description: OK
@@ -179,8 +198,14 @@ paths:
       tags:
         - roles
       parameters:
-        - $ref: '#/components/parameters/accountNumber'
-        - $ref: '#/components/parameters/roleName'
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtendedRoleModel'
       responses:
         '200':
           description: OK
@@ -188,14 +213,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExtendedRoleModel'
-  /roles/{accountNumber}/{roleName}/requests:
+  /roles/{account_id}/{role_name}/requests:
     get:
       summary: get a list of requests for a role
       tags:
         - requests
       parameters:
-        - $ref: '#/components/parameters/accountNumber'
-        - $ref: '#/components/parameters/roleName'
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
       responses:
         '200':
           description: OK
@@ -205,15 +230,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RequestModel'
-  /roles/{accountNumber}/{roleName}/requests/{requestId}:
+  /roles/{account_id}/{role_name}/requests/{request_id}:
     get:
       summary: get details about a request for a role
       tags:
         - requests
       parameters:
-        - $ref: '#/components/parameters/accountNumber'
-        - $ref: '#/components/parameters/roleName'
-        - $ref: '#/components/parameters/requestId'
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
+        - $ref: '#/components/parameters/RequestId'
       responses:
         '200':
           description: OK
@@ -238,23 +263,23 @@ components:
         type: string
       description: Allowed request headers
   parameters:
-    accountNumber:
-      name: accountNumber
+    AccountId:
+      name: account_id
       in: path
       required: true
       example: 012345678901
       schema:
         type: string
         pattern: '^\d{12}$'
-    roleName:
-      name: roleName
+    RoleName:
+      name: role_name
       in: path
       required: true
       example: fake_account_admin
       schema:
         type: string
-    requestId:
-      name: requestId
+    RequestId:
+      name: request_id
       in: path
       required: true
       example: 16fd2706-8baf-433b-82eb-8c7fada847da
@@ -411,6 +436,8 @@ components:
           type: string
     RoleModel:
       type: object
+      required:
+        - name
       properties:
         name:
           type: string
@@ -420,12 +447,15 @@ components:
           minLength: 12
           maxLength: 12
           example: '123456789012'
+          readOnly: true
         account_name:
           type: string
           example: super_awesome
+          readOnly: true
         arn:
           type: string
           example: arn:aws:iam::123456789012:role/super_awesome_admin
+          readOnly: true
     ExtendedRoleModel:
       allOf:
         - $ref: '#/components/schemas/RoleModel'
@@ -449,8 +479,10 @@ components:
                 type: object # TODO: make tags schema
             templated:
               type: boolean
+              readOnly: true
             template_link:
               type: string
+              readOnly: true
     UserModel:
       type: object
       readOnly: true
