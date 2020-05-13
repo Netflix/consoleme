@@ -28,21 +28,21 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Request'
+                  $ref: '#/components/schemas/RequestModel'
     post:
       summary: submit a new request
       parameters:
         - in: body
           name: request
           schema:
-            $ref: '#/components/schemas/RequestDetails'
+            $ref: '#/components/schemas/ExtendedRequestModel'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RequestDetails'
+                $ref: '#/components/schemas/ExtendedRequestModel'
   /requests/{requestId}:
     get:
       summary: get details about a request
@@ -54,7 +54,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RequestDetails'
+                $ref: '#/components/schemas/ExtendedRequestModel'
     put:
       summary: update a request
       parameters:
@@ -62,14 +62,14 @@ paths:
         - in: body
           name: request
           schema:
-            $ref: '#/components/schemas/RequestDetails'
+            $ref: '#/components/schemas/ExtendedRequestModel'
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RequestDetails'
+                $ref: '#/components/schemas/ExtendedRequestModel'
   /resources:
     get:
       summary: get resources
@@ -96,7 +96,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Role'
+                  $ref: '#/components/schemas/RoleModel'
   /roles/{accountNumber}:
     options:
       summary: get endpoint options
@@ -124,7 +124,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Role'
+                  $ref: '#/components/schemas/RoleModel'
   /roles/{accountNumber}/{roleName}:
     options:
       summary: get endpoint options
@@ -152,7 +152,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoleDetails'
+                $ref: '#/components/schemas/ExtendedRoleModel'
     put:
       summary: update a role
       tags:
@@ -166,7 +166,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoleDetails'
+                $ref: '#/components/schemas/ExtendedRoleModel'
   /roles/{accountNumber}/{roleName}/requests:
     get:
       summary: get a list of requests for a role
@@ -213,7 +213,7 @@ components:
       schema:
         type: string
   schemas:
-    Request:
+    RequestModel:
       type: object
       properties:
         id:
@@ -234,55 +234,79 @@ components:
           type: array
           items:
             type: string
+          readOnly: true
         status:
           type: string
-    RequestDetails:
+    ExtendedRequestModel:
+      allOf:
+        - $ref: '#/components/schemas/RequestModel'
+        - type: object
+          properties:
+            changes:
+              type: array
+              items:
+                anyOf:
+                  - $ref: '#/components/schemas/InlinePolicyChangeModel'
+                  - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+                  - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+                discriminator:
+                  propertyName: change_type
+            requester_info:
+              $ref: '#/components/schemas/UserModel'
+            reviewer:
+              type: string
+            comments:
+              $ref: '#/components/schemas/CommentModel'
+    ChangeModel:
       type: object
+      required:
+        - change_type
       properties:
-        id:
+        change_type:
           type: string
-          readOnly: true
-        arn:
-          type: string
-          description: ARN of principal being modified
-          example: arn:aws:iam::123456789012:role/super_awesome_admin
-        timestamp:
-          type: string
-          format: date-time
-        changes:
-          type: array
-          items:
-            $ref: '#/components/schemas/PolicyChange'
-        justification:
-          type: string
-        requester_email:
-          type: string
-        requester_info:
-          $ref: '#/components/schemas/User'
-          readOnly: true
-        approvers:
-          type: array
-          items:
-            type: string
-          readOnly: true
-        reviewer:
-          type: string
-        status:
-          type: string
-        comments:
-          $ref: '#/components/schemas/Comment'
-    PolicyChange:
-      type: object
-      properties:
-        arn:
-          type: string
-        policy_name:
-          type: string
-        old_policy:
-          $ref: '#/components/schemas/Policy'
-        new_policy:
-          $ref: '#/components/schemas/Policy'
-    Policy:
+          enum:
+            - inline_policy
+            - managed_policy
+            - resource_policy
+    InlinePolicyChangeModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeModel'
+        - type: object
+          properties:
+            arn:
+              type: string
+            policy_name:
+              type: string
+            old_policy:
+              $ref: '#/components/schemas/PolicyModel'
+            new_policy:
+              $ref: '#/components/schemas/PolicyModel'
+    ResourcePolicyChangeModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeModel'
+        - type: object
+          properties:
+            arn:
+              type: string
+            old_policy:
+              $ref: '#/components/schemas/PolicyModel'
+            new_policy:
+              $ref: '#/components/schemas/PolicyModel'
+    ManagedPolicyChangeModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeModel'
+        - type: object
+          properties:
+            arn:
+              type: string
+            policy_name:
+              type: string
+            action:
+              type: string
+              enum:
+                - attach
+                - detach
+    PolicyModel:
       type: object
       properties:
         policy_document:
@@ -291,7 +315,7 @@ components:
         policy_sha256:
           type: string
           description: hash of policy_document
-    Comment:
+    CommentModel:
       type: object
       properties:
         id:
@@ -306,10 +330,10 @@ components:
           type: string
           format: date-time
         user:
-          $ref: '#/components/schemas/User'
+          $ref: '#/components/schemas/UserModel'
         text:
           type: string
-    Role:
+    RoleModel:
       type: object
       properties:
         name:
@@ -326,45 +350,34 @@ components:
         arn:
           type: string
           example: arn:aws:iam::123456789012:role/super_awesome_admin
-    RoleDetails:
+    ExtendedRoleModel:
+      allOf:
+        - $ref: '#/components/schemas/RoleModel'
+        - type: object
+          properties:
+            inline_policies:
+              type: array
+              items:
+                type: object # TODO: make inline_policies schema
+            assume_role_policies:
+              type: array
+              items:
+                type: object # TODO: make assume_role_policies schema
+            managed_policies:
+              type: array
+              items:
+                type: object # TODO: make managed_policies schema
+            tags:
+              type: array
+              items:
+                type: object # TODO: make tags schema
+            templated:
+              type: boolean
+            template_link:
+              type: string
+    UserModel:
       type: object
-      properties:
-        name:
-          type: string
-          example: super_awesome_admin
-        account_id:
-          type: string
-          minLength: 12
-          maxLength: 12
-          example: '123456789012'
-        account_name:
-          type: string
-          example: super_awesome
-        arn:
-          type: string
-          example: arn:aws:iam::123456789012:role/super_awesome_admin
-        inline_policies:
-          type: array
-          items:
-            type: object # TODO: make inline_policies schema
-        assume_role_policies:
-          type: array
-          items:
-            type: object # TODO: make assume_role_policies schema
-        managed_policies:
-          type: array
-          items:
-            type: object # TODO: make managed_policies schema
-        tags:
-          type: array
-          items:
-            type: object # TODO: make tags schema
-        templated:
-          type: boolean
-        template_link:
-          type: string
-    User:
-      type: object
+      readOnly: true
       properties:
         email:
           type: string
