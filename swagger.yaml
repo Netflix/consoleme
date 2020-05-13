@@ -344,13 +344,12 @@ components:
         status:
           type: string
     ExtendedRequestModel:
-      type: object
-      required:
-        - changes
-        - requester_info
       allOf:
         - $ref: '#/components/schemas/RequestModel'
         - type: object
+          required:
+            - changes
+            - requester_info
           properties:
             changes:
               type: array
@@ -382,15 +381,14 @@ components:
         resource:
           $ref: '#/components/schemas/ResourceModel'
     InlinePolicyChangeModel:
-      type: object
-      required:
-        - arn
-        - policy_name
-        - new
-        - policy
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
         - type: object
+          required:
+            - arn
+            - policy_name
+            - new
+            - policy
           properties:
             arn:
               type: string
@@ -406,13 +404,12 @@ components:
             old_policy:
               $ref: '#/components/schemas/PolicyModel'
     ResourcePolicyChangeModel:
-      type: object
-      required:
-        - arn
-        - policy
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
         - type: object
+          required:
+            - arn
+            - policy
           properties:
             arn:
               type: string
@@ -421,14 +418,13 @@ components:
             old_policy:
               $ref: '#/components/schemas/PolicyModel'
     ManagedPolicyChangeModel:
-      type: object
-      required:
-        - arn
-        - policy_name
-        - action
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
         - type: object
+          required:
+            - arn
+            - policy_name
+            - action
           properties:
             arn:
               type: string
@@ -499,15 +495,14 @@ components:
           example: arn:aws:iam::123456789012:role/super_awesome_admin
           readOnly: true
     ExtendedRoleModel:
-      type: object
-      required:
-        - inline_policies
-        - assume_role_policies
-        - managed_policies
-        - tags
       allOf:
         - $ref: '#/components/schemas/RoleModel'
         - type: object
+          required:
+            - inline_policies
+            - assume_role_policies
+            - managed_policies
+            - tags
           properties:
             inline_policies:
               type: array
