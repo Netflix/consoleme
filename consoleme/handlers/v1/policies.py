@@ -517,6 +517,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
             "ip": self.ip,
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
+            "auto_approved": False,
         }
         log.debug(log_data)
 
@@ -541,6 +542,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         )
         if should_auto_approve_request is not False:
             policy_status = "approved"
+            log_data["auto_approved"] = True
         try:
             resource_actions = await get_resources_from_events(events)
             resources = list(resource_actions.keys())
@@ -597,6 +599,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         await aws.send_communications_policy_change_request(request, send_sns=True)
         request["status"] = "success"
         self.write(request)
+        log_data["finished"] = True
         log.debug(log_data)
         await self.finish()
         return
@@ -1015,9 +1018,7 @@ async def handle_resource_type_ahead_request(cls):
         topic = config.get("swag.redis_key", "SWAG_SETTINGSv2")
         topic_is_hash = False
     elif resource_type == "app":
-        topic = config.get(
-            "spinnaker.app_to_roles.redis_key", "SPINNAKER_SETTINGS_APP_TO_ROLE"
-        )
+        topic = config.get("celery.apps_to_roles.redis_key", "APPS_TO_ROLES")
         topic_is_hash = False
     else:
         cls.send_error(404, message=f"Invalid resource_type: {resource_type}")
