@@ -1,20 +1,20 @@
 openapi: 3.0.0
-servers:
-  - description: test
-    url: https://test.foo
 info:
   description: ConsoleMe API definition
   version: '2.0.0'
   title: ConsoleMe v2 API
   contact:
-    email: psanders@netflix.com
+    email: consoleme-owners@netflix.com
   license:
-    name: License TBD
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.txt
 tags:
   - name: roles
-    description: Cool role stuff
+    description: IAM Role endpoints
   - name: requests
-    description: Cool request stuff
+    description: Policy Request endpoints
+  - name: privileged
+    description: Endpoints requiring elevated permissions
 paths:
   /requests:
     get:
@@ -95,16 +95,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/ResourceModel'
   /roles:
-    options:
-      summary: get endpoint options
-      tags:
-        - roles
-      responses:
-        200:
-          description: OK
-          headers:
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/accessControlAllow'
     get:
       summary: get a list of roles
       tags:
@@ -119,18 +109,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/RoleModel'
   /roles/{account_id}:
-    options:
-      summary: get endpoint options
-      tags:
-        - roles
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
-      responses:
-        200:
-          description: OK
-          headers:
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/accessControlAllow'
     get:
       summary: get a list of roles in an account
       tags:
@@ -150,6 +128,7 @@ paths:
       summary: create a role
       tags:
         - roles
+        - privileged
       parameters:
         - $ref: '#/components/parameters/AccountId'
       requestBody:
@@ -166,19 +145,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExtendedRoleModel'
   /roles/{account_id}/{role_name}:
-    options:
-      summary: get endpoint options
-      tags:
-        - roles
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - $ref: '#/components/parameters/RoleName'
-      responses:
-        200:
-          description: OK
-          headers:
-            Access-Control-Allow-Headers:
-              $ref: '#/components/headers/accessControlAllow'
     get:
       summary: get details about a role
       tags:
@@ -197,6 +163,7 @@ paths:
       summary: update a role
       tags:
         - roles
+        - privileged
       parameters:
         - $ref: '#/components/parameters/AccountId'
         - $ref: '#/components/parameters/RoleName'
@@ -217,6 +184,7 @@ paths:
       summary: delete a role
       tags:
         - roles
+        - privileged
       parameters:
         - $ref: '#/components/parameters/AccountId'
         - $ref: '#/components/parameters/RoleName'
@@ -267,11 +235,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserModel'
 components:
-  headers:
-    accessControlAllow:
-      schema:
-        type: string
-      description: Allowed request headers
   parameters:
     AccountId:
       name: account_id
