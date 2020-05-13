@@ -213,6 +213,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExtendedRoleModel'
+    delete:
+      summary: delete a role
+      tags:
+        - roles
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
+      responses:
+        '204':
+          description: No Content
   /roles/{account_id}/{role_name}/requests:
     get:
       summary: get a list of requests for a role
