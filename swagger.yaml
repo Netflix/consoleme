@@ -270,20 +270,36 @@ components:
       type: object
       properties:
         arn:
+          description: resource ARN
           type: string
           readOnly: true
         account_id:
+          description: AWS account ID
+          type: string
+          readOnly: true
+        account_name:
+          description: human-friendly AWS account name
           type: string
           readOnly: true
         policy_sha256:
+          description: hash of the most recent resource policy seen by ConsoleMe
           type: string
           readOnly: true
+        policy:
+          type: string
         owner:
+          description: email address of team or individual who owns this resource
           type: string
         approvers:
           type: array
           items:
             type: string
+        resource_type:
+          type: string
+        last_updated:
+          description: last time resource was updated from source-of-truth
+          type: string
+          format: date-time
     RequestModel:
       type: object
       properties:
@@ -348,6 +364,9 @@ components:
         - type: object
           properties:
             arn:
+              type: string
+            additional_arns:
+              description: additional ARNs relevant to request, e.g. S3 bucket ARN with path prefix
               type: string
             policy_name:
               type: string
