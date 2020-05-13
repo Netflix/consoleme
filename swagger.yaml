@@ -268,6 +268,16 @@ components:
   schemas:
     ResourceModel:
       type: object
+      required:
+        - arn
+        - account_id
+        - account_name
+        - policy_sha256
+        - policy
+        - owner
+        - approvers
+        - resource_type
+        - last_updated
       properties:
         arn:
           description: resource ARN
@@ -302,6 +312,14 @@ components:
           format: date-time
     RequestModel:
       type: object
+      required:
+        - id
+        - arn
+        - timestamp
+        - justification
+        - requester_email
+        - approvers
+        - status
       properties:
         id:
           type: string
@@ -326,6 +344,10 @@ components:
         status:
           type: string
     ExtendedRequestModel:
+      type: object
+      required:
+        - changes
+        - requester_info
       allOf:
         - $ref: '#/components/schemas/RequestModel'
         - type: object
@@ -349,6 +371,7 @@ components:
       type: object
       required:
         - change_type
+        - resource
       properties:
         change_type:
           type: string
@@ -359,6 +382,12 @@ components:
         resource:
           $ref: '#/components/schemas/ResourceModel'
     InlinePolicyChangeModel:
+      type: object
+      required:
+        - arn
+        - policy_name
+        - new
+        - policy
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
         - type: object
@@ -370,22 +399,33 @@ components:
               type: string
             policy_name:
               type: string
+            new:
+              type: boolean
+            policy:
+              $ref: '#/components/schemas/PolicyModel'
             old_policy:
               $ref: '#/components/schemas/PolicyModel'
-            new_policy:
-              $ref: '#/components/schemas/PolicyModel'
     ResourcePolicyChangeModel:
+      type: object
+      required:
+        - arn
+        - policy
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
         - type: object
           properties:
             arn:
               type: string
+            policy:
+              $ref: '#/components/schemas/PolicyModel'
             old_policy:
               $ref: '#/components/schemas/PolicyModel'
-            new_policy:
-              $ref: '#/components/schemas/PolicyModel'
     ManagedPolicyChangeModel:
+      type: object
+      required:
+        - arn
+        - policy_name
+        - action
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
         - type: object
@@ -401,6 +441,9 @@ components:
                 - detach
     PolicyModel:
       type: object
+      required:
+        - policy_document
+        - policy_sha256
       properties:
         policy_document:
           type: string
@@ -410,6 +453,11 @@ components:
           description: hash of policy_document
     CommentModel:
       type: object
+      required:
+        - id
+        - timestamp
+        - user_email
+        - text
       properties:
         id:
           type: string
@@ -422,6 +470,8 @@ components:
         last_modified:
           type: string
           format: date-time
+        user_email:
+          type: string
         user:
           $ref: '#/components/schemas/UserModel'
         text:
@@ -449,6 +499,12 @@ components:
           example: arn:aws:iam::123456789012:role/super_awesome_admin
           readOnly: true
     ExtendedRoleModel:
+      type: object
+      required:
+        - inline_policies
+        - assume_role_policies
+        - managed_policies
+        - tags
       allOf:
         - $ref: '#/components/schemas/RoleModel'
         - type: object
@@ -481,5 +537,5 @@ components:
       properties:
         email:
           type: string
-        pandora_info:
+        extended_info:
           type: object
