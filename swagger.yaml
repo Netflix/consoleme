@@ -191,6 +191,8 @@ paths:
   /roles/{accountNumber}/{roleName}/requests:
     get:
       summary: get a list of requests for a role
+      tags:
+        - requests
       parameters:
         - $ref: '#/components/parameters/accountNumber'
         - $ref: '#/components/parameters/roleName'
@@ -206,6 +208,8 @@ paths:
   /roles/{accountNumber}/{roleName}/requests/{requestId}:
     get:
       summary: get details about a request for a role
+      tags:
+        - requests
       parameters:
         - $ref: '#/components/parameters/accountNumber'
         - $ref: '#/components/parameters/roleName'
