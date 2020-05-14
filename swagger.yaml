@@ -191,39 +191,6 @@ paths:
       responses:
         '204':
           description: No Content
-  /roles/{account_id}/{role_name}/requests:
-    get:
-      summary: get a list of requests for a role
-      tags:
-        - requests
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - $ref: '#/components/parameters/RoleName'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/RequestModel'
-  /roles/{account_id}/{role_name}/requests/{request_id}:
-    get:
-      summary: get details about a request for a role
-      tags:
-        - requests
-      parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - $ref: '#/components/parameters/RoleName'
-        - $ref: '#/components/parameters/RequestId'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExtendedRequestModel'
   /user:
     get:
       summary: get details about current user
