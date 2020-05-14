@@ -1,11 +1,29 @@
+import sys
+import threading
 from typing import Optional
 
+import boto3
 import redis
+import ujson as json
 from asgiref.sync import sync_to_async
-from consoleme.config import config
 from redis.client import Redis
 
+from consoleme.config import config
+from consoleme.lib.plugins import get_plugin_by_name
+
 region = config.region
+log = config.get_logger()
+stats = get_plugin_by_name(config.get("plugins.metrics"))()
+
+automatically_backup_to_s3 = config.get(
+    "redis.automatically_backup_to_s3.enabled", False
+)
+automatically_restore_from_s3 = config.get(
+    "redis.automatically_restore_from_s3.enabled", False
+)
+s3 = boto3.resource("s3")
+s3_bucket = config.get("redis.automatically_backup_to_s3.bucket")
+s3_folder = config.get("redis.automatically_backup_to_s3.folder")
 
 
 # ToDo - Switch to Aioredis
@@ -14,6 +32,8 @@ class ConsoleMeRedis(redis.StrictRedis):
     ConsoleMeRedis is a simple wrapper around redis.StrictRedis. It was created to allow Redis to be optional.
     If Redis settings are not defined in ConsoleMe's configuration, we "disable" redis. If Redis is disabled, calls to
     Redis will fail silently. If new Redis calls are added to ConsoleMe, they should be added to this class.
+
+    ConsoleMeRedis also supports writing/retrieving data from S3 if the data is not retrievable from Redis
     """
 
     def __init__(self, *args, **kwargs):
@@ -25,42 +45,296 @@ class ConsoleMeRedis(redis.StrictRedis):
     def get(self, *args, **kwargs):
         if not self.enabled:
             return None
-        return super(ConsoleMeRedis, self).get(*args, **kwargs)
+        try:
+            result = super(ConsoleMeRedis, self).get(*args, **kwargs)
+        except redis.exceptions.ConnectionError as e:
+            function = (
+                f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+            )
+            log.error(
+                {
+                    "function": function,
+                    "message": "Unable to perform redis operation",
+                    "key": args[0],
+                    "error": e,
+                },
+                exc_info=True,
+            )
+            stats.count(f"{function}.error")
+            result = None
+        if not result and automatically_restore_from_s3:
+            try:
+                obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
+                result = obj.get()["Body"].read().decode("utf-8")
+            except Exception as e:
+                function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+                log.error(
+                    {
+                        "function": function,
+                        "message": "Unable to perform S3 operation",
+                        "key": args[0],
+                        "error": e,
+                    },
+                    exc_info=True,
+                )
+                stats.count(f"{function}.error")
+        return result
 
     def set(self, *args, **kwargs):
         if not self.enabled:
             return False
-        return super(ConsoleMeRedis, self).set(*args, **kwargs)
+        try:
+            result = super(ConsoleMeRedis, self).set(*args, **kwargs)
+        except redis.exceptions.ConnectionError as e:
+            function = (
+                f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+            )
+            log.error(
+                {
+                    "function": function,
+                    "message": "Unable to perform redis operation",
+                    "key": args[0],
+                    "error": e,
+                },
+                exc_info=True,
+            )
+            stats.count(f"{function}.error")
+            result = None
+        if automatically_backup_to_s3:
+            try:
+                obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
+                obj.put(Body=args[1])
+            except Exception as e:
+                function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+                log.error(
+                    {
+                        "function": function,
+                        "message": "Unable to perform S3 operation",
+                        "key": args[0],
+                        "error": e,
+                    },
+                    exc_info=True,
+                )
+                stats.count(f"{function}.error")
+        return result
 
     def setex(self, *args, **kwargs):
         if not self.enabled:
             return False
-        return super(ConsoleMeRedis, self).setex(*args, **kwargs)
+        # We do not currently support caching data in S3 with expiration (SETEX)
+        try:
+            result = super(ConsoleMeRedis, self).setex(*args, **kwargs)
+        except redis.exceptions.ConnectionError as e:
+            function = (
+                f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+            )
+            log.error(
+                {
+                    "function": function,
+                    "message": "Unable to perform redis operation",
+                    "key": args[0],
+                    "error": e,
+                },
+                exc_info=True,
+            )
+            stats.count(f"{function}.error")
+            result = None
+        return result
 
     def hmset(self, *args, **kwargs):
         if not self.enabled:
             return False
-        return super(ConsoleMeRedis, self).hmset(*args, **kwargs)
+        try:
+            result = super(ConsoleMeRedis, self).hmset(*args, **kwargs)
+        except redis.exceptions.ConnectionError as e:
+            function = (
+                f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+            )
+            log.error(
+                {
+                    "function": function,
+                    "message": "Unable to perform redis operation",
+                    "key": args[0],
+                    "error": e,
+                },
+                exc_info=True,
+            )
+            stats.count(f"{function}.error")
+            result = None
+        if automatically_backup_to_s3:
+            try:
+                obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
+                # Write to S3 in a separate thread
+                t = threading.Thread(
+                    target=obj.put, kwargs={"Body": json.dumps(args[1])}
+                )
+                t.daemon = True
+                t.start()
+            except Exception as e:
+                function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+                log.error(
+                    {
+                        "function": function,
+                        "message": "Unable to perform S3 operation",
+                        "key": args[0],
+                        "error": e,
+                    },
+                    exc_info=True,
+                )
+                stats.count(f"{function}.error")
+        return result
 
     def hset(self, *args, **kwargs):
         if not self.enabled:
             return False
-        return super(ConsoleMeRedis, self).hset(*args, **kwargs)
+        try:
+            result = super(ConsoleMeRedis, self).hset(*args, **kwargs)
+        except redis.exceptions.ConnectionError as e:
+            function = (
+                f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+            )
+            log.error(
+                {
+                    "function": function,
+                    "message": "Unable to perform redis operation",
+                    "key": args[0],
+                    "error": e,
+                },
+                exc_info=True,
+            )
+            stats.count(f"{function}.error")
+            result = None
+        if automatically_backup_to_s3:
+            try:
+                try:
+                    obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
+                    current = json.loads(obj.get()["Body"].read().decode("utf-8"))
+                    current[args[1]] = args[2]
+                except:  # noqa
+                    current = {args[1]: args[2]}
+                t = threading.Thread(
+                    target=obj.put, kwargs={"Body": json.dumps(current)}
+                )
+                t.daemon = True
+                t.start()
+            except Exception as e:
+                function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+                log.error(
+                    {
+                        "function": function,
+                        "message": "Unable to perform S3 operation",
+                        "key": args[0],
+                        "error": e,
+                    },
+                    exc_info=True,
+                )
+                stats.count(f"{function}.error")
+        return result
 
     def hget(self, *args, **kwargs):
         if not self.enabled:
             return None
-        return super(ConsoleMeRedis, self).hget(*args, **kwargs)
+        try:
+            result = super(ConsoleMeRedis, self).hget(*args, **kwargs)
+        except redis.exceptions.ConnectionError as e:
+            function = (
+                f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+            )
+            log.error(
+                {
+                    "function": function,
+                    "message": "Unable to perform redis operation",
+                    "key": args[0],
+                    "error": e,
+                },
+                exc_info=True,
+            )
+            stats.count(f"{function}.error")
+            result = None
+
+        if not result and automatically_restore_from_s3:
+            try:
+                obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
+                current = json.loads(obj.get()["Body"].read().decode("utf-8"))
+                result = current[args[1]]
+                if result:
+                    self.hset(args[0], args[1], result)
+            except Exception as e:
+                function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+                log.error(
+                    {
+                        "function": function,
+                        "message": "Unable to perform S3 operation",
+                        "key": args[0],
+                        "error": e,
+                    },
+                    exc_info=True,
+                )
+                stats.count(f"{function}.error")
+        return result
 
     def hmget(self, *args, **kwargs):
         if not self.enabled:
             return None
-        return super(ConsoleMeRedis, self).hmget(*args, **kwargs)
+        try:
+            result = super(ConsoleMeRedis, self).hmget(*args, **kwargs)
+        except redis.exceptions.ConnectionError as e:
+            function = (
+                f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+            )
+            log.error(
+                {
+                    "function": function,
+                    "message": "Unable to perform redis operation",
+                    "key": args[0],
+                    "error": e,
+                },
+                exc_info=True,
+            )
+            stats.count(f"{function}.error")
+            result = None
+        return result
 
     def hgetall(self, *args, **kwargs):
         if not self.enabled:
             return None
-        return super(ConsoleMeRedis, self).hgetall(*args, **kwargs)
+        try:
+            result = super(ConsoleMeRedis, self).hgetall(*args, **kwargs)
+        except redis.exceptions.ConnectionError as e:
+            function = (
+                f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+            )
+            log.error(
+                {
+                    "function": function,
+                    "message": "Unable to perform redis operation",
+                    "key": args[0],
+                    "error": e,
+                },
+                exc_info=True,
+            )
+            stats.count(f"{function}.error")
+            result = None
+        if not result and automatically_restore_from_s3:
+            try:
+                obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
+                result_j = obj.get()["Body"].read().decode("utf-8")
+                result = json.loads(result_j)
+                if result:
+                    self.hmset(args[0], result)
+            except Exception as e:
+                function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+                log.error(
+                    {
+                        "function": function,
+                        "message": "Unable to perform S3 operation",
+                        "key": args[0],
+                        "error": e,
+                    },
+                    exc_info=True,
+                )
+                stats.count(f"{function}.error")
+        return result
 
 
 class RedisHandler:

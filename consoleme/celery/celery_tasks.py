@@ -7,7 +7,6 @@ beat scheduler and a worker simultaneously, and to have jobs kick off starting a
 command: celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG -B
 
 """
-
 import json  # We use a separate SetEncoder here so we cannot use ujson
 import sys
 import time
@@ -26,13 +25,16 @@ from celery.schedules import crontab
 from celery.signals import task_failure, task_received, task_revoked, task_success
 from cloudaux import sts_conn
 from cloudaux.aws.iam import (
-    get_all_managed_policies,
     get_account_authorization_details,
+    get_all_managed_policies,
     get_user_access_keys,
 )
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sqs import list_queues
+from raven.contrib.celery import register_logger_signal, register_signal
+from retrying import retry
+
 from consoleme.config import config
 from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
@@ -41,8 +43,6 @@ from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import get_request_review_url
 from consoleme.lib.s3_helpers import put_object
 from consoleme.lib.ses import send_group_modification_notification
-from raven.contrib.celery import register_signal, register_logger_signal
-from retrying import retry
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
 region = config.region
@@ -514,7 +514,7 @@ def cache_policies_table_details() -> bool:
                     }
                 )
 
-    sns_topic_key: str = config.get("redis.sns_topics_key ", "SNS_TOPICS")
+    sns_topic_key: str = config.get("redis.sns_topics_key", "SNS_TOPICS")
     sns_accounts = red.hkeys(sns_topic_key)
     if sns_accounts:
         for account in sns_accounts:

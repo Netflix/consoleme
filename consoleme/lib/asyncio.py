@@ -1,0 +1,61 @@
+import asyncio
+from typing import List
+
+from asgiref.sync import sync_to_async
+
+
+async def bound_fetch(sem, fn, args, kwargs):
+    # Getter function with semaphore.
+    async with sem:
+        return {
+            "fn": fn,
+            "args": args,
+            "kwargs": kwargs,
+            "result": await fn(*args, **kwargs),
+        }
+
+
+async def bound_fetch_sync(sem, fn, args, kwargs):
+    # Getter function with semaphore.
+    async with sem:
+        return {
+            "fn": fn,
+            "args": args,
+            "kwargs": kwargs,
+            "result": await sync_to_async(fn)(*args, **kwargs),
+        }
+
+
+def run_in_parallel(task_list: List, threads=1000, sync=True):
+    async def run():
+        sem = asyncio.Semaphore(threads)
+        futures = []
+        for task in task_list:
+            if sync:
+                futures.append(
+                    asyncio.ensure_future(
+                        bound_fetch_sync(
+                            sem,
+                            task.get("fn"),
+                            task.get("args", ()),
+                            task.get("kwargs", {}),
+                        )
+                    )
+                )
+            else:
+                futures.append(
+                    asyncio.ensure_future(
+                        bound_fetch(
+                            sem,
+                            task.get("fn"),
+                            task.get("args", ()),
+                            task.get("kwargs", {}),
+                        )
+                    )
+                )
+        responses = asyncio.gather(*futures)
+        return await responses
+
+    loop = asyncio.get_event_loop()
+    future = asyncio.ensure_future(run())
+    return loop.run_until_complete(future)
