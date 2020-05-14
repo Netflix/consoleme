@@ -57,7 +57,6 @@ from consoleme.handlers.v2.roles import (
 from consoleme.handlers.v2.requests import (
     RequestsHandler,
     RequestDetailHandler,
-    RoleRequestsHandler,
 )
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
@@ -137,7 +136,6 @@ def make_app(jwt_validator=None):
         (r"/api/v2/requests/([a-zA-Z0-9_-]+)", RequestDetailHandler),
         (r"/api/v2/roles", RolesHandler),
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
-        (r"/api/v2/roles/(\d{12})/(.*)/requests", RoleRequestsHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
         (r"/config/?", DynamicConfigHandler),
         (r"/myheaders/?", HeaderHandler),
