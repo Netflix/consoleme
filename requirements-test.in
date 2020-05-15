@@ -9,7 +9,7 @@ flake8-docstrings
 flake8-import-order
 mock<4 # Mock 4 breaks a bunch of unit tests
 mockredispy
-moto>=1.3.14.dev522 # For unit test "delete_policy" call
+moto
 mypy
 Pillow
 pre-commit
