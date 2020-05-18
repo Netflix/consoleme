@@ -93,7 +93,7 @@ paths:
                 anyOf:
                   - $ref: '#/components/schemas/S3ChangeGeneratorModel'
                 discriminator:
-                  propertyName: template_type
+                  propertyName: generator_type
       responses:
         '200':
           description: OK
@@ -364,10 +364,10 @@ components:
     ChangeGeneratorModel:
       type: object
       required:
-        - template_type
+        - generator_type
         - resource
       properties:
-        template_type:
+        generator_type:
           type: string
           enum:
             - s3
