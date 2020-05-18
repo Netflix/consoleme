@@ -2,13 +2,10 @@ import ujson as json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseJSONHandler
-from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
-crypto = Crypto()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
 
 
 class RequestsHandler(BaseJSONHandler):
@@ -28,6 +25,10 @@ class RequestsHandler(BaseJSONHandler):
         """
         GET /api/v2/requests
         """
+        tags = {
+            "user": self.user,
+        }
+        stats.count("RequestsHandler.get", tags=tags)
         log_data = {
             "function": "RequestsHandler.get",
             "user": self.user,
@@ -42,6 +43,10 @@ class RequestsHandler(BaseJSONHandler):
         """
         POST /api/v2/requests
         """
+        tags = {
+            "user": self.user,
+        }
+        stats.count("RequestsHandler.post", tags=tags)
         log_data = {
             "function": "RequestsHandler.post",
             "user": self.user,
@@ -69,6 +74,10 @@ class RequestDetailHandler(BaseJSONHandler):
         """
         GET /api/v2/requests/{request_id}
         """
+        tags = {
+            "user": self.user,
+        }
+        stats.count("RequestDetailHandler.get", tags=tags)
         log_data = {
             "function": "RequestDetailHandler.get",
             "user": self.user,
@@ -83,6 +92,10 @@ class RequestDetailHandler(BaseJSONHandler):
         """
         PUT /api/v2/requests/{request_id}
         """
+        tags = {
+            "user": self.user,
+        }
+        stats.count("RequestDetailHandler.put", tags=tags)
         log_data = {
             "function": "RequestDetailHandler.put",
             "user": self.user,
