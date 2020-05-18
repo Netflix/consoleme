@@ -116,3 +116,4 @@ node_modules/
 **/static/bundles/
 webpack-stats.*.json
 **/yarn.lock
+.setupmeta.version
