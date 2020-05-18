@@ -80,6 +80,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExtendedRequestModel'
+  /template:
+    post:
+      summary: get templated changes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/S3TemplateModel'
+              discriminator:
+                propertyName: template_type
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/InlinePolicyChangeModel'
+                  - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+                  - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+                discriminator:
+                  propertyName: change_type
   /resources:
     get:
       summary: get resources
@@ -333,6 +357,32 @@ components:
               type: string
             comments:
               $ref: '#/components/schemas/CommentModel'
+    TemplateModel: # I don't like this name. Help!
+      type: object
+      required:
+        - template_type
+        - resource
+      properties:
+        template_type:
+          type: string
+          enum:
+            - s3
+    S3TemplateModel: # These schemas could be defined in different files.
+      allOf:
+        - $ref: '#/components/schemas/TemplateModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            action_groups:
+              type: array
+              items:
+                type: string
+                enum:
+                  - list
+                  - get
+                  - put
+                  - delete
     ChangeModel:
       type: object
       required:
