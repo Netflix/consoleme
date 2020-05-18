@@ -80,7 +80,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ExtendedRequestModel'
-  /template:
+  /generate_changes:
     post:
       summary: get templated changes
       requestBody:
@@ -88,22 +88,26 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/S3TemplateModel'
-              discriminator:
-                propertyName: template_type
+              type: array
+              items:
+                anyOf:
+                  - $ref: '#/components/schemas/S3ChangeGeneratorModel'
+                discriminator:
+                  propertyName: template_type
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/InlinePolicyChangeModel'
-                  - $ref: '#/components/schemas/ManagedPolicyChangeModel'
-                  - $ref: '#/components/schemas/ResourcePolicyChangeModel'
-                discriminator:
-                  propertyName: change_type
+                type: array
+                items:
+                  anyOf:
+                    - $ref: '#/components/schemas/InlinePolicyChangeModel'
+                    - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+                    - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+                  discriminator:
+                    propertyName: change_type
   /resources:
     get:
       summary: get resources
@@ -357,7 +361,7 @@ components:
               type: string
             comments:
               $ref: '#/components/schemas/CommentModel'
-    TemplateModel: # I don't like this name. Help!
+    ChangeGeneratorModel:
       type: object
       required:
         - template_type
@@ -367,9 +371,9 @@ components:
           type: string
           enum:
             - s3
-    S3TemplateModel: # These schemas could be defined in different files.
+    S3ChangeGeneratorModel: # These schemas could be defined in different files.
       allOf:
-        - $ref: '#/components/schemas/TemplateModel'
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
         - type: object
           required:
             - action_groups
