@@ -386,23 +386,13 @@ async def update_role_policy(events):
     log_data["response"] = response
     log.debug(log_data)
 
-    if response.get("FunctionError"):
+    if not response.get("success"):
         log_data["message"] = "Error"
-        log_data["error"] = json.dumps(response)
+        log_data["error"] = response.get("message")
         log.error(log_data)
         result["status"] = "error"
         result["error"] = log_data["error"]
         return result
-
-    elif response.get("Payload"):
-        payload = json.loads(response["Payload"].read())
-        if not payload.get("success"):
-            log_data["message"] = "Error"
-            log_data["error"] = payload.get("message")
-            log.error(log_data)
-            result["status"] = "error"
-            result["error"] = log_data["error"]
-            return result
 
     return result
 
