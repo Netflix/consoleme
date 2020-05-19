@@ -91,7 +91,10 @@ paths:
               type: array
               items:
                 anyOf:
+                  - $ref: '#/components/schemas/GenericChangeGeneratorModel'
                   - $ref: '#/components/schemas/S3ChangeGeneratorModel'
+                  - $ref: '#/components/schemas/SQSChangeGeneratorModel'
+                  - $ref: '#/components/schemas/SNSChangeGeneratorModel'
                 discriminator:
                   propertyName: generator_type
       responses:
@@ -370,8 +373,51 @@ components:
         generator_type:
           type: string
           enum:
+            - generic
             - s3
+            - sqs
+            - sns
+    GenericChangeGeneratorModel:
+      description: uses Policy Sentry to generate a policy based on access levels
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - access_level
+          properties:
+            access_level:
+              type: array
+              items:
+                type: string
+                enum:
+                  - read
+                  - write
+                  - list
+                  - tagging
+                  - permissions-management
     S3ChangeGeneratorModel: # These schemas could be defined in different files.
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            bucket_name:
+              type: string
+              example: really.cool.bucket
+            bucket_prefix:
+              type: string
+              example: /awesome/prefix/*
+            action_groups:
+              type: array
+              items:
+                type: string
+                enum:
+                  - list
+                  - get
+                  - put
+                  - delete
+    SQSChangeGeneratorModel:
       allOf:
         - $ref: '#/components/schemas/ChangeGeneratorModel'
         - type: object
@@ -383,10 +429,28 @@ components:
               items:
                 type: string
                 enum:
-                  - list
-                  - get
-                  - put
-                  - delete
+                  - get_queue_attributes
+                  - set_queue_attributes
+                  - receive_messages
+                  - send_messages
+                  - delete_messages
+    SNSChangeGeneratorModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            action_groups:
+              type: array
+              items:
+                type: string
+                enum:
+                  - get_topic_attributes
+                  - set_topic_attributes
+                  - publish
+                  - subscribe
+                  - unsubscribe
     ChangeModel:
       type: object
       required:
