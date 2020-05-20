@@ -1,8 +1,7 @@
+from datetime import datetime
 from unittest import TestCase
 
-from datetime import datetime
-
-from consoleme.lib.generic import is_in_time_range
+from consoleme.lib.generic import divide_chunks, is_in_time_range
 
 VALID_RANGE = {
     "days": [0, 1, 2, 3],
@@ -33,3 +32,7 @@ class TestGenericLib(TestCase):
         x = datetime(2020, 3, 6, 15, 30)  # Friday
         result = is_in_time_range(x, VALID_RANGE)
         self.assertEqual(result, False)
+
+    def test_divide_chunks(self):
+        r = list(divide_chunks(["a", "b", "c", "d", "e"], 3))
+        self.assertEqual(r, [["a", "b", "c"], ["d", "e"]])
