@@ -256,7 +256,7 @@ class ConsoleMeRedis(redis.StrictRedis):
             try:
                 obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
                 current = json.loads(obj.get()["Body"].read().decode("utf-8"))
-                result = current[args[1]]
+                result = current.get(args[1])
                 if result:
                     self.hset(args[0], args[1], result)
             except Exception as e:
