@@ -2,7 +2,6 @@ from typing import List
 
 import boto3
 import ujson as json
-from consoleme_internal.plugins.group_mapping.group_mapping import Spinnaker
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MissingConfigurationValue
@@ -10,7 +9,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
-spinnaker = Spinnaker()
 
 client = boto3.client("config")
 
