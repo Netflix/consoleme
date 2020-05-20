@@ -1,14 +1,14 @@
 import os
 import random
+import re
+from datetime import datetime
 from random import randint
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
-import re
 import ujson as json
-from datetime import datetime
 from dateutil import parser
 from tornado.web import RequestHandler
-from typing import Dict, List, Optional, Union
 
 
 def str2bool(v: Optional[Union[bool, str]]) -> bool:
@@ -17,6 +17,21 @@ def str2bool(v: Optional[Union[bool, str]]) -> bool:
     if type(v) == bool and v is True:
         return True
     return v.lower() in ["true", "True"]
+
+
+# Yield successive n-sized
+# chunks from list l.
+def divide_chunks(l, n):
+    """
+    Yields successive n=zied chunks from list l by looping
+    until length l.
+
+    `divide_chunks(["a","b","c","d","e"], 2)` yields:
+    ['a', 'b', 'c']
+    ['d', 'e']
+    """
+    for i in range(0, len(l), n):
+        yield l[i : i + n]
 
 
 def generate_html(d: List[Dict[str, Union[str, bool]]]) -> str:
