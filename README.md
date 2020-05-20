@@ -212,6 +212,14 @@ It is possible to use Docker `docker-compose-test.yaml` to run ConsoleMe and its
 in Docker with the default plugin set. Configure a new Docker Python interpreter to run __main__.py with your
 working directory set to `/apps/consoleme` (on the container). This flow was tested on Windows 10.
 
+### Generating Models from Swagger Spec
+
+When changes are made to the Swagger spec, models may need to be regenerated using [datamodel-code-generator](https://github.com/koxudaxi/datamodel-code-generator).
+
+```bash
+pip install datamodel-code-generator
+datamodel-codegen --input swagger.yaml --output consoleme/models/models.py
+```
 
 ## Generate an AMI to deploy ConsoleMe to EC2
 

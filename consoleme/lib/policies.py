@@ -1,10 +1,9 @@
-import base64
-from collections import defaultdict
-
-import boto3
 import re
 import sys
 import time
+from collections import defaultdict
+from typing import Dict, List
+
 import ujson as json
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
@@ -16,12 +15,12 @@ from policy_sentry.util.arns import (
     get_resource_from_arn,
     get_service_from_arn,
 )
-from typing import Dict, List
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.role_updater.handler import update_role
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -381,36 +380,19 @@ async def update_role_policy(events):
     stats.count(function)
 
     log_data = {"function": function, "message": "Updating role policy"}
-    # Invoke Lambda and wait for response
-    client = boto3.client("lambda", region_name=config.region)
 
-    response = await sync_to_async(client.invoke)(
-        FunctionName="roleupdater_lambda",
-        LogType="Tail",
-        Payload=str.encode(json.dumps(events, escape_forward_slashes=False)),
-    )
-
-    response_log = base64.b64decode(response["LogResult"])
-    log_data["lambda_response"] = response_log
+    response = await update_role(events)
+    log_data["message"] = "Received Response"
+    log_data["response"] = response
     log.debug(log_data)
 
-    if response.get("FunctionError"):
+    if not response.get("success"):
         log_data["message"] = "Error"
-        log_data["error"] = json.dumps(response)
+        log_data["error"] = response.get("message")
         log.error(log_data)
         result["status"] = "error"
         result["error"] = log_data["error"]
         return result
-
-    elif response.get("Payload"):
-        payload = json.loads(response["Payload"].read())
-        if not payload.get("success"):
-            log_data["message"] = "Error"
-            log_data["error"] = payload.get("message")
-            log.error(log_data)
-            result["status"] = "error"
-            result["error"] = log_data["error"]
-            return result
 
     return result
 

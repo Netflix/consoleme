@@ -1,0 +1,621 @@
+openapi: 3.0.0
+info:
+  description: ConsoleMe API definition
+  version: '2.0.0'
+  title: ConsoleMe v2 API
+  contact:
+    email: consoleme-owners@netflix.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.txt
+tags:
+  - name: roles
+    description: IAM Role endpoints
+  - name: requests
+    description: Policy Request endpoints
+  - name: privileged
+    description: Endpoints requiring elevated permissions
+paths:
+  /requests:
+    get:
+      summary: get a list of requests
+      tags:
+        - requests
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RequestModel'
+    post:
+      summary: submit a new request
+      tags:
+        - requests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtendedRequestModel'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRequestModel'
+  /requests/{request_id}:
+    get:
+      summary: get details about a request
+      tags:
+        - requests
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRequestModel'
+    put:
+      summary: update a request
+      tags:
+        - requests
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtendedRequestModel'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRequestModel'
+  /generate_changes:
+    post:
+      summary: get templated changes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                anyOf:
+                  - $ref: '#/components/schemas/GenericChangeGeneratorModel'
+                  - $ref: '#/components/schemas/S3ChangeGeneratorModel'
+                  - $ref: '#/components/schemas/SQSChangeGeneratorModel'
+                  - $ref: '#/components/schemas/SNSChangeGeneratorModel'
+                discriminator:
+                  propertyName: generator_type
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  anyOf:
+                    - $ref: '#/components/schemas/InlinePolicyChangeModel'
+                    - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+                    - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+                  discriminator:
+                    propertyName: change_type
+  /resources:
+    get:
+      summary: get resources
+      parameters:
+        - $ref: '#/components/parameters/AccountIdQueryString'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResourceModel'
+  /roles:
+    get:
+      summary: get a list of roles
+      tags:
+        - roles
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleModel'
+  /roles/{account_id}:
+    get:
+      summary: get a list of roles in an account
+      tags:
+        - roles
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoleModel'
+    post:
+      summary: create a role
+      tags:
+        - roles
+        - privileged
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtendedRoleModel'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRoleModel'
+  /roles/{account_id}/{role_name}:
+    get:
+      summary: get details about a role
+      tags:
+        - roles
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRoleModel'
+    put:
+      summary: update a role
+      tags:
+        - roles
+        - privileged
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtendedRoleModel'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRoleModel'
+    delete:
+      summary: delete a role
+      tags:
+        - roles
+        - privileged
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
+      responses:
+        '204':
+          description: No Content
+  /user:
+    get:
+      summary: get details about current user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserModel'
+components:
+  parameters:
+    AccountId:
+      name: account_id
+      in: path
+      required: true
+      example: 012345678901
+      schema:
+        type: string
+        pattern: '^\d{12}$'
+    RoleName:
+      name: role_name
+      in: path
+      required: true
+      example: fake_account_admin
+      schema:
+        type: string
+    RequestId:
+      name: request_id
+      in: path
+      required: true
+      example: 16fd2706-8baf-433b-82eb-8c7fada847da
+      schema:
+        type: string
+    AccountIdQueryString:
+      name: account_id
+      in: query
+      example: 012345678901
+      schema:
+        type: string
+        pattern: '^\d{12}$'
+  schemas:
+    ResourceModel:
+      type: object
+      required:
+        - arn
+        - account_id
+        - account_name
+        - policy_sha256
+        - policy
+        - owner
+        - approvers
+        - resource_type
+        - last_updated
+      properties:
+        arn:
+          description: resource ARN
+          type: string
+          readOnly: true
+        account_id:
+          description: AWS account ID
+          type: string
+          readOnly: true
+        account_name:
+          description: human-friendly AWS account name
+          type: string
+          readOnly: true
+        policy_sha256:
+          description: hash of the most recent resource policy seen by ConsoleMe
+          type: string
+          readOnly: true
+        policy:
+          type: string
+        owner:
+          description: email address of team or individual who owns this resource
+          type: string
+        approvers:
+          type: array
+          items:
+            type: string
+        resource_type:
+          type: string
+        last_updated:
+          description: last time resource was updated from source-of-truth
+          type: string
+          format: date-time
+    RequestModel:
+      type: object
+      required:
+        - id
+        - arn
+        - timestamp
+        - justification
+        - requester_email
+        - approvers
+        - status
+      properties:
+        id:
+          type: string
+          readOnly: true
+        arn:
+          type: string
+          description: ARN of principal being modified
+          example: arn:aws:iam::123456789012:role/super_awesome_admin
+        timestamp:
+          type: string
+          format: date-time
+        justification:
+          type: string
+        requester_email:
+          type: string
+        approvers:
+          description: list of approvers, derived from approvers of `resource`s in `changes`
+          type: array
+          items:
+            type: string
+          readOnly: true
+        status:
+          type: string
+    ExtendedRequestModel:
+      allOf:
+        - $ref: '#/components/schemas/RequestModel'
+        - type: object
+          required:
+            - changes
+            - requester_info
+          properties:
+            changes:
+              type: array
+              items:
+                anyOf:
+                  - $ref: '#/components/schemas/InlinePolicyChangeModel'
+                  - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+                  - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+                discriminator:
+                  propertyName: change_type
+            requester_info:
+              $ref: '#/components/schemas/UserModel'
+            reviewer:
+              type: string
+            comments:
+              $ref: '#/components/schemas/CommentModel'
+    ChangeGeneratorModel:
+      type: object
+      required:
+        - generator_type
+        - resource
+      properties:
+        generator_type:
+          type: string
+          enum:
+            - generic
+            - s3
+            - sqs
+            - sns
+    GenericChangeGeneratorModel:
+      description: uses Policy Sentry to generate a policy based on access levels
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - access_level
+          properties:
+            access_level:
+              type: array
+              items:
+                type: string
+                enum:
+                  - read
+                  - write
+                  - list
+                  - tagging
+                  - permissions-management
+    S3ChangeGeneratorModel: # These schemas could be defined in different files.
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            bucket_name:
+              type: string
+              example: really.cool.bucket
+            bucket_prefix:
+              type: string
+              example: /awesome/prefix/*
+            action_groups:
+              type: array
+              items:
+                type: string
+                enum:
+                  - list
+                  - get
+                  - put
+                  - delete
+    SQSChangeGeneratorModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            action_groups:
+              type: array
+              items:
+                type: string
+                enum:
+                  - get_queue_attributes
+                  - set_queue_attributes
+                  - receive_messages
+                  - send_messages
+                  - delete_messages
+    SNSChangeGeneratorModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            action_groups:
+              type: array
+              items:
+                type: string
+                enum:
+                  - get_topic_attributes
+                  - set_topic_attributes
+                  - publish
+                  - subscribe
+                  - unsubscribe
+    ChangeModel:
+      type: object
+      required:
+        - change_type
+        - resource
+      properties:
+        change_type:
+          type: string
+          enum:
+            - inline_policy
+            - managed_policy
+            - resource_policy
+        resource:
+          $ref: '#/components/schemas/ResourceModel'
+    InlinePolicyChangeModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeModel'
+        - type: object
+          required:
+            - arn
+            - policy_name
+            - new
+            - policy
+          properties:
+            arn:
+              type: string
+            additional_arns:
+              description: additional ARNs relevant to request, e.g. S3 bucket ARN with path prefix
+              type: string
+            policy_name:
+              type: string
+            new:
+              type: boolean
+            policy:
+              $ref: '#/components/schemas/PolicyModel'
+            old_policy:
+              $ref: '#/components/schemas/PolicyModel'
+    ResourcePolicyChangeModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeModel'
+        - type: object
+          required:
+            - arn
+            - policy
+          properties:
+            arn:
+              type: string
+            policy:
+              $ref: '#/components/schemas/PolicyModel'
+            old_policy:
+              $ref: '#/components/schemas/PolicyModel'
+    ManagedPolicyChangeModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeModel'
+        - type: object
+          required:
+            - arn
+            - policy_name
+            - action
+          properties:
+            arn:
+              type: string
+            policy_name:
+              type: string
+            action:
+              type: string
+              enum:
+                - attach
+                - detach
+    PolicyModel:
+      type: object
+      required:
+        - policy_document
+        - policy_sha256
+      properties:
+        policy_document:
+          type: string
+          description: JSON policy document
+        policy_sha256:
+          type: string
+          description: hash of policy_document
+    CommentModel:
+      type: object
+      required:
+        - id
+        - timestamp
+        - user_email
+        - text
+      properties:
+        id:
+          type: string
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+        edited:
+          type: boolean
+        last_modified:
+          type: string
+          format: date-time
+        user_email:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserModel'
+        text:
+          type: string
+    RoleModel:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: super_awesome_admin
+        account_id:
+          type: string
+          minLength: 12
+          maxLength: 12
+          example: '123456789012'
+          readOnly: true
+        account_name:
+          type: string
+          example: super_awesome
+          readOnly: true
+        arn:
+          type: string
+          example: arn:aws:iam::123456789012:role/super_awesome_admin
+          readOnly: true
+    ExtendedRoleModel:
+      allOf:
+        - $ref: '#/components/schemas/RoleModel'
+        - type: object
+          required:
+            - inline_policies
+            - assume_role_policies
+            - managed_policies
+            - tags
+          properties:
+            inline_policies:
+              type: array
+              items:
+                type: object # TODO: make inline_policies schema
+            assume_role_policies:
+              type: array
+              items:
+                type: object # TODO: make assume_role_policies schema
+            managed_policies:
+              type: array
+              items:
+                type: object # TODO: make managed_policies schema
+            tags:
+              type: array
+              items:
+                type: object # TODO: make tags schema
+            templated:
+              type: boolean
+              readOnly: true
+            template_link:
+              type: string
+              readOnly: true
+    UserModel:
+      type: object
+      readOnly: true
+      properties:
+        email:
+          type: string
+        extended_info:
+          type: object

@@ -26,6 +26,7 @@ kombu
 marshmallow
 logmatic-python
 lxml
+okta_jwt
 pandas<1 #  Internal plugin depends on Pandas < 1
 pkgconfig
 policy_sentry
