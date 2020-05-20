@@ -342,14 +342,7 @@ components:
             - requester_info
           properties:
             changes:
-              type: array
-              items:
-                anyOf:
-                  - $ref: '#/components/schemas/InlinePolicyChangeModel'
-                  - $ref: '#/components/schemas/ManagedPolicyChangeModel'
-                  - $ref: '#/components/schemas/ResourcePolicyChangeModel'
-                discriminator:
-                  propertyName: change_type
+              $ref: '#/components/schemas/ChangeModelArray'
             requester_info:
               $ref: '#/components/schemas/UserModel'
             reviewer:
@@ -521,6 +514,15 @@ components:
               enum:
                 - attach
                 - detach
+    ChangeModelArray:
+      type: array
+      items:
+        anyOf:
+          - $ref: '#/components/schemas/InlinePolicyChangeModel'
+          - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+          - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+        discriminator:
+          propertyName: change_type
     PolicyModel:
       type: object
       required:
