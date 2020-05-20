@@ -268,14 +268,6 @@ components:
       type: object
       required:
         - arn
-        - account_id
-        - account_name
-        - policy_sha256
-        - policy
-        - owner
-        - approvers
-        - resource_type
-        - last_updated
       properties:
         arn:
           description: resource ARN
@@ -368,8 +360,12 @@ components:
       type: object
       required:
         - generator_type
+        - arn
         - resource
       properties:
+        arn:
+          description: principal ARN
+          type: string
         generator_type:
           type: string
           enum:
@@ -377,6 +373,9 @@ components:
             - s3
             - sqs
             - sns
+        resource:
+          description: resource ARN
+          type: string
     GenericChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -455,7 +454,7 @@ components:
       type: object
       required:
         - change_type
-        - resource
+        - resource_arn
       properties:
         change_type:
           type: string
@@ -463,6 +462,8 @@ components:
             - inline_policy
             - managed_policy
             - resource_policy
+        resource_arn:
+          type: string
         resource:
           $ref: '#/components/schemas/ResourceModel'
     InlinePolicyChangeModel:
