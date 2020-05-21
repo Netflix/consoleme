@@ -10,17 +10,16 @@ from consoleme.lib.plugins import get_plugin_by_name
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 
-client = boto3.client("config")
-
 
 def query(query: str) -> List:
+    config_client = boto3.client("config", region_name=config.region)
     resources = []
     configuration_aggregator_name: str = config.get(
         "aws_config.configuration_aggregator.name"
-    )
+    ).format(region=config.region)
     if not configuration_aggregator_name:
         raise MissingConfigurationValue("Invalid configuration for aws_config")
-    response = client.select_aggregate_resource_config(
+    response = config_client.select_aggregate_resource_config(
         Expression=query,
         ConfigurationAggregatorName=configuration_aggregator_name,
         Limit=100,
@@ -28,7 +27,7 @@ def query(query: str) -> List:
     for r in response.get("Results", []):
         resources.append(json.loads(r))
     while response.get("NextToken"):
-        response = client.select_aggregate_resource_config(
+        response = config_client.select_aggregate_resource_config(
             Expression=query,
             ConfigurationAggregatorName=configuration_aggregator_name,
             Limit=100,
