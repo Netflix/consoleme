@@ -197,7 +197,7 @@ The configuration in `docker-compose-saml.yaml` specifies the expected service p
 
 A simple configuration for SimpleSaml users exists at `docker/simplesamlphp/authsources.php`. It specifies an example user (consoleme_user:consoleme_user), and an admin user (consoleme_admin:consoleme_admin).
 
-ConsoleMe's configuration (`docker/example_config_saml.yaml`) specifies the following configuration:
+ConsoleMe's configuration (`docker/example_config_saml.yaml`) specifies the following configuration: 
 
 `get_user_by_saml_settings.saml_path`: Location of SAML settings used by the OneLoginSaml2 library
 	- You'll need to configure the entity ID, IdP Binding urls, and ACS urls in this file
