@@ -343,3 +343,11 @@ class DataNotRetrievable(BaseException):
     def __init__(self, msg=""):
         stats.count("DataNotRetrievable")
         super().__init__(msg)
+
+
+class MissingConfigurationValue(BaseException):
+    """Unable to find expected configuration value"""
+
+    def __init__(self, msg=""):
+        stats.count("MissingConfigurationValue")
+        super().__init__(msg)

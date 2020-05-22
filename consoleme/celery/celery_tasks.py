@@ -22,7 +22,15 @@ from botocore.exceptions import ClientError
 from celery.app.task import Context
 from celery.concurrency import asynpool
 from celery.schedules import crontab
-from celery.signals import task_failure, task_received, task_revoked, task_success
+from celery.signals import (
+    task_failure,
+    task_received,
+    task_rejected,
+    task_retry,
+    task_revoked,
+    task_success,
+    task_unknown,
+)
 from cloudaux import sts_conn
 from cloudaux.aws.iam import (
     get_account_authorization_details,
@@ -46,6 +54,11 @@ from consoleme.lib.ses import send_group_modification_notification
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
 region = config.region
+default_retry_kwargs = {
+    "autoretry_for": (Exception,),
+    "retry_backoff": True,
+    "retry_kwargs": {"max_retries": config.get("celery.default_max_retries", 5)},
+}
 
 
 class Celery(celery.Celery):
@@ -132,9 +145,18 @@ def get_celery_request_tags(**kwargs):
         task_id = request.id
         receiver_hostname = request.hostname
     else:
-        task_name = sender.name
-        task_id = sender.request.id
-        receiver_hostname = sender.request.hostname
+        try:
+            task_name = sender.name
+        except AttributeError:
+            task_name = kwargs.pop("name", "")
+        try:
+            task_id = sender.request.id
+        except AttributeError:
+            task_id = kwargs.pop("id", "")
+        try:
+            receiver_hostname = sender.request.hostname
+        except AttributeError:
+            receiver_hostname = ""
 
     tags = {
         "task_name": task_name,
@@ -142,8 +164,11 @@ def get_celery_request_tags(**kwargs):
         "sender_hostname": sender_hostname,
         "receiver_hostname": receiver_hostname,
     }
-    if kwargs.get("exception"):
-        tags["error"] = repr(kwargs["exception"])
+    exception = kwargs.get("exception")
+    if not exception:
+        exception = kwargs.get("exc")
+    if exception:
+        tags["error"] = repr(exception)
     return tags
 
 
@@ -185,6 +210,38 @@ def report_successful_task(**kwargs):
     stats.timer("celery.successful_task", tags=tags)
 
 
+@task_retry.connect
+def report_task_retry(**kwargs):
+    """
+    Report a generic retry metric as tasks to our metrics broker every time a task is retroed.
+    This metric can be used for alerting.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-retry
+
+    :param sender:
+    :param headers:
+    :param body:
+    :param kwargs:
+    :return:
+    """
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "Message": "Celery Task Retry",
+    }
+
+    # Add traceback if exception info is in the kwargs
+    einfo = kwargs.get("einfo")
+    if einfo:
+        log_data["traceback"] = einfo.traceback
+
+    error_tags = get_celery_request_tags(**kwargs)
+
+    log_data.update(error_tags)
+    log.error(log_data)
+    error_tags.pop("error", None)
+    error_tags.pop("task_id", None)
+    stats.timer("celery.retried_task", tags=error_tags)
+
+
 @task_failure.connect
 def report_failed_task(**kwargs):
     """
@@ -215,6 +272,60 @@ def report_failed_task(**kwargs):
     error_tags.pop("error", None)
     error_tags.pop("task_id", None)
     stats.timer("celery.failed_task", tags=error_tags)
+
+
+@task_unknown.connect
+def report_unknown_task(**kwargs):
+    """
+    Report a generic failure metric as tasks to our metrics broker every time a worker receives an unknown task.
+    This metric can be used for alerting.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-unknown
+
+    :param sender:
+    :param headers:
+    :param body:
+    :param kwargs:
+    :return:
+    """
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "Message": "Celery Task Unknown",
+    }
+
+    error_tags = get_celery_request_tags(**kwargs)
+
+    log_data.update(error_tags)
+    log.error(log_data)
+    error_tags.pop("error", None)
+    error_tags.pop("task_id", None)
+    stats.timer("celery.unknown_task", tags=error_tags)
+
+
+@task_rejected.connect
+def report_rejected_task(**kwargs):
+    """
+    Report a generic failure metric as tasks to our metrics broker every time a task is rejected.
+    This metric can be used for alerting.
+    https://docs.celeryproject.org/en/latest/userguide/signals.html#task-rejected
+
+    :param sender:
+    :param headers:
+    :param body:
+    :param kwargs:
+    :return:
+    """
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "Message": "Celery Task Rejected",
+    }
+
+    error_tags = get_celery_request_tags(**kwargs)
+
+    log_data.update(error_tags)
+    log.error(log_data)
+    error_tags.pop("error", None)
+    error_tags.pop("task_id", None)
+    stats.timer("celery.rejected_task", tags=error_tags)
 
 
 @task_revoked.connect
@@ -571,7 +682,7 @@ def cache_policies_table_details() -> bool:
     return True
 
 
-@app.task(name="cache_roles_for_account", soft_time_limit=2700)
+@app.task(name="cache_roles_for_account", soft_time_limit=2700, **default_retry_kwargs)
 def cache_roles_for_account(account_id: str) -> bool:
     # Get the DynamoDB handler:
     dynamo = IAMRoleDynamoHandler()
@@ -645,7 +756,7 @@ def cache_roles_across_accounts() -> bool:
     return True
 
 
-@app.task(soft_time_limit=1800)
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     managed_policies: list[dict] = get_all_managed_policies(
         account_number=account_id,
@@ -747,7 +858,7 @@ def cache_sns_topics_across_accounts() -> bool:
     return True
 
 
-@app.task(soft_time_limit=1800)
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     all_queues: set = set()
     for region in config.get("celery.sync_regions"):
@@ -787,7 +898,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     return log_data
 
 
-@app.task(soft_time_limit=1800)
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     # Make sure it is regional
     all_topics: set = set()
@@ -827,7 +938,7 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     return log_data
 
 
-@app.task(soft_time_limit=1800)
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     s3_buckets: list = list_buckets(
         account_number=account_id,
@@ -1000,7 +1111,6 @@ def get_iam_role_limit() -> dict:
     """
     This function will gather the number of existing IAM Roles and IAM Role quota in all owned AWS accounts.
     """
-
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     num_accounts = 0
     num_roles = 0
