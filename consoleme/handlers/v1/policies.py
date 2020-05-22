@@ -14,7 +14,7 @@ from consoleme.exceptions.exceptions import (
     MustBeFte,
     Unauthorized,
 )
-from consoleme.handlers.base import BaseHandler, BaseMtlsHandler
+from consoleme.handlers.base import BaseHandler, BaseMtlsHandler, BaseAPIHandler
 from consoleme.lib.aws import (
     fetch_resource_details,
     get_all_iam_managed_policies_for_account,
@@ -935,7 +935,7 @@ class SelfServiceHandler(BaseHandler):
         )
 
 
-class AutocompleteHandler(BaseHandler):
+class AutocompleteHandler(BaseAPIHandler):
     async def get(self):
         """
         /api/v1/policyuniverse/autocomplete/?prefix=

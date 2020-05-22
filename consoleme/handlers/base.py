@@ -435,7 +435,13 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         return auth
 
 
-class BaseMtlsHandler(BaseHandler):
+class BaseAPIHandler(BaseHandler):
+    """Default BaseAPIHandler."""
+    def set_default_headers(self, *args, **kwargs):
+        self.set_header("Content-Type", "application/json")
+
+
+class BaseMtlsHandler(BaseAPIHandler):
     def initialize(self, **kwargs):
         self.kwargs = kwargs
 

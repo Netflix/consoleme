@@ -3,7 +3,7 @@ from operator import itemgetter
 from urllib.parse import parse_qs, urlencode, urlparse
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseHandler
+from consoleme.handlers.base import BaseHandler, BaseAPIHandler
 from consoleme.lib.handler_utils import format_role_name
 from consoleme.lib.loader import WebpackLoader
 from consoleme.lib.plugins import get_plugin_by_name
@@ -176,7 +176,7 @@ class IndexHandler(BaseHandler):
         self.redirect(url)
 
 
-class SelectRolesHandler(BaseHandler):
+class SelectRolesHandler(BaseAPIHandler):
     def initialize(self):
         self.user: str = None
         self.eligible_roles: list = []

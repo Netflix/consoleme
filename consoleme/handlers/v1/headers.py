@@ -1,7 +1,7 @@
 from tornado.escape import xhtml_escape
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseHandler, BaseMtlsHandler
+from consoleme.handlers.base import BaseHandler, BaseMtlsHandler, BaseAPIHandler
 from consoleme.lib.generic import get_random_security_logo, is_in_group
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -9,7 +9,7 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
 
-class UserProfileHandler(BaseHandler):
+class UserProfileHandler(BaseAPIHandler):
     async def get(self):
         """
         Provide information about the user profile for the frontend
@@ -54,7 +54,7 @@ class UserProfileHandler(BaseHandler):
         self.write(user_profile)
 
 
-class SiteConfigHandler(BaseHandler):
+class SiteConfigHandler(BaseAPIHandler):
     async def get(self):
         """
         Provide information about site configuration for the frontend
