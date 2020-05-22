@@ -86,6 +86,7 @@ class SelfServiceStep1 extends Component {
 
     handleResultSelect(e, {result}) {
         let role = Object.assign({}, this.props.role);
+        // TODO(curtis), once we select a role, fetch the role info and update the Role Info section.
         role.roleArn = result.title;
         this.props.handleRoleUpdate(role);
         this.setState({
@@ -101,6 +102,8 @@ class SelfServiceStep1 extends Component {
 
     handleSelectRoleChange(e, {value}) {
         let role = Object.assign({}, this.props.role);
+
+        // TODO(curtis), once we select a role, fetch the role info and update the Role Info section.
         role.roleArn = value;
         this.props.handleRoleUpdate(role);
     }

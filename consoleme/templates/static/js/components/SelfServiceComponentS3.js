@@ -30,33 +30,46 @@ class SelfServiceComponentS3 extends Component {
         this.props.updatePermission({
             type: SelfServiceComponentS3.TYPE,
             actions: [],
-            prefix: '',
+            prefix: '/*',
             value: '',
         });
     }
 
     handleActionChange(e, {value}) {
         const {permission} = this.props;
-        permission.actions = value;
-        this.props.updatePermission(permission);
+        this.props.updatePermission({
+            actions: value,
+            prefix: permission.prefix,
+            value: permission.value,
+        });
     }
 
     handleBucketPrefixChange(e) {
         const {permission} = this.props;
-        permission.prefix = value;
-        this.props.updatePermission(permission);
+        this.props.updatePermission({
+            actions: permission.actions,
+            prefix: e.target.value,
+            value: permission.value,
+        });
     }
 
     handleResultSelect(e, {result}) {
         const {permission} = this.props;
-        permission.value = result.title;
-        this.props.updatePermission(permission);
+        this.props.updatePermission({
+            actions: permission.actions,
+            prefix: permission.prefix,
+            value: result.title,
+        });
     }
 
     handleSearchChange(e, {value}) {
         const {permission} = this.props;
-        permission.value = value;
-        this.props.updatePermission(permission);
+
+        this.props.updatePermission({
+            actions: permission.actions,
+            prefix: permission.prefix,
+            value: value,
+        });
 
         this.setState({
             isLoading: true,
@@ -121,8 +134,7 @@ class SelfServiceComponentS3 extends Component {
                         ref="prefix"
                         placeholder="/*"
                         defaultValue="/*"
-                        value={permission.prefix || '/*'}
-                        onChange={this.handleBucketPrefixChange.bind(this)}
+                        onBlur={this.handleBucketPrefixChange.bind(this)}
                     />
                 </Form.Field>
                 <Form.Field>

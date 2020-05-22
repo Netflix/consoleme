@@ -42,7 +42,7 @@ class SelfServiceStep1 extends Component {
     }
 
     handlePermissionAdd() {
-        const {permission} = this.state;
+        const {permission, resourceType} = this.state;
         const {permissions} = this.props;
 
         // skip adding a permission if any of followings are empty.
@@ -50,7 +50,10 @@ class SelfServiceStep1 extends Component {
             return;
         }
 
-        permissions.push(permission);
+        permissions.push({
+            type: resourceType,
+            ...permission,
+        });
 
         this.setState({
             permission: {},

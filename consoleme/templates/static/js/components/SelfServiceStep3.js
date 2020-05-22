@@ -23,9 +23,15 @@ import policyExample from './policy_example';
 class SelfServiceStep3 extends Component {
     state = {};
 
+    componentDidMount() {
+        // TODO(curtis), use the role and permissions from props and send them for policy
+        // generation and review evaluation.
+        const {role, permissions} = this.props;
+    }
+
     handleRequestSubmit() {
         const {role, permissions} = this.props;
-        // TODO, send a role and a list of permissions or JSON dump?
+        // TODO(curtis), send a role and a list of permissions or JSON dump
         console.log("Send Request to Backend: ", role, permissions);
     }
 
