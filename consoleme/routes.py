@@ -9,6 +9,7 @@ import tornado.web
 from apispec import APISpec
 from apispec.exceptions import APISpecError
 from apispec_webframeworks.tornado import TornadoPlugin
+from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 from raven.contrib.tornado import AsyncSentryClient
 
 import consoleme
@@ -133,6 +134,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/roles/?", SelectRolesHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
+        (r"/api/v2/generate_policy", GeneratePolicyHandler),
         (r"/api/v2/requests", RequestsHandler),
         (r"/api/v2/requests/([a-zA-Z0-9_-]+)", RequestDetailHandler),
         (r"/api/v2/roles", RolesHandler),

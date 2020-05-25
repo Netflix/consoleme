@@ -74,8 +74,8 @@ module.exports = {
     jquery: 'jQuery'
   },
   // Enable these for easier development when running locally
-  // devtool: 'source-map',
-  // optimization: {
-  //     minimize: false
-  // },
+  devtool: 'source-map',
+  optimization: {
+      minimize: false
+  },
 };

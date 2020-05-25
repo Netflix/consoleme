@@ -18,15 +18,20 @@ import "ace-builds/src-noconflict/theme-monokai";
 
 // TODO, remove this.
 import policyExample from './policy_example';
+import useFetch from "../helpers/useFetch";
 
 
 class SelfServiceStep3 extends Component {
     state = {};
 
-    componentDidMount() {
+    async componentDidMount() {
         // TODO(curtis), use the role and permissions from props and send them for policy
         // generation and review evaluation.
         const {role, permissions} = this.props;
+
+        const { get, post, response, loading, error } = useFetch("/api/v2/generate_policy")
+        const res = await get()
+        console.log(res)
     }
 
     handleRequestSubmit() {
