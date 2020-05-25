@@ -96,6 +96,11 @@ class IndexHandler(BaseHandler):
         user_role = False
         account_id = None
 
+        if not role or role not in self.eligible_roles:
+            # Not authorized
+            self.set_status(403)
+            return
+
         # User role must be defined as a user attribute
         if self.user_role_name and role.split("role/")[1] == self.user_role_name:
             user_role = True
