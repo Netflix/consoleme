@@ -256,11 +256,11 @@
 
         if (pastRoles != null) {
             text = '<h3>Recent roles</h3>'
-            text = text.concat('<form id="recent_roles" name="recent_roles" action="/" method="post" enctype="application/json"><ul>')
-            text = text.concat('{% module xsrf_form_html() %}')
-            text = text.concat('<input type=hidden name="region" value="{{ escape(region) }}">')
+            text += '<form id="recent_roles" name="recent_roles" action="/" method="post" enctype="application/json"><ul>'
+            text += '{% module xsrf_form_html() %}'
+            text += '<input type=hidden name="region" value="{{ escape(region) }}">'
             {% if globals().get("redirect") and redirect %}
-                text = text.concat('<input type=hidden name="redirect" value="{{ escape(redirect) }}">')
+                text += '<input type=hidden name="redirect" value="{{ escape(redirect) }}">'
             {% end %}
             for (i = 0; i < pastRoles.length; i++) {
                 let roleName = formatRoleName(pastRoles[i].split('role/')[1], accounts);
@@ -268,9 +268,9 @@
                 if (!roleName) {
                     continue;
                 }
-                text = text.concat('<li><a style="height: 40px;padding: 0px 0px; */"><div class="text-center" data-toggle="buttons" style="display: block; margin-bottom:2px;margin-left:30px;margin-top:10px;"><label class="btn" style="margin-left: 10px;height: 40px;">')
-                text = text.concat('<input type="radio" display="block" class="btn btn-link" name="role" style="vertical-align: middle;" value="' + pastRoles[i] + '"/>' + roleName)
-                text = text.concat('</label></div></a></li>')
+                text += '<li><a style="height: 40px;padding: 0px 0px; */"><div class="text-center" data-toggle="buttons" style="display: block; margin-bottom:2px;margin-left:30px;margin-top:10px;"><label class="btn" style="margin-left: 10px;height: 40px;">'
+                text += '<input type="radio" display="block" class="btn btn-link" name="role" style="vertical-align: middle;" value="' + pastRoles[i] + '"/>' + roleName
+                text += '</label></div></a></li>'
             }
             document.getElementById("RoleHistory").innerHTML = text;
         }
