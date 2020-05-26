@@ -435,19 +435,13 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         return auth
 
 
-class BaseAPIV1Handler(BaseHandler):
-    """Default API Handler for V1 routes."""
+class BaseAPIHandler(BaseHandler):
+    """Default API Handler for api/* routes."""
     def set_default_headers(self) -> None:
         self.set_header("Content-Type", "application/json")
 
 
-class BaseAPIV2Handler(BaseJSONHandler):
-    """Default API Handler for V2 routes."""
-    # for adding override methods to all v2/* routes
-    pass
-
-
-class BaseMtlsHandler(BaseAPIV1Handler):
+class BaseMtlsHandler(BaseAPIHandler):
     def initialize(self, **kwargs):
         self.kwargs = kwargs
 

@@ -1,14 +1,14 @@
 import ujson as json
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseJSONHandler, BaseAPIV2Handler
+from consoleme.handlers.base import BaseJSONHandler, BaseAPIHandler
 from consoleme.lib.plugins import get_plugin_by_name
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
 
-class RequestsHandler(BaseAPIV2Handler):
+class RequestsHandler(BaseAPIHandler):
     """Handler for /api/v2/requests
 
     Allows read access to a list of requests. Returned requests are
@@ -16,10 +16,6 @@ class RequestsHandler(BaseAPIV2Handler):
     """
 
     allowed_methods = ["GET", "POST"]
-
-    def __init__(self, *args, **kwargs):
-        # TODO(psanders): Use actual JWT validator
-        super().__init__(jwt_validator=lambda x: {}, *args, **kwargs)
 
     async def get(self):
         """
@@ -58,17 +54,13 @@ class RequestsHandler(BaseAPIV2Handler):
         self.write_error(501, message="Create request")
 
 
-class RequestDetailHandler(BaseAPIV2Handler):
+class RequestDetailHandler(BaseAPIHandler):
     """Handler for /api/v2/requests/{request_id}
 
     Allows read and update access to a specific request.
     """
 
     allowed_methods = ["GET", "PUT"]
-
-    def __init__(self, *args, **kwargs):
-        # TODO(psanders): Use actual JWT validator
-        super().__init__(jwt_validator=lambda x: {}, *args, **kwargs)
 
     async def get(self, request_id):
         """
