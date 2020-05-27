@@ -48,7 +48,6 @@ from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 
 # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
 from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
-from consoleme.handlers.v2.index import SelectRolesHandler  # noqa
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleDetailHandler,
@@ -129,12 +128,11 @@ def make_app(jwt_validator=None):
         (r"/api/v1/get_roles", GetRolesHandler),
         (r"/api/v1/siteconfig/?", SiteConfigHandler),
         (r"/api/v1/profile/?", UserProfileHandler),
-        (r"/api/v1/roles/?", SelectRolesHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/requests", RequestsHandler),
         (r"/api/v2/requests/([a-zA-Z0-9_-]+)", RequestDetailHandler),
-        (r"/api/v2/roles", RolesHandler),
+        (r"/api/v2/roles/?", RolesHandler),
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
         (r"/config/?", DynamicConfigHandler),

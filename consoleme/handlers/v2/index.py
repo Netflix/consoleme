@@ -180,17 +180,3 @@ class IndexHandler(BaseHandler):
 
         self.redirect(url)
 
-
-class SelectRolesHandler(BaseHandler):
-    def initialize(self):
-        self.user: str = None
-        self.eligible_roles: list = []
-
-    async def get(self):
-        self.set_header("Content-Type", "application/json")
-        payload = {
-            "eligible_roles": self.eligible_roles,
-            "_xsrf": self.xsrf_token.decode("utf-8"),
-        }
-        self.write(json.dumps(payload))
-        await self.finish()
