@@ -473,7 +473,9 @@ components:
               type: string
             additional_arns:
               description: additional ARNs relevant to request, e.g. S3 bucket ARN with path prefix
-              type: string
+              type: array
+              items:
+                type: string
             policy_name:
               type: string
             new:

@@ -2,10 +2,18 @@ from unittest import TestCase
 
 import ujson as json
 
-from consoleme.lib.change_request import generate_iam_policy
-from consoleme.lib.change_request import generate_s3_change
-from consoleme.models import ChangeType
-from consoleme.models import S3ChangeGeneratorModel
+from consoleme.lib.change_request import (
+    generate_iam_policy,
+    generate_s3_change,
+    generate_sns_change,
+    generate_sqs_change,
+)
+from consoleme.models import (
+    ChangeType,
+    S3ChangeGeneratorModel,
+    SNSChangeGeneratorModel,
+    SQSChangeGeneratorModel,
+)
 
 
 class TestChangeRequestLib(TestCase):
@@ -50,4 +58,57 @@ class TestChangeRequestLib(TestCase):
         self.assertNotEqual(
             result.policy.policy_sha256,
             "75a9789293f685c34a882277c944a0db785e7d02e489625e1ccbcb429def4b92",
+        )
+
+    def test_generate_sns_change(self):
+        test_change_input = {
+            "arn": "arn:aws:sns::123456789012:role/hey",
+            "generator_type": "sns",
+            "resource": "arn:aws:sns:::foo",
+            "action_groups": ["get", "publish", "subscribe"],
+        }
+
+        test_change = SNSChangeGeneratorModel(**test_change_input)
+        result = generate_sns_change(test_change)
+        policy_document = json.loads(result.policy.policy_document)
+        self.assertEqual(result.change_type, ChangeType.inline_policy)
+        self.assertListEqual(
+            policy_document.get("Statement")[0].get("Action"),
+            [
+                "sns:ConfirmSubscription",
+                "sns:GetEndpointAttributes",
+                "sns:GetTopicAttributes",
+                "sns:Publish",
+                "sns:Subscribe",
+            ],
+        )
+        self.assertEqual(
+            result.policy.policy_sha256,
+            "b7e24b1e3d976ba8c97470c292875e4f8415294a4fb8b561654e5767b63b0bb2",
+        )
+
+    def test_generate_sqs_change(self):
+        test_change_input = {
+            "arn": "arn:aws:sns::123456789012:role/hey",
+            "generator_type": "sqs",
+            "resource": "arn:aws:sqs:::foo",
+            "action_groups": ["get", "receive", "send"],
+        }
+
+        test_change = SQSChangeGeneratorModel(**test_change_input)
+        result = generate_sqs_change(test_change)
+        policy_document = json.loads(result.policy.policy_document)
+        self.assertEqual(result.change_type, ChangeType.inline_policy)
+        self.assertListEqual(
+            policy_document.get("Statement")[0].get("Action"),
+            [
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+                "sqs:ReceiveMessage",
+                "sqs:SendMessage",
+            ],
+        )
+        self.assertEqual(
+            result.policy.policy_sha256,
+            "8fdfe44c7f1800eb3963cf02862470308a59a3a7517d25a4ddaac611cb30754b",
         )

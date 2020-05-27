@@ -1,14 +1,18 @@
+from hashlib import sha256
 from typing import Dict, List
 
-from hashlib import sha256
 import ujson as json
 
-from consoleme.models import ChangeModel
-from consoleme.models import ChangeType
-from consoleme.models import InlinePolicyChangeModel
-from consoleme.models import ResourcePolicyChangeModel
-from consoleme.models import PolicyModel
-from consoleme.models import S3ChangeGeneratorModel
+from consoleme.models import (
+    ChangeModel,
+    ChangeType,
+    InlinePolicyChangeModel,
+    PolicyModel,
+    ResourcePolicyChangeModel,
+    S3ChangeGeneratorModel,
+    SNSChangeGeneratorModel,
+    SQSChangeGeneratorModel,
+)
 
 s3_action_map = {
     "list": ["s3:ListBucket", "s3:ListBucketVersions"],
@@ -84,21 +88,52 @@ def generate_iam_policy(
     return PolicyModel(**policy_input)
 
 
-def generate_s3_change(generator: S3ChangeGeneratorModel) -> InlinePolicyChangeModel:
-    prefix_arn = generator.resource + generator.bucket_prefix
-    resources = [generator.resource, prefix_arn]
-    actions = []
-    for ag in generator.action_groups:
-        actions += s3_action_map.get(ag, [])
+def _generate_change(
+    principal_arn: str,
+    resource_arn: str,
+    action_groups: List[str],
+    action_map: Dict[str, List[str]],
+    additional_arns: List[str] = [],
+    is_new: bool = True,
+):
+    actions: List[str] = []
+    for ag in action_groups:
+        actions += action_map.get(ag, [])
+
+    resources = [resource_arn] + additional_arns
     policy_document = generate_iam_policy(resources, actions)
     change_details = {
         "change_type": ChangeType.inline_policy,
-        "arn": generator.arn,
-        "resource_arn": generator.resource,
-        "additional_arns": prefix_arn,
+        "arn": principal_arn,
+        "resource_arn": resource_arn,
+        "additional_arns": additional_arns,
         "policy_name": "foobar",
-        "new": True,
+        "new": is_new,
         "policy": policy_document,
         "policy_sha256": "",
     }
     return InlinePolicyChangeModel(**change_details)
+
+
+def generate_s3_change(generator: S3ChangeGeneratorModel) -> InlinePolicyChangeModel:
+    prefix_arn = generator.resource + generator.bucket_prefix
+    additional_arns = [prefix_arn]
+    return _generate_change(
+        generator.arn,
+        generator.resource,
+        generator.action_groups,
+        s3_action_map,
+        additional_arns=additional_arns,
+    )
+
+
+def generate_sns_change(generator: SNSChangeGeneratorModel) -> InlinePolicyChangeModel:
+    return _generate_change(
+        generator.arn, generator.resource, generator.action_groups, sns_action_map,
+    )
+
+
+def generate_sqs_change(generator: SQSChangeGeneratorModel) -> InlinePolicyChangeModel:
+    return _generate_change(
+        generator.arn, generator.resource, generator.action_groups, sqs_action_map,
+    )
