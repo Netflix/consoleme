@@ -435,13 +435,38 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         return auth
 
 
-class BaseAPIHandler(BaseHandler):
-    """Default API Handler for api/* routes."""
+class BaseAPIV1Handler(BaseHandler):
+    """Default API Handler for api/v1/* routes."""
     def set_default_headers(self) -> None:
         self.set_header("Content-Type", "application/json")
 
 
-class BaseMtlsHandler(BaseAPIHandler):
+class BaseAPIV2Handler(BaseHandler):
+    """Default API Handler for api/v2/* routes."""
+    def set_default_headers(self) -> None:
+        self.set_header("Content-Type", "application/json")
+
+    def write_error(self, status_code: int, **kwargs: Any) -> None:
+        if self.settings.get("serve_traceback") and "exc_info" in kwargs:
+            # in debug mode, try to send a traceback
+            self.set_header("Content-Type", "text/plain")
+            for line in traceback.format_exception(*kwargs["exc_info"]):
+                self.write(line)
+            self.finish()
+        else:
+            self.set_header("Content-Type", "application/problem+json")
+            title = httputil.responses.get(status_code, "Unknown")
+            message = kwargs.get("message", self._reason)
+            # self.set_status() modifies self._reason, so this call should come after we grab the reason
+            self.set_status(status_code)
+            self.finish(
+                json.dumps(
+                    {"status": status_code, "title": title, "message": message}
+                )  # noqa
+            )
+
+
+class BaseMtlsHandler(BaseAPIV1Handler):
     def initialize(self, **kwargs):
         self.kwargs = kwargs
 

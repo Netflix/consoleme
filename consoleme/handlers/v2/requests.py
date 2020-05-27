@@ -1,14 +1,14 @@
 import ujson as json
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseJSONHandler, BaseAPIHandler
+from consoleme.handlers.base import BaseJSONHandler, BaseAPIV2Handler
 from consoleme.lib.plugins import get_plugin_by_name
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
 
-class RequestsHandler(BaseAPIHandler):
+class RequestsHandler(BaseAPIV2Handler):
     """Handler for /api/v2/requests
 
     Allows read access to a list of requests. Returned requests are
@@ -54,7 +54,7 @@ class RequestsHandler(BaseAPIHandler):
         self.write_error(501, message="Create request")
 
 
-class RequestDetailHandler(BaseAPIHandler):
+class RequestDetailHandler(BaseAPIV2Handler):
     """Handler for /api/v2/requests/{request_id}
 
     Allows read and update access to a specific request.

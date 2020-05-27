@@ -1,7 +1,7 @@
 import ujson as json
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseJSONHandler, BaseAPIHandler
+from consoleme.handlers.base import BaseJSONHandler, BaseAPIV2Handler
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -11,7 +11,7 @@ crypto = Crypto()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 
 
-class RolesHandler(BaseAPIHandler):
+class RolesHandler(BaseAPIV2Handler):
     """Handler for /api/v2/roles
 
     Allows read access to a list of roles across all accounts. Returned roles are
@@ -25,16 +25,16 @@ class RolesHandler(BaseAPIHandler):
         self.eligible_roles: list = []
 
     async def get(self):
-        self.set_header("Content-Type", "application/json")
         payload = {
             "eligible_roles": self.eligible_roles,
             "_xsrf": self.xsrf_token.decode("utf-8"),
         }
+        self.set_header("Content-Type", "application/json")
         self.write(json.dumps(payload, escape_forward_slashes=False))
         await self.finish()
 
 
-class AccountRolesHandler(BaseAPIHandler):
+class AccountRolesHandler(BaseAPIV2Handler):
     """Handler for /api/v2/roles/{account_number}
 
     Allows read access to a list of roles by account. Roles are limited to what the
@@ -58,7 +58,7 @@ class AccountRolesHandler(BaseAPIHandler):
         self.write_error(501, message="Get roles by account")
 
 
-class RoleDetailHandler(BaseAPIHandler):
+class RoleDetailHandler(BaseAPIV2Handler):
     """Handler for /api/v2/roles/{accountNumber}/{roleName}
 
     Allows read and update access to a specific role in an account.

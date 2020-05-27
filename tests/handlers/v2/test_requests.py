@@ -10,22 +10,32 @@ class TestRequestsHandler(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
     
     def test_get(self):
+        expected = {
+            "status": 501,
+            "title": "Not Implemented",
+            "message": "Get requests",
+        }
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch("/api/v2/requests", method="GET", headers=headers)
-        self.assertEqual(response.code, 200)
-        self.assertIn(b"501: OK", response.body)
+        self.assertEqual(response.code, 501)
+        self.assertDictEqual(json.loads(response.body), expected)
 
     def test_post(self):
+        expected = {
+            "status": 501,
+            "title": "Not Implemented",
+            "message": "Create request",
+        }
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
-        response = self.fetch( "/api/v2/requests", method="POST", headers=headers, body="{}")
-        self.assertEqual(response.code, 200)
-        self.assertIn(b"501: OK", response.body)
+        response = self.fetch("/api/v2/requests", method="POST", headers=headers, body="{}")
+        self.assertEqual(response.code, 501)
+        self.assertDictEqual(json.loads(response.body), expected)
 
 
 class TestRequestDetailHandler(AsyncHTTPTestCase):
@@ -35,6 +45,11 @@ class TestRequestDetailHandler(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     def test_get(self):
+        expected = {
+            "status": 501,
+            "title": "Not Implemented",
+            "message": "Get request details",
+        }
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -44,10 +59,15 @@ class TestRequestDetailHandler(AsyncHTTPTestCase):
             method="GET",
             headers=headers,
         )
-        self.assertEqual(response.code, 200)
-        self.assertIn(b"501: OK", response.body)
+        self.assertEqual(response.code, 501)
+        self.assertDictEqual(json.loads(response.body), expected)
 
     def test_put(self):
+        expected = {
+            "status": 501,
+            "title": "Not Implemented",
+            "message": "Update request details",
+        }
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -58,5 +78,5 @@ class TestRequestDetailHandler(AsyncHTTPTestCase):
             headers=headers,
             body="{}",
         )
-        self.assertEqual(response.code, 200)
-        self.assertIn(b"501: OK", response.body)
+        self.assertEqual(response.code, 501)
+        self.assertDictEqual(json.loads(response.body), expected)

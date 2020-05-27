@@ -29,6 +29,11 @@ class TestAccountRolesHandler(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     def test_get(self):
+        expected = {
+            "status": 501,
+            "title": "Not Implemented",
+            "message": "Get roles by account",
+        }
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -36,8 +41,8 @@ class TestAccountRolesHandler(AsyncHTTPTestCase):
         response = self.fetch(
             "/api/v2/roles/012345678901", method="GET", headers=headers
         )
-        self.assertEqual(response.code, 200)
-        self.assertIn(b"501: OK", response.body)
+        self.assertEqual(response.code, 501)
+        self.assertDictEqual(json.loads(response.body), expected)
 
 
 class TestRoleDetailHandler(AsyncHTTPTestCase):
@@ -47,6 +52,11 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     def test_get(self):
+        expected = {
+            "status": 501,
+            "title": "Not Implemented",
+            "message": "Get role details",
+        }
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -56,10 +66,15 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
             method="GET",
             headers=headers,
         )
-        self.assertEqual(response.code, 200)
-        self.assertIn(b"501: OK", response.body)
+        self.assertEqual(response.code, 501)
+        self.assertDictEqual(json.loads(response.body), expected)
 
     def test_put(self):
+        expected = {
+            "status": 501,
+            "title": "Not Implemented",
+            "message": "Update role details",
+        }
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -70,5 +85,5 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
             headers=headers,
             body="{}",
         )
-        self.assertEqual(response.code, 200)
-        self.assertIn(b"501: OK", response.body)
+        self.assertEqual(response.code, 501)
+        self.assertDictEqual(json.loads(response.body), expected)
