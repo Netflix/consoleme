@@ -450,6 +450,7 @@ class BaseAPIV2Handler(BaseHandler):
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
             # in debug mode, try to send a traceback
             self.set_header("Content-Type", "text/plain")
+            self.set_status(status_code)
             for line in traceback.format_exception(*kwargs["exc_info"]):
                 self.write(line)
             self.finish()

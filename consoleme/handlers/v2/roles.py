@@ -1,7 +1,7 @@
 import ujson as json
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseJSONHandler, BaseAPIV2Handler
+from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 
