@@ -3,13 +3,15 @@ from unittest import TestCase
 import ujson as json
 
 from consoleme.lib.change_request import (
-    generate_iam_policy,
+    _generate_iam_policy,
+    generate_generic_change,
     generate_s3_change,
     generate_sns_change,
     generate_sqs_change,
 )
 from consoleme.models import (
     ChangeType,
+    GenericChangeGeneratorModel,
     S3ChangeGeneratorModel,
     SNSChangeGeneratorModel,
     SQSChangeGeneratorModel,
@@ -20,7 +22,7 @@ class TestChangeRequestLib(TestCase):
     def test_generate_iam_policy(self):
         resources = ["arn:aws:s3:::foo", "arn:aws:s3:::foo/bar/*"]
         actions = ["s3:ListObjects", "s3:GetObject", "s3:GetObject"]
-        result = generate_iam_policy(resources, actions)
+        result = _generate_iam_policy(resources, actions)
         self.assertEqual(
             result.policy_sha256,
             "0315b4f93ae5c8007038c7f16c909081eb951bca5f206576424179b8e56834d0",
@@ -62,7 +64,7 @@ class TestChangeRequestLib(TestCase):
 
     def test_generate_sns_change(self):
         test_change_input = {
-            "arn": "arn:aws:sns::123456789012:role/hey",
+            "arn": "arn:aws:iam::123456789012:role/hey",
             "generator_type": "sns",
             "resource": "arn:aws:sns:::foo",
             "action_groups": ["get", "publish", "subscribe"],
@@ -89,7 +91,7 @@ class TestChangeRequestLib(TestCase):
 
     def test_generate_sqs_change(self):
         test_change_input = {
-            "arn": "arn:aws:sns::123456789012:role/hey",
+            "arn": "arn:aws:iam::123456789012:role/hey",
             "generator_type": "sqs",
             "resource": "arn:aws:sqs:::foo",
             "action_groups": ["get", "receive", "send"],
@@ -111,4 +113,40 @@ class TestChangeRequestLib(TestCase):
         self.assertEqual(
             result.policy.policy_sha256,
             "8fdfe44c7f1800eb3963cf02862470308a59a3a7517d25a4ddaac611cb30754b",
+        )
+
+    def test_generate_generic_change(self):
+        test_change_input = {
+            "arn": "arn:aws:iam::123456789012:role/hey",
+            "generator_type": "generic",
+            "resource": "arn:aws:sqs:us-east-1:123456789012:super-cool-queue",
+            "access_level": ["Read", "Write", "List"],
+        }
+
+        test_change = GenericChangeGeneratorModel(**test_change_input)
+        result = generate_generic_change(test_change)
+        policy_document = json.loads(result.policy.policy_document)
+        self.assertEqual(result.change_type, ChangeType.inline_policy)
+        self.assertListEqual(
+            policy_document.get("Statement")[0].get("Action"),
+            [
+                "sqs:ChangeMessageVisibility",
+                "sqs:ChangeMessageVisibilityBatch",
+                "sqs:DeleteMessage",
+                "sqs:DeleteMessageBatch",
+                "sqs:DeleteQueue",
+                "sqs:GetQueueAttributes",
+                "sqs:GetQueueUrl",
+                "sqs:ListDeadLetterSourceQueues",
+                "sqs:ListQueueTags",
+                "sqs:ListQueues",
+                "sqs:PurgeQueue",
+                "sqs:ReceiveMessage",
+                "sqs:SendMessage",
+                "sqs:SendMessageBatch",
+            ],
+        )
+        self.assertEqual(
+            result.policy.policy_sha256,
+            "e5680a0af420843004de36916e1ea7916368a0dc0c0d9b575c649c97b1221874",
         )

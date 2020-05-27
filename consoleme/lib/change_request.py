@@ -1,6 +1,8 @@
 from hashlib import sha256
 from typing import Dict, List
 
+from policy_sentry.util.arns import get_service_from_arn
+from policy_sentry.querying.actions import get_actions_with_access_level
 import ujson as json
 
 from consoleme.models import (
@@ -9,6 +11,7 @@ from consoleme.models import (
     InlinePolicyChangeModel,
     PolicyModel,
     ResourcePolicyChangeModel,
+    GenericChangeGeneratorModel,
     S3ChangeGeneratorModel,
     SNSChangeGeneratorModel,
     SQSChangeGeneratorModel,
@@ -62,7 +65,7 @@ def get_resource_policy_changes(
     pass
 
 
-def generate_iam_policy(
+def _generate_iam_policy(
     resources: List[str], actions: List[str], effect: str = "Allow", sid: str = ""
 ) -> PolicyModel:
     # Deduplicate actions, then sort them to make this function deterministic
@@ -91,17 +94,12 @@ def generate_iam_policy(
 def _generate_change(
     principal_arn: str,
     resource_arn: str,
-    action_groups: List[str],
-    action_map: Dict[str, List[str]],
+    actions: List[str],
     additional_arns: List[str] = [],
     is_new: bool = True,
 ):
-    actions: List[str] = []
-    for ag in action_groups:
-        actions += action_map.get(ag, [])
-
     resources = [resource_arn] + additional_arns
-    policy_document = generate_iam_policy(resources, actions)
+    policy_document = _generate_iam_policy(resources, actions)
     change_details = {
         "change_type": ChangeType.inline_policy,
         "arn": principal_arn,
@@ -115,25 +113,63 @@ def _generate_change(
     return InlinePolicyChangeModel(**change_details)
 
 
+def _get_access_level_actions_for_resource(
+    resource_arn: str, access_levels: List[str]
+) -> List[str]:
+    """Use policy_sentry to get actions corresponding to AWS service and access_levels.
+    TODO(psanders): Move this to a more sensible module
+
+    :param resource_arn:
+    :param access_levels:
+    :return:
+    """
+    service = get_service_from_arn(resource_arn)
+    actions: List[str] = []
+    for level in access_levels:
+        actions += get_actions_with_access_level(service, level)
+    return actions
+
+
+def _get_actions_from_groups(
+    action_groups: List[str], action_map: Dict[str, List[str]]
+) -> List[str]:
+    """Get actions based on "groups" defined in action_map
+    TODO(psanders): Move this to a more sensible module
+    TODO(psanders): Read in action maps from config instead of hard coding
+
+    :param action_groups:
+    :param action_map:
+    :return:
+    """
+    actions: List[str] = []
+    for ag in action_groups:
+        actions += action_map.get(ag, [])
+    return actions
+
+
+def generate_generic_change(
+    generator: GenericChangeGeneratorModel,
+) -> InlinePolicyChangeModel:
+    actions = _get_access_level_actions_for_resource(
+        generator.resource, generator.access_level
+    )
+    return _generate_change(generator.arn, generator.resource, actions,)
+
+
 def generate_s3_change(generator: S3ChangeGeneratorModel) -> InlinePolicyChangeModel:
     prefix_arn = generator.resource + generator.bucket_prefix
     additional_arns = [prefix_arn]
+    actions = _get_actions_from_groups(generator.action_groups, s3_action_map)
     return _generate_change(
-        generator.arn,
-        generator.resource,
-        generator.action_groups,
-        s3_action_map,
-        additional_arns=additional_arns,
+        generator.arn, generator.resource, actions, additional_arns=additional_arns,
     )
 
 
 def generate_sns_change(generator: SNSChangeGeneratorModel) -> InlinePolicyChangeModel:
-    return _generate_change(
-        generator.arn, generator.resource, generator.action_groups, sns_action_map,
-    )
+    actions = _get_actions_from_groups(generator.action_groups, sns_action_map)
+    return _generate_change(generator.arn, generator.resource, actions,)
 
 
 def generate_sqs_change(generator: SQSChangeGeneratorModel) -> InlinePolicyChangeModel:
-    return _generate_change(
-        generator.arn, generator.resource, generator.action_groups, sqs_action_map,
-    )
+    actions = _get_actions_from_groups(generator.action_groups, sqs_action_map)
+    return _generate_change(generator.arn, generator.resource, actions,)
