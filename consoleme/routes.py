@@ -9,7 +9,6 @@ import tornado.web
 from apispec import APISpec
 from apispec.exceptions import APISpecError
 from apispec_webframeworks.tornado import TornadoPlugin
-from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 from raven.contrib.tornado import AsyncSentryClient
 
 import consoleme
@@ -47,17 +46,15 @@ from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
 from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
+from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 
 # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
 from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
+from consoleme.handlers.v2.requests import RequestDetailHandler, RequestsHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleDetailHandler,
     RolesHandler,
-)
-from consoleme.handlers.v2.requests import (
-    RequestsHandler,
-    RequestDetailHandler,
 )
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
