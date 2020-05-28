@@ -14,7 +14,7 @@ from consoleme.exceptions.exceptions import (
     MustBeFte,
     Unauthorized,
 )
-from consoleme.handlers.base import BaseHandler, BaseMtlsHandler
+from consoleme.handlers.base import BaseHandler, BaseMtlsHandler, BaseAPIV1Handler
 from consoleme.lib.aws import (
     fetch_resource_details,
     get_all_iam_managed_policies_for_account,
