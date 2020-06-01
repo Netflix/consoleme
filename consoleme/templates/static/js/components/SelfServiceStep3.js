@@ -25,19 +25,17 @@ class SelfServiceStep3 extends Component {
     state = {};
 
     async componentDidMount() {
-        // TODO(curtis), use the role and permissions from props and send them for policy
+        // TODO(iam), use the role and permissions from props and send them for policy
         // generation and review evaluation.
         const {role, permissions} = this.props;
 
         const { get, post, response, loading, error } = useFetch("/api/v2/generate_policy")
         const res = await get()
-        console.log(res)
     }
 
     handleRequestSubmit() {
         const {role, permissions} = this.props;
-        // TODO(curtis), send a role and a list of permissions or JSON dump
-        console.log("Send Request to Backend: ", role, permissions);
+        // TODO(iam), send a role and a list of permissions or JSON dump
     }
 
     render() {
@@ -55,7 +53,7 @@ class SelfServiceStep3 extends Component {
                             Target S3 bucket exists in the cross account. You need to assume a role in the cross account using your <a>{role.roleArn}</a> role.
                         </Feed.Summary>
                         <Feed.Extra text>
-                            Please reach out to #security-help for further requests with this details.
+                            Please reach out to helpdesk for further requests with this details.
                         </Feed.Extra>
                         <Feed.Meta>
                             <Label size="tiny">
@@ -76,7 +74,7 @@ class SelfServiceStep3 extends Component {
                             The bucket policy is required to allow your role to access the S3 bucket exists in the cross account.
                         </Feed.Summary>
                         <Feed.Extra text>
-                            Please reach out to #security-help for further requests with this details.
+                            Please reach out to helpdesk for further requests with this details.
                         </Feed.Extra>
                         <Feed.Meta>
                             <Label size="tiny" content="S3" />
@@ -164,9 +162,6 @@ class SelfServiceStep3 extends Component {
                     <Tab.Pane>
                         <Header>
                             Edit your permissions in JSON format.
-                            <Header.Subheader>
-                                Please refer to IAM JSON reference manual for further details.
-                            </Header.Subheader>
                         </Header>
                         <br />
                         <AceEditor
@@ -174,7 +169,7 @@ class SelfServiceStep3 extends Component {
                             theme="monokai"
                             width="100%"
                             onChange={(newValue) => {
-                                console.log(newValue);
+                                return;
                             }}
                             value={policyExample}
                             name="json_editor"

@@ -1,5 +1,5 @@
 from consoleme.config import config
-from consoleme.handlers.base import BaseJSONHandler, BaseHandler
+from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.plugins import get_plugin_by_name
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -16,7 +16,7 @@ BASE_INLINE_POLICY = {
 }
 
 
-class GeneratePolicyHandler(BaseHandler):
+class GeneratePolicyHandler(BaseAPIV2Handler):
     """Handler for /api/v2/generate_policy
 
     Generates an AWS role / resource policy given a set of CRUD permissions

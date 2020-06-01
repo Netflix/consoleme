@@ -14,7 +14,11 @@ from consoleme.exceptions.exceptions import (
     MustBeFte,
     Unauthorized,
 )
-from consoleme.handlers.base import BaseHandler, BaseMtlsHandler, BaseAPIV1Handler
+from consoleme.handlers.base import (
+    BaseHandler,
+    BaseMtlsHandler,
+    BaseAPIV1Handler,
+)
 from consoleme.lib.aws import (
     fetch_resource_details,
     get_all_iam_managed_policies_for_account,
@@ -938,7 +942,7 @@ class SelfServiceHandler(BaseHandler):
 class SelfServiceNewHandler(BaseHandler):
     async def get(self):
         """
-        /self_service
+        /self_service_new
         ---
         get:
             description: Entry point to Self Service IAM Wizard
@@ -957,7 +961,7 @@ class SelfServiceNewHandler(BaseHandler):
         )
 
 
-class AutocompleteHandler(BaseHandler):
+class AutocompleteHandler(BaseAPIV1Handler):
     async def get(self):
         """
         /api/v1/policyuniverse/autocomplete/?prefix=

@@ -9,31 +9,12 @@ import {
 } from 'semantic-ui-react';
 
 
-const sourceOptions = [
-    { key: 'app', text: 'Applications', value: 'app' },
-    { key: 'role', text: 'IAM Roles', value: 'role' },
-];
-
 class SelfServiceStep1 extends Component {
     state = {
-        eligibleRoles: [],
         isLoading: false,
         results: [],
         value: '',
     };
-
-    componentDidMount() {
-        fetch("/api/v1/roles").then((resp) => {
-            resp.json().then(({eligible_roles}) => {
-                const eligibleRoles = eligible_roles.map((role) => {
-                    return { key: role, text: role, value: role};
-                });
-                this.setState({
-                    eligibleRoles,
-                });
-            });
-        });
-    }
 
     handleSearchChange(event, { value }) {
         this.setState({
@@ -86,7 +67,7 @@ class SelfServiceStep1 extends Component {
 
     handleResultSelect(e, {result}) {
         let role = Object.assign({}, this.props.role);
-        // TODO(curtis), once we select a role, fetch the role info and update the Role Info section.
+        // TODO(iam), once we select a role, fetch the role info and update the Role Info section.
         role.roleArn = result.title;
         this.props.handleRoleUpdate(role);
         this.setState({
@@ -94,51 +75,9 @@ class SelfServiceStep1 extends Component {
         });
     }
 
-    handleSelectRoleFromChange(e, {value}) {
-        let role = Object.assign({}, this.props.role);
-        role.roleFrom = value;
-        this.props.handleRoleUpdate(role);
-    }
-
-    handleSelectRoleChange(e, {value}) {
-        let role = Object.assign({}, this.props.role);
-
-        // TODO(curtis), once we select a role, fetch the role info and update the Role Info section.
-        role.roleArn = value;
-        this.props.handleRoleUpdate(role);
-    }
-
     render() {
-        const {roleArn, roleFrom} = this.props.role;
-        const {eligibleRoles, isLoading, results, value} = this.state;
-
-        const sourceTypeSubInput = (roleFrom === 'app')
-            ? (
-                <Form.Field required>
-                    <label>Search Roles</label>
-                    <Search
-                        category
-                        loading={isLoading}
-                        onResultSelect={this.handleResultSelect.bind(this)}
-                        onSearchChange={_.debounce(this.handleSearchChange.bind(this), 500, {
-                            leading: true,
-                        })}
-                        results={results}
-                        value={roleArn}
-                    />
-                </Form.Field>
-            )
-            : (
-                <Form.Select
-                    required
-                    label="Your Eligible Roles"
-                    options={eligibleRoles}
-                    search
-                    placeholder="Choose Your Role"
-                    value={roleArn}
-                    onChange={this.handleSelectRoleChange.bind(this)}
-                />
-            );
+        const {roleArn} = this.props.role;
+        const {isLoading, results} = this.state;
 
         return (
             <Segment>
@@ -155,15 +94,19 @@ class SelfServiceStep1 extends Component {
                                 For Help, please visit <a href={"https://go/selfserviceiamtldr"}>go/selfserviceiamtldr</a>
                             </p>
                             <Form widths="equal">
-                                <Form.Select
-                                    required
-                                    label="Select Source Type"
-                                    defaultValue={roleFrom}
-                                    options={sourceOptions}
-                                    placeholder='Select Source Type'
-                                    onChange={this.handleSelectRoleFromChange.bind(this)}
-                                />
-                                {sourceTypeSubInput}
+                                <Form.Field required>
+                                    <label>Search Your Application Roles</label>
+                                    <Search
+                                        category
+                                        loading={isLoading}
+                                        onResultSelect={this.handleResultSelect.bind(this)}
+                                        onSearchChange={_.debounce(this.handleSearchChange.bind(this), 500, {
+                                            leading: true,
+                                        })}
+                                        results={results}
+                                        value={roleArn}
+                                    />
+                                </Form.Field>
                                 <Form.Checkbox label='Show all entities' checked />
                             </Form>
                         </Grid.Column>
