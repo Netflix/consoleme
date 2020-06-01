@@ -38,16 +38,6 @@ class TestIndexHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         self.assertIn(b"reset_aws_auth_cookie", response.body)
 
-    def test_index_v2_pageload(self):
-        headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
-        }
-
-        response = self.fetch("/ui", headers=headers)
-        self.assertEqual(response.code, 200)
-        self.assertIn(b"static/js/bundle.js", response.body)
-
 
 @pytest.mark.usefixtures(
     "retry", "user_role_lambda", "iam_sync_roles", "sts", "iamrole_table"

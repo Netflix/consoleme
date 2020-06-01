@@ -14,7 +14,11 @@ from consoleme.exceptions.exceptions import (
     MustBeFte,
     Unauthorized,
 )
-from consoleme.handlers.base import BaseHandler, BaseMtlsHandler, BaseAPIV1Handler
+from consoleme.handlers.base import (
+    BaseHandler,
+    BaseMtlsHandler,
+    BaseAPIV1Handler,
+)
 from consoleme.lib.aws import (
     fetch_resource_details,
     get_all_iam_managed_policies_for_account,
@@ -927,6 +931,28 @@ class SelfServiceHandler(BaseHandler):
 
         await self.render(
             "self_service.html",
+            page_title="ConsoleMe - Self Service",
+            current_page="policies",
+            user=self.user,
+            user_groups=self.groups,
+            config=config,
+        )
+
+
+class SelfServiceNewHandler(BaseHandler):
+    async def get(self):
+        """
+        /self_service_new
+        ---
+        get:
+            description: Entry point to Self Service IAM Wizard
+            responses:
+                200:
+                    description: Returns Self Service IAM Wizard
+        """
+
+        await self.render(
+            "self_service_new.html",
             page_title="ConsoleMe - Self Service",
             current_page="policies",
             user=self.user,

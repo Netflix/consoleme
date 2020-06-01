@@ -1,7 +1,7 @@
 {
   "author": "",
   "dependencies": {
-    "ace-builds": "^1.4.2",
+    "ace-builds": "^1.4.11",
     "babel-preset-react": "^6.24.1",
     "gulp": "^4.0.2",
     "jquery": "^3.4.1",
@@ -37,7 +37,7 @@
     "eslint-plugin-standard": "^4.0.0",
     "faker": "^4.1.0",
     "lodash": "^4.17.15",
-    "react-ace": "^7.0.2",
+    "react-ace": "^8.1.0",
     "react-checkbox-group": "^4.0.1",
     "react-form-checkbox": "^0.2.0",
     "react-redux": "^5.0.0",
