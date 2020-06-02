@@ -1,9 +1,11 @@
 import json
-from copy import deepcopy
-
-import pytz
 import sys
 import time
+from copy import deepcopy
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
+import pytz
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
@@ -12,19 +14,16 @@ from cloudaux.aws.s3 import get_bucket_policy, get_bucket_tagging
 from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
-from datetime import datetime
-
-from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from deepdiff import DeepDiff
 from policy_sentry.util.arns import (
     get_account_from_arn,
     get_resource_from_arn,
     get_service_from_arn,
 )
-from typing import Any, Dict, List, Optional, Tuple
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hgetall
 
@@ -413,6 +412,68 @@ def apply_managed_policy_to_role(
         tags={"role": role.get("Arn"), "policy": policy_arn},
     )
     return True
+
+
+async def delete_iam_role(role: Dict) -> bool:
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "message": "Attempting to delete Role",
+        "Role": role,
+    }
+
+    log.info(log_data)
+    account_id = role["arn"].split(":")[4]
+    iam_client = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        service_type="client",
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        region=config.region,
+    )
+    for instance_profile in role.get("InstanceProfileList"):
+        log.info(
+            {
+                **log_data,
+                "message": "Removing and deleting instance profile from role",
+                "instance_profile": instance_profile["InstanceProfileName"],
+            }
+        )
+        await sync_to_async(iam_client.remove_role_from_instance_profile)(
+            InstanceProfileName=instance_profile["InstanceProfileName"],
+            RoleName=role["RoleName"],
+        )
+        await sync_to_async(iam_client.delete_instance_profile)(
+            InstanceProfileName=instance_profile["InstanceProfileName"]
+        )
+    # Detach managed policies
+    for policy in role["AttachedManagedPolicies"]:
+        log.info(
+            {
+                **log_data,
+                "message": "Detaching managed policy from role",
+                "policy_arn": policy["PolicyArn"],
+            }
+        )
+        await sync_to_async(iam_client.detach_role_policy)(
+            RoleName=role["RoleName"], PolicyArn=policy["PolicyArn"]
+        )
+
+    # Delete Inline policies
+    for policy in role["RolePolicyList"]:
+        log.info(
+            {
+                **log_data,
+                "message": "Deleting inline policy on role",
+                "policy_arn": policy["PolicyName"],
+            }
+        )
+        await sync_to_async(iam_client.delete_role_policy)(
+            RoleName=role["RoleName"], PolicyName=policy["PolicyName"]
+        )
+
+    log.info({**log_data, "message": "Performing role deletion"})
+    await sync_to_async(iam_client.delete_role)(RoleName=role["RoleName"])
+    stats.count(f"{log_data['function'].success}", tags={"role_name": role["RoleName"]})
 
 
 def role_has_tag(role: Dict, key: str, value: Optional[str] = None) -> bool:
