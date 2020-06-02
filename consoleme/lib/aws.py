@@ -417,7 +417,8 @@ def apply_managed_policy_to_role(
 async def delete_iam_role(role: Dict) -> bool:
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
-        "message": "Attempting to delete Role",
+        "message": "Attempting to delete role",
+        "arn": role.get("Arn"),
         "Role": role,
     }
 
@@ -473,7 +474,7 @@ async def delete_iam_role(role: Dict) -> bool:
 
     log.info({**log_data, "message": "Performing role deletion"})
     await sync_to_async(iam_client.delete_role)(RoleName=role["RoleName"])
-    stats.count(f"{log_data['function'].success}", tags={"role_name": role["RoleName"]})
+    stats.count(f"{log_data['function']}.success", tags={"role_name": role["RoleName"]})
 
 
 def role_has_tag(role: Dict, key: str, value: Optional[str] = None) -> bool:
