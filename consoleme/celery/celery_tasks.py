@@ -46,11 +46,13 @@ from retrying import retry
 from consoleme.config import config
 from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
+from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import get_request_review_url
 from consoleme.lib.s3_helpers import put_object
 from consoleme.lib.ses import send_group_modification_notification
+from consoleme.lib.timeout import Timeout
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
 region = config.region
@@ -84,7 +86,8 @@ app.conf.task_acks_late = config.get("celery.task_acks_late", True)
 
 if config.get("celery.purge"):
     # Useful to clear celery queue in development
-    app.control.purge()
+    with Timeout(seconds=5, error_message="Timeout: Are you sure Redis is running?"):
+        app.control.purge()
 
 log = config.get_logger()
 red = async_to_sync(RedisHandler().redis)()
@@ -557,7 +560,8 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
 
 @app.task(soft_time_limit=1800)
 def cache_policies_table_details() -> bool:
-    arns = red.hkeys("IAM_ROLE_CACHE")
+    iam_role_redis_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
+    arns = red.hkeys(iam_role_redis_key)
     items = []
     accounts_d = aws.get_account_ids_to_names()
 
@@ -700,8 +704,18 @@ def cache_roles_for_account(account_id: str) -> bool:
             filter="Role",
         )
 
-        ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            json.dumps(iam_roles, cls=SetEncoder),
+            redis_key=config.get("cache_roles_for_account.redis_key", "").format(
+                account_id=account_id
+            ),
+            s3_bucket=config.get("cache_roles_for_account.s3.bucket"),
+            s3_key=config.get("cache_roles_for_account.s3.file", "").format(
+                resource_type="iam_roles", account_id=account_id
+            ),
+        )
 
+        ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
         # Save them:
         for role in iam_roles:
             role_entry = {
@@ -732,6 +746,7 @@ def cache_roles_for_account(account_id: str) -> bool:
 @app.task(soft_time_limit=1800)
 def cache_roles_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
     if config.region == config.get("celery.active_region") or config.get(
         "unit_testing.override_true"
     ):
@@ -745,12 +760,18 @@ def cache_roles_across_accounts() -> bool:
                 if account_id in config.get("celery.test_account_ids", []):
                     cache_roles_for_account.delay(account_id)
     else:
-        cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
         roles = dynamo.fetch_all_roles()
         for role_entry in roles:
             _add_role_to_redis(cache_key, role_entry)
+
+    # Delete roles in Redis cache with expired TTL
+    all_roles = red.hgetall(cache_key)
+    for arn, role_entry_j in all_roles.items():
+        role_entry = json.loads(role_entry_j)
+        if datetime.fromtimestamp(role_entry["ttl"]) < datetime.utcnow():
+            red.hdel(cache_key, arn)
 
     stats.count(f"{function}.success")
     return True

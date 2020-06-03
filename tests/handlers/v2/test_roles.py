@@ -1,7 +1,7 @@
 import ujson as json
 from mock import patch
 from tornado.testing import AsyncHTTPTestCase
-
+from consoleme.config import config
 
 class TestRolesHandler(AsyncHTTPTestCase):
     def get_app(self):
@@ -9,20 +9,17 @@ class TestRolesHandler(AsyncHTTPTestCase):
 
         return make_app(jwt_validator=lambda x: {})
 
-    @patch(
-        "consoleme.handlers.base.BaseJSONHandler.get_current_user",
-        lambda x: {"email": "foo@bar.com"},
-    )
     def test_get(self):
-        headers = {"Authorization": "Bearer foo"}
-        response = self.fetch("/api/v2/roles", method="GET", headers=headers)
-        expected = {
-            "status": 501,
-            "title": "Not Implemented",
-            "message": "Get roles",
+        headers = {
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
-        self.assertEqual(response.code, 501)
-        self.assertDictEqual(json.loads(response.body), expected)
+        response = self.fetch("/api/v2/roles", method="GET", headers=headers)
+        self.assertEqual(response.code, 200)
+        responseJSON = json.loads(response.body)
+        self.assertIn("_xsrf", responseJSON)
+        self.assertIn("eligible_roles", responseJSON)
+        self.assertEqual(0, len(responseJSON["eligible_roles"]))
 
 
 class TestAccountRolesHandler(AsyncHTTPTestCase):
@@ -31,20 +28,19 @@ class TestAccountRolesHandler(AsyncHTTPTestCase):
 
         return make_app(jwt_validator=lambda x: {})
 
-    @patch(
-        "consoleme.handlers.base.BaseJSONHandler.get_current_user",
-        lambda x: {"email": "foo@bar.com"},
-    )
     def test_get(self):
-        headers = {"Authorization": "Bearer foo"}
-        response = self.fetch(
-            "/api/v2/roles/012345678901", method="GET", headers=headers
-        )
         expected = {
             "status": 501,
             "title": "Not Implemented",
             "message": "Get roles by account",
         }
+        headers = {
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+        }
+        response = self.fetch(
+            "/api/v2/roles/012345678901", method="GET", headers=headers
+        )
         self.assertEqual(response.code, 501)
         self.assertDictEqual(json.loads(response.body), expected)
 
@@ -55,42 +51,39 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
 
         return make_app(jwt_validator=lambda x: {})
 
-    @patch(
-        "consoleme.handlers.base.BaseJSONHandler.get_current_user",
-        lambda x: {"email": "foo@bar.com"},
-    )
     def test_get(self):
-        headers = {"Authorization": "Bearer foo"}
-        response = self.fetch(
-            "/api/v2/roles/012345678901/fake_account_admin",
-            method="GET",
-            headers=headers,
-        )
         expected = {
             "status": 501,
             "title": "Not Implemented",
             "message": "Get role details",
         }
+        headers = {
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+        }
+        response = self.fetch(
+            "/api/v2/roles/012345678901/fake_account_admin",
+            method="GET",
+            headers=headers,
+        )
         self.assertEqual(response.code, 501)
         self.assertDictEqual(json.loads(response.body), expected)
 
-    @patch(
-        "consoleme.handlers.base.BaseJSONHandler.get_current_user",
-        lambda x: {"email": "foo@bar.com"},
-    )
     def test_put(self):
-        headers = {"Authorization": "Bearer foo"}
+        expected = {
+            "status": 501,
+            "title": "Not Implemented",
+            "message": "Update role details",
+        }
+        headers = {
+            config.get("auth.user_header_name"): "user@github.com",
+            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+        }
         response = self.fetch(
             "/api/v2/roles/012345678901/fake_account_admin",
             method="PUT",
             headers=headers,
             body="{}",
         )
-        expected = {
-            "status": 501,
-            "title": "Not Implemented",
-            "message": "Update role details",
-        }
-
         self.assertEqual(response.code, 501)
         self.assertDictEqual(json.loads(response.body), expected)
