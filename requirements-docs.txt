@@ -4,7 +4,7 @@
 #
 #    pip-compile --no-index --output-file=requirements-docs.txt requirements-docs.in
 #
-apispec==3.3.0            # via -c requirements.txt, -r requirements-docs.in
+apispec[yaml]==3.3.0      # via -c requirements.txt, -r requirements-docs.in
 click==7.1.2              # via -c requirements-test.txt, -c requirements.txt, mkdocs, nltk
 future==0.18.2            # via -c requirements-test.txt, lunr
 jinja2==2.11.2            # via -c requirements-test.txt, mkdocs
