@@ -1,16 +1,13 @@
 """Docstring in public module."""
-
 import os
-
 import sys
+
 import ujson as json
 from mock import MagicMock, patch
-from tornado.concurrent import Future
 from tornado.testing import AsyncHTTPTestCase
 
 from consoleme.config import config
-from tests.conftest import MockBaseHandler, MOCK_ROLE, MockRedisHandler
-from tests.conftest import create_future
+from tests.conftest import MOCK_ROLE, MockBaseHandler, MockRedisHandler, create_future
 
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(APP_ROOT, ".."))
@@ -57,8 +54,7 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
     def test_policy_pageload(self, mock_fetch_iam_role):
-        mock_fetch_iam_role_rv = Future()
-        mock_fetch_iam_role_rv.set_result(MOCK_ROLE)
+        mock_fetch_iam_role_rv = MOCK_ROLE
         mock_fetch_iam_role.return_value = mock_fetch_iam_role_rv
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
@@ -79,9 +75,7 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
     )
     @patch("consoleme.handlers.v1.policies.aws.fetch_iam_role")
     def test_policy_notfound(self, mock_fetch_iam_role):
-        mock_fetch_iam_role_rv = Future()
-        mock_fetch_iam_role_rv.set_result(None)
-        mock_fetch_iam_role.return_value = mock_fetch_iam_role_rv
+        mock_fetch_iam_role.return_value = None
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -569,7 +563,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
             f"/policies/typeahead?resource={resource}", headers=headers, method="GET"
         )
         self.assertEqual(response.code, 400)
-        result = create_future({"123456789012": '["abucket1", "abucket2"]'})
+        result = {"123456789012": '["abucket1", "abucket2"]'}
         mock_redis_hgetall.return_value = result
         account_id = "123456789012"
         resource = "s3"
