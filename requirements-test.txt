@@ -13,9 +13,9 @@ aws-xray-sdk==2.5.0       # via moto
 bandit==1.6.2             # via -r requirements-test.in
 black==19.10b0            # via -r requirements-test.in
 bleach==3.1.5             # via -c requirements.txt, readme-renderer
-boto3==1.13.21            # via -c requirements.txt, aws-sam-translator, moto
+boto3==1.13.23            # via -c requirements.txt, aws-sam-translator, moto
 boto==2.49.0              # via -c requirements.txt, moto
-botocore==1.16.21         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
+botocore==1.16.23         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
 certifi==2020.4.5.1       # via -c requirements.txt, requests
 cffi==1.14.0              # via cryptography
 cfgv==3.1.0               # via pre-commit
@@ -38,7 +38,7 @@ flake8==3.8.2             # via -r requirements-test.in, flake8-docstrings
 future==0.18.2            # via aws-xray-sdk
 gitdb==4.0.5              # via gitpython
 gitpython==3.1.3          # via bandit
-identify==1.4.18          # via pre-commit
+identify==1.4.19          # via pre-commit
 idna==2.8                 # via -c requirements.txt, moto, requests
 importlib-metadata==1.6.0  # via jsonpickle
 jinja2==2.11.2            # via moto
@@ -79,7 +79,7 @@ pytest-cov==2.9.0         # via -r requirements-test.in
 pytest-forked==1.1.3      # via pytest-xdist
 pytest-html==2.1.1        # via -r requirements-test.in
 pytest-metadata==1.9.0    # via pytest-html
-pytest-mock==3.1.0        # via -r requirements-test.in
+pytest-mock==3.1.1        # via -r requirements-test.in
 pytest-timeout==1.3.4     # via -r requirements-test.in
 pytest-tornado==0.8.0     # via -r requirements-test.in
 pytest-xdist==1.32.0      # via -r requirements-test.in
@@ -96,12 +96,12 @@ responses==0.10.14        # via moto
 rsa==4.0                  # via -c requirements.txt, python-jose
 s3transfer==0.3.3         # via -c requirements.txt, boto3
 selenium==3.141.0         # via -r requirements-test.in
-six==1.15.0               # via -c requirements.txt, aws-sam-translator, bandit, bleach, cfn-lint, cryptography, docker, ecdsa, fakeredis, jsonschema, junit-xml, mock, moto, packaging, pyrsistent, pytest-xdist, python-dateutil, python-jose, readme-renderer, responses, stevedore, tox, virtualenv, websocket-client
+six==1.15.0               # via -c requirements.txt, aws-sam-translator, bandit, bleach, cfn-lint, cryptography, docker, ecdsa, fakeredis, jsonschema, junit-xml, mock, moto, packaging, pyrsistent, pytest-xdist, python-dateutil, python-jose, readme-renderer, responses, tox, virtualenv, websocket-client
 smmap==3.0.4              # via gitdb
 snowballstemmer==2.0.0    # via pydocstyle
 sortedcontainers==2.1.0   # via fakeredis
 sshpubkeys==3.1.0         # via moto
-stevedore==1.32.0         # via bandit
+stevedore==2.0.0          # via bandit
 toml==0.10.1              # via -c requirements.txt, black, pre-commit, tox
 tornado==6.0.4            # via -c requirements.txt, -r requirements-test.in, pytest-tornado
 tox==3.15.1               # via -r requirements-test.in
