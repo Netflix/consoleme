@@ -356,8 +356,8 @@ class JSONBulkUserMembershipHandler(BaseJSONHandler):
 
         tasks = []
         for group_name in group_list:
-            task = await api_add_user_to_group_or_raise(
-                group_name, member_name, actor=self.user
+            task = asyncio.ensure_future(
+                api_add_user_to_group_or_raise(group_name, member_name, actor=self.user)
             )
             tasks.append(task)
 
