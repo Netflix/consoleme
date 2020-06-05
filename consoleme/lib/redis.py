@@ -103,7 +103,7 @@ class ConsoleMeRedis(redis.StrictRedis):
         if automatically_backup_to_s3:
             try:
                 obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
-                obj.put(Body=args[1])
+                obj.put(Body=str(args[1]))
             except Exception as e:
                 function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
                 log.error(
