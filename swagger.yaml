@@ -268,14 +268,6 @@ components:
       type: object
       required:
         - arn
-        - account_id
-        - account_name
-        - policy_sha256
-        - policy
-        - owner
-        - approvers
-        - resource_type
-        - last_updated
       properties:
         arn:
           description: resource ARN
@@ -350,14 +342,7 @@ components:
             - requester_info
           properties:
             changes:
-              type: array
-              items:
-                anyOf:
-                  - $ref: '#/components/schemas/InlinePolicyChangeModel'
-                  - $ref: '#/components/schemas/ManagedPolicyChangeModel'
-                  - $ref: '#/components/schemas/ResourcePolicyChangeModel'
-                discriminator:
-                  propertyName: change_type
+              $ref: '#/components/schemas/ChangeModelArray'
             requester_info:
               $ref: '#/components/schemas/UserModel'
             reviewer:
@@ -368,8 +353,12 @@ components:
       type: object
       required:
         - generator_type
+        - arn
         - resource
       properties:
+        arn:
+          description: principal ARN
+          type: string
         generator_type:
           type: string
           enum:
@@ -377,6 +366,9 @@ components:
             - s3
             - sqs
             - sns
+        resource:
+          description: resource ARN
+          type: string
     GenericChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -455,7 +447,7 @@ components:
       type: object
       required:
         - change_type
-        - resource
+        - resource_arns
       properties:
         change_type:
           type: string
@@ -463,6 +455,10 @@ components:
             - inline_policy
             - managed_policy
             - resource_policy
+        resource_arns:
+          type: array
+          items:
+            type: string
         resource:
           $ref: '#/components/schemas/ResourceModel'
     InlinePolicyChangeModel:
@@ -470,16 +466,15 @@ components:
         - $ref: '#/components/schemas/ChangeModel'
         - type: object
           required:
-            - arn
+            - resource_arns
             - policy_name
             - new
             - policy
           properties:
-            arn:
-              type: string
-            additional_arns:
-              description: additional ARNs relevant to request, e.g. S3 bucket ARN with path prefix
-              type: string
+            resource_arns:
+              type: array
+              items:
+                type: string
             policy_name:
               type: string
             new:
@@ -520,6 +515,15 @@ components:
               enum:
                 - attach
                 - detach
+    ChangeModelArray:
+      type: array
+      items:
+        anyOf:
+          - $ref: '#/components/schemas/InlinePolicyChangeModel'
+          - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+          - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+        discriminator:
+          propertyName: change_type
     PolicyModel:
       type: object
       required:
