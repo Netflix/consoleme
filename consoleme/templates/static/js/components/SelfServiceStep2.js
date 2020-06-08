@@ -46,7 +46,7 @@ class SelfServiceStep1 extends Component {
         const {permissions} = this.props;
 
         // skip adding a permission if any of followings are empty.
-        if (permission.value === '' || permission.actions.length < 1) {
+        if (permission.actions.length < 1) {
             return;
         }
 
