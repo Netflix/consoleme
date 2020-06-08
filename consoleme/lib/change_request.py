@@ -93,18 +93,15 @@ def _generate_iam_policy(
 
 def _generate_change(
     principal_arn: str,
-    resource_arn: str,
+    resource_arns: List[str],
     actions: List[str],
-    additional_arns: List[str] = [],
     is_new: bool = True,
 ):
-    resources = [resource_arn] + additional_arns
-    policy_document = _generate_iam_policy(resources, actions)
+    policy_document = _generate_iam_policy(resource_arns, actions)
     change_details = {
         "change_type": ChangeType.inline_policy,
         "arn": principal_arn,
-        "resource_arn": resource_arn,
-        "additional_arns": additional_arns,
+        "resource_arns": resource_arns,
         "policy_name": "foobar",
         "new": is_new,
         "policy": policy_document,
@@ -153,23 +150,21 @@ def generate_generic_change(
     actions = _get_access_level_actions_for_resource(
         generator.resource, generator.access_level
     )
-    return _generate_change(generator.arn, generator.resource, actions,)
+    return _generate_change(generator.arn, [generator.resource], actions,)
 
 
 def generate_s3_change(generator: S3ChangeGeneratorModel) -> InlinePolicyChangeModel:
     prefix_arn = generator.resource + generator.bucket_prefix
-    additional_arns = [prefix_arn]
+    resource_arns = [generator.resource, prefix_arn]
     actions = _get_actions_from_groups(generator.action_groups, s3_action_map)
-    return _generate_change(
-        generator.arn, generator.resource, actions, additional_arns=additional_arns,
-    )
+    return _generate_change(generator.arn, resource_arns, actions,)
 
 
 def generate_sns_change(generator: SNSChangeGeneratorModel) -> InlinePolicyChangeModel:
     actions = _get_actions_from_groups(generator.action_groups, sns_action_map)
-    return _generate_change(generator.arn, generator.resource, actions,)
+    return _generate_change(generator.arn, [generator.resource], actions,)
 
 
 def generate_sqs_change(generator: SQSChangeGeneratorModel) -> InlinePolicyChangeModel:
     actions = _get_actions_from_groups(generator.action_groups, sqs_action_map)
-    return _generate_change(generator.arn, generator.resource, actions,)
+    return _generate_change(generator.arn, [generator.resource], actions,)

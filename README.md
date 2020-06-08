@@ -218,7 +218,7 @@ When changes are made to the Swagger spec, models may need to be regenerated usi
 
 ```bash
 pip install datamodel-code-generator
-datamodel-codegen --input swagger.yaml --output consoleme/models/models.py
+datamodel-codegen --input swagger.yaml --output consoleme/models.py
 ```
 
 ## Generate an AMI to deploy ConsoleMe to EC2
