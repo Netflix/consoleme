@@ -14,12 +14,9 @@ from consoleme.exceptions.exceptions import (
     MustBeFte,
     Unauthorized,
 )
-from consoleme.handlers.base import (
-    BaseHandler,
-    BaseMtlsHandler,
-    BaseAPIV1Handler,
-)
+from consoleme.handlers.base import BaseAPIV1Handler, BaseHandler, BaseMtlsHandler
 from consoleme.lib.aws import (
+    can_delete_roles,
     fetch_resource_details,
     get_all_iam_managed_policies_for_account,
     get_resource_policies,
@@ -229,7 +226,7 @@ class PolicyEditHandler(BaseHandler):
         read_only = False
 
         can_save_delete = await can_manage_policy_requests(self.groups)
-
+        can_delete_role = await can_delete_roles(self.groups)
         arn = f"arn:aws:iam::{account_id}:role/{role_name}"
 
         stats.count("PolicyEditHandler.get", tags={"user": self.user, "arn": arn})
@@ -307,6 +304,7 @@ class PolicyEditHandler(BaseHandler):
             config=config,
             read_only=read_only,
             can_save_delete=can_save_delete,
+            can_delete_role=can_delete_role,
             s3_errors=s3_errors,
             s3_query_url=s3_query_url,
             s3_non_error_query_url=s3_non_error_query_url,
@@ -1008,13 +1006,13 @@ async def handle_resource_type_ahead_request(cls):
     try:
         search_string: str = cls.request.arguments.get("search")[0].decode("utf-8")
     except TypeError:
-        cls.send_error(400, message=f"`search` parameter must be defined")
+        cls.send_error(400, message="`search` parameter must be defined")
         return
 
     try:
         resource_type: str = cls.request.arguments.get("resource")[0].decode("utf-8")
     except TypeError:
-        cls.send_error(400, message=f"`resource_type` parameter must be defined")
+        cls.send_error(400, message="`resource_type` parameter must be defined")
         return
 
     account_id = None
