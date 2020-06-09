@@ -1,7 +1,10 @@
 import React, { Component } from 'react';
+import SelfServiceComponentCustom from "./SelfServiceComponentCustom";
+import SelfServiceComponentEC2 from "./SelfServiceComponentEC2";
+import SelfServiceComponentRDS from "./SelfServiceComponentRDS";
+import SelfServiceComponentRoute53 from "./SelfServiceComponentRoute53";
 import SelfServiceComponentS3 from './SelfServiceComponentS3';
-import SelfServiceComponentSQS from './SelfServiceComponentSQS';
-import SelfServiceComponentCustom from './SelfServiceComponentCustom';
+import SelfServiceComponentSQS from "./SelfServiceComponentSQS";
 
 // TODO, move this to config file.
 const DEFAULT_AWS_SERVICE = 's3';
@@ -10,9 +13,12 @@ const DEFAULT_AWS_SERVICE = 's3';
 class SelfServiceComponent extends Component {
     // TODO(heewonk), load available components via dynamic import using module name pattern.
     static components = {
+        custom: SelfServiceComponentCustom,
+        ec2: SelfServiceComponentEC2,
+        rds: SelfServiceComponentRDS,
+        route53: SelfServiceComponentRoute53,
         s3: SelfServiceComponentS3,
         sqs: SelfServiceComponentSQS,
-        custom: SelfServiceComponentCustom,
     };
 
     componentDidMount() {

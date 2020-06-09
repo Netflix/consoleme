@@ -22,7 +22,6 @@ class SelfService extends Component {
         permissions: [],
         role: {
             roleArn: '',
-            roleFrom: 'app', // TODO, change to ENUM
         },
     };
 
