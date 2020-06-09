@@ -714,3 +714,6 @@ components:
           type: string
         extended_info:
           type: object
+        details_url:
+          type: string
+          example: https://details_about/user
