@@ -583,6 +583,91 @@ components:
           type: string
           example: arn:aws:iam::123456789012:role/super_awesome_admin
           readOnly: true
+    CloudTrailError:
+      type: object
+      properties:
+        error_call:
+          type: string
+          example: sqs:CreateQueue
+        count:
+          type: integer
+          example: 5
+    CloudTrailErrorArray:
+      type: array
+      items:
+        anyOf:
+          - $ref: '#/components/schemas/CloudTrailError'
+    CloudTrailDetailsModel:
+      type: object
+      properties:
+        query_url:
+          type: string
+          example: https://cloudtrail_details/for/role_arn
+        error_url:
+          type: string
+          example: https://cloudtrail_errors/for/role_arn
+        errors:
+          $ref: '#/components/schemas/CloudTrailErrorArray'
+    S3Error:
+      type: object
+      properties:
+        error_call:
+          type: string
+          example: s3:PutObject
+        count:
+          type: integer
+          example: 5
+        bucket_name:
+          type: string
+          example: bucket_name
+        bucket_prefix:
+          type: string
+          example: folder/file.txt
+        status_code:
+          type: integer
+          example: 403
+        status_text:
+          type: string
+          example: AccessDenied
+        role_arn:
+          type: string
+          example: arn:aws:iam::123456789012:role/roleName
+    S3ErrorArray:
+      type: array
+      items:
+        anyOf:
+          - $ref: '#/components/schemas/S3Error'
+    S3DetailsModel:
+      type: object
+      properties:
+        query_url:
+          type: string
+          example: https://s3_log_query/for/role_or_bucket_arn
+        error_url:
+          type: string
+          example: https://s3_error_query/for/role_or_bucket_arn
+        errors:
+          $ref: '#/components/schemas/S3ErrorArray'
+    AppDetailsModel:
+      type: object
+      properties:
+        name:
+          type: string
+          example: app_name
+        owner:
+          type: string
+          example: owner@example.com
+        owner_url:
+          type: string
+          example: https://link_to_owner_group
+        app_url:
+          type: string
+          example: https://link_to_app_ci_pipeline_for_app
+    AppDetailsArray:
+      type: array
+      items:
+        anyOf:
+          - $ref: '#/components/schemas/AppDetailsModel'
     ExtendedRoleModel:
       allOf:
         - $ref: '#/components/schemas/RoleModel'
@@ -601,6 +686,12 @@ components:
               type: array
               items:
                 type: object # TODO: make assume_role_policies schema
+            cloudtrail_details:
+              $ref: '#/components/schemas/CloudTrailDetailsModel'
+            s3_details:
+              $ref: '#/components/schemas/S3DetailsModel'
+            app_details:
+              $ref: '#/components/schemas/AppDetailsArray'
             managed_policies:
               type: array
               items:
@@ -623,3 +714,6 @@ components:
           type: string
         extended_info:
           type: object
+        details_url:
+          type: string
+          example: https://details_about/user
