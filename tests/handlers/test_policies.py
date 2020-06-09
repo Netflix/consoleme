@@ -54,7 +54,7 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
     def test_policy_pageload(self, mock_fetch_iam_role):
-        mock_fetch_iam_role.return_value = MOCK_ROLE
+        mock_fetch_iam_role.return_value = create_future(MOCK_ROLE)
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -74,7 +74,7 @@ class TestPolicyEditHandler(AsyncHTTPTestCase):
     )
     @patch("consoleme.handlers.v1.policies.aws.fetch_iam_role")
     def test_policy_notfound(self, mock_fetch_iam_role):
-        mock_fetch_iam_role.return_value = None
+        mock_fetch_iam_role.return_value = create_future(None)
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -562,7 +562,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
             f"/policies/typeahead?resource={resource}", headers=headers, method="GET"
         )
         self.assertEqual(response.code, 400)
-        result = {"123456789012": '["abucket1", "abucket2"]'}
+        result = create_future({"123456789012": '["abucket1", "abucket2"]'})
         mock_redis_hgetall.return_value = result
         account_id = "123456789012"
         resource = "s3"
