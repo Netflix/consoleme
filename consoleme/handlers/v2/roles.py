@@ -116,15 +116,15 @@ class RoleDetailHandler(BaseAPIV2Handler):
             "role": role_name,
         }
 
-        allowed_to_delete = await can_delete_roles(self.groups)
-        if not allowed_to_delete:
+        can_delete_role = await can_delete_roles(self.groups)
+        if not can_delete_role:
             stats.count(
                 f"{log_data['function']}.unauthorized",
                 tags={
                     "user": self.user,
                     "account": account_id,
                     "role": role_name,
-                    "authorized": False,
+                    "authorized": can_delete_role,
                     "ip": self.ip,
                 },
             )
@@ -143,7 +143,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
                     "user": self.user,
                     "account": account_id,
                     "role": role_name,
-                    "authorized": True,
+                    "authorized": can_delete_role,
                     "ip": self.ip,
                 },
             )
@@ -159,4 +159,4 @@ class RoleDetailHandler(BaseAPIV2Handler):
             "role": role_name,
             "account": account_id,
         }
-        self.write(json.dumps(response_json))
+        self.write(response_json)

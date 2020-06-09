@@ -418,15 +418,15 @@ async def delete_iam_role(account_id, role_name, username) -> bool:
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "message": "Attempting to delete role",
-        "account": account_id,
+        "account_id": account_id,
         "role_name": role_name,
         "user": username,
     }
     log.info(log_data)
-    role = await (fetch_role_details(account_id, role_name))
+    role = await fetch_role_details(account_id, role_name)
 
-    for instance_profile in role.instance_profiles.all():
-        instance_profile.load()
+    for instance_profile in await sync_to_async(role.instance_profiles.all)():
+        await sync_to_async(instance_profile.load)()
         log.info(
             {
                 **log_data,
@@ -438,8 +438,8 @@ async def delete_iam_role(account_id, role_name, username) -> bool:
         await sync_to_async(instance_profile.delete)()
 
     # Detach managed policies
-    for policy in role.attached_policies.all():
-        policy.load()
+    for policy in await sync_to_async(role.attached_policies.all)():
+        await sync_to_async(policy.load)()
         log.info(
             {
                 **log_data,
@@ -450,8 +450,8 @@ async def delete_iam_role(account_id, role_name, username) -> bool:
         await sync_to_async(policy.detach_role)(RoleName=role_name)
 
     # Delete Inline policies
-    for policy in role.policies.all():
-        policy.load()
+    for policy in await sync_to_async(role.policies.all)():
+        await sync_to_async(policy.load)()
         log.info(
             {
                 **log_data,
@@ -483,13 +483,13 @@ async def fetch_role_details(account_id, role_name):
         session_name="fetch_role_details",
     )
     try:
-        iam_role = iam_resource.Role(role_name)
+        iam_role = await sync_to_async(iam_resource.Role)(role_name)
     except ClientError as ce:
         if ce.response["Error"]["Code"] == "NoSuchEntity":
             log_data["message"] = "Requested role doesn't exist"
             log.error(log_data)
         raise
-    iam_role.load()
+    await sync_to_async(iam_role.load)()
     return iam_role
 
 
