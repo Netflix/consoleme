@@ -613,7 +613,7 @@ components:
       properties:
         error_call:
           type: string
-          example: sqs:CreateQueue
+          example: s3:PutObject
         count:
           type: integer
           example: 5
