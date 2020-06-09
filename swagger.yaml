@@ -648,6 +648,26 @@ components:
           example: https://s3_error_query/for/role_or_bucket_arn
         errors:
           $ref: '#/components/schemas/S3ErrorArray'
+    AppDetailsModel:
+      type: object
+      properties:
+        name:
+          type: string
+          example: app_name
+        owner:
+          type: string
+          example: owner@example.com
+        owner_url:
+          type: string
+          example: https://link_to_owner_group
+        app_url:
+          type: string
+          example: https://link_to_app_ci_pipeline_for_app
+    AppDetailsArray:
+      type: array
+      items:
+        anyOf:
+          - $ref: '#/components/schemas/AppDetailsModel'
     ExtendedRoleModel:
       allOf:
         - $ref: '#/components/schemas/RoleModel'
@@ -671,7 +691,7 @@ components:
             s3_details:
               $ref: '#/components/schemas/S3DetailsModel'
             app_details:
-              type: object
+              $ref: '#/components/schemas/AppDetailsArray'
             managed_policies:
               type: array
               items:
