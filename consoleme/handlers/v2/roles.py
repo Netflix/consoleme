@@ -12,6 +12,7 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 crypto = Crypto()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
+aws = get_plugin_by_name(config.get("plugins.aws"))()
 
 
 class RolesHandler(BaseAPIV2Handler):
@@ -150,6 +151,8 @@ class RoleDetailHandler(BaseAPIV2Handler):
             return
 
         # if here, role has been successfully deleted
+        arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+        await aws.fetch_iam_role(account_id, arn, force_refresh=True)
         response_json = {
             "status": "success",
             "message": "Successfully deleted role from account",
