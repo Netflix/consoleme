@@ -586,7 +586,7 @@ components:
     CloudTrailError:
       type: object
       properties:
-        error_call:
+        event_call:
           type: string
           example: sqs:CreateQueue
         count:
@@ -597,15 +597,14 @@ components:
       items:
         anyOf:
           - $ref: '#/components/schemas/CloudTrailError'
+        discriminator:
+          propertyName: cloudtrail_errors
     CloudTrailDetailsModel:
       type: object
       properties:
-        query_url:
-          type: string
-          example: https://cloudtrail_details/for/role_arn
         error_url:
           type: string
-          example: https://cloudtrail_errors/for/role_arn
+          example: https://cloudtrail_logs/for/role_arn
         errors:
           $ref: '#/components/schemas/CloudTrailErrorArray'
     S3Error:
@@ -620,7 +619,7 @@ components:
         bucket_name:
           type: string
           example: bucket_name
-        bucket_prefix:
+        request_prefix:
           type: string
           example: folder/file.txt
         status_code:
@@ -637,6 +636,8 @@ components:
       items:
         anyOf:
           - $ref: '#/components/schemas/S3Error'
+        discriminator:
+          propertyName: s3_errors
     S3DetailsModel:
       type: object
       properties:
@@ -668,6 +669,8 @@ components:
       items:
         anyOf:
           - $ref: '#/components/schemas/AppDetailsModel'
+        discriminator:
+          propertyName: app_details
     ExtendedRoleModel:
       allOf:
         - $ref: '#/components/schemas/RoleModel'
@@ -682,10 +685,8 @@ components:
               type: array
               items:
                 type: object # TODO: make inline_policies schema
-            assume_role_policies:
-              type: array
-              items:
-                type: object # TODO: make assume_role_policies schema
+            assume_role_policy_document:
+              type: object # TODO: make assume_role_policy_document schema
             cloudtrail_details:
               $ref: '#/components/schemas/CloudTrailDetailsModel'
             s3_details:
