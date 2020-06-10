@@ -14,6 +14,7 @@ class SelfServiceStep1 extends Component {
         isLoading: false,
         results: [],
         value: '',
+        roleInfo: '',
     };
 
     handleSearchChange(event, { value }) {
@@ -68,6 +69,19 @@ class SelfServiceStep1 extends Component {
     handleResultSelect(e, {result}) {
         let role = Object.assign({}, this.props.role);
         // TODO(iam), once we select a role, fetch the role info and update the Role Info section.
+        const roleName = result.title.split("/")[1]
+        const accountId = result.title.split(":")[4]
+
+        // const res = detch (`/roles/${accountId}/${roleName}`);
+        fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
+            resp.text().then((source) => {
+                this.setState({
+                    isLoading: false,
+                    roleInfo: source,
+                });
+            });
+        });
+
         role.roleArn = result.title;
         this.props.handleRoleUpdate(role);
         this.setState({
@@ -77,7 +91,7 @@ class SelfServiceStep1 extends Component {
 
     render() {
         const {roleArn} = this.props.role;
-        const {isLoading, results} = this.state;
+        const {isLoading, results, roleInfo} = this.state;
 
         return (
             <Segment>
@@ -114,7 +128,9 @@ class SelfServiceStep1 extends Component {
                             <Header>
                                 Role Information
                             </Header>
-                            <Segment placeholder />
+                            <Segment placeholder>
+                                {roleInfo}
+                            </Segment>
                         </Grid.Column>
                     </Grid.Row>
                 </Grid>

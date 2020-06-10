@@ -97,7 +97,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
             )
             return
 
-        self.write(role_details.dict())
+        self.write(role_details.json())
 
     async def put(self, account_id, role_name):
         """

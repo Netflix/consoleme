@@ -10,7 +10,8 @@
     "react-dom": "^16.8.6",
     "react-select": "^3.0.4",
     "semantic-ui-calendar-react": "^0.15.3",
-    "semantic-ui-react": "^0.84.0"
+    "semantic-ui-react": "^0.84.0",
+    "swagger-client": "^3.10.6"
   },
   "description": "",
   "devDependencies": {
