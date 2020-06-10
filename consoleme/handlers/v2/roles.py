@@ -70,6 +70,10 @@ class RoleDetailHandler(BaseAPIV2Handler):
 
     allowed_methods = ["GET", "PUT", "DELETE"]
 
+    def initialize(self):
+        self.user: str = None
+        self.eligible_roles: list = []
+
     async def get(self, account_number, role_name):
         """
         GET /api/v2/roles/{account_number}/{role_name}

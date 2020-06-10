@@ -1,7 +1,12 @@
+import boto3
 import ujson as json
 from mock import patch
+from moto import mock_iam
 from tornado.testing import AsyncHTTPTestCase
+
 from consoleme.config import config
+from tests.conftest import MockBaseHandler, create_future
+
 
 class TestRolesHandler(AsyncHTTPTestCase):
     def get_app(self):
@@ -86,4 +91,79 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
             body="{}",
         )
         self.assertEqual(response.code, 501)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+    @patch("consoleme.handlers.v2.roles.RoleDetailHandler.authorization_flow")
+    def test_post_no_user(self, mock_auth):
+        mock_auth.return_value = create_future(None)
+        expected = {
+            "status": 403,
+            "title": "Forbidden",
+            "message": "No user detected",
+        }
+        response = self.fetch(
+            "/api/v2/roles/012345678901/fake_account_admin", method="DELETE",
+        )
+        self.assertEqual(response.code, 403)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+    @patch(
+        "consoleme.handlers.v2.roles.RoleDetailHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    def test_post_unauthorized_user(self):
+        expected = {
+            "status": 403,
+            "title": "Forbidden",
+            "message": "User is unauthorized to delete a role",
+        }
+        response = self.fetch(
+            "/api/v2/roles/012345678901/fake_account_admin", method="DELETE",
+        )
+        self.assertEqual(response.code, 403)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+    @patch(
+        "consoleme.handlers.v2.roles.RoleDetailHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    @patch("consoleme.handlers.v2.roles.can_delete_roles")
+    def test_post_authorized_user_invalid_role(self, mock_can_delete_roles):
+        expected = {
+            "status": 500,
+            "title": "Internal Server Error",
+            "message": "Error occurred deleting role: An error occurred (NoSuchEntity) when calling the GetRole "
+            "operation: Role fake_account_admin not found",
+        }
+        mock_can_delete_roles.return_value = create_future(True)
+        response = self.fetch(
+            "/api/v2/roles/012345678901/fake_account_admin", method="DELETE",
+        )
+        self.assertEqual(response.code, 500)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+    @patch(
+        "consoleme.handlers.v2.roles.RoleDetailHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    @patch("consoleme.handlers.v2.roles.can_delete_roles")
+    @mock_iam
+    def test_post_authorized_user_valid_role(self, mock_can_delete_roles):
+        client = boto3.client("iam", region_name="us-east-1")
+        role_name = "fake_account_admin"
+        account_id = "012345678901"
+        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
+        expected = {
+            "status": "success",
+            "message": "Successfully deleted role from account",
+            "role": role_name,
+            "account": account_id,
+        }
+
+        mock_can_delete_roles.return_value = create_future(True)
+
+        response = self.fetch(
+            f"/api/v2/roles/{account_id}/{role_name}", method="DELETE",
+        )
+        self.assertEqual(response.code, 200)
         self.assertDictEqual(json.loads(response.body), expected)
