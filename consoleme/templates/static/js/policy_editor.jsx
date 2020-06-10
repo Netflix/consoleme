@@ -302,3 +302,38 @@ export function renderIAMSelfServiceWizard() {
   $('#create-policy-button').attr("disabled", "disabled");
   $('#wizard-policy-button').attr("disabled", "disabled");
 }
+
+export async function deleteRole(account_id, role_name) {
+    $(".circular.ui.icon.button").removeClass( "active" );
+    let result = await Swal.fire({
+    title: 'Are you sure?',
+    text: "Are you sure you want to delete " + role_name + " from account " + account_id + "?",
+    type: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, remove it.'
+  });
+  if (result.value) {
+    let dimmer = $('.ui.dimmer');
+    dimmer.addClass('active');
+    let url = "/api/v2/roles/" + account_id + "/" + role_name
+    let xsrf = await getCookie('_xsrf');
+    const rawResponse = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Content-type': 'application/json',
+        'X-Xsrftoken': xsrf,
+      }
+    });
+    let res = await rawResponse;
+    let resJson;
+    try {
+      resJson = await res.json();
+    } catch (e) {
+      resJson = res;
+    }
+    dimmer.removeClass('active');
+    await handleResponse(resJson, "/policies", "Successfully deleted role! Redirecting to ConsoleMe's policies page", 5000);
+  }
+}
