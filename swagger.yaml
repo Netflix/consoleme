@@ -565,6 +565,7 @@ components:
       type: object
       required:
         - name
+        - account_id
       properties:
         name:
           type: string
