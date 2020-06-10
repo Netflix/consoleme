@@ -593,12 +593,13 @@ components:
           type: integer
           example: 5
     CloudTrailErrorArray:
-      type: array
-      items:
-        anyOf:
-          - $ref: '#/components/schemas/CloudTrailError'
-        discriminator:
-          propertyName: cloudtrail_errors
+      type: object
+      properties:
+        cloudtrail_errors:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/CloudTrailError'
     CloudTrailDetailsModel:
       type: object
       properties:
@@ -632,12 +633,13 @@ components:
           type: string
           example: arn:aws:iam::123456789012:role/roleName
     S3ErrorArray:
-      type: array
-      items:
-        anyOf:
-          - $ref: '#/components/schemas/S3Error'
-        discriminator:
-          propertyName: s3_errors
+      type: object
+      properties:
+        s3_errors:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/S3Error'
     S3DetailsModel:
       type: object
       properties:
@@ -665,12 +667,13 @@ components:
           type: string
           example: https://link_to_app_ci_pipeline_for_app
     AppDetailsArray:
-      type: array
-      items:
-        anyOf:
-          - $ref: '#/components/schemas/AppDetailsModel'
-        discriminator:
-          propertyName: app_details
+      type: object
+      properties:
+        app_details:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/AppDetailsModel'
     ExtendedRoleModel:
       allOf:
         - $ref: '#/components/schemas/RoleModel'
@@ -691,7 +694,7 @@ components:
               $ref: '#/components/schemas/CloudTrailDetailsModel'
             s3_details:
               $ref: '#/components/schemas/S3DetailsModel'
-            app_details:
+            apps:
               $ref: '#/components/schemas/AppDetailsArray'
             managed_policies:
               type: array

@@ -51,7 +51,7 @@ async def get_cloudtrail_details_for_role(
         )
 
     return CloudTrailDetailsModel(
-        error_url=error_url, errors=CloudTrailErrorArray(__root__=ct_errors)
+        error_url=error_url, errors=CloudTrailErrorArray(cloudtrail_errors=ct_errors)
     )
 
 
@@ -94,7 +94,7 @@ async def get_s3_details_for_role(
     return S3DetailsModel(
         query_url=query_url,
         error_url=error_url,
-        errors=S3ErrorArray(__root__=s3_errors_formatted),
+        errors=S3ErrorArray(s3_errors=s3_errors_formatted),
     )
 
 
