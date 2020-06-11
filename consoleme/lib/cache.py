@@ -1,10 +1,14 @@
 import json
 import sys
 import time
-from typing import Dict, List, Union, Any
+from typing import Any, Dict, List, Optional, Union
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import DataNotRetrievable, UnsupportedRedisDataType
+from consoleme.exceptions.exceptions import (
+    DataNotRetrievable,
+    ExpiredData,
+    UnsupportedRedisDataType,
+)
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -40,8 +44,13 @@ async def store_json_results_in_redis_and_s3(
     :return:
     """
 
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    last_updated_redis_key = config.get(
+        "store_json_results_in_redis_and_s3.last_updated_redis_key",
+        "STORE_JSON_RESULTS_IN_REDIS_AND_S3_LAST_UPDATED",
+    )
 
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    last_updated = int(time.time())
     stats.count(
         f"{function}.called",
         tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key},
@@ -54,8 +63,9 @@ async def store_json_results_in_redis_and_s3(
             red.hmset(redis_key, data)
         else:
             raise UnsupportedRedisDataType("Unsupported redis_data_type passed")
+        red.hset(last_updated_redis_key, redis_key, last_updated)
 
-    data_for_s3 = {"last_updated": int(time.time()), "data": data}
+    data_for_s3 = {"last_updated": last_updated, "data": data}
 
     if s3_bucket and s3_key:
         put_object(
@@ -71,6 +81,7 @@ async def retrieve_json_data_from_redis_or_s3(
     s3_bucket: str = None,
     s3_key: str = None,
     cache_to_redis_if_data_in_s3: bool = True,
+    max_age: Optional[int] = None,
 ):
     """
     Retrieve data from Redis as a priority. If data is unavailable in Redis, fall back to S3 and attempt to store
@@ -84,7 +95,10 @@ async def retrieve_json_data_from_redis_or_s3(
     :return:
     """
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-
+    last_updated_redis_key = config.get(
+        "store_json_results_in_redis_and_s3.last_updated_redis_key",
+        "STORE_JSON_RESULTS_IN_REDIS_AND_S3_LAST_UPDATED",
+    )
     stats.count(
         f"{function}.called",
         tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key},
@@ -99,12 +113,24 @@ async def retrieve_json_data_from_redis_or_s3(
             data = red.hgetall(redis_key)
         else:
             raise UnsupportedRedisDataType("Unsupported redis_data_type passed")
+        if data and max_age:
+            current_time = int(time.time())
+            last_updated = int(red.hget(last_updated_redis_key, redis_key))
+            if current_time - last_updated > max_age:
+                raise ExpiredData(f"Data in Redis is older than {max_age} seconds.")
 
     # Fall back to S3 if there's no data
     if not data and s3_bucket and s3_key:
-        data_object = get_object(Bucket=s3_bucket, Key=s3_key)
-        data_object_content = data_object["Body"].read()
-        data = json.loads(data_object_content)["data"]
+        s3_object = get_object(Bucket=s3_bucket, Key=s3_key)
+        s3_object_content = s3_object["Body"].read()
+        data_object = json.loads(s3_object_content)["data"]
+        data = data_object["data"]
+
+        if data and max_age:
+            current_time = int(time.time())
+            last_updated = data_object["last_updated"]
+            if current_time - last_updated > max_age:
+                raise ExpiredData(f"Data in S3 is older than {max_age} seconds.")
         if redis_key and cache_to_redis_if_data_in_s3:
             await store_json_results_in_redis_and_s3(
                 data, redis_key=redis_key, redis_data_type=redis_data_type

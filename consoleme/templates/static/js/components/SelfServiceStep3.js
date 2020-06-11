@@ -30,7 +30,7 @@ class SelfServiceStep3 extends Component {
         const {role, permissions} = this.props;
 
         const { get, post, response, loading, error } = useFetch("/api/v2/generate_policy")
-        const res = await get()
+        const res = await post(this.props)
     }
 
     handleRequestSubmit() {

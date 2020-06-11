@@ -1198,6 +1198,7 @@ def get_iam_role_limit() -> dict:
                 stats.count(f"{function}.error", tags={"account_id": account_id})
                 log.error(log_data, exc_info=True)
                 config.sentry.captureException()
+                raise
 
     log_data = {
         "function": function,

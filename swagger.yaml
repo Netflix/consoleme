@@ -369,6 +369,9 @@ components:
         resource:
           description: resource ARN
           type: string
+        version:
+          description: Version
+          type: string
     GenericChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -565,6 +568,7 @@ components:
       type: object
       required:
         - name
+        - account_id
       properties:
         name:
           type: string
@@ -586,7 +590,7 @@ components:
     CloudTrailError:
       type: object
       properties:
-        error_call:
+        event_call:
           type: string
           example: sqs:CreateQueue
         count:
@@ -594,18 +598,18 @@ components:
           example: 5
     CloudTrailErrorArray:
       type: array
-      items:
-        anyOf:
-          - $ref: '#/components/schemas/CloudTrailError'
+      properties:
+        cloudtrail_errors:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/CloudTrailError'
     CloudTrailDetailsModel:
       type: object
       properties:
-        query_url:
-          type: string
-          example: https://cloudtrail_details/for/role_arn
         error_url:
           type: string
-          example: https://cloudtrail_errors/for/role_arn
+          example: https://cloudtrail_logs/for/role_arn
         errors:
           $ref: '#/components/schemas/CloudTrailErrorArray'
     S3Error:
@@ -620,7 +624,7 @@ components:
         bucket_name:
           type: string
           example: bucket_name
-        bucket_prefix:
+        request_prefix:
           type: string
           example: folder/file.txt
         status_code:
@@ -633,10 +637,13 @@ components:
           type: string
           example: arn:aws:iam::123456789012:role/roleName
     S3ErrorArray:
-      type: array
-      items:
-        anyOf:
-          - $ref: '#/components/schemas/S3Error'
+      type: object
+      properties:
+        s3_errors:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/S3Error'
     S3DetailsModel:
       type: object
       properties:
@@ -664,10 +671,13 @@ components:
           type: string
           example: https://link_to_app_ci_pipeline_for_app
     AppDetailsArray:
-      type: array
-      items:
-        anyOf:
-          - $ref: '#/components/schemas/AppDetailsModel'
+      type: object
+      properties:
+        app_details:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/AppDetailsModel'
     ExtendedRoleModel:
       allOf:
         - $ref: '#/components/schemas/RoleModel'
@@ -682,15 +692,13 @@ components:
               type: array
               items:
                 type: object # TODO: make inline_policies schema
-            assume_role_policies:
-              type: array
-              items:
-                type: object # TODO: make assume_role_policies schema
+            assume_role_policy_document:
+              type: object # TODO: make assume_role_policy_document schema
             cloudtrail_details:
               $ref: '#/components/schemas/CloudTrailDetailsModel'
             s3_details:
               $ref: '#/components/schemas/S3DetailsModel'
-            app_details:
+            apps:
               $ref: '#/components/schemas/AppDetailsArray'
             managed_policies:
               type: array
