@@ -37,24 +37,30 @@ function formatRoleName(role, accounts) {
   }
 }
 
-async function handleResponse(res, redirect_uri = null, message = "Success! Refreshing cache and reloading the page.") {
+async function handleResponse(res, redirect_uri = null, message = "Success! Refreshing cache and reloading the page.", delay = 0) {
   document.getElementById('error_div').classList.add('hidden');
   document.getElementById('success_div').classList.add('hidden');
   if (res.status !== "success") {
     let element = document.getElementById('error_response');
     document.getElementById('error_div').classList.remove('hidden');
-    element.textContent = JSON.stringify(res, null, '\t');
+    if(res.hasOwnProperty("message")) {
+      element.textContent = res.message
+    } else {
+      element.textContent = JSON.stringify(res, null, '\t');
+    }
     $('.ui.basic.modal').modal('show')
   } else {
     let element = document.getElementById('success_response');
     element.textContent = message;
     document.getElementById('success_div').classList.remove('hidden')
     $('.ui.basic.modal').modal('show');
-    if (redirect_uri) {
-      window.location.replace(redirect_uri);
-    } else {
-      location.reload();
-    }
+    setTimeout(() => {
+      if (redirect_uri) {
+        window.location.replace(redirect_uri);
+      } else {
+        location.reload();
+      }
+    }, delay )
   }
 }
 

@@ -414,67 +414,91 @@ def apply_managed_policy_to_role(
     return True
 
 
-async def delete_iam_role(role: Dict) -> bool:
+async def delete_iam_role(account_id, role_name, username) -> bool:
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "message": "Attempting to delete role",
-        "arn": role.get("Arn"),
-        "Role": role,
+        "account_id": account_id,
+        "role_name": role_name,
+        "user": username,
     }
-
     log.info(log_data)
-    account_id = role["arn"].split(":")[4]
-    iam_client = await sync_to_async(boto3_cached_conn)(
-        "iam",
-        service_type="client",
-        account_number=account_id,
-        assume_role=config.get("policies.role_name"),
-        region=config.region,
-    )
-    for instance_profile in role.get("InstanceProfileList"):
+    role = await fetch_role_details(account_id, role_name)
+
+    for instance_profile in await sync_to_async(role.instance_profiles.all)():
+        await sync_to_async(instance_profile.load)()
         log.info(
             {
                 **log_data,
                 "message": "Removing and deleting instance profile from role",
-                "instance_profile": instance_profile["InstanceProfileName"],
+                "instance_profile": instance_profile.name,
             }
         )
-        await sync_to_async(iam_client.remove_role_from_instance_profile)(
-            InstanceProfileName=instance_profile["InstanceProfileName"],
-            RoleName=role["RoleName"],
-        )
-        await sync_to_async(iam_client.delete_instance_profile)(
-            InstanceProfileName=instance_profile["InstanceProfileName"]
-        )
+        await sync_to_async(instance_profile.remove_role)(RoleName=role.name,)
+        await sync_to_async(instance_profile.delete)()
+
     # Detach managed policies
-    for policy in role["AttachedManagedPolicies"]:
+    for policy in await sync_to_async(role.attached_policies.all)():
+        await sync_to_async(policy.load)()
         log.info(
             {
                 **log_data,
                 "message": "Detaching managed policy from role",
-                "policy_arn": policy["PolicyArn"],
+                "policy_arn": policy.arn,
             }
         )
-        await sync_to_async(iam_client.detach_role_policy)(
-            RoleName=role["RoleName"], PolicyArn=policy["PolicyArn"]
-        )
+        await sync_to_async(policy.detach_role)(RoleName=role_name)
 
     # Delete Inline policies
-    for policy in role["RolePolicyList"]:
+    for policy in await sync_to_async(role.policies.all)():
+        await sync_to_async(policy.load)()
         log.info(
             {
                 **log_data,
                 "message": "Deleting inline policy on role",
-                "policy_arn": policy["PolicyName"],
+                "policy_name": policy.name,
             }
         )
-        await sync_to_async(iam_client.delete_role_policy)(
-            RoleName=role["RoleName"], PolicyName=policy["PolicyName"]
-        )
+        await sync_to_async(policy.delete)()
 
     log.info({**log_data, "message": "Performing role deletion"})
-    await sync_to_async(iam_client.delete_role)(RoleName=role["RoleName"])
-    stats.count(f"{log_data['function']}.success", tags={"role_name": role["RoleName"]})
+    await sync_to_async(role.delete)()
+    stats.count(f"{log_data['function']}.success", tags={"role_name": role_name})
+
+
+async def fetch_role_details(account_id, role_name):
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "message": "Attempting to fetch role details",
+        "account": account_id,
+        "role": role_name,
+    }
+    log.info(log_data)
+    iam_resource = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        service_type="resource",
+        account_number=account_id,
+        region=config.region,
+        assume_role=config.get("policies.role_name"),
+        session_name="fetch_role_details",
+    )
+    try:
+        iam_role = await sync_to_async(iam_resource.Role)(role_name)
+    except ClientError as ce:
+        if ce.response["Error"]["Code"] == "NoSuchEntity":
+            log_data["message"] = "Requested role doesn't exist"
+            log.error(log_data)
+        raise
+    await sync_to_async(iam_role.load)()
+    return iam_role
+
+
+async def can_delete_roles(groups):
+    approval_groups = config.get("groups.can_delete_roles", [])
+    for g in approval_groups:
+        if g in groups:
+            return True
+    return False
 
 
 def role_has_tag(role: Dict, key: str, value: Optional[str] = None) -> bool:

@@ -29,7 +29,7 @@ account_ids_to_names = aws.get_account_ids_to_names()
 
 async def get_cloudtrail_details_for_role(
     arn: str
-):  # Todo: Need CloudTrailErrors model
+):
     """
     Retrieves CT details associated with role, if they exist exists
     :param arn:
@@ -57,7 +57,7 @@ async def get_cloudtrail_details_for_role(
 
 async def get_s3_details_for_role(
     account_id: str, role_name: str
-):  # TODO: Need S3Errors model
+):
     """
     Retrieves s3 details associated with role, if it exists
     :param arn:

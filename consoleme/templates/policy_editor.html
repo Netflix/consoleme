@@ -165,7 +165,13 @@
         </div>
     </div>
     <h2 class="ui header"><a href="javascript:window.location.href=window.location.pathname + '?refresh=true'"><i
-            class="refresh icon"></i></a> Role {{ role.get("arn") }} ({{ account_name }}) {% if cloudtrail_error_uri %}Logs: [<a target="_blank" href="{{ cloudtrail_error_uri }}">Cloudtrail</a>] {% end %} {% if s3_non_error_query_url %}[<a target="_blank" href="{{ s3_non_error_query_url }}">S3</a>] {% end %}</h2>
+            class="refresh icon"></i></a> Role {{ role.get("arn") }} ({{ account_name }}) {% if cloudtrail_error_uri %}Logs: [<a target="_blank" href="{{ cloudtrail_error_uri }}">Cloudtrail</a>] {% end %} {% if s3_non_error_query_url %}[<a target="_blank" href="{{ s3_non_error_query_url }}">S3</a>] {% end %}
+    </h2>
+    <p>
+        <button id="delete-role-button" onclick="policyEditor.deleteRole(  '{{ account_id }}', '{{ role.get("name") }}' )" class="ui red button"
+            type="delete" {% if not can_delete_role %}style="display: none;"{% end %} style="margin: 10px;"> Delete Role
+        </button>
+    </p>
     {% include "templated_role_div.html" %}
 
     {% if cloudtrail_errors %}
