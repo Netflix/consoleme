@@ -109,7 +109,9 @@ async def get_role_template(arn: str):
     )
 
 
-async def get_role_details(account_id: str, role_name: str) -> ExtendedRoleModel:
+async def get_role_details(
+    account_id: str, role_name: str, extended: bool = False
+) -> ExtendedRoleModel:
     arn = f"arn:aws:iam::{account_id}:role/{role_name}"
     role = await aws.fetch_iam_role(account_id, arn)
     template = await get_role_template(arn)

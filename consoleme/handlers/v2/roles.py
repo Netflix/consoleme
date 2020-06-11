@@ -95,7 +95,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
             tags={"user": self.user, "account_id": account_id, "role_name": role_name},
         )
         log.debug(log_data)
-        role_details = await get_role_details(account_id, role_name)
+        role_details = await get_role_details(account_id, role_name, extended=True)
 
         if not role_details:
             self.send_error(
