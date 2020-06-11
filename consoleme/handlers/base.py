@@ -470,7 +470,7 @@ class BaseAPIV2Handler(BaseHandler):
             )
 
 
-class BaseMtlsHandler(BaseAPIV1Handler):
+class BaseMtlsHandler(BaseAPIV2Handler):
     def initialize(self, **kwargs):
         self.kwargs = kwargs
 

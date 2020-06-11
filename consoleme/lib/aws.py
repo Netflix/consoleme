@@ -501,6 +501,12 @@ async def can_delete_roles(groups):
     return False
 
 
+async def can_delete_roles_app(app_name):
+    if app_name in config.get("groups.can_delete_roles_apps", []):
+        return True
+    return False
+
+
 def role_has_tag(role: Dict, key: str, value: Optional[str] = None) -> bool:
     """
     Checks a role dictionary and determine of the role has the specified tag. If `value` is passed,

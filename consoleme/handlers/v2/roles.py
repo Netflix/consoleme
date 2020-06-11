@@ -3,8 +3,8 @@ import sys
 import ujson as json
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseAPIV2Handler
-from consoleme.lib.aws import can_delete_roles, delete_iam_role
+from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
+from consoleme.lib.aws import can_delete_roles, can_delete_roles_app, delete_iam_role
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.roles import get_role_details
@@ -167,6 +167,84 @@ class RoleDetailHandler(BaseAPIV2Handler):
                     "role": role_name,
                     "authorized": can_delete_role,
                     "ip": self.ip,
+                },
+            )
+            self.write_error(500, message="Error occurred deleting role: " + str(e))
+            return
+
+        # if here, role has been successfully deleted
+        arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+        await aws.fetch_iam_role(account_id, arn, force_refresh=True)
+        response_json = {
+            "status": "success",
+            "message": "Successfully deleted role from account",
+            "role": role_name,
+            "account": account_id,
+        }
+        self.write(response_json)
+
+
+class RoleDetailAppHandler(BaseMtlsHandler):
+
+    """ Handler for /api/v2/mtls/roles/{accountNumber}/{roleName}
+
+        Allows apps to delete a role
+    """
+
+    allowed_methods = ["DELETE"]
+
+    def check_xsrf_cookie(self):
+        pass
+
+    async def delete(self, account_id, role_name):
+        """
+        DELETE /api/v2/mtls/roles/{account_id}/{role_name}
+        """
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "account_id": account_id,
+            "role_name": role_name,
+        }
+        requester_type = self.requester.get("type")
+        if requester_type != "application":
+            log_data[
+                "message"
+            ] = "Non-application trying to access application only endpoint"
+            log.error(log_data)
+            self.write_error(406, message="Endpoint not supported for non-applications")
+            return
+
+        app_name = self.requester.get("name")
+        can_delete_role = await can_delete_roles_app(app_name)
+        if not can_delete_role:
+            stats.count(
+                f"{log_data['function']}.unauthorized",
+                tags={
+                    "app_name": app_name,
+                    "account_id": account_id,
+                    "role_name": role_name,
+                    "authorized": can_delete_role,
+                },
+            )
+            log_data["message"] = "App is unauthorized to delete a role"
+            log.error(log_data)
+            self.write_error(403, message="App is unauthorized to delete a role")
+            return
+
+        try:
+            await delete_iam_role(account_id, role_name, app_name)
+        except Exception as e:
+            log_data["message"] = "Exception deleting role"
+            log.error(log_data, exc_info=True)
+            stats.count(
+                f"{log_data['function']}.exception",
+                tags={
+                    "app_name": app_name,
+                    "account_id": account_id,
+                    "role_name": role_name,
+                    "authorized": can_delete_role,
                 },
             )
             self.write_error(500, message="Error occurred deleting role: " + str(e))

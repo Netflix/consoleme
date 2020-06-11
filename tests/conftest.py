@@ -1,16 +1,15 @@
+import asyncio
 import json
 import os
+import unittest
+from datetime import datetime, timedelta
 
-import asyncio
 import boto3
 import fakeredis
 import pytest
-import unittest
-from datetime import datetime, timedelta
-from mock import MagicMock
-from mock import patch, Mock
+from mock import MagicMock, Mock, patch
 from mockredis import mock_strict_redis_client
-from moto import mock_sts, mock_iam, mock_dynamodb2, mock_lambda
+from moto import mock_dynamodb2, mock_iam, mock_lambda, mock_sts
 from tornado.concurrent import Future
 
 from consoleme.lib.dynamo import BaseDynamoHandler
@@ -111,6 +110,18 @@ class MockBaseHandler:
         self.groups = ["group1", "group2"]
         self.contractor = False
         self.red = mock_strict_redis_client()
+
+
+class MockBaseMtlsHandler:
+    async def authorization_flow_user(self):
+        self.request_uuid = 1234
+        self.ip = "1.2.3.4"
+        self.requester = {"type": "user"}
+
+    async def authorization_flow_app(self):
+        self.request_uuid = 1234
+        self.ip = "1.2.3.4"
+        self.requester = {"type": "application", "name": "fakeapp"}
 
 
 class MockAuth:
