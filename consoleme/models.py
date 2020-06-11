@@ -12,49 +12,49 @@ from pydantic import BaseModel, Field, constr
 
 
 class ResourceModel(BaseModel):
-    arn: str = Field(..., description='resource ARN')
-    account_id: Optional[str] = Field(None, description='AWS account ID')
+    arn: str = Field(..., description="resource ARN")
+    account_id: Optional[str] = Field(None, description="AWS account ID")
     account_name: Optional[str] = Field(
-        None, description='human-friendly AWS account name'
+        None, description="human-friendly AWS account name"
     )
     policy_sha256: Optional[str] = Field(
-        None, description='hash of the most recent resource policy seen by ConsoleMe'
+        None, description="hash of the most recent resource policy seen by ConsoleMe"
     )
     policy: Optional[str] = None
     owner: Optional[str] = Field(
-        None, description='email address of team or individual who owns this resource'
+        None, description="email address of team or individual who owns this resource"
     )
     approvers: Optional[List[str]] = None
     resource_type: Optional[str] = None
     last_updated: Optional[datetime] = Field(
-        None, description='last time resource was updated from source-of-truth'
+        None, description="last time resource was updated from source-of-truth"
     )
 
 
 class RequestModel(BaseModel):
     id: str
-    arn: str = Field(..., description='ARN of principal being modified')
+    arn: str = Field(..., description="ARN of principal being modified")
     timestamp: datetime
     justification: str
     requester_email: str
     approvers: List[str] = Field(
         ...,
-        description='list of approvers, derived from approvers of `resource`s in `changes`',
+        description="list of approvers, derived from approvers of `resource`s in `changes`",
     )
     status: str
 
 
 class GeneratorType(Enum):
-    generic = 'generic'
-    s3 = 's3'
-    sqs = 'sqs'
-    sns = 'sns'
+    generic = "generic"
+    s3 = "s3"
+    sqs = "sqs"
+    sns = "sns"
 
 
 class ChangeGeneratorModel(BaseModel):
-    arn: str = Field(..., description='principal ARN')
+    arn: str = Field(..., description="principal ARN")
     generator_type: GeneratorType
-    resource: str = Field(..., description='resource ARN')
+    resource: str = Field(..., description="resource ARN")
 
 
 class GenericChangeGeneratorModel(ChangeGeneratorModel):
@@ -76,9 +76,9 @@ class SNSChangeGeneratorModel(ChangeGeneratorModel):
 
 
 class ChangeType(Enum):
-    inline_policy = 'inline_policy'
-    managed_policy = 'managed_policy'
-    resource_policy = 'resource_policy'
+    inline_policy = "inline_policy"
+    managed_policy = "managed_policy"
+    resource_policy = "resource_policy"
 
 
 class ChangeModel(BaseModel):
@@ -88,8 +88,8 @@ class ChangeModel(BaseModel):
 
 
 class Action(Enum):
-    attach = 'attach'
-    detach = 'detach'
+    attach = "attach"
+    detach = "detach"
 
 
 class ManagedPolicyChangeModel(ChangeModel):
@@ -99,8 +99,8 @@ class ManagedPolicyChangeModel(ChangeModel):
 
 
 class PolicyModel(BaseModel):
-    policy_document: str = Field(..., description='JSON policy document')
-    policy_sha256: str = Field(..., description='hash of policy_document')
+    policy_document: str = Field(..., description="JSON policy document")
+    policy_sha256: str = Field(..., description="hash of policy_document")
 
 
 class RoleModel(BaseModel):
