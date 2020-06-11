@@ -186,8 +186,8 @@ class RoleDetailAppHandler(BaseMtlsHandler):
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
-            "account": account_id,
-            "role": role_name,
+            "account_id": account_id,
+            "role_name": role_name,
         }
         requester_type = self.requester.get("type")
         if requester_type != "application":
@@ -204,9 +204,9 @@ class RoleDetailAppHandler(BaseMtlsHandler):
             stats.count(
                 f"{log_data['function']}.unauthorized",
                 tags={
-                    "user": app_name,
-                    "account": account_id,
-                    "role": role_name,
+                    "app_name": app_name,
+                    "account_id": account_id,
+                    "role_name": role_name,
                     "authorized": can_delete_role,
                 },
             )
@@ -223,9 +223,9 @@ class RoleDetailAppHandler(BaseMtlsHandler):
             stats.count(
                 f"{log_data['function']}.exception",
                 tags={
-                    "user": app_name,
-                    "account": account_id,
-                    "role": role_name,
+                    "app_name": app_name,
+                    "account_id": account_id,
+                    "role_name": role_name,
                     "authorized": can_delete_role,
                 },
             )
