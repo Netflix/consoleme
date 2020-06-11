@@ -5,15 +5,7 @@ from consoleme.lib.plugins import get_plugin_by_name
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
-BASE_INLINE_POLICY = {
-    "Statement": [
-        {
-            "Action": [],
-            "Effect": "Allow",
-            "Resource": [],
-        }
-    ]
-}
+BASE_INLINE_POLICY = {"Statement": [{"Action": [], "Effect": "Allow", "Resource": []}]}
 
 
 class GeneratePolicyHandler(BaseAPIV2Handler):
@@ -24,12 +16,9 @@ class GeneratePolicyHandler(BaseAPIV2Handler):
 
     allowed_methods = ["GET", "POST"]
 
-    # def __init__(self, *args, **kwargs):
-    #     # TODO(psanders): Use actual JWT validator
-    #     super().__init__(jwt_validator=lambda x: {}, *args, **kwargs)
-
     async def get(self):
         self.write(BASE_INLINE_POLICY)
+
     async def post(self):
         """
         POST /api/v2/generate_policy
@@ -38,9 +27,7 @@ class GeneratePolicyHandler(BaseAPIV2Handler):
         selections in self-service
         """
         self.write(BASE_INLINE_POLICY)
-        tags = {
-            "user": self.user,
-        }
+        tags = {"user": self.user}
         stats.count("RequestsHandler.post", tags=tags)
         log_data = {
             "function": "RequestsHandler.post",
