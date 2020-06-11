@@ -168,9 +168,9 @@ class RoleDetailHandler(BaseAPIV2Handler):
 
 class RoleDetailAppHandler(BaseMtlsHandler):
 
-    """ Handler for /api/v2/metatron/roles/{accountNumber}/{roleName}
+    """ Handler for /api/v2/mtls/roles/{accountNumber}/{roleName}
 
-        Allows metatron apps to delete a role
+        Allows apps to delete a role
     """
 
     allowed_methods = ["DELETE"]
@@ -180,7 +180,7 @@ class RoleDetailAppHandler(BaseMtlsHandler):
 
     async def delete(self, account_id, role_name):
         """
-        DELETE /api/v2/metatron/roles/{account_id}/{role_name}
+        DELETE /api/v2/mtls/roles/{account_id}/{role_name}
         """
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
