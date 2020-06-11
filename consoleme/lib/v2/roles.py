@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Union
 
 import ujson as json
 from asgiref.sync import sync_to_async
@@ -12,6 +13,7 @@ from consoleme.models import (
     CloudTrailError,
     CloudTrailErrorArray,
     ExtendedRoleModel,
+    RoleModel,
     S3DetailsModel,
     S3Error,
     S3ErrorArray,
@@ -111,24 +113,32 @@ async def get_role_template(arn: str):
 
 async def get_role_details(
     account_id: str, role_name: str, extended: bool = False
-) -> ExtendedRoleModel:
+) -> Union[ExtendedRoleModel, RoleModel]:
     arn = f"arn:aws:iam::{account_id}:role/{role_name}"
     role = await aws.fetch_iam_role(account_id, arn)
-    template = await get_role_template(arn)
-    return ExtendedRoleModel(
-        name=role_name,
-        account_id=account_id,
-        account_name=account_ids_to_names.get(account_id, [None])[0],
-        arn=arn,
-        inline_policies=role["policy"]["RolePolicyList"],
-        assume_role_policies=role["policy"]["AssumeRolePolicyDocument"],
-        cloudtrail_details=await get_cloudtrail_details_for_role(arn),
-        s3_details=await get_s3_details_for_role(
-            account_id=account_id, role_name=role_name
-        ),
-        app_details=await get_app_details_for_role(arn),
-        managed_policies=role["policy"]["AttachedManagedPolicies"],
-        tags=role["policy"]["Tags"],
-        templated=True if template else False,
-        template_link=template,
-    )
+    if extended:
+        template = await get_role_template(arn)
+        return ExtendedRoleModel(
+            name=role_name,
+            account_id=account_id,
+            account_name=account_ids_to_names.get(account_id, [None])[0],
+            arn=arn,
+            inline_policies=role["policy"]["RolePolicyList"],
+            assume_role_policies=role["policy"]["AssumeRolePolicyDocument"],
+            cloudtrail_details=await get_cloudtrail_details_for_role(arn),
+            s3_details=await get_s3_details_for_role(
+                account_id=account_id, role_name=role_name
+            ),
+            app_details=await get_app_details_for_role(arn),
+            managed_policies=role["policy"]["AttachedManagedPolicies"],
+            tags=role["policy"]["Tags"],
+            templated=True if template else False,
+            template_link=template,
+        )
+    else:
+        return RoleModel(
+            name=role_name,
+            account_id=account_id,
+            account_name=account_ids_to_names.get(account_id, [None])[0],
+            arn=arn,
+        )
