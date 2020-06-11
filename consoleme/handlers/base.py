@@ -437,12 +437,14 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
 
 class BaseAPIV1Handler(BaseHandler):
     """Default API Handler for api/v1/* routes."""
+
     def set_default_headers(self) -> None:
         self.set_header("Content-Type", "application/json")
 
 
 class BaseAPIV2Handler(BaseHandler):
     """Default API Handler for api/v2/* routes."""
+
     def set_default_headers(self) -> None:
         self.set_header("Content-Type", "application/json")
 
@@ -467,7 +469,7 @@ class BaseAPIV2Handler(BaseHandler):
             )
 
 
-class BaseMtlsHandler(BaseAPIV1Handler):
+class BaseMtlsHandler(BaseAPIV2Handler):
     def initialize(self, **kwargs):
         self.kwargs = kwargs
 

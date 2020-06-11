@@ -53,6 +53,7 @@ from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
 from consoleme.handlers.v2.requests import RequestDetailHandler, RequestsHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
+    RoleDetailAppHandler,
     RoleDetailHandler,
     RolesHandler,
 )
@@ -122,6 +123,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/roles/?", RolesHandler),
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
+        (r"/api/v2/metatron/roles/(\d{12})/(.*)", RoleDetailAppHandler),
         (r"/config/?", DynamicConfigHandler),
         (r"/myheaders/?", HeaderHandler),
         (r"/policies/?", PolicyViewHandler),

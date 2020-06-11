@@ -5,7 +5,7 @@ from moto import mock_iam
 from tornado.testing import AsyncHTTPTestCase
 
 from consoleme.config import config
-from tests.conftest import MockBaseHandler, create_future
+from tests.conftest import MockBaseHandler, MockBaseMtlsHandler, create_future
 
 
 class TestRolesHandler(AsyncHTTPTestCase):
@@ -94,7 +94,7 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
         self.assertDictEqual(json.loads(response.body), expected)
 
     @patch("consoleme.handlers.v2.roles.RoleDetailHandler.authorization_flow")
-    def test_post_no_user(self, mock_auth):
+    def test_delete_no_user(self, mock_auth):
         mock_auth.return_value = create_future(None)
         expected = {
             "status": 403,
@@ -111,7 +111,7 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
         "consoleme.handlers.v2.roles.RoleDetailHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
-    def test_post_unauthorized_user(self):
+    def test_delete_unauthorized_user(self):
         expected = {
             "status": 403,
             "title": "Forbidden",
@@ -128,7 +128,7 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
         MockBaseHandler.authorization_flow,
     )
     @patch("consoleme.handlers.v2.roles.can_delete_roles")
-    def test_post_authorized_user_invalid_role(self, mock_can_delete_roles):
+    def test_delete_authorized_user_invalid_role(self, mock_can_delete_roles):
         expected = {
             "status": 500,
             "title": "Internal Server Error",
@@ -148,7 +148,7 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
     )
     @patch("consoleme.handlers.v2.roles.can_delete_roles")
     @mock_iam
-    def test_post_authorized_user_valid_role(self, mock_can_delete_roles):
+    def test_delete_authorized_user_valid_role(self, mock_can_delete_roles):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "fake_account_admin"
         account_id = "012345678901"
@@ -164,6 +164,67 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
 
         response = self.fetch(
             f"/api/v2/roles/{account_id}/{role_name}", method="DELETE",
+        )
+        self.assertEqual(response.code, 200)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+
+class TestRoleDetailAppHandler(AsyncHTTPTestCase):
+    def get_app(self):
+        from consoleme.routes import make_app
+
+        return make_app(jwt_validator=lambda x: {})
+
+    @patch(
+        "consoleme.handlers.v2.roles.RoleDetailAppHandler.prepare",
+        MockBaseMtlsHandler.authorization_flow_user,
+    )
+    def test_delete_role_by_user(self):
+        expected = {
+            "status": 406,
+            "title": "Not Acceptable",
+            "message": "Endpoint not supported for non-applications",
+        }
+        response = self.fetch(
+            "/api/v2/metatron/roles/012345678901/fake_account_admin", method="DELETE",
+        )
+        self.assertEqual(response.code, 406)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+    @patch(
+        "consoleme.handlers.v2.roles.RoleDetailAppHandler.prepare",
+        MockBaseMtlsHandler.authorization_flow_app,
+    )
+    @patch("consoleme.handlers.v2.roles.can_delete_roles_app")
+    @mock_iam
+    def test_delete_role_by_app(self, mock_can_delete_roles):
+        expected = {
+            "status": 403,
+            "title": "Forbidden",
+            "message": "App is unauthorized to delete a role",
+        }
+        mock_can_delete_roles.return_value = create_future(False)
+        response = self.fetch(
+            "/api/v2/metatron/roles/012345678901/fake_account_admin", method="DELETE",
+        )
+        self.assertEqual(response.code, 403)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+        mock_can_delete_roles.return_value = create_future(True)
+        client = boto3.client("iam", region_name="us-east-1")
+        role_name = "fake_account_admin"
+        account_id = "012345678901"
+        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
+
+        expected = {
+            "status": "success",
+            "message": "Successfully deleted role from account",
+            "role": role_name,
+            "account": account_id,
+        }
+
+        response = self.fetch(
+            f"/api/v2/metatron/roles/{account_id}/{role_name}", method="DELETE",
         )
         self.assertEqual(response.code, 200)
         self.assertDictEqual(json.loads(response.body), expected)
