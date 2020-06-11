@@ -351,3 +351,11 @@ class MissingConfigurationValue(BaseException):
     def __init__(self, msg=""):
         stats.count("MissingConfigurationValue")
         super().__init__(msg)
+
+
+class ExpiredData(BaseException):
+    """Data was retrieved but is older than expected"""
+
+    def __init__(self, msg=""):
+        stats.count("ExpiredData")
+        super().__init__(msg)

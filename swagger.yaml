@@ -593,7 +593,7 @@ components:
           type: integer
           example: 5
     CloudTrailErrorArray:
-      type: object
+      type: array
       properties:
         cloudtrail_errors:
           type: array
