@@ -1,5 +1,6 @@
 import sys
 
+from asgiref.sync import sync_to_async
 from pydantic import ValidationError
 
 from consoleme.config import config
@@ -50,20 +51,30 @@ class GenerateChangesHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
         }
         try:
-            cgm = ChangeGeneratorModel.parse_raw(self.request.body)
+            cgm = await sync_to_async(ChangeGeneratorModel.parse_raw)(self.request.body)
 
             if cgm.generator_type == GeneratorType.generic:
-                generic_cgm = GenericChangeGeneratorModel.parse_raw(self.request.body)
-                response_model = generate_generic_change(generic_cgm)
+                generic_cgm = await sync_to_async(
+                    GenericChangeGeneratorModel.parse_raw
+                )(self.request.body)
+                response_model = await sync_to_async(generate_generic_change)(
+                    generic_cgm
+                )
             elif cgm.generator_type == GeneratorType.s3:
-                s3_cgm = S3ChangeGeneratorModel.parse_raw(self.request.body)
-                response_model = generate_s3_change(s3_cgm)
+                s3_cgm = await sync_to_async(S3ChangeGeneratorModel.parse_raw)(
+                    self.request.body
+                )
+                response_model = await sync_to_async(generate_s3_change)(s3_cgm)
             elif cgm.generator_type == GeneratorType.sns:
-                sns_cgm = SNSChangeGeneratorModel.parse_raw(self.request.body)
-                response_model = generate_sns_change(sns_cgm)
+                sns_cgm = await sync_to_async(SNSChangeGeneratorModel.parse_raw)(
+                    self.request.body
+                )
+                response_model = await sync_to_async(generate_sns_change)(sns_cgm)
             elif cgm.generator_type == GeneratorType.sqs:
-                sqs_cgm = SQSChangeGeneratorModel.parse_raw(self.request.body)
-                response_model = generate_sqs_change(sqs_cgm)
+                sqs_cgm = await sync_to_async(SQSChangeGeneratorModel.parse_raw)(
+                    self.request.body
+                )
+                response_model = await sync_to_async(generate_sqs_change)(sqs_cgm)
             else:
                 # should never hit this case, but having this in case future code changes cause this
                 # or we forgot to add stuff here when more generator types are added
