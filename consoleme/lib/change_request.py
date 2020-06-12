@@ -1,21 +1,30 @@
 from hashlib import sha256
 from typing import Dict, List
 
-from policy_sentry.util.arns import get_service_from_arn
-from policy_sentry.querying.actions import get_actions_with_access_level
 import ujson as json
+from policy_sentry.querying.actions import get_actions_with_access_level
+from policy_sentry.util.arns import get_service_from_arn
 
 from consoleme.models import (
     ChangeModel,
     ChangeType,
+    GenericChangeGeneratorModel,
     InlinePolicyChangeModel,
     PolicyModel,
     ResourcePolicyChangeModel,
-    GenericChangeGeneratorModel,
     S3ChangeGeneratorModel,
     SNSChangeGeneratorModel,
     SQSChangeGeneratorModel,
 )
+
+generic_access_level_map = {
+    # Mapping actions that our model accepts to what sentry expects
+    "read": "Read",
+    "write": "Write",
+    "list": "List",
+    "tagging": "Tagging",
+    "permissions-management": "Permissions Management",
+}
 
 s3_action_map = {
     "list": ["s3:ListBucket", "s3:ListBucketVersions"],
@@ -44,15 +53,15 @@ s3_action_map = {
 }
 
 sqs_action_map = {
-    "get": ["sqs:GetQueueAttributes", "sqs:GetQueueUrl"],
-    "send": ["sqs:SendMessage"],
-    "receive": ["sqs:ReceiveMessage"],
-    "delete": ["sqs:DeleteMessage"],
-    "set": ["sqs:SetQueueAttributes"],
+    "get_queue_attributes": ["sqs:GetQueueAttributes", "sqs:GetQueueUrl"],
+    "send_messages": ["sqs:SendMessage"],
+    "receive_messages": ["sqs:ReceiveMessage"],
+    "delete_messages": ["sqs:DeleteMessage"],
+    "set_queue_attributes": ["sqs:SetQueueAttributes"],
 }
 
 sns_action_map = {
-    "get": ["sns:GetEndpointAttributes", "sns:GetTopicAttributes"],
+    "get_topic_attributes": ["sns:GetEndpointAttributes", "sns:GetTopicAttributes"],
     "publish": ["sns:Publish"],
     "subscribe": ["sns:Subscribe", "sns:ConfirmSubscription"],
     "unsubscribe": ["sns:Unsubscribe"],
@@ -147,24 +156,37 @@ def _get_actions_from_groups(
 def generate_generic_change(
     generator: GenericChangeGeneratorModel,
 ) -> InlinePolicyChangeModel:
+    access_level_actions: List[str] = []
+    for access in generator.access_level:
+        access_level_actions.append(generic_access_level_map.get(access.value))
     actions = _get_access_level_actions_for_resource(
-        generator.resource, generator.access_level
+        generator.resource, access_level_actions
     )
     return _generate_change(generator.arn, [generator.resource], actions,)
 
 
 def generate_s3_change(generator: S3ChangeGeneratorModel) -> InlinePolicyChangeModel:
-    prefix_arn = generator.resource + generator.bucket_prefix
-    resource_arns = [generator.resource, prefix_arn]
-    actions = _get_actions_from_groups(generator.action_groups, s3_action_map)
+    resource_arns = [generator.resource]
+    if generator.bucket_prefix is not None:
+        resource_arns.append(generator.resource + generator.bucket_prefix)
+    action_group_actions: List[str] = []
+    for action in generator.action_groups:
+        action_group_actions.append(action.value)
+    actions = _get_actions_from_groups(action_group_actions, s3_action_map)
     return _generate_change(generator.arn, resource_arns, actions,)
 
 
 def generate_sns_change(generator: SNSChangeGeneratorModel) -> InlinePolicyChangeModel:
-    actions = _get_actions_from_groups(generator.action_groups, sns_action_map)
+    action_group_actions: List[str] = []
+    for action in generator.action_groups:
+        action_group_actions.append(action.value)
+    actions = _get_actions_from_groups(action_group_actions, sns_action_map)
     return _generate_change(generator.arn, [generator.resource], actions,)
 
 
 def generate_sqs_change(generator: SQSChangeGeneratorModel) -> InlinePolicyChangeModel:
-    actions = _get_actions_from_groups(generator.action_groups, sqs_action_map)
+    action_group_actions: List[str] = []
+    for action in generator.action_groups:
+        action_group_actions.append(action.value)
+    actions = _get_actions_from_groups(action_group_actions, sqs_action_map)
     return _generate_change(generator.arn, [generator.resource], actions,)

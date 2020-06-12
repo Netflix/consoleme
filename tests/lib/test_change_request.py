@@ -67,7 +67,7 @@ class TestChangeRequestLib(TestCase):
             "arn": "arn:aws:iam::123456789012:role/hey",
             "generator_type": "sns",
             "resource": "arn:aws:sns:::foo",
-            "action_groups": ["get", "publish", "subscribe"],
+            "action_groups": ["get_topic_attributes", "publish", "subscribe"],
         }
 
         test_change = SNSChangeGeneratorModel(**test_change_input)
@@ -94,7 +94,11 @@ class TestChangeRequestLib(TestCase):
             "arn": "arn:aws:iam::123456789012:role/hey",
             "generator_type": "sqs",
             "resource": "arn:aws:sqs:::foo",
-            "action_groups": ["get", "receive", "send"],
+            "action_groups": [
+                "get_queue_attributes",
+                "receive_messages",
+                "send_messages",
+            ],
         }
 
         test_change = SQSChangeGeneratorModel(**test_change_input)
@@ -120,7 +124,7 @@ class TestChangeRequestLib(TestCase):
             "arn": "arn:aws:iam::123456789012:role/hey",
             "generator_type": "generic",
             "resource": "arn:aws:sqs:us-east-1:123456789012:super-cool-queue",
-            "access_level": ["Read", "Write", "List"],
+            "access_level": ["read", "write", "list"],
         }
 
         test_change = GenericChangeGeneratorModel(**test_change_input)
