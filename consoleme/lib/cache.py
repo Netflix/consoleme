@@ -123,7 +123,7 @@ async def retrieve_json_data_from_redis_or_s3(
     if not data and s3_bucket and s3_key:
         s3_object = get_object(Bucket=s3_bucket, Key=s3_key)
         s3_object_content = s3_object["Body"].read()
-        data_object = json.loads(s3_object_content)["data"]
+        data_object = json.loads(s3_object_content)
         data = data_object["data"]
 
         if data and max_age:
