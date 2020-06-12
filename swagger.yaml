@@ -236,6 +236,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserModel'
+  /mtls/roles/{account_id}/{role_name}:
+    delete:
+      summary: delete a role (mtls apps only)
+      tags:
+        - roles
+        - privileged
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+        - $ref: '#/components/parameters/RoleName'
+      responses:
+        '200':
+          description: OK
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
 components:
   responses:
     DefaultErrorResponse:
