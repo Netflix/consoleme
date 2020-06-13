@@ -1,4 +1,5 @@
 import ujson as json
+from asgiref.sync import async_to_sync
 from mock import patch
 from tornado.testing import AsyncHTTPTestCase
 
@@ -100,7 +101,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "access_level": ["read", "write"],
         }
         generic_cgm = GenericChangeGeneratorModel(**input_body)
-        expected = generate_generic_change(generic_cgm)
+        expected = async_to_sync(generate_generic_change)(generic_cgm)
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )
@@ -127,7 +128,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "action_groups": ["list", "delete"],
         }
         s3_cgm = S3ChangeGeneratorModel(**input_body)
-        expected = generate_s3_change(s3_cgm)
+        expected = async_to_sync(generate_s3_change)(s3_cgm)
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )
@@ -154,7 +155,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "action_groups": ["get_topic_attributes", "publish"],
         }
         sns_cgm = SNSChangeGeneratorModel(**input_body)
-        expected = generate_sns_change(sns_cgm)
+        expected = async_to_sync(generate_sns_change)(sns_cgm)
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )
@@ -181,7 +182,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "action_groups": ["get_queue_attributes", "delete_messages"],
         }
         sqs_cgm = SQSChangeGeneratorModel(**input_body)
-        expected = generate_sqs_change(sqs_cgm)
+        expected = async_to_sync(generate_sqs_change)(sqs_cgm)
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )

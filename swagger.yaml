@@ -88,29 +88,25 @@ paths:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                anyOf:
-                  - $ref: '#/components/schemas/GenericChangeGeneratorModel'
-                  - $ref: '#/components/schemas/S3ChangeGeneratorModel'
-                  - $ref: '#/components/schemas/SQSChangeGeneratorModel'
-                  - $ref: '#/components/schemas/SNSChangeGeneratorModel'
-                discriminator:
-                  propertyName: generator_type
+              oneOf:
+                - $ref: '#/components/schemas/GenericChangeGeneratorModel'
+                - $ref: '#/components/schemas/S3ChangeGeneratorModel'
+                - $ref: '#/components/schemas/SQSChangeGeneratorModel'
+                - $ref: '#/components/schemas/SNSChangeGeneratorModel'
+              discriminator:
+                propertyName: generator_type
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  anyOf:
-                    - $ref: '#/components/schemas/InlinePolicyChangeModel'
-                    - $ref: '#/components/schemas/ManagedPolicyChangeModel'
-                    - $ref: '#/components/schemas/ResourcePolicyChangeModel'
-                  discriminator:
-                    propertyName: change_type
+                oneOf:
+                  - $ref: '#/components/schemas/InlinePolicyChangeModel'
+                  - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+                  - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+                discriminator:
+                  propertyName: change_type
         default:
           $ref: '#/components/responses/DefaultErrorResponse'
   /resources:
