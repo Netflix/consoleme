@@ -45,9 +45,9 @@ async def get_cloudtrail_details_for_role(arn: str):
 
     ct_errors = []
 
-    for error in errors_unformatted:
+    for event_call, value in errors_unformatted.items():
         ct_errors.append(
-            CloudTrailError(event_call=error["event_call"], count=error["count"])
+            CloudTrailError(event_call=event_call, count=value.get("count", 0))
         )
 
     return CloudTrailDetailsModel(

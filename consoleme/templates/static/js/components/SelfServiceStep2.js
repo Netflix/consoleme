@@ -11,101 +11,72 @@ import {
     Header,
     Segment,
 } from 'semantic-ui-react';
-import SelfServiceComponent from './SelfServiceComponent';
+import SelfServiceComponent from "./SelfServiceComponent";
+import {getServiceTypes} from '../helpers/utils';
 
 // TODO, move this to config file.
 const DEFAULT_AWS_SERVICE = 's3';
 
 // List of available self service items.
-const resourceTypeOptions = Object.keys(SelfServiceComponent.components).map(service => {
-    const component = SelfServiceComponent.components[service];
-    return {
-        key: component.TYPE,
-        value: component.TYPE,
-        text: component.NAME,
+const serviceTypeOptions = getServiceTypes();
+
+class SelfServiceStep2 extends Component {
+    state = {
+        service: DEFAULT_AWS_SERVICE,
     };
-});
 
-const initializeState = {
-    permission: {},
-    resourceType: DEFAULT_AWS_SERVICE,
-};
-
-
-class SelfServiceStep1 extends Component {
-    state = initializeState;
-
-    handleResourceTypeChange(e, {value}) {
+    handleServiceTypeChange(e, {value}) {
         this.setState({
-            resourceType: value,
+            service: value,
         });
     }
 
-    handlePermissionAdd() {
-        const {permission, resourceType} = this.state;
-        const {permissions} = this.props;
-
-        // skip adding a permission if any of followings are empty.
-        if (permission.actions.length < 1) {
-            return;
-        }
-
-        permissions.push({
-            type: resourceType,
-            ...permission,
-        });
-
+    handlePermissionAdd(permission) {
         this.setState({
-            permission: {},
-            resourceType: DEFAULT_AWS_SERVICE,
+            service: DEFAULT_AWS_SERVICE,
         }, () => {
+            const {permissions} = this.props;
+            permissions.push(permission);
             this.props.handlePermissionsUpdate(permissions);
         });
     }
 
-    handlePermissionRemove(p) {
+    handlePermissionRemove(target) {
         const {permissions} = this.props;
-        _.remove(permissions, (e) => _.isEqual(p, e));
-
+        _.remove(permissions, (permission) => _.isEqual(target, permission));
         this.props.handlePermissionsUpdate(permissions);
     }
 
-    updatePermission(permission) {
-        this.setState({
-            permission,
-        });
-    }
-
     getPermissionItems() {
-        return this.props.permissions.map((p, idx) => {
+        return this.props.permissions.map((permission, idx) => {
+            const found = _.find(serviceTypeOptions, {"key": permission.service});
+            const serviceName = found.text;
             return (
                 <Item key={idx}>
                     <Item.Content>
                         <Item.Header>
-                            {
-                                // TODO, read resource title from its component.
-                                resourceTypeOptions.filter(r => {
-                                    return r.key === p.type;
-                                })[0].text || ''
-                            }
+                            {serviceName}
                         </Item.Header>
                         <Item.Meta>
-                            {p.value}
+                            {permission.value}
                         </Item.Meta>
                         <Item.Extra>
                             <Button
                                 size="tiny"
                                 color="red"
                                 floated='right'
-                                onClick={this.handlePermissionRemove.bind(this, p)}
+                                onClick={this.handlePermissionRemove.bind(this, permission)}
                             >
                                 Remove
                                 <Icon name='right close' />
                             </Button>
                             {
-                                p.actions.map(a => {
+                                permission.actions.map(action => {
+                                    const actionDetail = _.find(found.actions, {"key": action});
                                     return (
-                                        <Label>{a}</Label>
+                                        <Label as="a" color="pink">
+                                            {actionDetail.text}
+                                        </Label>
                                     );
                                 })
                             }
@@ -117,8 +88,7 @@ class SelfServiceStep1 extends Component {
     }
 
     render() {
-        const {permission, resourceType} = this.state;
-        const permissionItems = this.getPermissionItems();
+        const {role} = this.props;
 
         return (
             <Segment>
@@ -133,27 +103,20 @@ class SelfServiceStep1 extends Component {
                             </Header>
                             <Form>
                                 <Form.Select
-                                    defaultValue={resourceType}
+                                    value={this.state.service}
                                     label="Select AWS Service"
-                                    onChange={this.handleResourceTypeChange.bind(this)}
-                                    options={resourceTypeOptions}
+                                    onChange={this.handleServiceTypeChange.bind(this)}
+                                    options={serviceTypeOptions}
                                     placeholder='Choose One'
                                     required
                                 />
                             </Form>
                             <Divider />
                             <SelfServiceComponent
-                                permission={permission}
-                                service={resourceType}
-                                updatePermission={this.updatePermission.bind(this)}
+                                role={role}
+                                service={this.state.service}
+                                updatePermission={this.handlePermissionAdd.bind(this)}
                             />
-                            <Divider />
-                            <Button
-                                fluid
-                                onClick={this.handlePermissionAdd.bind(this)}
-                            >
-                                Add Permission
-                            </Button>
                         </Grid.Column>
                         <Grid.Column>
                             <Header>
@@ -163,7 +126,7 @@ class SelfServiceStep1 extends Component {
                                 </Header.Subheader>
                             </Header>
                             <Item.Group divided>
-                                {permissionItems}
+                                {this.getPermissionItems()}
                             </Item.Group>
                             <Divider />
                         </Grid.Column>
@@ -174,4 +137,4 @@ class SelfServiceStep1 extends Component {
     }
 }
 
-export default SelfServiceStep1;
+export default SelfServiceStep2;

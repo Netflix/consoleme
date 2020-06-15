@@ -20,9 +20,7 @@ class SelfService extends Component {
         currStep: SelfServiceStepEnum.STEP1,
         messages: null,
         permissions: [],
-        role: {
-            roleArn: '',
-        },
+        role: null,
     };
 
     handleStepClick(dir) {
