@@ -1,31 +1,30 @@
 import _ from 'lodash';
 import React, {Component} from 'react';
 import {
+    Dimmer,
     Form,
     Grid,
     Header,
+    Loader,
     Search,
     Segment,
 } from 'semantic-ui-react';
+import RoleDetails from "./RoleDetails";
 
 
 class SelfServiceStep1 extends Component {
     state = {
         isLoading: false,
+        isRoleLoading: false,
         results: [],
         value: '',
-        roleInfo: '',
     };
 
-    handleSearchChange(event, { value }) {
+    handleSearchChange(event, {value}) {
         this.setState({
             isLoading: true,
             value,
         });
-
-        let role = Object.assign({}, this.props.role);
-        role.roleArn = value;
-        this.props.handleRoleUpdate(role);
 
         setTimeout(() => {
             const {value} = this.state;
@@ -51,7 +50,7 @@ class SelfServiceStep1 extends Component {
                         (memo, data, name) => {
                             const results = _.filter(data.results, isMatch);
                             if (results.length) {
-                                memo[name] = { name, results };
+                                memo[name] = {name, results};
                             }
                             return memo;
                         },
@@ -67,31 +66,28 @@ class SelfServiceStep1 extends Component {
     }
 
     handleResultSelect(e, {result}) {
-        let role = Object.assign({}, this.props.role);
-        // TODO(iam), once we select a role, fetch the role info and update the Role Info section.
+        this.setState({
+            value: result.title,
+            isRoleLoading: true,
+        });
         const roleName = result.title.split("/")[1]
         const accountId = result.title.split(":")[4]
-
-        // const res = detch (`/roles/${accountId}/${roleName}`);
         fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
-            resp.text().then((source) => {
+            resp.text().then((resp) => {
+                const role = JSON.parse(resp);
+                this.props.handleRoleUpdate(role);
                 this.setState({
                     isLoading: false,
-                    roleInfo: source,
+                    isRoleLoading: false,
+                    value: role.arn,
                 });
             });
-        });
-
-        role.roleArn = result.title;
-        this.props.handleRoleUpdate(role);
-        this.setState({
-            value: role.roleArn,
         });
     }
 
     render() {
-        const {roleArn} = this.props.role;
-        const {isLoading, results, roleInfo} = this.state;
+        const role = this.props.role;
+        const {isLoading, isRoleLoading, results, value} = this.state;
 
         return (
             <Segment>
@@ -105,7 +101,8 @@ class SelfServiceStep1 extends Component {
                                 </Header.Subheader>
                             </Header>
                             <p>
-                                For Help, please visit <a href={"https://go/selfserviceiamtldr"}>go/selfserviceiamtldr</a>
+                                For Help, please visit <a
+                                href={"https://go/selfserviceiamtldr"}>go/selfserviceiamtldr</a>
                             </p>
                             <Form widths="equal">
                                 <Form.Field required>
@@ -118,19 +115,20 @@ class SelfServiceStep1 extends Component {
                                             leading: true,
                                         })}
                                         results={results}
-                                        value={roleArn}
+                                        value={value}
                                     />
                                 </Form.Field>
-                                <Form.Checkbox label='Show all entities' checked />
                             </Form>
                         </Grid.Column>
                         <Grid.Column>
                             <Header>
                                 Role Information
                             </Header>
-                            <Segment placeholder>
-                                {roleInfo}
-                            </Segment>
+                            {
+                                isRoleLoading
+                                    ? <Loader active={isRoleLoading} />
+                                    : <RoleDetails role={role} />
+                            }
                         </Grid.Column>
                     </Grid.Row>
                 </Grid>
