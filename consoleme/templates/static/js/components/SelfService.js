@@ -30,7 +30,7 @@ class SelfService extends Component {
         switch (currStep) {
             case SelfServiceStepEnum.STEP1:
                 // TODO, change dir to ENUM
-                if (dir === 'next' && this.state.role.roleArn != '') {
+                if (dir === 'next' && this.state.role != null) {
                     nextStep = SelfServiceStepEnum.STEP2;
                 } else {
                     return this.setState({
