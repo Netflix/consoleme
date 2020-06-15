@@ -31,6 +31,17 @@ class SelfServiceStep3 extends Component {
 
     async componentDidMount() {
         const {permissions} = this.props;
+        // fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
+        //     resp.text().then((resp) => {
+        //         const role = JSON.parse(resp);
+        //         this.props.handleRoleUpdate(role);
+        //         this.setState({
+        //             isLoading: false,
+        //             isRoleLoading: false,
+        //             value: role.arn,
+        //         });
+        //     });
+        // });
         const statement = {
             "Statement": [],
         };

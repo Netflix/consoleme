@@ -12,7 +12,7 @@ from consoleme.lib.change_request import (
 )
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import (
-    ChangeGeneratorModel,
+    ChangeGeneratorModelArray,
     GeneratorType,
     GenericChangeGeneratorModel,
     S3ChangeGeneratorModel,
@@ -29,9 +29,6 @@ class GenerateChangesHandler(BaseAPIV2Handler):
 
     Generate templated changes
     """
-
-    def initialize(self) -> None:
-        self.user = None
 
     allowed_methods = ["POST"]
 
@@ -50,24 +47,24 @@ class GenerateChangesHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
         }
         try:
-            cgm = ChangeGeneratorModel.parse_raw(self.request.body)
-
-            if cgm.generator_type == GeneratorType.generic:
-                generic_cgm = GenericChangeGeneratorModel.parse_raw(self.request.body)
-                response_model = await generate_generic_change(generic_cgm)
-            elif cgm.generator_type == GeneratorType.s3:
-                s3_cgm = S3ChangeGeneratorModel.parse_raw(self.request.body)
-                response_model = await generate_s3_change(s3_cgm)
-            elif cgm.generator_type == GeneratorType.sns:
-                sns_cgm = SNSChangeGeneratorModel.parse_raw(self.request.body)
-                response_model = await generate_sns_change(sns_cgm)
-            elif cgm.generator_type == GeneratorType.sqs:
-                sqs_cgm = SQSChangeGeneratorModel.parse_raw(self.request.body)
-                response_model = await generate_sqs_change(sqs_cgm)
-            else:
-                # should never hit this case, but having this in case future code changes cause this
-                # or we forgot to add stuff here when more generator types are added
-                raise NotImplementedError
+            changes = ChangeGeneratorModelArray.parse_raw(self.request.body)
+            for change in changes.changes:
+                if change.generator_type == GeneratorType.generic:
+                    generic_cgm = GenericChangeGeneratorModel.parse_obj(change)
+                    response_model = await generate_generic_change(generic_cgm)
+                elif change.generator_type == GeneratorType.s3:
+                    s3_cgm = S3ChangeGeneratorModel.parse_obj(change)
+                    response_model = await generate_s3_change(s3_cgm)
+                elif change.generator_type == GeneratorType.sns:
+                    sns_cgm = SNSChangeGeneratorModel.parse_obj(change)
+                    response_model = await generate_sns_change(sns_cgm)
+                elif change.generator_type == GeneratorType.sqs:
+                    sqs_cgm = SQSChangeGeneratorModel.parse_obj(change)
+                    response_model = await generate_sqs_change(sqs_cgm)
+                else:
+                    # should never hit this case, but having this in case future code changes cause this
+                    # or we forgot to add stuff here when more generator types are added
+                    raise NotImplementedError
         except ValidationError as e:
             log_data["message"] = "Validation Exception"
             log.error(log_data, exc_info=True)

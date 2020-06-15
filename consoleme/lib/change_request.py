@@ -5,6 +5,8 @@ import ujson as json
 from policy_sentry.querying.actions import get_actions_with_access_level
 from policy_sentry.util.arns import get_service_from_arn
 
+from consoleme.config import config
+from consoleme.exceptions.exceptions import MissingConfigurationValue
 from consoleme.models import (
     ChangeModel,
     ChangeType,
@@ -17,59 +19,9 @@ from consoleme.models import (
     SQSChangeGeneratorModel,
 )
 
-generic_access_level_map = {
-    # Mapping actions that our model accepts to what sentry expects
-    "read": "Read",
-    "write": "Write",
-    "list": "List",
-    "tagging": "Tagging",
-    "permissions-management": "Permissions Management",
-}
-
-s3_action_map = {
-    "list": ["s3:ListBucket", "s3:ListBucketVersions"],
-    "get": [
-        "s3:GetObject",
-        "s3:GetObjectTagging",
-        "s3:GetObjectVersion",
-        "s3:GetObjectVersionTagging",
-        "s3:GetObjectAcl",
-        "s3:GetObjectVersionAcl",
-    ],
-    "put": [
-        "s3:PutObject",
-        "s3:PutObjectTagging",
-        "s3:PutObjectVersionTagging",
-        "s3:ListMultipartUploadParts*",
-        "s3:AbortMultipartUpload",
-        "s3:RestoreObject",
-    ],
-    "delete": [
-        "s3:DeleteObject",
-        "s3:DeleteObjectTagging",
-        "s3:DeleteObjectVersion",
-        "s3:DeleteObjectVersionTagging",
-    ],
-}
-
-sqs_action_map = {
-    "get_queue_attributes": ["sqs:GetQueueAttributes", "sqs:GetQueueUrl"],
-    "send_messages": ["sqs:SendMessage"],
-    "receive_messages": ["sqs:ReceiveMessage"],
-    "delete_messages": ["sqs:DeleteMessage"],
-    "set_queue_attributes": ["sqs:SetQueueAttributes"],
-}
-
-sns_action_map = {
-    "get_topic_attributes": ["sns:GetEndpointAttributes", "sns:GetTopicAttributes"],
-    "publish": ["sns:Publish"],
-    "subscribe": ["sns:Subscribe", "sns:ConfirmSubscription"],
-    "unsubscribe": ["sns:Unsubscribe"],
-}
-
 
 def get_resource_policy_changes(
-    principal_arn: str, changes: List[ChangeModel],
+    principal_arn: str, changes: List[ChangeModel]
 ) -> List[ResourcePolicyChangeModel]:
     pass
 
@@ -156,43 +108,81 @@ async def _get_actions_from_groups(
 async def generate_generic_change(
     generator: GenericChangeGeneratorModel,
 ) -> InlinePolicyChangeModel:
+    action_map = config.get("self_service_iam.change_types.generic.actions")
+    if not action_map:
+        raise MissingConfigurationValue(
+            "Unable to find applicable action map configuration."
+        )
     access_level_actions: List[str] = []
     for access in generator.access_level:
-        access_level_actions.append(generic_access_level_map.get(access.value))
+        access_level_actions.append(action_map.get(access))
     actions = await _get_access_level_actions_for_resource(
         generator.resource, access_level_actions
     )
-    return await _generate_change(generator.arn, [generator.resource], actions,)
+    return await _generate_change(generator.arn, [generator.resource], actions)
 
 
 async def generate_s3_change(
     generator: S3ChangeGeneratorModel,
 ) -> InlinePolicyChangeModel:
-    resource_arns = [generator.resource]
-    if generator.bucket_prefix is not None:
-        resource_arns.append(generator.resource + generator.bucket_prefix)
+    action_map = config.get("self_service_iam.change_types.s3.actions")
+    if not action_map:
+        raise MissingConfigurationValue(
+            "Unable to find applicable action map configuration."
+        )
+    resource_arns = []
+
+    # Handle the bucket ARN
+    if not generator.resource.startswith("arn:aws:s3:::"):
+        generator.resource = f"arn:aws:s3:::{generator.resource}"
+    resource_arns.append(generator.resource)
+
+    # Handle the prefix ARN
+    if generator.bucket_prefix:
+        # Make sure prefix starts with "/"
+        if not generator.bucket_prefix.startswith("/"):
+            generator.bucket_prefix = f"/{generator.bucket_prefix}"
+
+        # Make sure prefix ends in /*
+        # TODO: What if we want to access a single file?
+        if not generator.bucket_prefix.endswith("/*"):
+            generator.bucket_prefix = f"{generator.bucket_prefix}/*"
+    else:
+        generator.bucket_prefix = "/*"
+    resource_arns.append(f"{generator.resource}{generator.bucket_prefix}")
+
     action_group_actions: List[str] = []
     for action in generator.action_groups:
-        action_group_actions.append(action.value)
-    actions = await _get_actions_from_groups(action_group_actions, s3_action_map)
-    return await _generate_change(generator.arn, resource_arns, actions,)
+        action_group_actions.append(action)
+    actions = await _get_actions_from_groups(action_group_actions, action_map)
+    return await _generate_change(generator.arn, resource_arns, actions)
 
 
 async def generate_sns_change(
     generator: SNSChangeGeneratorModel,
 ) -> InlinePolicyChangeModel:
+    action_map = config.get("self_service_iam.change_types.sns.actions")
+    if not action_map:
+        raise MissingConfigurationValue(
+            "Unable to find applicable action map configuration."
+        )
     action_group_actions: List[str] = []
     for action in generator.action_groups:
-        action_group_actions.append(action.value)
-    actions = await _get_actions_from_groups(action_group_actions, sns_action_map)
-    return await _generate_change(generator.arn, [generator.resource], actions,)
+        action_group_actions.append(action)
+    actions = await _get_actions_from_groups(action_group_actions, action_map)
+    return await _generate_change(generator.arn, [generator.resource], actions)
 
 
 async def generate_sqs_change(
     generator: SQSChangeGeneratorModel,
 ) -> InlinePolicyChangeModel:
+    action_map = config.get("self_service_iam.change_types.sqs.actions")
+    if not action_map:
+        raise MissingConfigurationValue(
+            "Unable to find applicable action map configuration."
+        )
     action_group_actions: List[str] = []
     for action in generator.action_groups:
-        action_group_actions.append(action.value)
-    actions = await _get_actions_from_groups(action_group_actions, sqs_action_map)
-    return await _generate_change(generator.arn, [generator.resource], actions,)
+        action_group_actions.append(action)
+    actions = await _get_actions_from_groups(action_group_actions, action_map)
+    return await _generate_change(generator.arn, [generator.resource], actions)

@@ -88,13 +88,12 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/GenericChangeGeneratorModel'
-                - $ref: '#/components/schemas/S3ChangeGeneratorModel'
-                - $ref: '#/components/schemas/SQSChangeGeneratorModel'
-                - $ref: '#/components/schemas/SNSChangeGeneratorModel'
-              discriminator:
-                propertyName: generator_type
+              type: array
+              items:
+                anyOf:
+                  - $ref: '#/components/schemas/ChangeGeneratorModelArray'
+                discriminator:
+                  propertyName: generator_type
       responses:
         '200':
           description: OK
@@ -370,6 +369,14 @@ components:
               type: string
             comments:
               $ref: '#/components/schemas/CommentModel'
+    ChangeGeneratorModelArray:
+      type: object
+      properties:
+        changes:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/ChangeGeneratorModel'
     ChangeGeneratorModel:
       type: object
       required:
@@ -393,6 +400,11 @@ components:
         version:
           description: Version
           type: string
+        action_groups:
+          type: array
+          description: Action groups
+          items:
+            type: string
     GenericChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -618,7 +630,7 @@ components:
           type: integer
           example: 5
     CloudTrailErrorArray:
-      type: array
+      type: object
       properties:
         cloudtrail_errors:
           type: array

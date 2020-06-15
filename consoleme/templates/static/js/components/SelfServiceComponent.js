@@ -18,7 +18,7 @@ class SelfServiceComponent extends Component {
     };
 
     componentDidMount() {
-        // TODO(heewonk), retrieve a config from backed to figure which components to register.
+        // TODO(heewonk), retrieve a config from backend to figure which components to register.
     }
 
     render() {

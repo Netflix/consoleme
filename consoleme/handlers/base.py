@@ -142,9 +142,11 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
 
     def initialize(self) -> None:
         self.tracer = None
+        self.responses = []
         super(BaseHandler, self).initialize()
 
     async def prepare(self) -> None:
+        self.tracer = None
         await self.configure_tracing()
 
         if config.get("tornado.xsrf", True):
@@ -154,13 +156,14 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                 self.xsrf_token,
                 **cookie_kwargs,
             )
-        self.responses = []
         self.request_uuid = str(uuid.uuid4())
         stats.timer("base_handler.incoming_request")
         return await self.authorization_flow()
 
     def write(self, chunk: Union[str, bytes, dict]) -> None:
         if config.get("_security_risk_full_debugging.enabled"):
+            if not hasattr(self, "responses"):
+                self.responses = []
             self.responses.append(chunk)
         super(BaseHandler, self).write(chunk)
 
@@ -188,7 +191,7 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                 self.set_header(k, v)
 
     def on_finish(self) -> None:
-        if self.tracer:
+        if hasattr(self, "tracer"):
             asyncio.ensure_future(
                 self.tracer.set_additional_tags({"http.status_code": self.get_status()})
             )
@@ -196,6 +199,9 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
             asyncio.ensure_future(self.tracer.disable_tracing())
 
         if config.get("_security_risk_full_debugging.enabled"):
+            responses = None
+            if hasattr(self, "responses"):
+                responses = self.responses
             request_details = {
                 "path": self.request.path,
                 "method": self.request.method,
@@ -207,10 +213,10 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                 "query_arguments": self.request.query_arguments,
                 "uri": self.request.uri,
                 "cookies": dict(self.request.cookies.items()),
-                "response": self.responses,
+                "response": responses,
             }
             with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
-                f.write(json.dumps(request_details))
+                f.write(json.dumps(request_details, reject_bytes=False))
         super(BaseHandler, self).on_finish()
 
     async def authorization_flow(
