@@ -91,6 +91,7 @@ class GenerateChangesHandler(BaseAPIV2Handler):
             log_data["message"] = "Unknown Exception occured while generating changes"
             log.error(log_data, exc_info=True)
             stats.count(f"{log_data['function']}.exception", tags={"user": self.user})
+            config.sentry.captureException(tags={"user": self.user})
             self.write_error(500, message="Error generating changes: " + str(e))
             return
 
