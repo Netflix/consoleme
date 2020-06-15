@@ -46,6 +46,7 @@ from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
 from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
+from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 
 # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
@@ -124,6 +125,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
         (r"/api/v2/mtls/roles/(\d{12})/(.*)", RoleDetailAppHandler),
+        (r"/api/v2/generate_changes/?", GenerateChangesHandler),
         (r"/config/?", DynamicConfigHandler),
         (r"/myheaders/?", HeaderHandler),
         (r"/policies/?", PolicyViewHandler),
