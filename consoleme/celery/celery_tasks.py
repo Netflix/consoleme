@@ -18,6 +18,7 @@ import celery
 import raven
 import ujson
 from asgiref.sync import async_to_sync
+from billiard.exceptions import SoftTimeLimitExceeded
 from botocore.exceptions import ClientError
 from celery.app.task import Context
 from celery.concurrency import asynpool
@@ -136,6 +137,7 @@ def get_celery_request_tags(**kwargs):
     request = kwargs.get("request")
     sender_hostname = "unknown"
     sender = kwargs.get("sender")
+
     if sender:
         try:
             sender_hostname = sender.hostname
@@ -167,11 +169,15 @@ def get_celery_request_tags(**kwargs):
         "sender_hostname": sender_hostname,
         "receiver_hostname": receiver_hostname,
     }
+
+    tags["expired"] = kwargs.get("expired", False)
     exception = kwargs.get("exception")
     if not exception:
         exception = kwargs.get("exc")
     if exception:
         tags["error"] = repr(exception)
+        if isinstance(exception, SoftTimeLimitExceeded):
+            tags["timed_out"] = True
     return tags
 
 
@@ -248,8 +254,10 @@ def report_task_retry(**kwargs):
 @task_failure.connect
 def report_failed_task(**kwargs):
     """
-    Report a generic failure metric as tasks to our metrics broker every time a task fails.
-    This metric can be used for alerting.
+    Report a generic failure metric as tasks to our metrics broker every time a task fails. This is also called when
+    a task has it a SoftTimeLimit.
+
+    The metric emited by this function can be used for alerting.
     https://docs.celeryproject.org/en/latest/userguide/signals.html#task-failure
 
     :param sender:
@@ -281,7 +289,7 @@ def report_failed_task(**kwargs):
 def report_unknown_task(**kwargs):
     """
     Report a generic failure metric as tasks to our metrics broker every time a worker receives an unknown task.
-    This metric can be used for alerting.
+    The metric emited by this function can be used for alerting.
     https://docs.celeryproject.org/en/latest/userguide/signals.html#task-unknown
 
     :param sender:
@@ -308,7 +316,7 @@ def report_unknown_task(**kwargs):
 def report_rejected_task(**kwargs):
     """
     Report a generic failure metric as tasks to our metrics broker every time a task is rejected.
-    This metric can be used for alerting.
+    The metric emited by this function can be used for alerting.
     https://docs.celeryproject.org/en/latest/userguide/signals.html#task-rejected
 
     :param sender:
@@ -743,7 +751,7 @@ def cache_roles_for_account(account_id: str) -> bool:
     return True
 
 
-@app.task(soft_time_limit=1800)
+@app.task(soft_time_limit=3600)
 def cache_roles_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
@@ -1235,7 +1243,7 @@ schedule = {
     },
     "cache_roles_across_accounts": {
         "task": "consoleme.celery.celery_tasks.cache_roles_across_accounts",
-        "options": {"expires": 180},
+        "options": {"expires": 1000},
         "schedule": schedule_45_minute,
     },
     "clear_old_redis_iam_cache": {
