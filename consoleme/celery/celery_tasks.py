@@ -255,7 +255,7 @@ def report_task_retry(**kwargs):
 def report_failed_task(**kwargs):
     """
     Report a generic failure metric as tasks to our metrics broker every time a task fails. This is also called when
-    a task has it a SoftTimeLimit.
+    a task has hit a SoftTimeLimit.
 
     The metric emited by this function can be used for alerting.
     https://docs.celeryproject.org/en/latest/userguide/signals.html#task-failure
