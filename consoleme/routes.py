@@ -126,7 +126,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
         (r"/api/v2/mtls/roles/(\d{12})/(.*)", RoleDetailAppHandler),
-        (r"/api/v2/roles/clone/(\d{12})/(.*)", RoleCloneHandler),
+        (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
         (r"/config/?", DynamicConfigHandler),
         (r"/myheaders/?", HeaderHandler),

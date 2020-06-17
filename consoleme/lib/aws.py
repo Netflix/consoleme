@@ -22,10 +22,14 @@ from policy_sentry.util.arns import (
 )
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import BackgroundCheckNotPassedException
+from consoleme.exceptions.exceptions import (
+    BackgroundCheckNotPassedException,
+    MissingConfigurationValue,
+)
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hgetall
+from consoleme.models import CloneRoleRequestModel
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
@@ -507,37 +511,37 @@ async def can_delete_roles_app(app_name):
     return False
 
 
-async def can_clone_roles(groups):
+async def can_clone_roles(groups, username):
     approval_groups = config.get("groups.can_clone_roles", [])
     for g in approval_groups:
         if g in groups:
             return True
+    approval_users = config.get("users.can_clone_roles", [])
+    if username in approval_users:
+        return True
     return False
 
 
-async def clone_iam_role(
-    account_id,
-    role_name,
-    dest_account_id,
-    dest_role_name,
-    username,
-    clone_options: dict,
-):
+async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
     """
     Clones IAM role within same account or across account, always creating and attaching instance profile if one exists
     on the source role.
-    :param account_id: source role's account ID
-    :param role_name: source role's name
-    :param dest_account_id: destination role's account ID (may be same as account_id)
-    :param dest_role_name: destination role's name
-    :param username: username of user requesting action
-    :param clone_options: dict to indicate what to copy when cloning:
+    ;param username: username of user requesting action
+    ;:param clone_model: CloneRoleRequestModel, which has the following attributes:
+        account_id: source role's account ID
+        role_name: source role's name
+        dest_account_id: destination role's account ID (may be same as account_id)
+        dest_role_name: destination role's name
+        clone_options: dict to indicate what to copy when cloning:
             assume_role_policy: bool
                 default: False - uses default ConsoleMe AssumeRolePolicy
             tags: bool
                 default: False - defaults to no tags
-            description: bool
-                default: False - defaults to empty description
+            copy_description: bool
+                default: False - defaults to copying provided description or default description
+            description: string
+                default: "Role cloned via ConsoleMe by `username` from `arn:aws:iam::<account_id>:role/<role_name>`
+                if copy_description is True, then description is ignored
             inline_policies: bool
                 default: False - defaults to no inline policies
             managed_policies: bool
@@ -548,70 +552,79 @@ async def clone_iam_role(
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "message": "Attempting to clone role",
-        "account_id": account_id,
-        "role_name": role_name,
-        "dest_account_id": dest_account_id,
-        "dest_role_name": dest_role_name,
+        "account_id": clone_model.account_id,
+        "role_name": clone_model.role_name,
+        "dest_account_id": clone_model.dest_account_id,
+        "dest_role_name": clone_model.dest_role_name,
         "user": username,
     }
     log.info(log_data)
-    role = await fetch_role_details(account_id, role_name)
+    role = await fetch_role_details(clone_model.account_id, clone_model.role_name)
 
-    # attributes using during role creation
-    copy_assume_role_policy = clone_options.get("assume_role_policy", False)
-    copy_tags = clone_options.get("tags", False)
-    copy_description = clone_options.get("description", False)
-
-    default_trust_policy = config.get("user_role_creator.default_trust_policy", {})
-    trust_policy = json.dumps(
+    default_trust_policy = config.get("user_role_creator.default_trust_policy")
+    trust_policy = (
         role.assume_role_policy_document
-        if copy_assume_role_policy
+        if clone_model.options.assume_role_policy
         else default_trust_policy
     )
-    description = role.description if copy_description else ""
-    tags = role.tags if copy_tags else []
+    if trust_policy is None:
+        raise MissingConfigurationValue(
+            "Missing Default Assume Role Policy Configuration"
+        )
+
+    if clone_model.options.copy_description:
+        description = role.description
+    elif clone_model.options.description is not None:
+        description = clone_model.options.description
+    else:
+        description = f"Role cloned via ConsoleMe by {username} from {role.arn}"
+
+    tags = role.tags if clone_model.options.tags else []
 
     iam_client = await sync_to_async(boto3_cached_conn)(
         "iam",
         service_type="client",
-        account_number=dest_account_id,
+        account_number=clone_model.dest_account_id,
         region=config.region,
         assume_role=config.get("policies.role_name"),
-        session_name="clone_role",
+        session_name="clone_role_" + username,
     )
     results = {"errors": 0, "action_results": []}
     try:
         await sync_to_async(iam_client.create_role)(
-            RoleName=dest_role_name,
-            AssumeRolePolicyDocument=trust_policy,
+            RoleName=clone_model.dest_role_name,
+            AssumeRolePolicyDocument=json.dumps(trust_policy),
             Description=description,
             Tags=tags,
         )
         results["action_results"].append(
             {
                 "status": "success",
-                "message": f"Role arn:aws:iam::{dest_account_id}:role/{dest_role_name} successfully created",
+                "message": f"Role arn:aws:iam::{clone_model.dest_account_id}:role/{clone_model.dest_role_name} "
+                f"successfully created",
             }
         )
     except Exception as e:
-        log_data["message"] = "Exception occurred creating cloned role " + str(e)
-        log.error(log_data)
+        log_data["message"] = "Exception occurred creating cloned role"
+        log_data["error"] = str(e)
+        log.error(log_data, exc_info=True)
         results["action_results"].append(
             {
                 "status": "error",
-                "message": f"Error creating role {dest_role_name} in account {dest_account_id}: "
+                "message": f"Error creating role {clone_model.dest_role_name} in account {clone_model.dest_account_id}:"
                 + str(e),
             }
         )
         results["errors"] += 1
+        config.sentry.captureException()
         # Since we were unable to create the role, no point continuing, just return
         return results
 
-    if copy_tags:
+    if clone_model.options.tags:
         results["action_results"].append(
             {"status": "success", "message": "Successfully copied tags"}
         )
-    if copy_assume_role_policy:
+    if clone_model.options.assume_role_policy:
         results["action_results"].append(
             {
                 "status": "success",
@@ -625,40 +638,58 @@ async def clone_iam_role(
                 "message": "Successfully added default Assume Role Policy Document",
             }
         )
-
+    if clone_model.options.copy_description:
+        results["action_results"].append(
+            {"status": "success", "message": "Successfully copied description"}
+        )
+    else:
+        results["action_results"].append(
+            {
+                "status": "success",
+                "message": "Successfully added description: " + description,
+            }
+        )
     # Create instance profile and attach if it exists in source role
     if len(list(await sync_to_async(role.instance_profiles.all)())) > 0:
         try:
             await sync_to_async(iam_client.create_instance_profile)(
-                InstanceProfileName=dest_role_name
+                InstanceProfileName=clone_model.dest_role_name
             )
             await sync_to_async(iam_client.add_role_to_instance_profile)(
-                InstanceProfileName=dest_role_name, RoleName=dest_role_name
+                InstanceProfileName=clone_model.dest_role_name,
+                RoleName=clone_model.dest_role_name,
             )
             results["action_results"].append(
                 {
                     "status": "success",
-                    "message": f"Successfully added instance profile {dest_role_name} to role {dest_role_name}",
+                    "message": f"Successfully added instance profile {clone_model.dest_role_name} to role "
+                    f"{clone_model.dest_role_name}",
                 }
             )
         except Exception as e:
+            log_data[
+                "message"
+            ] = "Exception occurred creating/attaching instance profile"
+            log_data["error"] = str(e)
+            log.error(log_data, exc_info=True)
+            config.sentry.captureException()
             results["action_results"].append(
                 {
                     "status": "error",
-                    "message": f"Error creating/attaching instance profile {dest_role_name} to role: "
+                    "message": f"Error creating/attaching instance profile {clone_model.dest_role_name} to role: "
                     + str(e),
                 }
             )
             results["errors"] += 1
 
     # other optional attributes to copy over after role has been successfully created
-    copy_inline_policies = clone_options.get("inline_policies", False)
-    copy_managed_policies = clone_options.get("managed_policies", False)
 
-    cloned_role = await fetch_role_details(dest_account_id, dest_role_name)
+    cloned_role = await fetch_role_details(
+        clone_model.dest_account_id, clone_model.dest_role_name
+    )
 
     # Copy inline policies
-    if copy_inline_policies:
+    if clone_model.options.inline_policies:
         for src_policy in await sync_to_async(role.policies.all)():
             await sync_to_async(src_policy.load)()
             try:
@@ -673,6 +704,10 @@ async def clone_iam_role(
                     }
                 )
             except Exception as e:
+                log_data["message"] = "Exception occurred copying inline policy"
+                log_data["error"] = str(e)
+                log.error(log_data, exc_info=True)
+                config.sentry.captureException()
                 results["action_results"].append(
                     {
                         "status": "error",
@@ -683,10 +718,12 @@ async def clone_iam_role(
                 results["errors"] += 1
 
     # Copy managed policies
-    if copy_managed_policies:
+    if clone_model.options.managed_policies:
         for src_policy in await sync_to_async(role.attached_policies.all)():
             await sync_to_async(src_policy.load)()
-            dest_policy_arn = src_policy.arn.replace(account_id, dest_account_id)
+            dest_policy_arn = src_policy.arn.replace(
+                clone_model.account_id, clone_model.dest_account_id
+            )
             try:
                 await sync_to_async(cloned_role.attach_policy)(
                     PolicyArn=dest_policy_arn
@@ -698,6 +735,10 @@ async def clone_iam_role(
                     }
                 )
             except Exception as e:
+                log_data["message"] = "Exception occurred copying managed policy"
+                log_data["error"] = str(e)
+                log.error(log_data, exc_info=True)
+                config.sentry.captureException()
                 results["action_results"].append(
                     {
                         "status": "error",
@@ -707,7 +748,9 @@ async def clone_iam_role(
                 )
                 results["errors"] += 1
 
-    stats.count(f"{log_data['function']}.success", tags={"role_name": role_name})
+    stats.count(
+        f"{log_data['function']}.success", tags={"role_name": clone_model.role_name}
+    )
     log_data["message"] = "Successfully cloned role"
     log.info(log_data)
     return results
