@@ -21,6 +21,7 @@ class SelfService extends Component {
         messages: null,
         permissions: [],
         role: null,
+        config: null,
     };
 
     handleStepClick(dir) {

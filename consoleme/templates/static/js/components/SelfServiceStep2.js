@@ -74,7 +74,7 @@ class SelfServiceStep2 extends Component {
                                 permission.actions.map(action => {
                                     const actionDetail = _.find(found.actions, {"key": action});
                                     return (
-                                        <Label as="a" color="pink">
+                                        <Label as="a" color="green">
                                             {actionDetail.text}
                                         </Label>
                                     );

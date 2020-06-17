@@ -293,6 +293,7 @@ components:
           description: resource ARN
           type: string
           readOnly: true
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         account_id:
           description: AWS account ID
           type: string
@@ -338,6 +339,7 @@ components:
           type: string
           description: ARN of principal being modified
           example: arn:aws:iam::123456789012:role/super_awesome_admin
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         timestamp:
           type: string
           format: date-time
@@ -371,22 +373,35 @@ components:
               $ref: '#/components/schemas/CommentModel'
     ChangeGeneratorModelArray:
       type: object
+      required:
+        - changes
       properties:
         changes:
           type: array
           items:
             anyOf:
-              - $ref: '#/components/schemas/ChangeGeneratorModel'
+              - $ref: '#/components/schemas/S3ChangeGeneratorModel'
+              - $ref: '#/components/schemas/SQSChangeGeneratorModel'
+              - $ref: '#/components/schemas/SNSChangeGeneratorModel'
+              - $ref: '#/components/schemas/GenericChangeGeneratorModel'
+            discriminator:
+              propertyName: change_generator_model
     ChangeGeneratorModel:
       type: object
       required:
         - generator_type
         - arn
         - resource
+        - user
       properties:
-        arn:
-          description: principal ARN
+        principal_arn:
+          description: |-
+            The principal (Source ARN) associated with the Change. This is most commomly an IAM role ARN.
+            The principal ARN is associated with the entity whose policy will be modified if the change is
+            approved and successful.
+          example: arn:aws:iam::123456789012:role/exampleRole
           type: string
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         generator_type:
           type: string
           enum:
@@ -394,17 +409,47 @@ components:
             - s3
             - sqs
             - sns
-        resource:
-          description: resource ARN
+        resource_arn:
+          description: |-
+            The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
+            resource policy will need to be modified if the change is approved and successful.
+          example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
           type: string
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         version:
           description: Version
+          type: string
+        user:
+          description: Email address of user creating the change
           type: string
         action_groups:
           type: array
           description: Action groups
           items:
             type: string
+        policy_name:
+          type: string
+          description: Optional policy name for the change, if applicable.
+          pattern: '^[a-zA-Z0-9+=,.@\\-_]+$'
+        effect:
+          type: string
+          description: The effect. By default, this is allow
+          default: Allow
+          pattern: '^(Allow|Deny)$'
+        condition:
+          type: object
+          description: Optional condition for the change
+          example: |-
+            {
+                "StringEquals": {"iam:PassedToService": "ec2.amazonaws.com"},
+                "StringLike": {
+                    "iam:AssociatedResourceARN": [
+                        "arn:aws:ec2:us-east-1:111122223333:instance/*",
+                        "arn:aws:ec2:us-west-1:111122223333:instance/*"
+                    ]
+                }
+            }
+
     GenericChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -429,10 +474,8 @@ components:
         - type: object
           required:
             - action_groups
+            - bucket_prefix
           properties:
-            bucket_name:
-              type: string
-              example: really.cool.bucket
             bucket_prefix:
               type: string
               example: /awesome/prefix/*
@@ -482,9 +525,13 @@ components:
     ChangeModel:
       type: object
       required:
+        - principal_arn
         - change_type
         - resource_arns
       properties:
+        principal_arn:
+          type: string
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         change_type:
           type: string
           enum:
@@ -495,6 +542,7 @@ components:
           type: array
           items:
             type: string
+            pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         resource:
           $ref: '#/components/schemas/ResourceModel'
     InlinePolicyChangeModel:
@@ -511,6 +559,20 @@ components:
               type: array
               items:
                 type: string
+                pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+            condition:
+              type: object
+              example: |-
+                {
+                    "StringEquals": {"iam:PassedToService": "ec2.amazonaws.com"},
+                    "StringLike": {
+                        "iam:AssociatedResourceARN": [
+                            "arn:aws:ec2:us-east-1:111122223333:instance/*",
+                            "arn:aws:ec2:us-west-1:111122223333:instance/*"
+                        ]
+                    }
+                }
+              description: Optional condition key
             policy_name:
               type: string
             new:
@@ -529,6 +591,7 @@ components:
           properties:
             arn:
               type: string
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
             policy:
               $ref: '#/components/schemas/PolicyModel'
             old_policy:
@@ -544,6 +607,7 @@ components:
           properties:
             arn:
               type: string
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
             policy_name:
               type: string
             action:
@@ -559,19 +623,50 @@ components:
           - $ref: '#/components/schemas/ManagedPolicyChangeModel'
           - $ref: '#/components/schemas/ResourcePolicyChangeModel'
         discriminator:
-          propertyName: change_type
+          propertyName: change_model
     PolicyModel:
       type: object
       required:
-        - policy_document
         - policy_sha256
       properties:
+        version:
+          type: string
+          description: AWS Policy Version
+          default: "2012-10-17"
+        statements:
+          type: array
+          items:
+            $ref: '#/components/schemas/PolicyStatement'
         policy_document:
           type: string
           description: JSON policy document
         policy_sha256:
           type: string
-          description: hash of policy_document
+          description: hash of the policy_document json
+    PolicyStatement:
+      type: object
+      required:
+        - action
+        - effect
+        - resource
+      properties:
+        action:
+          type: array
+          description: AWS Policy Actions
+          items:
+            type: string
+        effect:
+          type: string
+          description: Allow | Deny
+        resource:
+          type: array
+          description: AWS Resource ARNs
+          items:
+            type: string
+        sid:
+          type: string
+          description: Statement identifier
+          pattern: '^([a-zA-Z0-9]+)*'
     CommentModel:
       type: object
       required:
@@ -620,6 +715,7 @@ components:
           type: string
           example: arn:aws:iam::123456789012:role/super_awesome_admin
           readOnly: true
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
     CloudTrailError:
       type: object
       properties:
@@ -669,6 +765,7 @@ components:
         role_arn:
           type: string
           example: arn:aws:iam::123456789012:role/roleName
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
     S3ErrorArray:
       type: object
       properties:

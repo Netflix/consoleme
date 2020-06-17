@@ -1,11 +1,13 @@
 from asgiref.sync import sync_to_async
-from onelogin.saml2.utils import OneLogin_Saml2_Utils
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.jwt import generate_jwt_token
 from consoleme.lib.plugins import get_plugin_by_name
+
+if config.get("auth.get_user_by_saml"):
+    from onelogin.saml2.utils import OneLogin_Saml2_Utils
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()

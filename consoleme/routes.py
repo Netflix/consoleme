@@ -58,6 +58,7 @@ from consoleme.handlers.v2.roles import (
     RoleDetailHandler,
     RolesHandler,
 )
+from consoleme.handlers.v2.self_service import SelfServiceConfigHandler
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -115,6 +116,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
         (r"/api/v1/get_roles", GetRolesHandler),
         (r"/api/v1/siteconfig/?", SiteConfigHandler),
+        (r"/api/v2/self_service_config/?", SelfServiceConfigHandler),
         (r"/api/v1/profile/?", UserProfileHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),

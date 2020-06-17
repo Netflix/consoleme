@@ -10,7 +10,6 @@ import tornado.httputil
 import tornado.web
 import ujson as json
 from asgiref.sync import sync_to_async
-from onelogin.saml2.auth import OneLogin_Saml2_Auth
 from raven.contrib.tornado import SentryMixin
 from tornado import httputil
 
@@ -31,6 +30,9 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.saml import authenticate_user_by_saml
 from consoleme.lib.tracing import ConsoleMeTracer
+
+if config.get("auth.get_user_by_saml"):
+    from onelogin.saml2.auth import OneLogin_Saml2_Auth
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()

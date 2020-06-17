@@ -18,7 +18,19 @@ class SelfServiceStep1 extends Component {
         isRoleLoading: false,
         results: [],
         value: '',
+        config: {}
     };
+
+     componentDidMount() {
+        fetch(`/api/v2/self_service_config`).then((resp) => {
+            resp.text().then((resp) => {
+                const config = JSON.parse(resp);
+                this.setState({
+                    config: config
+                });
+            });
+        });
+    }
 
     handleSearchChange(event, {value}) {
         this.setState({

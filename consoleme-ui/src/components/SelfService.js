@@ -25,7 +25,7 @@ import {
 } from 'semantic-ui-react';
 
 
-const buckets = ["ap-northeast-1-441660064727-s3-access-logs", "ap-northeast-2-441660064727-s3-access-logs", "ap-south-1-441660064727-s3-access-logs", "ap-southeast-1-441660064727-s3-access-logs", "ap-southeast-2-441660064727-s3-access-logs", "ca-central-1-441660064727-s3-access-logs", "cf-templates-ek0ovumwslho-us-west-2", "codepipeline-us-east-1-949857809385", "eu-central-1-441660064727-s3-access-logs", "eu-north-1-441660064727-s3-access-logs", "eu-west-1-441660064727-s3-access-logs", "eu-west-1.netflix-logs-bunkerprod", "eu-west-2-441660064727-s3-access-logs", "eu-west-3-441660064727-s3-access-logs", "netflix-logs-bunker-prod", "netflix-logs-bunker-prod-eu-west-1", "netflix-logs-bunker-prod-us-east-1", "netflix-logs-bunker-prod-us-west-1", "netflix-logs-bunker-prod-us-west-2", "netflix-logs-bunkerprod", "netflix-logs-bunkerprod-eu-west-1", "netflix-logs-bunkerprod-us-west-1", "netflix-logs-bunkerprod-us-west-2", "nflx-alert-sqs-to-otterspeak-lambda.bunkerprod.eu-west-1", "nflx-alert-sqs-to-otterspeak-lambda.bunkerprod.us-east-1", "nflx-alert-sqs-to-otterspeak-lambda.bunkerprod.us-west-2", "nflx-apiprotect-bunkerprod-us-west-2", "nflx-awsconfig-bunkerprod-ap-northeast-1", "nflx-awsconfig-bunkerprod-ap-northeast-2", "nflx-awsconfig-bunkerprod-ap-south-1", "nflx-awsconfig-bunkerprod-ap-southeast-1", "nflx-awsconfig-bunkerprod-ap-southeast-2", "nflx-awsconfig-bunkerprod-ca-central-1", "nflx-awsconfig-bunkerprod-eu-central-1", "nflx-awsconfig-bunkerprod-eu-north-1", "nflx-awsconfig-bunkerprod-eu-west-1", "nflx-awsconfig-bunkerprod-eu-west-2", "nflx-awsconfig-bunkerprod-eu-west-3", "nflx-awsconfig-bunkerprod-sa-east-1", "nflx-awsconfig-bunkerprod-us-east-1", "nflx-awsconfig-bunkerprod-us-east-2", "nflx-awsconfig-bunkerprod-us-west-1", "nflx-awsconfig-bunkerprod-us-west-2", "nflx-consoleme-api.elb.logs-bunkerprod-us-east-1", "nflx-consoleme-api.elb.logs-bunkerprod-us-west-2", "nflx-consoleme-bunkerprod-us-west-2", "nflx-consoleme.elb.logs-bunkerprod-us-east-1", "nflx-consoleme.elb.logs-bunkerprod-us-west-2", "nflx-historical-reports-bunkerprod-eu-west-1", "nflx-historical-reports-bunkerprod-us-east-1", "nflx-historical-reports-bunkerprod-us-west-2", "nflx-honeybee-bunker-prod-us-west-2", "nflx-honeybee-pipeline-bunker-prod-us-west-2", "nflx-infrasec-codepipeline-bunker-prod-us-east-1", "nflx-infrasec-codepipeline-bunker-prod-us-west-2", "nflx-infrasec-lambdas-bunkerprod-us-east-1", "nflx-infrasec-lambdas-bunkerprod-us-west-2", "nflx-migrator-iamrole-lambda", "nflx-remotelambdarolecreator.bunkerprod.eu-west-1", "nflx-remotelambdarolecreator.bunkerprod.us-east-1", "nflx-remotelambdarolecreator.bunkerprod.us-west-2", "nflx-repokid-bunker-prod-us-west-2", "nflx-roleprotect-bunker-prod-us-west-2", "nflx-terraform-bunkerprod-us-east-1", "nflx-terraform-bunkerprod-us-west-2", "nflx-user-role-creator-lambda.bunkerprod.us-east-1", "nflx-user-role-creator-lambda.bunkerprod.us-west-2", "nflx-vault-bunker-prod-us-east-1", "nflx-vault-bunker-prod-us-west-2", "sa-east-1-441660064727-s3-access-logs", "us-east-1-441660064727-s3-access-logs", "us-east-1-bunkerprod-nflx-secops-lambdas", "us-east-1.netflix-logs-bunkerprod", "us-east-2-441660064727-s3-access-logs", "us-west-1-441660064727-s3-access-logs", "us-west-2-441660064727-s3-access-logs", "us-west-2-bunkerprod-nflx-secops-lambdas", "us-west-2.netflix-logs-bunkerprod"].map(bucket => {
+const buckets = [];
     return {
         key: bucket,
         text: bucket,
@@ -146,8 +146,8 @@ class SelfService extends Component {
         isLoading: false,
         results: [],
         value: '',
-        sourceValue: 'arn:aws:iam::441660064727:role/consolemeInstanceProfile',
-        targetValue: 'nflx-honeybee-bunker-prod-us-west-2',
+        sourceValue: '',
+        targetValue: '',
         role: '',
         account: '',
     };
