@@ -507,6 +507,212 @@ async def can_delete_roles_app(app_name):
     return False
 
 
+async def can_clone_roles(groups):
+    approval_groups = config.get("groups.can_clone_roles", [])
+    for g in approval_groups:
+        if g in groups:
+            return True
+    return False
+
+
+async def clone_iam_role(
+    account_id,
+    role_name,
+    dest_account_id,
+    dest_role_name,
+    username,
+    clone_options: dict,
+):
+    """
+    Clones IAM role within same account or across account, always creating and attaching instance profile if one exists
+    on the source role.
+    :param account_id: source role's account ID
+    :param role_name: source role's name
+    :param dest_account_id: destination role's account ID (may be same as account_id)
+    :param dest_role_name: destination role's name
+    :param username: username of user requesting action
+    :param clone_options: dict to indicate what to copy when cloning:
+            assume_role_policy: bool
+                default: False - uses default ConsoleMe AssumeRolePolicy
+            tags: bool
+                default: False - defaults to no tags
+            description: bool
+                default: False - defaults to empty description
+            inline_policies: bool
+                default: False - defaults to no inline policies
+            managed_policies: bool
+                default: False - defaults to no managed policies
+    :return: results: - indicating the results of each action
+    """
+
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "message": "Attempting to clone role",
+        "account_id": account_id,
+        "role_name": role_name,
+        "dest_account_id": dest_account_id,
+        "dest_role_name": dest_role_name,
+        "user": username,
+    }
+    log.info(log_data)
+    role = await fetch_role_details(account_id, role_name)
+
+    # attributes using during role creation
+    copy_assume_role_policy = clone_options.get("assume_role_policy", False)
+    copy_tags = clone_options.get("tags", False)
+    copy_description = clone_options.get("description", False)
+
+    default_trust_policy = config.get("user_role_creator.default_trust_policy", {})
+    trust_policy = json.dumps(
+        role.assume_role_policy_document
+        if copy_assume_role_policy
+        else default_trust_policy
+    )
+    description = role.description if copy_description else ""
+    tags = role.tags if copy_tags else []
+
+    iam_client = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        service_type="client",
+        account_number=dest_account_id,
+        region=config.region,
+        assume_role=config.get("policies.role_name"),
+        session_name="clone_role",
+    )
+    results = {"errors": 0, "action_results": []}
+    try:
+        await sync_to_async(iam_client.create_role)(
+            RoleName=dest_role_name,
+            AssumeRolePolicyDocument=trust_policy,
+            Description=description,
+            Tags=tags,
+        )
+        results["action_results"].append(
+            {
+                "status": "success",
+                "message": f"Role arn:aws:iam::{dest_account_id}:role/{dest_role_name} successfully created",
+            }
+        )
+    except Exception as e:
+        log_data["message"] = "Exception occurred creating cloned role " + str(e)
+        log.error(log_data)
+        results["action_results"].append(
+            {
+                "status": "error",
+                "message": f"Error creating role {dest_role_name} in account {dest_account_id}: "
+                + str(e),
+            }
+        )
+        results["errors"] += 1
+        # Since we were unable to create the role, no point continuing, just return
+        return results
+
+    if copy_tags:
+        results["action_results"].append(
+            {"status": "success", "message": "Successfully copied tags"}
+        )
+    if copy_assume_role_policy:
+        results["action_results"].append(
+            {
+                "status": "success",
+                "message": "Successfully copied Assume Role Policy Document",
+            }
+        )
+    else:
+        results["action_results"].append(
+            {
+                "status": "success",
+                "message": "Successfully added default Assume Role Policy Document",
+            }
+        )
+
+    # Create instance profile and attach if it exists in source role
+    if len(list(await sync_to_async(role.instance_profiles.all)())) > 0:
+        try:
+            await sync_to_async(iam_client.create_instance_profile)(
+                InstanceProfileName=dest_role_name
+            )
+            await sync_to_async(iam_client.add_role_to_instance_profile)(
+                InstanceProfileName=dest_role_name, RoleName=dest_role_name
+            )
+            results["action_results"].append(
+                {
+                    "status": "success",
+                    "message": f"Successfully added instance profile {dest_role_name} to role {dest_role_name}",
+                }
+            )
+        except Exception as e:
+            results["action_results"].append(
+                {
+                    "status": "error",
+                    "message": f"Error creating/attaching instance profile {dest_role_name} to role: "
+                    + str(e),
+                }
+            )
+            results["errors"] += 1
+
+    # other optional attributes to copy over after role has been successfully created
+    copy_inline_policies = clone_options.get("inline_policies", False)
+    copy_managed_policies = clone_options.get("managed_policies", False)
+
+    cloned_role = await fetch_role_details(dest_account_id, dest_role_name)
+
+    # Copy inline policies
+    if copy_inline_policies:
+        for src_policy in await sync_to_async(role.policies.all)():
+            await sync_to_async(src_policy.load)()
+            try:
+                dest_policy = await sync_to_async(cloned_role.Policy)(src_policy.name)
+                await sync_to_async(dest_policy.put)(
+                    PolicyDocument=json.dumps(src_policy.policy_document)
+                )
+                results["action_results"].append(
+                    {
+                        "status": "success",
+                        "message": f"Successfully copied inline policy {src_policy.name}",
+                    }
+                )
+            except Exception as e:
+                results["action_results"].append(
+                    {
+                        "status": "error",
+                        "message": f"Error copying inline policy {src_policy.name}: "
+                        + str(e),
+                    }
+                )
+                results["errors"] += 1
+
+    # Copy managed policies
+    if copy_managed_policies:
+        for src_policy in await sync_to_async(role.attached_policies.all)():
+            await sync_to_async(src_policy.load)()
+            dest_policy_arn = src_policy.arn.replace(account_id, dest_account_id)
+            try:
+                await sync_to_async(cloned_role.attach_policy)(
+                    PolicyArn=dest_policy_arn
+                )
+                results["action_results"].append(
+                    {
+                        "status": "success",
+                        "message": f"Successfully attached managed policy {src_policy.arn} as {dest_policy_arn}",
+                    }
+                )
+            except Exception as e:
+                results["action_results"].append(
+                    {
+                        "status": "error",
+                        "message": f"Error attaching managed policy {dest_policy_arn}: "
+                        + str(e),
+                    }
+                )
+                results["errors"] += 1
+
+    stats.count(f"{log_data['function']}.success", tags={"role_name": role_name})
+    log_data["message"] = "Successfully cloned role"
+    log.info(log_data)
+    return results
+
+
 def role_has_tag(role: Dict, key: str, value: Optional[str] = None) -> bool:
     """
     Checks a role dictionary and determine of the role has the specified tag. If `value` is passed,

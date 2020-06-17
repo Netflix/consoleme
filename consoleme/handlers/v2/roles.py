@@ -4,7 +4,13 @@ import ujson as json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
-from consoleme.lib.aws import can_delete_roles, can_delete_roles_app, delete_iam_role
+from consoleme.lib.aws import (
+    can_clone_roles,
+    can_delete_roles,
+    can_delete_roles_app,
+    clone_iam_role,
+    delete_iam_role,
+)
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.roles import get_role_details
@@ -31,10 +37,7 @@ class RolesHandler(BaseAPIV2Handler):
         self.eligible_roles: list = []
 
     async def get(self):
-        payload = {
-            "eligible_roles": self.eligible_roles,
-            "_xsrf": self.xsrf_token.decode("utf-8"),
-        }
+        payload = {"eligible_roles": self.eligible_roles}
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(payload, escape_forward_slashes=False))
         await self.finish()
@@ -260,3 +263,92 @@ class RoleDetailAppHandler(BaseMtlsHandler):
             "account": account_id,
         }
         self.write(response_json)
+
+
+class RoleCloneHandler(BaseAPIV2Handler):
+    """Handler for /api/v2/roles/clone/{accountNumber}/{roleName}
+
+    Allows cloning a role.
+    """
+
+    allowed_methods = ["POST"]
+
+    def initialize(self):
+        self.user: str = None
+        self.eligible_roles: list = []
+
+    async def post(self, account_id, role_name):
+        if not self.user:
+            self.write_error(403, message="No user detected")
+            return
+
+        log_data = {
+            "user": self.user,
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "ip": self.ip,
+            "account": account_id,
+            "role": role_name,
+        }
+        can_clone_role = await can_clone_roles(self.groups)
+        if not can_clone_role:
+            stats.count(
+                f"{log_data['function']}.unauthorized",
+                tags={
+                    "user": self.user,
+                    "account_id": account_id,
+                    "role_name": role_name,
+                    "authorized": can_clone_role,
+                    "ip": self.ip,
+                },
+            )
+            log_data["message"] = "User is unauthorized to clone a role"
+            log.error(log_data)
+            self.write_error(403, message="User is unauthorized to clone a role")
+            return
+
+        clone_options = json.loads(self.request.body)
+        dest_account_id = clone_options.get("dest_account_id", None)
+        dest_role_name = clone_options.get("dest_role_name", None)
+        if not dest_account_id or not dest_role_name:
+            stats.count(
+                f"{log_data['function']}.bad_request",
+                tags={
+                    "user": self.user,
+                    "account_id": account_id,
+                    "role_name": role_name,
+                    "authorized": can_clone_role,
+                    "ip": self.ip,
+                },
+            )
+            log_data["message"] = "Missing required parameters"
+            log.error(log_data)
+            self.write_error(400, message="Missing required parameters in request body")
+            return
+
+        try:
+            results = await clone_iam_role(
+                account_id=account_id,
+                role_name=role_name,
+                dest_account_id=dest_account_id,
+                dest_role_name=dest_role_name,
+                username=self.user,
+                clone_options=clone_options,
+            )
+        except Exception as e:
+            log_data["message"] = "Exception cloning role"
+            log.error(log_data, exc_info=True)
+            stats.count(
+                f"{log_data['function']}.exception",
+                tags={
+                    "user": self.user,
+                    "account_id": account_id,
+                    "role_name": role_name,
+                },
+            )
+            self.write_error(500, message="Exception occurred cloning role: " + str(e))
+            return
+
+        # if here, role has been successfully cloned
+        self.write(json.dumps(results))

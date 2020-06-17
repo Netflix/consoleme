@@ -23,7 +23,6 @@ class TestRolesHandler(AsyncHTTPTestCase):
         response = self.fetch("/api/v2/roles", method="GET", headers=headers)
         self.assertEqual(response.code, 200)
         responseJSON = json.loads(response.body)
-        self.assertIn("_xsrf", responseJSON)
         self.assertIn("eligible_roles", responseJSON)
         self.assertEqual(0, len(responseJSON["eligible_roles"]))
 
