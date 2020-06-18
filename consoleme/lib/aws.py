@@ -513,12 +513,11 @@ async def can_delete_roles_app(app_name):
 
 async def can_clone_roles(groups, username):
     approval_groups = config.get("groups.can_clone_roles", [])
+    if username in approval_groups:
+        return True
     for g in approval_groups:
         if g in groups:
             return True
-    approval_users = config.get("users.can_clone_roles", [])
-    if username in approval_users:
-        return True
     return False
 
 
