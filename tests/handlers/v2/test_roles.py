@@ -190,3 +190,96 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
         )
         self.assertEqual(response.code, 200)
         self.assertDictEqual(json.loads(response.body), expected)
+
+
+class TestRoleCloneHandler(AsyncHTTPTestCase):
+    def get_app(self):
+        from consoleme.routes import make_app
+
+        return make_app(jwt_validator=lambda x: {})
+
+    @patch(
+        "consoleme.handlers.v2.roles.RoleCloneHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    def test_clone_unauthorized_user(self):
+        expected = {
+            "status": 403,
+            "title": "Forbidden",
+            "message": "User is unauthorized to clone a role",
+        }
+        response = self.fetch("/api/v2/clone/role", method="POST", body="abcd")
+        self.assertEqual(response.code, 403)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+    @patch(
+        "consoleme.handlers.v2.roles.RoleCloneHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    @patch("consoleme.handlers.v2.roles.can_clone_roles")
+    @mock_iam
+    def test_clone_authorized_user(self, mock_can_clone_roles):
+        mock_can_clone_roles.return_value = create_future(True)
+        input_body = {
+            "dest_account_id": "012345678901",
+            "dest_role_name": "testing_dest_role",
+            "account_id": "012345678901",
+            "options": {
+                "tags": "False",
+                "inline_policies": "True",
+                "assume_role_policy": "True",
+                "copy_description": "False",
+                "description": "Testing this should appear",
+            },
+        }
+        expected = {
+            "status": 400,
+            "title": "Bad Request",
+            "message": "Error validating input: 1 validation error for CloneRoleRequestModel\nrole_name\n  "
+            "field required (type=value_error.missing)",
+        }
+        response = self.fetch(
+            "/api/v2/clone/role", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 400)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+        client = boto3.client("iam", region_name="us-east-1")
+        role_name = "fake_account_admin"
+        client.create_role(
+            RoleName=role_name,
+            AssumeRolePolicyDocument="{}",
+            Description="Should not appear",
+        )
+        client.create_instance_profile(InstanceProfileName="testinstanceprofile")
+        client.add_role_to_instance_profile(
+            InstanceProfileName="testinstanceprofile", RoleName=role_name
+        )
+
+        input_body["role_name"] = role_name
+        expected = {
+            "errors": 0,
+            "action_results": [
+                {
+                    "status": "success",
+                    "message": "Role arn:aws:iam::012345678901:role/testing_dest_role successfully created",
+                },
+                {
+                    "status": "success",
+                    "message": "Successfully copied Assume Role Policy Document",
+                },
+                {
+                    "status": "success",
+                    "message": "Successfully added description: Testing this should appear",
+                },
+                {
+                    "status": "success",
+                    "message": "Successfully added instance profile testing_dest_role to role testing_dest_role",
+                },
+            ],
+        }
+        response = self.fetch(
+            "/api/v2/clone/role", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 200)
+        self.assertDictEqual(json.loads(response.body), expected)
