@@ -206,8 +206,8 @@ class ConsoleMeRedis(redis.StrictRedis):
             result = None
         if automatically_backup_to_s3:
             try:
+                obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
                 try:
-                    obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
                     current = json.loads(obj.get()["Body"].read().decode("utf-8"))
                     current[args[1]] = args[2]
                 except:  # noqa
