@@ -175,3 +175,160 @@ tracing:
 #      iss:
 #        enum:
 #          - https://provider.example.com
+
+# Note: Do not put anything sensitive in the self_service_iam key. This may be exposed to the frontend UI
+self_service_iam:
+  change_types:
+    s3:
+      text: S3 Bucket
+      actions:
+        list:
+          text: List
+          permissions:
+            - s3:ListBucket
+            - s3:ListBucketVersions
+        get:
+          text: Get
+          permissions:
+            - s3:GetObject
+            - s3:GetObjectTagging
+            - s3:GetObjectVersion
+            - s3:GetObjectVersionTagging
+            - s3:GetObjectAcl
+            - s3:GetObjectVersionAcl
+        put:
+          text: Put
+          permissions:
+            - s3:PutObject
+            - s3:PutObjectTagging
+            - s3:PutObjectVersionTagging
+            - s3:ListMultipartUploadParts*
+            - s3:AbortMultipartUpload
+            - s3:RestoreObject
+        delete:
+          text: Delete
+          permissions:
+            - s3:DeleteObject
+            - s3:DeleteObjectTagging
+            - s3:DeleteObjectVersion
+            - s3:DeleteObjectVersionTagging
+    sqs:
+      text: SQS Queue
+      actions:
+        get_queue_attributes:
+          text: Get Queue Attributes
+          permissions:
+            - sqs:GetQueueAttributes
+            - sqs:GetQueueUrl
+        send_messages:
+          text: Send Message
+          permissions:
+            - sqs:SendMessage
+        receive_messages:
+          text: Receive Message
+          permissions:
+            - sqs:ReceiveMessage
+        delete_messages:
+          text: Delete Message
+          permissions:
+            - sqs:DeleteMessage
+        set_queue_attributes:
+          text: Set Queue Attributes
+          permissions:
+            - sqs:SetQueueAttributes
+    sns:
+      text: SNS Topic
+      inputs:
+        - name: sns_topic
+          text: Topic ARN
+          required: true
+          typeahead: true
+          typeahead_endpoint: /api/v2/typeahead/sns
+      actions:
+        get_topic_attributes:
+          text: Get Topic Attributes
+          permissions:
+            - sns:GetEndpointAttributes
+            - sns:GetTopicAttributes
+        publish:
+          text: Publish
+          permissions:
+            - sns:Publish
+        subscribe:
+          text: Subscribe
+          permissions:
+            - sns:Subscribe
+            - sns:ConfirmSubscription
+        unsubscribe:
+          text: Unsubscribe
+          permissions:
+            - sns:Unsubscribe
+    rds:
+      text: RDS
+      actions:
+        passrole:
+          text: PassRole
+          permissions:
+            - iam:PassRole
+          resources:
+            - "arn:aws:iam::{account_id}:role/rds-monitoring-role"
+    ec2:
+      text: EC2
+      actions:
+        volmount:
+          text: VolMount
+          permissions:
+            - ec2:attachvolume
+            - ec2:createvolume
+            - ec2:describelicenses
+            - ec2:describevolumes
+            - ec2:detachvolume
+            - ec2:reportinstancestatus
+            - ec2:resetsnapshotattribute
+    route53:
+      text: Route53
+      actions:
+        list_records:
+          text: List Records
+          permissions:
+            - route53:listresourcerecordsets
+        change_records:
+          text: Change Records
+          permissions:
+            - route53:changeresourcerecordsets
+    sts:
+      text: STS AssumeRole
+      inputs:
+        - name: iam_role
+          text: Role ARN yhat you wish to assume
+          required: true
+          typeahead: true
+          typeahead_endpoint: /api/v2/typeahead/iam_role
+      actions:
+        assume_role:
+          text: Assume Role
+          permissions:
+            - sts:AssumeRole
+    # TODO: Custom and generic will need some modification
+    custom:
+      text: Custom Permissions
+      inputs:
+        - name: iam_action
+          text: IAM Actions
+          required: true
+          typeahead: true
+          typeahead_endpoint: /api/v2/typeahead/iam_actions
+        - name: resource
+          text: Resources
+          default: "*"
+          required: true
+          typeahead: true
+          typeahead_endpoint: /api/v2/typeahead/all
+    generic:
+      text: Generic Permissions
+      generic_actions:
+        read: Read
+        write: Write
+        list: List
+        tagging: Tagging
+        permissions-management: Permissions Management

@@ -4,6 +4,7 @@ from pydantic import ValidationError
 from tornado.escape import json_decode
 
 from consoleme.config import config
+from consoleme.exceptions.exceptions import InvalidRequestParameter
 from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.change_request import generate_change_model_array
 from consoleme.lib.plugins import get_plugin_by_name
@@ -16,7 +17,7 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 class GenerateChangesHandler(BaseAPIV2Handler):
     """Handler for /api/v2/generate_changes
 
-    Generates ChangeModelArray from ChangeGeneratorModelArray.
+    Generates a ChangeModelArray from ChangeGeneratorModelArray
     """
 
     allowed_methods = ["POST"]
@@ -24,10 +25,46 @@ class GenerateChangesHandler(BaseAPIV2Handler):
     async def post(self):
         """
         POST /api/v2/generate_changes
+
+        Generates a ChangeModelArray JSON from ChangeGeneratorModelArray JSON.
+
+        Request example:
+
+        {"changes": [
+            {
+                "principal_arn": "arn:aws:iam::123456789012:role/aRole",
+                "generator_type": "s3",
+                "resource_arn": "arn:aws:s3:::123456789012-bucket",
+                "bucket_prefix": "/*",
+                "effect": "Allow",
+                "action_groups": [
+                    "get",
+                    "list"
+                ]
+            }
+        ]}
+
+        Response example:
+
+        [{
+            "principal_arn": "arn:aws:iam::123456789012:role/aRole",
+            "change_type": "inline_policy",
+            "resource_arns": [
+                "arn:aws:s3:::123456789012-bucket"
+            ],
+            "resource": null,
+            "condition": null,
+            "policy_name": "cm_user_1592499820_gmli",
+            "new": true,
+            "policy": {
+                "version": "2012-10-17",
+                "statements": null,
+                "policy_document": "{\"Version\":\"2012-10-17\",\"Statement\":[[{\"Action\"...",
+                "policy_sha256": "cb300def8dd1deaf4db2bfeef4bc6fc740be18e8ccae74c399affe781f82ba6e"
+            },
+            "old_policy": null
+        }]
         """
-        if not self.user:
-            self.write_error(403, message="No user detected")
-            return
 
         log_data = {
             "user": self.user,
@@ -38,17 +75,25 @@ class GenerateChangesHandler(BaseAPIV2Handler):
         }
         body_dict = json_decode(self.request.body)
 
-        # Override user attribute for each change
-        for change in body_dict["changes"]:
-            change["user"] = self.user
         try:
+            if not isinstance(body_dict, dict) or not isinstance(
+                body_dict.get("changes"), list
+            ):
+                raise InvalidRequestParameter(
+                    "Please pass properly formatted ChangeGeneratorModelArray"
+                )
+
+            # Override user attribute for each change
+            for change in body_dict["changes"]:
+                change["user"] = self.user
+
             # Validate the model
             changes = ChangeGeneratorModelArray.parse_obj(body_dict)
 
             # Loop through the raw json object to retrieve attributes that would be parsed out in the
             # ChangeGeneratorModelArray, such as bucket_prefix for S3ChangeGeneratorModel
             change_model_array = await generate_change_model_array(changes)
-        except ValidationError as e:
+        except (InvalidRequestParameter, ValidationError) as e:
             log_data["message"] = "Validation Exception"
             log.error(log_data, exc_info=True)
             stats.count(
@@ -68,12 +113,12 @@ class GenerateChangesHandler(BaseAPIV2Handler):
             )
             return
         except Exception as e:
-            log_data["message"] = "Unknown Exception ocurred while generating changes"
+            log_data["message"] = "Unknown Exception occurred while generating changes"
             log.error(log_data, exc_info=True)
             stats.count(f"{log_data['function']}.exception", tags={"user": self.user})
             config.sentry.captureException(tags={"user": self.user})
             self.write_error(500, message="Error generating changes: " + str(e))
-            raise  # TODO: Revert this before committing. For Dev.
+            return
 
         log_data["message"] = "Successfully generated changes requested"
         log.info(log_data)

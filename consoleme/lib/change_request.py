@@ -13,25 +13,21 @@ from consoleme.exceptions.exceptions import (
     MissingConfigurationValue,
 )
 from consoleme.lib.generic import generate_random_string
+from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import (
     ChangeGeneratorModel,
     ChangeGeneratorModelArray,
-    ChangeModel,
     ChangeModelArray,
     ChangeType,
     GeneratorType,
     GenericChangeGeneratorModel,
     InlinePolicyChangeModel,
     PolicyModel,
-    ResourcePolicyChangeModel,
+    ResourceModel,
 )
 
-
-async def get_resource_policy_changes(
-    principal_arn: str, changes: List[ChangeModel]
-) -> List[ResourcePolicyChangeModel]:
-    # TODO
-    pass
+group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
+account_ids_to_names = group_mapping.get_account_ids_to_names()
 
 
 async def _generate_policy_statement(
@@ -39,9 +35,9 @@ async def _generate_policy_statement(
 ) -> Dict:
     """
     Generates an IAM policy resource given actions, effects, resources, and conditions
-    :param actions:
-    :param resources:
-    :param effect:
+    :param actions: a List of actions
+    :param resources: a List of AWS resource ARNs or wildcards
+    :param effect: an Effect (Allow|Deny)
     :return:
     """
 
@@ -55,15 +51,26 @@ async def _generate_policy_statement(
     return policy_statement
 
 
-async def _generate_policy_sid(user):
-    # "AllowedPatternRegex": "^[a-zA-Z0-9+=,.@\\-_]+$",
+async def _generate_policy_sid(user: str) -> str:
+    """
+    Generate a unique SID identifying the user and time of the change request.
+
+    :param user: User's e-mail address
+    :return: policy SID string
+    """
     user_stripped = user.split("@")[0]
     random_string = await generate_random_string()
     return f"cm{user_stripped}{int(time.time())}{random_string}"
 
 
-async def _generate_policy_name(policy_name, user):
-    # "AllowedPatternRegex": "^[a-zA-Z0-9+=,.@\\-_]+$",
+async def _generate_policy_name(policy_name: str, user: str) -> str:
+    """
+    Generate a unique policy name identifying the user and time of the change request.
+
+    :param policy_name: A predefined policy name that will override the generated one, if it exists
+    :param user: User's e-mail address
+    :return: policy name string
+    """
     if policy_name:
         return policy_name
     user_stripped = user.split("@")[0]
@@ -72,30 +79,47 @@ async def _generate_policy_name(policy_name, user):
 
 
 async def _generate_inline_policy_model_from_statements(
-    statements: List
+    statements: List[Dict]
 ) -> PolicyModel:
-    policy_string = json.dumps({"Version": "2012-10-17", "Statement": [statements]})
+    """
+    given a list of policy statements, generate a policy
+    :param statements: List[Dict] - list of policy statements
+    :return:
+    """
+    policy_document = {"Version": "2012-10-17", "Statement": [statements]}
+    policy_string = json.dumps(policy_document)
     policy_input = {
-        "policy_document": policy_string,
+        "policy_document": policy_document,
         "policy_sha256": sha256(policy_string.encode()).hexdigest(),
     }
     return PolicyModel(**policy_input)
 
 
-async def _generate_change(
+async def _generate_inline_policy_change_model(
     principal_arn: str,
-    resource_arns: List[str],
+    resources: List[ResourceModel],
     statements: List[Dict],
     user: str,
     is_new: bool = True,
     policy_name: Optional[str] = None,
-):
+) -> InlinePolicyChangeModel:
+    """
+    Generates an inline policy change model.
+
+    :param principal_arn: ARN of the principal associated with the InlinePolicyChangeModel
+    :param resource_arns: Resource ARNs (or wildcards) of the resources associated with the InlinePolicyChangeModel
+    :param statements: A list of AWS IAM policy statement dictionaries
+    :param user: User e-mail address
+    :param is_new: Boolean representing if we're creating a new policy or updating an existing policy
+    :param policy_name: Optional policy name. If not provided, one will be generated
+    :return: InlinePolicyChangeModel
+    """
     policy_name = await _generate_policy_name(policy_name, user)
     policy_document = await _generate_inline_policy_model_from_statements(statements)
     change_details = {
         "change_type": ChangeType.inline_policy,
         "principal_arn": principal_arn,
-        "resource_arns": resource_arns,
+        "resources": resources,
         "policy_name": policy_name,
         "new": is_new,
         "policy": policy_document,
@@ -103,15 +127,15 @@ async def _generate_change(
     return InlinePolicyChangeModel(**change_details)
 
 
-async def _get_access_level_actions_for_resource(
+async def _get_access_level_actions_for_resource_from_policy_sentry(
     resource_arn: str, access_levels: List[str]
 ) -> List[str]:
     """Use policy_sentry to get actions corresponding to AWS service and access_levels.
     TODO(psanders): Move this to a more sensible module
 
-    :param resource_arn:
-    :param access_levels:
-    :return:
+    :param resource_arn: Resource ARN (or wildcards) of the resource associated with the change
+    :param access_levels: a list of CRUD operations to generate IAM policy statmeents from
+    :return: actions: A list of IAM policy actions
     """
     service = get_service_from_arn(resource_arn)
     actions: List[str] = []
@@ -126,9 +150,9 @@ async def _get_actions_from_groups(
     """Get actions based on "groups" defined in action_map
     TODO(psanders): Move this to a more sensible module
 
-    :param action_groups:
-    :param action_map:
-    :return:
+    :param action_groups: A list of requested CRUD operations to convert into IAM actions
+    :param action_map: A mapping of actions associated with the resource type, usually from configuration
+    :return: actions: A list of IAM policy actions
     """
     actions: List[str] = []
     for ag in action_groups:
@@ -140,7 +164,16 @@ async def _get_actions_from_groups(
     return actions
 
 
-async def _generate_s3_inline_policy_statement(generator: ChangeGeneratorModel) -> Dict:
+async def _generate_s3_inline_policy_statement_from_mapping(
+    generator: ChangeGeneratorModel
+) -> Dict:
+    """
+    Generates an S3 inline policy statement from a ChangeGeneratorModel. S3 is an edge case, thus it gets a
+    unique function for this purpose. We need to consider the resource ARN and prefix.
+
+    :param generator: ChangeGeneratorModel
+    :return: policy_statement: A dictionary representing an inline policy statement.
+    """
     action_map = config.get("self_service_iam.change_types.s3.actions")
     if not action_map:
         raise MissingConfigurationValue(
@@ -172,10 +205,15 @@ async def _generate_s3_inline_policy_statement(generator: ChangeGeneratorModel) 
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
 
-# TODO(ccastrapel): This is confusing since we have a generic model already
-async def _generate_general_inline_policy_statement(
+async def _generate_inline_policy_statement_from_mapping(
     generator: ChangeGeneratorModel
 ) -> Dict:
+    """
+    Generates an inline policy statement given a ChangeGeneratorModel from a action mapping stored in configuration.
+
+    :param generator: ChangeGeneratorModel
+    :return: policy_statement: A dictionary representing an inline policy statement.
+    """
     action_map = config.get(
         f"self_service_iam.change_types.{generator.generator_type.value}.actions"
     )
@@ -195,9 +233,16 @@ async def _generate_general_inline_policy_statement(
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
 
-async def _generate_generic_inline_policy_statement(
+async def _generate_inline_policy_statement_from_policy_sentry(
     generator: GenericChangeGeneratorModel,
 ) -> Dict:
+    """
+    Generates an inline policy statement given a ChangeGeneratorModel from a action mapping provided by policy
+    sentry.
+
+    :param generator: ChangeGeneratorModel
+    :return: policy_statement: A dictionary representing an inline policy statement.
+    """
     action_map = config.get("self_service_iam.change_types.generic.generic_actions")
     if not action_map:
         raise MissingConfigurationValue(
@@ -206,7 +251,7 @@ async def _generate_generic_inline_policy_statement(
     access_level_actions: List[str] = []
     for access in generator.access_level:
         access_level_actions.append(action_map.get(access.value))
-    actions = await _get_access_level_actions_for_resource(
+    actions = await _get_access_level_actions_for_resource_from_policy_sentry(
         generator.resource_arn, access_level_actions
     )
     return await _generate_policy_statement(
@@ -219,19 +264,21 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
 ) -> Dict:
     """
     Generates an inline policy statement from a ChangeGeneratorModel.
-    :param change:
-    :return:
+    :param change: ChangeGeneratorModel
+    :return: policy_statement: A dictionary representing an inline policy statement.
     """
     if change.generator_type == GeneratorType.s3:
-        return await _generate_s3_inline_policy_statement(change)
+        return await _generate_s3_inline_policy_statement_from_mapping(change)
     if change.generator_type == GeneratorType.generic:
-        return await _generate_generic_inline_policy_statement(change)
-    return await _generate_general_inline_policy_statement(change)
-    # TODO: Custom policy handler
+        return await _generate_inline_policy_statement_from_policy_sentry(change)
+    return await _generate_inline_policy_statement_from_mapping(change)
+    # TODO: Custom policy handler where we handle explicit permission additions
     pass
 
 
-async def _minimize_iam_policy_statements(inline_iam_policy_statements: List) -> List:
+async def _minimize_iam_policy_statements(
+    inline_iam_policy_statements: List[Dict]
+) -> List[Dict]:
     """
     Minimizes a list of inline IAM policy statements.
 
@@ -240,6 +287,8 @@ async def _minimize_iam_policy_statements(inline_iam_policy_statements: List) ->
 
     2. Policies that have an identical resource, but different actions, will be combined if the rest of the policy
     is identical.
+    :param inline_iam_policy_statements: A list of IAM policy statement dictionaries
+    :return: A potentially more compact list of IAM policy statement dictionaries
     """
     exclude_ids = []
     minimized_policies = []
@@ -279,28 +328,66 @@ async def _minimize_iam_policy_statements(inline_iam_policy_statements: List) ->
 
 
 async def _attach_sids_to_policy_statements(
-    inline_iam_policy_statements: List, user: str
-) -> List:
+    inline_iam_policy_statements: List[Dict], user: str
+) -> List[Dict]:
+    """
+    Generates and attaches Sids to each policy statement if the statement does not already have a Sid.
+
+    :param inline_iam_policy_statements: A list of IAM policy statement dictionaries
+    :param user: The acting user's email address
+    :return: A list of IAM policy statement dictionaries with Sid entries for each
+    """
     for statement in inline_iam_policy_statements:
-        statement["Sid"] = await _generate_policy_sid(user)
+        if not statement.get("Sid"):
+            statement["Sid"] = await _generate_policy_sid(user)
     return inline_iam_policy_statements
+
+
+async def _generate_resource_model_from_arn(arn: str) -> Optional[ResourceModel]:
+    """
+    Generates a ResourceModel from a Resource ARN
+
+    :param arn: AWS resource identifier
+    :return: ResourceModel
+    """
+    try:
+        account_id = arn.split(":")[4]
+        resource_type = arn.split(":")[2]
+        region = arn.split(":")[3]
+        name = arn.split(":")[5].split("/")[-1]
+        if not region:
+            region = "global"
+        account_name = account_ids_to_names.get(account_id, [""])[0]
+
+        return ResourceModel(
+            arn=arn,
+            name=name,
+            account_id=account_id,
+            account_name=account_name,
+            resource_type=resource_type,
+            region=region,
+        )
+    except IndexError:
+        # Resource is not parsable or a wildcard.
+        return
 
 
 async def generate_change_model_array(
     changes: ChangeGeneratorModelArray
 ) -> ChangeModelArray:
     """
-    Generates ChangeModelArray of all changes required to satisfy ChangeGeneratorModelArray
+    Compiles a ChangeModelArray which includes all of the AWS policies required to satisfy the
+    ChangeGeneratorModelArray request.
 
-    :param changes:
-    :return:
+    :param changes: ChangeGeneratorModelArray
+    :return: ChangeModelArray
     """
 
     change_models = []
     inline_iam_policy_statements: List[Dict] = []
     primary_principal_arn = None
     primary_user = None
-    resource_arns = []
+    resources = []
 
     for change in changes.changes:
         # Enforce a maximum of one user per ChangeGeneratorModelArray (aka Policy Request)
@@ -332,7 +419,13 @@ async def generate_change_model_array(
                 f"Generated inline policy is invalid. Double-check request parameter: {inline_policy}"
             )
         if inline_policy:
-            resource_arns.append(change.resource_arn)
+            # TODO(ccastrapel): Add more details to the ResourceModel when we determine we can use it for something.
+            resource_model = await _generate_resource_model_from_arn(
+                change.resource_arn
+            )
+            # If the resource arn is actually a wildcard, we might not have a valid resource model
+            if resource_model:
+                resources.append(resource_model)
             inline_iam_policy_statements.append(inline_policy)
 
         # TODO(ccastrapel): V2: Generate resource policies for the change, if applicable
@@ -345,33 +438,9 @@ async def generate_change_model_array(
     inline_iam_policy_statements = await _attach_sids_to_policy_statements(
         inline_iam_policy_statements, primary_user
     )
-    # TODO(ccastrapel): Check if the inline policy statements would be auto-approved
-    inline_iam_policy_change_model = await _generate_change(
-        primary_principal_arn, resource_arns, inline_iam_policy_statements, primary_user
+    # TODO(ccastrapel): Check if the inline policy statements would be auto-approved and supply that context
+    inline_iam_policy_change_model = await _generate_inline_policy_change_model(
+        primary_principal_arn, resources, inline_iam_policy_statements, primary_user
     )
     change_models.append(inline_iam_policy_change_model)
     return ChangeModelArray.parse_obj(change_models)
-
-    # for change in changes.changes:
-    #     if change.generator_type == GeneratorType.generic:
-    #         generic_cgm = GenericChangeGeneratorModel.parse_obj(change)
-    #         change_objects.append(generic_cgm)
-    #         #change_model = await generate_generic_change(generic_cgm)
-    #     elif change.generator_type == GeneratorType.s3:
-    #         s3_cgm = S3ChangeGeneratorModel.parse_obj(change)
-    #         change_objects.append(s3_cgm)
-    #         #change_model = await generate_s3_change(s3_cgm)
-    #     elif change.generator_type == GeneratorType.sns:
-    #         sns_cgm = SNSChangeGeneratorModel.parse_obj(change)
-    #         change_objects.append(sns_cgm)
-    #         #change_model = await generate_sns_change(sns_cgm)
-    #     elif change.generator_type == GeneratorType.sqs:
-    #         sqs_cgm = SQSChangeGeneratorModel.parse_obj(change)
-    #         change_objects.append(sqs_cgm)
-    #         #change_model = await generate_sqs_change(sqs_cgm)
-    #     else:
-    #         # should never hit this case, but having this in case future code changes cause this
-    #         # or we forgot to add stuff here when more generator types are added
-    #         raise NotImplementedError
-    #     change_models.append(change_model)
-    # return ChangeModelArray.parse_obj(change_models)

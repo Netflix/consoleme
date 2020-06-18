@@ -307,6 +307,7 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
             except NoUserException:
                 self.clear()
                 self.set_status(403)
+
                 stats.count(
                     "Basehandler.authorization_flow.no_user_detected",
                     tags={

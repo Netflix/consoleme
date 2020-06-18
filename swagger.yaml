@@ -288,14 +288,23 @@ components:
       type: object
       required:
         - arn
+        - name
+        - resource_type
       properties:
         arn:
           description: resource ARN
           type: string
           readOnly: true
           pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        name:
+          description: Resource Name
+          type: string
         account_id:
           description: AWS account ID
+          type: string
+          readOnly: true
+        region:
+          description: Region
           type: string
           readOnly: true
         account_name:
@@ -419,6 +428,7 @@ components:
         version:
           description: Version
           type: string
+          default: 2.0
         user:
           description: Email address of user creating the change
           type: string
@@ -527,7 +537,7 @@ components:
       required:
         - principal_arn
         - change_type
-        - resource_arns
+        - resources
       properties:
         principal_arn:
           type: string
@@ -538,41 +548,22 @@ components:
             - inline_policy
             - managed_policy
             - resource_policy
-        resource_arns:
+        resources:
           type: array
           items:
-            type: string
-            pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
-        resource:
-          $ref: '#/components/schemas/ResourceModel'
+            $ref: '#/components/schemas/ResourceModel'
+        version:
+          type: string
+          default: 2.0
     InlinePolicyChangeModel:
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
         - type: object
           required:
-            - resource_arns
             - policy_name
             - new
             - policy
           properties:
-            resource_arns:
-              type: array
-              items:
-                type: string
-                pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
-            condition:
-              type: object
-              example: |-
-                {
-                    "StringEquals": {"iam:PassedToService": "ec2.amazonaws.com"},
-                    "StringLike": {
-                        "iam:AssociatedResourceARN": [
-                            "arn:aws:ec2:us-east-1:111122223333:instance/*",
-                            "arn:aws:ec2:us-west-1:111122223333:instance/*"
-                        ]
-                    }
-                }
-              description: Optional condition key
             policy_name:
               type: string
             new:
@@ -632,13 +623,8 @@ components:
         version:
           type: string
           description: AWS Policy Version
-          default: "2012-10-17"
-        statements:
-          type: array
-          items:
-            $ref: '#/components/schemas/PolicyStatement'
         policy_document:
-          type: string
+          type: object
           description: JSON policy document
         policy_sha256:
           type: string
