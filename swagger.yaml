@@ -123,6 +123,26 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ResourceModel'
+  /clone/role:
+    post:
+      summary: clone a role
+      tags:
+        - privileged
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloneRoleRequestModel'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CloneRequestResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
   /roles:
     get:
       summary: get a list of roles
@@ -755,3 +775,59 @@ components:
           type: string
         message:
           type: string
+    CloneRoleRequestModel:
+      type: object
+      required:
+        - account_id
+        - role_name
+        - dest_account_id
+        - dest_role_name
+        - options
+      properties:
+        account_id:
+          type: string
+          minLength: 12
+          maxLength: 12
+        role_name:
+          type: string
+        dest_account_id:
+          type: string
+          minLength: 12
+          maxLength: 12
+        dest_role_name:
+          type: string
+        options:
+          type: object
+          properties:
+            assume_role_policy:
+              type: boolean
+              default: 'False'
+            tags:
+              type: boolean
+              default: 'False'
+            copy_description:
+              type: boolean
+              default: 'False'
+            description:
+              type: string
+            inline_policies:
+              type: boolean
+              default: 'False'
+            managed_policies:
+              type: boolean
+              default: 'False'
+    CloneRequestResponse:
+      type: object
+      properties:
+        errors:
+          type: integer
+        action_results:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              message:
+                type: string
+

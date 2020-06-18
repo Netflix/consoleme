@@ -1,13 +1,21 @@
 import sys
 
 import ujson as json
+from pydantic import ValidationError
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
-from consoleme.lib.aws import can_delete_roles, can_delete_roles_app, delete_iam_role
+from consoleme.lib.aws import (
+    can_clone_roles,
+    can_delete_roles,
+    can_delete_roles_app,
+    clone_iam_role,
+    delete_iam_role,
+)
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.roles import get_role_details
+from consoleme.models import CloneRoleRequestModel
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
@@ -31,10 +39,7 @@ class RolesHandler(BaseAPIV2Handler):
         self.eligible_roles: list = []
 
     async def get(self):
-        payload = {
-            "eligible_roles": self.eligible_roles,
-            "_xsrf": self.xsrf_token.decode("utf-8"),
-        }
+        payload = {"eligible_roles": self.eligible_roles}
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(payload, escape_forward_slashes=False))
         await self.finish()
@@ -260,3 +265,67 @@ class RoleDetailAppHandler(BaseMtlsHandler):
             "account": account_id,
         }
         self.write(response_json)
+
+
+class RoleCloneHandler(BaseAPIV2Handler):
+    """Handler for /api/v2/clone/role
+
+    Allows cloning a role.
+    """
+
+    allowed_methods = ["POST"]
+
+    async def post(self):
+
+        log_data = {
+            "user": self.user,
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "ip": self.ip,
+        }
+        can_clone_role = await can_clone_roles(self.groups, self.user)
+        if not can_clone_role:
+            stats.count(
+                f"{log_data['function']}.unauthorized",
+                tags={"user": self.user, "authorized": can_clone_role},
+            )
+            log_data["message"] = "User is unauthorized to clone a role"
+            log.error(log_data)
+            self.write_error(403, message="User is unauthorized to clone a role")
+            return
+
+        try:
+            clone_model = CloneRoleRequestModel.parse_raw(self.request.body)
+        except ValidationError as e:
+            log_data["message"] = "Validation Exception"
+            log.error(log_data, exc_info=True)
+            stats.count(
+                f"{log_data['function']}.validation_exception", tags={"user": self.user}
+            )
+            config.sentry.captureException()
+            self.write_error(400, message="Error validating input: " + str(e))
+            return
+
+        try:
+            results = await clone_iam_role(clone_model, self.user)
+        except Exception as e:
+            log_data["message"] = "Exception cloning role"
+            log_data["error"] = str(e)
+            log_data["account_id"] = clone_model.account_id
+            log_data["role_name"] = clone_model.role_name
+            log.error(log_data, exc_info=True)
+            stats.count(
+                f"{log_data['function']}.exception",
+                tags={
+                    "user": self.user,
+                    "account_id": clone_model.account_id,
+                    "role_name": clone_model.role_name,
+                },
+            )
+            config.sentry.captureException()
+            self.write_error(500, message="Exception occurred cloning role: " + str(e))
+            return
+
+        # if here, role has been successfully cloned
+        self.write(results)
