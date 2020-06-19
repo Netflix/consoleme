@@ -115,7 +115,7 @@ class SelfServiceStep3 extends Component {
             isLoading: true,
         }, async () => {
             const response = await sendRequestCommon(
-                JSON.stringify(request),
+                request,
                 '/policies/submit_for_review',
             );
 

@@ -498,10 +498,10 @@ class PolicyReviewSubmitHandler(BaseHandler):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
         data: dict = tornado.escape.json_decode(self.request.body)
-
         arn: str = data.get("arn", "")
         account_id: str = data.get("account_id", "")
         justification: str = data.get("justification", "")
+
         if not justification:
             await write_json_error(
                 "Justification is required to submit a policy change request.", obj=self
@@ -951,11 +951,12 @@ class SelfServiceNewHandler(BaseHandler):
 
         await self.render(
             "self_service_new.html",
-            page_title="ConsoleMe - Self Service",
+            config=config,
             current_page="policies",
+            page_title="ConsoleMe - Self Service",
             user=self.user,
             user_groups=self.groups,
-            config=config,
+            xsrf=self.xsrf_token,
         )
 
 

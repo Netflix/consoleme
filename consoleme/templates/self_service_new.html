@@ -3,6 +3,10 @@
     <div id="new_policy_wizard" />
     <script src="/static/js/dist/selfService.js"></script>
     <script>
-        setTimeout(function(){ selfService.renderIAMSelfServiceWizard(); }, 1000);
+        // set xsrf global variable
+        const _xsrf = "{{ xsrf }}";
+        setTimeout(() => {
+            selfService.renderIAMSelfServiceWizard();
+        }, 1000);
     </script>
 </div>

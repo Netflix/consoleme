@@ -45,19 +45,19 @@ export async function getCookie(name) {
   return r ? r[1] : undefined
 }
 
-export async function sendRequestCommon(json, location = window.location.href) {
-    let xsrf = await getCookie('_xsrf');
-    const rawResponse = await fetch(location, {
+export async function sendRequestCommon(json, endpoint) {
+    // const xsrf_cookie = await getCookie('_xsrf');
+    const rawResponse = await fetch(endpoint, {
         method: 'post',
         headers: {
+            'Accept': 'application/json',
             'Content-type': 'application/json',
-            'X-Xsrftoken': xsrf,
+            'X-Xsrftoken': _xsrf,
         },
-        body: json
+        body: JSON.stringify(json),
     });
 
-    let res = await rawResponse;
-
+    const res = await rawResponse;
     let resJson;
     try {
         resJson = res.json();
