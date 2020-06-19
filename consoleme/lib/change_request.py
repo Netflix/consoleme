@@ -5,7 +5,6 @@ from typing import Dict, List, Optional
 import ujson as json
 from deepdiff import DeepDiff
 from policy_sentry.querying.actions import get_actions_with_access_level
-from policy_sentry.util.arns import get_service_from_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -20,7 +19,6 @@ from consoleme.models import (
     ChangeModelArray,
     ChangeType,
     GeneratorType,
-    GenericChangeGeneratorModel,
     InlinePolicyChangeModel,
     PolicyModel,
     ResourceModel,
@@ -86,7 +84,7 @@ async def _generate_inline_policy_model_from_statements(
     :param statements: List[Dict] - list of policy statements
     :return:
     """
-    policy_document = {"Version": "2012-10-17", "Statement": [statements]}
+    policy_document = {"Version": "2012-10-17", "Statement": statements}
     policy_string = json.dumps(policy_document)
     policy_input = {
         "policy_document": policy_document,
@@ -127,8 +125,8 @@ async def _generate_inline_policy_change_model(
     return InlinePolicyChangeModel(**change_details)
 
 
-async def _get_access_level_actions_for_resource_from_policy_sentry(
-    resource_arn: str, access_levels: List[str]
+async def _get_policy_sentry_access_level_actions(
+    service: str, access_levels: List[str]
 ) -> List[str]:
     """Use policy_sentry to get actions corresponding to AWS service and access_levels.
     TODO(psanders): Move this to a more sensible module
@@ -137,7 +135,6 @@ async def _get_access_level_actions_for_resource_from_policy_sentry(
     :param access_levels: a list of CRUD operations to generate IAM policy statmeents from
     :return: actions: A list of IAM policy actions
     """
-    service = get_service_from_arn(resource_arn)
     actions: List[str] = []
     for level in access_levels:
         actions += get_actions_with_access_level(service, level)
@@ -145,18 +142,20 @@ async def _get_access_level_actions_for_resource_from_policy_sentry(
 
 
 async def _get_actions_from_groups(
-    action_groups: List[str], action_map: Dict[str, List[str]]
+    action_groups: List[str], permissions_map: Dict[List, Dict[str, List[str]]]
 ) -> List[str]:
-    """Get actions based on "groups" defined in action_map
+    """Get actions based on "groups" defined in permissions_map
     TODO(psanders): Move this to a more sensible module
 
     :param action_groups: A list of requested CRUD operations to convert into IAM actions
-    :param action_map: A mapping of actions associated with the resource type, usually from configuration
+    :param permissions_map: A mapping of actions associated with the resource type, usually from configuration
     :return: actions: A list of IAM policy actions
     """
     actions: List[str] = []
     for ag in action_groups:
-        actions += action_map.get(ag, {}).get("permissions", [])
+        for pm in permissions_map:
+            if pm["name"] == ag:
+                actions += pm.get("permissions", [])
     if not actions:
         raise InvalidRequestParameter(
             f"One or more of the passed actions is invalid for the generator type: {action_groups}"
@@ -174,8 +173,8 @@ async def _generate_s3_inline_policy_statement_from_mapping(
     :param generator: ChangeGeneratorModel
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
-    action_map = config.get("self_service_iam.change_types.s3.actions")
-    if not action_map:
+    permissions_map = config.get("self_service_iam.permissions_map.s3.action_map")
+    if not permissions_map:
         raise MissingConfigurationValue(
             "Unable to find applicable action map configuration."
         )
@@ -201,7 +200,7 @@ async def _generate_s3_inline_policy_statement_from_mapping(
 
     for action in generator.action_groups:
         action_group_actions.append(action.value)
-    actions = await _get_actions_from_groups(action_group_actions, action_map)
+    actions = await _get_actions_from_groups(action_group_actions, permissions_map)
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
 
@@ -214,12 +213,15 @@ async def _generate_inline_policy_statement_from_mapping(
     :param generator: ChangeGeneratorModel
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
-    action_map = config.get(
-        f"self_service_iam.change_types.{generator.generator_type.value}.actions"
+    generator_type = generator.generator_type
+    if not isinstance(generator_type, str):
+        generator_type = generator.generator_type.value
+    permissions_map = config.get(
+        f"self_service_iam.permissions_map.{generator_type}.action_map"
     )
-    if not action_map:
+    if not permissions_map:
         raise MissingConfigurationValue(
-            f"Unable to find applicable action map configuration for {generator.generator_type}."
+            f"Unable to find applicable action map configuration for {generator_type}."
         )
 
     action_group_actions: List[str] = []
@@ -228,13 +230,18 @@ async def _generate_inline_policy_statement_from_mapping(
     condition = generator.condition
 
     for action in generator.action_groups:
-        action_group_actions.append(action.value)
-    actions = await _get_actions_from_groups(action_group_actions, action_map)
+        # TODO: Seems like a datamodel bug when we don't have a enum defined for an array type, but I need to access
+        # this as a string sometimes
+        if isinstance(action, str):
+            action_group_actions.append(action)
+        else:
+            action_group_actions.append(action.value)
+    actions = await _get_actions_from_groups(action_group_actions, permissions_map)
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
 
 async def _generate_inline_policy_statement_from_policy_sentry(
-    generator: GenericChangeGeneratorModel,
+    generator: ChangeGeneratorModel,
 ) -> Dict:
     """
     Generates an inline policy statement given a ChangeGeneratorModel from a action mapping provided by policy
@@ -243,16 +250,20 @@ async def _generate_inline_policy_statement_from_policy_sentry(
     :param generator: ChangeGeneratorModel
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
-    action_map = config.get("self_service_iam.change_types.generic.generic_actions")
-    if not action_map:
+    permissions_map = config.get(
+        "self_service_iam.permissions_map.crud_lookup.action_map"
+    )
+    if not permissions_map:
         raise MissingConfigurationValue(
             "Unable to find applicable action map configuration."
         )
     access_level_actions: List[str] = []
-    for access in generator.access_level:
-        access_level_actions.append(action_map.get(access.value))
-    actions = await _get_access_level_actions_for_resource_from_policy_sentry(
-        generator.resource_arn, access_level_actions
+    for access in generator.action_groups:
+        for pm in permissions_map:
+            if pm["name"] == access.value:
+                access_level_actions += pm.get("permissions")
+    actions = await _get_policy_sentry_access_level_actions(
+        generator.service, access_level_actions
     )
     return await _generate_policy_statement(
         actions, [generator.resource_arn], generator.effect, generator.condition
@@ -269,7 +280,7 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
     """
     if change.generator_type == GeneratorType.s3:
         return await _generate_s3_inline_policy_statement_from_mapping(change)
-    if change.generator_type == GeneratorType.generic:
+    if change.generator_type == GeneratorType.crud_lookup:
         return await _generate_inline_policy_statement_from_policy_sentry(change)
     return await _generate_inline_policy_statement_from_mapping(change)
     # TODO: Custom policy handler where we handle explicit permission additions
@@ -291,7 +302,7 @@ async def _minimize_iam_policy_statements(
     :return: A potentially more compact list of IAM policy statement dictionaries
     """
     exclude_ids = []
-    minimized_policies = []
+    minimized_statements = []
 
     for i in range(len(inline_iam_policy_statements)):
         inline_iam_policy_statement = inline_iam_policy_statements[i]
@@ -322,9 +333,9 @@ async def _minimize_iam_policy_statements(
 
     for i in range(len(inline_iam_policy_statements)):
         if i not in exclude_ids:
-            minimized_policies.append(inline_iam_policy_statements[i])
+            minimized_statements.append(inline_iam_policy_statements[i])
     # TODO(cccastrapel): Intelligently combine actions and/or resources if they include wildcards
-    return minimized_policies
+    return minimized_statements
 
 
 async def _attach_sids_to_policy_statements(

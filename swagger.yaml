@@ -412,6 +412,7 @@ components:
               - $ref: '#/components/schemas/S3ChangeGeneratorModel'
               - $ref: '#/components/schemas/SQSChangeGeneratorModel'
               - $ref: '#/components/schemas/SNSChangeGeneratorModel'
+              - $ref: '#/components/schemas/CrudChangeGeneratorModel'
               - $ref: '#/components/schemas/GenericChangeGeneratorModel'
             discriminator:
               propertyName: change_generator_model
@@ -421,7 +422,6 @@ components:
         - generator_type
         - arn
         - resource
-        - user
       properties:
         principal_arn:
           description: |-
@@ -438,13 +438,19 @@ components:
             - s3
             - sqs
             - sns
+            - sts
+            - route53
+            - ec2
+            - rds
+            - advanced
+            - crud_lookup
         resource_arn:
           description: |-
             The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
             resource policy will need to be modified if the change is approved and successful.
           example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
           type: string
-          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|(^\*$)'
         version:
           description: Version
           type: string
@@ -479,16 +485,33 @@ components:
                     ]
                 }
             }
-
+        service:
+          type: string
     GenericChangeGeneratorModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            action_groups:
+              type: array
+              items:
+                type: string
+    CrudChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
         - $ref: '#/components/schemas/ChangeGeneratorModel'
         - type: object
           required:
-            - access_level
+            - action_groups
+            - service
+            - generator_type
           properties:
-            access_level:
+            generator_type:
+              type: string
+              pattern: "crud_lookup"
+            action_groups:
               type: array
               items:
                 type: string
@@ -498,6 +521,8 @@ components:
                   - list
                   - tagging
                   - permissions-management
+            service:
+              type: string
     S3ChangeGeneratorModel: # These schemas could be defined in different files.
       allOf:
         - $ref: '#/components/schemas/ChangeGeneratorModel'

@@ -1,7 +1,6 @@
 import sys
 
 from pydantic import ValidationError
-from tornado.escape import json_decode
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter
@@ -73,22 +72,14 @@ class GenerateChangesHandler(BaseAPIV2Handler):
             "ip": self.ip,
             "request_id": self.request_uuid,
         }
-        body_dict = json_decode(self.request.body)
 
         try:
-            if not isinstance(body_dict, dict) or not isinstance(
-                body_dict.get("changes"), list
-            ):
-                raise InvalidRequestParameter(
-                    "Please pass properly formatted ChangeGeneratorModelArray"
-                )
+            # Validate the model
+            changes = ChangeGeneratorModelArray.parse_raw(self.request.body)
 
             # Override user attribute for each change
-            for change in body_dict["changes"]:
-                change["user"] = self.user
-
-            # Validate the model
-            changes = ChangeGeneratorModelArray.parse_obj(body_dict)
+            for change in changes.changes:
+                change.user = self.user
 
             # Loop through the raw json object to retrieve attributes that would be parsed out in the
             # ChangeGeneratorModelArray, such as bucket_prefix for S3ChangeGeneratorModel

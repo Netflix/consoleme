@@ -178,16 +178,27 @@ tracing:
 
 # Note: Do not put anything sensitive in the self_service_iam key. This may be exposed to the frontend UI
 self_service_iam:
-  change_types:
+  permissions_map:
     s3:
       text: S3 Bucket
-      actions:
-        list:
+      description: S3 Permissions
+      inputs:
+        - name: resource_arn
+          text: Bucket Name (Cross-account writes are discouraged)
+          required: true
+          typeahead: true
+          typeahead_endpoint: /policies/typeahead?resource=s3&search={query}
+        - name: bucket_prefix
+          text: Prefix (Folder under S3 that you need access to).
+          required: true
+          default: /*
+      action_map:
+        - name: list
           text: List
           permissions:
             - s3:ListBucket
             - s3:ListBucketVersions
-        get:
+        - name: get
           text: Get
           permissions:
             - s3:GetObject
@@ -196,7 +207,7 @@ self_service_iam:
             - s3:GetObjectVersionTagging
             - s3:GetObjectAcl
             - s3:GetObjectVersionAcl
-        put:
+        - name: put
           text: Put
           permissions:
             - s3:PutObject
@@ -205,7 +216,7 @@ self_service_iam:
             - s3:ListMultipartUploadParts*
             - s3:AbortMultipartUpload
             - s3:RestoreObject
-        delete:
+        - name: delete
           text: Delete
           permissions:
             - s3:DeleteObject
@@ -214,68 +225,82 @@ self_service_iam:
             - s3:DeleteObjectVersionTagging
     sqs:
       text: SQS Queue
-      actions:
-        get_queue_attributes:
+      inputs:
+        - name: resource_arn
+          text: Queue ARN
+          required: true
+          typeahead: true
+          typeahead_endpoint: /policies/typeahead?resource=sqs&search={query}
+      action_map:
+        - name: get_queue_attributes
           text: Get Queue Attributes
           permissions:
             - sqs:GetQueueAttributes
             - sqs:GetQueueUrl
-        send_messages:
+        - name: send_messages
           text: Send Message
           permissions:
             - sqs:SendMessage
-        receive_messages:
+        - name: receive_messages
           text: Receive Message
           permissions:
             - sqs:ReceiveMessage
-        delete_messages:
+        - name: delete_messages
           text: Delete Message
           permissions:
             - sqs:DeleteMessage
-        set_queue_attributes:
+        - name: set_queue_attributes
           text: Set Queue Attributes
           permissions:
             - sqs:SetQueueAttributes
     sns:
       text: SNS Topic
       inputs:
-        - name: sns_topic
+        - name: resource_arn
           text: Topic ARN
           required: true
           typeahead: true
-          typeahead_endpoint: /api/v2/typeahead/sns
-      actions:
-        get_topic_attributes:
+          typeahead_endpoint: /policies/typeahead?resource=sns&search={query}
+      action_map:
+        - name: get_topic_attributes
           text: Get Topic Attributes
           permissions:
             - sns:GetEndpointAttributes
             - sns:GetTopicAttributes
-        publish:
+        - name: publish
           text: Publish
           permissions:
             - sns:Publish
-        subscribe:
+        - name: subscribe
           text: Subscribe
           permissions:
             - sns:Subscribe
             - sns:ConfirmSubscription
-        unsubscribe:
+        - name: unsubscribe
           text: Unsubscribe
           permissions:
             - sns:Unsubscribe
     rds:
       text: RDS
-      actions:
-        passrole:
+      inputs:
+        - name: resource_arn
+          text: EC2 resource you need access to
+          required: true
+          default: "arn:aws:iam::{account_id}:role/rds-monitoring-role"
+      action_map:
+        - name: passrole
           text: PassRole
           permissions:
             - iam:PassRole
-          resources:
-            - "arn:aws:iam::{account_id}:role/rds-monitoring-role"
     ec2:
       text: EC2
-      actions:
-        volmount:
+      inputs:
+        - name: resource_arn
+          text: EC2 resource you need access to
+          required: true
+          default: "*"
+      action_map:
+        - name: volmount
           text: VolMount
           permissions:
             - ec2:attachvolume
@@ -287,48 +312,79 @@ self_service_iam:
             - ec2:resetsnapshotattribute
     route53:
       text: Route53
-      actions:
-        list_records:
+      inputs:
+        - name: resource_arn
+          text: Route53 Domain you need access to
+          required: true
+          default: "*"
+      action_map:
+        - name: list_records
           text: List Records
           permissions:
             - route53:listresourcerecordsets
-        change_records:
+        - name: change_records
           text: Change Records
           permissions:
             - route53:changeresourcerecordsets
     sts:
       text: STS AssumeRole
       inputs:
-        - name: iam_role
+        - name: resource_arn
           text: Role ARN yhat you wish to assume
           required: true
           typeahead: true
-          typeahead_endpoint: /api/v2/typeahead/iam_role
-      actions:
-        assume_role:
+          typeahead_endpoint: /policies/typeahead?resource=iam_arn&search={query}
+      action_map:
+        - name: assume_role
           text: Assume Role
           permissions:
             - sts:AssumeRole
-    # TODO: Custom and generic will need some modification
-    custom:
-      text: Custom Permissions
+    crud_lookup:
+      text: Other Service (CRUD)
+      inputs:
+        - name: service
+          text: Service (s3, sqs, sns, ssm, etc)
+          required: true
+        - name: resource_arn
+          text: Resource ARN or Wildcard (*)
+          required: true
+          default: "*"
+      action_map:
+        - name: list
+          text: List
+          permissions:
+            - List
+        - name: read
+          text: Read
+          permissions:
+            - Read
+        - name: write
+          text: Write
+          permissions:
+            - Write
+        - name: permissions_management
+          text: Permissions Management
+          permissions:
+            - Permissions management
+        - name: tagging
+          text: Tagging
+          permissions:
+            - Tagging
+    advanced:
+      text: Advanced Mode
+      description: |-
+        In advanced mode, you define specific IAM actions. See AWS's
+        <a href=https://awspolicygen.s3.amazonaws.com/policygen.html>IAM policy generator</a> for actions that you can use.
       inputs:
         - name: iam_action
           text: IAM Actions
           required: true
           typeahead: true
-          typeahead_endpoint: /api/v2/typeahead/iam_actions
+          typeahead_endpoint: /api/v1/policyuniverse/autocomplete/?prefix={query}
         - name: resource
           text: Resources
           default: "*"
           required: true
-          typeahead: true
-          typeahead_endpoint: /api/v2/typeahead/all
-    generic:
-      text: Generic Permissions
-      generic_actions:
-        read: Read
-        write: Write
-        list: List
-        tagging: Tagging
-        permissions-management: Permissions Management
+          # TODO: Create typeahead endpoint for all resourses
+          # typeahead: TBD
+          # typeahead_endpoint: TBD
