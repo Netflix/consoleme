@@ -22,7 +22,7 @@ Check out our Quick start guide
 
 ```bash
 # Install Python
-brew install python@3.7
+brew install python@3.8
 
 # XCode Command-Line Tools
 xcode-select --install
