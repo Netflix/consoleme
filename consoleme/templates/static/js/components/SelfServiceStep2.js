@@ -8,17 +8,14 @@ import {
     Icon,
     Item,
     Label,
+    List,
     Header,
     Segment,
 } from 'semantic-ui-react';
 import SelfServiceComponent from "./SelfServiceComponent";
-import {getServiceTypes} from '../helpers/utils';
 
 // TODO, move this to config file.
 const DEFAULT_AWS_SERVICE = 's3';
-
-// List of available self service items.
-const serviceTypeOptions = getServiceTypes();
 
 class SelfServiceStep2 extends Component {
     state = {
@@ -33,7 +30,7 @@ class SelfServiceStep2 extends Component {
 
     handlePermissionAdd(permission) {
         this.setState({
-            service: DEFAULT_AWS_SERVICE,
+            service: null,
         }, () => {
             const {permissions} = this.props;
             permissions.push(permission);
@@ -48,8 +45,10 @@ class SelfServiceStep2 extends Component {
     }
 
     getPermissionItems() {
+        const {services} = this.props;
+
         return this.props.permissions.map((permission, idx) => {
-            const found = _.find(serviceTypeOptions, {"key": permission.service});
+            const found = _.find(services, {"key": permission.service});
             const serviceName = found.text;
             return (
                 <Item key={idx}>
@@ -58,7 +57,21 @@ class SelfServiceStep2 extends Component {
                             {serviceName}
                         </Item.Header>
                         <Item.Meta>
-                            {permission.value}
+                            <List>
+                                {
+                                    Object.keys(permission).map((key) => {
+                                        if (key === "actions" || key === "service") {
+                                            return;
+                                        }
+                                        return (
+                                            <List.Item>
+                                                <List.Header>{key}</List.Header>
+                                                {permission[key]}
+                                            </List.Item>
+                                        )
+                                    })
+                                }
+                            </List>
                         </Item.Meta>
                         <Item.Extra>
                             <Button
@@ -72,9 +85,10 @@ class SelfServiceStep2 extends Component {
                             </Button>
                             {
                                 permission.actions.map(action => {
-                                    const actionDetail = _.find(found.actions, {"key": action});
+                                    const actionDetail = _.find(found.actions, {"name": action});
                                     return (
-                                        <Label as="a" color="green">
+                                        <Label as="a" color="olive">
+                                            <Icon name="caret right" />
                                             {actionDetail.text}
                                         </Label>
                                     );
@@ -88,8 +102,8 @@ class SelfServiceStep2 extends Component {
     }
 
     render() {
-        const {role} = this.props;
-
+        const {config, role, services} = this.props;
+        const {service} = this.state;
         return (
             <Segment>
                 <Grid columns={2} divided>
@@ -103,20 +117,27 @@ class SelfServiceStep2 extends Component {
                             </Header>
                             <Form>
                                 <Form.Select
-                                    value={this.state.service}
+                                    value={service}
                                     label="Select AWS Service"
                                     onChange={this.handleServiceTypeChange.bind(this)}
-                                    options={serviceTypeOptions}
+                                    options={services}
                                     placeholder='Choose One'
                                     required
                                 />
                             </Form>
                             <Divider />
-                            <SelfServiceComponent
-                                role={role}
-                                service={this.state.service}
-                                updatePermission={this.handlePermissionAdd.bind(this)}
-                            />
+                            {
+                                service != null
+                                    ? (
+                                        <SelfServiceComponent
+                                            config={config}
+                                            role={role}
+                                            service={service}
+                                            updatePermission={this.handlePermissionAdd.bind(this)}
+                                        />
+                                    )
+                                    : null
+                            }
                         </Grid.Column>
                         <Grid.Column>
                             <Header>

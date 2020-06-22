@@ -218,7 +218,7 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                 "response": responses,
             }
             with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
-                f.write(json.dumps(request_details, reject_bytes=False))
+                f.write(json.dumps(request_details))
         super(BaseHandler, self).on_finish()
 
     async def authorization_flow(

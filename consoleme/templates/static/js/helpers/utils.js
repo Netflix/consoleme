@@ -53,7 +53,7 @@ export async function sendRequestCommon(json, location = window.location.href) {
             'Content-type': 'application/json',
             'X-Xsrftoken': xsrf,
         },
-        body: json
+        body: JSON.stringify(json),
     });
 
     let res = await rawResponse;

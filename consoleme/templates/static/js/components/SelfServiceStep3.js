@@ -13,7 +13,7 @@ import {
     Table,
     TextArea,
 } from 'semantic-ui-react';
-import {generate_id, getServiceTypes, sendRequestCommon} from '../helpers/utils';
+import {generate_id, sendRequestCommon} from '../helpers/utils';
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-monokai";
@@ -30,48 +30,63 @@ class SelfServiceStep3 extends Component {
     };
 
     async componentDidMount() {
-        const {permissions} = this.props;
-        // fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
-        //     resp.text().then((resp) => {
-        //         const role = JSON.parse(resp);
-        //         this.props.handleRoleUpdate(role);
-        //         this.setState({
-        //             isLoading: false,
-        //             isRoleLoading: false,
-        //             value: role.arn,
-        //         });
-        //     });
-        // });
-        const statement = {
-            "Statement": [],
+        const {role, permissions} = this.props;
+        const payload = {
+            "changes": [],
         };
-        permissions.forEach(permission => {
-            statement["Statement"].push(permission.policy);
+        payload["changes"] = permissions.map(permission => {
+            const change = {
+                "principal_arn": role.arn,
+                "generator_type": permission.service,
+                "action_groups": permission.actions,
+                "effect": "Allow",
+                ...permission,
+            };
+            delete change["service"];
+            delete change["actions"];
+            return change;
         });
-        this.setState({
-            statement: JSON.stringify(statement, null, 4),
-        });
+
+        const response = await sendRequestCommon(payload, '/api/v2/generate_changes');
+        if (response) {
+            this.setState({
+                statement: JSON.stringify(response[0]["policy"]["policy_document"], null, 4),
+            });
+        }
     }
 
-    buildPermissionsTable(role, permissions) {
-        const serviceTypeOptions = getServiceTypes();
+    buildPermissionsTable() {
+        const {permissions, services} = this.props;
         const permissionRows = permissions.map(permission => {
-            const found = _.find(serviceTypeOptions, {"key": permission.service});
-            const serviceName = found.text;
+            const serviceDetail = _.find(services, {"key": permission.service});
             return (
                 <Table.Row>
                     <Table.Cell>
-                        {serviceName}
+                        {serviceDetail.text}
                     </Table.Cell>
                     <Table.Cell collapsing textAlign='left'>
-                        {permission.value}
+                        {
+                            Object.keys(permission).map((key) => {
+                                if (key === "actions" || key === "service") {
+                                    return;
+                                }
+                                return (
+                                    <Label as='a'>
+                                        {key}
+                                        <Label.Detail>
+                                            {permission[key]}
+                                        </Label.Detail>
+                                    </Label>
+                                )
+                            })
+                        }
                     </Table.Cell>
                     <Table.Cell>
                         {
                             permission.actions.map(action => {
-                                const actionDetail = _.find(found.actions, {"key": action});
+                                const actionDetail = _.find(serviceDetail.actions, {"name": action});
                                 return (
-                                    <Label as="a" color="pink">
+                                    <Label as="a" color="olive">
                                         {actionDetail.text}
                                     </Label>
                                 );
@@ -126,7 +141,7 @@ class SelfServiceStep3 extends Component {
             isLoading: true,
         }, async () => {
             const response = await sendRequestCommon(
-                JSON.stringify(request),
+                request,
                 '/policies/submit_for_review',
             );
 
@@ -160,7 +175,7 @@ class SelfServiceStep3 extends Component {
     }
 
     render() {
-        const {role, permissions} = this.props;
+        const {role} = this.props;
         const {isLoading, isSuccess, justification, messages, requestId, statement} = this.state;
         const messagesToShow = (messages.length > 0)
             ? (
@@ -192,7 +207,7 @@ class SelfServiceStep3 extends Component {
                         <p>
                             Your new permissions will be attached to the role <a href={`/policies/edit/${role.account_id}/iamrole/${role.name}`} target="_blank">{role.arn}</a> with the followings.
                         </p>
-                        {this.buildPermissionsTable(role, permissions)}
+                        {this.buildPermissionsTable()}
                         <Divider />
                         <Header>
                             Justification

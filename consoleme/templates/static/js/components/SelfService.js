@@ -17,12 +17,35 @@ import {
 
 class SelfService extends Component {
     state = {
+        config: null,
         currStep: SelfServiceStepEnum.STEP1,
         messages: null,
         permissions: [],
         role: null,
-        config: null,
+        services: [],
     };
+
+    componentDidMount() {
+        fetch(`/api/v2/self_service_config`).then((resp) => {
+            resp.text().then((resp) => {
+                const config = JSON.parse(resp);
+                const {services} = this.state;
+                Object.keys(config.permissions_map).forEach(name => {
+                    const service = config.permissions_map[name];
+                    services.push({
+                        actions: service.action_map,
+                        key: name,
+                        text: service.text,
+                        value: name,
+                    });
+                });
+                this.setState({
+                    config,
+                    services,
+                });
+            });
+        });
+    }
 
     handleStepClick(dir) {
         const {currStep} = this.state;
@@ -83,6 +106,7 @@ class SelfService extends Component {
             case SelfServiceStepEnum.STEP1:
                 SelfServiceStep = (
                     <SelfServiceStep1
+                        config={this.state.config}
                         role={this.state.role}
                         handleRoleUpdate={
                             this.handleRoleUpdate.bind(this)
@@ -93,7 +117,9 @@ class SelfService extends Component {
             case SelfServiceStepEnum.STEP2:
                 SelfServiceStep = (
                     <SelfServiceStep2
+                        config={this.state.config}
                         role={this.state.role}
+                        services={this.state.services}
                         permissions={this.state.permissions}
                         handlePermissionsUpdate={
                             this.handlePermissionsUpdate.bind(this)
@@ -104,7 +130,9 @@ class SelfService extends Component {
             case SelfServiceStepEnum.STEP3:
                 SelfServiceStep = (
                     <SelfServiceStep3
+                        config={this.state.config}
                         role={this.state.role}
+                        services={this.state.services}
                         permissions={this.state.permissions}
                     />
                 );
