@@ -2,6 +2,21 @@ extends:
   - example_config_base.yaml
   - example_secrets.yaml
 
+auth:
+  get_groups_by_header: false
+  get_user_by_header: false
+  get_user_by_oauth: false
+  get_user_by_oidc: false
+  get_user_by_aws_alb_auth: true
+  get_user_by_saml: false
+  groups_header_name: group_header
+  user_header_name: user_header
+  set_auth_cookie: true
+
+get_user_by_aws_alb_auth_settings:
+  jwt_email_key: sub
+  jwt_groups_key: groups
+
 development: true
 
 url: http://127.0.0.1:8081
@@ -12,19 +27,7 @@ tornado:
   xsrf: false
 
 google:
-  service_key_file: docker/test_google_secret.json
-
-get_eligible_roles:
-  from_config: true
-
-dynamic_config:
-  group_mapping:
-    someuser@example.com:
-      roles:
-        - arn:aws:iam::123456789012:role/userrolename
-    group1@example.com:
-      roles:
-        - arn:aws:iam::123456789012:role/rolename
+  service_key_file: example_config/test_google_secret.json
 
 duo:
   lambda_arn: arn:aws:lambda:{}:123456789012:function:duo_lambda

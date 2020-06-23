@@ -20,7 +20,7 @@ tornado:
   xsrf: false
 
 google:
-  service_key_file: docker/test_google_secret.json
+  service_key_file: example_config/test_google_secret.json
 
 duo:
   lambda_arn: arn:aws:lambda:{}:123456789012:function:duo_lambda
