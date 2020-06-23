@@ -12,6 +12,8 @@ const clone_options = [
     { text: "Tags", value: "tags"}
 ]
 
+const clone_default_selected_options = clone_options.map(option => {return option.value})
+
 class CloneService extends Component {
     state = {
         isLoading: false,
@@ -31,8 +33,8 @@ class CloneService extends Component {
         requestResults: [],
         isSubmitting: false,
         roleCreated: false,
-        options: [],
-        copy_description: false
+        options: clone_default_selected_options,
+        copy_description: true
     }
 
     handleSearchChange(event, {name, value}) {
@@ -42,8 +44,7 @@ class CloneService extends Component {
                 value,
                 source_role_value: value,
                 source_role: null,
-                //TODO(jdhulia): fix the backend so that iam_arn can be used for typeahead
-                searchType: 'app'
+                searchType: 'iam_arn'
             });
         } else {
             this.setState({
@@ -87,23 +88,13 @@ class CloneService extends Component {
                             }),
                         });
                     } else {
-                        const filteredResults = _.reduce(
-                            source,
-                            (memo, data, name) => {
-                                const results = _.filter(data.results, isMatch);
-                                if (results.length) {
-                                    memo[name] = {name, results};
-                                }
-                                return memo;
-                            },
-                            {},
-                        );
                         this.setState({
                             isLoading: false,
-                            results: filteredResults,
+                            results: source.filter(function (result) {
+                                return re.test(result.title);
+                            }),
                         });
                     }
-
                 });
             });
         }, 300);
@@ -235,12 +226,12 @@ class CloneService extends Component {
                                                 Please search for the role you want to clone.
                                             </Header.Subheader>
                                     </Header>
-                                    <Form widths="equal">
+                                    <Form>
                                         <Form.Field required>
                                             <label>Source Role</label>
                                             <Search
-                                                category
                                                 loading={isLoading}
+                                                fluid
                                                 name='source_role'
                                                 value_name='source_role_value'
                                                 onResultSelect={this.handleResultSelect.bind(this)}
@@ -259,6 +250,7 @@ class CloneService extends Component {
                                             search
                                             selection
                                             options={clone_options}
+                                            defaultValue={clone_default_selected_options}
                                             label="Attributes to clone"
                                             onChange={this.handleDropdownChange.bind(this)}
                                         />
@@ -271,7 +263,7 @@ class CloneService extends Component {
                                                 Please enter the destination account where you want the cloned role and desired role name.
                                             </Header.Subheader>
                                     </Header>
-                                    <Form widths='equal'>
+                                    <Form>
                                             <Form.Field required>
                                                 <label>Account ID</label>
                                                 <Search
@@ -284,6 +276,7 @@ class CloneService extends Component {
                                                     })}
                                                     results={resultsAccount}
                                                     value={dest_account_id_value}
+                                                    fluid
                                                 />
                                             </Form.Field>
                                             <Form.Input required fluid label='Role name' name='dest_role_name'

@@ -105,7 +105,7 @@
                     <a class="item" href="/api_health">API Health</a>
                     {% end %}
                     {% if is_in_group(user_groups, config.get("groups.can_clone_roles", [])) or is_in_group([user], config.get("groups.can_clone_roles", [])) %}
-                    <a class="item" href="/clone">Clone</a>
+                    <a class="item" href="/clone">Clone Role</a>
                     {% end %}
                 </div>
             </div>
