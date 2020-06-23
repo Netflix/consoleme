@@ -84,6 +84,7 @@ class SelfServiceStep2 extends Component {
                                 <Icon name='right close' />
                             </Button>
                             {
+                                permission.actions != null ? (
                                 permission.actions.map(action => {
                                     const actionDetail = _.find(found.actions, {"name": action});
                                     return (
@@ -92,7 +93,7 @@ class SelfServiceStep2 extends Component {
                                             {actionDetail.text}
                                         </Label>
                                     );
-                                })
+                                })) : null
                             }
                         </Item.Extra>
                     </Item.Content>

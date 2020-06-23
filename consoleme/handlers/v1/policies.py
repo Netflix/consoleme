@@ -1026,6 +1026,12 @@ async def handle_resource_type_ahead_request(cls):
     if limit_optional:
         limit = int(limit_optional[0].decode("utf-8"))
 
+    # By default, we only return the S3 bucket name of a resource and not the full ARN
+    # unless you specifically request it
+    show_full_arn_for_s3_buckets: Optional[bool] = cls.request.arguments.get(
+        "show_full_arn_for_s3_buckets"
+    )
+
     role_name = False
     if resource_type == "s3":
         topic = config.get("redis.s3_bucket_key", "S3_BUCKETS")
@@ -1143,6 +1149,10 @@ async def handle_resource_type_ahead_request(cls):
             else:
                 list_of_items = json.loads(v)
                 for item in list_of_items:
+                    # A Hack to get S3 to show full ARN, and maintain backwards compatibility
+                    # TODO: Fix this in V2 of resource specific typeahead endpoints
+                    if resource_type == "s3" and show_full_arn_for_s3_buckets:
+                        item = f"arn:aws:s3:::{item}"
                     if search_string.lower() in item.lower():
                         results.append({"title": item, "account_id": k})
                     if len(results) > limit:
