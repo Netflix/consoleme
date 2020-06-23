@@ -74,7 +74,6 @@ class CloneService extends Component {
             }
 
             const re = new RegExp(_.escapeRegExp(value), 'i');
-            const isMatch = (result) => re.test(result.title);
 
             const TYPEAHEAD_API = '/policies/typeahead?resource='+ searchType +'&search=' + value;
 
@@ -102,7 +101,7 @@ class CloneService extends Component {
 
     handleSubmit(){
 
-        const {source_role, dest_account_id, dest_role_name} = this.state
+        const {source_role, dest_account_id, dest_role_name} = this.state;
         let errors = []
         if(!source_role){
             errors.push("No source role provided, please select a source role")
@@ -126,7 +125,7 @@ class CloneService extends Component {
             "description": this.state.description,
             "inline_policies": this.state.options.includes("inline_policies"),
             "managed_policies": this.state.options.includes("managed_policies")
-        }
+        };
 
         const payload = {
             "account_id": source_role.substring(13, 25),
@@ -134,7 +133,8 @@ class CloneService extends Component {
             "dest_account_id": dest_account_id.substring(dest_account_id.indexOf("(") + 1, dest_account_id.indexOf(")")),
             "dest_role_name": this.state.dest_role_name,
             "options": cloneOptions
-        }
+        };
+
         this.setState({
             messages: null,
             isSubmitting: true,
@@ -144,12 +144,12 @@ class CloneService extends Component {
                 JSON.stringify(payload),
                 '/api/v2/clone/role',
             );
-            const messages = []
-            let requestResults = []
+            const messages = [];
+            let requestResults = [];
             let requestSent = false;
             let roleCreated = false;
-            if(response){
-                requestSent = true
+            if (response) {
+                requestSent = true;
                 if(!response.hasOwnProperty("role_created")){
                     requestResults.push({
                         "Status": "error",
@@ -186,11 +186,11 @@ class CloneService extends Component {
         this.setState({
             options: value,
             copy_description: value.includes("copy_description")
-        })
+        });
     }
-    handleChange = (e, { name, value }) => this.setState({ [name]: value })
+    handleChange = (e, { name, value }) => this.setState({ [name]: value });
 
-    handleCheckChange = (e, {name, value}) => this.setState({ [name]: !value})
+    handleCheckChange = (e, {name, value}) => this.setState({ [name]: !value});
 
     render() {
        const {isLoading, isLoadingAccount, results, source_role_value, dest_account_id_value, dest_role_name, resultsAccount,
@@ -279,12 +279,21 @@ class CloneService extends Component {
                                                     fluid
                                                 />
                                             </Form.Field>
-                                            <Form.Input required fluid label='Role name' name='dest_role_name'
-                                                        value={dest_role_name} placeholder='Role name'
-                                                        onChange={this.handleChange}
+                                            <Form.Input
+                                                required
+                                                fluid
+                                                label='Role name'
+                                                name='dest_role_name'
+                                                value={dest_role_name}
+                                                placeholder='Role name'
+                                                onChange={this.handleChange}
                                             />
-                                            <Form.Input required fluid name='description'
-                                                value={description} placeholder='Optional description'
+                                            <Form.Input
+                                                required
+                                                fluid
+                                                name='description'
+                                                value={description}
+                                                placeholder='Optional description'
                                                 onChange={this.handleChange}
                                                 disabled={true === copy_description}
                                             />
@@ -303,7 +312,7 @@ class CloneService extends Component {
                         />
                 </Segment>
                </Segment.Group>
-       )
+       );
 
        const postRequestContent = (requestResults.length > 0) ?
            (
