@@ -1140,12 +1140,9 @@ async def handle_resource_type_ahead_request(cls):
                     if r not in unique_roles:
                         unique_roles.append(r)
                         results.append({"title": r})
-            elif (
-                resource_type == "iam_arn"
-                and k.startswith("arn:")
-                and search_string.lower() in k.lower()
-            ):
-                results.append({"title": k})
+            elif resource_type == "iam_arn":
+                if k.startswith("arn:") and search_string.lower() in k.lower():
+                    results.append({"title": k})
             else:
                 list_of_items = json.loads(v)
                 for item in list_of_items:
