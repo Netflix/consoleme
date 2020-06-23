@@ -38,7 +38,7 @@ class CloneService extends Component {
     }
 
     handleSearchChange(event, {name, value}) {
-        if(name === 'source_role'){
+        if (name === 'source_role') {
             this.setState({
                 isLoading: true,
                 value,
@@ -79,7 +79,7 @@ class CloneService extends Component {
 
             fetch(TYPEAHEAD_API).then((resp) => {
                 resp.json().then((source) => {
-                    if(searchType === 'account') {
+                    if (searchType === 'account') {
                         this.setState({
                             isLoadingAccount: false,
                             resultsAccount: source.filter(function (result) {
@@ -102,17 +102,17 @@ class CloneService extends Component {
     handleSubmit(){
 
         const {source_role, dest_account_id, dest_role_name} = this.state;
-        let errors = []
-        if(!source_role){
+        let errors = [];
+        if (!source_role) {
             errors.push("No source role provided, please select a source role")
         }
-        if(!dest_account_id){
+        if (!dest_account_id) {
             errors.push("No destination account provided, please select a destination account")
         }
-        if(dest_role_name === ""){
+        if (dest_role_name === "") {
             errors.push("No destination role name provided, please provide a destination role name")
         }
-        if(errors.length > 0){
+        if (errors.length > 0) {
             return this.setState({
                 messages: errors,
             });
@@ -150,14 +150,14 @@ class CloneService extends Component {
             let roleCreated = false;
             if (response) {
                 requestSent = true;
-                if(!response.hasOwnProperty("role_created")){
+                if (!response.hasOwnProperty("role_created")) {
                     requestResults.push({
                         "Status": "error",
                         "message": response.message
                     })
                 } else {
                     requestResults = response.action_results
-                    if(response.role_created === "true"){
+                    if (response.role_created === "true") {
                         roleCreated = true
                     }
                 }
