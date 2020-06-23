@@ -51,3 +51,9 @@ ses:
   accessui:
     sender: access_ui_test@example.com
     name: Access UI
+
+support_contact: consoleme-support@example.com
+support_slack: https://www.example.com/slack/channel
+documentation_page: https://github.com/Netflix-Skunkworks/consoleme/
+# You can add a custom Security logo here
+# security_logo: /path/to/your/security_logo.png

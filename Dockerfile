@@ -14,3 +14,12 @@ RUN pip install -e default_plugins
 RUN pip install watchdog
 # Required by watchdog
 RUN pip install argh
+
+# Install Node / Yarn
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash
+RUN apt-get install -y nodejs
+RUN npm install yarn -g
+RUN yarn
+RUN yarn install
+# Run Webpack to generate Frontend / React files
+RUN ./node_modules/.bin/webpack

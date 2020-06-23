@@ -1,0 +1,16 @@
+extends:
+  - example_config_header_auth.yaml
+
+# A development configuration can specify a specific user to impersonate locally.
+_development_user_override: consoleme_admin@example.com
+
+# A development configuration can specify specific groups to consider the user a member of locally.
+_development_groups_override:
+  - groupa@example.com
+  - groupb@example.com
+  - configeditors@example.com
+  - consoleme_admins@example.com
+
+# ConsoleMe uses a Local DynamoDB docker container for development. You won't want this setting in your
+# test/prod stacks.
+dynamodb_server: http://localhost:8005

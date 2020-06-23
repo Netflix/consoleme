@@ -4,9 +4,8 @@ api_auth:
   valid_entities:
     - fake_api_entity
 auth_cookie_name: consoleme_auth
-application_admin: admin@example.com
+application_admin: consoleme_admins@example.com
 application_name: consoleme
-dynamodb_server: http://localhost:8005
 account_ids_to_name:
   123456789012: default_account
   123456789013: prod
@@ -47,12 +46,16 @@ get_eligible_roles:
   from_prefix: false
 
 headers:
+  # The Google Groups features do not fully work in the OSS version of ConsoleMe. Please contact the developers if you
+  # need this feature.
   group_access:
     enabled: false
   policies:
-    enabled: false
+    enabled: true
   config:
-    enabled: false
+    enabled: true
+
+enable_self_service: true
 
 dynamic_config:
   group_mapping:
@@ -69,6 +72,11 @@ jwt:
   groups_key: groups
   email_key: email
   expiration_hours: 1
+
+# If desired, you can configure Google Analytics here
+# google_analytics:
+#    tracking_id: 12345
+
 #google:
 #  admin_scopes:
 #    - 'https://www.googleapis.com/auth/admin.directory.group'
