@@ -801,21 +801,21 @@ components:
           properties:
             assume_role_policy:
               type: boolean
-              default: 'False'
+              default: False
             tags:
               type: boolean
-              default: 'False'
+              default: False
             copy_description:
               type: boolean
-              default: 'False'
+              default: False
             description:
               type: string
             inline_policies:
               type: boolean
-              default: 'False'
+              default: False
             managed_policies:
               type: boolean
-              default: 'False'
+              default: False
     CloneRequestResponse:
       type: object
       properties:
