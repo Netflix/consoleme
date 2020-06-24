@@ -158,6 +158,7 @@ class GetPoliciesHandler(BaseHandler):
             redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
             s3_bucket=config.get("cache_policies_table_details.s3.bucket"),
             s3_key=config.get("cache_policies_table_details.s3.file"),
+            default=[]
         )
 
         data = []

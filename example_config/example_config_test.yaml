@@ -2,13 +2,6 @@ extends:
   - example_config_base.yaml
   - example_secrets.yaml
 
-auth:
-  get_groups_by_header: false
-  get_user_by_header: false
-  get_user_by_oauth: false
-  get_user_by_saml: false
-  get_user_by_credentials: true
-
 development: true
 
 url: http://127.0.0.1:8081
@@ -19,7 +12,19 @@ tornado:
   xsrf: false
 
 google:
-  service_key_file: docker/test_google_secret.json
+  service_key_file: example_config/test_google_secret.json
+
+get_eligible_roles:
+  from_config: true
+
+dynamic_config:
+  group_mapping:
+    someuser@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/userrolename
+    group1@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/rolename
 
 duo:
   lambda_arn: arn:aws:lambda:{}:123456789012:function:duo_lambda
@@ -45,8 +50,8 @@ aws:
 
 ses:
   consoleme:
-    sender: consoleme_test@example.com
+    sender: consoleme_test@fakedomain.com
     name: Consoleme
   accessui:
-    sender: access_ui_test@example.com
+    sender: access_ui_test@fakedomain.com
     name: Access UI

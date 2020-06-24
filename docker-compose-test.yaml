@@ -5,7 +5,7 @@ services:
   python-tests:
     build: .
     environment:
-      - CONFIG_LOCATION=/apps/consoleme/docker/example_config_test.yaml
+      - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_test.yaml
     volumes:
       - .:/apps/consoleme:delegated
       - ~/.aws:/root/.aws:cached

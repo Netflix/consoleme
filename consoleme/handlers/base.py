@@ -256,8 +256,11 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                     self.groups = res.get("groups")
 
         if not self.user:
+            # Check for development mode and a configuration override that specify the user and their groups.
             if config.get("development") and config.get("_development_user_override"):
                 self.user = config.get("_development_user_override")
+            if config.get("development") and config.get("_development_groups_override"):
+                self.groups = config.get("_development_groups_override")
 
         if not self.user:
             # SAML flow. If user has a JWT signed by ConsoleMe, and SAML is enabled in configuration, user will go
