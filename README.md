@@ -1,24 +1,49 @@
 # ConsoleMe
 
-ConsoleMe makes it easier to manage multiple AWS accounts. It is designed to consolidate tooling for the most common use cases around requesting access, self-service IAM,
-AWS credentials, and logging into the AWS console. ConsoleMe improves user experience and insights around
-console login and access requests. It offers a web interface where users can search and login to the AWS IAM roles
-they have access to, and it saves previously selected roles for quicker access. It also provides a mechanism for users
-to request access to Google groups. Google groups may have attributes defining who the owners and approvers of the group
-are. If these are appropriately set, ConsoleMe will e-mail approvers when a request is made to a group that they own.
+ConsoleMe makes multi-account AWS easier for your end-users and cloud administrators.
+It is designed to consolidate the management of multiple accounts into a single web interface. It allows your end-users
+and administrators to get credentials / console access to your different accounts, depending on their authorization
+level. It provides mechanisms for end-users and administrators to both request and manage permissions for IAM roles,
+S3 buckets, SQS queues, and SNS topics. A self-service wizard is also provided to guide users into requesting the
+permissions they desire.
 
-Editing IAM policies across multiple accounts is possible for administrators. End-users have the ability to write or
-edit inline policies, and submit these to administrators to be approved and committed.
+ConsoleMe is extensible and pluggable. We offer a set of basic plugins for authenticating users, determining their
+groups and eligible roles, and more through the use of default plugins (consoleme/default_plugins).
+If you need to link ConsoleMe with internal business logic, we recommend creating a new private repository
+based on the default_plugins directory and modifying the code as appropriate to handle that custom internal logic.
+
+ConsoleMe uses [Celery](https://github.com/celery/celery/) to run tasks on a schedule or on-demand. Our implementation
+is also extensible through the usage of Python entry points. This means that you can also implement internal-only
+Celery tasks to handle some of your custom business logic if needed.
+
+The celery tasks in this repo are generally used to cache resources across your AWS accounts (such as IAM roles),
+and report Celery metrics. We have tasks that perform the following:
+
+* Cache IAM roles, SQS queues, SNS topics, and S3 buckets to Redis/DDB
+* Report Celery Last Success Metrics (Used for alerting on failed tasks)
+* Cache Cloudtrail Errors by ARN (This requires an internal celery task to aggregate Cloutrail errors from your
+preferred source)
+
+Netflix's internal celery tasks handle a variety of additional requirements that you may
+be interested in implementing. These include:
+
+* Caching S3/Cloudtrail errors from our Hive / ElasticSearch databases. We expose these to end-users in ConsoleMe
+* Generating tags for our resources, which include the creator and owner of the resource, and any associated applications.
+* Generating an IAM managed policy unique for each account which (when attached to a role) prevents the usage of an IAM
+role credential outside of the account. (This is used as a general credential theft and SSRF protection)
+* Cache Google Groups, Users and Account Settings from internal services at Netflix
 
 ## Quick Start
 
-Check out our Quick start guide
+Docker-Compose is the quickest way to get ConsoleMe up and running for testing purposes. The Dockerfile is a great
+point of reference for the installation process.
+
+```docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up```
+
 
 ## Build and Run Instructions
 
-### Prerequisites
-
-#### MacOS
+### MacOS
 
 ```bash
 # Install Python
@@ -31,24 +56,22 @@ xcode-select --install
 brew install pkgconfig libxmlsec1
 ```
 
-#### Linux
-
-TODO: Needs testing
+### Linux
 
 Ubuntu disco/19.04+, Debian buster/10+
 
 ```bash
 # Additional dependencies
-apt-get install libxmlsec1
+apt-get install build-essential libxml2-dev libxmlsec1 libxmlsec1-dev libxmlsec1-openssl musl-dev libcurl4-nss-dev python3-dev -y
 ```
 
-### Clone the ConsoleMe repo
+#### Clone the ConsoleMe repo
 
 ```bash
 git clone git@github.com:Netflix-Skunkworks/consoleme.git
 ```
 
-### Run dependencies
+#### Run dependencies
 
 A local set of Redis and DynamoDB (local) instances need to be set up. These are provided as Docker containers. In a separate terminal window, start the local redis and dynamodb instances:
 
@@ -56,7 +79,7 @@ A local set of Redis and DynamoDB (local) instances need to be set up. These are
 docker-compose -f docker-compose-dependencies.yaml up
 ```
 
-### Run install
+#### Run install
 
 In repo root run `make install`. You may also want to install the default plugins if you have not developed internal plugins: `pip install -e default_plugins`
 
@@ -67,7 +90,7 @@ make install
 > You will need to have AWS credentials for the installation to work (they need to be valid credentials for any
 account or user for the AWS SDK to communicate with the local DynamoDB container).
 
-### Run ConsoleMe with the default configuration
+#### Run ConsoleMe with the default configuration
 
 ```bash
 # Activate virtualenv created by `make install`
