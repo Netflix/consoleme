@@ -573,7 +573,10 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
 
     if clone_model.options.copy_description:
         description = role.description
-    elif clone_model.options.description is not None:
+    elif (
+        clone_model.options.description is not None
+        and clone_model.options.description != ""
+    ):
         description = clone_model.options.description
     else:
         description = f"Role cloned via ConsoleMe by {username} from {role.arn}"
@@ -588,7 +591,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
         assume_role=config.get("policies.role_name"),
         session_name="clone_role_" + username,
     )
-    results = {"errors": 0, "action_results": []}
+    results = {"errors": 0, "role_created": "false", "action_results": []}
     try:
         await sync_to_async(iam_client.create_role)(
             RoleName=clone_model.dest_role_name,
@@ -603,6 +606,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
                 f"successfully created",
             }
         )
+        results["role_created"] = "true"
     except Exception as e:
         log_data["message"] = "Exception occurred creating cloned role"
         log_data["error"] = str(e)

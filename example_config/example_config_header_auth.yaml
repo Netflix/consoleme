@@ -3,28 +3,12 @@ extends:
   - example_secrets.yaml
 
 auth:
-  get_groups_by_header: false
-  get_user_by_header: false
+  get_groups_by_header: true
+  get_user_by_header: true
   get_user_by_oauth: false
-  get_user_by_oidc: true
   get_user_by_saml: false
   groups_header_name: group_header
   user_header_name: user_header
-  set_auth_cookie: true
-
-
-get_user_by_oidc_settings:
-  resource: consoleme-oidc
-  authorize_url: http://localhost:9000/auth
-  issuer: http://simple-oidc-provider
-  token_endpoint: http://consoleme_oidc:9000/token
-  token_introspection_endpoint: http://localhost:9000/token/introspection
-  userinfo_endpoint: http://localhost:9000/me
-  jwt_verify: false
-  jwt_email_key: email
-  jwt_groups_key: groups
-  grant_type: authorization_code
-  token_response_key: id_token
 
 development: true
 
@@ -36,7 +20,7 @@ tornado:
   xsrf: false
 
 google:
-  service_key_file: docker/test_google_secret.json
+  service_key_file: example_config/test_google_secret.json
 
 duo:
   lambda_arn: arn:aws:lambda:{}:123456789012:function:duo_lambda
@@ -62,8 +46,14 @@ aws:
 
 ses:
   consoleme:
-    sender: consoleme_test@fakedomain.com
+    sender: consoleme_test@example.com
     name: Consoleme
   accessui:
-    sender: access_ui_test@fakedomain.com
+    sender: access_ui_test@example.com
     name: Access UI
+
+support_contact: consoleme-support@example.com
+support_slack: https://www.example.com/slack/channel
+documentation_page: https://github.com/Netflix-Skunkworks/consoleme/
+# You can add a custom Security logo here
+# security_logo: /path/to/your/security_logo.png

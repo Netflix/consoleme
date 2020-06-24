@@ -45,6 +45,7 @@ from consoleme.handlers.v1.policies import (
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
 from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
+from consoleme.handlers.v2.clone import CloneViewHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
@@ -131,6 +132,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
         (r"/config/?", DynamicConfigHandler),
+        (r"/clone/?", CloneViewHandler),
         (r"/myheaders/?", HeaderHandler),
         (r"/policies/?", PolicyViewHandler),
         (
