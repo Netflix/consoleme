@@ -571,7 +571,11 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
             "Missing Default Assume Role Policy Configuration"
         )
 
-    if clone_model.options.copy_description:
+    if (
+        clone_model.options.copy_description
+        and role.description is not None
+        and role.description != ""
+    ):
         description = role.description
     elif (
         clone_model.options.description is not None
@@ -641,9 +645,21 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
                 "message": "Successfully added default Assume Role Policy Document",
             }
         )
-    if clone_model.options.copy_description:
+    if (
+        clone_model.options.copy_description
+        and role.description is not None
+        and role.description != ""
+    ):
         results["action_results"].append(
             {"status": "success", "message": "Successfully copied description"}
+        )
+    elif clone_model.options.copy_description:
+        results["action_results"].append(
+            {
+                "status": "error",
+                "message": "Failed to copy description, so added default description: "
+                + description,
+            }
         )
     else:
         results["action_results"].append(
