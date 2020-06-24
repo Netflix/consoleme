@@ -821,6 +821,8 @@ components:
       properties:
         errors:
           type: integer
+        role_created:
+          type: boolean
         action_results:
           type: array
           items:
