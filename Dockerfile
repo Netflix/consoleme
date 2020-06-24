@@ -5,7 +5,7 @@ COPY . /apps/consoleme
 WORKDIR /apps/consoleme
 RUN apt-get clean
 RUN apt-get update
-RUN apt-get install build-essential libxml2-dev libxmlsec1-dev libxmlsec1-openssl musl-dev -y
+RUN apt-get install build-essential libxml2-dev libxmlsec1-dev libxmlsec1-openssl musl-dev libcurl4-nss-dev python3-dev -y
 RUN pip install -U setuptools pip cython
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir -r requirements-test.txt
