@@ -259,6 +259,7 @@ class TestRoleCloneHandler(AsyncHTTPTestCase):
         input_body["role_name"] = role_name
         expected = {
             "errors": 0,
+            "role_created": "true",
             "action_results": [
                 {
                     "status": "success",
