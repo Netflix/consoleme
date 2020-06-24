@@ -510,7 +510,8 @@ components:
           properties:
             generator_type:
               type: string
-              pattern: "crud_lookup"
+              enum:
+                - crud_lookup
             action_groups:
               type: array
               items:
