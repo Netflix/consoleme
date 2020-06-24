@@ -28,7 +28,6 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
-from consoleme.lib.timeout import Timeout
 
 DYNAMO_EMPTY_STRING = "---DYNAMO-EMPTY-STRING---"
 
@@ -81,26 +80,22 @@ class BaseDynamoHandler:
     def _get_dynamo_table(self, table_name):
         function: str = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
         try:
-            with Timeout(
-                seconds=5,
-                error_message="Timeout: Do you have AWS Credentials and is (Local) Dynamo accessible?",
-            ):
-                # call sts_conn with my client and pass in forced_client
-                if config.get("dynamodb_server"):
-                    resource = boto3.resource(
-                        "dynamodb",
-                        region_name=config.region,
-                        endpoint_url=config.get("dynamodb_server"),
-                    )
-                else:
-                    resource = boto3_cached_conn(
-                        "dynamodb",
-                        service_type="resource",
-                        account_number=config.get("aws.account_number"),
-                        session_name=config.get("application_name"),
-                        region=config.region,
-                    )
-                table = resource.Table(table_name)
+            # call sts_conn with my client and pass in forced_client
+            if config.get("dynamodb_server"):
+                resource = boto3.resource(
+                    "dynamodb",
+                    region_name=config.region,
+                    endpoint_url=config.get("dynamodb_server"),
+                )
+            else:
+                resource = boto3_cached_conn(
+                    "dynamodb",
+                    service_type="resource",
+                    account_number=config.get("aws.account_number"),
+                    session_name=config.get("application_name"),
+                    region=config.region,
+                )
+            table = resource.Table(table_name)
         except Exception:
             log.error({"function": function}, exc_info=True)
             stats.count(f"{function}.exception")
