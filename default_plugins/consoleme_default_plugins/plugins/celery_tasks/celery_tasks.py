@@ -22,6 +22,10 @@ if config.get("celery.purge"):
 
 @app.task
 def task_1():
+    """
+    This task demonstrates how you can implement your own internal celery tasks to run on schedule or on demand.
+    :return:
+    """
     pass
 
 
