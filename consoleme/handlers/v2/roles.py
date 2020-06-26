@@ -7,15 +7,17 @@ from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
 from consoleme.lib.aws import (
     can_clone_roles,
+    can_create_roles,
     can_delete_roles,
     can_delete_roles_app,
     clone_iam_role,
+    create_iam_role,
     delete_iam_role,
 )
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.roles import get_role_details
-from consoleme.models import CloneRoleRequestModel
+from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
@@ -28,21 +30,80 @@ internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))(
 class RolesHandler(BaseAPIV2Handler):
     """Handler for /api/v2/roles
 
-    Allows read access to a list of roles across all accounts. Returned roles are
+    GET - Allows read access to a list of roles across all accounts. Returned roles are
     limited to what the requesting user has access to.
+    POST - Allows (authorized) users to create a role
     """
 
-    allowed_methods = ["GET"]
-
-    def initialize(self):
-        self.user: str = None
-        self.eligible_roles: list = []
+    allowed_methods = ["GET", "POST"]
 
     async def get(self):
         payload = {"eligible_roles": self.eligible_roles}
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(payload, escape_forward_slashes=False))
         await self.finish()
+
+    async def post(self):
+        log_data = {
+            "user": self.user,
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "ip": self.ip,
+        }
+        can_create_role = await can_create_roles(self.groups)
+        if not can_create_role:
+            stats.count(
+                f"{log_data['function']}.unauthorized",
+                tags={"user": self.user, "authorized": can_create_role},
+            )
+            log_data["message"] = "User is unauthorized to create a role"
+            log.error(log_data)
+            self.write_error(403, message="User is unauthorized to create a role")
+            return
+
+        try:
+            create_model = RoleCreationRequestModel.parse_raw(self.request.body)
+        except ValidationError as e:
+            log_data["message"] = "Validation Exception"
+            log.error(log_data, exc_info=True)
+            stats.count(
+                f"{log_data['function']}.validation_exception", tags={"user": self.user}
+            )
+            config.sentry.captureException()
+            self.write_error(400, message="Error validating input: " + str(e))
+            return
+
+        try:
+            results = await create_iam_role(create_model, self.user)
+        except Exception as e:
+            log_data["message"] = "Exception creating role"
+            log_data["error"] = str(e)
+            log_data["account_id"] = create_model.account_id
+            log_data["role_name"] = create_model.role_name
+            log.error(log_data, exc_info=True)
+            stats.count(
+                f"{log_data['function']}.exception",
+                tags={
+                    "user": self.user,
+                    "account_id": create_model.account_id,
+                    "role_name": create_model.role_name,
+                },
+            )
+            config.sentry.captureException()
+            self.write_error(500, message="Exception occurred cloning role: " + str(e))
+            return
+
+        # if here, role has been successfully cloned
+        stats.count(
+            f"{log_data['function']}.success",
+            tags={
+                "user": self.user,
+                "account_id": create_model.account_id,
+                "role_name": create_model.role_name,
+            },
+        )
+        self.write(results)
 
 
 class AccountRolesHandler(BaseAPIV2Handler):
