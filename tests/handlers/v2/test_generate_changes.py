@@ -74,6 +74,61 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                     "effect": "Allow",
                     "action_groups": ["list", "get"],
                 },
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "crud_lookup",
+                    "resource_arn": "*",
+                    "effect": "Allow",
+                    "service": "ssm",
+                    "action_groups": ["list", "read"],
+                },
+            ]
+        }
+
+        response = self.fetch(
+            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 200)
+        result = json.loads(response.body)
+        self.assertEqual(
+            result[0]["principal_arn"], input_body["changes"][0]["principal_arn"]
+        )
+
+    @patch(
+        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    def test_post_valid_request_wildcard(self):
+        input_body = {
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "s3",
+                    "resource_arn": "*",
+                    "bucket_prefix": "folder_name/filename",
+                    "effect": "Allow",
+                    "action_groups": ["get", "list"],
+                },
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "s3",
+                    "resource_arn": "*",
+                    "bucket_prefix": "folder_name/*",
+                    "effect": "Allow",
+                    "action_groups": ["list", "get"],
+                },
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "crud_lookup",
+                    "resource_arn": "*",
+                    "effect": "Allow",
+                    "service": "ssm",
+                    "action_groups": ["list", "read"],
+                },
             ]
         }
 
@@ -113,6 +168,35 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(
             result[0]["principal_arn"], "arn:aws:iam::123456789012:role/roleName"
         )
+
+    @patch(
+        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    @patch("consoleme.handlers.v2.generate_changes.ChangeGeneratorModelArray.parse_raw")
+    def test_post_raises(self, mock_change_generator_model_array_parse_raw):
+        mock_change_generator_model_array_parse_raw.side_effect = Exception(
+            "Unknown Exception!"
+        )
+        input_body = {
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "resource_arn": "arn:aws:s3::123456789012:examplebucket",
+                    "bucket_prefix": "/*",
+                    "generator_type": "s3",
+                    "version": "abcd",
+                    "asd": "sdf",
+                    "action_groups": ["list", "delete"],
+                }
+            ]
+        }
+        response = self.fetch(
+            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 500)
+        self.assertIn("Error generating changes", str(response.body))
 
     @patch(
         "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",

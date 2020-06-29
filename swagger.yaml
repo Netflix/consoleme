@@ -421,7 +421,7 @@ components:
       required:
         - generator_type
         - arn
-        - resource
+        - resource_arn
       properties:
         principal_arn:
           description: |-
@@ -498,6 +498,8 @@ components:
                 }
             }
         service:
+          type: string
+        bucket_prefix:
           type: string
 
     AdvancedChangeGeneratorModel:

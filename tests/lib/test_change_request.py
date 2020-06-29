@@ -6,6 +6,7 @@ from consoleme.lib.change_request import (
     _generate_inline_policy_model_from_statements,
     _generate_policy_name,
     _generate_policy_sid,
+    _generate_policy_statement,
 )
 from consoleme.models import InlinePolicyChangeModel, ResourceModel
 
@@ -25,7 +26,9 @@ class TestChangeRequestLib(AsyncTestCase):
 
     @tornado.testing.gen_test
     async def test_generate_inline_policy_model_from_statements(self):
-        statements = [
+        from copy import deepcopy
+
+        original_statements = [
             {
                 "Action": [
                     "s3:GetObject",
@@ -44,7 +47,6 @@ class TestChangeRequestLib(AsyncTestCase):
                     "arn:aws:s3:::bucket2",
                     "arn:aws:s3:::bucket2/*",
                 ],
-                "Sid": "cmusername1592515223nlop",
             },
             {
                 "Action": [
@@ -54,13 +56,11 @@ class TestChangeRequestLib(AsyncTestCase):
                 ],
                 "Effect": "Allow",
                 "Resource": ["arn:aws:sqs:us-east-1:123456789012:resourceName"],
-                "Sid": "cmusername1592515223flbj",
             },
             {
                 "Action": ["sns:Publish"],
                 "Effect": "Allow",
                 "Resource": ["arn:aws:sns:us-east-1:123456789012:resourceName"],
-                "Sid": "cmusername1592515223ehod",
             },
             {
                 "Action": [
@@ -70,15 +70,40 @@ class TestChangeRequestLib(AsyncTestCase):
                 ],
                 "Effect": "Allow",
                 "Resource": ["*", "arn:aws:sns:us-east-1:123456789012:resourceName2"],
-                "Sid": "cmusername1592515223wesf",
             },
         ]
+        statements = deepcopy(original_statements)
 
         result = await _generate_inline_policy_model_from_statements(statements)
-        self.assertEqual(
-            result.policy_sha256,
-            "66da747c9166ee73295054eae957627b437c969f61bd69e9a98963accd8e30bf",
-        )
+        for entry in ["Action", "Effect", "Resource"]:  # Disregard Sid here
+            stripped_result = sorted(
+                [
+                    statement.pop(entry)
+                    for statement in result.policy_document["Statement"]
+                ]
+            )
+            stripped_comparison = sorted(
+                [statement.pop(entry) for statement in original_statements]
+            )
+            self.assertEqual(stripped_result, stripped_comparison)
+
+    @tornado.testing.gen_test
+    async def test_generate_policy_statement(self):
+        actions = ["iam:List*"]
+        resources = ["arn:aws:iam::123456789012:role/resource1"]
+        effect = "Allow"
+        condition = {
+            "StringEquals": {
+                "iam:PermissionsBoundary": [
+                    "arn:aws:iam::123456789012:policy/PermBoundarya"
+                ]
+            }
+        }
+        result = await _generate_policy_statement(actions, resources, effect, condition)
+        self.assertEqual(actions, result["Action"])
+        self.assertEqual(effect, result["Effect"])
+        self.assertEqual(resources, result["Resource"])
+        self.assertEqual(condition, result["Condition"])
 
     @tornado.testing.gen_test
     async def test_generate_inline_policy_change_model(self):

@@ -188,14 +188,10 @@ async def _generate_s3_inline_policy_statement_from_mapping(
         generator.resource_arn = f"arn:aws:s3:::{generator.resource_arn}"
     resource_arns.append(generator.resource_arn)
 
-    # Handle the prefix ARN
-    if generator.bucket_prefix:
-        # Make sure prefix starts with "/"
-        if not generator.bucket_prefix.startswith("/"):
-            generator.bucket_prefix = f"/{generator.bucket_prefix}"
-    else:
-        # Default to allowing the entire bucket
-        generator.bucket_prefix = "/*"
+    # Make sure prefix starts with "/"
+    if not generator.bucket_prefix.startswith("/"):
+        generator.bucket_prefix = f"/{generator.bucket_prefix}"
+
     resource_arns.append(f"{generator.resource_arn}{generator.bucket_prefix}")
 
     for action in generator.action_groups:
