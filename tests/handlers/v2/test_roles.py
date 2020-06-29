@@ -26,6 +26,74 @@ class TestRolesHandler(AsyncHTTPTestCase):
         self.assertIn("eligible_roles", responseJSON)
         self.assertEqual(0, len(responseJSON["eligible_roles"]))
 
+    @patch(
+        "consoleme.handlers.v2.roles.RolesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    def test_create_unauthorized_user(self):
+        expected = {
+            "status": 403,
+            "title": "Forbidden",
+            "message": "User is unauthorized to create a role",
+        }
+        response = self.fetch("/api/v2/roles", method="POST", body="test")
+        self.assertEqual(response.code, 403)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+    @patch(
+        "consoleme.handlers.v2.roles.RolesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    @patch("consoleme.handlers.v2.roles.can_create_roles")
+    @mock_iam
+    def test_create_authorized_user(self, mock_can_create_roles):
+        mock_can_create_roles.return_value = create_future(True)
+        input_body = {
+            "account_id": "012345678901",
+            "description": "This description should be added",
+            "instance_profile": "True",
+        }
+        expected = {
+            "status": 400,
+            "title": "Bad Request",
+            "message": "Error validating input: 1 validation error for RoleCreationRequestModel\nrole_name\n"
+            "  field required (type=value_error.missing)",
+        }
+        response = self.fetch(
+            "/api/v2/roles", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 400)
+        self.assertDictEqual(json.loads(response.body), expected)
+
+        input_body["role_name"] = "fakeRole"
+        expected = {
+            "errors": 0,
+            "role_created": "true",
+            "action_results": [
+                {
+                    "status": "success",
+                    "message": "Role arn:aws:iam::012345678901:role/fakeRole successfully created",
+                },
+                {
+                    "status": "success",
+                    "message": "Successfully added default Assume Role Policy Document",
+                },
+                {
+                    "status": "success",
+                    "message": "Successfully added description: This description should be added",
+                },
+                {
+                    "status": "success",
+                    "message": "Successfully added instance profile fakeRole to role fakeRole",
+                },
+            ],
+        }
+        response = self.fetch(
+            "/api/v2/roles", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 200)
+        self.assertDictEqual(json.loads(response.body), expected)
+
 
 class TestAccountRolesHandler(AsyncHTTPTestCase):
     def get_app(self):

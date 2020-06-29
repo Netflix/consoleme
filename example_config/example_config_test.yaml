@@ -55,3 +55,6 @@ ses:
   accessui:
     sender: access_ui_test@fakedomain.com
     name: Access UI
+
+user_role_creator:
+  default_trust_policy: {}
