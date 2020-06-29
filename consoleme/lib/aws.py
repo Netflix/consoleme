@@ -29,7 +29,7 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hgetall
-from consoleme.models import CloneRoleRequestModel
+from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
@@ -519,6 +519,141 @@ async def can_clone_roles(groups, username):
         if g in groups:
             return True
     return False
+
+
+async def can_create_roles(groups):
+    approval_groups = config.get("groups.can_create_roles", [])
+    for g in approval_groups:
+        if g in groups:
+            return True
+    return False
+
+
+async def create_iam_role(create_model: RoleCreationRequestModel, username):
+    """
+    Creates IAM role.
+    :param create_model: RoleCreationRequestModel, which has the following attributes:
+        account_id: destination account's ID
+        role_name: destination role name
+        description: optional string - description of the role
+                     default: Role created by {username} through ConsoleMe
+        instance_profile: optional boolean - whether to create an instance profile and attach it to the role or not
+                     default: True
+    :param username: username of user requesting action
+    :return: results: - indicating the results of each action
+    """
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "message": "Attempting to create role",
+        "account_id": create_model.account_id,
+        "role_name": create_model.role_name,
+        "user": username,
+    }
+    log.info(log_data)
+
+    default_trust_policy = config.get("user_role_creator.default_trust_policy")
+    if default_trust_policy is None:
+        raise MissingConfigurationValue(
+            "Missing Default Assume Role Policy Configuration"
+        )
+    if create_model.description:
+        description = create_model.description
+    else:
+        description = f"Role created by {username} through ConsoleMe"
+
+    iam_client = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        service_type="client",
+        account_number=create_model.account_id,
+        region=config.region,
+        assume_role=config.get("policies.role_name"),
+        session_name="create_role_" + username,
+    )
+    results = {"errors": 0, "role_created": "false", "action_results": []}
+    try:
+        await sync_to_async(iam_client.create_role)(
+            RoleName=create_model.role_name,
+            AssumeRolePolicyDocument=json.dumps(default_trust_policy),
+            Description=description,
+            Tags=[],
+        )
+        results["action_results"].append(
+            {
+                "status": "success",
+                "message": f"Role arn:aws:iam::{create_model.account_id}:role/{create_model.role_name} "
+                f"successfully created",
+            }
+        )
+        results["role_created"] = "true"
+    except Exception as e:
+        log_data["message"] = "Exception occurred creating role"
+        log_data["error"] = str(e)
+        log.error(log_data, exc_info=True)
+        results["action_results"].append(
+            {
+                "status": "error",
+                "message": f"Error creating role {create_model.role_name} in account {create_model.account_id}:"
+                + str(e),
+            }
+        )
+        results["errors"] += 1
+        config.sentry.captureException()
+        # Since we were unable to create the role, no point continuing, just return
+        return results
+
+    # If here, role has been successfully created, add status updates for each action
+    results["action_results"].append(
+        {
+            "status": "success",
+            "message": "Successfully added default Assume Role Policy Document",
+        }
+    )
+    results["action_results"].append(
+        {
+            "status": "success",
+            "message": "Successfully added description: " + description,
+        }
+    )
+
+    # Create instance profile and attach if specified
+    if create_model.instance_profile:
+        try:
+            await sync_to_async(iam_client.create_instance_profile)(
+                InstanceProfileName=create_model.role_name
+            )
+            await sync_to_async(iam_client.add_role_to_instance_profile)(
+                InstanceProfileName=create_model.role_name,
+                RoleName=create_model.role_name,
+            )
+            results["action_results"].append(
+                {
+                    "status": "success",
+                    "message": f"Successfully added instance profile {create_model.role_name} to role "
+                    f"{create_model.role_name}",
+                }
+            )
+        except Exception as e:
+            log_data[
+                "message"
+            ] = "Exception occurred creating/attaching instance profile"
+            log_data["error"] = str(e)
+            log.error(log_data, exc_info=True)
+            config.sentry.captureException()
+            results["action_results"].append(
+                {
+                    "status": "error",
+                    "message": f"Error creating/attaching instance profile {create_model.role_name} to role: "
+                    + str(e),
+                }
+            )
+            results["errors"] += 1
+
+    stats.count(
+        f"{log_data['function']}.success", tags={"role_name": create_model.role_name}
+    )
+    log_data["message"] = "Successfully created role"
+    log.info(log_data)
+    return results
 
 
 async def clone_iam_role(clone_model: CloneRoleRequestModel, username):

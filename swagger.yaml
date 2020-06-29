@@ -140,7 +140,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CloneRequestResponse'
+                $ref: '#/components/schemas/CreateCloneRequestResponse'
         default:
           $ref: '#/components/responses/DefaultErrorResponse'
   /roles:
@@ -157,6 +157,27 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RoleModel'
+    post:
+      summary: create a role
+      tags:
+        - roles
+        - privileged
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleCreationRequestModel'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateCloneRequestResponse'
+        default:
+          $ref: '#/components/responses/DefaultErrorResponse'
+
   /roles/{account_id}:
     get:
       summary: get a list of roles in an account
@@ -816,7 +837,7 @@ components:
             managed_policies:
               type: boolean
               default: False
-    CloneRequestResponse:
+    CreateCloneRequestResponse:
       type: object
       properties:
         errors:
@@ -832,4 +853,21 @@ components:
                 type: string
               message:
                 type: string
+    RoleCreationRequestModel:
+      type: object
+      required:
+        - role_name
+        - account_id
+      properties:
+        account_id:
+          type: string
+          minLength: 12
+          maxLength: 12
+        role_name:
+          type: string
+        description:
+          type: string
+        instance_profile:
+          type: boolean
+          default: True
 
