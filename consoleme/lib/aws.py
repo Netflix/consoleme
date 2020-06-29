@@ -720,7 +720,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
     else:
         description = f"Role cloned via ConsoleMe by {username} from {role.arn}"
 
-    tags = role.tags if clone_model.options.tags else []
+    tags = role.tags if clone_model.options.tags and role.tags else []
 
     iam_client = await sync_to_async(boto3_cached_conn)(
         "iam",
