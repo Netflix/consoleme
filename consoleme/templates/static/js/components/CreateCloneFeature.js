@@ -102,10 +102,10 @@ class CreateCloneFeature extends Component {
 
     handleSubmit(){
         const {feature_type} = this.state;
-        if(feature_type === "clone"){
-            this.handleCloneSubmit()
+        if (feature_type === "clone") {
+            this.handleCloneSubmit();
         } else {
-            this.handleCreateSubmit()
+            this.handleCreateSubmit();
         }
     }
 
@@ -130,8 +130,8 @@ class CreateCloneFeature extends Component {
         };
         this.setState({
             dest_account_id: payload["account_id"]
-        })
-        this.submitRequest(payload, '/api/v2/roles')
+        });
+        this.submitRequest(payload, '/api/v2/roles');
     }
 
     handleCloneSubmit(){
@@ -171,8 +171,8 @@ class CreateCloneFeature extends Component {
         };
         this.setState({
             dest_account_id: payload["dest_account_id"]
-        })
-        this.submitRequest(payload, '/api/v2/clone/role')
+        });
+        this.submitRequest(payload, '/api/v2/clone/role');
     }
 
     submitRequest(payload, url){
@@ -209,7 +209,6 @@ class CreateCloneFeature extends Component {
                 roleCreated
             });
         })
-
     }
 
     handleResultSelect(e, {name, value_name, result}) {
@@ -316,7 +315,7 @@ class CreateCloneFeature extends Component {
                        </Form.Field>
                    </Form>
                </Segment>
-           )
+           );
 
        const preRequestContent =
            (
