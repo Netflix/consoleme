@@ -531,7 +531,7 @@ async def can_create_roles(groups):
 
 async def create_iam_role(create_model: RoleCreationRequestModel, username):
     """
-    Creates IAM role within same account or across account.
+    Creates IAM role.
     :param create_model: RoleCreationRequestModel, which has the following attributes:
         account_id: destination account's ID
         role_name: destination role name
@@ -556,7 +556,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
         raise MissingConfigurationValue(
             "Missing Default Assume Role Policy Configuration"
         )
-    if create_model.description is not None and create_model.description != "":
+    if create_model.description:
         description = create_model.description
     else:
         description = f"Role created by {username} through ConsoleMe"
