@@ -32,6 +32,12 @@ class SelfServiceComponent extends Component {
         const {values} = this.state;
         const {inputs} = config.permissions_map[service];
 
+        if (!('actions' in values)) {
+            return this.setState({
+               messages: ["No actions are given"],
+            });
+        }
+
         const default_values = {};
         inputs.forEach((input) => {
             default_values[input.name] = input.default || null;
@@ -86,6 +92,7 @@ class SelfServiceComponent extends Component {
             }
         });
 
+        // DropDown Blocks for gathering Permission Actions for this Service.
         blocks.push(
             <DropDownBlockComponent
                 handleInputUpdate={this.handleInputUpdate.bind(this, "actions")}
