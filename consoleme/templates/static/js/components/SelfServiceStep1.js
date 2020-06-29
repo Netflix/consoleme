@@ -122,7 +122,7 @@ class SelfServiceStep1 extends Component {
                         </Grid.Column>
                         <Grid.Column>
                             <Header>
-                                Role Information
+                                Selected Role Information
                             </Header>
                             {
                                 isRoleLoading

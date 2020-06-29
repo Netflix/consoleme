@@ -58,7 +58,7 @@ class SelfService extends Component {
                     nextStep = SelfServiceStepEnum.STEP2;
                 } else {
                     return this.setState({
-                        messages: "Please supply IAM role either from your application or your roles."
+                        messages: "Please select a role from the list of applications."
                     });
                 }
                 break;

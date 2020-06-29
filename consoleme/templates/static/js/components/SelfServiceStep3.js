@@ -21,6 +21,7 @@ import "ace-builds/src-noconflict/theme-monokai";
 
 class SelfServiceStep3 extends Component {
     state = {
+        custom_statement: "",
         isLoading: false,
         isSuccess: false,
         justification: "",
@@ -49,8 +50,11 @@ class SelfServiceStep3 extends Component {
 
         const response = await sendRequestCommon(payload, '/api/v2/generate_changes');
         if (response) {
+            // TODO(heewonk), handle errors from the backend and validation
+            const statement = JSON.stringify(response[0]["policy"]["policy_document"], null, 4);
             this.setState({
-                statement: JSON.stringify(response[0]["policy"]["policy_document"], null, 4),
+                custom_statement: statement,
+                statement,
             });
         }
     }
@@ -174,9 +178,21 @@ class SelfServiceStep3 extends Component {
         });
     }
 
+    handleJSONEditorChange(custom_statement) {
+        const {statement} = this.state;
+        const messages = [];
+        if (statement !== custom_statement) {
+            messages.push("Please Review your custom changes before making a submission.");
+        }
+        this.setState({
+            messages,
+            custom_statement,
+        });
+    }
+
     render() {
         const {role} = this.props;
-        const {isLoading, isSuccess, justification, messages, requestId, statement} = this.state;
+        const {custom_statement, isLoading, isSuccess, justification, messages, requestId, statement} = this.state;
         const messagesToShow = (messages.length > 0)
             ? (
                 <Message negative>
@@ -222,6 +238,7 @@ class SelfServiceStep3 extends Component {
                         <Divider />
                         <Button
                             content="Submit"
+                            disabled={statement !== custom_statement}
                             fluid
                             onClick={this.handleSubmit.bind(this)}
                             primary
@@ -241,14 +258,16 @@ class SelfServiceStep3 extends Component {
                             mode="json"
                             theme="monokai"
                             width="100%"
-                            onChange={(newValue) => {
-                                this.setState({
-                                    statement: newValue,
-                                })
-                            }}
-                            value={statement}
+                            onChange={this.handleJSONEditorChange.bind(this)}
+                            value={custom_statement}
                             name="json_editor"
-                            editorProps={{ $blockScrolling: true }}
+                            editorProps={{
+                                $blockScrolling: true,
+                            }}
+                            setOptions={{
+                                "enableBasicAutocompletion": true,
+                                "enableLiveAutocompletion": true,
+                            }}
                         />
                         <Divider />
                         <Header>
