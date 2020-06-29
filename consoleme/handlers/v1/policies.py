@@ -978,9 +978,22 @@ class AutocompleteHandler(BaseAPIV1Handler):
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
+        only_filter_services = False
+
+        if (
+            self.request.arguments.get("only_filter_services")
+            and self.request.arguments.get("only_filter_services")[0].decode("utf-8")
+            == "true"
+        ):
+            only_filter_services = True
+
         prefix = self.request.arguments.get("prefix")[0].decode("utf-8") + "*"
         results = _expand_wildcard_action(prefix)
-        results = [dict(permission=r) for r in results]
+        if only_filter_services:
+            services = sorted(list(set(r.split(":")[0] for r in results)))
+            results = [{"title": service} for service in services]
+        else:
+            results = sorted([dict(permission=r) for r in results])
         self.write(json.dumps(results))
         await self.finish()
 
