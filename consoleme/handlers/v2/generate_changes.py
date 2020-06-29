@@ -98,7 +98,7 @@ class GenerateChangesHandler(BaseAPIV2Handler):
             stats.count(f"{log_data['function']}.exception", tags={"user": self.user})
             config.sentry.captureException(tags={"user": self.user})
             self.write_error(500, message="Error generating changes: " + str(e))
-            raise  # TODO REVERT
+            return
 
         log_data["message"] = "Successfully generated changes requested"
         log.info(log_data)

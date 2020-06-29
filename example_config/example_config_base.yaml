@@ -192,11 +192,12 @@ self_service_iam:
       description: S3 Permissions
       inputs:
         - name: resource_arn
-          text: Bucket Name (Cross-account writes are discouraged)
+          type: typeahead_input
+          text: Bucket Name
           required: true
-          typeahead: true
-          typeahead_endpoint: /policies/typeahead?resource=s3&search={query}
+          typeahead_endpoint: /policies/typeahead?resource=s3&show_full_arn_for_s3_buckets=true&search={query}
         - name: bucket_prefix
+          type: text_input
           text: Prefix (Folder under S3 that you need access to).
           required: true
           default: /*
@@ -233,11 +234,12 @@ self_service_iam:
             - s3:DeleteObjectVersionTagging
     sqs:
       text: SQS Queue
+      description: ""
       inputs:
         - name: resource_arn
+          type: typeahead_input
           text: Queue ARN
           required: true
-          typeahead: true
           typeahead_endpoint: /policies/typeahead?resource=sqs&search={query}
       action_map:
         - name: get_queue_attributes
@@ -263,11 +265,12 @@ self_service_iam:
             - sqs:SetQueueAttributes
     sns:
       text: SNS Topic
+      description: ""
       inputs:
         - name: resource_arn
+          type: typeahead_input
           text: Topic ARN
           required: true
-          typeahead: true
           typeahead_endpoint: /policies/typeahead?resource=sns&search={query}
       action_map:
         - name: get_topic_attributes
@@ -290,8 +293,10 @@ self_service_iam:
             - sns:Unsubscribe
     rds:
       text: RDS
+      description: ""
       inputs:
         - name: resource_arn
+          type: text_input
           text: EC2 resource you need access to
           required: true
           default: "arn:aws:iam::{account_id}:role/rds-monitoring-role"
@@ -302,8 +307,10 @@ self_service_iam:
             - iam:PassRole
     ec2:
       text: EC2
+      description: ""
       inputs:
         - name: resource_arn
+          type: text_input
           text: EC2 resource you need access to
           required: true
           default: "*"
@@ -320,8 +327,10 @@ self_service_iam:
             - ec2:resetsnapshotattribute
     route53:
       text: Route53
+      description: ""
       inputs:
         - name: resource_arn
+          type: text_input
           text: Route53 Domain you need access to
           required: true
           default: "*"
@@ -336,11 +345,12 @@ self_service_iam:
             - route53:changeresourcerecordsets
     sts:
       text: STS AssumeRole
+      description: ""
       inputs:
         - name: resource_arn
+          type: typeahead_input
           text: Role ARN yhat you wish to assume
           required: true
-          typeahead: true
           typeahead_endpoint: /policies/typeahead?resource=iam_arn&search={query}
       action_map:
         - name: assume_role
@@ -348,12 +358,18 @@ self_service_iam:
           permissions:
             - sts:AssumeRole
     crud_lookup:
-      text: Other Service (CRUD)
+      text: Other
+      description: |-
+        Define the service (ssm, rds, route53, etc), the resource (An ARN or a wildcard), and the list of actions
+        (List, Read, Write, Permissions Management, Tagging) that you need access to. If you know the specific IAM
+        permissions you need, use "Advanced Mode" from the dropdown instead.
       inputs:
         - name: service
+          type: text_input
           text: Service (s3, sqs, sns, ssm, etc)
           required: true
         - name: resource_arn
+          type: text_input
           text: Resource ARN or Wildcard (*)
           required: true
           default: "*"
@@ -378,21 +394,3 @@ self_service_iam:
           text: Tagging
           permissions:
             - Tagging
-    advanced:
-      text: Advanced Mode
-      description: |-
-        In advanced mode, you define specific IAM actions. See AWS's
-        <a href=https://awspolicygen.s3.amazonaws.com/policygen.html>IAM policy generator</a> for actions that you can use.
-      inputs:
-        - name: iam_action
-          text: IAM Actions
-          required: true
-          typeahead: true
-          typeahead_endpoint: /api/v1/policyuniverse/autocomplete/?prefix={query}
-        - name: resource
-          text: Resources
-          default: "*"
-          required: true
-          # TODO: Create typeahead endpoint for all resourses
-          # typeahead: TBD
-          # typeahead_endpoint: TBD
