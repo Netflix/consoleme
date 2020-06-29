@@ -434,16 +434,28 @@ components:
         generator_type:
           type: string
           enum:
-            - generic
-            - s3
-            - sqs
-            - sns
-            - sts
-            - route53
-            - ec2
-            - rds
             - advanced
             - crud_lookup
+            - ec2
+            - generic
+            - rds
+            - route53
+            - s3
+            - sns
+            - sqs
+            - sts
+          discriminator:
+            propertyName: generator_type
+            mapping:
+              advanced: '#/components/schemas/AdvancedChangeGeneratorModel'
+              crud_lookup: '#/components/schemas/CrudChangeGeneratorModel'
+              ec2: '#/components/schemas/GenericChangeGeneratorModel'
+              generic: '#/components/schemas/GenericChangeGeneratorModel'
+              rds: '#/components/schemas/GenericChangeGeneratorModel'
+              route53: '#/components/schemas/GenericChangeGeneratorModel'
+              s3: '#/components/schemas/S3ChangeGeneratorModel'
+              sns: '#/components/schemas/SNSChangeGeneratorModel'
+              sqs: '#/components/schemas/SQSChangeGeneratorModel'
         resource_arn:
           description: |-
             The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
@@ -487,6 +499,21 @@ components:
             }
         service:
           type: string
+
+    AdvancedChangeGeneratorModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            iam_action:
+              type: string
+              example: kinesis:AddTagsToStream
+            resource:
+              type: string
+              example: "*"
+
     GenericChangeGeneratorModel:
       allOf:
         - $ref: '#/components/schemas/ChangeGeneratorModel'
@@ -506,12 +533,7 @@ components:
           required:
             - action_groups
             - service
-            - generator_type
           properties:
-            generator_type:
-              type: string
-              enum:
-                - crud_lookup
             action_groups:
               type: array
               items:
