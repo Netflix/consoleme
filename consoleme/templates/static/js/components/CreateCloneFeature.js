@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
 import _ from "lodash";
-import {Button, Dimmer, Loader, Form, Grid, Header, Message, Search, Segment, Icon, Feed} from "semantic-ui-react";
+import {Button, Dimmer, Loader, Form, Grid, Header, Message, Search, Segment, Icon, Radio, Feed} from "semantic-ui-react";
 import {sendRequestCommon} from "../helpers/utils";
 
 const clone_options = [
@@ -14,7 +14,7 @@ const clone_options = [
 
 const clone_default_selected_options = clone_options.map(option => {return option.value})
 
-class CloneService extends Component {
+class CreateCloneFeature extends Component {
     state = {
         isLoading: false,
         isLoadingAccount: false,
@@ -34,7 +34,8 @@ class CloneService extends Component {
         isSubmitting: false,
         roleCreated: false,
         options: clone_default_selected_options,
-        copy_description: true
+        copy_description: true,
+        feature_type: 'create'
     }
 
     handleSearchChange(event, {name, value}) {
@@ -100,6 +101,40 @@ class CloneService extends Component {
     }
 
     handleSubmit(){
+        const {feature_type} = this.state;
+        if (feature_type === "clone") {
+            this.handleCloneSubmit();
+        } else {
+            this.handleCreateSubmit();
+        }
+    }
+
+    handleCreateSubmit(){
+        const {dest_account_id, dest_role_name} = this.state;
+        let errors = [];
+        if (!dest_account_id) {
+            errors.push("No destination account provided, please select a destination account")
+        }
+        if (dest_role_name === "") {
+            errors.push("No destination role name provided, please provide a destination role name")
+        }
+        if (errors.length > 0) {
+            return this.setState({
+                messages: errors,
+            });
+        }
+        const payload = {
+            "account_id": dest_account_id.substring(dest_account_id.indexOf("(") + 1, dest_account_id.indexOf(")")),
+            "role_name": dest_role_name,
+            "description": this.state.description
+        };
+        this.setState({
+            dest_account_id: payload["account_id"]
+        });
+        this.submitRequest(payload, '/api/v2/roles');
+    }
+
+    handleCloneSubmit(){
 
         const {source_role, dest_account_id, dest_role_name} = this.state;
         let errors = [];
@@ -129,21 +164,23 @@ class CloneService extends Component {
 
         const payload = {
             "account_id": source_role.substring(13, 25),
-            "role_name": source_role.substring(source_role.indexOf("/", 25) + 1),
+            "role_name": source_role.substring(source_role.lastIndexOf("/")+1),
             "dest_account_id": dest_account_id.substring(dest_account_id.indexOf("(") + 1, dest_account_id.indexOf(")")),
-            "dest_role_name": this.state.dest_role_name,
+            "dest_role_name": dest_role_name,
             "options": cloneOptions
         };
+        this.setState({
+            dest_account_id: payload["dest_account_id"]
+        });
+        this.submitRequest(payload, '/api/v2/clone/role');
+    }
 
+    submitRequest(payload, url){
         this.setState({
             messages: null,
             isSubmitting: true,
-            dest_account_id: payload["dest_account_id"]
         }, async() => {
-            const response = await sendRequestCommon(
-                JSON.stringify(payload),
-                '/api/v2/clone/role',
-            );
+            const response = await sendRequestCommon(JSON.stringify(payload), url);
             const messages = [];
             let requestResults = [];
             let requestSent = false;
@@ -194,8 +231,8 @@ class CloneService extends Component {
 
     render() {
        const {isLoading, isLoadingAccount, results, source_role_value, dest_account_id_value, dest_role_name, resultsAccount,
-              description, messages, requestSent, requestResults,
-              isSubmitting, roleCreated, dest_account_id, copy_description} = this.state;
+              description, messages, requestSent, requestResults, options,
+              isSubmitting, roleCreated, dest_account_id, copy_description, feature_type} = this.state;
        const messagesToShow = (messages != null && messages.length > 0)
             ? (
                 <Message negative>
@@ -213,54 +250,85 @@ class CloneService extends Component {
             )
             : null;
 
+       const sourceRoleContent = (feature_type === "clone") ?
+           (
+               <Grid.Column>
+                    <Header size='medium'>
+                            Select source role
+                            <Header.Subheader>
+                                Please search for the role you want to clone.
+                            </Header.Subheader>
+                    </Header>
+                    <Form>
+                        <Form.Field required>
+                            <label>Source Role</label>
+                            <Search
+                                loading={isLoading}
+                                fluid
+                                name='source_role'
+                                value_name='source_role_value'
+                                onResultSelect={this.handleResultSelect.bind(this)}
+                                onSearchChange={_.debounce(this.handleSearchChange.bind(this), 500, {
+                                    leading: true,
+                                })}
+                                results={results}
+                                value={source_role_value}
+                            >
+                            </Search>
+                        </Form.Field>
+                        <Form.Dropdown
+                            placeholder='Options'
+                            fluid
+                            multiple
+                            search
+                            selection
+                            options={clone_options}
+                            defaultValue={options}
+                            label="Attributes to clone"
+                            onChange={this.handleDropdownChange.bind(this)}
+                        />
+                    </Form>
+               </Grid.Column>
+           )
+           :
+           null;
+
+       const feature_selection =
+           (
+               <Segment>
+                   <Form>
+                       <Form.Field>
+                           <Radio
+                                label='Create blank role'
+                                name='feature_type'
+                                value='create'
+                                checked={feature_type === 'create'}
+                                onChange={this.handleChange}
+                           />
+                           <Radio
+                                label='Clone from existing role'
+                                name='feature_type'
+                                value='clone'
+                                checked={feature_type === 'clone'}
+                                onChange={this.handleChange}
+                           />
+                       </Form.Field>
+                   </Form>
+               </Segment>
+           );
+
        const preRequestContent =
            (
                <Segment.Group vertical>
+                   {feature_selection}
                    <Segment>
                        <Grid columns={2} divided>
                             <Grid.Row>
                                 <Grid.Column>
                                     <Header size='medium'>
-                                            Select source role
+                                            Role to be created
                                             <Header.Subheader>
-                                                Please search for the role you want to clone.
-                                            </Header.Subheader>
-                                    </Header>
-                                    <Form>
-                                        <Form.Field required>
-                                            <label>Source Role</label>
-                                            <Search
-                                                loading={isLoading}
-                                                fluid
-                                                name='source_role'
-                                                value_name='source_role_value'
-                                                onResultSelect={this.handleResultSelect.bind(this)}
-                                                onSearchChange={_.debounce(this.handleSearchChange.bind(this), 500, {
-                                                    leading: true,
-                                                })}
-                                                results={results}
-                                                value={source_role_value}
-                                            >
-                                            </Search>
-                                        </Form.Field>
-                                        <Form.Dropdown
-                                            placeholder='Options'
-                                            fluid
-                                            multiple
-                                            search
-                                            selection
-                                            options={clone_options}
-                                            defaultValue={clone_default_selected_options}
-                                            label="Attributes to clone"
-                                            onChange={this.handleDropdownChange.bind(this)}
-                                        />
-                                    </Form>
-                                </Grid.Column>
-                                <Grid.Column>
-                                    <Header size='medium'>
-                                            Destination role
-                                            <Header.Subheader>
-                                                Please enter the destination account where you want the cloned role and desired role name.
+                                                Please enter the destination account where you want the role and desired role name.
                                             </Header.Subheader>
                                     </Header>
                                     <Form>
@@ -295,10 +363,11 @@ class CloneService extends Component {
                                                 value={description}
                                                 placeholder='Optional description'
                                                 onChange={this.handleChange}
-                                                disabled={true === copy_description}
+                                                disabled={true === copy_description && feature_type === 'clone'}
                                             />
                                     </Form>
                                 </Grid.Column>
+                                {sourceRoleContent}
                             </Grid.Row>
                        </Grid>
                    </Segment>
@@ -357,7 +426,7 @@ class CloneService extends Component {
                 </Dimmer>
                 <Segment>
                     <Header size='huge'>
-                        Clone a role
+                        Create a role
                     </Header>
                 </Segment>
                 {roleInfoLink}
@@ -367,12 +436,11 @@ class CloneService extends Component {
     }
 }
 
-
-export function renderCloneWizard() {
+export function renderCreateCloneWizard() {
     ReactDOM.render(
-        <CloneService />,
-        document.getElementById("clone_wizard"),
+        <CreateCloneFeature />,
+        document.getElementById("create_clone_wizard"),
     );
 }
 
-export default CloneService;
+export default CreateCloneFeature;

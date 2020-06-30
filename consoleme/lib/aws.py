@@ -511,18 +511,10 @@ async def can_delete_roles_app(app_name):
     return False
 
 
-async def can_clone_roles(groups, username):
-    approval_groups = config.get("groups.can_clone_roles", [])
+async def can_create_roles(groups, username):
+    approval_groups = config.get("groups.can_create_roles", [])
     if username in approval_groups:
         return True
-    for g in approval_groups:
-        if g in groups:
-            return True
-    return False
-
-
-async def can_create_roles(groups):
-    approval_groups = config.get("groups.can_create_roles", [])
     for g in approval_groups:
         if g in groups:
             return True
@@ -720,7 +712,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
     else:
         description = f"Role cloned via ConsoleMe by {username} from {role.arn}"
 
-    tags = role.tags if clone_model.options.tags else []
+    tags = role.tags if clone_model.options.tags and role.tags else []
 
     iam_client = await sync_to_async(boto3_cached_conn)(
         "iam",

@@ -93,7 +93,7 @@
             </div>
             {% end %}
             {% if config.get("headers.policies.enabled", True) and not contractor %}
-            <div class="ui dropdown link item {% if current_page in ['policies', 'api_health', 'clone'] %}partial_active{% end %}">
+            <div class="ui dropdown link item {% if current_page in ['policies', 'api_health', 'create_role'] %}partial_active{% end %}">
                 <span class="text">Roles and Policies</span>
                 <i class="dropdown icon"></i>
                 <div class="menu transition hidden">
@@ -104,8 +104,8 @@
                     {% if is_in_group(user_groups, config.get("groups.can_edit_health_alert", [])) %}
                     <a class="item" href="/api_health">API Health</a>
                     {% end %}
-                    {% if is_in_group(user_groups, config.get("groups.can_clone_roles", [])) or is_in_group([user], config.get("groups.can_clone_roles", [])) %}
-                    <a class="item" href="/clone">Clone Role</a>
+                    {% if is_in_group(user_groups, config.get("groups.can_create_roles", [])) or is_in_group([user], config.get("groups.can_create_roles", [])) %}
+                    <a class="item" href="/create_role">Create Role</a>
                     {% end %}
                 </div>
             </div>
