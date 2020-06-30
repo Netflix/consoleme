@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
 from consoleme.lib.aws import (
-    can_clone_roles,
     can_create_roles,
     can_delete_roles,
     can_delete_roles_app,
@@ -51,7 +50,7 @@ class RolesHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
             "ip": self.ip,
         }
-        can_create_role = await can_create_roles(self.groups)
+        can_create_role = await can_create_roles(self.groups, self.user)
         if not can_create_role:
             stats.count(
                 f"{log_data['function']}.unauthorized",
@@ -345,11 +344,11 @@ class RoleCloneHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
             "ip": self.ip,
         }
-        can_clone_role = await can_clone_roles(self.groups, self.user)
-        if not can_clone_role:
+        can_create_role = await can_create_roles(self.groups, self.user)
+        if not can_create_role:
             stats.count(
                 f"{log_data['function']}.unauthorized",
-                tags={"user": self.user, "authorized": can_clone_role},
+                tags={"user": self.user, "authorized": can_create_role},
             )
             log_data["message"] = "User is unauthorized to clone a role"
             log.error(log_data)

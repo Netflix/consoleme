@@ -2,7 +2,7 @@ import sys
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
-from consoleme.lib.aws import can_clone_roles, can_create_roles
+from consoleme.lib.aws import can_create_roles
 from consoleme.lib.plugins import get_plugin_by_name
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -33,15 +33,13 @@ class CreateRoleViewHandler(BaseHandler):
         }
         log.debug(log_data)
 
-        can_create_clone_role = await can_clone_roles(
-            self.groups, self.user
-        ) or await can_create_roles(self.groups)
-        if not can_create_clone_role:
+        can_create_role = await can_create_roles(self.groups, self.user)
+        if not can_create_role:
             stats.count(
                 f"{log_data['function']}.unauthorized",
-                tags={"user": self.user, "authorized": can_create_clone_role},
+                tags={"user": self.user, "authorized": can_create_role},
             )
-            log_data["message"] = "User is unauthorized to view clone a role page"
+            log_data["message"] = "User is unauthorized to view create a role page"
             log.error(log_data)
             self.set_status(403, reason="Unauthorized to view this page")
             self.write_error(403)

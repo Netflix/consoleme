@@ -104,7 +104,7 @@
                     {% if is_in_group(user_groups, config.get("groups.can_edit_health_alert", [])) %}
                     <a class="item" href="/api_health">API Health</a>
                     {% end %}
-                    {% if is_in_group(user_groups, config.get("groups.can_clone_roles", [])) or is_in_group([user], config.get("groups.can_clone_roles", [])) or is_in_group(user_groups, config.get("groups.can_create_roles", [])) %}
+                    {% if is_in_group(user_groups, config.get("groups.can_create_roles", [])) or is_in_group([user], config.get("groups.can_create_roles", [])) %}
                     <a class="item" href="/create_role">Create Role</a>
                     {% end %}
                 </div>
