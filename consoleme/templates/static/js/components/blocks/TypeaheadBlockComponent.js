@@ -57,11 +57,11 @@ class TypeaheadBlockComponent extends Component {
 
     render() {
         const {isLoading, results, value} = this.state;
-        const {defaultValue, required} = this.props;
+        const {defaultValue, required, text} = this.props;
 
         return (
             <Form.Field required={required || false}>
-                <label>Type to Search Items</label>
+                <label>{text}</label>
                 <Search
                     defaultValue={defaultValue || ""}
                     loading={isLoading}

@@ -23,7 +23,7 @@ class DropDownBlockComponent extends Component {
 
         return (
             <Form.Field required={required || false}>
-                <label>Select Items</label>
+                <label>Select Desired Permissions</label>
                 <Form.Dropdown
                     defaultValue={defaultValue || ''}
                     multiple

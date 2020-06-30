@@ -20,11 +20,11 @@ class TextInputBlockComponent extends Component {
 
     render() {
         const {value} = this.state;
-        const {defaultValue, required} = this.props;
+        const {defaultValue, required, text} = this.props;
 
         return (
             <Form.Field required={required}>
-                <label>Enter Value</label>
+                <label>{text}</label>
                 <input
                     defaultValue={defaultValue}
                     onChange={this.handleTextInputChange.bind(this)}

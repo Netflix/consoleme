@@ -76,6 +76,7 @@ class SelfServiceComponent extends Component {
                             defaultValue={input.default || ""}
                             handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
                             required={input.required || false}
+                            text={input.text || "Enter Value"}
                         />
                     );
                 case "typeahead_input":
@@ -85,6 +86,7 @@ class SelfServiceComponent extends Component {
                             handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
                             required={input.required || false}
                             typeahead={input.typeahead_endpoint}
+                            text={input.text || "Enter Value"}
                         />
                     );
                 default:
