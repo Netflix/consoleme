@@ -938,7 +938,7 @@ class SelfServiceHandler(BaseHandler):
         )
 
 
-class SelfServiceNewHandler(BaseHandler):
+class SelfServiceV2Handler(BaseHandler):
     async def get(self):
         """
         /self_service_new
@@ -951,7 +951,7 @@ class SelfServiceNewHandler(BaseHandler):
         """
 
         await self.render(
-            "self_service_new.html",
+            "self_service_v2.html",
             page_title="ConsoleMe - Self Service",
             current_page="policies",
             user=self.user,

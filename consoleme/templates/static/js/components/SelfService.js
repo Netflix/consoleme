@@ -160,6 +160,10 @@ class SelfService extends Component {
 
         return (
             <Segment basic>
+                  <Message success>
+                      Welcome to the new and improved IAM Self-Service Wizard!
+                      Please click <a href='/self_service_v1'>here</a> if you need to access the older version.
+                  </Message>
                 <Step.Group fluid>
                     <Step
                         active={currStep === SelfServiceStepEnum.STEP1}

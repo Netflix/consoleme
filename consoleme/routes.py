@@ -40,7 +40,7 @@ from consoleme.handlers.v1.policies import (
     ResourcePolicyEditHandler,
     ResourceTypeAheadHandler,
     SelfServiceHandler,
-    SelfServiceNewHandler,
+    SelfServiceV2Handler,
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
@@ -151,8 +151,8 @@ def make_app(jwt_validator=None):
         (r"/swagger", SwaggerHandler),
         (r"/swagger.json", SwaggerJsonGenerator),
         (r"/saml/(.*)", SamlHandler),
-        (r"/self_service", SelfServiceHandler),
-        (r"/self_service_new", SelfServiceNewHandler),
+        (r"/self_service_v1", SelfServiceHandler),
+        (r"/self_service", SelfServiceV2Handler),
     ]
 
     routes.extend(
