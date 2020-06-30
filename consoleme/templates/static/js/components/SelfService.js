@@ -162,7 +162,7 @@ class SelfService extends Component {
             <Segment basic>
                   <Message success>
                       Welcome to the new and improved IAM Self-Service Wizard!
-                      Please click <a href='/self_service_v1'>here</a> if you need to access the older version.
+                      Please click <a target='_blank' href='/self_service_v1'>here</a> if you need to access the older version.
                   </Message>
                 <Step.Group fluid>
                     <Step
@@ -216,14 +216,20 @@ class SelfService extends Component {
                 >
                     Previous
                 </Button>
-                <Button
-                    disabled={currStep === SelfServiceStepEnum.STEP3}
-                    floated='right'
-                    primary
-                    onClick={this.handleStepClick.bind(this, 'next')}
-                >
-                    Next
-                </Button>
+                {
+                    currStep !== SelfServiceStepEnum.STEP3
+                        ? (
+                            <Button
+                                disabled={currStep === SelfServiceStepEnum.STEP3}
+                                floated='right'
+                                primary
+                                onClick={this.handleStepClick.bind(this, 'next')}
+                            >
+                                Next
+                            </Button>
+                        )
+                        : null
+                }
             </Segment>
         );
     }
