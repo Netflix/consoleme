@@ -555,7 +555,7 @@ components:
         - type: object
           required:
             - action_groups
-            - service
+            - service_name
           properties:
             action_groups:
               type: array
@@ -567,7 +567,7 @@ components:
                   - list
                   - tagging
                   - permissions-management
-            service:
+            service_name:
               type: string
     S3ChangeGeneratorModel: # These schemas could be defined in different files.
       allOf:

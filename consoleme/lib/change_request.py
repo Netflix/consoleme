@@ -77,7 +77,7 @@ async def _generate_policy_name(policy_name: str, user: str) -> str:
 
 
 async def _generate_inline_policy_model_from_statements(
-    statements: List[Dict]
+    statements: List[Dict],
 ) -> PolicyModel:
     """
     given a list of policy statements, generate a policy
@@ -164,7 +164,7 @@ async def _get_actions_from_groups(
 
 
 async def _generate_s3_inline_policy_statement_from_mapping(
-    generator: ChangeGeneratorModel
+    generator: ChangeGeneratorModel,
 ) -> Dict:
     """
     Generates an S3 inline policy statement from a ChangeGeneratorModel. S3 is an edge case, thus it gets a
@@ -201,7 +201,7 @@ async def _generate_s3_inline_policy_statement_from_mapping(
 
 
 async def _generate_inline_policy_statement_from_mapping(
-    generator: ChangeGeneratorModel
+    generator: ChangeGeneratorModel,
 ) -> Dict:
     """
     Generates an inline policy statement given a ChangeGeneratorModel from a action mapping stored in configuration.
@@ -259,7 +259,7 @@ async def _generate_inline_policy_statement_from_policy_sentry(
             if pm["name"] == access.value:
                 access_level_actions += pm.get("permissions")
     actions = await _get_policy_sentry_access_level_actions(
-        generator.service, access_level_actions
+        generator.service_name, access_level_actions
     )
     return await _generate_policy_statement(
         actions, [generator.resource_arn], generator.effect, generator.condition
@@ -267,7 +267,7 @@ async def _generate_inline_policy_statement_from_policy_sentry(
 
 
 async def _generate_inline_iam_policy_statement_from_change_generator(
-    change: ChangeGeneratorModel
+    change: ChangeGeneratorModel,
 ) -> Dict:
     """
     Generates an inline policy statement from a ChangeGeneratorModel.
@@ -284,7 +284,7 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
 
 
 async def _minimize_iam_policy_statements(
-    inline_iam_policy_statements: List[Dict]
+    inline_iam_policy_statements: List[Dict],
 ) -> List[Dict]:
     """
     Minimizes a list of inline IAM policy statements.
@@ -380,7 +380,7 @@ async def _generate_resource_model_from_arn(arn: str) -> Optional[ResourceModel]
 
 
 async def generate_change_model_array(
-    changes: ChangeGeneratorModelArray
+    changes: ChangeGeneratorModelArray,
 ) -> ChangeModelArray:
     """
     Compiles a ChangeModelArray which includes all of the AWS policies required to satisfy the

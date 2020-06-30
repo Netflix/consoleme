@@ -1,8 +1,7 @@
 import ujson as json
 from mock import patch
-from tornado.testing import AsyncHTTPTestCase
-
 from tests.conftest import MockBaseHandler
+from tornado.testing import AsyncHTTPTestCase
 
 
 class TestGenerateChangesHandler(AsyncHTTPTestCase):
@@ -80,7 +79,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                     "generator_type": "crud_lookup",
                     "resource_arn": "*",
                     "effect": "Allow",
-                    "service": "ssm",
+                    "service_name": "ssm",
                     "action_groups": ["list", "read"],
                 },
             ]
@@ -126,7 +125,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                     "generator_type": "crud_lookup",
                     "resource_arn": "*",
                     "effect": "Allow",
-                    "service": "ssm",
+                    "service_name": "ssm",
                     "action_groups": ["list", "read"],
                 },
             ]
