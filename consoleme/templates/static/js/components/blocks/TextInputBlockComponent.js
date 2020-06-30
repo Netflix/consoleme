@@ -12,17 +12,6 @@ class TextInputBlockComponent extends Component {
         };
     }
 
-    componentDidMount() {
-        const defaultValue = this.props.defaultValue;
-        if (defaultValue) {
-            this.setState({
-                defaultValue,
-            }, () => {
-                this.props.handleInputUpdate(defaultValue);
-            });
-        }
-    }
-
     handleTextInputChange(e) {
         const {value} = e.target;
         this.setState({

@@ -63,6 +63,7 @@ class TypeaheadBlockComponent extends Component {
             <Form.Field required={required || false}>
                 <label>{text}</label>
                 <Search
+                    fluid
                     defaultValue={defaultValue || ""}
                     loading={isLoading}
                     onResultSelect={this.handleResultSelect.bind(this)}
