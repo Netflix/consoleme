@@ -5,9 +5,23 @@ import {
 
 
 class TextInputBlockComponent extends Component {
-    state = {
-        value: '',
-    };
+    constructor(props) {
+        super(props);
+        this.state = {
+            value: '',
+        };
+    }
+
+    componentDidMount() {
+        const defaultValue = this.props.defaultValue;
+        if (defaultValue) {
+            this.setState({
+                defaultValue,
+            }, () => {
+                this.props.handleInputUpdate(defaultValue);
+            });
+        }
+    }
 
     handleTextInputChange(e) {
         const {value} = e.target;
@@ -21,6 +35,7 @@ class TextInputBlockComponent extends Component {
     render() {
         const {value} = this.state;
         const {defaultValue, required, text} = this.props;
+
 
         return (
             <Form.Field required={required}>

@@ -57,7 +57,7 @@ class SelfServiceComponent extends Component {
     }
 
     buildInputBlocks() {
-        const {config, service} = this.props;
+        const {config, service, role} = this.props;
         const {action_map, inputs} = config.permissions_map[service];
         const options = action_map.map(action => {
             return {
@@ -69,11 +69,14 @@ class SelfServiceComponent extends Component {
         });
 
         const blocks = inputs.map(input => {
+            let defaultValue
+            defaultValue = input.default || "";
+            defaultValue = defaultValue.replace("{account_id}", role.account_id)
             switch (input.type) {
                 case "text_input":
                     return (
                         <TextInputBlockComponent
-                            defaultValue={input.default || ""}
+                            defaultValue={defaultValue}
                             handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
                             required={input.required || false}
                             text={input.text || "Enter Value"}
@@ -82,7 +85,7 @@ class SelfServiceComponent extends Component {
                 case "typeahead_input":
                     return (
                         <TypeaheadBlockComponent
-                            defaultValue={input.default || ""}
+                            defaultValue={defaultValue}
                             handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
                             required={input.required || false}
                             typeahead={input.typeahead_endpoint}
@@ -107,7 +110,7 @@ class SelfServiceComponent extends Component {
     }
 
     render() {
-        const {config, service} = this.props;
+        const {config, service, role} = this.props;
         const {description, text} = config.permissions_map[service];
 
         const {messages} = this.state;
