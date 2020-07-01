@@ -45,6 +45,7 @@ from raven.contrib.celery import register_logger_signal, register_signal
 from retrying import retry
 
 from consoleme.config import config
+from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.json_encoder import SetEncoder
@@ -677,6 +678,33 @@ def cache_policies_table_details() -> bool:
                     }
                 )
 
+    resources_from_aws_config_redis_key: str = config.get("aws_config_cache.redis_key")
+    resources_from_aws_config = red.hgetall(resources_from_aws_config_redis_key)
+    if resources_from_aws_config:
+        for arn, value in resources_from_aws_config.items():
+            resource = json.loads(value)
+            technology = resource["resourceType"]
+            # Skip technologies that we retrieve directly
+            if technology in [
+                "AWS::IAM::Role",
+                "AWS::SQS::Queue",
+                "AWS::SNS::Topic",
+                "AWS::S3::Bucket",
+            ]:
+                continue
+            account_id = arn.split(":")[4]
+            account_name = accounts_d.get(account_id, ["Unknown"])[0]
+            items.append(
+                {
+                    "account_id": account_id,
+                    "account_name": account_name,
+                    "arn": arn,
+                    "technology": technology,
+                    "templated": None,
+                    "errors": 0,
+                }
+            )
+
     s3_bucket = None
     s3_key = None
     if config.region == config.get("celery.active_region") or config.get(
@@ -1136,6 +1164,75 @@ def get_inventory_of_iam_keys() -> dict:
 
 
 @app.task(soft_time_limit=1800)
+def cache_resources_from_aws_config_for_account(account_id) -> dict:
+    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
+    results = aws_config.query(
+        config.get(
+            "cache_all_resources_from_aws_config.aws_config.all_resources_query"
+        ).format(account_id=account_id)
+    )
+
+    ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
+    redis_result_set = {}
+    for result in results:
+        result["ttl"] = ttl
+        if result.get("arn"):
+            if redis_result_set.get(result["arn"]):
+                continue
+            redis_result_set[result["arn"]] = json.dumps(result)
+
+    if config.region == config.get("celery.active_region") or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("aws_config_cache.s3.bucket")
+        s3_key = config.get("aws_config_cache.s3.file").format(account_id=account_id)
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            redis_result_set,
+            redis_key=config.get("aws_config_cache.redis_key"),
+            redis_data_type="hash",
+            s3_bucket=s3_bucket,
+            s3_key=s3_key,
+        )
+
+    dynamo = UserDynamoHandler()
+    dynamo.write_resource_cache_data(results)
+    log_data = {
+        "function": function,
+        "account_id": account_id,
+        "number_resources_synced": len(results),
+    }
+    log.debug(log_data)
+    return log_data
+
+
+@app.task(soft_time_limit=1800)
+def cache_resources_from_aws_config_across_accounts() -> bool:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    resource_redis_cache_key = config.get("aws_config_cache.redis_key")
+    if config.region == config.get("celery.active_region") or config.get(
+        "unit_testing.override_true"
+    ):
+        # First, get list of accounts
+        accounts_d = aws.get_account_ids_to_names()
+        # Second, call tasks to enumerate all the roles across all accounts
+        for account_id in accounts_d.keys():
+            if config.get("environment") in ["prod", "dev"]:
+                cache_resources_from_aws_config_for_account.delay(account_id)
+            else:
+                if account_id in config.get("celery.test_account_ids", []):
+                    cache_resources_from_aws_config_for_account.delay(account_id)
+
+    # Delete roles in Redis cache with expired TTL
+    all_roles = red.hgetall(resource_redis_cache_key)
+    for arn, resource_entry_j in all_roles.items():
+        resource_entry = json.loads(resource_entry_j)
+        if datetime.fromtimestamp(resource_entry["ttl"]) < datetime.utcnow():
+            red.hdel(resource_redis_cache_key, arn)
+    stats.count(f"{function}.success")
+    return True
+
+
+@app.task(soft_time_limit=1800)
 def get_iam_role_limit() -> dict:
     """
     This function will gather the number of existing IAM Roles and IAM Role quota in all owned AWS accounts.
@@ -1300,6 +1397,11 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.cache_cloudtrail_errors_by_arn",
         "options": {"expires": 300},
         "schedule": schedule_1_hour,
+    },
+    "cache_resources_from_aws_config_across_accounts": {
+        "task": "consoleme.celery.celery_tasks.cache_resources_from_aws_config_across_accounts",
+        "options": {"expires": 300},
+        "schedule": schedule_6_hours,
     },
 }
 
