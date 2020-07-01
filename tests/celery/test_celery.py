@@ -1,5 +1,4 @@
 """Docstring in public module."""
-
 import json
 import os
 import sys
@@ -9,8 +8,6 @@ from unittest import TestCase
 import pytest
 from mock import patch
 from mockredis import mock_strict_redis_client
-
-from consoleme.lib.dynamo import IAMRoleDynamoHandler
 
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(APP_ROOT, ".."))
@@ -26,6 +23,8 @@ class TestCelerySync(TestCase):
         self.celery = celery
 
     def test_cache_roles_for_account(self):
+        from consoleme.lib.dynamo import IAMRoleDynamoHandler
+
         mock_red = mock_strict_redis_client()
 
         redis_patch = patch("consoleme.celery.celery_tasks.red", mock_red)
