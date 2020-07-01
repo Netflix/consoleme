@@ -1,24 +1,21 @@
 import tornado
 from tornado.testing import AsyncTestCase
 
-from consoleme.lib.change_request import (
-    _generate_inline_policy_change_model,
-    _generate_inline_policy_model_from_statements,
-    _generate_policy_name,
-    _generate_policy_sid,
-    _generate_policy_statement,
-)
 from consoleme.models import InlinePolicyChangeModel, ResourceModel
 
 
 class TestChangeRequestLib(AsyncTestCase):
     @tornado.testing.gen_test
     async def test_generate_policy_sid(self):
+        from consoleme.lib.change_request import _generate_policy_sid
+
         random_sid = await _generate_policy_sid("username@example.com")
         self.assertRegex(random_sid, "^cmusername\d{10}[a-z]{4}$")
 
     @tornado.testing.gen_test
     async def test_generate_policy_name(self):
+        from consoleme.lib.change_request import _generate_policy_name
+
         random_sid = await _generate_policy_name(None, "username@example.com")
         self.assertRegex(random_sid, "^cm_username_\d{10}_[a-z]{4}$")
         explicit = await _generate_policy_name("blah", "username@example.com")
@@ -27,6 +24,10 @@ class TestChangeRequestLib(AsyncTestCase):
     @tornado.testing.gen_test
     async def test_generate_inline_policy_model_from_statements(self):
         from copy import deepcopy
+
+        from consoleme.lib.change_request import (
+            _generate_inline_policy_model_from_statements,
+        )
 
         original_statements = [
             {
@@ -89,6 +90,8 @@ class TestChangeRequestLib(AsyncTestCase):
 
     @tornado.testing.gen_test
     async def test_generate_policy_statement(self):
+        from consoleme.lib.change_request import _generate_policy_statement
+
         actions = ["iam:List*"]
         resources = ["arn:aws:iam::123456789012:role/resource1"]
         effect = "Allow"
@@ -107,6 +110,8 @@ class TestChangeRequestLib(AsyncTestCase):
 
     @tornado.testing.gen_test
     async def test_generate_inline_policy_change_model(self):
+        from consoleme.lib.change_request import _generate_inline_policy_change_model
+
         is_new = True
         policy_name = None
         principal_arn = "arn:aws:iam::123456789012:role/roleName"
