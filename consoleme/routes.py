@@ -45,7 +45,7 @@ from consoleme.handlers.v1.policies import (
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
 from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
-from consoleme.handlers.v2.clone import CloneViewHandler
+from consoleme.handlers.v2.create_role import CreateRoleViewHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
@@ -61,6 +61,7 @@ from consoleme.handlers.v2.roles import (
     RolesHandler,
 )
 from consoleme.handlers.v2.self_service import SelfServiceConfigHandler
+from consoleme.handlers.v2.typeahead import ResourceTypeAheadHandlerV2
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -131,8 +132,9 @@ def make_app(jwt_validator=None):
         (r"/api/v2/mtls/roles/(\d{12})/(.*)", RoleDetailAppHandler),
         (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
+        (r"/api/v2/typeahead/resources", ResourceTypeAheadHandlerV2),
         (r"/config/?", DynamicConfigHandler),
-        (r"/clone/?", CloneViewHandler),
+        (r"/create_role/?", CreateRoleViewHandler),
         (r"/myheaders/?", HeaderHandler),
         (r"/policies/?", PolicyViewHandler),
         (

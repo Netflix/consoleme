@@ -7,12 +7,6 @@ from tornado.testing import AsyncTestCase
 from consoleme.config import config
 from consoleme.exceptions.exceptions import NoMatchingRequest
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.requests import (
-    get_all_pending_requests_api,
-    get_existing_pending_request,
-    get_request_by_id,
-    get_user_requests,
-)
 
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 
@@ -23,6 +17,8 @@ class TestRequestsLibrary(AsyncTestCase):
     @patch("consoleme.lib.requests.UserDynamoHandler")
     @patch("consoleme.lib.requests.auth")
     def test_get_user_requests(self, mock_auth, mock_user_dynamo_handler):
+        from consoleme.lib.requests import get_user_requests
+
         """Chuck Norris has a request and is an secondary approver for group1"""
         mock_user = "cnorris"
         mock_requests = [
@@ -52,6 +48,8 @@ class TestRequestsLibrary(AsyncTestCase):
     @patch("consoleme.lib.requests.auth")
     def test_get_all_pending_requests_api(self, mock_auth, mock_user_dynamo_handler):
         """Chuck Norris has a request and is an secondary approver for group1"""
+        from consoleme.lib.requests import get_all_pending_requests_api
+
         mock_user = "cnorris"
         mock_requests = [
             {"username": mock_user, "status": "pending"},
@@ -80,6 +78,8 @@ class TestRequestsLibrary(AsyncTestCase):
     @patch("consoleme.lib.requests.auth")
     def test_get_request_by_id(self, mock_auth, mock_user_dynamo_handler):
         """Chuck Norris has a request and is an secondary approver for group1"""
+        from consoleme.lib.requests import get_request_by_id
+
         mock_user = "cnorris"
         mock_requests = [
             {"username": mock_user, "status": "pending"},
@@ -106,6 +106,8 @@ class TestRequestsLibrary(AsyncTestCase):
     @patch("consoleme.lib.requests.auth")
     def test_get_request_by_id_no_match(self, mock_auth, mock_user_dynamo_handler):
         """Chuck Norris has a request and is an secondary approver for group1"""
+        from consoleme.lib.requests import get_request_by_id
+
         mock_user = "cnorris"
         mock_requests = []
         mock_secondary_approver = ["group1"]
@@ -128,6 +130,8 @@ class TestRequestsLibrary(AsyncTestCase):
     @patch("consoleme.lib.requests.auth")
     def test_get_request_by_id_failure(self, mock_auth, mock_user_dynamo_handler):
         """Chuck Norris has a request and is an secondary approver for group1"""
+        from consoleme.lib.requests import get_request_by_id
+
         mock_user = "cnorris"
         mock_requests = NoMatchingRequest("foo")
         mock_secondary_approver = ["group1"]
@@ -149,6 +153,8 @@ class TestRequestsLibrary(AsyncTestCase):
     @patch("consoleme.lib.requests.UserDynamoHandler")
     def test_get_existing_pending_request(self, mock_user_dynamo_handler):
         """Chuck Norris has a request and is an secondary approver for group1"""
+        from consoleme.lib.requests import get_existing_pending_request
+
         mock_user = "cnorris"
         group_info = Group(**{"name": "group1"})
         mock_requests = [
@@ -169,6 +175,8 @@ class TestRequestsLibrary(AsyncTestCase):
     @patch("consoleme.lib.requests.UserDynamoHandler")
     def test_get_existing_pending_request_fail_status(self, mock_user_dynamo_handler):
         """Chuck Norris has a request and is an secondary approver for group1"""
+        from consoleme.lib.requests import get_existing_pending_request
+
         mock_user = "cnorris"
         group_info = Group(**{"name": "group1"})
         mock_requests = [
@@ -189,6 +197,8 @@ class TestRequestsLibrary(AsyncTestCase):
     @patch("consoleme.lib.requests.UserDynamoHandler")
     def test_get_existing_pending_request_fail_group(self, mock_user_dynamo_handler):
         """Chuck Norris has a request and is an secondary approver for group1"""
+        from consoleme.lib.requests import get_existing_pending_request
+
         mock_user = "cnorris"
         group_info = Group(**{"name": "group1"})
         mock_requests = [

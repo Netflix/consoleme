@@ -168,6 +168,17 @@ tracing:
     - /consoleme/
     - /consoleme-internal/
 
+cache_all_resources_from_aws_config:
+  aws_config:
+    all_resources_query: select * where accountId = '{account_id}'
+  redis_key: ALL_RESOURCE_ARNS
+
+aws_config_cache:
+  redis_key: AWSCONFIG_RESOURCE_CACHE
+  s3:
+    bucket: consoleme_bucket
+    file: aws_config_cache/cache_{account_id}_v1.json
+
 #policies:
 #  role_name: ConsoleMeRole
 

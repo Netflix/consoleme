@@ -46,6 +46,14 @@ crypto = Crypto()
 red = RedisHandler().redis_sync()
 
 
+def parallel_write_table(table, data, overwrite_by_pkeys=None):
+    if not overwrite_by_pkeys:
+        overwrite_by_pkeys = []
+    with table.batch_writer(overwrite_by_pkeys=overwrite_by_pkeys) as batch:
+        for item in data:
+            batch.put_item(Item=item)
+
+
 def parallel_scan_table(table, total_threads=10):
     async def _scan_segment(segment, total_segments):
         response = table.scan(Segment=segment, TotalSegments=total_segments)
@@ -190,6 +198,11 @@ class UserDynamoHandler(BaseDynamoHandler):
                     "consoleme_api_health_apps",
                 )
             )
+            self.resource_cache_table = self._get_dynamo_table(
+                config.get(
+                    "aws.resource_cache_dynamo_table", "consoleme_resource_cache"
+                )
+            )
             if user_email:
                 self.user = self.get_or_create_user(user_email)
                 self.affected_user = self.user
@@ -210,6 +223,11 @@ class UserDynamoHandler(BaseDynamoHandler):
             else:
                 log.error("Unable to get Dynamo table.", exc_info=True)
                 raise
+
+    def write_resource_cache_data(self, data):
+        parallel_write_table(
+            self.resource_cache_table, data, ["resourceId", "resourceType"]
+        )
 
     async def get_dynamic_config_yaml(self) -> str:
         """Retrieve dynamic configuration yaml."""

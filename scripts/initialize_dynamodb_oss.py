@@ -135,3 +135,30 @@ except ClientError as e:
         f"Unable to create table consoleme_policy_requests  . Most likely it already exists and you can ignore this "
         f"message. Error: {e}"
     )
+
+try:
+    ddb.create_table(
+        TableName="consoleme_resource_cache",
+        KeySchema=[{"AttributeName": "resourceId", "KeyType": "HASH"}],  # Partition key
+        AttributeDefinitions=[
+            {"AttributeName": "resourceId", "AttributeType": "S"},
+            {"AttributeName": "resourceType", "AttributeType": "S"},
+        ],
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "arn-index",
+                "KeySchema": [{"AttributeName": "arn", "KeyType": "HASH"}],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 123,
+                    "WriteCapacityUnits": 123,
+                },
+            }
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+    )
+except ClientError as e:
+    print(
+        f"Unable to create table consoleme_resource_cache  . Most likely it already exists and you can ignore this "
+        f"message. Error: {e}"
+    )

@@ -44,6 +44,9 @@ $(document).ready(function () {
             let is_service_role = (split_resource_name[1] === "aws-service-role");
             let iam_resource_name = split_resource_name.slice(1).join("/");
             let resource_type = data.split(":")[2];
+            if (resource_type === "iam" && data.split(":")[5].startsWith("user/")) {
+              resource_type = "iam_user"
+            }
             let region = data.split(":")[3];
             if (!is_service_role && resource_type === "iam") {
               data = '<a target="_blank" href="/policies/edit/' + account_id + '/iamrole/' + iam_resource_name + '">' + data + '</a>';

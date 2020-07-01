@@ -284,10 +284,10 @@ class TestRoleCloneHandler(AsyncHTTPTestCase):
         "consoleme.handlers.v2.roles.RoleCloneHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
-    @patch("consoleme.handlers.v2.roles.can_clone_roles")
+    @patch("consoleme.handlers.v2.roles.can_create_roles")
     @mock_iam
-    def test_clone_authorized_user(self, mock_can_clone_roles):
-        mock_can_clone_roles.return_value = create_future(True)
+    def test_clone_authorized_user(self, mock_can_create_roles):
+        mock_can_create_roles.return_value = create_future(True)
         input_body = {
             "dest_account_id": "012345678901",
             "dest_role_name": "testing_dest_role",

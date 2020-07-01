@@ -113,6 +113,7 @@ paths:
       summary: get resources
       parameters:
         - $ref: '#/components/parameters/AccountIdQueryString'
+        - $ref: '#/components/parameters/ResourceTypeQueryString'
       responses:
         '200':
           description: OK
@@ -121,7 +122,21 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ResourceModel'
+                  type: string
+  /typeahead/resources:
+    get:
+      summary: typeahead for all known resource ARNs
+      parameters:
+        - $ref: '#/components/parameters/TypeAheadQueryString'
+        - $ref: '#/components/parameters/AccountIdQueryString'
+        - $ref: '#/components/parameters/ResourceTypeQueryString'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArnArray'
   /clone/role:
     post:
       summary: clone a role
@@ -324,6 +339,24 @@ components:
       schema:
         type: string
         pattern: '^\d{12}$'
+    TypeAheadQueryString:
+      name: typeahead
+      in: query
+      example: con
+      schema:
+        type: string
+    ResourceTypeQueryString:
+      name: resource_type
+      in: query
+      example: sqs
+      schema:
+        type: string
+    LimitQueryString:
+      name: limit
+      in: query
+      example: 20
+      schema:
+        type: int
   schemas:
     ResourceModel:
       type: object
@@ -706,6 +739,11 @@ components:
           - $ref: '#/components/schemas/ResourcePolicyChangeModel'
         discriminator:
           propertyName: change_model
+    ArnArray:
+      type: array
+      items:
+        type: string
+        pattern: '^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$'
     PolicyModel:
       type: object
       required:

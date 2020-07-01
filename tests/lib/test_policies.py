@@ -3,7 +3,6 @@ from unittest import TestCase
 
 from mock import MagicMock, patch
 
-from consoleme.lib.policies import get_actions_for_resource, get_resources_from_events
 from tests.conftest import create_future
 
 mock_s3_bucket_redis = MagicMock(
@@ -15,6 +14,8 @@ mock_s3_bucket_redis = MagicMock(
 
 class TestPoliciesLib(TestCase):
     def test_get_actions_for_resource(self):
+        from consoleme.lib.policies import get_actions_for_resource
+
         test_cases = [
             {
                 "arn": "arn:aws:s3:::foobar",
@@ -44,6 +45,8 @@ class TestPoliciesLib(TestCase):
 
     @patch("consoleme.lib.aws.redis_hgetall", mock_s3_bucket_redis)
     def test_get_resources_from_events(self):
+        from consoleme.lib.policies import get_resources_from_events
+
         policy_changes = [
             {
                 "inline_policies": [
