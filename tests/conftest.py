@@ -12,8 +12,6 @@ from mockredis import mock_strict_redis_client
 from moto import mock_dynamodb2, mock_iam, mock_lambda, mock_sts
 from tornado.concurrent import Future
 
-from consoleme.lib.dynamo import BaseDynamoHandler
-
 MOCK_ROLE = {
     "arn": "arn:aws:iam::123456789012:role/FakeRole",
     "name": "FakeRole",
@@ -76,6 +74,8 @@ MOCK_ROLE = {
     },
     "templated": "fake/file.json",
 }
+
+fakeredis_server = fakeredis.FakeServer()
 
 
 class AioTestCase(unittest.TestCase):
@@ -299,6 +299,8 @@ def dummy_requests_data(requests_table):
         "username": {"S": "test@user.xyz"},
         "reviewer_commnets": {"S": "All the access!"},
     }
+    from consoleme.lib.dynamo import BaseDynamoHandler
+
     requests_table.put_item(
         TableName="consoleme_requests_global",
         Item=BaseDynamoHandler()._data_to_dynamo_replace(user),
@@ -316,6 +318,8 @@ def dummy_users_data(users_table):
         "last_udpated": {"N": "1547848006"},
         "requests": {"L": [{"S": "abc-def-ghi"}]},
     }
+    from consoleme.lib.dynamo import BaseDynamoHandler
+
     users_table.put_item(
         TableName="consoleme_users_global",
         Item=BaseDynamoHandler()._data_to_dynamo_replace(user),
@@ -471,14 +475,15 @@ def www_user():
     )
 
 
+class FakeRedis(fakeredis.FakeStrictRedis):
+    def __init__(self, *args, **kwargs):
+        super(FakeRedis, self).__init__(*args, **kwargs, server=fakeredis_server)
+
+
 @pytest.fixture(autouse=True)
 def redis(mocker):
-    mocker.patch("consoleme.lib.redis.redis.StrictRedis", fakeredis.FakeStrictRedis)
-    mocker.patch("consoleme.lib.redis.redis.Redis", fakeredis.FakeStrictRedis)
-    mocker.patch(
-        "consoleme.lib.redis.RedisHandler.redis_sync",
-        return_value=fakeredis.FakeStrictRedis(),
-    )
+    mocker.patch("redis.Redis", FakeRedis)
+    mocker.patch("redis.StrictRedis", FakeRedis)
     return True
 
 
