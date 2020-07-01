@@ -64,6 +64,7 @@ export function PolicyTypeahead(value, callback, limit = 20) {
 export function getCompletions(editor, session, pos, prefix, callback) {
     let resource = false
     let action = false
+
     const lines = editor.getValue().split("\n")
     for (let i = pos.row; i >= 0; i--) {
         if (lines[i].indexOf('"Resource"') > -1) {
@@ -76,19 +77,17 @@ export function getCompletions(editor, session, pos, prefix, callback) {
             break
         }
     }
+    // Only start typeahead if we have more than 3 characters to work with
+    if (prefix.length <= 3) {
+        callback(null, []);
+        return
+    }
     // Check for other statements? The beginning of the statement? The curly bracket?
     // if not action or resource do nothing?
     if (prefix.length === 0 || (action === false && resource === false)) {
         callback(null, []);
         return
     }
-    // TODO(ccastrapel): Need generic typeahead for all resource types
-    let resources = [
-        {"resource": "arn:aws:s3:::", "type": "s3"},
-        {"resource": "arn:aws:sqs:", "type": "sqs"},
-        {"resource": "arn:aws:sns:", "type": "sns"},
-        {"resource": "arn:aws:iam:", "type": "iam_arn"}];
-    // TODO(ccastrapel): Regions should be configurable
 
     let row = session.getDocument().getLine(pos["row"]).trim().replace(/\"/g, "");
     if (action === true) {
@@ -107,6 +106,6 @@ export function getCompletions(editor, session, pos, prefix, callback) {
         })
     } else if (resource === true) {
         // We know we're in the Resource section, so let's help type the ARN
-       new PolicyTypeahead(row, callback, 1000)
+       new PolicyTypeahead(row, callback, 500000)
     }
 }

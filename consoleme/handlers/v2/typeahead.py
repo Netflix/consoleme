@@ -15,7 +15,7 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
         try:
             type_ahead: Optional[str] = self.request.arguments.get("typeahead")[
                 0
-            ].decode("utf-8")
+            ].decode("utf-8").lower()
         except TypeError:
             type_ahead = None
 
@@ -60,7 +60,7 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
                 continue
             if account_id and account_id != arn.split(":")[4]:
                 continue
-            if type_ahead and type_ahead in arn:
+            if type_ahead and type_ahead in arn.lower():
                 matching.add(arn)
             elif not type_ahead:
                 # Oh, you want all the things do you?
