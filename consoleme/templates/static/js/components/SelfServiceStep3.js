@@ -13,11 +13,14 @@ import {
     Table,
     TextArea,
 } from 'semantic-ui-react';
-import {generate_id, sendRequestCommon} from '../helpers/utils';
+import {generate_id, sendRequestCommon, getCompletions} from '../helpers/utils';
 import AceEditor from "react-ace";
 import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-monokai";
+import "ace-builds/src-noconflict/ext-language_tools"
 
+let langTools = ace.acequire('ace/ext/language_tools');
+langTools.addCompleter({getCompletions: getCompletions});
 
 class SelfServiceStep3 extends Component {
     state = {

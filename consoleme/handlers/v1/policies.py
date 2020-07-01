@@ -997,7 +997,7 @@ class AutocompleteHandler(BaseAPIV1Handler):
             )
             results = [{"title": service} for service in services]
         else:
-            results = sorted([dict(permission=r) for r in results])
+            results = [dict(permission=r) for r in results]
         self.write(json.dumps(results))
         await self.finish()
 
