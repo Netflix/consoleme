@@ -45,20 +45,16 @@ export async function sendRequestCommon(json, location = window.location.href) {
 }
 
 
-export function PolicyTypeahead(resource_type, value, account_id = null, callback, limit = 20) {
-        let url = "/policies/typeahead?resource=" + resource_type + "&search=" + value + "&limit=" + limit
-        if (account_id) {
-          url += "&account_id=" + account_id
-        }
+export function PolicyTypeahead(value, callback, limit = 20) {
+        let url = "/api/v2/typeahead/resources?typeahead=" + value + "&limit=" + limit
 
-        const resp = fetch(url).then((resp) => {
+        fetch(url).then((resp) => {
             resp.text().then((resp) => {
-                const result = JSON.parse(resp);
+                const results = JSON.parse(resp);
                 let matching_resources = []
                 results.forEach(function (result) {
                     // Strip out what the user has currently typed (`row`) from the full value returned from typeahead
-                    const v = result.title.replace(row, row[row.length - 1]);
-                    matching_resources.push({name: result.title, value: v, meta: "Resource", score: 1000})
+                    matching_resources.push({name: result, value: result, meta: "Resource", score: 1000})
                 })
                 callback(null, matching_resources)
             })
@@ -93,11 +89,7 @@ export function getCompletions(editor, session, pos, prefix, callback) {
         {"resource": "arn:aws:sns:", "type": "sns"},
         {"resource": "arn:aws:iam:", "type": "iam_arn"}];
     // TODO(ccastrapel): Regions should be configurable
-    let regions = [
-        {"region": "us-east-1", "type": "region"},
-        {"region": "us-west-2", "type": "region"},
-        {"region": "eu-west-1", "type": "region"},
-    ]
+
     let row = session.getDocument().getLine(pos["row"]).trim().replace(/\"/g, "");
     if (action === true) {
         fetch("/api/v1/policyuniverse/autocomplete?prefix=" + row).then((resp) => {
@@ -114,31 +106,7 @@ export function getCompletions(editor, session, pos, prefix, callback) {
             })
         })
     } else if (resource === true) {
-        // We know we're in the Resource section, so let's help type the ARN starting with the prefix
-        // of `arn:aws:<resource_type>`
-        if ("arn:aws:".indexOf(row) > -1 && row.length < 9) {
-            callback(null, resources.map(function (ea) {
-                return {name: ea.resource, value: ea.resource, meta: "Resource", score: 1000}
-            }));
-        } else if (row.indexOf("arn:aws:") > -1) {
-            // We have `arn:aws:<resource_type>`, now let's help type of the region if necessary
-            const splitted = row.split(":")
-            if (splitted.length === 4 && splitted[2] !== "s3") {
-                callback(null, regions.map(function (ea) {
-                    return {name: ea.region, value: ea.region, meta: "Region", score: 1000}
-                }));
-                return
-            }
-            let resource_type = null
-            resources.forEach(function (r) {
-                if (row.indexOf(r.resource) > -1) {
-                    resource_type = r.type
-                }
-            });
-            if (resource_type !== null) {
-                row = row.replace("arn:aws:s3:::", "")
-                let results = new PolicyTypeahead(resource_type, row, null, callback, 100)
-            }
-        }
+        // We know we're in the Resource section, so let's help type the ARN
+       new PolicyTypeahead(row, callback, 1000)
     }
 }

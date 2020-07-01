@@ -139,10 +139,14 @@ except ClientError as e:
 try:
     ddb.create_table(
         TableName="consoleme_resource_cache",
-        KeySchema=[{"AttributeName": "resourceId", "KeyType": "HASH"}],  # Partition key
+        KeySchema=[
+            {"AttributeName": "resourceId", "KeyType": "HASH"},
+            {"AttributeName": "resourceType", "KeyType": "RANGE"},  # Sort key
+        ],  # Partition key
         AttributeDefinitions=[
             {"AttributeName": "resourceId", "AttributeType": "S"},
             {"AttributeName": "resourceType", "AttributeType": "S"},
+            {"AttributeName": "arn", "AttributeType": "S"},
         ],
         GlobalSecondaryIndexes=[
             {

@@ -20,7 +20,8 @@ import "ace-builds/src-noconflict/theme-monokai";
 import "ace-builds/src-noconflict/ext-language_tools"
 
 let langTools = ace.acequire('ace/ext/language_tools');
-langTools.addCompleter({getCompletions: getCompletions});
+langTools.setCompleters([{getCompletions: getCompletions}])
+//langTools.addCompleter({getCompletions: getCompletions});
 
 class SelfServiceStep3 extends Component {
     state = {
@@ -269,7 +270,7 @@ class SelfServiceStep3 extends Component {
                             }}
                             setOptions={{
                                 "enableBasicAutocompletion": true,
-                                "enableLiveAutocompletion": true,
+                                "enableLiveAutocompletion": true
                             }}
                         />
                         <Divider />
