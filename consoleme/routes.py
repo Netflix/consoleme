@@ -154,7 +154,8 @@ def make_app(jwt_validator=None):
         (r"/swagger.json", SwaggerJsonGenerator),
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service_v1", SelfServiceHandler),
-        (r"/self_service", SelfServiceV2Handler),
+        (r"/self_service", SelfServiceHandler),  # TODO: Switch for migration to V2
+        (r"/self_service_v2", SelfServiceV2Handler),
     ]
 
     routes.extend(
