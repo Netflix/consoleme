@@ -88,7 +88,7 @@ class SelfServiceStep3 extends Component {
     return aceComponent
   }
 
-  buildPermissionsTable() {
+  buildPermissionsTable(statement, custom_statement, messagesToShow) {
     const {permissions, services} = this.props;
     const permissionRows = permissions.map(permission => {
       const serviceDetail = _.find(services, {"key": permission.service});
@@ -130,7 +130,7 @@ class SelfServiceStep3 extends Component {
       );
     });
 
-    return (
+    const permissionTable = (
       <Table celled striped selectable>
         <Table.Header>
           <Table.HeaderCell>Service</Table.HeaderCell>
@@ -142,6 +142,12 @@ class SelfServiceStep3 extends Component {
         </Table.Body>
       </Table>
     );
+
+    if (statement === custom_statement) {
+      return permissionTable
+    } else {
+      return messagesToShow
+    }
   }
 
   handleSubmit() {
@@ -211,7 +217,7 @@ class SelfServiceStep3 extends Component {
     const {statement} = this.state;
     const messages = [];
     if (statement !== custom_statement) {
-      messages.push("Please Review your custom changes before making a submission.");
+      messages.push("Custom changes were created in the JSON editor for this request.");
     }
     this.setState({
       messages,
@@ -226,7 +232,7 @@ class SelfServiceStep3 extends Component {
       ? (
         <Message negative>
           <Message.Header>
-            There was an issue making a request.
+            Custom Changes were detected
           </Message.Header>
           <Message.List>
             {
@@ -252,9 +258,9 @@ class SelfServiceStep3 extends Component {
             <p>
               Your new permissions will be attached to the role <a
               href={`/policies/edit/${role.account_id}/iamrole/${role.name}`} target="_blank">{role.arn}</a> with the
-              followings.
+              following statements:
             </p>
-            {this.buildPermissionsTable()}
+            {this.buildPermissionsTable(statement, custom_statement, messagesToShow)}
             <Divider/>
             <Header>
               Justification
@@ -269,7 +275,6 @@ class SelfServiceStep3 extends Component {
             <Divider/>
             <Button
               content="Submit"
-              disabled={statement !== custom_statement}
               fluid
               onClick={this.handleSubmit.bind(this)}
               primary
@@ -333,7 +338,6 @@ class SelfServiceStep3 extends Component {
         >
           <Loader/>
         </Dimmer>
-        {messagesToShow}
         {tabContent}
       </React.Fragment>
     );
