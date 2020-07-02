@@ -8,6 +8,11 @@ info:
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.txt
+servers:
+  - url: '{server}/api/v2'
+    variables:
+      server:
+        default: https://consoleme.example.com
 tags:
   - name: roles
     description: IAM Role endpoints
@@ -356,7 +361,7 @@ components:
       in: query
       example: 20
       schema:
-        type: int
+        type: integer
   schemas:
     ResourceModel:
       type: object
@@ -1053,4 +1058,3 @@ components:
         instance_profile:
           type: boolean
           default: True
-
