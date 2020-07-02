@@ -180,7 +180,7 @@ class CreateCloneFeature extends Component {
             messages: null,
             isSubmitting: true,
         }, async() => {
-            const response = await sendRequestCommon(JSON.stringify(payload), url);
+            const response = await sendRequestCommon(payload, url);
             const messages = [];
             let requestResults = [];
             let requestSent = false;
