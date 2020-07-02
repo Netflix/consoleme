@@ -4,17 +4,17 @@
 #
 #    pip-compile --no-index --output-file=requirements-docs.txt requirements-docs.in
 #
-apispec==3.3.1            # via -c requirements.txt, -r requirements-docs.in
+apispec[yaml]==3.3.1      # via -c requirements.txt, -r requirements-docs.in
 click==7.1.2              # via -c requirements-test.txt, -c requirements.txt, mkdocs, nltk
 future==0.18.2            # via -c requirements-test.txt, -c requirements.txt, lunr
 jinja2==2.11.2            # via -c requirements-test.txt, mkdocs
-joblib==0.15.1            # via -c requirements.txt, nltk
+joblib==0.16.0            # via -c requirements.txt, nltk
 livereload==2.6.2         # via mkdocs
 lunr[languages]==0.5.8    # via mkdocs
 markdown==3.2.2           # via mkdocs, mkdocs-material, pymdown-extensions
 markupsafe==1.1.1         # via -c requirements-test.txt, jinja2
 mkdocs-material-extensions==1.0  # via mkdocs-material
-mkdocs-material==5.3.3    # via -r requirements-docs.in, mkdocs-material-extensions
+mkdocs-material==5.4.0    # via -r requirements-docs.in, mkdocs-material-extensions
 mkdocs==1.1.2             # via -r requirements-docs.in, mkdocs-material
 nltk==3.5                 # via lunr
 pygments==2.6.1           # via -c requirements-test.txt, -c requirements.txt, mkdocs-material
@@ -23,4 +23,4 @@ pyyaml==5.3.1             # via -c requirements-test.txt, -c requirements.txt, -
 regex==2020.6.8           # via -c requirements-test.txt, nltk
 six==1.15.0               # via -c requirements-test.txt, -c requirements.txt, livereload, lunr
 tornado==6.0.4            # via -c requirements-test.txt, -c requirements.txt, livereload, mkdocs
-tqdm==4.46.1              # via nltk
+tqdm==4.47.0              # via nltk
