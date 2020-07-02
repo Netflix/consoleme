@@ -1,21 +1,7 @@
 import ujson as json
-from asgiref.sync import async_to_sync
 from mock import patch
+from tests.conftest import MockBaseHandler
 from tornado.testing import AsyncHTTPTestCase
-
-from consoleme.lib.change_request import (
-    generate_generic_change,
-    generate_s3_change,
-    generate_sns_change,
-    generate_sqs_change,
-)
-from consoleme.models import (
-    GenericChangeGeneratorModel,
-    S3ChangeGeneratorModel,
-    SNSChangeGeneratorModel,
-    SQSChangeGeneratorModel,
-)
-from tests.conftest import MockBaseHandler, create_future
 
 
 class TestGenerateChangesHandler(AsyncHTTPTestCase):
@@ -24,68 +10,43 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
 
         return make_app(jwt_validator=lambda x: {})
 
-    @patch(
-        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow"
-    )
-    def test_post_no_user(self, mock_auth):
-        mock_auth.return_value = create_future(None)
-        expected = {"status": 403, "title": "Forbidden", "message": "No user detected"}
+    def test_post_no_user(self):
+        expected = b"No user detected. Check configuration."
         response = self.fetch("/api/v2/generate_changes", method="POST", body="abcd")
         self.assertEqual(response.code, 403)
-        self.assertDictEqual(json.loads(response.body), expected)
+        self.assertEqual(response.body, expected)
 
     @patch(
         "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
     def test_post_invalid_requests(self):
-        input_body = {
-            "arn": "arn:aws:s3::123456789012:example_bucket",
-        }
-        expected = {
-            "status": 400,
-            "title": "Bad Request",
-            "message": "Error validating input: 2 validation errors for ChangeGeneratorModel\ngenerator_type\n  "
-            "field required (type=value_error.missing)\nresource\n  "
-            "field required (type=value_error.missing)",
-        }
+        input_body = {"changes": [{"arn": "arn:aws:s3::123456789012:example_bucket"}]}
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )
+        self.assertIn("Error validating input", str(response.body))
         self.assertEqual(response.code, 400)
-        self.assertDictEqual(json.loads(response.body), expected)
 
-        input_body["resource"] = "arn:aws:s3::12345678902:example_bucket_2"
-        input_body["generator_type"] = "fake"
-        expected = {
-            "status": 400,
-            "title": "Bad Request",
-            "message": "Error validating input: 1 validation error for ChangeGeneratorModel\ngenerator_type\n  value is"
-            " not a valid enumeration member; permitted: 'generic', 's3', 'sqs', 'sns' "
-            "(type=type_error.enum; enum_values=[<GeneratorType.generic: 'generic'>, <GeneratorType.s3: "
-            "'s3'>, <GeneratorType.sqs: 'sqs'>, <GeneratorType.sns: 'sns'>])",
-        }
-        response = self.fetch(
-            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
-        )
-        self.assertEqual(response.code, 400)
-        self.assertDictEqual(json.loads(response.body), expected)
+        input_body["changes"][0][
+            "resource"
+        ] = "arn:aws:s3::12345678902:example_bucket_2"
+        input_body["changes"][0]["generator_type"] = "fake"
 
-        input_body["generator_type"] = "s3"
-        input_body["action_groups"] = ["get", "fakeaction"]
-        expected = {
-            "status": 400,
-            "title": "Bad Request",
-            "message": "Error validating input: 1 validation error for S3ChangeGeneratorModel\naction_groups -> 1\n  "
-            "value is not a valid enumeration member; permitted: 'list', 'get', 'put', 'delete' "
-            "(type=type_error.enum; enum_values=[<ActionGroup.list: 'list'>, <ActionGroup.get: 'get'>, "
-            "<ActionGroup.put: 'put'>, <ActionGroup.delete: 'delete'>])",
-        }
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )
+        self.assertIn("Error validating input", str(response.body))
         self.assertEqual(response.code, 400)
-        self.assertDictEqual(json.loads(response.body), expected)
+
+        input_body["changes"][0]["generator_type"] = "s3"
+        input_body["changes"][0]["action_groups"] = ["get", "fakeaction"]
+
+        response = self.fetch(
+            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
+        )
+        self.assertIn("Error validating input", str(response.body))
+        self.assertEqual(response.code, 400)
 
     @patch(
         "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
@@ -93,25 +54,90 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
     )
     def test_post_valid_request_generic(self):
         input_body = {
-            "arn": "arn:aws:s3::123456789012:examplebucket",
-            "resource": "arn:aws:s3::12345678902:examplebucketahhhh",
-            "generator_type": "generic",
-            "version": "abcd",
-            "asd": "sdf",
-            "access_level": ["read", "write"],
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "s3",
+                    "resource_arn": "arn:aws:s3:::123456789012-bucket",
+                    "bucket_prefix": "/*",
+                    "effect": "Allow",
+                    "action_groups": ["get", "list"],
+                },
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "s3",
+                    "resource_arn": "arn:aws:s3:::bucket2",
+                    "bucket_prefix": "/*",
+                    "effect": "Allow",
+                    "action_groups": ["list", "get"],
+                },
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "crud_lookup",
+                    "resource_arn": "*",
+                    "effect": "Allow",
+                    "service_name": "ssm",
+                    "action_groups": ["list", "read"],
+                },
+            ]
         }
-        generic_cgm = GenericChangeGeneratorModel(**input_body)
-        expected = async_to_sync(generate_generic_change)(generic_cgm)
+
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["policy"]["policy_sha256"], expected.policy.policy_sha256
+            result[0]["principal_arn"], input_body["changes"][0]["principal_arn"]
         )
+
+    @patch(
+        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    def test_post_valid_request_wildcard(self):
+        input_body = {
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "s3",
+                    "resource_arn": "*",
+                    "bucket_prefix": "folder_name/filename",
+                    "effect": "Allow",
+                    "action_groups": ["get", "list"],
+                },
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "s3",
+                    "resource_arn": "*",
+                    "bucket_prefix": "folder_name/*",
+                    "effect": "Allow",
+                    "action_groups": ["list", "get"],
+                },
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "crud_lookup",
+                    "resource_arn": "*",
+                    "effect": "Allow",
+                    "service_name": "ssm",
+                    "action_groups": ["list", "read"],
+                },
+            ]
+        }
+
+        response = self.fetch(
+            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 200)
+        result = json.loads(response.body)
         self.assertEqual(
-            result["policy"]["policy_document"], expected.policy.policy_document
+            result[0]["principal_arn"], input_body["changes"][0]["principal_arn"]
         )
 
     @patch(
@@ -120,26 +146,56 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
     )
     def test_post_valid_request_s3(self):
         input_body = {
-            "arn": "arn:aws:s3::123456789012:examplebucket",
-            "resource": "arn:aws:s3::12345678902:examplebucketahhhh",
-            "generator_type": "s3",
-            "version": "abcd",
-            "asd": "sdf",
-            "action_groups": ["list", "delete"],
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "resource_arn": "arn:aws:s3::123456789012:examplebucket",
+                    "bucket_prefix": "/*",
+                    "generator_type": "s3",
+                    "version": "abcd",
+                    "asd": "sdf",
+                    "action_groups": ["list", "delete"],
+                }
+            ]
         }
-        s3_cgm = S3ChangeGeneratorModel(**input_body)
-        expected = async_to_sync(generate_s3_change)(s3_cgm)
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["policy"]["policy_sha256"], expected.policy.policy_sha256
+            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/roleName"
         )
-        self.assertEqual(
-            result["policy"]["policy_document"], expected.policy.policy_document
+
+    @patch(
+        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    @patch("consoleme.handlers.v2.generate_changes.ChangeGeneratorModelArray.parse_raw")
+    def test_post_raises(self, mock_change_generator_model_array_parse_raw):
+        mock_change_generator_model_array_parse_raw.side_effect = Exception(
+            "Unknown Exception!"
         )
+        input_body = {
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "resource_arn": "arn:aws:s3::123456789012:examplebucket",
+                    "bucket_prefix": "/*",
+                    "generator_type": "s3",
+                    "version": "abcd",
+                    "asd": "sdf",
+                    "action_groups": ["list", "delete"],
+                }
+            ]
+        }
+        response = self.fetch(
+            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 500)
+        self.assertIn("Error generating changes", str(response.body))
 
     @patch(
         "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
@@ -147,25 +203,26 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
     )
     def test_post_valid_request_sns(self):
         input_body = {
-            "arn": "arn:aws:s3::123456789012:examplebucket",
-            "resource": "arn:aws:s3::12345678902:examplebucketahhhh",
-            "generator_type": "sns",
-            "version": "abcd",
-            "asd": "sdf",
-            "action_groups": ["get_topic_attributes", "publish"],
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/exampleRole",
+                    "resource_arn": "arn:aws:sns:us-east-1:123456789012:exampletopic",
+                    "generator_type": "sns",
+                    "version": "abcd",
+                    "asd": "sdf",
+                    "action_groups": ["get_topic_attributes", "publish"],
+                }
+            ]
         }
-        sns_cgm = SNSChangeGeneratorModel(**input_body)
-        expected = async_to_sync(generate_sns_change)(sns_cgm)
+
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["policy"]["policy_sha256"], expected.policy.policy_sha256
-        )
-        self.assertEqual(
-            result["policy"]["policy_document"], expected.policy.policy_document
+            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/exampleRole"
         )
 
     @patch(
@@ -174,23 +231,22 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
     )
     def test_post_valid_request_sqs(self):
         input_body = {
-            "arn": "arn:aws:s3::123456789012:examplebucket",
-            "resource": "arn:aws:s3::12345678902:examplebucketahhhh",
-            "generator_type": "sqs",
-            "version": "abcd",
-            "asd": "sdf",
-            "action_groups": ["get_queue_attributes", "delete_messages"],
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "sqs",
+                    "resource_arn": "arn:aws:sqs:us-east-1:123456789012:resourceName",
+                    "effect": "Allow",
+                    "action_groups": ["get_queue_attributes", "send_messages"],
+                }
+            ]
         }
-        sqs_cgm = SQSChangeGeneratorModel(**input_body)
-        expected = async_to_sync(generate_sqs_change)(sqs_cgm)
         response = self.fetch(
             "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
         )
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["policy"]["policy_sha256"], expected.policy.policy_sha256
-        )
-        self.assertEqual(
-            result["policy"]["policy_document"], expected.policy.policy_document
+            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/roleName"
         )

@@ -1,161 +1,237 @@
 import tornado
-import ujson as json
 from tornado.testing import AsyncTestCase
 
-from consoleme.lib.change_request import (
-    _generate_iam_policy,
-    generate_generic_change,
-    generate_s3_change,
-    generate_sns_change,
-    generate_sqs_change,
-)
-from consoleme.models import (
-    ChangeType,
-    GenericChangeGeneratorModel,
-    S3ChangeGeneratorModel,
-    SNSChangeGeneratorModel,
-    SQSChangeGeneratorModel,
-)
+from consoleme.models import InlinePolicyChangeModel, ResourceModel
 
 
 class TestChangeRequestLib(AsyncTestCase):
     @tornado.testing.gen_test
-    async def test_generate_iam_policy(self):
-        resources = ["arn:aws:s3:::foo", "arn:aws:s3:::foo/bar/*"]
-        actions = ["s3:ListObjects", "s3:GetObject", "s3:GetObject"]
-        result = await _generate_iam_policy(resources, actions)
-        self.assertEqual(
-            result.policy_sha256,
-            "0315b4f93ae5c8007038c7f16c909081eb951bca5f206576424179b8e56834d0",
-        )
-        policy_json = json.loads(result.policy_document)
-        statement = policy_json["Statement"][0]
-        self.assertListEqual(statement["Action"], ["s3:GetObject", "s3:ListObjects"])
-        self.assertListEqual(
-            statement["Resource"], ["arn:aws:s3:::foo", "arn:aws:s3:::foo/bar/*"],
-        )
-        self.assertEqual(statement["Effect"], "Allow")
-        self.assertEqual(statement["Sid"], "")
+    async def test_generate_policy_sid(self):
+        from consoleme.lib.change_request import _generate_policy_sid
+
+        random_sid = await _generate_policy_sid("username@example.com")
+        self.assertRegex(random_sid, "^cmusername\d{10}[a-z]{4}$")
 
     @tornado.testing.gen_test
-    async def test_generate_s3_change(self):
-        test_change_input = {
-            "arn": "arn:aws:iam::123456789012:role/hey",
-            "generator_type": "s3",
-            "resource": "arn:aws:s3:::foo",
-            "bucket_name": "foo",
-            "bucket_prefix": "/*",
-            "action_groups": ["list", "get"],
-        }
+    async def test_generate_policy_name(self):
+        from consoleme.lib.change_request import _generate_policy_name
 
-        test_change = S3ChangeGeneratorModel(**test_change_input)
-        result = await generate_s3_change(test_change)
-        self.assertEqual(result.change_type, ChangeType.inline_policy)
-        self.assertEqual(
-            result.policy.policy_sha256,
-            "75a9789293f685c34a882277c944a0db785e7d02e489625e1ccbcb429def4b92",
-        )
-
-        test_change_input["bucket_prefix"] = "/foo/*"
-        test_change = S3ChangeGeneratorModel(**test_change_input)
-        result = await generate_s3_change(test_change)
-        self.assertNotEqual(
-            result.policy.policy_sha256,
-            "75a9789293f685c34a882277c944a0db785e7d02e489625e1ccbcb429def4b92",
-        )
+        random_sid = await _generate_policy_name(None, "username@example.com")
+        self.assertRegex(random_sid, "^cm_username_\d{10}_[a-z]{4}$")
+        explicit = await _generate_policy_name("blah", "username@example.com")
+        self.assertRegex(explicit, "blah")
 
     @tornado.testing.gen_test
-    async def test_generate_sns_change(self):
-        test_change_input = {
-            "arn": "arn:aws:iam::123456789012:role/hey",
-            "generator_type": "sns",
-            "resource": "arn:aws:sns:::foo",
-            "action_groups": ["get_topic_attributes", "publish", "subscribe"],
-        }
+    async def test_generate_inline_policy_model_from_statements(self):
+        from copy import deepcopy
 
-        test_change = SNSChangeGeneratorModel(**test_change_input)
-        result = await generate_sns_change(test_change)
-        policy_document = json.loads(result.policy.policy_document)
-        self.assertEqual(result.change_type, ChangeType.inline_policy)
-        self.assertListEqual(
-            policy_document.get("Statement")[0].get("Action"),
-            [
-                "sns:ConfirmSubscription",
-                "sns:GetEndpointAttributes",
-                "sns:GetTopicAttributes",
-                "sns:Publish",
-                "sns:Subscribe",
-            ],
+        from consoleme.lib.change_request import (
+            _generate_inline_policy_model_from_statements,
         )
-        self.assertEqual(
-            result.policy.policy_sha256,
-            "b7e24b1e3d976ba8c97470c292875e4f8415294a4fb8b561654e5767b63b0bb2",
-        )
+
+        original_statements = [
+            {
+                "Action": [
+                    "s3:GetObject",
+                    "s3:GetObjectTagging",
+                    "s3:GetObjectVersionTagging",
+                    "s3:GetObjectAcl",
+                    "s3:GetObjectVersion",
+                    "s3:ListBucketVersions",
+                    "s3:ListBucket",
+                    "s3:GetObjectVersionAcl",
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:s3:::123456789012-bucket",
+                    "arn:aws:s3:::123456789012-bucket/*",
+                    "arn:aws:s3:::bucket2",
+                    "arn:aws:s3:::bucket2/*",
+                ],
+            },
+            {
+                "Action": [
+                    "sqs:GetQueueAttributes",
+                    "sqs:SendMessage",
+                    "sqs:GetQueueUrl",
+                ],
+                "Effect": "Allow",
+                "Resource": ["arn:aws:sqs:us-east-1:123456789012:resourceName"],
+            },
+            {
+                "Action": ["sns:Publish"],
+                "Effect": "Allow",
+                "Resource": ["arn:aws:sns:us-east-1:123456789012:resourceName"],
+            },
+            {
+                "Action": [
+                    "sns:GetTopicAttributes",
+                    "sns:Publish",
+                    "sns:GetEndpointAttributes",
+                ],
+                "Effect": "Allow",
+                "Resource": ["*", "arn:aws:sns:us-east-1:123456789012:resourceName2"],
+            },
+        ]
+        statements = deepcopy(original_statements)
+
+        result = await _generate_inline_policy_model_from_statements(statements)
+        for entry in ["Action", "Effect", "Resource"]:  # Disregard Sid here
+            stripped_result = sorted(
+                [
+                    statement.pop(entry)
+                    for statement in result.policy_document["Statement"]
+                ]
+            )
+            stripped_comparison = sorted(
+                [statement.pop(entry) for statement in original_statements]
+            )
+            self.assertEqual(stripped_result, stripped_comparison)
 
     @tornado.testing.gen_test
-    async def test_generate_sqs_change(self):
-        test_change_input = {
-            "arn": "arn:aws:iam::123456789012:role/hey",
-            "generator_type": "sqs",
-            "resource": "arn:aws:sqs:::foo",
-            "action_groups": [
-                "get_queue_attributes",
-                "receive_messages",
-                "send_messages",
-            ],
-        }
+    async def test_generate_policy_statement(self):
+        from consoleme.lib.change_request import _generate_policy_statement
 
-        test_change = SQSChangeGeneratorModel(**test_change_input)
-        result = await generate_sqs_change(test_change)
-        policy_document = json.loads(result.policy.policy_document)
-        self.assertEqual(result.change_type, ChangeType.inline_policy)
-        self.assertListEqual(
-            policy_document.get("Statement")[0].get("Action"),
-            [
-                "sqs:GetQueueAttributes",
-                "sqs:GetQueueUrl",
-                "sqs:ReceiveMessage",
-                "sqs:SendMessage",
-            ],
-        )
-        self.assertEqual(
-            result.policy.policy_sha256,
-            "8fdfe44c7f1800eb3963cf02862470308a59a3a7517d25a4ddaac611cb30754b",
-        )
+        actions = ["iam:List*"]
+        resources = ["arn:aws:iam::123456789012:role/resource1"]
+        effect = "Allow"
+        condition = {
+            "StringEquals": {
+                "iam:PermissionsBoundary": [
+                    "arn:aws:iam::123456789012:policy/PermBoundarya"
+                ]
+            }
+        }
+        result = await _generate_policy_statement(actions, resources, effect, condition)
+        self.assertEqual(actions, result["Action"])
+        self.assertEqual(effect, result["Effect"])
+        self.assertEqual(resources, result["Resource"])
+        self.assertEqual(condition, result["Condition"])
 
     @tornado.testing.gen_test
-    async def test_generate_generic_change(self):
-        test_change_input = {
-            "arn": "arn:aws:iam::123456789012:role/hey",
-            "generator_type": "generic",
-            "resource": "arn:aws:sqs:us-east-1:123456789012:super-cool-queue",
-            "access_level": ["read", "write", "list"],
-        }
+    async def test_generate_inline_policy_change_model(self):
+        from consoleme.lib.change_request import _generate_inline_policy_change_model
 
-        test_change = GenericChangeGeneratorModel(**test_change_input)
-        result = await generate_generic_change(test_change)
-        policy_document = json.loads(result.policy.policy_document)
-        self.assertEqual(result.change_type, ChangeType.inline_policy)
-        self.assertListEqual(
-            policy_document.get("Statement")[0].get("Action"),
-            [
-                "sqs:ChangeMessageVisibility",
-                "sqs:ChangeMessageVisibilityBatch",
-                "sqs:DeleteMessage",
-                "sqs:DeleteMessageBatch",
-                "sqs:DeleteQueue",
-                "sqs:GetQueueAttributes",
-                "sqs:GetQueueUrl",
-                "sqs:ListDeadLetterSourceQueues",
-                "sqs:ListQueueTags",
-                "sqs:ListQueues",
-                "sqs:PurgeQueue",
-                "sqs:ReceiveMessage",
-                "sqs:SendMessage",
-                "sqs:SendMessageBatch",
-            ],
+        is_new = True
+        policy_name = None
+        principal_arn = "arn:aws:iam::123456789012:role/roleName"
+        resources = [
+            ResourceModel(
+                arn="arn:aws:s3:::123456789012-bucket",
+                name="123456789012-bucket",
+                account_id="",
+                region="global",
+                account_name="",
+                policy_sha256=None,
+                policy=None,
+                owner=None,
+                approvers=None,
+                resource_type="s3",
+                last_updated=None,
+            ),
+            ResourceModel(
+                arn="arn:aws:s3:::bucket",
+                name="bucket",
+                account_id="",
+                region="global",
+                account_name="",
+                policy_sha256=None,
+                policy=None,
+                owner=None,
+                approvers=None,
+                resource_type="s3",
+                last_updated=None,
+            ),
+            ResourceModel(
+                arn="arn:aws:sqs:us-east-1:123456789012:resourceName",
+                name="resourceName",
+                account_id="123456789012",
+                region="us-east-1",
+                account_name="",
+                policy_sha256=None,
+                policy=None,
+                owner=None,
+                approvers=None,
+                resource_type="sqs",
+                last_updated=None,
+            ),
+            ResourceModel(
+                arn="arn:aws:sns:us-east-1:123456789012:resourceName",
+                name="resourceName",
+                account_id="123456789012",
+                region="us-east-1",
+                account_name="",
+                policy_sha256=None,
+                policy=None,
+                owner=None,
+                approvers=None,
+                resource_type="sns",
+                last_updated=None,
+            ),
+            ResourceModel(
+                arn="arn:aws:sns:us-east-1:123456789012:resourceName2",
+                name="resourceName2",
+                account_id="123456789012",
+                region="us-east-1",
+                account_name="",
+                policy_sha256=None,
+                policy=None,
+                owner=None,
+                approvers=None,
+                resource_type="sns",
+                last_updated=None,
+            ),
+        ]
+        statements = [
+            {
+                "Action": [
+                    "s3:GetObject",
+                    "s3:GetObjectTagging",
+                    "s3:GetObjectVersionTagging",
+                    "s3:GetObjectAcl",
+                    "s3:GetObjectVersion",
+                    "s3:ListBucketVersions",
+                    "s3:ListBucket",
+                    "s3:GetObjectVersionAcl",
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:s3:::123456789012-bucket",
+                    "arn:aws:s3:::123456789012-bucket/*",
+                    "arn:aws:s3:::bucket",
+                    "arn:aws:s3:::bucket/*",
+                ],
+                "Sid": "cmusername1592515689hnwb",
+            },
+            {
+                "Action": [
+                    "sqs:GetQueueAttributes",
+                    "sqs:SendMessage",
+                    "sqs:GetQueueUrl",
+                ],
+                "Effect": "Allow",
+                "Resource": ["arn:aws:sqs:us-east-1:123456789012:resourceName"],
+                "Sid": "cmusername1592515689dzbd",
+            },
+            {
+                "Action": ["sns:Publish"],
+                "Effect": "Allow",
+                "Resource": ["arn:aws:sns:us-east-1:123456789012:resourceName"],
+                "Sid": "cmusername1592515689kbra",
+            },
+            {
+                "Action": [
+                    "sns:GetTopicAttributes",
+                    "sns:Publish",
+                    "sns:GetEndpointAttributes",
+                ],
+                "Effect": "Allow",
+                "Resource": ["*", "arn:aws:sns:us-east-1:123456789012:resourceName2"],
+                "Sid": "cmusername1592515689aasy",
+            },
+        ]
+        user = "username@example.com"
+        result = await _generate_inline_policy_change_model(
+            principal_arn, resources, statements, user, is_new, policy_name
         )
-        self.assertEqual(
-            result.policy.policy_sha256,
-            "e5680a0af420843004de36916e1ea7916368a0dc0c0d9b575c649c97b1221874",
-        )
+        self.assertIsInstance(result, InlinePolicyChangeModel)

@@ -88,13 +88,12 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/GenericChangeGeneratorModel'
-                - $ref: '#/components/schemas/S3ChangeGeneratorModel'
-                - $ref: '#/components/schemas/SQSChangeGeneratorModel'
-                - $ref: '#/components/schemas/SNSChangeGeneratorModel'
-              discriminator:
-                propertyName: generator_type
+              type: array
+              items:
+                anyOf:
+                  - $ref: '#/components/schemas/ChangeGeneratorModelArray'
+                discriminator:
+                  propertyName: generator_type
       responses:
         '200':
           description: OK
@@ -363,13 +362,23 @@ components:
       type: object
       required:
         - arn
+        - name
+        - resource_type
       properties:
         arn:
           description: resource ARN
           type: string
           readOnly: true
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        name:
+          description: Resource Name
+          type: string
         account_id:
           description: AWS account ID
+          type: string
+          readOnly: true
+        region:
+          description: Region
           type: string
           readOnly: true
         account_name:
@@ -413,6 +422,7 @@ components:
           type: string
           description: ARN of principal being modified
           example: arn:aws:iam::123456789012:role/super_awesome_admin
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         timestamp:
           type: string
           format: date-time
@@ -444,38 +454,143 @@ components:
               type: string
             comments:
               $ref: '#/components/schemas/CommentModel'
+    ChangeGeneratorModelArray:
+      type: object
+      required:
+        - changes
+      properties:
+        changes:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/S3ChangeGeneratorModel'
+              - $ref: '#/components/schemas/SQSChangeGeneratorModel'
+              - $ref: '#/components/schemas/SNSChangeGeneratorModel'
+              - $ref: '#/components/schemas/CrudChangeGeneratorModel'
+              - $ref: '#/components/schemas/GenericChangeGeneratorModel'
+            discriminator:
+              propertyName: change_generator_model
     ChangeGeneratorModel:
       type: object
       required:
         - generator_type
         - arn
-        - resource
+        - resource_arn
       properties:
-        arn:
-          description: principal ARN
+        principal_arn:
+          description: |-
+            The principal (Source ARN) associated with the Change. This is most commomly an IAM role ARN.
+            The principal ARN is associated with the entity whose policy will be modified if the change is
+            approved and successful.
+          example: arn:aws:iam::123456789012:role/exampleRole
           type: string
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         generator_type:
           type: string
           enum:
+            - advanced
+            - crud_lookup
+            - ec2
             - generic
+            - rds
+            - route53
             - s3
-            - sqs
             - sns
-        resource:
-          description: resource ARN
+            - sqs
+            - sts
+          discriminator:
+            propertyName: generator_type
+            mapping:
+              advanced: '#/components/schemas/AdvancedChangeGeneratorModel'
+              crud_lookup: '#/components/schemas/CrudChangeGeneratorModel'
+              ec2: '#/components/schemas/GenericChangeGeneratorModel'
+              generic: '#/components/schemas/GenericChangeGeneratorModel'
+              rds: '#/components/schemas/GenericChangeGeneratorModel'
+              route53: '#/components/schemas/GenericChangeGeneratorModel'
+              s3: '#/components/schemas/S3ChangeGeneratorModel'
+              sns: '#/components/schemas/SNSChangeGeneratorModel'
+              sqs: '#/components/schemas/SQSChangeGeneratorModel'
+        resource_arn:
+          description: |-
+            The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
+            resource policy will need to be modified if the change is approved and successful.
+          example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
           type: string
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|(^\*$)'
         version:
           description: Version
           type: string
+          default: 2.0
+        user:
+          description: Email address of user creating the change
+          type: string
+        action_groups:
+          type: array
+          description: Action groups
+          items:
+            type: string
+        policy_name:
+          type: string
+          description: Optional policy name for the change, if applicable.
+          pattern: '^[a-zA-Z0-9+=,.@\\-_]+$'
+        effect:
+          type: string
+          description: The effect. By default, this is allow
+          default: Allow
+          pattern: '^(Allow|Deny)$'
+        condition:
+          type: object
+          description: Optional condition for the change
+          example: |-
+            {
+                "StringEquals": {"iam:PassedToService": "ec2.amazonaws.com"},
+                "StringLike": {
+                    "iam:AssociatedResourceARN": [
+                        "arn:aws:ec2:us-east-1:111122223333:instance/*",
+                        "arn:aws:ec2:us-west-1:111122223333:instance/*"
+                    ]
+                }
+            }
+        service:
+          type: string
+        bucket_prefix:
+          type: string
+
+    AdvancedChangeGeneratorModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            iam_action:
+              type: string
+              example: kinesis:AddTagsToStream
+            resource:
+              type: string
+              example: "*"
+
     GenericChangeGeneratorModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - action_groups
+          properties:
+            action_groups:
+              type: array
+              items:
+                type: string
+    CrudChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
         - $ref: '#/components/schemas/ChangeGeneratorModel'
         - type: object
           required:
-            - access_level
+            - action_groups
+            - service_name
           properties:
-            access_level:
+            action_groups:
               type: array
               items:
                 type: string
@@ -485,16 +600,16 @@ components:
                   - list
                   - tagging
                   - permissions-management
+            service_name:
+              type: string
     S3ChangeGeneratorModel: # These schemas could be defined in different files.
       allOf:
         - $ref: '#/components/schemas/ChangeGeneratorModel'
         - type: object
           required:
             - action_groups
+            - bucket_prefix
           properties:
-            bucket_name:
-              type: string
-              example: really.cool.bucket
             bucket_prefix:
               type: string
               example: /awesome/prefix/*
@@ -544,35 +659,35 @@ components:
     ChangeModel:
       type: object
       required:
+        - principal_arn
         - change_type
-        - resource_arns
+        - resources
       properties:
+        principal_arn:
+          type: string
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         change_type:
           type: string
           enum:
             - inline_policy
             - managed_policy
             - resource_policy
-        resource_arns:
+        resources:
           type: array
           items:
-            type: string
-        resource:
-          $ref: '#/components/schemas/ResourceModel'
+            $ref: '#/components/schemas/ResourceModel'
+        version:
+          type: string
+          default: 2.0
     InlinePolicyChangeModel:
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
         - type: object
           required:
-            - resource_arns
             - policy_name
             - new
             - policy
           properties:
-            resource_arns:
-              type: array
-              items:
-                type: string
             policy_name:
               type: string
             new:
@@ -591,6 +706,7 @@ components:
           properties:
             arn:
               type: string
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
             policy:
               $ref: '#/components/schemas/PolicyModel'
             old_policy:
@@ -606,6 +722,7 @@ components:
           properties:
             arn:
               type: string
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
             policy_name:
               type: string
             action:
@@ -621,7 +738,7 @@ components:
           - $ref: '#/components/schemas/ManagedPolicyChangeModel'
           - $ref: '#/components/schemas/ResourcePolicyChangeModel'
         discriminator:
-          propertyName: change_type
+          propertyName: change_model
     ArnArray:
       type: array
       items:
@@ -630,15 +747,41 @@ components:
     PolicyModel:
       type: object
       required:
-        - policy_document
         - policy_sha256
       properties:
-        policy_document:
+        version:
           type: string
+          description: AWS Policy Version
+        policy_document:
+          type: object
           description: JSON policy document
         policy_sha256:
           type: string
-          description: hash of policy_document
+          description: hash of the policy_document json
+    PolicyStatement:
+      type: object
+      required:
+        - action
+        - effect
+        - resource
+      properties:
+        action:
+          type: array
+          description: AWS Policy Actions
+          items:
+            type: string
+        effect:
+          type: string
+          description: Allow | Deny
+        resource:
+          type: array
+          description: AWS Resource ARNs
+          items:
+            type: string
+        sid:
+          type: string
+          description: Statement identifier
+          pattern: '^([a-zA-Z0-9]+)*'
     CommentModel:
       type: object
       required:
@@ -687,6 +830,7 @@ components:
           type: string
           example: arn:aws:iam::123456789012:role/super_awesome_admin
           readOnly: true
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
     CloudTrailError:
       type: object
       properties:
@@ -697,7 +841,7 @@ components:
           type: integer
           example: 5
     CloudTrailErrorArray:
-      type: array
+      type: object
       properties:
         cloudtrail_errors:
           type: array
@@ -736,6 +880,7 @@ components:
         role_arn:
           type: string
           example: arn:aws:iam::123456789012:role/roleName
+          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
     S3ErrorArray:
       type: object
       properties:

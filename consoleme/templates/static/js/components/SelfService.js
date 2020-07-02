@@ -17,11 +17,35 @@ import {
 
 class SelfService extends Component {
     state = {
+        config: null,
         currStep: SelfServiceStepEnum.STEP1,
         messages: null,
         permissions: [],
         role: null,
+        services: [],
     };
+
+    componentDidMount() {
+        fetch(`/api/v2/self_service_config`).then((resp) => {
+            resp.text().then((resp) => {
+                const config = JSON.parse(resp);
+                const {services} = this.state;
+                Object.keys(config.permissions_map).forEach(name => {
+                    const service = config.permissions_map[name];
+                    services.push({
+                        actions: service.action_map,
+                        key: name,
+                        text: service.text,
+                        value: name,
+                    });
+                });
+                this.setState({
+                    config,
+                    services,
+                });
+            });
+        });
+    }
 
     handleStepClick(dir) {
         const {currStep} = this.state;
@@ -34,7 +58,7 @@ class SelfService extends Component {
                     nextStep = SelfServiceStepEnum.STEP2;
                 } else {
                     return this.setState({
-                        messages: "Please supply IAM role either from your application or your roles."
+                        messages: "Please select a role from the list of applications."
                     });
                 }
                 break;
@@ -82,6 +106,7 @@ class SelfService extends Component {
             case SelfServiceStepEnum.STEP1:
                 SelfServiceStep = (
                     <SelfServiceStep1
+                        config={this.state.config}
                         role={this.state.role}
                         handleRoleUpdate={
                             this.handleRoleUpdate.bind(this)
@@ -92,7 +117,9 @@ class SelfService extends Component {
             case SelfServiceStepEnum.STEP2:
                 SelfServiceStep = (
                     <SelfServiceStep2
+                        config={this.state.config}
                         role={this.state.role}
+                        services={this.state.services}
                         permissions={this.state.permissions}
                         handlePermissionsUpdate={
                             this.handlePermissionsUpdate.bind(this)
@@ -103,7 +130,9 @@ class SelfService extends Component {
             case SelfServiceStepEnum.STEP3:
                 SelfServiceStep = (
                     <SelfServiceStep3
+                        config={this.state.config}
                         role={this.state.role}
+                        services={this.state.services}
                         permissions={this.state.permissions}
                     />
                 );
@@ -131,6 +160,10 @@ class SelfService extends Component {
 
         return (
             <Segment basic>
+                  <Message success>
+                      Welcome to the new and improved IAM Self-Service Wizard!
+                      Please click <a target='_blank' href='/self_service_v1'>here</a> if you need to access the older version.
+                  </Message>
                 <Step.Group fluid>
                     <Step
                         active={currStep === SelfServiceStepEnum.STEP1}
@@ -183,14 +216,20 @@ class SelfService extends Component {
                 >
                     Previous
                 </Button>
-                <Button
-                    disabled={currStep === SelfServiceStepEnum.STEP3}
-                    floated='right'
-                    primary
-                    onClick={this.handleStepClick.bind(this, 'next')}
-                >
-                    Next
-                </Button>
+                {
+                    currStep !== SelfServiceStepEnum.STEP3
+                        ? (
+                            <Button
+                                disabled={currStep === SelfServiceStepEnum.STEP3}
+                                floated='right'
+                                primary
+                                onClick={this.handleStepClick.bind(this, 'next')}
+                            >
+                                Next
+                            </Button>
+                        )
+                        : null
+                }
             </Segment>
         );
     }

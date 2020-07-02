@@ -7,7 +7,7 @@ repos:
     -   id: check-case-conflict
     -   id: check-yaml
     -   id: flake8
-        args: []
+        args: ["--exclude", "consoleme/models.py"]
     -   id: pretty-format-json
         args: ["--autofix"]
 

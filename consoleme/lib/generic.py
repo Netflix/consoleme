@@ -1,6 +1,7 @@
 import os
 import random
 import re
+import string
 from datetime import datetime
 from random import randint
 from typing import Dict, List, Optional, Union
@@ -179,3 +180,8 @@ async def get_random_security_logo():
     dir = "sunglasses" if summer else "nosunglasses"
     file = f"{randint(1, 3)}.png"  # nosec
     return f"/static/logos/{dir}/{file}"
+
+
+async def generate_random_string(string_length=4):
+    letters = string.ascii_lowercase
+    return "".join(random.choice(letters) for i in range(string_length))  # nosec

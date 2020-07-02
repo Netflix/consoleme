@@ -8,7 +8,9 @@
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
+    "react-markdown": "^4.3.1",
     "react-select": "^3.0.4",
+    "resolve-cwd": "^3.0.0",
     "semantic-ui-calendar-react": "^0.15.3",
     "semantic-ui-react": "^0.84.0",
     "swagger-client": "^3.10.6"
@@ -45,7 +47,7 @@
     "react-semantic-redux-form": "^1.2.6",
     "redux": "^4.0.4",
     "redux-form": "^7.4.2",
-    "webpack": "^4.35.3",
+    "webpack": "^4.43.0",
     "webpack-cli": "^3.3.5"
   },
   "directories": {

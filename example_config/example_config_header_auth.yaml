@@ -7,6 +7,7 @@ auth:
   get_user_by_header: true
   get_user_by_oauth: false
   get_user_by_saml: false
+  # TODO: Add caveat here that user must be safely authed.
   groups_header_name: group_header
   user_header_name: user_header
 

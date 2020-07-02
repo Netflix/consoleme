@@ -158,7 +158,7 @@ class GetPoliciesHandler(BaseHandler):
             redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
             s3_bucket=config.get("cache_policies_table_details.s3.bucket"),
             s3_key=config.get("cache_policies_table_details.s3.file"),
-            default=[]
+            default=[],
         )
 
         data = []
@@ -938,7 +938,7 @@ class SelfServiceHandler(BaseHandler):
         )
 
 
-class SelfServiceNewHandler(BaseHandler):
+class SelfServiceV2Handler(BaseHandler):
     async def get(self):
         """
         /self_service_new
@@ -951,7 +951,7 @@ class SelfServiceNewHandler(BaseHandler):
         """
 
         await self.render(
-            "self_service_new.html",
+            "self_service_v2.html",
             page_title="ConsoleMe - Self Service",
             current_page="policies",
             user=self.user,
@@ -978,9 +978,26 @@ class AutocompleteHandler(BaseAPIV1Handler):
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
+        only_filter_services = False
+
+        if (
+            self.request.arguments.get("only_filter_services")
+            and self.request.arguments.get("only_filter_services")[0].decode("utf-8")
+            == "true"
+        ):
+            only_filter_services = True
+
         prefix = self.request.arguments.get("prefix")[0].decode("utf-8") + "*"
         results = _expand_wildcard_action(prefix)
-        results = [dict(permission=r) for r in results]
+        if only_filter_services:
+            # We return known matching services in a format that the frontend expects to see them. We omit the wildcard
+            # character returned by policyuniverse.
+            services = sorted(
+                list(set(r.split(":")[0].replace("*", "") for r in results))
+            )
+            results = [{"title": service} for service in services]
+        else:
+            results = [dict(permission=r) for r in results]
         self.write(json.dumps(results))
         await self.finish()
 
@@ -1026,6 +1043,12 @@ async def handle_resource_type_ahead_request(cls):
     limit_optional: Optional[List[bytes]] = cls.request.arguments.get("limit")
     if limit_optional:
         limit = int(limit_optional[0].decode("utf-8"))
+
+    # By default, we only return the S3 bucket name of a resource and not the full ARN
+    # unless you specifically request it
+    show_full_arn_for_s3_buckets: Optional[bool] = cls.request.arguments.get(
+        "show_full_arn_for_s3_buckets"
+    )
 
     role_name = False
     if resource_type == "s3":
@@ -1141,6 +1164,10 @@ async def handle_resource_type_ahead_request(cls):
             else:
                 list_of_items = json.loads(v)
                 for item in list_of_items:
+                    # A Hack to get S3 to show full ARN, and maintain backwards compatibility
+                    # TODO: Fix this in V2 of resource specific typeahead endpoints
+                    if resource_type == "s3" and show_full_arn_for_s3_buckets:
+                        item = f"arn:aws:s3:::{item}"
                     if search_string.lower() in item.lower():
                         results.append({"title": item, "account_id": k})
                     if len(results) > limit:

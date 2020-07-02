@@ -102,7 +102,7 @@ class SelfServiceStep1 extends Component {
                             </Header>
                             <p>
                                 For Help, please visit <a
-                                href={"https://go/selfserviceiamtldr"}>go/selfserviceiamtldr</a>
+                                href={"http://go/selfserviceiamtldr"} target={"_blank"}>go/selfserviceiamtldr</a>
                             </p>
                             <Form widths="equal">
                                 <Form.Field required>
@@ -122,7 +122,7 @@ class SelfServiceStep1 extends Component {
                         </Grid.Column>
                         <Grid.Column>
                             <Header>
-                                Role Information
+                                Selected Role Information
                             </Header>
                             {
                                 isRoleLoading
