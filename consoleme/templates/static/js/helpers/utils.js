@@ -78,7 +78,7 @@ export function getCompletions(editor, session, pos, prefix, callback) {
         }
     }
     // Only start typeahead if we have more than 3 characters to work with
-    if (prefix.length <= 3) {
+    if (resource && prefix.length <= 3) {
         callback(null, []);
         return
     }

@@ -9,6 +9,7 @@ import "ace-builds/src-noconflict/ext-language_tools"
 
 let langTools = ace.acequire('ace/ext/language_tools');
 langTools.setCompleters([{getCompletions: getCompletions}])
+
 class SelfServiceStep3 extends Component {
   state = {
     custom_statement: "",
@@ -19,6 +20,7 @@ class SelfServiceStep3 extends Component {
     requestId: null,
     statement: "",
   };
+
 
   async componentDidMount() {
     const {role, permissions} = this.props;
@@ -50,11 +52,24 @@ class SelfServiceStep3 extends Component {
   }
 
   buildAceEditor(custom_statement) {
-    return (
+    let aceComponent = (
       <AceEditor
         mode="json"
         theme="monokai"
         width="100%"
+        showPrintMargin={false}
+        ref={function (reactAceComponent) {
+          if (reactAceComponent && reactAceComponent != null) {
+            const editor = reactAceComponent.editor;
+            if (editor.completer && editor.completer.popup) {
+              let popup = editor.completer.popup;
+              popup.container.style.width = "600px";
+              popup.resize();
+
+            }
+          }
+        }}
+        tabSize={4}
         onChange={this.handleJSONEditorChange.bind(this)}
         value={custom_statement}
         name="json_editor"
@@ -63,10 +78,14 @@ class SelfServiceStep3 extends Component {
         }}
         setOptions={{
           "enableBasicAutocompletion": true,
-          "enableLiveAutocompletion": true
+          "enableLiveAutocompletion": true,
+          "wrapBehavioursEnabled": true,
+          "wrap": true,
+          "useSoftTabs": true,
         }}
       />
     )
+    return aceComponent
   }
 
   buildPermissionsTable() {
