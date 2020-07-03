@@ -1,7 +1,7 @@
-import _ from 'lodash';
-import React, {Component} from 'react';
-import {Button, Dimmer, Divider, Form, Header, Label, Loader, Message, Tab, Table, TextArea,} from 'semantic-ui-react';
-import {generate_id, getCompletions, sendRequestCommon} from '../helpers/utils';
+import _ from "lodash";
+import React, {Component} from "react";
+import {Button, Dimmer, Divider, Form, Header, Label, Loader, Message, Tab, Table, TextArea,} from "semantic-ui-react";
+import {generate_id, getCompletions, sendRequestCommon} from "../helpers/utils";
 import AceEditor from "react-ace";
 
 import ace from "brace";
@@ -9,7 +9,7 @@ import "brace/ext/language_tools";
 import "brace/theme/monokai";
 import "brace/mode/json";
 
-let langTools = ace.acequire('ace/ext/language_tools');
+let langTools = ace.acequire("ace/ext/language_tools");
 langTools.setCompleters([{getCompletions: getCompletions}])
 
 class SelfServiceStep3 extends Component {
@@ -45,7 +45,7 @@ class SelfServiceStep3 extends Component {
             return change;
         });
 
-        const response = await sendRequestCommon(payload, '/api/v2/generate_changes');
+        const response = await sendRequestCommon(payload, "/api/v2/generate_changes");
         if (response.status != null && response.status === 400) {
             return this.setState({
                 isError: true,
@@ -156,7 +156,7 @@ class SelfServiceStep3 extends Component {
 
     handleSubmit() {
         const {role} = this.props;
-        const {justification, statement} = this.state;
+        const {justification, custom_statement} = this.state;
 
         if (!justification) {
             return this.setState({
@@ -164,16 +164,18 @@ class SelfServiceStep3 extends Component {
             });
         }
 
-        const editor = this.inlinePolicyEditorRef.current.editor;
-        const lintErrors = editor.getSession().getAnnotations()
-        if (lintErrors.length > 0) {
-            let ErrorMessages = []
-            for (let i = 0; i < lintErrors.length; i++) {
-                ErrorMessages.push("Lint Error - Row: " + lintErrors[i]["row"] + ", Column: " + lintErrors[i]["column"] + ", Error: " + lintErrors[i]["text"])
+        if (this.inlinePolicyEditorRef.current) {
+            const editor = this.inlinePolicyEditorRef.current.editor;
+            const lintErrors = editor.getSession().getAnnotations()
+            if (lintErrors.length > 0) {
+                let ErrorMessages = []
+                for (let i = 0; i < lintErrors.length; i++) {
+                    ErrorMessages.push("Lint Error - Row: " + lintErrors[i]["row"] + ", Column: " + lintErrors[i]["column"] + ", Error: " + lintErrors[i]["text"])
+                }
+                return this.setState({
+                    messages: ErrorMessages,
+                });
             }
-            return this.setState({
-                messages: ErrorMessages,
-            });
         }
 
         const {account_id, arn} = role;
@@ -187,7 +189,7 @@ class SelfServiceStep3 extends Component {
                 {
                     'type': policyType,
                     'name': policyName,
-                    'value': statement,
+                    'value': custom_statement,
                     'is_new': true,
                 },
             ],
@@ -328,6 +330,7 @@ class SelfServiceStep3 extends Component {
                         </Header>
                         <br/>
                         {this.buildAceEditor(custom_statement)}
+                        {messagesToShow}
                         <Divider/>
                         <Header>
                             Justification
@@ -377,7 +380,6 @@ class SelfServiceStep3 extends Component {
                 >
                     <Loader/>
                 </Dimmer>
-                {messagesToShow}
                 {tabContent}
             </React.Fragment>
         );
