@@ -1160,10 +1160,10 @@
   resolved "https://registry.yarnpkg.com/@xtuc/long/-/long-4.2.2.tgz#d291c6a4e97989b5c61d9acf396ae4fe133a718d"
   integrity sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==
 
-ace-builds@^1.4.11, ace-builds@^1.4.6:
+ace-builds@^1.4.11:
   version "1.4.11"
-  resolved "https://registry.yarnpkg.com/ace-builds/-/ace-builds-1.4.11.tgz#b1f19a891afcef1d26522473082baf80067e855f"
-  integrity sha512-keACH1d7MvAh72fE/us36WQzOFQPJbHphNpj33pXwVZOM84pTWcdFzIAvngxOGIGLTm7gtUP2eJ4Ku6VaPo8bw==
+  resolved "https://artifacts.netflix.com/api/npm/npm-netflix/ace-builds/-/ace-builds-1.4.11.tgz#b1f19a891afcef1d26522473082baf80067e855f"
+  integrity sha1-sfGaiRr87x0mUiRzCCuvgAZ+hV8=
 
 acorn-jsx@^5.0.0:
   version "5.2.0"
@@ -5722,12 +5722,12 @@ randomfill@^1.0.3:
     randombytes "^2.0.5"
     safe-buffer "^5.1.0"
 
-react-ace@^8.1.0:
-  version "8.1.0"
-  resolved "https://registry.yarnpkg.com/react-ace/-/react-ace-8.1.0.tgz#6680accb7306a1850e6ef4370a00f0007eadc8b4"
-  integrity sha512-n3rm9gRNZjLGlXJQ587RASOQCPn6WlcV2gjRYwvG3gyVpBf4pY6lh/uI9tDkx2zYdEKJUfnGbTmzEGL5yyDWuw==
+react-ace@<8:
+  version "7.0.5"
+  resolved "https://artifacts.netflix.com/api/npm/npm-netflix/react-ace/-/react-ace-7.0.5.tgz#798299fd52ddf3a3dcc92afc5865538463544f01"
+  integrity sha1-eYKZ/VLd86PcySr8WGVThGNUTwE=
   dependencies:
-    ace-builds "^1.4.6"
+    brace "^0.11.1"
     diff-match-patch "^1.0.4"
     lodash.get "^4.4.2"
     lodash.isequal "^4.5.0"

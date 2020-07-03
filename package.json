@@ -40,7 +40,7 @@
     "eslint-plugin-standard": "^4.0.0",
     "faker": "^4.1.0",
     "lodash": "^4.17.15",
-    "react-ace": "^8.1.0",
+    "react-ace": "<8",
     "react-checkbox-group": "^4.0.1",
     "react-form-checkbox": "^0.2.0",
     "react-redux": "^5.0.0",
