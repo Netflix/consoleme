@@ -919,7 +919,7 @@ class PolicyReviewHandler(BaseHandler):
 class SelfServiceHandler(BaseHandler):
     async def get(self):
         """
-        /self_service
+        /self_service_v1
         ---
         get:
             description: Entry point to Self Service IAM Wizard
@@ -941,7 +941,7 @@ class SelfServiceHandler(BaseHandler):
 class SelfServiceV2Handler(BaseHandler):
     async def get(self):
         """
-        /self_service_new
+        /self_service
         ---
         get:
             description: Entry point to Self Service IAM Wizard
