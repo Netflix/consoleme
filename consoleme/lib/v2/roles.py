@@ -129,7 +129,7 @@ async def get_role_details(
             s3_details=await get_s3_details_for_role(
                 account_id=account_id, role_name=role_name
             ),
-            app_details=await get_app_details_for_role(arn),
+            apps=await get_app_details_for_role(arn),
             managed_policies=role["policy"]["AttachedManagedPolicies"],
             tags=role["policy"]["Tags"],
             templated=True if template else False,

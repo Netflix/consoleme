@@ -160,10 +160,10 @@ class SelfService extends Component {
 
         return (
             <Segment basic>
-                  <Message success>
-                      Welcome to the new and improved IAM Self-Service Wizard!
-                      Please click <a target='_blank' href='/self_service_v1'>here</a> if you need to access the older version.
-                  </Message>
+                <Message success>
+                    Welcome to the new and improved IAM Self-Service Wizard!
+                    Please click <a target='_blank' href='/self_service_v1'>here</a> if you need to access the older version.
+                </Message>
                 <Step.Group fluid>
                     <Step
                         active={currStep === SelfServiceStepEnum.STEP1}
@@ -207,15 +207,20 @@ class SelfService extends Component {
                 </Step.Group>
                 {messagesToShow}
                 {SelfServiceStep}
-                <Button
-                    disabled={currStep === SelfServiceStepEnum.STEP1}
-                    floated='left'
-                    primary
-                    // TODO, change to ENUM
-                    onClick={this.handleStepClick.bind(this, 'previous')}
-                >
-                    Previous
-                </Button>
+                {
+                    currStep !== SelfServiceStepEnum.STEP1
+                        ? (
+                            <Button
+                                disabled={currStep === SelfServiceStepEnum.STEP1}
+                                floated='left'
+                                primary
+                                onClick={this.handleStepClick.bind(this, 'previous')}
+                            >
+                                Previous
+                            </Button>
+                        )
+                        : null
+                }
                 {
                     currStep !== SelfServiceStepEnum.STEP3
                         ? (

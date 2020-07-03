@@ -25,7 +25,6 @@ class TextInputBlockComponent extends Component {
         const {value} = this.state;
         const {defaultValue, required, text} = this.props;
 
-
         return (
             <Form.Field required={required}>
                 <label>{text}</label>

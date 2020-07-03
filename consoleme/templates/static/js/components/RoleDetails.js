@@ -9,7 +9,6 @@ import {
 
 function RoleDetails(props) {
     const role = props.role;
-
     if (!role) {
         return (
             <Segment placeholder>
@@ -36,9 +35,27 @@ function RoleDetails(props) {
                 <List.Icon name='code' />
                 <List.Content>
                     <List.Header>Application</List.Header>
-                    <List.Description>
-                        {role.apps || 'Not Available'}
-                    </List.Description>
+                    <List.List>
+                        {
+                            role.apps.app_details.map((app) => {
+                                return (
+                                    <List.Item>
+                                        <List.Icon name="file code" />
+                                        <List.Content>
+                                            <List.Header>
+                                                <a target="_blank" href={app.app_url}>
+                                                    {app.name}
+                                                </a>
+                                            </List.Header>
+                                            <List.Description>
+                                                {app.owner}
+                                            </List.Description>
+                                        </List.Content>
+                                    </List.Item>
+                                );
+                            })
+                        }
+                    </List.List>
                 </List.Content>
             </List.Item>
             <List.Item as="a">

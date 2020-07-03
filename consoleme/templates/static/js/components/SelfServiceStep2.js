@@ -45,11 +45,12 @@ class SelfServiceStep2 extends Component {
     }
 
     getPermissionItems() {
-        const {services} = this.props;
+        const {config, services} = this.props;
 
         return this.props.permissions.map((permission, idx) => {
             const found = _.find(services, {"key": permission.service});
             const serviceName = found.text;
+            const {inputs} = config.permissions_map[found.key];
             return (
                 <Item key={idx}>
                     <Item.Content>
@@ -57,18 +58,19 @@ class SelfServiceStep2 extends Component {
                             {serviceName}
                         </Item.Header>
                         <Item.Meta>
-                            <List>
+                            <List relaxed>
                                 {
                                     Object.keys(permission).map((key) => {
                                         if (key === "actions" || key === "service") {
                                             return;
                                         }
+                                        const inputConfig = _.find(inputs, {"name": key});
                                         return (
                                             <List.Item>
-                                                <List.Header>{key}</List.Header>
+                                                <List.Header>{inputConfig.text}</List.Header>
                                                 {permission[key]}
                                             </List.Item>
-                                        )
+                                        );
                                     })
                                 }
                             </List>
@@ -85,15 +87,15 @@ class SelfServiceStep2 extends Component {
                             </Button>
                             {
                                 permission.actions != null ? (
-                                permission.actions.map(action => {
-                                    const actionDetail = _.find(found.actions, {"name": action});
-                                    return (
-                                        <Label as="a" color="olive">
-                                            <Icon name="caret right" />
-                                            {actionDetail.text}
-                                        </Label>
-                                    );
-                                })) : null
+                                    permission.actions.map(action => {
+                                        const actionDetail = _.find(found.actions, {"name": action});
+                                        return (
+                                            <Label as="a" color="olive">
+                                                <Icon name="caret right" />
+                                                {actionDetail.text}
+                                            </Label>
+                                        );
+                                    })) : null
                             }
                         </Item.Extra>
                     </Item.Content>
