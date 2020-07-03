@@ -115,5 +115,8 @@ node_modules/
 # FrontEnd Ignores
 **/static/bundles/
 webpack-stats.*.json
+package-lock.json
+**/package-lock.json
+yarn.lock
 **/yarn.lock
 .setupmeta.version
