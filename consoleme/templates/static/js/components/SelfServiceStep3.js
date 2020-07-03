@@ -1,25 +1,15 @@
-import _ from 'lodash';
-import React, {Component} from 'react';
-import {
-    Button,
-    Dimmer,
-    Divider,
-    Form,
-    Header,
-    Label,
-    Loader,
-    Message,
-    Tab,
-    Table,
-    TextArea,
-} from 'semantic-ui-react';
-import {generate_id, getCompletions, sendRequestCommon} from '../helpers/utils';
+import _ from "lodash";
+import React, {Component} from "react";
+import {Button, Dimmer, Divider, Form, Header, Label, Loader, Message, Tab, Table, TextArea,} from "semantic-ui-react";
+import {generate_id, getCompletions, sendRequestCommon} from "../helpers/utils";
 import AceEditor from "react-ace";
-import "ace-builds/src-noconflict/mode-json";
-import "ace-builds/src-noconflict/theme-monokai";
-import "ace-builds/src-noconflict/ext-language_tools"
 
-let langTools = ace.acequire('ace/ext/language_tools');
+import ace from "brace";
+import "brace/ext/language_tools";
+import "brace/theme/monokai";
+import "brace/mode/json";
+
+let langTools = ace.acequire("ace/ext/language_tools");
 langTools.setCompleters([{getCompletions: getCompletions}])
 
 class SelfServiceStep3 extends Component {
@@ -31,8 +21,10 @@ class SelfServiceStep3 extends Component {
         justification: "",
         messages: [],
         requestId: null,
-        statement: "",
+        statement: ""
     };
+
+    inlinePolicyEditorRef = React.createRef();
 
 
     async componentDidMount() {
@@ -53,7 +45,7 @@ class SelfServiceStep3 extends Component {
             return change;
         });
 
-        const response = await sendRequestCommon(payload, '/api/v2/generate_changes');
+        const response = await sendRequestCommon(payload, "/api/v2/generate_changes");
         if (response.status != null && response.status === 400) {
             return this.setState({
                 isError: true,
@@ -84,17 +76,7 @@ class SelfServiceStep3 extends Component {
                 theme="monokai"
                 width="100%"
                 showPrintMargin={false}
-                ref={function (reactAceComponent) {
-                    if (reactAceComponent && reactAceComponent != null) {
-                        const editor = reactAceComponent.editor;
-                        if (editor.completer && editor.completer.popup) {
-                            let popup = editor.completer.popup;
-                            popup.container.style.width = "600px";
-                            popup.resize();
-
-                        }
-                    }
-                }}
+                ref={this.inlinePolicyEditorRef}
                 tabSize={4}
                 onChange={this.handleJSONEditorChange.bind(this)}
                 value={custom_statement}
@@ -174,12 +156,26 @@ class SelfServiceStep3 extends Component {
 
     handleSubmit() {
         const {role} = this.props;
-        const {justification, statement} = this.state;
+        const {justification, custom_statement} = this.state;
 
         if (!justification) {
             return this.setState({
                 messages: ["No Justification is Given"],
             });
+        }
+
+        if (this.inlinePolicyEditorRef.current) {
+            const editor = this.inlinePolicyEditorRef.current.editor;
+            const lintErrors = editor.getSession().getAnnotations()
+            if (lintErrors.length > 0) {
+                let ErrorMessages = []
+                for (let i = 0; i < lintErrors.length; i++) {
+                    ErrorMessages.push("Lint Error - Row: " + lintErrors[i]["row"] + ", Column: " + lintErrors[i]["column"] + ", Error: " + lintErrors[i]["text"])
+                }
+                return this.setState({
+                    messages: ErrorMessages,
+                });
+            }
         }
 
         const {account_id, arn} = role;
@@ -193,7 +189,7 @@ class SelfServiceStep3 extends Component {
                 {
                     'type': policyType,
                     'name': policyName,
-                    'value': statement,
+                    'value': custom_statement,
                     'is_new': true,
                 },
             ],
@@ -236,6 +232,12 @@ class SelfServiceStep3 extends Component {
     }
 
     handleJSONEditorChange(custom_statement) {
+        const editor = this.inlinePolicyEditorRef.current.editor;
+        if (editor.completer && editor.completer.popup) {
+            let popup = editor.completer.popup;
+            popup.container.style.width = "600px";
+            popup.resize();
+        }
         const messages = [];
         this.setState({
             messages,
@@ -285,7 +287,8 @@ class SelfServiceStep3 extends Component {
                         </Header>
                         <p>
                             Your new permissions will be attached to the role <a
-                            href={`/policies/edit/${role.account_id}/iamrole/${role.name}`} target="_blank">{role.arn}</a> with the
+                            href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
+                            target="_blank">{role.arn}</a> with the
                             following statements:
                         </p>
                         <Dimmer.Dimmable dimmed={active}>
@@ -339,6 +342,7 @@ class SelfServiceStep3 extends Component {
                             />
                         </Form>
                         <Divider/>
+                        {messagesToShow}
                         <Button
                             content="Submit"
                             disabled={isError}
@@ -356,7 +360,8 @@ class SelfServiceStep3 extends Component {
                     <Message.Header>
                         Your request was successful.
                     </Message.Header>
-                    You can check your request status from <a href={`/policies/request/${requestId}`} target="_blank">here</a>.
+                    You can check your request status from <a href={`/policies/request/${requestId}`}
+                                                              target="_blank">here</a>.
                 </Message>
 
             )
@@ -375,7 +380,6 @@ class SelfServiceStep3 extends Component {
                 >
                     <Loader/>
                 </Dimmer>
-                {messagesToShow}
                 {tabContent}
             </React.Fragment>
         );
