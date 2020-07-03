@@ -330,7 +330,6 @@ class SelfServiceStep3 extends Component {
                         </Header>
                         <br/>
                         {this.buildAceEditor(custom_statement)}
-                        {messagesToShow}
                         <Divider/>
                         <Header>
                             Justification
@@ -343,6 +342,7 @@ class SelfServiceStep3 extends Component {
                             />
                         </Form>
                         <Divider/>
+                        {messagesToShow}
                         <Button
                             content="Submit"
                             disabled={isError}
