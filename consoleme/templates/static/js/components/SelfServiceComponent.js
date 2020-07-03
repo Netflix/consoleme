@@ -28,26 +28,43 @@ class SelfServiceComponent extends Component {
     }
 
     handleSubmit() {
-        const {config, service} = this.props;
+        const {config, role, service} = this.props;
         const {values} = this.state;
         const {inputs} = config.permissions_map[service];
-
-        if (!('actions' in values)) {
-            return this.setState({
-               messages: ["No actions are given"],
-            });
-        }
 
         const default_values = {};
         inputs.forEach((input) => {
             default_values[input.name] = input.default || null;
         });
         const result = Object.assign(default_values, values);
+        Object.keys(result).forEach((key) => {
+            const value = result[key];
+            if (value && key !== 'actions') {
+                result[key] = value.replace("{account_id}", role.account_id);
+            }
+        });
+
+        // Exception Hanlding for inputs
+        const messages = [];
+        Object.keys(inputs).forEach((idx) => {
+            const input = inputs[idx];
+            if (!result[input.name]) {
+                messages.push(`No value is given for ${input.name}`);
+            }
+        });
+
+        if (!('actions' in result)) {
+            messages.push("No actions are selected");
+        }
+
+        if (messages.length > 0) {
+            return this.setState({ messages });
+        }
+
         const permission = {
             service,
             ...result,
         };
-
         return this.setState({
             messages: [],
             values: {},
