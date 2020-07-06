@@ -13,6 +13,7 @@ import SelfServiceStep3 from './SelfServiceStep3';
 import {
     SelfServiceStepEnum,
 } from './SelfServiceEnums';
+import ReactMarkdown from "react-markdown";
 
 
 class SelfService extends Component {
@@ -158,12 +159,17 @@ class SelfService extends Component {
             )
             : null;
 
+        const headerMessage = (this.state.config != null && this.state.config.custom_header_message != null)
+            ? (
+                <Message success>
+                    <ReactMarkdown source={this.state.config.custom_header_message} />
+                </Message>
+            )
+            : null;
+
         return (
             <Segment basic>
-                <Message success>
-                    Welcome to the new and improved IAM Self-Service Wizard!
-                    Please click <a target='_blank' href='/self_service_v1'>here</a> if you need to access the older version.
-                </Message>
+                {headerMessage}
                 <Step.Group fluid>
                     <Step
                         active={currStep === SelfServiceStepEnum.STEP1}
