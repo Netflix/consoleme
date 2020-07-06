@@ -15,11 +15,7 @@ from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
-from policy_sentry.util.arns import (
-    get_account_from_arn,
-    get_resource_from_arn,
-    get_service_from_arn,
-)
+from policy_sentry.util.arns import get_account_from_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -28,7 +24,7 @@ from consoleme.exceptions.exceptions import (
 )
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.redis import RedisHandler, redis_hgetall
+from consoleme.lib.redis import RedisHandler, redis_hget
 from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
@@ -172,23 +168,18 @@ async def get_all_iam_managed_policies_for_account(account_id):
 async def get_resource_account(arn: str) -> str:
     """Return the AWS account ID that owns a resource.
 
-    In most cases, this will pull the ID directly from the ARN. For S3, we do
-    a lookup in Redis to get the account ID.
+    In most cases, this will pull the ID directly from the ARN.
+    If we are unsuccessful in pulling the account from ARN, we try to grab it from our resources cache
     """
-    s3_bucket_key = config.get("redis.s3_bucket_key", "S3_BUCKETS")
-    s3_buckets: Dict = await redis_hgetall(s3_bucket_key)
 
     resource_account: str = get_account_from_arn(arn)
     if resource_account:
         return resource_account
 
-    resource_type: str = get_service_from_arn(arn)
-    resource_name: str = get_resource_from_arn(arn)
-    if resource_type == "s3":
-        if s3_buckets:
-            for k, v in s3_buckets.items():
-                if resource_name in v:
-                    return k
+    resources_from_aws_config_redis_key: str = config.get("aws_config_cache.redis_key")
+    resource_info = await redis_hget(resources_from_aws_config_redis_key, arn)
+    if resource_info:
+        return json.loads(resource_info).get("accountId", "")
 
     return ""
 
