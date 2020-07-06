@@ -10,6 +10,7 @@ import {
     Segment,
 } from 'semantic-ui-react';
 import RoleDetails from "./RoleDetails";
+import "./SelfService.css";
 
 
 class SelfServiceStep1 extends Component {
