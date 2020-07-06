@@ -1,3 +1,5 @@
+[![Gitter](https://badges.gitter.im/consolemeoss/community.svg)](https://gitter.im/consolemeoss/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 # ConsoleMe
 
 ConsoleMe makes multi-account AWS easier for your end-users and cloud administrators.
