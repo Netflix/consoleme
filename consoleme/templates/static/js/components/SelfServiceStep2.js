@@ -121,7 +121,7 @@ class SelfServiceStep2 extends Component {
                             <Form>
                                 <Form.Select
                                     value={service}
-                                    label="Select AWS Service"
+                                    label="Select Desired Permissions"
                                     onChange={this.handleServiceTypeChange.bind(this)}
                                     options={services}
                                     placeholder='Choose One'
