@@ -18,6 +18,7 @@ from boto3.dynamodb.types import Binary  # noqa
 from cloudaux import get_iso_string
 from cloudaux.aws.sts import boto3_cached_conn as boto3_cached_conn
 from retrying import retry
+from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -51,7 +52,9 @@ def parallel_write_table(table, data, overwrite_by_pkeys=None):
         overwrite_by_pkeys = []
     with table.batch_writer(overwrite_by_pkeys=overwrite_by_pkeys) as batch:
         for item in data:
-            batch.put_item(Item=item)
+            for attempt in Retrying(stop=stop_after_attempt(3), wait=wait_fixed(2)):
+                with attempt:
+                    batch.put_item(Item=item)
 
 
 def parallel_scan_table(table, total_threads=10):
