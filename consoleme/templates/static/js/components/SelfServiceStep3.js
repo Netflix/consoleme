@@ -311,6 +311,7 @@ class SelfServiceStep3 extends Component {
                             />
                         </Form>
                         <Divider/>
+                        {messagesToShow}
                         <Button
                             content="Submit"
                             disabled={isError}
