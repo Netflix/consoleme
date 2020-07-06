@@ -1226,18 +1226,15 @@ def cache_resources_from_aws_config_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     resource_redis_cache_key = config.get("aws_config_cache.redis_key")
 
-    if config.region == config.get("celery.active_region") or config.get(
-        "unit_testing.override_true"
-    ):
-        # First, get list of accounts
-        accounts_d = aws.get_account_ids_to_names()
-        # Second, call tasks to enumerate all the roles across all accounts
-        for account_id in accounts_d.keys():
-            if config.get("environment") in ["prod", "dev"]:
+    # First, get list of accounts
+    accounts_d = aws.get_account_ids_to_names()
+    # Second, call tasks to enumerate all the roles across all accounts
+    for account_id in accounts_d.keys():
+        if config.get("environment") in ["prod", "dev"]:
+            cache_resources_from_aws_config_for_account.delay(account_id)
+        else:
+            if account_id in config.get("celery.test_account_ids", []):
                 cache_resources_from_aws_config_for_account.delay(account_id)
-            else:
-                if account_id in config.get("celery.test_account_ids", []):
-                    cache_resources_from_aws_config_for_account.delay(account_id)
 
     # Delete roles in Redis cache with expired TTL
     all_resources = red.hgetall(resource_redis_cache_key)
