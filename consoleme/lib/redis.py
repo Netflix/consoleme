@@ -389,6 +389,14 @@ async def redis_hgetall(key: str, default=None):
     return v
 
 
+async def redis_hget(name: str, key: str, default=None):
+    red = await RedisHandler().redis()
+    v = await sync_to_async(red.hget)(name, key)
+    if not v:
+        return default
+    return v
+
+
 def redis_get_sync(key: str, default: None = None) -> Optional[str]:
     red = RedisHandler().redis_sync()
     try:

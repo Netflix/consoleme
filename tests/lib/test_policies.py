@@ -1,14 +1,13 @@
 import asyncio
 from unittest import TestCase
 
+import ujson as json
 from mock import MagicMock, patch
 
 from tests.conftest import create_future
 
-mock_s3_bucket_redis = MagicMock(
-    return_value=create_future(
-        {"123456789012": ["foobar", "bazbang", "bangbar", "heewon"]}
-    )
+mock_aws_config_resources_redis = MagicMock(
+    return_value=create_future(json.dumps({"accountId": "123456789012"}))
 )
 
 
@@ -43,7 +42,7 @@ class TestPoliciesLib(TestCase):
             result = get_actions_for_resource(tc["arn"], tc["statement"])
             self.assertListEqual(tc["expected"], result, tc["description"])
 
-    @patch("consoleme.lib.aws.redis_hgetall", mock_s3_bucket_redis)
+    @patch("consoleme.lib.aws.redis_hget", mock_aws_config_resources_redis)
     def test_get_resources_from_events(self):
         from consoleme.lib.policies import get_resources_from_events
 

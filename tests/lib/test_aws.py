@@ -4,7 +4,8 @@ from unittest import TestCase
 
 import pytest
 import pytz
-from mock import MagicMock, patch
+import ujson as json
+from mock import patch
 
 from tests.conftest import create_future
 
@@ -15,10 +16,6 @@ ROLE = {
     "AttachedManagedPolicies": [{"PolicyName": "Policy1"}, {"PolicyName": "Policy2"}],
     "Tags": [{"Key": "tag1", "Value": "value1"}],
 }
-
-mock_s3_bucket_redis = MagicMock(
-    return_value=create_future({"123456789012": ["foobar", "bazbang"]})
-)
 
 
 @pytest.mark.usefixtures("iam", "iam_sync_roles")
@@ -72,16 +69,12 @@ class TestAwsLib(TestCase):
 
         apply_managed_policy_to_role(ROLE, "policy-one", "session")
 
-    @patch("consoleme.lib.aws.redis_hgetall", mock_s3_bucket_redis)
-    def test_get_resource_account(self):
+    @patch("consoleme.lib.aws.redis_hget")
+    def test_get_resource_account(self, mock_aws_config_resources_redis):
         from consoleme.lib.aws import get_resource_account
 
+        mock_aws_config_resources_redis.return_value = create_future(None)
         test_cases = [
-            {
-                "arn": "arn:aws:s3:::foobar",
-                "expected": "123456789012",
-                "description": "internal S3 bucket",
-            },
             {
                 "arn": "arn:aws:s3:::nope",
                 "expected": "",
@@ -104,3 +97,21 @@ class TestAwsLib(TestCase):
             self.assertEqual(
                 tc["expected"], result, f"Test case failed: {tc['description']}"
             )
+
+        aws_config_resources_test_case = {
+            "arn": "arn:aws:s3:::foobar",
+            "expected": "123456789012",
+            "description": "internal S3 bucket",
+        }
+        aws_config_resources_test_case_redis_result = {"accountId": "123456789012"}
+        mock_aws_config_resources_redis.return_value = create_future(
+            json.dumps(aws_config_resources_test_case_redis_result)
+        )
+        result = loop.run_until_complete(
+            get_resource_account(aws_config_resources_test_case["arn"])
+        )
+        self.assertEqual(
+            aws_config_resources_test_case["expected"],
+            result,
+            f"Test case failed: " f"{aws_config_resources_test_case['description']}",
+        )
