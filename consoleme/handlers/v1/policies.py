@@ -32,6 +32,7 @@ from consoleme.lib.policies import (
     escape_json,
     get_formatted_policy_changes,
     get_resources_from_events,
+    get_url_for_resource,
     parse_policy_change_request,
     should_auto_approve_policy,
     update_resource_policy,
@@ -188,14 +189,31 @@ class GetPoliciesHandler(BaseHandler):
             raise
 
         for policy in results[start:finish]:
+            arn = policy.get("arn")
+            account_id = policy.get("account_id")
+            resource_type = policy.get("technology")
+            resource_name = policy.get("arn").split(":")[5]
+            # resource_path = ""
+            if "/" in resource_name:
+                # resource_path = resource_name.split("/")[0]
+                resource_name = resource_name.split("/")[1]
+            region = arn.split(":")[3]
+            if resource_type == "iam" and not arn.split(":")[5].startswith("role/"):
+                resource_type = "iam" + arn.split(":")[5].split("/")[0]
+
+            url = await get_url_for_resource(
+                arn, resource_type, account_id, region, resource_name
+            )
+
             data.append(
                 [
-                    policy.get("account_id"),
+                    account_id,
                     policy.get("account_name"),
                     policy.get("arn"),
-                    policy.get("technology"),
+                    resource_type,
                     policy.get("templated"),
                     policy.get("errors"),
+                    url,
                 ]
             )
             if len(data) == length:
