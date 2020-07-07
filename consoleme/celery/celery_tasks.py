@@ -40,7 +40,7 @@ from cloudaux.aws.iam import (
 )
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
-from cloudaux.aws.sqs import list_queues
+from cloudaux.aws.sts import boto3_cached_conn
 from raven.contrib.celery import register_logger_signal, register_signal
 from retrying import retry
 
@@ -921,16 +921,24 @@ def cache_sns_topics_across_accounts() -> bool:
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     all_queues: set = set()
+
     for region in config.get("celery.sync_regions"):
-        queues = list_queues(
+        client = boto3_cached_conn(
+            "sqs",
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=region,
             read_only=True,
         )
-        for queue in queues:
-            arn = f"arn:aws:sqs:{region}:{account_id}:{queue.split('/')[4]}"
-            all_queues.add(arn)
+
+        paginator = client.get_paginator("list_queues")
+
+        response_iterator = paginator.paginate(PaginationConfig={"PageSize": 1000})
+
+        for res in response_iterator:
+            for queue in res["QueueUrls"]:
+                arn = f"arn:aws:sqs:{region}:{account_id}:{queue.split('/')[4]}"
+                all_queues.add(arn)
     sqs_queue_key: str = config.get("redis.sqs_queues_key", "SQS_QUEUES")
     red.hset(sqs_queue_key, account_id, json.dumps(list(all_queues)))
 
