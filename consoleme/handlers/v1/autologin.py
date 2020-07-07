@@ -55,6 +55,7 @@ class AutoLoginHandler(BaseHandler):
             "function": "AutoLoginHandler.get",
             "selected_roles": selected_roles,
             "requested_role": role,
+            "redirect": redirect,
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
         }
