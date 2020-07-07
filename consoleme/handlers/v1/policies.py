@@ -1,8 +1,13 @@
 import re
 import sys
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+from urllib.parse import quote_plus
+
 import tornado.escape
 import ujson as json
-import urllib.parse
+from policyuniverse.expander_minimizer import _expand_wildcard_action
+
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
@@ -27,6 +32,7 @@ from consoleme.lib.policies import (
     escape_json,
     get_formatted_policy_changes,
     get_resources_from_events,
+    get_url_for_resource,
     parse_policy_change_request,
     should_auto_approve_policy,
     update_resource_policy,
@@ -34,10 +40,6 @@ from consoleme.lib.policies import (
 )
 from consoleme.lib.redis import redis_get, redis_hgetall
 from consoleme.lib.timeout import Timeout
-from datetime import datetime, timedelta
-from policyuniverse.expander_minimizer import _expand_wildcard_action
-from typing import Dict, List, Optional
-from urllib.parse import quote_plus
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -66,7 +68,7 @@ class PolicyViewHandler(BaseHandler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         stats.count("PolicyViewHandler.get", tags={"user": self.user})
@@ -127,7 +129,7 @@ class GetPoliciesHandler(BaseHandler):
             return
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         draw = int(self.request.arguments.get("draw")[0])
@@ -197,32 +199,12 @@ class GetPoliciesHandler(BaseHandler):
                 resource_name = resource_name.split("/")[1]
             region = arn.split(":")[3]
             if resource_type == "iam" and not arn.split(":")[5].startswith("role/"):
-                resource_type = "iam_other"
+                resource_type = "iam" + arn.split(":")[5].split("/")[0]
 
-            url = ""
-            if resource_type == "iam":
-                url = f"/policies/edit/{account_id}/iamrole/{resource_name}"
-            elif resource_type == "s3":
-                url = f"/policies/edit/{account_id}/s3/{resource_name}"
-            elif resource_type in ["sqs", "sns"]:
-                url = f"/policies/edit/{account_id}/{resource_type}/{region}/{resource_name}"
-            elif resource_type == "AWS::EC2::SecurityGroup":
-                url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/ec2/v2/home?region={region}%23SecurityGroup:groupId={resource_name}"
-            elif resource_type == "AWS::EC2::RouteTable":
-                url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/vpc/home?region={region}%23RouteTables:sort=routeTableId"
-            elif resource_type == "AWS::RDS::DBSnapshot":
-                resource_name = policy.get("arn").split(":")[6]
-                url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/rds/home?region={region}%23db-snapshot:id={resource_name}"
-            elif resource_type == "AWS::CloudWatch::Alarm":
-                # CloudWatch alarms have a different resource_name format
-                resource_name = policy.get("arn").split(":")[6]
+            url = await get_url_for_resource(
+                arn, resource_type, account_id, region, resource_name
+            )
 
-                # :alarm/{urllib.parse.quote(resource_name)}?
-                # TODO: Not sure how to parse this properly
-                url = (
-                          f"/role/{account_id}?redirect=https://console.aws.amazon.com/cloudwatch/home"
-                          f"?region={region}%23alarmsV2"
-                )
             data.append(
                 [
                     account_id,
@@ -257,7 +239,7 @@ class PolicyEditHandler(BaseHandler):
             return
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         read_only = False
@@ -355,7 +337,7 @@ class PolicyEditHandler(BaseHandler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -409,7 +391,7 @@ class ResourcePolicyEditHandler(BaseHandler):
             return
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         read_only = False
@@ -480,7 +462,7 @@ class ResourcePolicyEditHandler(BaseHandler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -530,7 +512,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -654,7 +636,7 @@ class PolicyReviewHandler(BaseHandler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -747,7 +729,7 @@ class PolicyReviewHandler(BaseHandler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -907,7 +889,7 @@ class PolicyReviewHandler(BaseHandler):
             data_type = (
                 "AssumeRolePolicyDocument"
                 if policy_name
-                   in ["Assume Role Policy Document", "AssumeRolePolicyDocument"]
+                in ["Assume Role Policy Document", "AssumeRolePolicyDocument"]
                 else "InlinePolicy"
             )
             data_list = [
@@ -1010,16 +992,16 @@ class AutocompleteHandler(BaseAPIV1Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
         only_filter_services = False
 
         if (
-                self.request.arguments.get("only_filter_services")
-                and self.request.arguments.get("only_filter_services")[0].decode("utf-8")
-                == "true"
+            self.request.arguments.get("only_filter_services")
+            and self.request.arguments.get("only_filter_services")[0].decode("utf-8")
+            == "true"
         ):
             only_filter_services = True
 
@@ -1225,7 +1207,7 @@ class ResourceTypeAheadHandler(BaseHandler):
     async def get(self):
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         results = await handle_resource_type_ahead_request(self)
