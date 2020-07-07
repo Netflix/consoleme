@@ -612,6 +612,7 @@ async def should_auto_approve_policy(events, user, user_groups):
 async def get_url_for_resource(arn, resource_type, account_id, region, resource_name):
     url = ""
     if resource_type == "iam":
+        resource_name = arn.split("/")[-1]
         url = f"/policies/edit/{account_id}/iamrole/{resource_name}"
     elif resource_type == "s3":
         url = f"/policies/edit/{account_id}/s3/{resource_name}"
