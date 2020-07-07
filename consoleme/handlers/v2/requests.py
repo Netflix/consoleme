@@ -1,7 +1,7 @@
 import ujson as json
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseAPIV2Handler
+from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
 from consoleme.lib.plugins import get_plugin_by_name
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -21,9 +21,7 @@ class RequestsHandler(BaseAPIV2Handler):
         """
         GET /api/v2/requests
         """
-        tags = {
-            "user": self.user,
-        }
+        tags = {"user": self.user}
         stats.count("RequestsHandler.get", tags=tags)
         log_data = {
             "function": "RequestsHandler.get",
@@ -39,9 +37,7 @@ class RequestsHandler(BaseAPIV2Handler):
         """
         POST /api/v2/requests
         """
-        tags = {
-            "user": self.user,
-        }
+        tags = {"user": self.user}
         stats.count("RequestsHandler.post", tags=tags)
         log_data = {
             "function": "RequestsHandler.post",
@@ -66,9 +62,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
         """
         GET /api/v2/requests/{request_id}
         """
-        tags = {
-            "user": self.user,
-        }
+        tags = {"user": self.user}
         stats.count("RequestDetailHandler.get", tags=tags)
         log_data = {
             "function": "RequestDetailHandler.get",
@@ -84,9 +78,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
         """
         PUT /api/v2/requests/{request_id}
         """
-        tags = {
-            "user": self.user,
-        }
+        tags = {"user": self.user}
         stats.count("RequestDetailHandler.put", tags=tags)
         log_data = {
             "function": "RequestDetailHandler.put",
@@ -97,3 +89,25 @@ class RequestDetailHandler(BaseAPIV2Handler):
         }
         log.debug(log_data)
         self.write_error(501, message="Update request details")
+
+
+class RequestsWebHandler(BaseHandler):
+    async def get(self):
+        """
+        /requests
+        ---
+        get:
+            description: Entry point to Requests view
+            responses:
+                200:
+                    description: Returns Requests view
+        """
+
+        await self.render(
+            "requests.html",
+            page_title="ConsoleMe - Requests",
+            current_page="policies",  # TODO change me
+            user=self.user,
+            user_groups=self.groups,
+            config=config,
+        )

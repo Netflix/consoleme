@@ -52,7 +52,11 @@ from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 
 # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
 from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
-from consoleme.handlers.v2.requests import RequestDetailHandler, RequestsHandler
+from consoleme.handlers.v2.requests import (
+    RequestDetailHandler,
+    RequestsHandler,
+    RequestsWebHandler,
+)
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
@@ -155,6 +159,7 @@ def make_app(jwt_validator=None):
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service_v1", SelfServiceHandler),
         (r"/self_service", SelfServiceV2Handler),
+        (r"/requests", RequestsWebHandler),
     ]
 
     routes.extend(
