@@ -364,7 +364,7 @@ async def update_resource_policy(
             log_data["error"] = e
             log.error(log_data, exc_info=True)
             result["status"] = "error"
-            result["error"] = log_data["error"]
+            result["error"] = str(e)
             return result
     if not changes:
         result = {"status": "error", "message": "No changes detected."}

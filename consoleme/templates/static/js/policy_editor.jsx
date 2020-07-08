@@ -337,3 +337,39 @@ export async function deleteRole(account_id, role_name) {
     await handleResponse(resJson, "/policies", "Successfully deleted role! Redirecting to ConsoleMe's policies page", 5000);
   }
 }
+
+export async function applyResourcePolicy(editor_value, account_id, resource_type, resource_name, region, is_new=false) {
+  let lint_errors = editor_value.getSession().getAnnotations();
+  if (lint_errors.length > 0) {
+    Swal.fire(
+      'Lint Error',
+      JSON.stringify(lint_errors),
+      'error'
+    );
+    return false;
+  }
+  let url = "/policies/edit/" + account_id + "/" + resource_type + "/" + ((region === '') ? resource_name : region + "/" + resource_name)
+  let arr = [{'type': 'ResourcePolicy', 'name': 'Resource Policy', 'value': editor_value.getValue(), 'is_new': is_new}];
+  let json = JSON.stringify(arr);
+  let dimmer = $('.ui.dimmer');
+  dimmer.addClass('active');
+  let res = await sendRequestCommon(json, url);
+  dimmer.removeClass('active');
+  document.getElementById('error_div').classList.add('hidden');
+  document.getElementById('success_div').classList.add('hidden');
+  if (res.status !== "success") {
+    let element = document.getElementById('error_response');
+    document.getElementById('error_div').classList.remove('hidden');
+    if(res.hasOwnProperty("message")) {
+      element.textContent = res.message
+    } else {
+      element.textContent = JSON.stringify(res, null, '\t');
+    }
+    $('.ui.basic.modal').modal('show')
+  } else {
+    let element = document.getElementById('success_response');
+    element.textContent = "Successfully applied resource policy!";
+    document.getElementById('success_div').classList.remove('hidden')
+    $('.ui.basic.modal').modal('show');
+  }
+}
