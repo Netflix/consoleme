@@ -40,7 +40,6 @@ from consoleme.handlers.v1.policies import (
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
-from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
 from consoleme.handlers.v2.create_role import CreateRoleViewHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
@@ -138,8 +137,6 @@ def make_app(jwt_validator=None):
         (r"/policies/request/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
         (r"/policies/submit_for_review", PolicyReviewSubmitHandler),
         (r"/policies/typeahead", ResourceTypeAheadHandler),
-        (r"/swagger", SwaggerHandler),
-        (r"/swagger.json", SwaggerJsonGenerator),
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service_v1", SelfServiceHandler),
         (r"/self_service", SelfServiceV2Handler),
