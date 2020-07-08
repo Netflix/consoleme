@@ -7,7 +7,7 @@ development: true
 url: http://127.0.0.1:8081
 
 tornado:
-  debug: true
+  debug: false
   port: 8081
   xsrf: false
 

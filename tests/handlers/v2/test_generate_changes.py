@@ -1,7 +1,8 @@
 import ujson as json
 from mock import patch
-from tests.conftest import MockBaseHandler
 from tornado.testing import AsyncHTTPTestCase
+
+from tests.conftest import MockBaseHandler
 
 
 class TestGenerateChangesHandler(AsyncHTTPTestCase):
@@ -15,6 +16,60 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         response = self.fetch("/api/v2/generate_changes", method="POST", body="abcd")
         self.assertEqual(response.code, 403)
         self.assertEqual(response.body, expected)
+
+    @patch(
+        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    def test_post_valid_request_sns(self):
+        input_body = {
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/exampleRole",
+                    "resource_arn": "arn:aws:sns:us-east-1:123456789012:exampletopic",
+                    "generator_type": "sns",
+                    "version": "abcd",
+                    "asd": "sdf",
+                    "action_groups": ["get_topic_attributes", "publish"],
+                }
+            ]
+        }
+
+        response = self.fetch(
+            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 200)
+        result = json.loads(response.body)
+        self.assertEqual(
+            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/exampleRole"
+        )
+
+    @patch(
+        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    def test_post_valid_request_sqs(self):
+        input_body = {
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "generator_type": "sqs",
+                    "resource_arn": "arn:aws:sqs:us-east-1:123456789012:resourceName",
+                    "effect": "Allow",
+                    "action_groups": ["get_queue_attributes", "send_messages"],
+                }
+            ]
+        }
+        response = self.fetch(
+            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 200)
+        result = json.loads(response.body)
+        self.assertEqual(
+            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/roleName"
+        )
 
     @patch(
         "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
@@ -196,57 +251,3 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         )
         self.assertEqual(response.code, 500)
         self.assertIn("Error generating changes", str(response.body))
-
-    @patch(
-        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
-        MockBaseHandler.authorization_flow,
-    )
-    def test_post_valid_request_sns(self):
-        input_body = {
-            "changes": [
-                {
-                    "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/exampleRole",
-                    "resource_arn": "arn:aws:sns:us-east-1:123456789012:exampletopic",
-                    "generator_type": "sns",
-                    "version": "abcd",
-                    "asd": "sdf",
-                    "action_groups": ["get_topic_attributes", "publish"],
-                }
-            ]
-        }
-
-        response = self.fetch(
-            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
-        )
-        self.assertEqual(response.code, 200)
-        result = json.loads(response.body)
-        self.assertEqual(
-            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/exampleRole"
-        )
-
-    @patch(
-        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
-        MockBaseHandler.authorization_flow,
-    )
-    def test_post_valid_request_sqs(self):
-        input_body = {
-            "changes": [
-                {
-                    "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
-                    "generator_type": "sqs",
-                    "resource_arn": "arn:aws:sqs:us-east-1:123456789012:resourceName",
-                    "effect": "Allow",
-                    "action_groups": ["get_queue_attributes", "send_messages"],
-                }
-            ]
-        }
-        response = self.fetch(
-            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
-        )
-        self.assertEqual(response.code, 200)
-        result = json.loads(response.body)
-        self.assertEqual(
-            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/roleName"
-        )

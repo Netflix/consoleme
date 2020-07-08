@@ -71,6 +71,7 @@ class GenerateChangesHandler(BaseAPIV2Handler):
             "user-agent": self.request.headers.get("User-Agent"),
             "ip": self.ip,
             "request_id": self.request_uuid,
+            "request_body": self.request.body,
         }
 
         try:

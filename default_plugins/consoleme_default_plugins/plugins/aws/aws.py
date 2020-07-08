@@ -521,6 +521,8 @@ class Aws:
 
     async def get_account_name_from_account_id(self, account_id):
         accounts = self.get_account_ids_to_names()
+        print("Account ID: " + account_id)
+        print(accounts)
         return accounts.get(account_id)
 
     @staticmethod
