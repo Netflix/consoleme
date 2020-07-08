@@ -607,3 +607,194 @@ async def should_auto_approve_policy(events, user, user_groups):
     aws = get_plugin_by_name(config.get("plugins.aws"))()
     result = await aws.should_auto_approve_policy(events, user, user_groups)
     return result
+
+
+async def get_url_for_resource(arn, resource_type, account_id, region, resource_name):
+    url = ""
+    if resource_type == "iam":
+        resource_name = arn.split("/")[-1]
+        url = f"/policies/edit/{account_id}/iamrole/{resource_name}"
+    elif resource_type == "s3":
+        url = f"/policies/edit/{account_id}/s3/{resource_name}"
+    elif resource_type in ["sqs", "sns"]:
+        url = f"/policies/edit/{account_id}/{resource_type}/{region}/{resource_name}"
+    elif resource_type == "AWS::CloudFormation::Stack":
+        url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/cloudformation/home?region={region}#/stacks/"
+    elif resource_type == "AWS::CloudFront::Distribution":
+        url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/cloudfront/home?%23distribution-settings:{resource_name}"
+    elif resource_type == "AWS::CloudTrail::Trail":
+        url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/cloudtrail/home?region={region}%23/configuration"
+    elif resource_type == "AWS::CloudWatch::Alarm":
+        url = (
+            f"/role/{account_id}?redirect=https://console.aws.amazon.com/cloudwatch/home"
+            f"?region={region}%23alarmsV2:"
+        )
+    elif resource_type == "AWS::CodeBuild::Project":
+        url = (
+            f"/role/{account_id}?redirect=https://console.aws.amazon.com/codesuite/codebuild/"
+            f"{account_id}/projects/{resource_name}/history?region={region}"
+        )
+    elif resource_type == "AWS::CodePipeline::Pipeline":
+        url = (
+            f"/role/{account_id}?redirect="
+            "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/"
+            f"{resource_name}/view?region={region}"
+        )
+    elif resource_type == "AWS::DynamoDB::Table":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/dynamodb/home?region={region}%23tables:selected={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::CustomerGateway":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23CustomerGateways:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::InternetGateway":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23igws:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::NatGateway":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23NatGateways:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::NetworkAcl":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23acls:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::RouteTable":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23RouteTables:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::SecurityGroup":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/ec2/v2/home?region={region}%23SecurityGroup:groupId={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::Subnet":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23subnets:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::VPC":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23vpcs:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::VPCEndpoint":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23Endpoints:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::VPCEndpointService":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23EndpointServices:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::VPCPeeringConnection":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23PeeringConnections:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::VPNConnection":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23VpnConnections:search={resource_name}"
+        )
+    elif resource_type == "AWS::EC2::VPNGateway":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/vpc/home?region={region}%23VpnGateways:search={resource_name}"
+        )
+    elif resource_type == "AWS::ElasticBeanstalk::Application":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/elasticbeanstalk/home?region={region}%23/applications"
+        )
+    elif resource_type == "AWS::ElasticBeanstalk::ApplicationVersion":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/elasticbeanstalk/home?region={region}%23/applications"
+        )
+    elif resource_type == "AWS::ElasticBeanstalk::Environment":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/elasticbeanstalk/home?region={region}%23/environments"
+        )
+    elif resource_type == "AWS::ElasticLoadBalancing::LoadBalancer":
+        url = (
+            f"/role/{account_id}?redirect="
+            "https://console.aws.amazon.com"
+            f"/ec2/v2/home?region={region}%23LoadBalancers:search={resource_name}"
+        )
+    elif resource_type == "AWS::ElasticLoadBalancingV2::LoadBalancer":
+        resource_name = arn.split("/")[2]
+        url = (
+            f"/role/{account_id}?redirect="
+            "https://console.aws.amazon.com"
+            f"/ec2/v2/home?region={region}%23LoadBalancers:search={resource_name}"
+        )
+    elif resource_type == "AWS::Elasticsearch::Domain":
+        url = (
+            f"/role/{account_id}?redirect="
+            "https://console.aws.amazon.com"
+            f"/es/home?region={region}%23domain:resource={resource_name};action=dashboard;tab=undefined"
+        )
+    elif resource_type == "AWS::Lambda::Function":
+        resource_name = arn.split(":")[6]
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/lambda/home?region={region}%23/functions/{resource_name}"
+        )
+    elif resource_type == "AWS::RDS::DBSnapshot":
+        resource_name = arn.split(":")[6]
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/rds/home?region={region}%23db-snapshot:id={resource_name}"
+        )
+    # TBD
+    elif resource_type == "AWS::Redshift::Cluster":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/rds/home?region={region}%23db-snapshot:id={resource_name}"
+        )
+    elif resource_type == "AWS::IAM::Policy":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/iam/home?%23/policies/{arn}$serviceLevelSummary"
+        )
+    elif resource_type == "AWS::IAM::User":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/iam/home?%23/users/{resource_name}"
+        )
+    elif resource_type == "AWS::IAM::Group":
+        url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/iam/home?%23/groups/{resource_name}"
+    elif resource_type == "AWS::Shield::Protection":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/wafv2/shield%23/tedx"
+        )
+    elif resource_type == "AWS::ShieldRegional::Protection":
+        url = (
+            f"/role/{account_id}?redirect="
+            f"https://console.aws.amazon.com/wafv2/shield%23/tedx"
+        )
+    elif resource_type in ["AWS::WAF::RateBasedRule", "AWS::WAF::Rule"]:
+        url = (
+            f"/role/{account_id}?redirect=" f"https://console.aws.amazon.com/wafv2/home"
+        )
+    elif resource_type == "AWS::WAF::RuleGroup":
+        url = (
+            f"/role/{account_id}?redirect=" f"https://console.aws.amazon.com/wafv2/fms"
+        )
+    elif resource_type == "AWS::WAF::WebACL":
+        url = (
+            f"/role/{account_id}?redirect=" f"https://console.aws.amazon.com/wafv2/home"
+        )
+
+    return url

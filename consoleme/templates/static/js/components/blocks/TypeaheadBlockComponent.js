@@ -26,15 +26,19 @@ class TypeaheadBlockComponent extends Component {
         this.setState({
             isLoading: true,
             value,
+        }, () => {
+            this.props.handleInputUpdate(value);
         });
 
         setTimeout(() => {
             if (this.state.value.length < 1) {
-                return this.setState(
-                    {
+                return this.setState({
                         isLoading: false,
                         results: [],
                         value: '',
+                    },
+                    () => {
+                        this.props.handleInputUpdate('');
                     }
                 );
             }
@@ -54,14 +58,13 @@ class TypeaheadBlockComponent extends Component {
         }, 300);
     }
 
-
     render() {
         const {isLoading, results, value} = this.state;
-        const {defaultValue, required, text} = this.props;
+        const {defaultValue, required, label} = this.props;
 
         return (
             <Form.Field required={required || false}>
-                <label>{text}</label>
+                <label>{label || "Enter Value"}</label>
                 <Search
                     fluid
                     defaultValue={defaultValue || ""}

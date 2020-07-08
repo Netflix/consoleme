@@ -936,7 +936,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         response_iterator = paginator.paginate(PaginationConfig={"PageSize": 1000})
 
         for res in response_iterator:
-            for queue in res["QueueUrls"]:
+            for queue in res.get("QueueUrls", []):
                 arn = f"arn:aws:sqs:{region}:{account_id}:{queue.split('/')[4]}"
                 all_queues.add(arn)
     sqs_queue_key: str = config.get("redis.sqs_queues_key", "SQS_QUEUES")

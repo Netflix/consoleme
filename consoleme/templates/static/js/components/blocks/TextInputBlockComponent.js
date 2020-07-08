@@ -12,6 +12,13 @@ class TextInputBlockComponent extends Component {
         };
     }
 
+    componentDidMount() {
+        const {defaultValue} = this.props;
+        this.setState({
+            value: defaultValue || "",
+        });
+    }
+
     handleTextInputChange(e) {
         const {value} = e.target;
         this.setState({
@@ -23,16 +30,15 @@ class TextInputBlockComponent extends Component {
 
     render() {
         const {value} = this.state;
-        const {defaultValue, required, text} = this.props;
+        const {required, label} = this.props;
 
         return (
             <Form.Field required={required}>
-                <label>{text}</label>
+                <label>{label || "Enter Value"}</label>
                 <input
-                    defaultValue={defaultValue}
                     onChange={this.handleTextInputChange.bind(this)}
                     placeholder="Enter your value here"
-                    value={value || (defaultValue || '')}
+                    value={value}
                     type="text"
                 />
             </Form.Field>

@@ -133,6 +133,7 @@ class SelfServiceStep2 extends Component {
                                 service != null
                                     ? (
                                         <SelfServiceComponent
+                                            key={service}
                                             config={config}
                                             role={role}
                                             service={service}
