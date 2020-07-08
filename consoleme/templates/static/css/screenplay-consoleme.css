@@ -72,10 +72,6 @@ nav.sidebar li a, nav.sidebar li a * {
     outline: rgb(255, 255, 255) none 0px;
 }
 
-label {
-  width:200px;
-  display: inline-block;
-}
 #header{
     box-shadow: none;
 }
