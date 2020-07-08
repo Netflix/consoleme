@@ -40,6 +40,7 @@
       };
       let langTools = ace.require("ace/ext/language_tools");
       langTools.addCompleter(permissionCompleter);
+      let resource_policy_diffs = [];
 </script>
 <link href="/static/css/ace-diff.min.css" rel="stylesheet">
 <div id="wrapper" class="container">
@@ -168,7 +169,10 @@
             {% end %}
             <tr>
                 <td>Cross-Account</td>
-                <td><span style="copendinglor: red;">{{ request.get("cross_account_request", False) }}</span>
+                <td>
+                    <strong style="color: {% if request.get("cross_account_request", False) %}red{% else %}green{% end %};">
+                        {{ request.get("cross_account_request", False) }}
+                    </strong>
                 </td>
             </tr>
         </tbody>
@@ -183,6 +187,9 @@
               </div>
               <ul class="list">
                 <li>If you've made a mistake or want to add additional permissions to your request, you can modify the request and click 'Save Edits'</li>
+                {% if request.get("cross_account_request", False) %}
+                   <li>For cross-account access to work properly, an administrator will need to apply the corresponding resource policies to the resources.</li>
+                {% end %}
               </ul>
             </div>
             {% end %}
@@ -279,18 +286,73 @@
             <h2>Resource Policy Changes</h2>
             <p>The InfraSec team may need to update the resource policy for the following resource(s). We've tried to give a head start by modifying the existing policy or building a new one. Note that these will <em>not</em> be applied when this request is approved and committed.</em></p>
             {% for idx, resource_policy in enumerate(resource_policies) %}
-                <h3>{{ resource_policy.get('resource') }}</h3>
-                <div id="resourcePolicy{{ idx }}" class="ui segment" style="height: 500px;">
-                    {{ json.dumps(resource_policy.get('policy_document'), indent=4, sort_keys=True, escape_forward_slashes=False) }}
+                <div class="ui segment">
+                    <h3>Resource:
+                        {% if resource_policy.get('url', '') != '' %}
+                            <a href="{{ escape(resource_policy.get('url')) }}?refresh=true" target="_blank"> {{ escape(resource_policy.get('resource')) }} </a>
+                        {% else %}
+                            {{ escape(resource_policy.get('resource')) }}
+                        {% end %}
+                    </h3>
+                    <div class="ui grid">
+                        <div class="eight wide column">
+                            <h4>Current Policy</h4>
+                            <p>This is a read-only view of the current policy in AWS.</p>
+                        </div>
+                        <div class="eight wide column">
+                            <h4>Proposed Policy</h4>
+                            <p>This is an editable view of the proposed policy. An approver can modify the proposed policy before approving and applying it.</p>
+                        </div>
+                    </div>
+                    <div class="ui segment" style="height: 500px;">
+                        <div class="resourcePolicy{{ idx }}"></div>
+                    </div>
+                    {% if resource_policy.get('supported') %}
+                        {% if can_apply_resource_policies %}
+                            <form class="ui form" onsubmit="return false;">
+                                {% module xsrf_form_html() %}
+                                 <div class="item">
+                                     <button class="positive ui button" onClick="policyEditor.applyResourcePolicy(resource_policy_diffs[`{{idx}}`].getEditors().right, '{{ escape(resource_policy.get('account')) }}', '{{ escape(resource_policy.get('type')) }}', '{{ escape(resource_policy.get('resource')) }}', '{{ escape(resource_policy.get('region', '')) }}');"
+                                        style="margin: 10px;">
+                                            Apply Resource Policy
+                                     </button>
+                                 </div>
+                            </form>
+                        {% end %}
+                    {% else %}
+                        <div class="ui error message">
+                          <div class="header">
+                            Warning
+                          </div>
+                          This resource type is currently not supported for automatic application of resource policies. A best effort proposed resource policy is shown above. Please review carefully before applying.
+                        </div>
+                    {% end %}
+                    <script>
+                          resource_policy_diffs[`{{idx}}`] = new AceDiff({
+                          element: '.resourcePolicy{{ idx }}',
+                          mode: "ace/mode/json",
+                          theme: "ace/theme/" + editor_theme,
+                          diffGranularity: "specific",
+                          left: {
+                            content: `{% raw escape_json(json.dumps(resource_policy.get("old_policy_document"), indent=4, sort_keys=True, escape_forward_slashes=False)) %}`,
+                            editable: false,
+                            copyLinkEnabled: false,
+                          },
+                          right: {
+                            content: `{% raw escape_json(json.dumps(resource_policy.get("policy_document"), indent=4, sort_keys=True, escape_forward_slashes=False)) %}`,
+                            copyLinkEnabled: false,
+                          {% if not can_apply_resource_policies %}
+                            editable: false
+                          {% end %}
+                          },
+                        })
+
+                        resource_policy_diffs[`{{idx}}`].editors.left.ace.setShowPrintMargin(false);
+                        resource_policy_diffs[`{{idx}}`].editors.right.ace.setShowPrintMargin(false);
+                        resource_policy_diffs[`{{idx}}`].editors.right.ace.setOptions({enableBasicAutocompletion: true});
+                        resource_policy_diffs[`{{idx}}`].editors.right.ace.setOptions({enableLiveAutocompletion: true});
+                    </script>
                 </div>
-                <script>
-                    var editor = ace.edit("resourcePolicy{{ idx }}");
-                    editor.setTheme("ace/theme/textmate");
-                    editor.session.setMode("ace/mode/json");
-                    editor.setOptions({
-                        editable: false,
-                    })
-                </script>
             {% end %}
         </div>
         {% end %}
@@ -340,3 +402,4 @@
 <style>
     body.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown), html.swal2-shown:not(.swal2-no-backdrop):not(.swal2-toast-shown) { height: 100% !important; overflow-y: visible !important; }
 </style>
+<script src="/static/js/dist/policyEditor.js"></script>
