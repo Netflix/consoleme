@@ -691,12 +691,21 @@ class PolicyReviewHandler(BaseHandler):
             resource_policy["old_policy_document"] = await get_resource_policy(
                 resource_account, resource_type, resource_name, resource_region
             )
+
             # if account wasn't present, we don't support applying resource policies automatically
             # (for backwards compatibility as we can't pull current resource policy and don't want to overwrite)
             if not resource_account or resource_type not in supported_resource_policies:
                 resource_policy["supported"] = False
             else:
                 resource_policy["supported"] = True
+                # only need to provide ARN if resource_type is IAM, which is not supported
+                resource_policy["url"] = await get_url_for_resource(
+                    arn="",
+                    resource_type=resource_type,
+                    account_id=resource_account,
+                    region=resource_region,
+                    resource_name=resource_name,
+                )
 
         if status == "pending":
             show_approve_reject_buttons = await can_manage_policy_requests(self.groups)

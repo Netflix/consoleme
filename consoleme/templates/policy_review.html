@@ -287,7 +287,13 @@
             <p>The InfraSec team may need to update the resource policy for the following resource(s). We've tried to give a head start by modifying the existing policy or building a new one. Note that these will <em>not</em> be applied when this request is approved and committed.</em></p>
             {% for idx, resource_policy in enumerate(resource_policies) %}
                 <div class="ui segment">
-                    <h3>Resource: {{ escape(resource_policy.get('resource')) }} </h3>
+                    <h3>Resource:
+                        {% if resource_policy.get('url', '') != '' %}
+                            <a href="{{ escape(resource_policy.get('url')) }}?refresh=true" target="_blank"> {{ escape(resource_policy.get('resource')) }} </a>
+                        {% else %}
+                            {{ escape(resource_policy.get('resource')) }}
+                        {% end %}
+                    </h3>
                     <div class="ui grid">
                         <div class="eight wide column">
                             <h4>Current Policy</h4>
