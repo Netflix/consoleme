@@ -21,8 +21,8 @@ function RoleDetails(props) {
     }
 
     return (
-        <List selection relaxed="very">
-            <List.Item as="a">
+        <List divided relaxed="very">
+            <List.Item>
                 <List.Icon name='key' />
                 <List.Content>
                     <List.Header>Account</List.Header>
@@ -31,7 +31,7 @@ function RoleDetails(props) {
                     </List.Description>
                 </List.Content>
             </List.Item>
-            <List.Item as="a">
+            <List.Item>
                 <List.Icon name='code' />
                 <List.Content>
                     <List.Header>Application</List.Header>
@@ -58,12 +58,12 @@ function RoleDetails(props) {
                     </List.List>
                 </List.Content>
             </List.Item>
-            <List.Item as="a">
+            <List.Item>
                 <List.Icon name='edit' />
                 <List.Content>
                     <List.Header>Role</List.Header>
                     <List.List>
-                        <List.Item as="a">
+                        <List.Item>
                             <List.Icon name="file" />
                             <List.Content>
                                 <List.Header>
@@ -74,7 +74,7 @@ function RoleDetails(props) {
                                 </List.Description>
                             </List.Content>
                         </List.Item>
-                        <List.Item as="a">
+                        <List.Item>
                             <List.Icon name="file alternate" />
                             <List.Content>
                                 <List.Header>
@@ -89,7 +89,7 @@ function RoleDetails(props) {
                                 </List.Description>
                             </List.Content>
                         </List.Item>
-                        <List.Item as="a">
+                        <List.Item>
                             <List.Icon name="tags" />
                             <List.Content>
                                 <List.Header>
@@ -116,7 +116,7 @@ function RoleDetails(props) {
                                 </List.List>
                             </List.Content>
                         </List.Item>
-                        <List.Item as="a">
+                        <List.Item>
                             <List.Icon name='clone' />
                             <List.Content>
                                 <List.Header>Template</List.Header>
@@ -132,30 +132,30 @@ function RoleDetails(props) {
                     </List.List>
                 </List.Content>
             </List.Item>
-            <List.Item as="a">
+            <List.Item>
                 <List.Icon name='history' />
                 <List.Content>
                     <List.Header>Activity</List.Header>
                     <List.List>
-                        <List.Item as="a">
+                        <List.Item>
                             <List.Icon name="cloud" />
                             <List.Content>
                                 <List.Header>
                                     Cloud Trails
                                 </List.Header>
                                 <List.Description>
-                                    There are <a href={role.cloudtrail_details.error_url}>{role.cloudtrail_details.errors.cloudtrail_errors.length}</a> errors.
+                                    There are <a href={role.cloudtrail_details.error_url} target="_blank">{role.cloudtrail_details.errors.cloudtrail_errors.length}</a> errors.
                                 </List.Description>
                             </List.Content>
                         </List.Item>
-                        <List.Item as="a">
+                        <List.Item>
                             <List.Icon name="bitbucket" />
                             <List.Content>
                                 <List.Header>
                                     S3 Access Logs
                                 </List.Header>
                                 <List.Description>
-                                    There are <a href={role.s3_details.error_url}>{role.s3_details.errors.s3_errors.length}</a> errors.
+                                    There are <a href={role.s3_details.error_url} target="_blank">{role.s3_details.errors.s3_errors.length}</a> errors.
                                 </List.Description>
                             </List.Content>
                         </List.Item>
