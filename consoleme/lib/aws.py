@@ -215,7 +215,13 @@ async def get_resource_policies(
                 old_policy, principal_arn, arns, actions
             )
 
-            result = {"resource": resource_name, "policy_document": new_policy}
+            result = {
+                "resource": resource_name,
+                "account": resource_account,
+                "type": resource_type,
+                "region": resource_region,
+                "policy_document": new_policy,
+            }
             resource_policies.append(result)
 
     return resource_policies, cross_account_request
