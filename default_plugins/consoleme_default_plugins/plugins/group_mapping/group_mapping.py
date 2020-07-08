@@ -155,6 +155,8 @@ class GroupMapping:
             account_friendlyname = friendly_names.get(account_id, "")
             if account_friendlyname and isinstance(account_friendlyname, list):
                 account_ids[account_id] = account_friendlyname[0]
+            else:
+                account_ids[account_id] = account_friendlyname
         return account_ids
 
     async def get_account_mappings(self) -> dict:
@@ -163,16 +165,6 @@ class GroupMapping:
 
     async def get_secondary_approvers(self, group, return_default=False):
         return config.get("access_requests.default_approver")
-
-    def get_account_names_to_ids(self, force_refresh: bool = False) -> dict:
-        """Get account name to id mapping"""
-        stats.count("get_account_names_to_ids")
-        return {}
-
-    def get_account_ids_to_names(self, force_refresh: bool = False) -> str:
-        """Get account id to name mapping"""
-        stats.count("get_account_ids_to_names")
-        return {}
 
     async def get_max_cert_age_for_role(self, role_name: str):
         """Retrieve the maximum allowed certificate age allowable to retrieve a particular

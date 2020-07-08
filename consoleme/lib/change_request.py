@@ -24,8 +24,7 @@ from consoleme.models import (
     ResourceModel,
 )
 
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
-account_ids_to_names = group_mapping.get_account_ids_to_names()
+aws = get_plugin_by_name(config.get("plugins.aws"))()
 
 
 async def _generate_policy_statement(
@@ -364,7 +363,7 @@ async def _generate_resource_model_from_arn(arn: str) -> Optional[ResourceModel]
         name = arn.split(":")[5].split("/")[-1]
         if not region:
             region = "global"
-        account_name = account_ids_to_names.get(account_id, [""])[0]
+        account_name = await aws.get_account_name_from_account_id(account_id)
 
         return ResourceModel(
             arn=arn,

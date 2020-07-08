@@ -519,6 +519,10 @@ class Aws:
     def get_account_ids_to_names():
         return config.get("account_ids_to_name")
 
+    async def get_account_name_from_account_id(self, account_id):
+        accounts = self.get_account_ids_to_names()
+        return accounts.get(account_id)
+
     @staticmethod
     def handle_detected_role(role):
         pass

@@ -116,12 +116,15 @@ async def get_role_details(
 ) -> Union[ExtendedRoleModel, RoleModel]:
     arn = f"arn:aws:iam::{account_id}:role/{role_name}"
     role = await aws.fetch_iam_role(account_id, arn)
+
+    account_name = await aws.get_account_name_from_account_id(account_id)
+
     if extended:
         template = await get_role_template(arn)
         return ExtendedRoleModel(
             name=role_name,
             account_id=account_id,
-            account_name=account_ids_to_names.get(account_id, [None])[0],
+            account_name=account_name,
             arn=arn,
             inline_policies=role["policy"]["RolePolicyList"],
             assume_role_policies=role["policy"]["AssumeRolePolicyDocument"],
@@ -137,8 +140,5 @@ async def get_role_details(
         )
     else:
         return RoleModel(
-            name=role_name,
-            account_id=account_id,
-            account_name=account_ids_to_names.get(account_id, [None])[0],
-            arn=arn,
+            name=role_name, account_id=account_id, account_name=account_name, arn=arn
         )

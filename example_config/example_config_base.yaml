@@ -6,10 +6,25 @@ api_auth:
 auth_cookie_name: consoleme_auth
 application_admin: consoleme_admins@example.com
 application_name: consoleme
+
+# Replace with a mapping of your account IDs to account names. Be sure to use quotes around the account_id, otherwise
+# it will be interpreted as an integer, which is problematic for account_ids that begin with a 0
 account_ids_to_name:
-  123456789012: default_account
-  123456789013: prod
-  123456789014: test
+  "123456789012":
+    - default_account
+  "123456789013":
+    - prod
+  "123456789014":
+    - test
+
+# Replace with a mapping of your apps to IAM roles. We strongly recommend modifying your internal plugins to retrieve
+# this information rather than manually modifying this configuration file.
+apps_to_roles:
+  app1:
+    - arn:aws:iam::123456789012:role/app1InstanceProfile
+  app2:
+    - arn:aws:iam::123456789012:role/app2InstanceProfile
+    - arn:aws:iam::123456789013:role/app2InstanceProfile
 
 auth:
   get_groups_by_header: true
@@ -61,8 +76,10 @@ dynamic_config:
   group_mapping:
     groupa@example.com:
       roles:
-        - arn:aws:iam::123456789012:role/roleA
-        - arn:aws:iam::123456789012:role/roleB
+        - arn:aws:iam::123456789012:role/firstAccountRole
+        - arn:aws:iam::123456789012:role/firstAccountRole2
+        - arn:aws:iam::123456789013:role/secondAccountRole
+        - arn:aws:iam::123456789014:role/thirdAccountRole
 
 groups:
   can_edit_config:

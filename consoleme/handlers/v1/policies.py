@@ -44,7 +44,6 @@ from consoleme.lib.timeout import Timeout
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
 
@@ -230,9 +229,6 @@ class GetPoliciesHandler(BaseHandler):
 
 
 class PolicyEditHandler(BaseHandler):
-    def initialize(self):
-        self.account_ids_to_names = group_mapping.get_account_ids_to_names()
-
     async def get(self, account_id, role_name):
 
         if not self.user:
@@ -307,7 +303,7 @@ class PolicyEditHandler(BaseHandler):
         all_account_managed_policies = await get_all_iam_managed_policies_for_account(
             account_id
         )
-        account_name = self.account_ids_to_names.get(account_id, [""])[0]
+        account_name = await aws.get_account_name_from_account_id(account_id)
 
         await self.render(
             "policy_editor.html",
@@ -1098,6 +1094,9 @@ async def handle_resource_type_ahead_request(cls):
     else:
         data = await redis_get(topic)
 
+    if not data:
+        return []
+
     results: List[Dict] = []
 
     unique_roles: List[str] = []
@@ -1120,16 +1119,8 @@ async def handle_resource_type_ahead_request(cls):
         )
         if all_role_arns_j:
             all_role_arns = all_role_arns_j.keys()
-        # ConsoleMe (Account: Test, Arn: arn)
-        # TODO: Make this OSS compatible and configurable
-        try:
-            accounts = json.loads(
-                await redis_get(
-                    config.get("swag.redis_id_name_key", "SWAG_SETTINGS_ID_TO_NAMEv2")
-                )
-            )
-        except Exception as e:  # noqa
-            accounts = {}
+
+        accounts = aws.get_account_ids_to_names()
         app_to_role_map = json.loads(data)
         seen: Dict = {}
         seen_roles = {}
