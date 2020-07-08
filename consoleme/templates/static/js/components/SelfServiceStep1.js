@@ -12,6 +12,7 @@ import {
 import RoleDetails from "./RoleDetails";
 import "./SelfService.css";
 
+const ARN_REGEX = /^arn:aws:iam::(?<accountId>\d{12}):role\/(?<roleName>.+)$/;
 
 class SelfServiceStep1 extends Component {
     state = {
@@ -25,6 +26,37 @@ class SelfServiceStep1 extends Component {
         this.setState({
             isLoading: true,
             value,
+        }, () => {
+            const match = ARN_REGEX.exec(value);
+            if (match) {
+                let {groups: {accountId, roleName}} = match;
+                roleName = roleName.split('/').splice(-1, 1)[0];
+                fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
+                    resp.text().then((resp) => {
+                        // if the given role doesn't exist.
+                        if (resp.includes("Traceback")) {
+                            this.props.handleRoleUpdate(null);
+                            this.setState({
+                                isLoading: false,
+                            });
+                        } else {
+                            const role = JSON.parse(resp);
+                            this.props.handleRoleUpdate(role);
+                            this.setState({
+                                isLoading: false,
+                                value: role.arn,
+                            });
+                        }
+                    });
+                });
+            } else {
+                // If the given ARN is not a valid one.
+                this.setState({
+                    isLoading: false,
+                }, () => {
+                    this.props.handleRoleUpdate(null);
+                });
+            }
         });
 
         setTimeout(() => {
@@ -41,9 +73,7 @@ class SelfServiceStep1 extends Component {
 
             const re = new RegExp(_.escapeRegExp(value), 'i');
             const isMatch = (result) => re.test(result.title);
-
             const TYPEAHEAD_API = '/policies/typeahead?resource=app&search=' + value;
-
             fetch(TYPEAHEAD_API).then((resp) => {
                 resp.json().then((source) => {
                     const filteredResults = _.reduce(
@@ -70,19 +100,23 @@ class SelfServiceStep1 extends Component {
         this.setState({
             value: result.title,
             isRoleLoading: true,
-        });
-        const roleName = result.title.split("/")[1]
-        const accountId = result.title.split(":")[4]
-        fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
-            resp.text().then((resp) => {
-                const role = JSON.parse(resp);
-                this.props.handleRoleUpdate(role);
-                this.setState({
-                    isLoading: false,
-                    isRoleLoading: false,
-                    value: role.arn,
+        }, () => {
+            const match = ARN_REGEX.exec(result.title);
+            if (match) {
+                let {groups: {accountId, roleName}} = match;
+                roleName = roleName.split('/').splice(-1, 1)[0];
+                fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
+                    resp.text().then((resp) => {
+                        const role = JSON.parse(resp);
+                        this.props.handleRoleUpdate(role);
+                        this.setState({
+                            isLoading: false,
+                            isRoleLoading: false,
+                            value: role.arn,
+                        });
+                    });
                 });
-            });
+            }
         });
     }
 
