@@ -1,11 +1,11 @@
 import _ from 'lodash';
 import React, {Component} from 'react';
 import {
-    Dimmer,
     Form,
     Grid,
     Header,
     Loader,
+    Message,
     Search,
     Segment,
 } from 'semantic-ui-react';
@@ -18,6 +18,7 @@ class SelfServiceStep1 extends Component {
     state = {
         isLoading: false,
         isRoleLoading: false,
+        messages: [],
         results: [],
         value: '',
     };
@@ -34,17 +35,20 @@ class SelfServiceStep1 extends Component {
                 fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
                     resp.text().then((resp) => {
                         // if the given role doesn't exist.
-                        if (resp.includes("Traceback")) {
+                        const response = JSON.parse(resp);
+                        if (response.status === 404) {
                             this.props.handleRoleUpdate(null);
                             this.setState({
                                 isLoading: false,
+                                messages: [response.message],
                             });
                         } else {
-                            const role = JSON.parse(resp);
+                            const role = response;
                             this.props.handleRoleUpdate(role);
                             this.setState({
                                 isLoading: false,
                                 value: role.arn,
+                                messages: [],
                             });
                         }
                     });
@@ -65,6 +69,7 @@ class SelfServiceStep1 extends Component {
                 return this.setState(
                     {
                         isLoading: false,
+                        messages: [],
                         results: [],
                         value: '',
                     }
@@ -112,6 +117,7 @@ class SelfServiceStep1 extends Component {
                         this.setState({
                             isLoading: false,
                             isRoleLoading: false,
+                            messages: [],
                             value: role.arn,
                         });
                     });
@@ -122,10 +128,26 @@ class SelfServiceStep1 extends Component {
 
     render() {
         const role = this.props.role;
-        const {isLoading, isRoleLoading, results, value} = this.state;
-
+        const {isLoading, isRoleLoading, messages, results, value} = this.state;
+        const messagesToShow = (messages.length > 0)
+            ? (
+                <Message negative>
+                    <Message.Header>
+                        We found some problems for this request.
+                    </Message.Header>
+                    <Message.List>
+                        {
+                            messages.map(message => {
+                                return <Message.Item>{message}</Message.Item>;
+                            })
+                        }
+                    </Message.List>
+                </Message>
+            )
+            : null;
         return (
             <Segment>
+                {messagesToShow}
                 <Grid columns={2} divided>
                     <Grid.Row>
                         <Grid.Column>
