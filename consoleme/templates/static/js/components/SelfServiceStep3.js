@@ -1,6 +1,6 @@
 import _ from "lodash";
 import React, {Component} from "react";
-import {Button, Container, Dimmer, Divider, Form, Header, Label, Loader, Message, Tab, Table, TextArea,} from "semantic-ui-react";
+import {Button, Dimmer, Divider, Form, Grid, Header, Label, Loader, Message, Tab, Table, TextArea,} from "semantic-ui-react";
 import {generate_id, getCompletions, sendRequestCommon} from "../helpers/utils";
 import AceEditor from "react-ace";
 
@@ -299,20 +299,28 @@ class SelfServiceStep3 extends Component {
 
         const submission_buttons = (admin_bypass_approval_enabled) ?
             (
-                <Button.Group fluid>
-                    <Button
-                        content="Submit and apply without approval"
-                        disabled={isError}
-                        onClick={this.handleAdminSubmit}
-                        positive
-                    />
-                    <Button
-                        content="Submit"
-                        disabled={isError}
-                        onClick={this.handleSubmit}
-                        primary
-                    />
-                </Button.Group>
+                <Grid columns={2}>
+                    <Grid.Row>
+                        <Grid.Column>
+                            <Button
+                                content="Submit and apply without approval"
+                                disabled={isError}
+                                onClick={this.handleAdminSubmit}
+                                positive
+                                fluid
+                            />
+                        </Grid.Column>
+                        <Grid.Column>
+                            <Button
+                                content="Submit"
+                                disabled={isError}
+                                onClick={this.handleSubmit}
+                                primary
+                                fluid
+                            />
+                        </Grid.Column>
+                    </Grid.Row>
+                </Grid>
             )
             :
             (
