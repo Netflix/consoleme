@@ -531,7 +531,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         if len(data_list) != 1:
             raise InvalidRequestParameter("Exactly one change is required per request.")
         policy_name: str = data_list[0].get("name")
-
+        admin_auto_approve: bool = data.get("admin_auto_approve", False)
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "arn": arn,
@@ -540,12 +540,39 @@ class PolicyReviewSubmitHandler(BaseHandler):
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
             "auto_approved": False,
+            "admin_auto_approved": False,
         }
         log.debug(log_data)
 
         stats.count(
             "PolicyReviewSubmitHandler.post", tags={"user": self.user, "arn": arn}
         )
+        updated_by = ""
+        reviewer_comments = ""
+        policy_status = "pending"
+        if admin_auto_approve:
+            # make sure user is allowed to use admin_auto_approve
+            can_manage_policy_request = await can_manage_policy_requests(self.groups)
+            if can_manage_policy_request:
+                policy_status = "approved"
+                log_data["admin_auto_approved"] = True
+                log.debug(log_data)
+                updated_by = self.user
+                reviewer_comments = f"Self-approved by admin: {self.user}"
+                stats.count(
+                    "PolicyReviewSubmitHandler.post.admin_auto_approved",
+                    tags={"user": self.user},
+                )
+            else:
+                # someone is trying to use admin bypass without being an admin
+                stats.count(
+                    "PolicyReviewSubmitHandler.post.unauthorized_admin_bypass",
+                    tags={"user": self.user},
+                )
+                log_data["message"] = "Unauthorized user trying to use admin bypass"
+                log.error(log_data)
+                await write_json_error("Unauthorized", obj=self)
+                return
 
         role = await aws.fetch_iam_role(account_id, arn)
 
@@ -558,13 +585,18 @@ class PolicyReviewSubmitHandler(BaseHandler):
             return
 
         events = parsed_policy_change["events"]
-        policy_status = "pending"
-        should_auto_approve_request: bool = await should_auto_approve_policy(
-            events, self.user, self.groups
-        )
-        if should_auto_approve_request is not False:
-            policy_status = "approved"
-            log_data["auto_approved"] = True
+
+        # Only look at auto-approval probes if it hasn't been self-approved by admin already
+        if policy_status != "approved":
+            should_auto_approve_request: bool = await should_auto_approve_policy(
+                events, self.user, self.groups
+            )
+
+            if should_auto_approve_request is not False:
+                policy_status = "approved"
+                log_data["auto_approved"] = True
+                updated_by = f"Auto-Approve Probe: {should_auto_approve_request['approving_probe']}"
+
         try:
             resource_actions = await get_resources_from_events(events)
             resources = list(resource_actions.keys())
@@ -608,9 +640,8 @@ class PolicyReviewSubmitHandler(BaseHandler):
             result: dict = await update_role_policy(events)
             if result["status"] == "success":
                 request["status"] = "approved"
-                request[
-                    "updated_by"
-                ] = f"Auto-Approve Probe: {should_auto_approve_request['approving_probe']}"
+                request["updated_by"] = updated_by
+                request["reviewer_comments"] = reviewer_comments
                 # if approved, Make sure current policy is the same as the one the user thinks they are updating
                 await dynamo.update_policy_request(request)
                 await aws.fetch_iam_role(account_id, arn, force_refresh=True)
@@ -997,7 +1028,11 @@ class SelfServiceV2Handler(BaseHandler):
                 200:
                     description: Returns Self Service IAM Wizard
         """
-
+        can_manage_policy_request = await can_manage_policy_requests(self.groups)
+        if can_manage_policy_request:
+            admin_bypass_approval_enabled = "true"
+        else:
+            admin_bypass_approval_enabled = "false"
         await self.render(
             "self_service_v2.html",
             page_title="ConsoleMe - Self Service",
@@ -1005,6 +1040,7 @@ class SelfServiceV2Handler(BaseHandler):
             user=self.user,
             user_groups=self.groups,
             config=config,
+            admin_bypass_approval_enabled=admin_bypass_approval_enabled,
         )
 
 

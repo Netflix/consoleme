@@ -24,6 +24,7 @@ class SelfService extends Component {
         permissions: [],
         role: null,
         services: [],
+        admin_bypass_approval_enabled: false
     };
 
     componentDidMount() {
@@ -43,6 +44,7 @@ class SelfService extends Component {
                 this.setState({
                     config,
                     services,
+                    admin_bypass_approval_enabled: this.props.admin_bypass_approval_enabled
                 });
             });
         });
@@ -135,6 +137,7 @@ class SelfService extends Component {
                         role={this.state.role}
                         services={this.state.services}
                         permissions={this.state.permissions}
+                        admin_bypass_approval_enabled={this.state.admin_bypass_approval_enabled}
                     />
                 );
                 break;
@@ -249,9 +252,11 @@ class SelfService extends Component {
     }
 }
 
-export function renderIAMSelfServiceWizard() {
+export function renderIAMSelfServiceWizard(admin_bypass_approval_enabled = false) {
     ReactDOM.render(
-        <SelfService />,
+        <SelfService
+            admin_bypass_approval_enabled={admin_bypass_approval_enabled}
+        />,
         document.getElementById("new_policy_wizard"),
     );
 }
