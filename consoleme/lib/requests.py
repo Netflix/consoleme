@@ -8,7 +8,6 @@ from consoleme.exceptions.exceptions import NoMatchingRequest
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 
-
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 
 
@@ -87,6 +86,14 @@ async def get_all_pending_requests_api(user):
 async def get_app_pending_requests_policies(user):
     dynamo_handler = UserDynamoHandler(user)
     all_policy_requests = await dynamo_handler.get_all_policy_requests(status="pending")
+    if not all_policy_requests:
+        all_policy_requests = []
+    return all_policy_requests
+
+
+async def get_all_policy_requests(user, status=None):
+    dynamo_handler = UserDynamoHandler(user)
+    all_policy_requests = await dynamo_handler.get_all_policy_requests(status=status)
     if not all_policy_requests:
         all_policy_requests = []
     return all_policy_requests

@@ -3,6 +3,7 @@ import ujson as json
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.requests import get_all_policy_requests
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
@@ -31,7 +32,9 @@ class RequestsHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
         }
         log.debug(log_data)
-        self.write_error(501, message="Get requests")
+        # TODO (ccastrapel): cache this in Redis?
+        requests = await get_all_policy_requests(self.user)
+        self.write(json.dumps(requests))
 
     async def post(self):
         """

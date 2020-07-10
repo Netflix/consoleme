@@ -4,6 +4,7 @@
     "ace-builds": "^1.4.11",
     "babel-preset-react": "^6.24.1",
     "css-loader": "^3.6.0",
+    "es6-promise": "^4.2.8",
     "gulp": "^4.0.2",
     "jquery": "^3.4.1",
     "prop-types": "^15.7.2",
