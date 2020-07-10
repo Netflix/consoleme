@@ -116,6 +116,9 @@ async def get_role_details(
 ) -> Union[ExtendedRoleModel, RoleModel]:
     arn = f"arn:aws:iam::{account_id}:role/{role_name}"
     role = await aws.fetch_iam_role(account_id, arn)
+    # requested role doesn't exist
+    if not role:
+        return None
     if extended:
         template = await get_role_template(arn)
         return ExtendedRoleModel(

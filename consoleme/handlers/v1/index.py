@@ -42,13 +42,21 @@ class IndexHandler(BaseHandler):
 
         region = self.request.arguments.get("r", ["us-east-1"])[0]
         redirect = self.request.arguments.get("redirect", [""])[0]
-        stats.count("index.get", tags={"user": self.user, "ip": self.ip})
+        stats.count(
+            "index.get",
+            tags={
+                "user": self.user,
+                "ip": self.ip,
+                "redirect": True if redirect else False,
+            },
+        )
         log_data = {
             "user": self.user,
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "message": "Incoming request",
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
+            "redirect": redirect,
             "ip": self.ip,
         }
 
@@ -83,17 +91,20 @@ class IndexHandler(BaseHandler):
         if not self.user:
             return
         arguments = {k: self.get_argument(k) for k in self.request.arguments}
+        role = arguments.get("role")
+        region = arguments.get("region")
+        redirect = arguments.get("redirect")
         log_data = {
             "user": self.user,
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
+            "role": role,
+            "region": region,
+            "redirect": redirect,
             "ip": self.ip,
         }
 
-        role = arguments.get("role")
-        region = arguments.get("region")
-        redirect = arguments.get("redirect")
         log_data["role"] = role
         if not role or role not in self.eligible_roles:
             # Not authorized
@@ -103,7 +114,7 @@ class IndexHandler(BaseHandler):
                     "user": self.user,
                     "role": role,
                     "authorized": False,
-                    "ip": self.ip,
+                    "redirect": True if redirect else False,
                 },
             )
             log_data["message"] = "Unauthorized role or invalid parameter passed."
@@ -129,7 +140,12 @@ class IndexHandler(BaseHandler):
 
         stats.count(
             "index.post",
-            tags={"user": self.user, "role": role, "authorized": True, "ip": self.ip},
+            tags={
+                "user": self.user,
+                "role": role,
+                "authorized": True,
+                "redirect": True if redirect else False,
+            },
         )
 
         log_data["message"] = "Incoming request"

@@ -1,4 +1,4 @@
-[![Gitter](https://badges.gitter.im/consolemeoss/community.svg)](https://gitter.im/consolemeoss/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Discord](https://img.shields.io/discord/730908778299523072?label=Discord&logo=discord&style=flat-square)](https://discord.gg/tZ8S7Yg)
 
 # ConsoleMe
 

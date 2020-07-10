@@ -20,6 +20,7 @@ from consoleme.lib.aws import (
     fetch_resource_details,
     get_all_iam_managed_policies_for_account,
     get_resource_policies,
+    get_resource_policy,
 )
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.dynamo import UserDynamoHandler
@@ -32,6 +33,7 @@ from consoleme.lib.policies import (
     escape_json,
     get_formatted_policy_changes,
     get_resources_from_events,
+    get_url_for_resource,
     parse_policy_change_request,
     should_auto_approve_policy,
     update_resource_policy,
@@ -188,14 +190,31 @@ class GetPoliciesHandler(BaseHandler):
             raise
 
         for policy in results[start:finish]:
+            arn = policy.get("arn")
+            account_id = policy.get("account_id")
+            resource_type = policy.get("technology")
+            resource_name = policy.get("arn").split(":")[5]
+            # resource_path = ""
+            if "/" in resource_name:
+                # resource_path = resource_name.split("/")[0]
+                resource_name = resource_name.split("/")[1]
+            region = arn.split(":")[3]
+            if resource_type == "iam" and not arn.split(":")[5].startswith("role/"):
+                resource_type = "iam" + arn.split(":")[5].split("/")[0]
+
+            url = await get_url_for_resource(
+                arn, resource_type, account_id, region, resource_name
+            )
+
             data.append(
                 [
-                    policy.get("account_id"),
+                    account_id,
                     policy.get("account_name"),
                     policy.get("arn"),
-                    policy.get("technology"),
+                    resource_type,
                     policy.get("templated"),
                     policy.get("errors"),
+                    url,
                 ]
             )
             if len(data) == length:
@@ -660,7 +679,35 @@ class PolicyReviewHandler(BaseHandler):
         can_cancel: bool = False
         show_update_button: bool = False
         read_only = True
-        resource_policies: List = request.get("resource_policies", [])
+
+        can_apply_resource_policies = await can_manage_policy_requests(self.groups)
+        supported_resource_policies = config.get(
+            "policies.supported_resource_types_for_policy_application", []
+        )
+        resource_policies: List[Dict] = request.get("resource_policies", [])
+        for resource_policy in resource_policies:
+            resource_type: str = resource_policy.get("type", "")
+            resource_region: str = resource_policy.get("region", "")
+            resource_name: str = resource_policy.get("resource", "")
+            resource_account: str = resource_policy.get("account", "")
+            resource_policy["old_policy_document"] = await get_resource_policy(
+                resource_account, resource_type, resource_name, resource_region
+            )
+
+            # if account wasn't present, we don't support applying resource policies automatically
+            # (for backwards compatibility as we can't pull current resource policy and don't want to overwrite)
+            if not resource_account or resource_type not in supported_resource_policies:
+                resource_policy["supported"] = False
+            else:
+                resource_policy["supported"] = True
+                # only need to provide ARN if resource_type is IAM, which is not supported
+                resource_policy["url"] = await get_url_for_resource(
+                    arn="",
+                    resource_type=resource_type,
+                    account_id=resource_account,
+                    region=resource_region,
+                    resource_name=resource_name,
+                )
 
         if status == "pending":
             show_approve_reject_buttons = await can_manage_policy_requests(self.groups)
@@ -702,6 +749,7 @@ class PolicyReviewHandler(BaseHandler):
             escape_json=escape_json,
             policy_changes=formatted_policy_changes,
             resource_policies=resource_policies,
+            can_apply_resource_policies=can_apply_resource_policies,
         )
 
     async def post(self, request_id):

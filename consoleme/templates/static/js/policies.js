@@ -18,11 +18,15 @@ $(document).ready(function () {
       $('#loading').css('display', 'none');
     },
     "lengthMenu": [[10, 25, 50, 100, 1000], [10, 25, 50, 100, 1000]],
-    "order": [],
     "displayLength": 25,
     "processing": true,
     "serverSide": true,
-    "ajax": "/policies/get_policies",
+    "ajax": {
+      "url": "/policies/get_policies",
+      "data": function ( d ) {
+        return d;
+      }
+    },
     "search": {
       "regex": true
     },
@@ -38,27 +42,9 @@ $(document).ready(function () {
         "orderable": false,
         "render": function (data, type, row, meta) {
           if (type === 'display') {
-            let account_id = row[0];
-            let resource_name = data.split(":")[5];
-            let split_resource_name = resource_name.split("/");
-            let is_service_role = (split_resource_name[1] === "aws-service-role");
-            let iam_resource_name = split_resource_name.slice(1).join("/");
-            let resource_type = data.split(":")[2];
-            if (resource_type === "iam" && !data.split(":")[5].startsWith("role/")) {
-              resource_type = "iam_other"
-            }
-            let region = data.split(":")[3];
-            if (!is_service_role && resource_type === "iam") {
-              data = '<a target="_blank" href="/policies/edit/' + account_id + '/iamrole/' + iam_resource_name + '">' + data + '</a>';
-            }
-            else if (resource_type === "s3") {
-              data = '<a target="_blank" href="/policies/edit/' + account_id + '/s3/' + resource_name + '">' + data + '</a>';
-            }
-            else if (resource_type === "sqs") {
-              data = '<a target="_blank" href="/policies/edit/' + account_id + '/sqs/' + region + '/' + resource_name + '">' + data + '</a>';
-            }
-            else if (resource_type === "sns") {
-              data = '<a target="_blank" href="/policies/edit/' + account_id + '/sns/' + region + '/' + resource_name + '">' + data + '</a>';
+            let link = row[6];
+            if (link) {
+              data = '<a target="_blank" href=' + link + '>' + data + '</a>';
             }
           }
           return data;

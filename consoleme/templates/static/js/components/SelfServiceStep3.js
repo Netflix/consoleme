@@ -13,19 +13,23 @@ let langTools = ace.acequire("ace/ext/language_tools");
 langTools.setCompleters([{getCompletions: getCompletions}])
 
 class SelfServiceStep3 extends Component {
-    state = {
-        custom_statement: "",
-        isError: false,
-        isLoading: false,
-        isSuccess: false,
-        justification: "",
-        messages: [],
-        requestId: null,
-        statement: ""
-    };
-
-    inlinePolicyEditorRef = React.createRef();
-
+    constructor(props) {
+        super(props);
+        this.state = {
+            activeIndex: 0,
+            custom_statement: "",
+            isError: false,
+            isLoading: false,
+            isSuccess: false,
+            justification: "",
+            messages: [],
+            requestId: null,
+            statement: ""
+        };
+        this.inlinePolicyEditorRef = React.createRef();
+        this.handleJustificationChange = this.handleJustificationChange.bind(this);
+        this.handleSubmit = this.handleSubmit.bind(this);
+    }
 
     async componentDidMount() {
         const {role, permissions} = this.props;
@@ -69,8 +73,29 @@ class SelfServiceStep3 extends Component {
         }
     }
 
+    handleJSONEditorValidation(lintErrors) {
+        const {activeIndex} = this.state;
+        const messages = [];
+        if (lintErrors.length > 0) {
+            for (let i = 0; i < lintErrors.length; i++) {
+                messages.push("Lint Error - Row: " + lintErrors[i]["row"] + ", Column: " + lintErrors[i]["column"] + ", Error: " + lintErrors[i]["text"]);
+            }
+            this.setState({
+                isError: true,
+                messages,
+            });
+        } else {
+            if (activeIndex === 1) {
+                this.setState({
+                    isError: false,
+                    messages: [],
+                });
+            }
+        }
+    }
+
     buildAceEditor(custom_statement) {
-        let aceComponent = (
+        return (
             <AceEditor
                 mode="json"
                 theme="monokai"
@@ -79,6 +104,7 @@ class SelfServiceStep3 extends Component {
                 ref={this.inlinePolicyEditorRef}
                 tabSize={4}
                 onChange={this.handleJSONEditorChange.bind(this)}
+                onValidate={this.handleJSONEditorValidation.bind(this)}
                 value={custom_statement}
                 name="json_editor"
                 editorProps={{
@@ -92,8 +118,7 @@ class SelfServiceStep3 extends Component {
                     "useSoftTabs": true,
                 }}
             />
-        )
-        return aceComponent
+        );
     }
 
     buildPermissionsTable() {
@@ -156,26 +181,12 @@ class SelfServiceStep3 extends Component {
 
     handleSubmit() {
         const {role} = this.props;
-        const {justification, custom_statement} = this.state;
+        const {custom_statement, justification} = this.state;
 
         if (!justification) {
-            return this.setState({
+            return this.setState(state => ({
                 messages: ["No Justification is Given"],
-            });
-        }
-
-        if (this.inlinePolicyEditorRef.current) {
-            const editor = this.inlinePolicyEditorRef.current.editor;
-            const lintErrors = editor.getSession().getAnnotations()
-            if (lintErrors.length > 0) {
-                let ErrorMessages = []
-                for (let i = 0; i < lintErrors.length; i++) {
-                    ErrorMessages.push("Lint Error - Row: " + lintErrors[i]["row"] + ", Column: " + lintErrors[i]["column"] + ", Error: " + lintErrors[i]["text"])
-                }
-                return this.setState({
-                    messages: ErrorMessages,
-                });
-            }
+            }));
         }
 
         const {account_id, arn} = role;
@@ -194,6 +205,7 @@ class SelfServiceStep3 extends Component {
                 },
             ],
         };
+
         this.setState({
             isLoading: true,
         }, async () => {
@@ -238,9 +250,7 @@ class SelfServiceStep3 extends Component {
             popup.container.style.width = "600px";
             popup.resize();
         }
-        const messages = [];
         this.setState({
-            messages,
             custom_statement,
         });
     }
@@ -257,6 +267,7 @@ class SelfServiceStep3 extends Component {
             requestId,
             statement
         } = this.state;
+
         const active = custom_statement != statement;
         const messagesToShow = (messages.length > 0)
             ? (
@@ -274,87 +285,94 @@ class SelfServiceStep3 extends Component {
                 </Message>
             )
             : null;
+
         const panes = [
             {
                 menuItem: 'Review',
-                render: () => (
-                    <Tab.Pane>
-                        <Header>
-                            Please Review Permissions
-                            <Header.Subheader>
-                                You can customize your request using the JSON Editor for advanced permissions.
-                            </Header.Subheader>
-                        </Header>
-                        <p>
-                            Your new permissions will be attached to the role <a
-                            href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
-                            target="_blank">{role.arn}</a> with the
-                            following statements:
-                        </p>
-                        <Dimmer.Dimmable dimmed={active}>
-                            {this.buildPermissionsTable()}
-                            <Dimmer active={active}>
-                                <Header as='h2' inverted>
-                                    Your changes made from the JSON Editor will override these permissions.
-                                </Header>
-                            </Dimmer>
-                        </Dimmer.Dimmable>
-                        <Divider/>
-                        <Header>
-                            Justification
-                        </Header>
-                        <Form>
-                            <TextArea
-                                onChange={this.handleJustificationChange.bind(this)}
-                                placeholder={"Your Justification"}
-                                value={justification}
+                render: () => {
+                    return (
+                        <Tab.Pane loading={isLoading}>
+                            <Header>
+                                Please Review Permissions
+                                <Header.Subheader>
+                                    You can customize your request using the JSON Editor for advanced permissions.
+                                </Header.Subheader>
+                            </Header>
+                            <p>
+                                Your new permissions will be attached to the role <a
+                                href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
+                                target="_blank">{role.arn}</a> with the
+                                following statements:
+                            </p>
+                            <Dimmer.Dimmable dimmed={active}>
+                                {this.buildPermissionsTable()}
+                                <Dimmer active={active}>
+                                    <Header as='h2' inverted>
+                                        Your changes made from the JSON Editor will override these permissions.
+                                    </Header>
+                                </Dimmer>
+                            </Dimmer.Dimmable>
+                            <Divider/>
+                            <Header>
+                                Justification
+                            </Header>
+                            <Form>
+                                <TextArea
+                                    onChange={this.handleJustificationChange}
+                                    placeholder={"Your Justification"}
+                                    value={justification}
+                                />
+                            </Form>
+                            <Divider/>
+                            {messagesToShow}
+                            <Button
+                                content="Submit"
+                                disabled={isError}
+                                fluid
+                                onClick={this.handleSubmit}
+                                primary
                             />
-                        </Form>
-                        <Divider/>
-                        {messagesToShow}
-                        <Button
-                            content="Submit"
-                            disabled={isError}
-                            fluid
-                            onClick={this.handleSubmit.bind(this)}
-                            primary
-                        />
-                    </Tab.Pane>
-                ),
+                        </Tab.Pane>
+                    );
+                },
             },
             {
                 menuItem: 'JSON Editor',
-                render: () => (
-                    <Tab.Pane>
-                        <Header>
-                            Edit your permissions in JSON format.
-                        </Header>
-                        <br/>
-                        {this.buildAceEditor(custom_statement)}
-                        <Divider/>
-                        <Header>
-                            Justification
-                        </Header>
-                        <Form>
-                            <TextArea
-                                onChange={this.handleJustificationChange.bind(this)}
-                                placeholder={"Your Justification"}
-                                value={justification}
+                render: () => {
+                    const jsonEditor = this.buildAceEditor(custom_statement);
+                    return (
+                        <Tab.Pane loading={isLoading}>
+                            <Header>
+                                Edit your permissions in JSON format.
+                            </Header>
+                            <br/>
+                            {jsonEditor}
+                            <Divider/>
+                            <Header>
+                                Justification
+                            </Header>
+                            <Form>
+                                <TextArea
+                                    onChange={this.handleJustificationChange}
+                                    placeholder={"Your Justification"}
+                                    value={justification}
+                                />
+                            </Form>
+                            <Divider/>
+                            {messagesToShow}
+                            <Button
+                                content="Submit"
+                                disabled={isError}
+                                fluid
+                                onClick={this.handleSubmit}
+                                primary
                             />
-                        </Form>
-                        <Divider/>
-                        {messagesToShow}
-                        <Button
-                            content="Submit"
-                            disabled={isError}
-                            fluid
-                            onClick={this.handleSubmit.bind(this)}
-                            primary
-                        />
-                    </Tab.Pane>
-                ),
+                        </Tab.Pane>
+                    );
+                },
             }
         ];
+
         const tabContent = (isSuccess)
             ? (
                 <Message positive>
@@ -364,26 +382,21 @@ class SelfServiceStep3 extends Component {
                     You can check your request status from <a href={`/policies/request/${requestId}`}
                                                               target="_blank">here</a>.
                 </Message>
-
             )
             : (
                 <React.Fragment>
-                    <Tab panes={panes}/>
+                    <Tab
+                        onTabChange={(event, data) =>
+                            this.setState({
+                                activeIndex: data.activeIndex,
+                            })
+                        }
+                        panes={panes}
+                    />
                     <br/>
                 </React.Fragment>
             );
-
-        return (
-            <React.Fragment>
-                <Dimmer
-                    active={isLoading}
-                    inverted
-                >
-                    <Loader/>
-                </Dimmer>
-                {tabContent}
-            </React.Fragment>
-        );
+        return tabContent;
     }
 }
 

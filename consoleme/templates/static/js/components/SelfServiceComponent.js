@@ -86,6 +86,7 @@ class SelfServiceComponent extends Component {
         });
 
         const blocks = inputs.map(input => {
+            // TODO(heewonk), make this substitution logic uniform and applied once
             let defaultValue
             defaultValue = input.default || "";
             defaultValue = defaultValue.replace("{account_id}", role.account_id)
@@ -96,7 +97,7 @@ class SelfServiceComponent extends Component {
                             defaultValue={defaultValue}
                             handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
                             required={input.required || false}
-                            text={input.text || "Enter Value"}
+                            label={input.text}
                         />
                     );
                 case "typeahead_input":
@@ -106,7 +107,7 @@ class SelfServiceComponent extends Component {
                             handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
                             required={input.required || false}
                             typeahead={input.typeahead_endpoint}
-                            text={input.text || "Enter Value"}
+                            label={input.text}
                         />
                     );
                 default:
@@ -155,7 +156,10 @@ class SelfServiceComponent extends Component {
                 <Header as="h3">
                     {text}
                 </Header>
-                <ReactMarkdown source={description} />
+                <ReactMarkdown
+                    linkTarget="_blank"
+                    source={description}
+                />
                 {blocks}
                 {messagesToShow}
                 <Button

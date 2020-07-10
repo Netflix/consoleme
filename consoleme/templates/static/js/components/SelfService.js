@@ -162,7 +162,10 @@ class SelfService extends Component {
         const headerMessage = (this.state.config != null && this.state.config.custom_header_message != null)
             ? (
                 <Message success>
-                    <ReactMarkdown source={this.state.config.custom_header_message} />
+                    <ReactMarkdown
+                        linkTarget="_blank"
+                        source={this.state.config.custom_header_message}
+                    />
                 </Message>
             )
             : null;
