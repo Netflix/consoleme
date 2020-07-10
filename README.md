@@ -494,3 +494,7 @@ datamodel-codegen --input swagger.yaml --output consoleme/models.py
 ## Generate an AMI to deploy ConsoleMe to EC2
 
 To generate an AMI, retrieve sufficiently privileged credentials locally and run `make create_ami`.
+
+
+## Override a Route
+If you wish to override a handler for a web route in routes.py, you can specify an internal route for it which will take precedence. For example, if you wanted to override the index page, you would modify your internal route plugin with the new route. The included [default_plugins](default_plugins/consoleme_default_plugins/plugins/internal_routes/handlers/internal_demo_route.py) has an example internal route.
