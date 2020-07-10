@@ -1,8 +1,8 @@
-[![Gitter](https://badges.gitter.im/consolemeoss/community.svg)](https://gitter.im/consolemeoss/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+[![Discord](https://img.shields.io/discord/730908778299523072?label=Discord&logo=discord&style=flat-square)](https://discord.gg/tZ8S7Yg)
 
 # ConsoleMe
 
-ConsoleMe makes multi-account AWS easier for your end-users and cloud administrators.
+ConsoleMe strives to be a multi-account AWS swiss-army knife, making AWS easier for your end-users and cloud administrators.
 It is designed to consolidate the management of multiple accounts into a single web interface. It allows your end-users
 and administrators to get credentials / console access to your different accounts, depending on their authorization
 level. It provides mechanisms for end-users and administrators to both request and manage permissions for IAM roles,
@@ -45,6 +45,9 @@ point of reference for the installation process.
 
 ## Build and Run Instructions
 
+ConsoleMe requires Python 3.7 or above. Crude installation instructions are below. This documentation is in dire need
+of improvement.
+
 ### MacOS
 
 ```bash
@@ -73,7 +76,7 @@ apt-get install build-essential libxml2-dev libxmlsec1 libxmlsec1-dev libxmlsec1
 git clone git@github.com:Netflix-Skunkworks/consoleme.git
 ```
 
-#### Run dependencies
+#### Start Redis and DynamoDB containers
 
 A local set of Redis and DynamoDB (local) instances need to be set up. These are provided as Docker containers. In a separate terminal window, start the local redis and dynamodb instances:
 
@@ -81,11 +84,19 @@ A local set of Redis and DynamoDB (local) instances need to be set up. These are
 docker-compose -f docker-compose-dependencies.yaml up
 ```
 
-#### Run install
+#### Make a virtual environment and run the installation script
 
 In repo root run `make install`. You may also want to install the default plugins if you have not developed internal plugins: `pip install -e default_plugins`
 
 ```bash
+# Make a Python 3.8 Virtual Environment using your preferred method. Here's a standard way of doing it:
+python3 -m venv env
+
+# Activate virtualenv
+. env/bin/activate
+
+# Run the `make install` script, which will create the appropriate DynamoDB tables locally and probably make a futile
+# effort to cache data in Redis. Caching will only work after you've configured ConsoleMe for your environment.
 make install
 ```
 
@@ -95,14 +106,8 @@ account or user for the AWS SDK to communicate with the local DynamoDB container
 #### Run ConsoleMe with the default configuration
 
 ```bash
-# Activate virtualenv created by `make install`
-. env/bin/activate
-
-# [Optional] Install default plugins
-pip install -e default_plugins
-
 # Run ConsoleMe
-CONFIG_LOCATION=docker/example_config_header_auth.yaml python consoleme/__main__.py
+CONFIG_LOCATION=example_config/example_config_development.yaml python consoleme/__main__.py
 ```
 
 > ConsoleMe requires Python 3.7+. If your virtualenv was installed under Python2.x
@@ -114,15 +119,255 @@ data on disk. This command will need to be run anytime you want to update your l
 
 ### Configure your browser
 
-Configure a header injector ([Requestly](https://www.requestly.in/) is recommended) to inject user / group headers. Your group
-headers should contain a comma-separated list of google groups. You can see which headers are being passed to ConsoleMe
-by visiting the `/myheaders` endpoint in ConsoleMe.
+You can either use the `example_config/example_config_development.yaml` as your configuration to override the user you
+are authenticated as for development, or you can Configure a header injector such as 
+[Requestly](https://www.requestly.in/) to inject user / group headers. By default, the header names are in your
+ configuration file. In our example configurations, they are specified in `example_config_base.yaml` under the 
+ `auth.user_header_name` and `auth.groups_header_name` keys. The user header should be an email address, i.e.
+ `you@example.com`. The groups header should be a list of comma-separated groups that you are a member of, i.e. 
+ `group1@example.com,group2@example.com,groupx@example.com`.  You can see which headers are being passed to ConsoleMe
+by visiting the [`/myheaders` endpoint](http://localhost:8081/myheaders) in ConsoleMe.
 
 > Make sure you have at least two groups in your list, otherwise every time you visit your local consoleme Role page it will auto-login to the console with your one role.
 
 ### Browse to ConsoleMe
 
 You should now be able to access the ConsoleMe web UI at http://localhost:8081. Success! 🎉
+
+
+### Role configuration
+
+By now, you should have the ConsoleMe web UI running, though it probably can't do much at the moment. This is where
+you'll need to configure ConsoleMe for your environment. The ConsoleMe service needs its own user/role (with an 
+InstanceProfile for EC2 deployment), and each of your accounts should have a role that ConsoleMe can assume into.
+
+
+#### ConsoleMeInstanceProfile configuration
+
+Firstly, the ConsoleMe service needs its own user or role. Note that ConsoleMe has a lot of permissions. You should
+ensure that its privileges cannot be used outside of ConsoleMe, except by authorized administrators (Likely, you).
+
+You can call this new role "ConsoleMeInstanceProfile". It will also need to assume whichever roles you want to allow it
+to assume in your environment. Here is a full-fledged
+policy you can use when deploying to production. For now, scoping down assume role rights for testing should be
+sufficient. Create an inline policy for your role with the following permissions if you never want to have to 
+think about it again:
+
+Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume Role Trust Policy with your ConsoleMe
+service role ARN.
+
+```json
+{
+   "Statement":[
+      {
+         "Action":[
+            "cloudtrail:*",
+            "cloudwatch:*",
+            "config:*",
+            "dynamodb:batchgetitem",
+            "dynamodb:batchwriteitem",
+            "dynamodb:deleteitem",
+            "dynamodb:describe*",
+            "dynamodb:getitem",
+            "dynamodb:getrecords",
+            "dynamodb:getsharditerator",
+            "dynamodb:putitem",
+            "dynamodb:query",
+            "dynamodb:scan",
+            "dynamodb:updateitem",
+            "sns:createplatformapplication",
+            "sns:createplatformendpoint",
+            "sns:deleteendpoint",
+            "sns:deleteplatformapplication",
+            "sns:getendpointattributes",
+            "sns:getplatformapplicationattributes",
+            "sns:listendpointsbyplatformapplication",
+            "sns:publish",
+            "sns:setendpointattributes",
+            "sns:setplatformapplicationattributes",
+            "sts:assumerole"
+         ],
+         "Effect":"Allow",
+         "Resource":[
+            "*"
+         ]
+      },
+      {
+         "Action":[
+            "ses:sendemail",
+            "ses:sendrawemail"
+         ],
+         "Condition":{
+            "StringLike":{
+               "ses:FromAddress":[
+                  "email_address_here@example.com"
+               ]
+            }
+         },
+         "Effect":"Allow",
+         "Resource":"arn:aws:ses:*:123456789:identity/your_identity.example.com"
+      }
+   ],
+   "Version":"2012-10-17"
+}
+```
+
+Configure the trust policy with the following settings (Yes, you'll want to allow ConsoleMe to assume itself):
+
+```json
+{
+ "Statement": [
+  {
+   "Action": "sts:AssumeRole",
+   "Effect": "Allow",
+   "Principal": {
+    "Service": "ec2.amazonaws.com"
+   }
+  },
+  {
+   "Action": "sts:AssumeRole",
+   "Effect": "Allow",
+   "Principal": {
+    "AWS": "arn:aws:iam::1243456789012:role/consolemeInstanceProfile"
+   }
+  }
+ ],
+ "Version": "2012-10-17"
+}
+```
+
+#### ConsoleMe role configuration
+Each of your accounts needs a role that ConsoleMe can assume. It uses this role to cache information from the account.
+ConsoleMe will cache IAM roles, S3 buckets, SNS topics, and SQS queues by default. If you have it configured, it will
+also cache data from the AWS Config service for IAM policy/self-service typeahead and for the Policies table.
+
+Note that these permissions are pretty hefty. Be sure to lock things down more here if appropriate for your environment,
+and again, ensure that this role is protected and can only be altered/use by administrative users.
+
+Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume Role Trust Policy with your ConsoleMe
+service role ARN.
+
+```json
+{
+ "Statement": [
+  {
+   "Action": [
+    "autoscaling:Describe*"
+    "cloudwatch:Get*",
+    "cloudwatch:List*",
+    "config:BatchGet*",
+    "config:List*",
+    "config:Select*",
+    "ec2:DescribeSubnets",
+    "ec2:describevpcendpoints",
+    "ec2:DescribeVpcs",
+    "iam:*",
+    "s3:GetBucketPolicy",
+    "s3:GetBucketTagging",
+    "s3:ListAllMyBuckets",
+    "s3:ListBucket",
+    "s3:PutBucketPolicy",
+    "s3:PutBucketTagging",
+    "sns:GetTopicAttributes",
+    "sns:ListTagsForResource",
+    "sns:ListTopics",
+    "sns:SetTopicAttributes",
+    "sns:TagResource",
+    "sns:UnTagResource",
+    "sqs:GetQueueAttributes",
+    "sqs:GetQueueUrl",
+    "sqs:ListQueues",
+    "sqs:ListQueueTags",
+    "sqs:SetQueueAttributes",
+    "sqs:TagQueue",
+    "sqs:UntagQueue",
+   ],
+   "Effect": "Allow",
+   "Resource": [
+    "*"
+   ],
+   "Sid": "iam"
+  }
+ ],
+ "Version": "2012-10-17"
+}
+```
+
+Assume Role Policy Document:
+```json
+{
+ "Statement": [
+  {
+   "Action": "sts:AssumeRole",
+   "Effect": "Allow",
+   "Principal": {
+    "AWS": "arn:aws:iam::1243456789012:role/consolemeInstanceProfile"
+   }
+  }
+ ],
+ "Version": "2012-10-17"
+}
+```
+
+### Service configuration
+You should have the ConsoleMe web service up and running, and you should have some roles that ConsoleMe can use or
+assume. Now comes the fun part: Configuring ConsoleMe.
+
+At Netflix, we use our production ConsoleMe sergice to get credentials for ConsoleMe locally 
+(hence why ConsoleMeInstanceProfile needs to be able to assume itself). For a first-time setup, you may not have this
+luxury. If you're using an IAM user, let it assume into the consolemeinstanceprofile service role that you created in
+the previous step (If you take this route, we recommend removing those permissions as soon as you deploy consoleme and
+can retrieve credentials from ConsoleMe in your production environment). You'll need to put the role's credentials in
+environmental variables or your ~/.aws/credentials file locally for now so that ConsoleMe can find them. (ConsoleMe uses
+ boto3, which like all AWS SDKs, looks for credentials [in the following order](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#credentials-default).)
+
+Once we have this up and running, you can statically define a map in your configuration of what roles to display, and
+specify which users/groups are authorized to access which roles in your environment:
+
+In your configuration, you'll want to specify an `account_ids_to_name` mapping of your AWS accounts. An example is
+provided in [example_config/example_config_base.yaml]:
+
+```yaml
+account_ids_to_name:
+  123456789012: default_account
+  123456789013: prod
+  123456789014: test
+```
+
+You'll also want to provide a mapping of which users/groups can access which roles. We use a dynamic configuration
+in our production environment to specify this mapping. This can be updated on the fly and will allow users to see newly
+authorized roles within a minute. Locally, we can either use Local DynamoDB for our dynamic configuration or just
+override the dynamic_config keyspace in our configuration. Here is what you can add to your yaml configuration.
+group_mapping maps a user's e-mail address, or a group e-mail address to a list of IAM roles.
+
+```yaml
+dynamic_config:
+  group_mapping:
+    groupa@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/roleA
+        - arn:aws:iam::123456789012:role/roleB
+    userb@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/roleA  
+```
+Once you have this configured, restart ConsoleMe locally and force-refresh your JWT by visiting:
+[http://localhost:8081?refresh_cache=true](http://localhost:8081?refresh_cache=true)
+
+For development only, you can override your local user and groups:
+
+```yaml
+# A development configuration can specify a specific user to impersonate locally.
+_development_user_override: consoleme_admin@example.com
+
+# A development configuration can override your groups locally
+_development_groups_override:
+  - groupa@example.com
+  - groupb@example.com
+  - configeditors@example.com
+  - consoleme_admins@example.com
+```
+
 
 ## Development
 
@@ -211,18 +456,18 @@ The configuration for the SAML exists in `docker-compose-simplesaml.yaml` You ca
 `docker-compose -f docker-compose-saml.yaml up`
 
 You will need to browse to the [Simplesaml metadata url](http://localhost:8080/simplesaml/saml2/idp/metadata.php?output=xml) and copy the x509 certificate
-for the IDP (The first one), and replace the x509cert value specified in `docker/saml_example/settings.json`.
+for the IDP (The first one), and replace the x509cert value specified in `example_config/saml_example/settings.json`.
 
 
 You can start ConsoleMe and point it to this IDP with the following command:
 
-`CONFIG_LOCATION=docker/example_config_saml.yaml python consoleme/__main__.py`
+`CONFIG_LOCATION=example_config/example_config_saml.yaml python consoleme/__main__.py`
 
 The configuration in `docker-compose-saml.yaml` specifies the expected service provider Acs location (`http://localhost:8081/saml/acs`) and the entity ID it expects to receive ('http://localhost:8081').
 
-A simple configuration for SimpleSaml users exists at `docker/simplesamlphp/authsources.php`. It specifies an example user (consoleme_user:consoleme_user), and an admin user (consoleme_admin:consoleme_admin).
+A simple configuration for SimpleSaml users exists at `example_config/simplesamlphp/authsources.php`. It specifies an example user (consoleme_user:consoleme_user), and an admin user (consoleme_admin:consoleme_admin).
 
-ConsoleMe's configuration (`docker/example_config_saml.yaml`) specifies the following configuration:
+ConsoleMe's configuration (`example_config/example_config_saml.yaml`) specifies the following configuration:
 
 `get_user_by_saml_settings.saml_path`: Location of SAML settings used by the OneLoginSaml2 library
 	- You'll need to configure the entity ID, IdP Binding urls, and ACS urls in this file

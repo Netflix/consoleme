@@ -40,6 +40,7 @@ class SelfServiceStep1 extends Component {
                             this.props.handleRoleUpdate(null);
                             this.setState({
                                 isLoading: false,
+                                isRoleLoading: false,
                                 messages: [response.message],
                             });
                         } else {
@@ -112,14 +113,24 @@ class SelfServiceStep1 extends Component {
                 roleName = roleName.split('/').splice(-1, 1)[0];
                 fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
                     resp.text().then((resp) => {
-                        const role = JSON.parse(resp);
-                        this.props.handleRoleUpdate(role);
-                        this.setState({
-                            isLoading: false,
-                            isRoleLoading: false,
-                            messages: [],
-                            value: role.arn,
-                        });
+                        const response = JSON.parse(resp);
+                        if (response.status === 404) {
+                            this.props.handleRoleUpdate(null);
+                            this.setState({
+                                isLoading: false,
+                                isRoleLoading: false,
+                                messages: [response.message],
+                            });
+                        } else {
+                            const role = response;
+                            this.props.handleRoleUpdate(role);
+                            this.setState({
+                                isLoading: false,
+                                isRoleLoading: false,
+                                messages: [],
+                                value: role.arn,
+                            });
+                        }
                     });
                 });
             }
