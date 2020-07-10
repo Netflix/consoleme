@@ -134,6 +134,227 @@ by visiting the [`/myheaders` endpoint](http://localhost:8081/myheaders) in Cons
 
 You should now be able to access the ConsoleMe web UI at http://localhost:8081. Success! 🎉
 
+
+### Role configuration
+
+By now, you should have the ConsoleMe web UI running, though it probably can't do much at the moment. This is where
+you'll need to configure ConsoleMe for your environment. The ConsoleMe service needs its own user/role (with an 
+InstanceProfile for EC2 deployment), and each of your accounts should have a role that ConsoleMe can assume into.
+
+
+#### ConsoleMeInstanceProfile configuration
+
+Firstly, the ConsoleMe service needs its own user or role. Note that ConsoleMe has a lot of permissions. You should
+ensure that its privileges cannot be used outside of ConsoleMe, except by authorized administrators (Likely, you).
+
+You can call this new role "ConsoleMeInstanceProfile". It will also need to assume whichever roles you want to allow it
+to assume in your environment. Here is a full-fledged
+policy you can use when deploying to production. For now, scoping down assume role rights for testing should be
+sufficient. Create an inline policy for your role with the following permissions if you never want to have to 
+think about it again:
+
+Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume Role Trust Policy with your ConsoleMe
+service role ARN.
+
+```json
+{
+   "Statement":[
+      {
+         "Action":[
+            "cloudtrail:*",
+            "cloudwatch:*",
+            "config:*",
+            "dynamodb:batchgetitem",
+            "dynamodb:batchwriteitem",
+            "dynamodb:deleteitem",
+            "dynamodb:describe*",
+            "dynamodb:getitem",
+            "dynamodb:getrecords",
+            "dynamodb:getsharditerator",
+            "dynamodb:putitem",
+            "dynamodb:query",
+            "dynamodb:scan",
+            "dynamodb:updateitem",
+            "sns:createplatformapplication",
+            "sns:createplatformendpoint",
+            "sns:deleteendpoint",
+            "sns:deleteplatformapplication",
+            "sns:getendpointattributes",
+            "sns:getplatformapplicationattributes",
+            "sns:listendpointsbyplatformapplication",
+            "sns:publish",
+            "sns:setendpointattributes",
+            "sns:setplatformapplicationattributes",
+            "sts:assumerole"
+         ],
+         "Effect":"Allow",
+         "Resource":[
+            "*"
+         ]
+      },
+      {
+         "Action":[
+            "ses:sendemail",
+            "ses:sendrawemail"
+         ],
+         "Condition":{
+            "StringLike":{
+               "ses:FromAddress":[
+                  "email_address_here@example.com"
+               ]
+            }
+         },
+         "Effect":"Allow",
+         "Resource":"arn:aws:ses:*:123456789:identity/your_identity.example.com"
+      }
+   ],
+   "Version":"2012-10-17"
+}
+```
+
+Configure the trust policy with the following settings (Yes, you'll want to allow ConsoleMe to assume itself):
+
+```json
+{
+ "Statement": [
+  {
+   "Action": "sts:AssumeRole",
+   "Effect": "Allow",
+   "Principal": {
+    "Service": "ec2.amazonaws.com"
+   }
+  },
+  {
+   "Action": "sts:AssumeRole",
+   "Effect": "Allow",
+   "Principal": {
+    "AWS": "arn:aws:iam::1243456789012:role/consolemeInstanceProfile"
+   }
+  }
+ ],
+ "Version": "2012-10-17"
+}
+```
+
+#### ConsoleMe role configuration
+Each of your accounts needs a role that ConsoleMe can assume. It uses this role to cache information from the account.
+ConsoleMe will cache IAM roles, S3 buckets, SNS topics, and SQS queues by default. If you have it configured, it will
+also cache data from the AWS Config service for IAM policy/self-service typeahead and for the Policies table.
+
+Note that these permissions are pretty hefty. Be sure to lock things down more here if appropriate for your environment,
+and again, ensure that this role is protected and can only be altered/use by administrative users.
+
+Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume Role Trust Policy with your ConsoleMe
+service role ARN.
+
+```json
+{
+ "Statement": [
+  {
+   "Action": [
+    "autoscaling:Describe*"
+    "cloudwatch:Get*",
+    "cloudwatch:List*",
+    "config:BatchGet*",
+    "config:List*",
+    "config:Select*",
+    "ec2:DescribeSubnets",
+    "ec2:describevpcendpoints",
+    "ec2:DescribeVpcs",
+    "iam:*",
+    "s3:GetBucketPolicy",
+    "s3:GetBucketTagging",
+    "s3:ListAllMyBuckets",
+    "s3:ListBucket",
+    "s3:PutBucketPolicy",
+    "s3:PutBucketTagging",
+    "sns:GetTopicAttributes",
+    "sns:ListTagsForResource",
+    "sns:ListTopics",
+    "sns:SetTopicAttributes",
+    "sns:TagResource",
+    "sns:UnTagResource",
+    "sqs:GetQueueAttributes",
+    "sqs:GetQueueUrl",
+    "sqs:ListQueues",
+    "sqs:ListQueueTags",
+    "sqs:SetQueueAttributes",
+    "sqs:TagQueue",
+    "sqs:UntagQueue",
+   ],
+   "Effect": "Allow",
+   "Resource": [
+    "*"
+   ],
+   "Sid": "iam"
+  }
+ ],
+ "Version": "2012-10-17"
+}
+```
+
+Assume Role Policy Document:
+```json
+{
+ "Statement": [
+  {
+   "Action": "sts:AssumeRole",
+   "Effect": "Allow",
+   "Principal": {
+    "AWS": "arn:aws:iam::1243456789012:role/consolemeInstanceProfile"
+   }
+  }
+ ],
+ "Version": "2012-10-17"
+}
+```
+
+### Service configuration
+You should have the ConsoleMe web service up and running, and you should have some roles that ConsoleMe can use or
+assume. Now comes the fun part: Configuring ConsoleMe.
+
+At Netflix, we use our production ConsoleMe sergice to get credentials for ConsoleMe locally 
+(hence why ConsoleMeInstanceProfile needs to be able to assume itself). For a first-time setup, you may not have this
+luxury. If you're using an IAM user, let it assume into the consolemeinstanceprofile service role that you created in
+the previous step (If you take this route, we recommend removing those permissions as soon as you deploy consoleme and
+can retrieve credentials from ConsoleMe in your production environment). You'll need to put the role's credentials in
+environmental variables or your ~/.aws/credentials file locally for now so that ConsoleMe can find them. (ConsoleMe uses
+ boto3, which like all AWS SDKs, looks for credentials [in the following order](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#credentials-default).)
+
+Once we have this up and running, you can statically define a map in your configuration of what roles to display, and
+specify which users/groups are authorized to access which roles in your environment:
+
+In your configuration, you'll want to specify an `account_ids_to_name` mapping of your AWS accounts. An example is
+provided in [example_config/example_config_base.yaml]:
+
+```yaml
+account_ids_to_name:
+  123456789012: default_account
+  123456789013: prod
+  123456789014: test
+```
+
+You'll also want to provide a mapping of which users/groups can access which roles. We use a dynamic configuration
+in our production environment to specify this mapping. This can be updated on the fly and will allow users to see newly
+authorized roles within a minute. Locally, we can either use Local DynamoDB for our dynamic configuration or just
+override the dynamic_config keyspace in our configuration. Here is what you can add to your yaml configuration.
+group_mapping maps a user's e-mail address, or a group e-mail address to a list of IAM roles.
+
+```yaml
+dynamic_config:
+  group_mapping:
+    groupa@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/roleA
+        - arn:aws:iam::123456789012:role/roleB
+    userb@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/roleA  
+```
+Once you have this configured, restart ConsoleMe locally and force-refresh your JWT:
+[http://localhost:8081?refresh_cache=true](http://localhost:8081?refresh_cache=true)
+
+
 ## Development
 
 ### Docker development
