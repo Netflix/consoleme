@@ -1028,11 +1028,6 @@ class SelfServiceV2Handler(BaseHandler):
                 200:
                     description: Returns Self Service IAM Wizard
         """
-        can_manage_policy_request = await can_manage_policy_requests(self.groups)
-        if can_manage_policy_request:
-            admin_bypass_approval_enabled = "true"
-        else:
-            admin_bypass_approval_enabled = "false"
         await self.render(
             "self_service_v2.html",
             page_title="ConsoleMe - Self Service",
@@ -1040,7 +1035,6 @@ class SelfServiceV2Handler(BaseHandler):
             user=self.user,
             user_groups=self.groups,
             config=config,
-            admin_bypass_approval_enabled=admin_bypass_approval_enabled,
         )
 
 
