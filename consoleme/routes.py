@@ -22,7 +22,7 @@ from consoleme.handlers.v1.headers import (
     UserProfileHandler,
 )
 from consoleme.handlers.v1.health import HealthHandler
-from consoleme.handlers.v1.index import IndexHandler  # noqa
+from consoleme.handlers.v1.index import IndexHandler
 
 # from consoleme.handlers.v1.index import IndexHandler
 from consoleme.handlers.v1.policies import (
