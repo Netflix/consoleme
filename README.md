@@ -105,7 +105,7 @@ account or user for the AWS SDK to communicate with the local DynamoDB container
 pip install -e default_plugins
 
 # Run ConsoleMe
-CONFIG_LOCATION=example_config/example_config_header_auth.yaml python consoleme/__main__.py
+CONFIG_LOCATION=example_config/example_config_development.yaml python consoleme/__main__.py
 ```
 
 > ConsoleMe requires Python 3.7+. If your virtualenv was installed under Python2.x
