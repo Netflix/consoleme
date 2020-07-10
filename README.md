@@ -117,9 +117,14 @@ data on disk. This command will need to be run anytime you want to update your l
 
 ### Configure your browser
 
-Configure a header injector ([Requestly](https://www.requestly.in/) is recommended) to inject user / group headers. Your group
-headers should contain a comma-separated list of google groups. You can see which headers are being passed to ConsoleMe
-by visiting the `/myheaders` endpoint in ConsoleMe.
+You can either use the `example_config/example_config_development.yaml` as your configuration to override the user you
+are authenticated as for development, or you can Configure a header injector such as 
+[Requestly](https://www.requestly.in/) to inject user / group headers. By default, the header names are in your
+ configuration file. In our example configurations, they are specified in `example_config_base.yaml` under the 
+ `auth.user_header_name` and `auth.groups_header_name` keys. The user header should be an email address, i.e.
+ `you@example.com`. The groups header should be a list of comma-separated groups that you are a member of, i.e. 
+ `group1@example.com,group2@example.com,groupx@example.com`.  You can see which headers are being passed to ConsoleMe
+by visiting the [`/myheaders` endpoint](http://localhost:8081/myheaders) in ConsoleMe.
 
 > Make sure you have at least two groups in your list, otherwise every time you visit your local consoleme Role page it will auto-login to the console with your one role.
 
