@@ -76,7 +76,7 @@ apt-get install build-essential libxml2-dev libxmlsec1 libxmlsec1-dev libxmlsec1
 git clone git@github.com:Netflix-Skunkworks/consoleme.git
 ```
 
-#### Run dependencies
+#### Start Redis and DynamoDB containers
 
 A local set of Redis and DynamoDB (local) instances need to be set up. These are provided as Docker containers. In a separate terminal window, start the local redis and dynamodb instances:
 
@@ -84,11 +84,19 @@ A local set of Redis and DynamoDB (local) instances need to be set up. These are
 docker-compose -f docker-compose-dependencies.yaml up
 ```
 
-#### Run install
+#### Make a virtual environment and run the installation script
 
 In repo root run `make install`. You may also want to install the default plugins if you have not developed internal plugins: `pip install -e default_plugins`
 
 ```bash
+# Make a Python 3.8 Virtual Environment using your preferred method. Here's a standard way of doing it:
+python3 -m venv env
+
+# Activate virtualenv
+. env/bin/activate
+
+# Run the `make install` script, which will create the appropriate DynamoDB tables locally and probably make a futile
+# effort to cache data in Redis. Caching will only work after you've configured ConsoleMe for your environment.
 make install
 ```
 
@@ -98,12 +106,6 @@ account or user for the AWS SDK to communicate with the local DynamoDB container
 #### Run ConsoleMe with the default configuration
 
 ```bash
-# Activate virtualenv created by `make install`
-. env/bin/activate
-
-# [Optional] Install default plugins
-pip install -e default_plugins
-
 # Run ConsoleMe
 CONFIG_LOCATION=example_config/example_config_development.yaml python consoleme/__main__.py
 ```
