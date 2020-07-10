@@ -351,8 +351,22 @@ dynamic_config:
       roles:
         - arn:aws:iam::123456789012:role/roleA  
 ```
-Once you have this configured, restart ConsoleMe locally and force-refresh your JWT:
+Once you have this configured, restart ConsoleMe locally and force-refresh your JWT by visiting:
 [http://localhost:8081?refresh_cache=true](http://localhost:8081?refresh_cache=true)
+
+For development only, you can override your local user and groups:
+
+```yaml
+# A development configuration can specify a specific user to impersonate locally.
+_development_user_override: consoleme_admin@example.com
+
+# A development configuration can override your groups locally
+_development_groups_override:
+  - groupa@example.com
+  - groupb@example.com
+  - configeditors@example.com
+  - consoleme_admins@example.com
+```
 
 
 ## Development
