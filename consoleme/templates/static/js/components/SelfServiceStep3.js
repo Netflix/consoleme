@@ -1,6 +1,6 @@
 import _ from "lodash";
 import React, {Component} from "react";
-import {Button, Dimmer, Divider, Form, Header, Label, Loader, Message, Tab, Table, TextArea,} from "semantic-ui-react";
+import {Button, Dimmer, Divider, Form, Grid, Header, Label, Loader, Message, Tab, Table, TextArea,} from "semantic-ui-react";
 import {generate_id, getCompletions, sendRequestCommon} from "../helpers/utils";
 import AceEditor from "react-ace";
 
@@ -24,11 +24,14 @@ class SelfServiceStep3 extends Component {
             justification: "",
             messages: [],
             requestId: null,
-            statement: ""
+            statement: "",
+            admin_bypass_approval_enabled: this.props.admin_bypass_approval_enabled,
+            admin_auto_approve: false
         };
         this.inlinePolicyEditorRef = React.createRef();
         this.handleJustificationChange = this.handleJustificationChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
     }
 
     async componentDidMount() {
@@ -179,10 +182,16 @@ class SelfServiceStep3 extends Component {
         return permissionTable;
     }
 
+    handleAdminSubmit(){
+        this.setState({
+            admin_auto_approve: true
+        }, () => {
+            this.handleSubmit();
+        });
+    }
     handleSubmit() {
         const {role} = this.props;
-        const {custom_statement, justification} = this.state;
-
+        const {custom_statement, justification, admin_auto_approve} = this.state;
         if (!justification) {
             return this.setState(state => ({
                 messages: ["No Justification is Given"],
@@ -196,6 +205,7 @@ class SelfServiceStep3 extends Component {
             arn,
             account_id,
             justification,
+            admin_auto_approve,
             "data_list": [
                 {
                     'type': policyType,
@@ -258,6 +268,7 @@ class SelfServiceStep3 extends Component {
     render() {
         const {role} = this.props;
         const {
+            admin_bypass_approval_enabled,
             custom_statement,
             isError,
             isLoading,
@@ -286,6 +297,41 @@ class SelfServiceStep3 extends Component {
             )
             : null;
 
+        const submission_buttons = (admin_bypass_approval_enabled) ?
+            (
+                <Grid columns={2}>
+                    <Grid.Row>
+                        <Grid.Column>
+                            <Button
+                                content="Submit and apply without approval"
+                                disabled={isError}
+                                onClick={this.handleAdminSubmit}
+                                positive
+                                fluid
+                            />
+                        </Grid.Column>
+                        <Grid.Column>
+                            <Button
+                                content="Submit"
+                                disabled={isError}
+                                onClick={this.handleSubmit}
+                                primary
+                                fluid
+                            />
+                        </Grid.Column>
+                    </Grid.Row>
+                </Grid>
+            )
+            :
+            (
+                <Button
+                    content="Submit"
+                    disabled={isError}
+                    fluid
+                    onClick={this.handleSubmit}
+                    primary
+                />
+            );
         const panes = [
             {
                 menuItem: 'Review',
@@ -325,13 +371,7 @@ class SelfServiceStep3 extends Component {
                             </Form>
                             <Divider/>
                             {messagesToShow}
-                            <Button
-                                content="Submit"
-                                disabled={isError}
-                                fluid
-                                onClick={this.handleSubmit}
-                                primary
-                            />
+                            {submission_buttons}
                         </Tab.Pane>
                     );
                 },
@@ -360,13 +400,7 @@ class SelfServiceStep3 extends Component {
                             </Form>
                             <Divider/>
                             {messagesToShow}
-                            <Button
-                                content="Submit"
-                                disabled={isError}
-                                fluid
-                                onClick={this.handleSubmit}
-                                primary
-                            />
+                            {submission_buttons}
                         </Tab.Pane>
                     );
                 },
