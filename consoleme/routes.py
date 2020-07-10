@@ -22,7 +22,7 @@ from consoleme.handlers.v1.headers import (
     UserProfileHandler,
 )
 from consoleme.handlers.v1.health import HealthHandler
-from consoleme.handlers.v1.index import IndexHandler
+from consoleme.handlers.v1.index import IndexHandler  # noqa
 
 # from consoleme.handlers.v1.index import IndexHandler
 from consoleme.handlers.v1.policies import (
@@ -81,10 +81,16 @@ def make_app(jwt_validator=None):
     """make_app."""
     path = pkg_resources.resource_filename("consoleme", "templates")
 
+    # This allows us to make the Index page configurable without using eval.
+    # We convert globals to an object
+    globals_object = type("globals_object", (object,), globals())
+
+    # We load the configurable index handler string from configuration and reference it in our routes.
+    index_handler = getattr(globals_object, config.get("index.handler", "IndexHandler"))
+
     routes = [
-        (r"/", IndexHandler),
-        (r"/selfservice", IndexHandler),
-        (r"/login", IndexHandler),
+        (r"/", index_handler),
+        (r"/login", index_handler),
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),
