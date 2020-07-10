@@ -81,16 +81,9 @@ def make_app(jwt_validator=None):
     """make_app."""
     path = pkg_resources.resource_filename("consoleme", "templates")
 
-    # This allows us to make the Index page configurable without using eval.
-    # We convert globals to an object
-    globals_object = type("globals_object", (object,), globals())
-
-    # We load the configurable index handler string from configuration and reference it in our routes.
-    index_handler = getattr(globals_object, config.get("index.handler", "IndexHandler"))
-
-    routes = [
-        (r"/", index_handler),
-        (r"/login", index_handler),
+    oss_routes = [
+        (r"/", IndexHandler),
+        (r"/login", IndexHandler),
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),
@@ -148,9 +141,11 @@ def make_app(jwt_validator=None):
         (r"/self_service", SelfServiceV2Handler),
     ]
 
-    routes.extend(
-        internal_routes.get_internal_routes(make_jwt_validator, jwt_validator)
+    # Prioritize internal routes before OSS routes so that OSS routes can be overrided if desired.
+    internal_route_list = internal_routes.get_internal_routes(
+        make_jwt_validator, jwt_validator
     )
+    routes = internal_route_list + oss_routes
 
     # Return a JSON 404 for unmatched /api/v2/ requests
     routes.append((r"/api/v2/.*", V2NotFoundHandler))
