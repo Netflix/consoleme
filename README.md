@@ -2,7 +2,7 @@
 
 # ConsoleMe
 
-ConsoleMe makes multi-account AWS easier for your end-users and cloud administrators.
+ConsoleMe strives to be a multi-account AWS swiss-army knife, making AWS easier for your end-users and cloud administrators.
 It is designed to consolidate the management of multiple accounts into a single web interface. It allows your end-users
 and administrators to get credentials / console access to your different accounts, depending on their authorization
 level. It provides mechanisms for end-users and administrators to both request and manage permissions for IAM roles,
@@ -44,6 +44,9 @@ point of reference for the installation process.
 
 
 ## Build and Run Instructions
+
+ConsoleMe requires Python 3.7 or above. Crude installation instructions are below. This documentation is in dire need
+of improvement.
 
 ### MacOS
 
@@ -102,7 +105,7 @@ account or user for the AWS SDK to communicate with the local DynamoDB container
 pip install -e default_plugins
 
 # Run ConsoleMe
-CONFIG_LOCATION=docker/example_config_header_auth.yaml python consoleme/__main__.py
+CONFIG_LOCATION=example_config/example_config_header_auth.yaml python consoleme/__main__.py
 ```
 
 > ConsoleMe requires Python 3.7+. If your virtualenv was installed under Python2.x
@@ -211,18 +214,18 @@ The configuration for the SAML exists in `docker-compose-simplesaml.yaml` You ca
 `docker-compose -f docker-compose-saml.yaml up`
 
 You will need to browse to the [Simplesaml metadata url](http://localhost:8080/simplesaml/saml2/idp/metadata.php?output=xml) and copy the x509 certificate
-for the IDP (The first one), and replace the x509cert value specified in `docker/saml_example/settings.json`.
+for the IDP (The first one), and replace the x509cert value specified in `example_config/saml_example/settings.json`.
 
 
 You can start ConsoleMe and point it to this IDP with the following command:
 
-`CONFIG_LOCATION=docker/example_config_saml.yaml python consoleme/__main__.py`
+`CONFIG_LOCATION=example_config/example_config_saml.yaml python consoleme/__main__.py`
 
 The configuration in `docker-compose-saml.yaml` specifies the expected service provider Acs location (`http://localhost:8081/saml/acs`) and the entity ID it expects to receive ('http://localhost:8081').
 
-A simple configuration for SimpleSaml users exists at `docker/simplesamlphp/authsources.php`. It specifies an example user (consoleme_user:consoleme_user), and an admin user (consoleme_admin:consoleme_admin).
+A simple configuration for SimpleSaml users exists at `example_config/simplesamlphp/authsources.php`. It specifies an example user (consoleme_user:consoleme_user), and an admin user (consoleme_admin:consoleme_admin).
 
-ConsoleMe's configuration (`docker/example_config_saml.yaml`) specifies the following configuration:
+ConsoleMe's configuration (`example_config/example_config_saml.yaml`) specifies the following configuration:
 
 `get_user_by_saml_settings.saml_path`: Location of SAML settings used by the OneLoginSaml2 library
 	- You'll need to configure the entity ID, IdP Binding urls, and ACS urls in this file
