@@ -1,14 +1,10 @@
 """Web routes."""
 import os
-import sys
 
 import pkg_resources
 import requests
 import tornado.autoreload
 import tornado.web
-from apispec import APISpec
-from apispec.exceptions import APISpecError
-from apispec_webframeworks.tornado import TornadoPlugin
 from raven.contrib.tornado import AsyncSentryClient
 
 import consoleme
@@ -44,7 +40,6 @@ from consoleme.handlers.v1.policies import (
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
-from consoleme.handlers.v1.swagger import SwaggerHandler, SwaggerJsonGenerator
 from consoleme.handlers.v2.create_role import CreateRoleViewHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
@@ -66,14 +61,6 @@ from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
 internal_routes = get_plugin_by_name(config.get("plugins.internal_routes"))()
-
-spec = APISpec(
-    title="Consoleme",
-    version="1.0.0",
-    openapi_version="3.0.2",
-    plugins=[TornadoPlugin()],
-    info=dict(description="Access to AWS Console and Google Groups"),
-)
 
 log = config.get_logger()
 
@@ -150,8 +137,6 @@ def make_app(jwt_validator=None):
         (r"/policies/request/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
         (r"/policies/submit_for_review", PolicyReviewSubmitHandler),
         (r"/policies/typeahead", ResourceTypeAheadHandler),
-        (r"/swagger", SwaggerHandler),
-        (r"/swagger.json", SwaggerJsonGenerator),
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service_v1", SelfServiceHandler),
         (r"/self_service", SelfServiceV2Handler),
@@ -179,18 +164,5 @@ def make_app(jwt_validator=None):
 
     if sentry_dsn:
         app.sentry_client = AsyncSentryClient(config.get("sentry.dsn"))
-
-    for r in routes:
-        try:
-            spec.path(urlspec=r)
-        except APISpecError:
-            # Docstring not specified correctly for endpoint
-            log_data = {
-                "function": f"{__name__}.{sys._getframe().f_code.co_name}",
-                "message": "Unable to add docs for Urlspec.",
-                "route": r,
-            }
-            log.debug(log_data, exc_info=True)
-    config.api_spec = spec.to_dict()
 
     return app
