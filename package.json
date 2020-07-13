@@ -15,7 +15,7 @@
     "react-select": "^3.0.4",
     "resolve-cwd": "^3.0.0",
     "semantic-ui-calendar-react": "^0.15.3",
-    "semantic-ui-react": "^0.84.0",
+    "semantic-ui-react": "^0.88.2",
     "style-loader": "^1.2.1",
     "styled-components": "^5.1.1",
     "swagger-client": "^3.10.6"

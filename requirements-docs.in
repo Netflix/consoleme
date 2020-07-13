@@ -1,6 +1,5 @@
 -c requirements.txt
 -c requirements-test.txt
-apispec
 mkdocs
 mkdocs-material
 pyyaml

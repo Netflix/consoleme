@@ -1,6 +1,4 @@
 aiozipkin
-apispec
-apispec-webframeworks
 asgiref # Allows sync_to_async call, executes synchronous code in its own threadpool.
 bleach
 boto3
@@ -48,7 +46,7 @@ simplejson
 six
 tenacity
 tornado
-ujson
+ujson<3 # Unpin when this bug is fixed: https://github.com/ultrajson/ultrajson/issues/415
 uvloop
 validate_email
 xmlsec

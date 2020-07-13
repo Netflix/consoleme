@@ -4,7 +4,6 @@
 #
 #    pip-compile --no-index --output-file=requirements-docs.txt requirements-docs.in
 #
-apispec[yaml]==3.3.1      # via -c requirements.txt, -r requirements-docs.in
 click==7.1.2              # via -c requirements-test.txt, -c requirements.txt, mkdocs, nltk
 future==0.18.2            # via -c requirements-test.txt, -c requirements.txt, lunr
 jinja2==2.11.2            # via -c requirements-test.txt, mkdocs
@@ -19,7 +18,7 @@ mkdocs==1.1.2             # via -r requirements-docs.in, mkdocs-material
 nltk==3.5                 # via lunr
 pygments==2.6.1           # via -c requirements-test.txt, -c requirements.txt, mkdocs-material
 pymdown-extensions==7.1   # via mkdocs-material
-pyyaml==5.3.1             # via -c requirements-test.txt, -c requirements.txt, -r requirements-docs.in, apispec, mkdocs
+pyyaml==5.3.1             # via -c requirements-test.txt, -c requirements.txt, -r requirements-docs.in, mkdocs
 regex==2020.6.8           # via -c requirements-test.txt, nltk
 six==1.15.0               # via -c requirements-test.txt, -c requirements.txt, livereload, lunr
 tornado==6.0.4            # via -c requirements-test.txt, -c requirements.txt, livereload, mkdocs
