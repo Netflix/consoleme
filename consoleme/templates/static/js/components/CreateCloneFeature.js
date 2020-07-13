@@ -297,22 +297,22 @@ class CreateCloneFeature extends Component {
            (
                <Segment>
                    <Form>
-                       <Form.Field>
-                           <Radio
+                       <Form.Group inline>
+                           <Form.Radio
                                 label='Create blank role'
                                 name='feature_type'
                                 value='create'
                                 checked={feature_type === 'create'}
                                 onChange={this.handleChange}
                            />
-                           <Radio
+                           <Form.Radio
                                 label='Clone from existing role'
                                 name='feature_type'
                                 value='clone'
                                 checked={feature_type === 'clone'}
                                 onChange={this.handleChange}
                            />
-                       </Form.Field>
+                       </Form.Group>
                    </Form>
                </Segment>
            );
@@ -324,6 +324,7 @@ class CreateCloneFeature extends Component {
                    <Segment>
                        <Grid columns={2} divided>
                             <Grid.Row>
+                                {sourceRoleContent}
                                 <Grid.Column>
                                     <Header size='medium'>
                                             Role to be created
@@ -367,7 +368,6 @@ class CreateCloneFeature extends Component {
                                             />
                                     </Form>
                                 </Grid.Column>
-                                {sourceRoleContent}
                             </Grid.Row>
                        </Grid>
                    </Segment>
