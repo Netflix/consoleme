@@ -77,9 +77,11 @@
     <div class="content">
 
         <div class="ui secondary pointing menu">
+            {% if config.get("headers.index.enabled", True) %}
             <a class="ui item {% if current_page in ['index'] %}active{% end %}" href="/">
                 AWS Console Roles
             </a>
+            {% end %}
             {% if config.get("headers.group_access.enabled", True) %}
             <div class="ui dropdown link item {% if current_page in ['accessui', 'groups', 'users', 'pending'] %}partial_active{% end %}">
                 <span class="text">Group Access</span>

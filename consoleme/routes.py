@@ -81,9 +81,8 @@ def make_app(jwt_validator=None):
     """make_app."""
     path = pkg_resources.resource_filename("consoleme", "templates")
 
-    routes = [
+    oss_routes = [
         (r"/", IndexHandler),
-        (r"/selfservice", IndexHandler),
         (r"/login", IndexHandler),
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
@@ -142,9 +141,11 @@ def make_app(jwt_validator=None):
         (r"/self_service", SelfServiceV2Handler),
     ]
 
-    routes.extend(
-        internal_routes.get_internal_routes(make_jwt_validator, jwt_validator)
+    # Prioritize internal routes before OSS routes so that OSS routes can be overrided if desired.
+    internal_route_list = internal_routes.get_internal_routes(
+        make_jwt_validator, jwt_validator
     )
+    routes = internal_route_list + oss_routes
 
     # Return a JSON 404 for unmatched /api/v2/ requests
     routes.append((r"/api/v2/.*", V2NotFoundHandler))
