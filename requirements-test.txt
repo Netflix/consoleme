@@ -13,9 +13,9 @@ aws-xray-sdk==2.6.0       # via moto
 bandit==1.6.2             # via -r requirements-test.in
 black==19.10b0            # via -r requirements-test.in
 bleach==3.1.5             # via -c requirements.txt, readme-renderer
-boto3==1.14.19            # via -c requirements.txt, aws-sam-translator, moto
+boto3==1.14.20            # via -c requirements.txt, aws-sam-translator, moto
 boto==2.49.0              # via -c requirements.txt, moto
-botocore==1.17.19         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
+botocore==1.17.20         # via -c requirements.txt, aws-xray-sdk, boto3, moto, s3transfer
 certifi==2020.6.20        # via -c requirements.txt, requests
 cffi==1.14.0              # via cryptography
 cfgv==3.1.0               # via pre-commit
@@ -37,8 +37,8 @@ flake8-import-order==0.18.1  # via -r requirements-test.in
 flake8==3.8.3             # via -r requirements-test.in, flake8-docstrings
 future==0.18.2            # via -c requirements.txt, aws-xray-sdk
 gitdb==4.0.5              # via gitpython
-gitpython==3.1.3          # via bandit
-identify==1.4.21          # via pre-commit
+gitpython==3.1.7          # via bandit
+identify==1.4.23          # via pre-commit
 idna==2.8                 # via -c requirements.txt, moto, requests
 importlib-metadata==1.7.0  # via jsonpickle
 jinja2==2.11.2            # via moto
@@ -79,10 +79,10 @@ pytest-cov==2.10.0        # via -r requirements-test.in
 pytest-forked==1.2.0      # via pytest-xdist
 pytest-html==2.1.1        # via -r requirements-test.in
 pytest-metadata==1.10.0   # via pytest-html
-pytest-mock==3.1.1        # via -r requirements-test.in
+pytest-mock==3.2.0        # via -r requirements-test.in
 pytest-timeout==1.4.1     # via -r requirements-test.in
 pytest-tornado==0.8.1     # via -r requirements-test.in
-pytest-xdist==1.32.0      # via -r requirements-test.in
+pytest-xdist==1.33.0      # via -r requirements-test.in
 pytest==5.4.3             # via -r requirements-test.in, pytest-asyncio, pytest-cov, pytest-forked, pytest-html, pytest-metadata, pytest-mock, pytest-timeout, pytest-tornado, pytest-xdist
 python-dateutil==2.8.1    # via -c requirements.txt, botocore, moto
 python-jose==3.1.0        # via -c requirements.txt, moto
@@ -101,7 +101,7 @@ smmap==3.0.4              # via gitdb
 snowballstemmer==2.0.0    # via pydocstyle
 sortedcontainers==2.2.2   # via fakeredis
 sshpubkeys==3.1.0         # via moto
-stevedore==2.0.1          # via bandit
+stevedore==3.1.0          # via bandit
 toml==0.10.1              # via -c requirements.txt, black, pre-commit, tox
 tornado==6.0.4            # via -c requirements.txt, -r requirements-test.in, pytest-tornado
 tox==3.16.1               # via -r requirements-test.in

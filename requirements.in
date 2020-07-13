@@ -46,7 +46,7 @@ simplejson
 six
 tenacity
 tornado
-ujson
+ujson<3 # Unpin when this bug is fixed: https://github.com/ultrajson/ultrajson/issues/415
 uvloop
 validate_email
 xmlsec
