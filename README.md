@@ -120,11 +120,11 @@ data on disk. This command will need to be run anytime you want to update your l
 ### Configure your browser
 
 You can either use the `example_config/example_config_development.yaml` as your configuration to override the user you
-are authenticated as for development, or you can Configure a header injector such as 
+are authenticated as for development, or you can Configure a header injector such as
 [Requestly](https://www.requestly.in/) to inject user / group headers. By default, the header names are in your
- configuration file. In our example configurations, they are specified in `example_config_base.yaml` under the 
+ configuration file. In our example configurations, they are specified in `example_config_base.yaml` under the
  `auth.user_header_name` and `auth.groups_header_name` keys. The user header should be an email address, i.e.
- `you@example.com`. The groups header should be a list of comma-separated groups that you are a member of, i.e. 
+ `you@example.com`. The groups header should be a list of comma-separated groups that you are a member of, i.e.
  `group1@example.com,group2@example.com,groupx@example.com`.  You can see which headers are being passed to ConsoleMe
 by visiting the [`/myheaders` endpoint](http://localhost:8081/myheaders) in ConsoleMe.
 
@@ -138,7 +138,7 @@ You should now be able to access the ConsoleMe web UI at http://localhost:8081. 
 ### Role configuration
 
 By now, you should have the ConsoleMe web UI running, though it probably can't do much at the moment. This is where
-you'll need to configure ConsoleMe for your environment. The ConsoleMe service needs its own user/role (with an 
+you'll need to configure ConsoleMe for your environment. The ConsoleMe service needs its own user/role (with an
 InstanceProfile for EC2 deployment), and each of your accounts should have a role that ConsoleMe can assume into.
 
 
@@ -150,7 +150,7 @@ ensure that its privileges cannot be used outside of ConsoleMe, except by author
 You can call this new role "ConsoleMeInstanceProfile". It will also need to assume whichever roles you want to allow it
 to assume in your environment. Here is a full-fledged
 policy you can use when deploying to production. For now, scoping down assume role rights for testing should be
-sufficient. Create an inline policy for your role with the following permissions if you never want to have to 
+sufficient. Create an inline policy for your role with the following permissions if you never want to have to
 think about it again:
 
 Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume Role Trust Policy with your ConsoleMe
@@ -252,7 +252,7 @@ service role ARN.
  "Statement": [
   {
    "Action": [
-    "autoscaling:Describe*"
+    "autoscaling:Describe*",
     "cloudwatch:Get*",
     "cloudwatch:List*",
     "config:BatchGet*",
@@ -280,7 +280,7 @@ service role ARN.
     "sqs:ListQueueTags",
     "sqs:SetQueueAttributes",
     "sqs:TagQueue",
-    "sqs:UntagQueue",
+    "sqs:UntagQueue"
    ],
    "Effect": "Allow",
    "Resource": [
@@ -313,7 +313,7 @@ Assume Role Policy Document:
 You should have the ConsoleMe web service up and running, and you should have some roles that ConsoleMe can use or
 assume. Now comes the fun part: Configuring ConsoleMe.
 
-At Netflix, we use our production ConsoleMe sergice to get credentials for ConsoleMe locally 
+At Netflix, we use our production ConsoleMe sergice to get credentials for ConsoleMe locally
 (hence why ConsoleMeInstanceProfile needs to be able to assume itself). For a first-time setup, you may not have this
 luxury. If you're using an IAM user, let it assume into the consolemeinstanceprofile service role that you created in
 the previous step (If you take this route, we recommend removing those permissions as soon as you deploy consoleme and
