@@ -1190,6 +1190,14 @@ async def handle_resource_type_ahead_request(cls):
             )
         except Exception as e:  # noqa
             accounts = {}
+        try:
+            accounts_to_env = json.loads(
+                await redis_get(
+                    config.get("swag.redis_accounts_to_env_key", "SWAG_ACCOUNTS_TO_ENV")
+                )
+            )
+        except Exception as e:  # noqa
+            accounts_to_env = {}
         app_to_role_map = json.loads(data)
         seen: Dict = {}
         seen_roles = {}
@@ -1201,6 +1209,7 @@ async def handle_resource_type_ahead_request(cls):
                 for role in roles:
                     account_id = role.split(":")[4]
                     account = accounts.get(account_id, [""])[0]
+                    environment = accounts_to_env.get(account_id, "")
                     parsed_app_name = (
                         f"{app_name} on {account} ({account_id}) ({role})]"
                     )
@@ -1209,7 +1218,11 @@ async def handle_resource_type_ahead_request(cls):
                     seen[parsed_app_name] = True
                     seen_roles[role] = True
                     results[app_name]["results"].append(
-                        {"title": role, "description": account}
+                        {
+                            "title": role,
+                            "description": account + "-" + app_name,
+                            "content": environment,
+                        }
                     )
         for role in all_role_arns:
             if len(results.keys()) > 9:
@@ -1219,9 +1232,12 @@ async def handle_resource_type_ahead_request(cls):
                     continue
                 account_id = role.split(":")[4]
                 account = accounts.get(account_id, [""])[0]
+                environment = accounts_to_env.get(account_id, "")
                 results[role] = {
                     "name": role.replace("arn:aws:iam::", "").replace(":role", ""),
-                    "results": [{"title": role, "description": account}],
+                    "results": [
+                        {"title": role, "description": account, "content": environment}
+                    ],
                 }
     else:
         for k, v in data.items():

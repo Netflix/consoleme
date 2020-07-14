@@ -1,9 +1,10 @@
 import _ from 'lodash';
-import React, {Component} from 'react';
+import React, {Component, Fragment} from 'react';
 import {
+    Divider,
     Form,
     Grid,
-    Header,
+    Header, Label,
     Loader,
     Message,
     Search,
@@ -13,6 +14,36 @@ import RoleDetails from "./RoleDetails";
 import "./SelfService.css";
 
 const ARN_REGEX = /^arn:aws:iam::(?<accountId>\d{12}):role\/(?<roleName>.+)$/;
+
+const categoryLayoutRenderer = ({ categoryContent, resultsContent }) => (
+    <div style={{ background: "white" }}>
+        {/*<div style={{ textAlign: "center", background: "white" }} className="category">{categoryContent}</div>*/}
+        <div style={{ background: "white" }} className="results">{resultsContent}</div>
+    </div>
+);
+
+const categoryRenderer = ({ name }) =>
+    <h3>{name}</h3>
+
+const resultRenderer = ({ title, content, description }) => (
+  <Fragment>
+    <div className="title">{title}</div>
+    {content && content === "prod" ? (
+      <Label color="red" horizontal>
+          {description}
+      </Label>
+    ) : (
+      <Label color="grey" horizontal>
+          {description}
+      </Label>
+    )}
+    {description && description.split("-").length === 2 ? (
+        <Label color="teal" horizontal>
+            {description.split("-")[1]}
+        </Label>
+    ) : null}
+  </Fragment>
+);
 
 class SelfServiceStep1 extends Component {
     state = {
@@ -172,11 +203,14 @@ class SelfServiceStep1 extends Component {
                                 For Help, please visit <a
                                 href={"http://go/selfserviceiamtldr"} target={"_blank"}>go/selfserviceiamtldr</a>
                             </p>
-                            <Form widths="equal">
+                            <Form>
                                 <Form.Field required>
                                     <label>Search Your Application Roles</label>
                                     <Search
                                         category
+                                        categoryLayoutRenderer={categoryLayoutRenderer}
+                                        categoryRenderer={categoryRenderer}
+                                        resultRenderer={resultRenderer}
                                         loading={isLoading}
                                         onResultSelect={this.handleResultSelect.bind(this)}
                                         onSearchChange={_.debounce(this.handleSearchChange.bind(this), 500, {
@@ -184,6 +218,7 @@ class SelfServiceStep1 extends Component {
                                         })}
                                         results={results}
                                         value={value}
+                                        fluid
                                     />
                                 </Form.Field>
                             </Form>
