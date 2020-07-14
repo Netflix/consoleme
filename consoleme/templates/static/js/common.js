@@ -40,7 +40,6 @@ function formatRoleName(role, accounts) {
 async function handleResponse(res, redirect_uri = null, message = "Success! Refreshing cache and reloading the page.", delay = 0, htmlMessage = "") {
   document.getElementById('error_div').classList.add('hidden');
   document.getElementById('success_div').classList.add('hidden');
-  console.log(res)
   if (res.status !== "success") {
     let element = document.getElementById('error_response');
     document.getElementById('error_div').classList.remove('hidden');
