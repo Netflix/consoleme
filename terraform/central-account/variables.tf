@@ -95,7 +95,7 @@ variable "key_name" {
 }
 
 variable "bucket" {
-  description = "The name of the S3 bucket containing the code"
+  description = "The name of the S3 bucket containing the consoleme.tar.gz in the root of the bucket"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------

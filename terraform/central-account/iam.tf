@@ -70,8 +70,8 @@ resource "aws_iam_policy" "consoleme" {
 
 data "aws_iam_policy_document" "consoleme_trust_policy" {
   statement {
-    sid    = "AssumeRoleEC2"
-    effect = "Allow"
+    sid     = "AssumeRoleEC2"
+    effect  = "Allow"
     actions = ["sts:AssumeRole"]
     principals {
       identifiers = ["ec2.amazonaws.com"]
@@ -79,15 +79,15 @@ data "aws_iam_policy_document" "consoleme_trust_policy" {
     }
   }
 
-//  statement {
-//    sid     = "AssumeRoleSelf"
-//    actions = ["sts:AssumeRole"]
-//    effect  = "Allow"
-//    principals {
-//      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.consoleme_instance_profile_name}"]
-//      type        = "AWS"
-//    }
-//  }
+  //  statement {
+  //    sid     = "AssumeRoleSelf"
+  //    actions = ["sts:AssumeRole"]
+  //    effect  = "Allow"
+  //    principals {
+  //      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.consoleme_instance_profile_name}"]
+  //      type        = "AWS"
+  //    }
+  //  }
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -99,8 +99,8 @@ resource "aws_iam_role" "consoleme" {
   assume_role_policy = data.aws_iam_policy_document.consoleme_trust_policy.json
 }
 
-resource "aws_iam_policy_attachment" "consoleme" {
-  name = var.consoleme_instance_profile_name
+resource "aws_iam_role_policy_attachment" "consoleme" {
+  role       = var.consoleme_instance_profile_name
   policy_arn = aws_iam_policy.consoleme.arn
 }
 
