@@ -31,7 +31,6 @@ sudo amazon-linux-extras install -y docker
 sudo service docker start
 sudo usermod -a -G docker ec2-user
 
-# TODO: Copy over the directory
 mkdir -p /apps/
 cd /apps/
 yum -y install unzip
@@ -45,7 +44,7 @@ useradd -r -s /bin/false consoleme
 #groupadd consoleme
 # Add users to the consoleme group
 usermod -aG consoleme consoleme
-usermod -a -G docker consoleme
+usermod -aG docker consoleme
 
 # Set up a new Virtualenv in the Consoleme directory
 python3 -m venv /apps/consoleme/env
@@ -59,7 +58,7 @@ pip install xmlsec
 
 make env_install
 
-make dynamodb
+make dynamo
 sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 sudo yum-config-manager --enable epel
 yum -y install redis
@@ -67,7 +66,21 @@ systemctl status redis
 systemctl start redis
 python /apps/consoleme/scripts/initialize_redis_oss.py
 
-#make bootstrap
+# Update the UI
+cd /apps/consoleme
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh > /tmp/nvm-install.sh
+chmod +x /tmp/nvm-install.sh
+bash /tmp/nvm-install.sh
+source ~/.nvm/nvm.sh
+nvm install 12.18.2
+nvm use 12.18.2
+node -e "console.log('Running Node.js ' + process.version)"
+npm install yarn -g
+yarn
+yarn install
+/apps/consoleme/node_modules/webpack/bin/webpack.js --progress
+
 # Since the setup ran as root, just chown it again so the consoleme user owns it
 chown -R consoleme:consoleme /apps/consoleme
 
@@ -87,18 +100,64 @@ Type=simple
 Restart=always
 RestartSec=1
 User=consoleme
+Group=consoleme
 ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/consoleme/__main__.py
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
+cat << EOF > /etc/systemd/system/celery.service
+[Unit]
+Description=Celery Service
+After=network.target
+
+[Service]
+Type=forking
+User=consoleme
+Group=consoleme
+Type=simple
+Restart=always
+RestartSec=1
+WorkingDirectory=/apps/consoleme
+Environment=CONFIG_LOCATION=/apps/consoleme/example_config/example_config_development.yaml
+ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG -B
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+
+# Remove default account IDs to name for this tutorial
+sed '/123456789013: prod/d' /apps/consoleme/example_config/example_config_base.yaml
+sed '/123456789012: default_account/d' /apps/consoleme/example_config/example_config_base.yaml
+sed '/123456789014: test/d' /apps/consoleme/example_config/example_config_base.yaml
+grep -rl '123456789012' /apps/consoleme/example_config/ | xargs sed -i "s/123456789012/${current_account_id}/g"
+
+# Add legit account ID to the config for this tutorial:
+echo "account_ids_to_name:" >> /apps/consoleme/example_config/example_config_base.yaml
+echo "" >> /apps/consoleme/example_config/example_config_base.yaml
+echo "  ${current_account_id}: default_account" >> file.txt /apps/consoleme/example_config/example_config_base.yaml
+
+# Remove the dynamodb config
+sed -i '/dynamodb_server: http:\/\/localhost:8005/d' /apps/consoleme/example_config/example_config_development.yaml
 
 # Change permissions on service file
+chown root:root /etc/systemd/system/celery.service
+chmod 644 /etc/systemd/system/celery.service
 chown root:root /etc/systemd/system/consoleme.service
 chmod 644 /etc/systemd/system/consoleme.service
+
+systemctl daemon-reload
+
+mkdir -p /home/consoleme
+chown consoleme:consoleme /home/consoleme/
+
 # Make sure it is listed
+systemctl list-unit-files | grep celery.service
 systemctl list-unit-files | grep consoleme.service
 # Enable the service and create the symlink in /usr/lib
+systemctl start celery
+systemctl enable celery
 systemctl enable consoleme
 systemctl start consoleme

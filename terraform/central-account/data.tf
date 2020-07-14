@@ -14,6 +14,7 @@ data "aws_ami" "amazon_linux" {
 data "template_file" "consoleme_userdata" {
   template = file("${path.module}/templates/userdata.sh")
   vars = {
-    bucket       = "neo4j"
+    bucket = var.bucket
+    current_account_id = data.aws_caller_identity.current.account_id
   }
 }

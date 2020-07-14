@@ -8,3 +8,7 @@ aws s3 cp consoleme.tar.gz s3://my-bucket
 ```
 
 Then make sure that the bucket `my-bucket` is reflected in your terraform.tfvars.
+
+
+* Create your terraform.tfvars
+* terraform init, plan, and apply
