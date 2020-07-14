@@ -83,7 +83,7 @@ export async function editPolicy(policy_type, policy_name, editor_value, is_new=
   await handleResponse(res);
 }
 
-export async function submitPolicyForReview(policy_type, policy_name, editor_value, arn, account_id, is_new=false) {
+export async function submitPolicyForReview(policy_type, policy_name, editor_value, arn, account_id, is_new=false, admin_auto_approve=false) {
 
   if(policy_name === "") {
     Swal.fire(
@@ -120,6 +120,7 @@ export async function submitPolicyForReview(policy_type, policy_name, editor_val
       "arn": arn,
       "account_id": account_id,
       "justification": justification,
+      "admin_auto_approve": admin_auto_approve,
       "data_list": [{'type': policy_type, 'name': policy_name, 'value': eval(editor_value).getValue(), 'is_new': is_new}]
     };
     let json = JSON.stringify(arr);
@@ -127,8 +128,16 @@ export async function submitPolicyForReview(policy_type, policy_name, editor_val
     dimmer.addClass('active');
     let res = await sendRequestCommon(json, '/policies/submit_for_review');
     dimmer.removeClass('active');
-    let redirect_uri = "/policies/request/" + res.request_id;
-    await handleResponse(res, redirect_uri, "Success! Redirecting to the request.");
+    if(!admin_auto_approve) {
+      // standard non-admin workflow
+      let redirect_uri = "/policies/request/" + res.request_id;
+      await handleResponse(res, redirect_uri, "Success! Redirecting to the request.");
+    } else {
+      // admin submitted self-approved request
+      let requestLink = '<a href="/policies/request/' + res.request_id + '" target="_blank"> here </a>'
+      let htmlMessage = "Your policy request was successfully self-approved and applied. Please click " + requestLink + " if you wish to see it."
+      await handleResponse(res, null, "", 4000, htmlMessage)
+    }
   }
 }
 

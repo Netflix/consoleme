@@ -289,14 +289,14 @@
                 <div class="ui center floated">
                     <button class="ui primary button" type="save"
                             {% if read_only or not can_save_delete %}style="display: none;"{% end %}
-                            onClick="policyEditor.editPolicy('InlinePolicy', $('#newpolicy_name').val(), neweditor, is_new=true);"
+                            onClick="policyEditor.submitPolicyForReview('InlinePolicy', $('#newpolicy_name').val(), neweditor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=true, admin_auto_approve=true);"
                             style="margin: 10px;">Save new policy
                     </button>
                 </div>
 
                 <div class="ui center floated">
                     <button class="ui primary button" type="save" {% if read_only %}style="display: none;"{% end %}
-                            onClick="policyEditor.submitPolicyForReview('InlinePolicy', $('#newpolicy_name').val(), neweditor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=true);"
+                            onClick="policyEditor.submitPolicyForReview('InlinePolicy', $('#newpolicy_name').val(), neweditor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=true, admin_auto_approve=false);"
                             style="margin: 10px;">submit new policy for review
                     </button>
                 </div>
@@ -372,13 +372,13 @@
             <div class="ui center floated">
                 <button class="ui primary button" type="save"
                         {% if read_only or not can_save_delete %}style="display: none;"{% end %}
-                        onClick="policyEditor.editPolicy('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }});"
+                        onClick="policyEditor.submitPolicyForReview('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }}, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=true);"
                         style="margin: 10px;">Save {{ policy.get("PolicyName") }}
                 </button>
             </div>
             <div class="ui center floated">
                 <button class="ui primary button" type="save" {% if read_only %}style="display: none;"{% end %}
-                        onClick="policyEditor.submitPolicyForReview('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }}, '{{ role.get("arn") }}', '{{ account_id }}');"
+                        onClick="policyEditor.submitPolicyForReview('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }}, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=false);"
                         style="margin: 10px;">Submit {{ policy.get("PolicyName") }} for review
                 </button>
             </div>
@@ -445,13 +445,13 @@
         <div class="ui center floated">
             <button class="ui primary button" type="save"
                     {% if read_only or not can_save_delete %}style="display: none;"{% end %}
-                    onClick="policyEditor.editPolicy('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor);"
+                    onClick="policyEditor.submitPolicyForReview('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=true);"
                     style="margin: 10px;">Save Assume Role Policy
             </button>
         </div>
         <div class="ui center floated">
             <button class="ui primary button" type="save" {% if read_only %}style="display: none;"{% end %}
-                    onClick="policyEditor.submitPolicyForReview('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor, '{{ role.get("arn") }}', '{{ account_id }}');"
+                    onClick="policyEditor.submitPolicyForReview('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=false);"
                     style="margin: 10px;">Submit Assume Role Policy for review
             </button>
         </div>
