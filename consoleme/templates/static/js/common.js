@@ -37,21 +37,30 @@ function formatRoleName(role, accounts) {
   }
 }
 
-async function handleResponse(res, redirect_uri = null, message = "Success! Refreshing cache and reloading the page.", delay = 0) {
+async function handleResponse(res, redirect_uri = null, message = "Success! Refreshing cache and reloading the page.", delay = 0, htmlMessage = "") {
   document.getElementById('error_div').classList.add('hidden');
   document.getElementById('success_div').classList.add('hidden');
   if (res.status !== "success") {
     let element = document.getElementById('error_response');
     document.getElementById('error_div').classList.remove('hidden');
     if(res.hasOwnProperty("message")) {
-      element.textContent = res.message
+      // since sometimes we return error message string and sometimes error message JSON object
+      if(typeof res.message === "string") {
+        element.textContent = res.message
+      } else {
+        element.textContent = JSON.stringify(res.message, null, '\t');
+      }
     } else {
       element.textContent = JSON.stringify(res, null, '\t');
     }
     $('.ui.basic.modal').modal('show')
   } else {
     let element = document.getElementById('success_response');
-    element.textContent = message;
+    if(htmlMessage === "") {
+      element.textContent = message;
+    } else {
+      element.innerHTML = htmlMessage;
+    }
     document.getElementById('success_div').classList.remove('hidden')
     $('.ui.basic.modal').modal('show');
     setTimeout(() => {
