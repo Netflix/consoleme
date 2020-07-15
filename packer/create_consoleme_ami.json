@@ -42,7 +42,7 @@
     },
     {
       "inline": [
-        "tar -xf {{user `app_archive`}} -C /apps/consoleme/",
+        "tar -xzf {{user `app_archive`}} -C /apps/consoleme/",
         "sudo cp -R /apps/consoleme/packer/root/* /",
         "rm {{user `app_archive`}}"
       ],

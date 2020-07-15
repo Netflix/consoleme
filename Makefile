@@ -125,6 +125,11 @@ endif
 	pip install -r requirements-docs.txt
 	@echo "--> Done installing new dependencies"
 
+.PHONY: tar
+tar:
+	# Tar contents of the current directory
+	tar --exclude='env*' --exclude='venv*' --exclude='node_modules*' --exclude='debian*' --exclude='staging*' -czvf /tmp/consoleme.tar.gz .
+
 .PHONY: create_ami
 create_ami:
 ifdef CONFIG_LOCATION
@@ -135,12 +140,11 @@ ifdef CONSOLEME_CONFIG_ENTRYPOINT
 	@echo "--> Using configuration entrypoint at at $(CONSOLEME_CONFIG_ENTRYPOINT)"
 	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT)
 endif
-	# Tar contents of the current directory
-	tar --exclude='env*' --exclude='venv*' -cf /tmp/consoleme.tar .
+	make tar
 	# Call Packer to build AMI
-	packer build -var 'app_archive=/tmp/consoleme.tar' packer/create_consoleme_ami.json
+	packer build -var 'app_archive=/tmp/consoleme.tar.gz' packer/create_consoleme_ami.json
 	# Remove Temporary Tar file
-	rm /tmp/consoleme.tar
+	rm /tmp/consoleme.tar.gz
 
 .PHONY: packer_ubuntu_oss
 packer_ubuntu_oss: ubuntu_redis env_install default_plugins
