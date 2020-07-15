@@ -1,5 +1,4 @@
 from consoleme.config import config
-from consoleme.lib.jwt import generate_jwt_token
 
 
 async def authenticate_user_by_credentials(request):

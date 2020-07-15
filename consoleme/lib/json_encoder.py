@@ -1,5 +1,4 @@
 import json  # I don't think I can use ujson here
-
 from datetime import datetime
 from decimal import Decimal
 

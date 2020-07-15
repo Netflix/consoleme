@@ -435,7 +435,7 @@ async def delete_iam_role(account_id, role_name, username) -> bool:
                 "instance_profile": instance_profile.name,
             }
         )
-        await sync_to_async(instance_profile.remove_role)(RoleName=role.name,)
+        await sync_to_async(instance_profile.remove_role)(RoleName=role.name)
         await sync_to_async(instance_profile.delete)()
 
     # Detach managed policies

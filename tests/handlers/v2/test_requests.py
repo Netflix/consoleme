@@ -1,14 +1,15 @@
 import ujson as json
-from mock import patch
 from tornado.testing import AsyncHTTPTestCase
+
 from consoleme.config import config
+
 
 class TestRequestsHandler(AsyncHTTPTestCase):
     def get_app(self):
         from consoleme.routes import make_app
 
         return make_app(jwt_validator=lambda x: {})
-    
+
     def test_get(self):
         expected = {
             "status": 501,
@@ -33,7 +34,9 @@ class TestRequestsHandler(AsyncHTTPTestCase):
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
-        response = self.fetch("/api/v2/requests", method="POST", headers=headers, body="{}")
+        response = self.fetch(
+            "/api/v2/requests", method="POST", headers=headers, body="{}"
+        )
         self.assertEqual(response.code, 501)
         self.assertDictEqual(json.loads(response.body), expected)
 

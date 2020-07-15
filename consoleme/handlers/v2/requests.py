@@ -94,6 +94,43 @@ class RequestDetailHandler(BaseAPIV2Handler):
         self.write_error(501, message="Update request details")
 
 
+class RequestsTableConfigHandler(BaseHandler):
+    async def get(self):
+        """
+        /requests_table_config
+        ---
+        get:
+            description: Retrieve Requests Table Configuration
+            responses:
+                200:
+                    description: Returns Requests Table Configuration
+        """
+        self.write(
+            {
+                "expandableRows": True,
+                "expandOnRowClicked": True,
+                "pagination": True,
+                "highlightOnHover": True,
+                "striped": True,
+                "subHeader": True,
+                "filterColumns": True,
+                "tableName": "Requests",
+                "dataEndpoint": "/api/v2/requests",
+                "grow": 3,
+                "wrap": True,
+                "desiredColumns": [
+                    {"name": "Username", "selector": "username"},
+                    {"name": "Arn", "selector": "arn"},
+                    {"name": "Request Time", "selector": "request_time"},
+                    {"name": "Status", "selector": "status"},
+                    {"name": "Request ID", "selector": "request_id"},
+                    {"name": "Policy Name", "selector": "policy_name"},
+                    {"name": "Last Updated By", "selector": "updated_by"},
+                ],
+            }
+        )
+
+
 class RequestsWebHandler(BaseHandler):
     async def get(self):
         """
@@ -109,7 +146,7 @@ class RequestsWebHandler(BaseHandler):
         await self.render(
             "requests.html",
             page_title="ConsoleMe - Requests",
-            current_page="policies",  # TODO change me
+            current_page="requests",  # TODO add a page header for me
             user=self.user,
             user_groups=self.groups,
             config=config,

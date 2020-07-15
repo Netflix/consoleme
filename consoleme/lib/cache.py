@@ -82,7 +82,7 @@ async def retrieve_json_data_from_redis_or_s3(
     s3_key: str = None,
     cache_to_redis_if_data_in_s3: bool = True,
     max_age: Optional[int] = None,
-    default: Optional = None
+    default: Optional = None,
 ):
     """
     Retrieve data from Redis as a priority. If data is unavailable in Redis, fall back to S3 and attempt to store
