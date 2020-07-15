@@ -289,7 +289,7 @@
                 <div class="ui center floated">
                     <button class="ui primary button" type="save"
                             {% if read_only or not can_save_delete %}style="display: none;"{% end %}
-                            {% if config.get("policies.log_admin_requests", False) %}onClick="policyEditor.submitPolicyForReview('InlinePolicy', $('#newpolicy_name').val(), neweditor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=true, admin_auto_approve=true);"
+                            {% if config.get("policies.admin_changes_must_be_requests", False) %}onClick="policyEditor.submitPolicyForReview('InlinePolicy', $('#newpolicy_name').val(), neweditor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=true, admin_auto_approve=true);"
                             {% else %}onClick="policyEditor.editPolicy('InlinePolicy', $('#newpolicy_name').val(), neweditor, is_new=true);"
                             {% end %}
                             style="margin: 10px;">Save new policy
@@ -374,7 +374,7 @@
             <div class="ui center floated">
                 <button class="ui primary button" type="save"
                         {% if read_only or not can_save_delete %}style="display: none;"{% end %}
-                        {% if config.get("policies.log_admin_requests", False) %}onClick="policyEditor.submitPolicyForReview('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }}, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=true);"
+                        {% if config.get("policies.admin_changes_must_be_requests", False) %}onClick="policyEditor.submitPolicyForReview('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }}, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=true);"
                         {% else %}onClick="policyEditor.editPolicy('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }});"
                         {% end %}
                         style="margin: 10px;">Save {{ policy.get("PolicyName") }}
@@ -449,7 +449,7 @@
         <div class="ui center floated">
             <button class="ui primary button" type="save"
                     {% if read_only or not can_save_delete %}style="display: none;"{% end %}
-                    {% if config.get("policies.log_admin_requests", False) %}onClick="policyEditor.submitPolicyForReview('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=true);"
+                    {% if config.get("policies.admin_changes_must_be_requests", False) %}onClick="policyEditor.submitPolicyForReview('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=true);"
                     {% else %}onClick="policyEditor.editPolicy('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor);"
                     {% end %}
                     style="margin: 10px;">Save Assume Role Policy
