@@ -115,7 +115,7 @@
             </tr>
             <tr>
                 <td>Title</td>
-                <td>{{ escape(requestor_info.get("customAttributes", {}).get("title")) }}</td>
+                <td>{{ escape(requestor_info.get("customAttributes", {}).get("title", "")) }}</td>
             </tr>
             <tr>
                 <td>Manager email</td>
@@ -153,7 +153,7 @@
             {% end %}
             <tr>
                 <td>User passed background check</td>
-                <td><span style="copendinglor: red;">{{ escape(requestor_info.get('customAttributes', dict()).get('bcStatusIndicator')) == "1" and escape(requestor_info.get('customAttributes', {}).get('backgroundCheckPackage')) != 'Driving and Aviation Package' }}</span>
+                <td><span style="copendinglor: red;">{{ escape(requestor_info.get('customAttributes', dict()).get('bcStatusIndicator', '')) == "1" and escape(requestor_info.get('customAttributes', {}).get('backgroundCheckPackage', '')) != 'Driving and Aviation Package' }}</span>
                 </td>
             </tr>
             <tr>

@@ -209,7 +209,7 @@ async def can_move_back_to_pending(request, groups):
         if request.get("last_updated", 0) < int(time.time()) - 86400:
             return False
         # Allow admins to return requests back to pending state
-        for g in config.get("groups.can_admin_policies"):
+        for g in config.get("groups.can_admin_policies", []):
             if g in groups:
                 return True
     return False
@@ -221,7 +221,7 @@ async def can_update_requests(request, user, groups):
 
     # Allow admins to return requests back to pending state
     if not can_update:
-        for g in config.get("groups.can_admin_policies"):
+        for g in config.get("groups.can_admin_policies", []):
             if g in groups:
                 return True
 
