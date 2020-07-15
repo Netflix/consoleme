@@ -520,6 +520,11 @@ class Aws:
         :param send_sns:
         :return:
         """
+        log_data: dict = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Function is not configured.",
+        }
+        log.warning(log_data)
         return
 
     @staticmethod
