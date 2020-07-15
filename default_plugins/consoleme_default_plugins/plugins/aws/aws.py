@@ -512,8 +512,20 @@ class Aws:
     async def sns_publish_policy_requests(self, request, request_uri):
         raise NotImplementedError()
 
-    async def send_communications_policy_change_request(self, request):
-        raise NotImplementedError()
+    async def send_communications_policy_change_request(self, request, send_sns=False):
+        """
+        Optionally send a notification when there's a new policy change request
+
+        :param request:
+        :param send_sns:
+        :return:
+        """
+        log_data: dict = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Function is not configured.",
+        }
+        log.warning(log_data)
+        return
 
     @staticmethod
     def get_account_ids_to_names():
