@@ -108,7 +108,7 @@ class RequestsTableConfigHandler(BaseHandler):
         self.write(
             {
                 "expandableRows": True,
-                "expandOnRowClicked": True,
+                "expandOnRowClicked": False,
                 "pagination": True,
                 "highlightOnHover": True,
                 "striped": True,
@@ -120,10 +120,15 @@ class RequestsTableConfigHandler(BaseHandler):
                 "wrap": True,
                 "desiredColumns": [
                     {"name": "Username", "selector": "username"},
-                    {"name": "Arn", "selector": "arn"},
+                    {"name": "Arn", "selector": "arn", },
                     {"name": "Request Time", "selector": "request_time"},
                     {"name": "Status", "selector": "status"},
-                    {"name": "Request ID", "selector": "request_id"},
+                    {"name": "Request ID", "selector": "request_id",
+                     "cell": {
+                         "type": "href",
+                         "href": "/policies/request/{row.request_id}",
+                         "name": "{row.request_id}"
+                     }},
                     {"name": "Policy Name", "selector": "policy_name"},
                     {"name": "Last Updated By", "selector": "updated_by"},
                 ],

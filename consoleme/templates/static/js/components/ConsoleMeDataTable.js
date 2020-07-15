@@ -64,6 +64,16 @@ class ConsoleMeDataTable extends Component {
 
   }
 
+  genCell(row, item) {
+    if (item.cell.type === 'href') {
+      let link = <a href={item.cell.href} target="_blank" rel="noopener noreferrer">{item.cell.name})</a>
+      row.forEach(function (item, index) {
+        link = link.replace(row.item, row.item)
+      };
+      return link
+    }
+  }
+
   genColumns () {
     const { tableConfig } = this.state
     let columns = []
@@ -72,15 +82,20 @@ class ConsoleMeDataTable extends Component {
       if (tableConfig.filterColumns) {
         name = <Input placeholder={'Search ' + item.name}></Input>
       }
-      columns.push(
-        {
-          name: name,
-          selector: item.selector,
-          sortable: tableConfig.sortable,
-          grow: tableConfig.grow,
-          wrap: tableConfig.wrap
-        }
-      )
+      let column = {
+        name: name,
+        selector: item.selector,
+        sortable: tableConfig.sortable,
+        grow: tableConfig.grow,
+        wrap: tableConfig.wrap
+      }
+
+      if (item.cell) {
+        // We're evaling the Cell configuration provided by ConsoleMe, and not untrusted user input.
+        column.cell = row => this.generateCell(row, item)
+      }
+
+      columns.push(column)
     })
     return columns
   }

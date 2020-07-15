@@ -57,7 +57,7 @@ def parallel_write_table(table, data, overwrite_by_pkeys=None):
                     batch.put_item(Item=item)
 
 
-def parallel_scan_table(table, total_threads=10):
+def parallel_scan_table(table, total_threads=10, loop=None):
     async def _scan_segment(segment, total_segments):
         response = table.scan(Segment=segment, TotalSegments=total_segments)
         items = response.get("Items", [])
@@ -71,8 +71,8 @@ def parallel_scan_table(table, total_threads=10):
             items.extend(response.get("Items", []))
 
         return items
-
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     tasks = []
     for i in range(total_threads):
         task = asyncio.ensure_future(_scan_segment(i, total_threads))
@@ -448,25 +448,28 @@ class UserDynamoHandler(BaseDynamoHandler):
         :param status:
         :return:
         """
-        response = await sync_to_async(self.policy_requests_table.scan)()
-        items = []
-
-        if response and "Items" in response:
-            items = self._data_from_dynamo_replace(response["Items"])
-
-        while "LastEvaluatedKey" in response:
-            response = await sync_to_async(self.policy_requests_table.scan)(
-                ExclusiveStartKey=response["LastEvaluatedKey"]
-            )
-            items.extend(self._data_from_dynamo_replace(response["Items"]))
-
-        return_value = []
-        if status:
-            for item in items:
-                if status and item["status"] == status:
-                    return_value.append(item)
-        else:
-            return_value = items
+        return_value = await sync_to_async(parallel_scan_table)(
+            self.policy_requests_table
+        )
+        # response = await sync_to_async(self.policy_requests_table.scan)()
+        # items = []
+        #
+        # if response and "Items" in response:
+        #     items = self._data_from_dynamo_replace(response["Items"])
+        #
+        # while "LastEvaluatedKey" in response:
+        #     response = await sync_to_async(self.policy_requests_table.scan)(
+        #         ExclusiveStartKey=response["LastEvaluatedKey"]
+        #     )
+        #     items.extend(self._data_from_dynamo_replace(response["Items"]))
+        #
+        # return_value = []
+        # if status:
+        #     for item in items:
+        #         if status and item["status"] == status:
+        #             return_value.append(item)
+        # else:
+        #     return_value = items
 
         return return_value
 
