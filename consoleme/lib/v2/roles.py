@@ -35,7 +35,7 @@ async def get_cloudtrail_details_for_role(arn: str):
     :param arn:
     :return:
     """
-    error_url = config.get("cloudtrail_errors.error_messages_by_role_uri").format(
+    error_url = config.get("cloudtrail_errors.error_messages_by_role_uri", "").format(
         arn=arn
     )
 

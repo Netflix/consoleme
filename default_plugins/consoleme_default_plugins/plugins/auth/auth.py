@@ -234,7 +234,22 @@ class Auth:
         return user
 
     async def get_user_info(self, user: str, object: bool = False):
-        raise NotImplementedError()
+        """
+        Retrieve details about a user from an authorative source
+        :param user:
+        :param object:
+        :return:
+        """
+        return {
+            "domain": "example.com",
+            "userName": user,
+            "name": {
+                "givenName": "First",
+                "familyName": "Last",
+                "fullName": "First Last",
+            },
+            "primaryEmail": "user@example.com",
+        }
 
     async def get_group_info(self, group, members=True):
         raise NotImplementedError()

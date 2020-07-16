@@ -6,10 +6,15 @@ api_auth:
 auth_cookie_name: consoleme_auth
 application_admin: consoleme_admins@example.com
 application_name: consoleme
+
+# We support account aliases, which is why the mapping of account names below is a list
 account_ids_to_name:
-  123456789012: default_account
-  123456789013: prod
-  123456789014: test
+  123456789012:
+    - default_account
+  123456789013:
+    - prod
+  123456789014:
+    - test
 
 auth:
   get_groups_by_header: true
@@ -18,6 +23,21 @@ auth:
   get_user_by_saml: false
   groups_header_name: group_header
   user_header_name: user_header
+
+# You'll probably want to override FUNCTION to generate this data with your own business logic.
+application_settings:
+  application_1:
+    owner: groupa@example.com
+    owner_url: https://www.example.com/groupa@example.com
+    app_url: https://www.example.com/ci_cd_pipeline/application_1
+    roles:
+      - arn:aws:iam::123456789012:role/application_1InstanceProfile
+      - arn:aws:iam::123456789013:role/application_1InstanceProfile
+  application_2:
+    owner: groupa@example.com
+    roles:
+      - arn:aws:iam::123456789012:role/application_2InstanceProfile
+
 
 aws:
   console_url: 'https://{}.console.aws.amazon.com'
@@ -67,6 +87,8 @@ dynamic_config:
 groups:
   can_edit_config:
     - configeditors@example.com
+  can_admin_policies:
+    - consoleme_admins@example.com
 
 jwt:
   groups_key: groups
@@ -179,6 +201,10 @@ aws_config_cache:
     bucket: consoleme_bucket
     file: aws_config_cache/cache_{account_id}_v1.json
 
+
+swag:
+  redis_id_name_key: ACCOUNT_ID_TO_NAME_MAPPING
+
 #policies:
 #  role_name: ConsoleMeRole
 
@@ -197,6 +223,9 @@ aws_config_cache:
 
 # Note: Do not put anything sensitive in the self_service_iam key. This may be exposed to the frontend UI
 self_service_iam:
+  custom_header_message: |-
+    Welcome to the new and improved IAM Self-Service Wizard beta!
+    Please click [here](/self_service_v1) if you need to access the older version.
   permissions_map:
     s3:
       text: S3 Bucket
@@ -235,7 +264,6 @@ self_service_iam:
             - s3:PutObjectVersionTagging
             - s3:ListMultipartUploadParts*
             - s3:AbortMultipartUpload
-            - s3:RestoreObject
         - name: delete
           text: Delete
           permissions:
@@ -253,22 +281,18 @@ self_service_iam:
           required: true
           typeahead_endpoint: /policies/typeahead?resource=sqs&search={query}
       action_map:
-        - name: get_queue_attributes
-          text: Get Queue Attributes
+        - name: send_messages
+          text: Send Message (Queue Producer)
           permissions:
             - sqs:GetQueueAttributes
             - sqs:GetQueueUrl
-        - name: send_messages
-          text: Send Message
-          permissions:
             - sqs:SendMessage
         - name: receive_messages
-          text: Receive Message
+          text: Receive/Delete Messages (Queue Consumer)
           permissions:
+            - sqs:GetQueueAttributes
+            - sqs:GetQueueUrl
             - sqs:ReceiveMessage
-        - name: delete_messages
-          text: Delete Message
-          permissions:
             - sqs:DeleteMessage
         - name: set_queue_attributes
           text: Set Queue Attributes
@@ -336,6 +360,10 @@ self_service_iam:
             - ec2:detachvolume
             - ec2:reportinstancestatus
             - ec2:resetsnapshotattribute
+        - name: ipv6
+          text: Enable IPv6
+          permissions:
+            - ec2:AssignIpv6Addresses
     route53:
       text: Route53
       description: ""
@@ -360,7 +388,7 @@ self_service_iam:
       inputs:
         - name: resource_arn
           type: typeahead_input
-          text: Role ARN yhat you wish to assume
+          text: Role ARN that you wish to assume
           required: true
           typeahead_endpoint: /policies/typeahead?resource=iam_arn&search={query}
       action_map:
@@ -371,14 +399,15 @@ self_service_iam:
     crud_lookup:
       text: Other
       description: |-
-        Define the service (ssm, rds, route53, etc), the resource (An ARN or a wildcard), and the list of actions
+        Define the service (rds, route53, rekognition, etc), the resource (An ARN or a wildcard), and the list of actions
         (List, Read, Write, Permissions Management, Tagging) that you need access to. If you know the specific IAM
         permissions you need, use "Advanced Mode" from the dropdown instead.
       inputs:
-        - name: service
-          type: text_input
-          text: Service (s3, sqs, sns, ssm, etc)
+        - name: service_name
+          type: typeahead_input
+          text: Service (s3, sqs, sns, rekognition, etc)
           required: true
+          typeahead_endpoint: /api/v1/policyuniverse/autocomplete/?only_filter_services=true&prefix={query}
         - name: resource_arn
           type: text_input
           text: Resource ARN or Wildcard (*)
@@ -397,7 +426,7 @@ self_service_iam:
           text: Write
           permissions:
             - Write
-        - name: permissions_management
+        - name: permissions-management
           text: Permissions Management
           permissions:
             - Permissions management

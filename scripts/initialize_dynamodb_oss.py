@@ -57,19 +57,6 @@ except ClientError as e:
         )
     )
 
-try:
-    ddb.create_table(
-        TableName="consoleme_policies_global",
-        KeySchema=[{"AttributeName": "account_id", "KeyType": "HASH"}],  # Partition key
-        AttributeDefinitions=[{"AttributeName": "account_id", "AttributeType": "N"}],
-        ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
-    )
-except ClientError as e:
-    print(
-        "Unable to create table consoleme_policies_global. Most likely it already exists and you can ignore this message. Error: {}".format(
-            e
-        )
-    )
 
 try:
     ddb.create_table(

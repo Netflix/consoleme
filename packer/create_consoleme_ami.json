@@ -42,7 +42,7 @@
     },
     {
       "inline": [
-        "tar -xf {{user `app_archive`}} -C /apps/consoleme/",
+        "tar -xzf {{user `app_archive`}} -C /apps/consoleme/",
         "sudo cp -R /apps/consoleme/packer/root/* /",
         "rm {{user `app_archive`}}"
       ],
@@ -51,7 +51,7 @@
     {
       "inline": [
         "sudo apt update",
-        "sudo apt install -y python3-pip virtualenv libcurl4-openssl-dev libssl-dev pkg-config libxmlsec1-dev docker.io",
+        "sudo apt install -y python3-pip python3-venv virtualenv libcurl4-openssl-dev libssl-dev pkg-config libxmlsec1-dev docker.io make",
         "sudo systemctl start docker",
         "sudo systemctl enable docker",
         "sudo usermod -aG docker $USER",
@@ -62,7 +62,8 @@
     {
       "inline": [
         "cd /apps/consoleme",
-        "sudo apt install make",
+        "python3 -m venv env",
+        ". env/bin/activate",
         "make packer_ubuntu_oss"
       ],
       "type": "shell"
