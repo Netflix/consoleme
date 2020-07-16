@@ -37,8 +37,9 @@ role credential outside of the account. (This is used as a general credential th
 
 ## Quick Start
 
-Docker-Compose is the quickest way to get ConsoleMe up and running for testing purposes. The Dockerfile is a great
-point of reference for the installation process.
+Docker-Compose is the quickest way to get ConsoleMe up and running locally for testing purposes. The Dockerfile is a
+great point of reference for the installation process. If you are going to deploy ConsoleMe in a production environment,
+we highly recommend deploying it to an isolated, locked-down AWS account.
 
 ```docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up```
 

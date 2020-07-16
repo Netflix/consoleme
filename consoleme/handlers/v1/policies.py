@@ -376,6 +376,24 @@ class PolicyEditHandler(BaseHandler):
 
         events = result["events"]
 
+        if config.get("policies.admin_changes_must_be_requests", False):
+            # For now, we only support admin policy requests for certain actions, those actions must go through
+            # the policy request flow:
+            # 1. Inline policy changes (non-delete)
+            # 2. All AssumeRolePolicy changes
+            for event in events:
+                for inline_policy_event in event["inline_policies"]:
+                    if inline_policy_event["action"] != "detach":
+                        await write_json_error(
+                            "Admin requests must be made as policy requests", obj=self
+                        )
+                        return
+                if "assume_role_policy_document" in event:
+                    await write_json_error(
+                        "Admin requests must be made as policy requests", obj=self
+                    )
+                    return
+
         result = await update_role_policy(events)
 
         if result["status"] == "success":
