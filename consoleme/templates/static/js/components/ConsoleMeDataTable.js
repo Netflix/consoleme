@@ -55,32 +55,73 @@ class ConsoleMeDataTable extends Component {
         dataEndpoint: '',
         desiredColumns: []
       },
-      filter: [],
+      filters: {},
       columns: []
     }
   }
 
-  filterTable () {
+  generateCell (row, item) {
+    if (item.cell.type === 'href') {
+      let href = item.cell.href
+      let name = item.cell.name
+      const hrefReplacements = href.match(/\{(.*)\}/)
+      const nameReplacements = name.match(/\{(.*)\}/)
+      hrefReplacements.forEach(function (item, index) {
+        try {
+          const matches = href.matchAll(/\{(.*?)\}/g)
+          for (const match of matches) {
+            href = href.replace(match[0], eval(match[1]))
+          }
+        } catch (e) {
+        }
+      })
 
+      nameReplacements.forEach(function (item, index) {
+        try {
+          const matches = name.matchAll(/\{(.*?)\}/g)
+          for (const match of matches) {
+            name = name.replace(match[0], eval(match[1]))
+          }
+        } catch (e) {
+        }
+      })
+
+      return <a href={href} target="_blank" rel="noopener noreferrer">{name})</a>
+    }
   }
 
-  genCell(row, item) {
-    if (item.cell.type === 'href') {
-      let link = <a href={item.cell.href} target="_blank" rel="noopener noreferrer">{item.cell.name})</a>
-      row.forEach(function (item, index) {
-        link = link.replace(row.item, row.item)
-      };
-      return link
-    }
+  filterColumn (event) {
+    const target = event.target
+    const name = target.name
+    let filters = this.state.filters
+    filters[name] = target.value
+    this.setState({ filters: filters })
+  }
+
+  filterTable (rows) {
+    let filters = this.state.filters
+    console.log(filters)
+    const columns = rows[0] && Object.keys(rows[0])
+    return rows.filter(
+      (row) => columns.some(column => row[column] && row[column].toString().toLowerCase().indexOf(this.state.q.toLowerCase()) > -1)
+    )
   }
 
   genColumns () {
     const { tableConfig } = this.state
     let columns = []
+    let filters = this.state.filters
     tableConfig.desiredColumns.forEach(function (item, index) {
       let name = item.name
       if (tableConfig.filterColumns) {
-        name = <Input placeholder={'Search ' + item.name}></Input>
+        // name = <Input name={item.name} onChange={this.filterColumn.bind(this)} placeholder={'Search ' + item.name}></Input>
+        name = <Input name={item.name}
+          ref = {item.name}
+          placeholder={'Search ' + item.name}
+          onChange={this.filterColumn.bind(this)}
+          value={'' || filters[item.name]}
+        >
+        </Input>
       }
       let column = {
         name: name,
@@ -96,7 +137,7 @@ class ConsoleMeDataTable extends Component {
       }
 
       columns.push(column)
-    })
+    }.bind(this))
     return columns
   }
 
@@ -115,13 +156,6 @@ class ConsoleMeDataTable extends Component {
     this.setState({ loading: false })
   }
 
-  filter (rows) {
-    const columns = rows[0] && Object.keys(rows[0])
-    return rows.filter(
-      (row) => columns.some(column => row[column] && row[column].toString().toLowerCase().indexOf(this.state.q.toLowerCase()) > -1)
-    )
-  }
-
   render () {
     const { loading, data, tableConfig } = this.state
     const columns = this.genColumns()
@@ -130,7 +164,7 @@ class ConsoleMeDataTable extends Component {
         <DataTable
           title={tableConfig.tableName}
           columns={columns}
-          data={this.filter(data)}
+          data={this.filterTable(data)}
           progressPending={loading}
           expandableRows={tableConfig.expandableRows}
           expandOnRowClicked={tableConfig.expandOnRowClicked}
