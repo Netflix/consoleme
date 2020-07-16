@@ -22,7 +22,7 @@ endif
 # Set CONSOLEME_CONFIG_ENTRYPOINT make variable to CONSOLEME_CONFIG_ENTRYPOINT env variable, or "default_config"
 CONSOLEME_CONFIG_ENTRYPOINT := $(or ${CONSOLEME_CONFIG_ENTRYPOINT},${CONSOLEME_CONFIG_ENTRYPOINT},default_config)
 
-prod_install:
+.PHONY: env_install
 env_install: env/bin/activate
 	# Activate either the virtualenv in env/ or tell conda to activate
 	. env/bin/activate || source activate consoleme;\
@@ -125,13 +125,15 @@ endif
 	pip install -r requirements-docs.txt
 	@echo "--> Done installing new dependencies"
 
-.PHONY: tar
-tar:
+consoleme.tar.gz:
 	# Tar contents of the current directory
-	tar --exclude='env*' --exclude='venv*' --exclude='node_modules*' --exclude='debian*' --exclude='staging*' -czvf /tmp/consoleme.tar.gz .
+	tar --exclude='consoleme.tar.gz' --exclude='build*' --exclude='env*' --exclude='venv*' --exclude='node_modules*' --exclude='debian*' --exclude='staging*' -czf consoleme.tar.gz .
 
 .PHONY: create_ami
-create_ami:
+create_ami: consoleme.tar.gz packer clean
+
+.PHONY: packer
+packer:
 ifdef CONFIG_LOCATION
 	@echo "--> Using configuration at $(CONFIG_LOCATION)"
 	export CONFIG_LOCATION=$(CONFIG_LOCATION)
@@ -140,11 +142,8 @@ ifdef CONSOLEME_CONFIG_ENTRYPOINT
 	@echo "--> Using configuration entrypoint at at $(CONSOLEME_CONFIG_ENTRYPOINT)"
 	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT)
 endif
-	make tar
 	# Call Packer to build AMI
-	packer build -var 'app_archive=/tmp/consoleme.tar.gz' packer/create_consoleme_ami.json
-	# Remove Temporary Tar file
-	rm /tmp/consoleme.tar.gz
+	packer build --debug -var 'app_archive=consoleme.tar.gz' packer/create_consoleme_ami.json
 
 .PHONY: packer_ubuntu_oss
 packer_ubuntu_oss: ubuntu_redis env_install default_plugins
