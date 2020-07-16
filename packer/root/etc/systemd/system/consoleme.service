@@ -6,7 +6,7 @@ StartLimitBurst=5
 StartLimitIntervalSec=0
 
 [Service]
-Environment=CONFIG_LOCATION=/apps/consoleme/docker/example_config_alb_auth.yaml
+Environment=CONFIG_LOCATION=/apps/consoleme/example_config/example_config_alb_auth.yaml
 Type=simple
 Restart=always
 RestartSec=1
