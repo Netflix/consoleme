@@ -458,7 +458,9 @@ components:
             reviewer:
               type: string
             comments:
-              $ref: '#/components/schemas/CommentModel'
+              type: array
+              items:
+                $ref: '#/components/schemas/CommentModel'
     ChangeGeneratorModelArray:
       type: object
       required:
@@ -667,6 +669,7 @@ components:
         - principal_arn
         - change_type
         - resources
+        - status
       properties:
         principal_arn:
           type: string
@@ -684,6 +687,11 @@ components:
         version:
           type: string
           default: 2.0
+        status:
+          type: string
+          enum:
+            - applied
+            - not_applied
     InlinePolicyChangeModel:
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
@@ -736,14 +744,19 @@ components:
                 - attach
                 - detach
     ChangeModelArray:
-      type: array
-      items:
-        anyOf:
-          - $ref: '#/components/schemas/InlinePolicyChangeModel'
-          - $ref: '#/components/schemas/ManagedPolicyChangeModel'
-          - $ref: '#/components/schemas/ResourcePolicyChangeModel'
-        discriminator:
-          propertyName: change_model
+      type: object
+      required:
+        - changes
+      properties:
+        changes:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/InlinePolicyChangeModel'
+              - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+              - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+            discriminator:
+              propertyName: change_model
     ArnArray:
       type: array
       items:
@@ -1058,3 +1071,14 @@ components:
         instance_profile:
           type: boolean
           default: True
+    RequestCreationModel:
+      type: object
+      required:
+        - changes
+        - justification
+      properties:
+        changes:
+          $ref: '#/components/schemas/ChangeModelArray'
+        justification:
+          type: string
+

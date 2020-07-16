@@ -60,8 +60,8 @@ class SelfServiceStep3 extends Component {
             });
         }
 
-        if (response.length > 0) {
-            const statement = JSON.stringify(response[0]["policy"]["policy_document"], null, 4);
+        if ("changes" in response && response["changes"].length > 0) {
+            const statement = JSON.stringify(response["changes"][0]["policy"]["policy_document"], null, 4);
             return this.setState({
                 custom_statement: statement,
                 isError: false,

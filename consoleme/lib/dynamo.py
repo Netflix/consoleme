@@ -29,6 +29,7 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
+from consoleme.models import ExtendedRequestModel
 
 DYNAMO_EMPTY_STRING = "---DYNAMO-EMPTY-STRING---"
 
@@ -390,6 +391,36 @@ class UserDynamoHandler(BaseDynamoHandler):
             "cross_account_request": cross_account_request,
         }
 
+        try:
+            await sync_to_async(self.policy_requests_table.put_item)(
+                Item=self._data_to_dynamo_replace(new_request)
+            )
+        except Exception:
+            error = f"Unable to add new policy request: {new_request}"
+            log.error(error, exc_info=True)
+            raise Exception(error)
+
+        return new_request
+
+    async def write_policy_request_v2(self, extended_request: ExtendedRequestModel):
+        """
+                    Writes a policy request v2 to the appropriate DynamoDB table
+                    Sample run:
+                    write_policy_request_v2(request)
+        """
+        new_request = {
+            "request_id": extended_request.id,
+            "arn": extended_request.arn,
+            "status": extended_request.status,
+            "justification": extended_request.justification,
+            "request_time": extended_request.timestamp,
+            "updated_by": extended_request.requester_info.email,
+            "last_updated": int(time.time()),
+            "username": extended_request.requester_info.email,
+            "policy_changes": json.dumps(extended_request.changes),
+            "comments": json.dumps(extended_request.comments),
+            "version": "2",
+        }
         try:
             await sync_to_async(self.policy_requests_table.put_item)(
                 Item=self._data_to_dynamo_replace(new_request)
