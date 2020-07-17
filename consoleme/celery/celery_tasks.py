@@ -54,7 +54,7 @@ from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
-from consoleme.lib.requests import get_request_review_url
+from consoleme.lib.requests import cache_all_policy_requests, get_request_review_url
 from consoleme.lib.s3_helpers import put_object
 from consoleme.lib.ses import send_group_modification_notification
 from consoleme.lib.timeout import Timeout
@@ -1337,6 +1337,30 @@ def get_iam_role_limit() -> dict:
     return log_data
 
 
+@app.task(soft_time_limit=300)
+def cache_policy_requests() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    s3_bucket = None
+    s3_key = None
+    redis_key = config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS")
+    if config.region == config.get("celery.active_region") or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("cache_policy_requests.s3.bucket")
+        s3_key = config.get("cache_policy_requests.s3.file")
+    requests = async_to_sync(cache_all_policy_requests)(
+        redis_key=redis_key, s3_bucket=s3_bucket, s3_key=s3_key
+    )
+
+    log_data = {
+        "function": function,
+        "num_requests": len(requests),
+        "message": "Successfully cached requests",
+    }
+
+    return log_data
+
+
 schedule_30_minute = timedelta(seconds=1800)
 schedule_45_minute = timedelta(seconds=2700)
 schedule_6_hours = timedelta(hours=6)
@@ -1424,6 +1448,11 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.cache_resources_from_aws_config_across_accounts",
         "options": {"expires": 300},
         "schedule": schedule_6_hours,
+    },
+    "cache_policy_requests": {
+        "task": "consoleme.celery.celery_tasks.cache_policy_requests",
+        "options": {"expires": 1000},
+        "schedule": schedule_1_hour,
     },
 }
 

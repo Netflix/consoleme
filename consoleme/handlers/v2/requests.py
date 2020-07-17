@@ -2,55 +2,64 @@ import ujson as json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
+from consoleme.lib.generic import filter_table
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.requests import get_all_policy_requests
+from consoleme.lib.timeout import Timeout
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
 
 class RequestsHandler(BaseAPIV2Handler):
-    """Handler for /api/v2/requests
+    """Handler for /api/v2/requests_table
 
-    Allows read access to a list of requests. Returned requests are
-    limited to what the requesting user has access to.
+    Api endpoint to list and filter policy requests.
     """
 
-    allowed_methods = ["GET", "POST"]
-
-    async def get(self):
-        """
-        GET /api/v2/requests
-        """
-        tags = {"user": self.user}
-        stats.count("RequestsHandler.get", tags=tags)
-        log_data = {
-            "function": "RequestsHandler.get",
-            "user": self.user,
-            "message": "Writing all available requests",
-            "user-agent": self.request.headers.get("User-Agent"),
-            "request_id": self.request_uuid,
-        }
-        log.debug(log_data)
-        # TODO (ccastrapel): cache this in Redis?
-        requests = await get_all_policy_requests(self.user)
-        self.write(json.dumps(requests))
+    allowed_methods = ["POST"]
 
     async def post(self):
         """
         POST /api/v2/requests
         """
+        cache_key = config.get(
+            "cache_all_policy_requests.redis_key", "ALL_POLICY_REQUESTS"
+        )
+        s3_bucket = config.get("cache_policy_requests.s3.bucket")
+        s3_key = config.get("cache_policy_requests.s3.file")
+        arguments = json.loads(self.request.body)
+        filters = arguments.get("filters")
+        limit = arguments.get("limit", 1000)
         tags = {"user": self.user}
         stats.count("RequestsHandler.post", tags=tags)
         log_data = {
             "function": "RequestsHandler.post",
             "user": self.user,
-            "message": "Creating request",
+            "message": "Writing all available requests",
+            "limit": limit,
+            "filters": filters,
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
         }
         log.debug(log_data)
-        self.write_error(501, message="Create request")
+        requests = await retrieve_json_data_from_redis_or_s3(
+            cache_key, s3_bucket=s3_bucket, s3_key=s3_key
+        )
+        if filters:
+            try:
+                with Timeout(seconds=5):
+                    for filter_key, filter_value in filters.items():
+                        requests = await filter_table(
+                            filter_key, filter_value, requests
+                        )
+            except TimeoutError:
+                self.write("Query took too long to run. Check your filter.")
+                await self.finish()
+                raise
+
+        self.write(json.dumps(requests[0:limit]))
+        return
 
 
 class RequestDetailHandler(BaseAPIV2Handler):
@@ -105,35 +114,46 @@ class RequestsTableConfigHandler(BaseHandler):
                 200:
                     description: Returns Requests Table Configuration
         """
-        self.write(
-            {
-                "expandableRows": True,
-                "expandOnRowClicked": False,
-                "pagination": True,
-                "highlightOnHover": True,
-                "striped": True,
-                "subHeader": True,
-                "filterColumns": True,
-                "tableName": "Requests",
-                "dataEndpoint": "/api/v2/requests",
-                "grow": 3,
-                "wrap": True,
-                "desiredColumns": [
-                    {"name": "Username", "selector": "username"},
-                    {"name": "Arn", "selector": "arn", },
-                    {"name": "Request Time", "selector": "request_time"},
-                    {"name": "Status", "selector": "status"},
-                    {"name": "Request ID", "selector": "request_id",
-                     "cell": {
-                         "type": "href",
-                         "href": "/policies/request/{row.request_id}",
-                         "name": "{row.request_id}"
-                     }},
-                    {"name": "Policy Name", "selector": "policy_name"},
-                    {"name": "Last Updated By", "selector": "updated_by"},
-                ],
-            }
+        default_configuration = {
+            "expandableRows": True,
+            "expandOnRowClicked": False,
+            "pagination": True,
+            "highlightOnHover": True,
+            "striped": True,
+            "subHeader": True,
+            "filterColumns": True,
+            "tableName": "Requests",
+            "dataEndpoint": "/api/v2/requests",
+            "grow": 3,
+            "totalRows": 1000,
+            "wrap": True,
+            "keyField": "request_id",
+            "className": "ConsoleMeDataTable",
+            "serverSideFiltering": True,
+            "desiredColumns": [
+                {"name": "Username", "selector": "username"},
+                {"name": "Arn", "selector": "arn"},
+                {"name": "Request Time", "selector": "request_time"},
+                {"name": "Status", "selector": "status"},
+                {
+                    "name": "Request ID",
+                    "selector": "request_id",
+                    "cell": {
+                        "type": "href",
+                        "href": "/policies/request/{row.request_id}",
+                        "name": "{row.request_id}",
+                    },
+                },
+                {"name": "Policy Name", "selector": "policy_name"},
+                {"name": "Last Updated By", "selector": "updated_by"},
+            ],
+        }
+
+        table_configuration = config.get(
+            "RequestsTableConfigHandler.configuration", default_configuration
         )
+
+        self.write(table_configuration)
 
 
 class RequestsWebHandler(BaseHandler):

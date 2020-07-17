@@ -185,3 +185,23 @@ async def get_random_security_logo():
 async def generate_random_string(string_length=4):
     letters = string.ascii_lowercase
     return "".join(random.choice(letters) for i in range(string_length))  # nosec
+
+
+async def filter_table(filter_key, filter_value, data):
+    if not (filter_key and filter_value):
+        # Filter parameters are incorrect. Don't filter
+        return data
+    try:
+        regexp = re.compile(r"{}".format(str(filter_value).strip()), re.IGNORECASE)
+    except:  # noqa
+        # Regex is incorrect. Don't filter
+        return data
+    results = []
+    for d in data:
+        try:
+            if regexp.search(str(d.get(filter_key))):
+                results.append(d)
+        except re.error:
+            # Regex error. Return no results
+            pass
+    return results
