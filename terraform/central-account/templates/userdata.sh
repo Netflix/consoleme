@@ -31,11 +31,12 @@ sudo amazon-linux-extras install -y docker
 sudo service docker start
 sudo usermod -a -G docker ec2-user
 
-mkdir -p /apps/
+mkdir -p /apps/consoleme
+mkdir /logs
 cd /apps/
 yum -y install unzip
 aws s3 cp s3://${bucket}/consoleme.tar.gz /apps/
-tar -xzvf consoleme.tar.gz
+tar -xzvf consoleme.tar.gz -C consoleme/
 rm consoleme.tar.gz
 
 #### User specific installation
@@ -57,6 +58,7 @@ pip install flower redis
 python3 -m venv /apps/consoleme/env
 source /apps/consoleme/env/bin/activate
 chown -R consoleme:consoleme /apps/consoleme
+chown -R consoleme:consoleme /logs
 # Install it
 cd /apps/consoleme
 pip install xmlsec
@@ -101,7 +103,7 @@ StartLimitIntervalSec=0
 
 [Service]
 #Environment=CONFIG_LOCATION=/apps/consoleme/docker/example_config_alb_auth.yaml
-Environment=CONFIG_LOCATION=/apps/consoleme/example_config/example_config_development.yaml
+Environment=CONFIG_LOCATION=/apps/consoleme/example_config/example_config_terraform.yaml
 WorkingDirectory=/apps/consoleme
 Type=simple
 Restart=always
@@ -127,27 +129,15 @@ Type=simple
 Restart=always
 RestartSec=1
 WorkingDirectory=/apps/consoleme
-Environment=CONFIG_LOCATION=/apps/consoleme/example_config/example_config_development.yaml
+Environment=CONFIG_LOCATION=/apps/consoleme/example_config/example_config_terraform.yaml
 ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG -B
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# TODO: Remove this hacky way of removing the fake account IDs... instead, stash the rendered template config in an S3 bucket and pull it from userdata
-# Remove default account IDs to name for this tutorial
-sed -i '/123456789013: prod/d' /apps/consoleme/example_config/example_config_base.yaml
-sed -i '/123456789012: default_account/d' /apps/consoleme/example_config/example_config_base.yaml
-sed -i '/123456789014: test/d' /apps/consoleme/example_config/example_config_base.yaml
-grep -rl '123456789012' /apps/consoleme/example_config/ | xargs sed -i "s/123456789012/${current_account_id}/g"
-
-# Add legit account ID to the config for this tutorial:
-echo "account_ids_to_name:" >> /apps/consoleme/example_config/example_config_base.yaml
-echo "" >> /apps/consoleme/example_config/example_config_base.yaml
-echo "  ${current_account_id}: default_account" >> /apps/consoleme/example_config/example_config_base.yaml
-
-# Remove the dynamodb config
-sed -i '/dynamodb_server: http:\/\/localhost:8005/d' /apps/consoleme/example_config/example_config_development.yaml
+# TODO: Remove this hacky way of removing the fake account ID... instead, stash the rendered template config in an S3 bucket and pull it from userdata
+grep -rl '123456789012' /apps/consoleme/example_config/example_config_terraform.yaml | xargs sed -i "s/123456789012/${current_account_id}/g"
 
 # Change permissions on service file
 chown root:root /etc/systemd/system/celery.service

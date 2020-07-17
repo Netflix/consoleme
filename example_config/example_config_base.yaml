@@ -176,6 +176,7 @@ logging_levels:
   spectator.Registry: WARNING
   urllib3: ERROR
 
+
 # Warning: Tracing has performance implications. We recommend against 100% sample_rate in a production environment.
 # Enabling tracing in development will also override your ability to debug in your IDE. If you're
 # running in docker, be sure to start Zipkin at the same time as your other containers

@@ -1,0 +1,18 @@
+extends:
+  - example_config_base.yaml
+
+tornado:
+  debug: true
+  port: 8081
+  xsrf: true
+  uvloop: false
+
+logging:
+  stdout_enabled: true
+  format: '%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s'
+  level: debug
+  file: /logs/consoleme/consoleme_tornado.log
+
+account_ids_to_name:
+  123456789012:
+    - default_account
