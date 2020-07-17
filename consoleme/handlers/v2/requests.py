@@ -14,36 +14,17 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
 
-class RequestsHandler(BaseAPIV2Handler):
-    """Handler for /api/v2/requests
+class RequestHandler(BaseAPIV2Handler):
+    """Handler for /api/v2/request
 
-    Allows read access to a list of requests. Returned requests are
-    limited to what the requesting user has access to.
+        Allows for creation of a request.
     """
 
-    allowed_methods = ["GET", "POST"]
-
-    async def get(self):
-        """
-        GET /api/v2/requests
-        """
-        tags = {
-            "user": self.user,
-        }
-        stats.count("RequestsHandler.get", tags=tags)
-        log_data = {
-            "function": "RequestsHandler.get",
-            "user": self.user,
-            "message": "Writing all available requests",
-            "user-agent": self.request.headers.get("User-Agent"),
-            "request_id": self.request_uuid,
-        }
-        log.debug(log_data)
-        self.write_error(501, message="Get requests")
+    allowed_methods = ["POST"]
 
     async def post(self):
         """
-        POST /api/v2/requests
+        POST /api/v2/request
 
         Request example JSON: (Request Schema is RequestCreationModel in models.py)
 
@@ -171,7 +152,52 @@ class RequestsHandler(BaseAPIV2Handler):
         # TODO: auto-approval probes
         # TODO: admin self-approval stuff
         # TODO: update dynamo request based on auto-approval (if required)
-        # self.write(extended_request.json())
+        self.write(extended_request.json())
+
+
+class RequestsHandler(BaseAPIV2Handler):
+    """Handler for /api/v2/requests
+
+    Allows read access to a list of requests. Returned requests are
+    limited to what the requesting user has access to.
+    """
+
+    allowed_methods = ["GET", "POST"]
+
+    async def get(self):
+        """
+        GET /api/v2/requests
+        """
+        tags = {
+            "user": self.user,
+        }
+        stats.count("RequestsHandler.get", tags=tags)
+        log_data = {
+            "function": "RequestsHandler.get",
+            "user": self.user,
+            "message": "Writing all available requests",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+        log.debug(log_data)
+        self.write_error(501, message="Get requests")
+
+    async def post(self):
+        """
+        POST /api/v2/requests
+        """
+        tags = {
+            "user": self.user,
+        }
+        stats.count("RequestsHandler.post", tags=tags)
+        log_data = {
+            "function": "RequestsHandler.post",
+            "user": self.user,
+            "message": "Creating request",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+        log.debug(log_data)
         self.write_error(501, message="Create request")
 
 

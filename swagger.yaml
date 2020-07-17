@@ -21,6 +21,24 @@ tags:
   - name: privileged
     description: Endpoints requiring elevated permissions
 paths:
+  /request:
+    post:
+      summary: submit a new request
+      tags:
+        - requests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestCreationModel'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRequestModel'
   /requests:
     get:
       summary: get a list of requests
@@ -35,23 +53,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RequestModel'
-    post:
-      summary: submit a new request
-      tags:
-        - requests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ExtendedRequestModel'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExtendedRequestModel'
   /requests/{request_id}:
     get:
       summary: get details about a request

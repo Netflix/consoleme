@@ -25,6 +25,11 @@ class TestRequestsHandler(AsyncHTTPTestCase):
         self.assertDictEqual(json.loads(response.body), expected)
 
     def test_post(self):
+        expected = {
+            "status": 501,
+            "title": "Not Implemented",
+            "message": "Create request",
+        }
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -32,9 +37,8 @@ class TestRequestsHandler(AsyncHTTPTestCase):
         response = self.fetch(
             "/api/v2/requests", method="POST", headers=headers, body="{}"
         )
-        # TODO: create unit tests
-        self.assertEqual(response.code, 400)
-        self.assertIn("Error validating input", str(response.body))
+        self.assertEqual(response.code, 501)
+        self.assertDictEqual(json.loads(response.body), expected)
 
 
 class TestRequestDetailHandler(AsyncHTTPTestCase):
