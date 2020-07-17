@@ -417,9 +417,11 @@ class UserDynamoHandler(BaseDynamoHandler):
             "updated_by": extended_request.requester_info.email,
             "last_updated": int(time.time()),
             "approvers": json.dumps(extended_request.approvers),
-            "username": extended_request.requester_info.email,
-            "policy_changes": json.dumps(extended_request.changes),
-            "comments": json.dumps(extended_request.comments),
+            "username": extended_request.requester_email,
+            "policy_changes": extended_request.changes.json(),
+            "reviewer": extended_request.reviewer,
+            "comments": [comment.json() for comment in extended_request.comments],
+            "requester_info": extended_request.requester_info.json(),
             "version": "2",
         }
         try:

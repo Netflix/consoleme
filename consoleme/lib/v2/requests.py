@@ -51,7 +51,6 @@ async def generate_request_from_change_model_array(
 
     primary_principal_arn = None
     change_models = request_creation.changes
-    # TODO: fix swagger for front end self service
     if len(change_models.changes) < 1:
         log_data["message"] = "Atleast 1 change is required to create a request."
         log.error(log_data)
@@ -147,7 +146,7 @@ async def generate_request_from_change_model_array(
         timestamp=int(time.time()),
         justification=request_creation.justification,
         requester_email=user,
-        approvers=[],  # TODO: approvers logic
+        approvers=[],  # TODO: approvers logic (future feature)
         status="pending",
         changes=request_changes,
         requester_info=UserModel(email=user),

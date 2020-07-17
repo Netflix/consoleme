@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter, MustBeFte
 from consoleme.handlers.base import BaseAPIV2Handler
+from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.requests import generate_request_from_change_model_array
 from consoleme.models import RequestCreationModel
@@ -43,6 +44,79 @@ class RequestsHandler(BaseAPIV2Handler):
     async def post(self):
         """
         POST /api/v2/requests
+
+        Request example JSON: (Request Schema is RequestCreationModel in models.py)
+
+        {
+            "justification" : "Justification for making the request"
+            "changes" : [
+                    {
+                        "principal_arn": "arn:aws:iam::123456789012:role/aRole",
+                        "change_type": "inline_policy",
+                        "resources": [
+                            {
+                                "arn": "arn:aws:s3:::test",
+                                "name": "test",
+                                "account_id": "123456789012",
+                                "region": "global",
+                                "account_name": "",
+                                "policy_sha256": null,
+                                "policy": null,
+                                "owner": null,
+                                "approvers": null,
+                                "resource_type": "s3",
+                                "last_updated": null
+                            }
+                        ],
+                        "status": "not_applied",
+                        "version": 2.0,
+                        "policy_name": "cm_user_1592499820_gmli",
+                        "new": true,
+                        "policy": {
+                            "version": "2012-10-17",
+                            "statements": null,
+                            "policy_document": "{\"Version\":\"2012-10-17\",\"Statement\":[[{\"Action\"...",
+                            "policy_sha256": "cb300def8dd1deaf4db2bfeef4bc6fc740be18e8ccae74c399affe781f82ba6e"
+                        },
+                        "old_policy": null
+                    }
+            ],
+            "admin_auto_approve" : "false" #TODO
+        }
+
+        Response example JSON: (Response Schema is ExtendedRequestModel in models.py)
+
+        {
+            "id": "223dd7c3-5f50-42dd-ad44-40cb60c9bb6b",
+            "arn": "arn:aws:iam::123456789012:role/aRole",
+            "timestamp": "2020-07-17T16:43:47+00:00",
+            "justification": "Justification for making the request",
+            "requester_email": "user@example.com",
+            "approvers": [],
+            "status": "pending",
+            "changes": {
+                "changes": [ <Change array from input> ]
+            },
+            "requester_info": {
+                "email": "user@example.com",
+                "extended_info": null,
+                "details_url": null
+            },
+            "reviewer": null,
+            "comments": [
+                {
+                    "id": "123",
+                    "timestamp": "2020-07-17T16:43:47+00:00",
+                    "edited": null,
+                    "last_modified": null,
+                    "user_email": "user2@example.com",
+                    "user": null,
+                    "text": "test comment"
+                }
+            ]
+        }
+
+
         """
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
@@ -72,6 +146,12 @@ class RequestsHandler(BaseAPIV2Handler):
             )
             log_data["request"] = extended_request.json()
             log.debug(log_data)
+
+            dynamo = UserDynamoHandler(self.user)
+            request = await dynamo.write_policy_request_v2(extended_request)
+            log_data["message"] = "New request created in Dynamo"
+            log_data["request"] = request
+            log.debug(log_data)
         except (InvalidRequestParameter, ValidationError) as e:
             log_data["message"] = "Validation Exception"
             log.error(log_data, exc_info=True)
@@ -88,9 +168,9 @@ class RequestsHandler(BaseAPIV2Handler):
             self.write_error(500, message="Error parsing request: " + str(e))
             return
 
-        # TODO: put generated request in Dynamo
         # TODO: auto-approval probes
         # TODO: admin self-approval stuff
+        # TODO: update dynamo request based on auto-approval (if required)
         # self.write(extended_request.json())
         self.write_error(501, message="Create request")
 
