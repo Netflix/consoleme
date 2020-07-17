@@ -41,16 +41,21 @@ rm consoleme.tar.gz
 #### User specific installation
 # Create a dedicated service user
 useradd -r -s /bin/false consoleme
-#groupadd consoleme
-# Add users to the consoleme group
 usermod -aG consoleme consoleme
 usermod -aG docker consoleme
 
+# Flower
+useradd -r -s /bin/false flower
+usermod -aG flower flower
+mkdir -p /apps/flower
+chown -R flower:flower /apps/flower
+python3 -m venv /apps/flower/env --copies
+source /apps/flower/env/bin/activate
+pip install flower redis
+
 # Set up a new Virtualenv in the Consoleme directory
 python3 -m venv /apps/consoleme/env
-# Activate the virtualenv
 source /apps/consoleme/env/bin/activate
-# Make sure the consoleme user owns it, not root
 chown -R consoleme:consoleme /apps/consoleme
 # Install it
 cd /apps/consoleme
@@ -72,11 +77,13 @@ cd /apps/consoleme
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh > /tmp/nvm-install.sh
 chmod +x /tmp/nvm-install.sh
 bash /tmp/nvm-install.sh
+cd ~/
 source ~/.nvm/nvm.sh
 nvm install 12.18.2
 nvm use 12.18.2
 node -e "console.log('Running Node.js ' + process.version)"
 npm install yarn -g
+cd /apps/consoleme
 yarn
 yarn install
 /apps/consoleme/node_modules/webpack/bin/webpack.js --progress
@@ -127,17 +134,17 @@ ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/ce
 WantedBy=multi-user.target
 EOF
 
-
+# TODO: Remove this hacky way of removing the fake account IDs... instead, stash the rendered template config in an S3 bucket and pull it from userdata
 # Remove default account IDs to name for this tutorial
-sed '/123456789013: prod/d' /apps/consoleme/example_config/example_config_base.yaml
-sed '/123456789012: default_account/d' /apps/consoleme/example_config/example_config_base.yaml
-sed '/123456789014: test/d' /apps/consoleme/example_config/example_config_base.yaml
+sed -i '/123456789013: prod/d' /apps/consoleme/example_config/example_config_base.yaml
+sed -i '/123456789012: default_account/d' /apps/consoleme/example_config/example_config_base.yaml
+sed -i '/123456789014: test/d' /apps/consoleme/example_config/example_config_base.yaml
 grep -rl '123456789012' /apps/consoleme/example_config/ | xargs sed -i "s/123456789012/${current_account_id}/g"
 
 # Add legit account ID to the config for this tutorial:
 echo "account_ids_to_name:" >> /apps/consoleme/example_config/example_config_base.yaml
 echo "" >> /apps/consoleme/example_config/example_config_base.yaml
-echo "  ${current_account_id}: default_account" >> file.txt /apps/consoleme/example_config/example_config_base.yaml
+echo "  ${current_account_id}: default_account" >> /apps/consoleme/example_config/example_config_base.yaml
 
 # Remove the dynamodb config
 sed -i '/dynamodb_server: http:\/\/localhost:8005/d' /apps/consoleme/example_config/example_config_development.yaml

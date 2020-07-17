@@ -1,7 +1,7 @@
 
 data "aws_iam_policy_document" "consoleme" {
     statement {
-        sid = "1"
+        sid = "ConsoleMeTypeahead"
         effect = "Allow"
         resources = ["*"]
         actions = [

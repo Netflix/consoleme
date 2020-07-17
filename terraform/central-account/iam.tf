@@ -7,7 +7,7 @@
 
 data "aws_iam_policy_document" "consoleme" {
   statement {
-    sid       = "1"
+    sid       = "CentralAccountPermissions"
     effect    = "Allow"
     resources = ["*"]
     actions = [
@@ -37,9 +37,54 @@ data "aws_iam_policy_document" "consoleme" {
       "sns:setendpointattributes",
       "sns:setplatformapplicationattributes",
       "sts:assumerole",
-      "s3:GetObject"
+
+      "iam:list*"
     ]
   }
+  statement {
+    sid = "GrabConfig"
+    actions = [
+    "s3:GetObject",
+    ]
+    resources = ["*"]
+    effect = "Allow"
+  }
+  statement {
+        sid = "ConsoleMeTypeahead"
+        effect = "Allow"
+        resources = ["*"]
+        actions = [
+            "autoscaling:Describe*",
+            "cloudwatch:Get*",
+            "cloudwatch:List*",
+            "config:BatchGet*",
+            "config:List*",
+            "config:Select*",
+            "ec2:DescribeSubnets",
+            "ec2:describevpcendpoints",
+            "ec2:DescribeVpcs",
+            "iam:*",
+            "s3:GetBucketPolicy",
+            "s3:GetBucketTagging",
+            "s3:ListAllMyBuckets",
+            "s3:ListBucket",
+            "s3:PutBucketPolicy",
+            "s3:PutBucketTagging",
+            "sns:GetTopicAttributes",
+            "sns:ListTagsForResource",
+            "sns:ListTopics",
+            "sns:SetTopicAttributes",
+            "sns:TagResource",
+            "sns:UnTagResource",
+            "sqs:GetQueueAttributes",
+            "sqs:GetQueueUrl",
+            "sqs:ListQueues",
+            "sqs:ListQueueTags",
+            "sqs:SetQueueAttributes",
+            "sqs:TagQueue",
+            "sqs:UntagQueue",
+        ]
+    }
   statement {
     sid    = "SendEmail"
     effect = "Allow"
