@@ -71,6 +71,7 @@ def parallel_scan_table(table, total_threads=10, loop=None):
             items.extend(response.get("Items", []))
 
         return items
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     tasks = []
@@ -451,25 +452,6 @@ class UserDynamoHandler(BaseDynamoHandler):
         return_value = await sync_to_async(parallel_scan_table)(
             self.policy_requests_table
         )
-        # response = await sync_to_async(self.policy_requests_table.scan)()
-        # items = []
-        #
-        # if response and "Items" in response:
-        #     items = self._data_from_dynamo_replace(response["Items"])
-        #
-        # while "LastEvaluatedKey" in response:
-        #     response = await sync_to_async(self.policy_requests_table.scan)(
-        #         ExclusiveStartKey=response["LastEvaluatedKey"]
-        #     )
-        #     items.extend(self._data_from_dynamo_replace(response["Items"]))
-        #
-        # return_value = []
-        # if status:
-        #     for item in items:
-        #         if status and item["status"] == status:
-        #             return_value.append(item)
-        # else:
-        #     return_value = items
 
         return return_value
 

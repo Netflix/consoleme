@@ -12,7 +12,7 @@ log = config.get_logger()
 
 
 class RequestsHandler(BaseAPIV2Handler):
-    """Handler for /api/v2/requests_table
+    """Handler for /api/v2/requests
 
     Api endpoint to list and filter policy requests.
     """
@@ -36,7 +36,7 @@ class RequestsHandler(BaseAPIV2Handler):
         log_data = {
             "function": "RequestsHandler.post",
             "user": self.user,
-            "message": "Writing all available requests",
+            "message": "Writing requests",
             "limit": limit,
             "filters": filters,
             "user-agent": self.request.headers.get("User-Agent"),
@@ -171,7 +171,7 @@ class RequestsWebHandler(BaseHandler):
         await self.render(
             "requests.html",
             page_title="ConsoleMe - Requests",
-            current_page="requests",  # TODO add a page header for me
+            current_page="requests",
             user=self.user,
             user_groups=self.groups,
             config=config,
