@@ -60,7 +60,7 @@ class ConsoleMeDataTable extends Component {
     }
     this.filterColumn = this.filterColumn.bind(this)
     this.genColumns = this.genColumns.bind(this)
-    this.filterColumn = _.debounce(this.filterColumn, 500, { leading: true, maxWait: 500, trailing: true })
+    this.filterColumn = _.debounce(this.filterColumn, 300, { leading: false, trailing: true })
   }
 
   generateCell (row, item) {
@@ -89,7 +89,7 @@ class ConsoleMeDataTable extends Component {
 
       return (
         <a href={href} target="_blank" rel="noopener noreferrer">
-          {name})
+          {name}
         </a>
       )
     }
@@ -107,13 +107,15 @@ class ConsoleMeDataTable extends Component {
             'There are no records to display. Please revise your filters.'
         })
       }
-      this.setState({ filteredData: data, limit: tableConfig.totalRows })
+      this.setState({ filteredData: data, limit: tableConfig.totalRows, loading: false })
     })()
   }
 
   filterColumn (event) {
+    this.setState({ loading: true })
     const { tableConfig } = this.state
     let filters = this.state.filters
+
     filters[event.target.name] = event.target.value
     this.setState({ filters: filters })
     if (tableConfig.serverSideFiltering) {
@@ -152,12 +154,13 @@ class ConsoleMeDataTable extends Component {
           'There are no records to display. Please revise your filters.'
       })
     }
-    this.setState({ filteredData: filteredData })
+    this.setState({ filteredData: filteredData, loading: false })
   }
 
   genColumns (tableConfig) {
     let columns = []
     let filters = this.state.filters
+
     tableConfig.desiredColumns.forEach(
       function (item, index) {
         let name = item.name
@@ -165,9 +168,11 @@ class ConsoleMeDataTable extends Component {
           name = (
             <Input
               name={item.selector}
-              key={item.selector}
               placeholder={'Search ' + item.name}
-              onChange={this.filterColumn}
+              onChange={(event) => {
+                event.persist()
+                this.filterColumn(event)
+              }}
               value={'' || filters[item.name]}
             />
           )

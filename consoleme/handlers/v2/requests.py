@@ -125,6 +125,7 @@ class RequestsTableConfigHandler(BaseHandler):
             "tableName": "Requests",
             "dataEndpoint": "/api/v2/requests",
             "grow": 3,
+            "sortable": False,
             "totalRows": 1000,
             "wrap": True,
             "keyField": "request_id",
