@@ -95,23 +95,21 @@ class ConsoleMeDataTable extends Component {
     }
   }
 
-  filterColumnServerSide (event, filters) {
+  async filterColumnServerSide (event, filters) {
     const { tableConfig } = this.state
-    const firstColumnName = tableConfig.desiredColumns[0].selector;
-    (async () => {
-      const data = await sendRequestCommon({ filters: filters }, tableConfig.dataEndpoint)
-      // Hacky bypass of this issue: https://github.com/jbetancur/react-data-table-component/issues/628
-      if (data.length === 0) {
-        data.push({
-          [firstColumnName]:
-            'There are no records to display. Please revise your filters.'
-        })
-      }
-      this.setState({ filteredData: data, limit: tableConfig.totalRows, loading: false })
-    })()
+    const firstColumnName = tableConfig.desiredColumns[0].selector
+    const data = await sendRequestCommon({ filters: filters }, tableConfig.dataEndpoint)
+    // Hacky bypass of this issue: https://github.com/jbetancur/react-data-table-component/issues/628
+    if (data.length === 0) {
+      data.push({
+        [firstColumnName]:
+          'There are no records to display. Please revise your filters.'
+      })
+    }
+    this.setState({ filteredData: data, limit: tableConfig.totalRows, loading: false })
   }
 
-  filterColumn (event) {
+  async filterColumn (event) {
     this.setState({ loading: true })
     const { tableConfig } = this.state
     let filters = this.state.filters
@@ -119,13 +117,13 @@ class ConsoleMeDataTable extends Component {
     filters[event.target.name] = event.target.value
     this.setState({ filters: filters })
     if (tableConfig.serverSideFiltering) {
-      this.filterColumnServerSide(event, filters)
+      await this.filterColumnServerSide(event, filters)
     } else {
-      this.filterColumnClientSide(event, filters)
+      await this.filterColumnClientSide(event, filters)
     }
   }
 
-  filterColumnClientSide (event, filters) {
+  async filterColumnClientSide (event, filters) {
     let { data, tableConfig } = this.state
     const firstColumnName = tableConfig.desiredColumns[0].selector
     let filteredData = data
@@ -169,9 +167,9 @@ class ConsoleMeDataTable extends Component {
             <Input
               name={item.selector}
               placeholder={'Search ' + item.name}
-              onChange={(event) => {
+              onChange={async (event) => {
                 event.persist()
-                this.filterColumn(event)
+                await this.filterColumn(event)
               }}
               value={'' || filters[item.name]}
             />
