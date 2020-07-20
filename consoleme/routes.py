@@ -83,6 +83,7 @@ def make_app(jwt_validator=None):
 
     oss_routes = [
         (r"/", IndexHandler),
+        (r"/landing", IndexHandlerV2),
         (r"/login", IndexHandler),
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
