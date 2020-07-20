@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -x
 
+export HOME=/root
 # ---------------------------------------------------------------------------------------------------------------------
 # Filter out useless messages from logs
 # ---------------------------------------------------------------------------------------------------------------------
@@ -75,17 +76,20 @@ python /apps/consoleme/scripts/initialize_redis_oss.py
 
 # Update the UI
 cd /apps/consoleme
+
 # Install nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh > /tmp/nvm-install.sh
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh > /tmp/nvm-install.sh
 chmod +x /tmp/nvm-install.sh
 bash /tmp/nvm-install.sh
-cd ~/
-source ~/.nvm/nvm.sh
+echo 'export NVM_DIR="/root/.nvm"' >> /root/.bashrc
+echo '[ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"  # This loads nvm' >> /root/.bashrc
+. ~/.nvm/nvm.sh
+. ~/.bashrc
+cd /apps/consoleme
 nvm install 12.18.2
 nvm use 12.18.2
 node -e "console.log('Running Node.js ' + process.version)"
 npm install yarn -g
-cd /apps/consoleme
 yarn
 yarn install
 /apps/consoleme/node_modules/webpack/bin/webpack.js --progress
@@ -138,7 +142,6 @@ EOF
 
 # TODO: Remove this hacky way of removing the fake account ID... instead, stash the rendered template config in an S3 bucket and pull it from userdata
 grep -rl '123456789012' /apps/consoleme/example_config/example_config_terraform.yaml | xargs sed -i "s/123456789012/${current_account_id}/g"
-
 # Change permissions on service file
 chown root:root /etc/systemd/system/celery.service
 chmod 644 /etc/systemd/system/celery.service
