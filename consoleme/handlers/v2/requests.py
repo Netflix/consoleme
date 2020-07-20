@@ -109,7 +109,7 @@ class RequestHandler(BaseAPIV2Handler):
         tags = {
             "user": self.user,
         }
-        stats.count("RequestsHandler.post", tags=tags)
+        stats.count("RequestHandler.post", tags=tags)
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "user": self.user,

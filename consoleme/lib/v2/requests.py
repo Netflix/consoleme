@@ -162,7 +162,7 @@ async def validate_inline_policy_change(
         "user": user,
         "arn": change.principal_arn,
         "request": change,
-        "message": "Incoming request - Inline Policy",
+        "message": "Validating inline policy change",
     }
     log.info(log_data)
     if await invalid_characters_in_policy(
@@ -198,7 +198,7 @@ async def validate_managed_policy_change(
         "user": user,
         "arn": change.principal_arn,
         "request": change,
-        "message": "Incoming request - Managed Policy",
+        "message": "Validating managed policy change",
     }
     log.info(log_data)
     if await invalid_characters_in_policy(change.policy_name):
