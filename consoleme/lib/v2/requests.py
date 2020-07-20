@@ -13,6 +13,7 @@ from consoleme.lib.policies import invalid_characters_in_policy
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import (
     Action,
+    AssumeRolePolicyChangeModel,
     ChangeModelArray,
     ChangeType,
     ExtendedRequestModel,
@@ -59,6 +60,7 @@ async def generate_request_from_change_model_array(
     inline_policy_changes = []
     managed_policy_changes = []
     resource_policy_changes = []
+    assume_role_policy_changes = []
 
     for change in change_models.changes:
         # Enforce a maximum of one principal ARN per ChangeGeneratorModelArray (aka Policy Request)
@@ -77,6 +79,8 @@ async def generate_request_from_change_model_array(
             managed_policy_changes.append(change)
         elif change.change_type == ChangeType.resource_policy:
             resource_policy_changes.append(change)
+        elif change.change_type == ChangeType.assume_role_policy:
+            assume_role_policy_changes.append(change)
 
         # All changes status must be not-applied at request creation
         change.status = Status.not_applied
@@ -91,12 +95,22 @@ async def generate_request_from_change_model_array(
     account_id = await get_resource_account(primary_principal_arn)
     arn_parsed = parse_arn(primary_principal_arn)
 
-    if len(inline_policy_changes) > 0 or len(managed_policy_changes) > 0:
+    # Only one assume role policy change allowed per request
+    if len(assume_role_policy_changes) > 1:
+        log_data["message"] = "One one assume role policy change supported per request."
+        log.error(log_data)
+        raise InvalidRequestParameter(log_data["message"])
+
+    if (
+        len(inline_policy_changes) > 0
+        or len(managed_policy_changes) > 0
+        or len(assume_role_policy_changes) > 0
+    ):
         # for inline policies and managed policies, principal arn must be a role
         if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
             log_data[
                 "message"
-            ] = "ARN type not supported for inline/managed policy changes."
+            ] = "ARN type not supported for inline/managed/assume role policy changes."
             log.error(log_data)
             raise InvalidRequestParameter(log_data["message"])
         role_name = arn_parsed["resource_path"].split("/")[-1]
@@ -105,6 +119,10 @@ async def generate_request_from_change_model_array(
             await validate_inline_policy_change(inline_policy_change, user, role)
         for managed_policy_change in managed_policy_changes:
             await validate_managed_policy_change(managed_policy_change, user, role)
+        for assume_role_policy_change in assume_role_policy_changes:
+            await validate_assume_role_policy_change(
+                assume_role_policy_change, user, role
+            )
 
     # TODO: do actual resource policy logic, rather than just the blank stub
     resource_policy = {"Version": "2012-10-17", "Statement": []}
@@ -135,10 +153,12 @@ async def generate_request_from_change_model_array(
                     )
                 )
 
-    # TODO: assume role policy document for roles: new model?
     # If here, request is valid and can successfully be generated
     request_changes = ChangeModelArray(
-        changes=inline_policy_changes + managed_policy_changes + resource_policy_changes
+        changes=inline_policy_changes
+        + managed_policy_changes
+        + resource_policy_changes
+        + assume_role_policy_changes
     )
     return ExtendedRequestModel(
         id=str(uuid.uuid4()),
@@ -165,9 +185,11 @@ async def validate_inline_policy_change(
         "message": "Validating inline policy change",
     }
     log.info(log_data)
-    if await invalid_characters_in_policy(
-        change.policy.policy_document
-    ) or await invalid_characters_in_policy(change.policy_name):
+    if (
+        await invalid_characters_in_policy(change.policy.policy_document)
+        or await invalid_characters_in_policy(change.policy_name)
+        or await invalid_characters_in_policy(change.policy.version)
+    ):
         log_data["message"] = "Invalid characters were detected in the policy."
         log.error(log_data)
         raise InvalidRequestParameter(log_data["message"])
@@ -227,3 +249,30 @@ async def validate_managed_policy_change(
             ] = "The Managed Policy you are trying to detach is not attached to this role."
             log.error(log_data)
             raise InvalidRequestParameter(log_data["message"])
+
+
+async def validate_assume_role_policy_change(
+    change: AssumeRolePolicyChangeModel, user: str, role: ExtendedRoleModel
+):
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "arn": change.principal_arn,
+        "request": change,
+        "message": "Validating assume role policy change",
+    }
+    log.info(log_data)
+    if await invalid_characters_in_policy(
+        change.policy.policy_document
+    ) or await invalid_characters_in_policy(change.policy.version):
+        log_data["message"] = "Invalid characters were detected in the policy."
+        log.error(log_data)
+        raise InvalidRequestParameter(log_data["message"])
+
+    # Check if policy being updated is the same as existing policy.
+    if change.policy.policy_document == role.assume_role_policy_document:
+        log_data[
+            "message"
+        ] = "No changes were found between the updated and existing policy."
+        log.error(log_data)
+        raise InvalidRequestParameter(log_data["message"])

@@ -681,6 +681,14 @@ components:
             - inline_policy
             - managed_policy
             - resource_policy
+            - assume_role_policy
+          discriminator:
+            propertyName: change_type
+            mapping:
+              inline_policy: '#/components/schemas/InlinePolicyChangeModel'
+              managed_policy: '#/components/schemas/ManagedPolicyChangeModel'
+              resource_policy: '#/components/schemas/ResourcePolicyChangeModel'
+              assume_role_policy: '#/components/schemas/AssumeRolePolicyChangeModel'
         resources:
           type: array
           items:
@@ -706,6 +714,17 @@ components:
               type: string
             new:
               type: boolean
+            policy:
+              $ref: '#/components/schemas/PolicyModel'
+            old_policy:
+              $ref: '#/components/schemas/PolicyModel'
+    AssumeRolePolicyChangeModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeModel'
+        - type: object
+          required:
+            - policy
+          properties:
             policy:
               $ref: '#/components/schemas/PolicyModel'
             old_policy:
@@ -756,6 +775,7 @@ components:
               - $ref: '#/components/schemas/InlinePolicyChangeModel'
               - $ref: '#/components/schemas/ManagedPolicyChangeModel'
               - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+              - $ref: '#/components/schemas/AssumeRolePolicyChangeModel'
             discriminator:
               propertyName: change_model
     ArnArray:

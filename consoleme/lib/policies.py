@@ -27,6 +27,8 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 
 
 async def invalid_characters_in_policy(policy_value):
+    if not policy_value:
+        return False
     if "<" in policy_value or ">" in policy_value:
         return True
     return False
