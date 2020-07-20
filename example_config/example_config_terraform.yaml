@@ -16,3 +16,13 @@ logging:
 account_ids_to_name:
   123456789012:
     - default_account
+
+# A development configuration can specify a specific user to impersonate locally.
+_development_user_override: consoleme_admin@example.com
+
+# A development configuration can specify specific groups to consider the user a member of locally.
+_development_groups_override:
+  - groupa@example.com
+  - groupb@example.com
+  - configeditors@example.com
+  - consoleme_admins@example.com

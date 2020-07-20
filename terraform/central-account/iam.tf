@@ -145,7 +145,7 @@ resource "aws_iam_role" "consoleme" {
 }
 
 resource "aws_iam_role_policy_attachment" "consoleme" {
-  role       = var.consoleme_instance_profile_name
+  role = aws_iam_role.consoleme.name
   policy_arn = aws_iam_policy.consoleme.arn
 }
 

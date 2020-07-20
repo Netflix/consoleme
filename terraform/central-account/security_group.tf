@@ -53,3 +53,27 @@ resource "aws_security_group_rule" "external_egress_allow_all" {
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
+resource "aws_security_group_rule" "external_ingress_alb" {
+  from_port         = 8081
+  protocol          = "tcp"
+  security_group_id = aws_security_group.external.id
+  to_port           = 8081
+  type              = "ingress"
+  source_security_group_id  = aws_security_group.alb.id
+}
+
+resource "aws_security_group" "alb" {
+  vpc_id      = module.network.vpc_id
+  name        = module.security_group_label.id
+  description = "Allow ingress to ALB"
+  tags        = module.security_group_label.tags
+}
+
+resource "aws_security_group_rule" "external_alb_ingress_443" {
+  from_port         = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.alb.id
+  to_port           = 443
+  type              = "ingress"
+  cidr_blocks       = var.allowed_inbound_cidr_blocks
+}
