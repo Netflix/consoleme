@@ -153,3 +153,4 @@ resource "aws_iam_instance_profile" "consoleme" {
   name = var.consoleme_instance_profile_name
   role = aws_iam_role.consoleme.name
 }
+

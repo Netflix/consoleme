@@ -9,11 +9,11 @@ application_name: consoleme
 
 # We support account aliases, which is why the mapping of account names below is a list
 account_ids_to_name:
-  123456789012:
+  "123456789012":
     - default_account
-  123456789013:
+  "123456789013":
     - prod
-  123456789014:
+  "123456789014":
     - test
 
 auth:
@@ -38,7 +38,6 @@ application_settings:
     roles:
       - arn:aws:iam::123456789012:role/application_2InstanceProfile
 
-
 aws:
   console_url: 'https://{}.console.aws.amazon.com'
   federation_url: 'https://signin.aws.amazon.com/federation'
@@ -47,8 +46,14 @@ aws:
   issuer: YourCompany
   requests_dynamo_table: consoleme_requests_global
   session_duration: 43200
+
 celery:
   active_region: us-west-2 # Some jobs should only run in one region.
+  # celery.sync_regions specifies which regions to sync resources from, such as SQS queues and SNS topics
+  sync_regions:
+    - us-east-1
+    - us-west-2
+    - eu-west-1
 challenge:
   token_expiration: 3600
 cli_auth:
