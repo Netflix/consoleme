@@ -142,7 +142,7 @@ RestartSec=1
 WorkingDirectory=/apps/consoleme
 Environment=CONFIG_LOCATION=/apps/consoleme/example_config/example_config_terraform.yaml
 Environment=EC2_REGION=${region}
-ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG -B
+ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=15
 
 [Install]
 WantedBy=multi-user.target
