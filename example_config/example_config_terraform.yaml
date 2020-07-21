@@ -7,6 +7,8 @@ tornado:
   xsrf: true
   uvloop: false
 
+development: true
+
 logging:
   stdout_enabled: true
   format: '%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s'

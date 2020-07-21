@@ -52,4 +52,3 @@ resource "aws_security_group_rule" "external_egress_allow_all" {
   security_group_id = aws_security_group.external.id
   cidr_blocks       = ["0.0.0.0/0"]
 }
-
