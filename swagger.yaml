@@ -1102,4 +1102,25 @@ components:
           $ref: '#/components/schemas/ChangeModelArray'
         justification:
           type: string
+        admin_auto_approve:
+          type: boolean
+          default: False
+    RequestCreationResponse:
+      type: object
+      properties:
+        errors:
+          type: integer
+        request_created:
+          type: boolean
+        request_id:
+          type: string
+        action_results:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              message:
+                type: string
 

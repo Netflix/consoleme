@@ -1,17 +1,26 @@
 import sys
+import time
+import uuid
 
 from pydantic import ValidationError
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter, MustBeFte
 from consoleme.handlers.base import BaseAPIV2Handler
+from consoleme.lib.aws import get_resource_account
 from consoleme.lib.dynamo import UserDynamoHandler
+from consoleme.lib.generic import write_json_error
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.v2.requests import generate_request_from_change_model_array
-from consoleme.models import RequestCreationModel
+from consoleme.lib.policies import can_manage_policy_requests
+from consoleme.lib.v2.requests import (
+    apply_changes_to_role,
+    generate_request_from_change_model_array,
+)
+from consoleme.models import CommentModel, RequestCreationModel, RequestCreationResponse
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
+aws = get_plugin_by_name(config.get("plugins.aws"))()
 
 
 class RequestHandler(BaseAPIV2Handler):
@@ -62,37 +71,23 @@ class RequestHandler(BaseAPIV2Handler):
                         "old_policy": null
                     }
             ],
-            "admin_auto_approve" : "false" #TODO
+            "admin_auto_approve" : "false"
         }
 
-        Response example JSON: (Response Schema is ExtendedRequestModel in models.py)
+        Response example JSON: (Response Schema is RequestCreationResponse in models.py)
 
         {
-            "id": "223dd7c3-5f50-42dd-ad44-40cb60c9bb6b",
-            "arn": "arn:aws:iam::123456789012:role/aRole",
-            "timestamp": "2020-07-17T16:43:47+00:00",
-            "justification": "Justification for making the request",
-            "requester_email": "user@example.com",
-            "approvers": [],
-            "status": "pending",
-            "changes": {
-                "changes": [ <Change array from input> ]
-            },
-            "requester_info": {
-                "email": "user@example.com",
-                "extended_info": null,
-                "details_url": null
-            },
-            "reviewer": null,
-            "comments": [
+            "errors": 1,
+            "request_created": true,
+            "request_id": "0c9fb298-c8ea-4d50-917c-3212da07b3ad",
+            "action_results": [
                 {
-                    "id": "123",
-                    "timestamp": "2020-07-17T16:43:47+00:00",
-                    "edited": null,
-                    "last_modified": null,
-                    "user_email": "user2@example.com",
-                    "user": null,
-                    "text": "test comment"
+                    "status": "success",
+                    "message": "Success description"
+                },
+                {
+                    "status": "error",
+                    "message": "Error description"
                 }
             ]
         }
@@ -117,6 +112,7 @@ class RequestHandler(BaseAPIV2Handler):
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
             "ip": self.ip,
+            "admin_auto_approved": False,
         }
         log.debug(log_data)
         try:
@@ -127,6 +123,40 @@ class RequestHandler(BaseAPIV2Handler):
             )
             log_data["request"] = extended_request.json()
             log.debug(log_data)
+
+            if changes.admin_auto_approve:
+                # make sure user is allowed to use admin_auto_approve
+                can_manage_policy_request = await can_manage_policy_requests(
+                    self.groups
+                )
+                if can_manage_policy_request:
+                    extended_request.status = "approved"
+                    log_data["admin_auto_approved"] = True
+                    log.debug(log_data)
+                    extended_request.reviewer = self.user
+                    self_approval_comment = CommentModel(
+                        id=str(uuid.uuid4()),
+                        timestamp=int(time.time()),
+                        user_email=self.user,
+                        last_modified=int(time.time()),
+                        text=f"Self-approved by admin: {self.user}",
+                    )
+                    extended_request.comments.append(self_approval_comment)
+
+                    stats.count(
+                        f"{log_data['function']}.post.admin_auto_approved",
+                        tags={"user": self.user},
+                    )
+                else:
+                    # someone is trying to use admin bypass without being an admin, don't allow request to proceed
+                    stats.count(
+                        f"{log_data['function']}.post.unauthorized_admin_bypass",
+                        tags={"user": self.user},
+                    )
+                    log_data["message"] = "Unauthorized user trying to use admin bypass"
+                    log.error(log_data)
+                    await write_json_error("Unauthorized", obj=self)
+                    return
 
             dynamo = UserDynamoHandler(self.user)
             request = await dynamo.write_policy_request_v2(extended_request)
@@ -149,10 +179,28 @@ class RequestHandler(BaseAPIV2Handler):
             self.write_error(500, message="Error parsing request: " + str(e))
             return
 
+        # If here, request has been successfully created
+        response = RequestCreationResponse(
+            errors=0,
+            request_created=True,
+            request_id=extended_request.id,
+            action_results=[],
+        )
+
+        # If approved is true, could be auto-approval probe or admin auto-approve, apply the changes
+        if extended_request.status == "approved":
+            response = await apply_changes_to_role(
+                extended_request, response, self.user
+            )
+            # Update in dynamo
+            await dynamo.write_policy_request_v2(extended_request)
+            account_id = await get_resource_account(extended_request.arn)
+            await aws.fetch_iam_role(
+                account_id, extended_request.arn, force_refresh=True
+            )
+
         # TODO: auto-approval probes
-        # TODO: admin self-approval stuff
-        # TODO: update dynamo request based on auto-approval (if required)
-        self.write(extended_request.json())
+        self.write(response.json())
 
 
 class RequestsHandler(BaseAPIV2Handler):

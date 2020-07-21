@@ -4,6 +4,8 @@ import uuid
 from hashlib import sha256
 
 import ujson as json
+from asgiref.sync import sync_to_async
+from cloudaux.aws.sts import boto3_cached_conn
 from policy_sentry.util.arns import parse_arn
 
 from consoleme.config import config
@@ -13,6 +15,7 @@ from consoleme.lib.policies import invalid_characters_in_policy
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import (
     Action,
+    ActionResult,
     AssumeRolePolicyChangeModel,
     ChangeModelArray,
     ChangeType,
@@ -22,6 +25,7 @@ from consoleme.models import (
     ManagedPolicyChangeModel,
     PolicyModel,
     RequestCreationModel,
+    RequestCreationResponse,
     ResourceModel,
     ResourcePolicyChangeModel,
     Status,
@@ -201,7 +205,9 @@ async def validate_inline_policy_change(
             log.error(log_data)
             raise InvalidRequestParameter(log_data["message"])
         # Check if policy being updated is the same as existing policy.
-        if not change.new and change.policy_name == existing_policy.get("PolicyName"):
+        if not change.new and change.policy.policy_document == existing_policy.get(
+            "PolicyDocument"
+        ):
             log_data[
                 "message"
             ] = "No changes were found between the updated and existing policy."
@@ -276,3 +282,177 @@ async def validate_assume_role_policy_change(
         ] = "No changes were found between the updated and existing policy."
         log.error(log_data)
         raise InvalidRequestParameter(log_data["message"])
+
+
+async def apply_changes_to_role(
+    extended_request: ExtendedRequestModel, response: RequestCreationResponse, user: str
+) -> RequestCreationResponse:
+    """
+            Applies changes based on the changes array in the request, in a best effort manner to a role
+
+            Caution: this method applies changes blindly... meaning it assumes before calling this method,
+            you have validated the changes being made are authorized.
+
+            :param extended_request: ExtendedRequestModel
+            :param user: Str - requester's email address
+            :param response: RequestCreationResponse
+            :return: ChangeModelArray
+        """
+
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "request": extended_request,
+        "message": "Applying request changes",
+    }
+    log.info(log_data)
+
+    arn_parsed = parse_arn(extended_request.arn)
+
+    # Principal ARN must be a role for this function
+    if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+        log_data[
+            "message"
+        ] = "ARN type not supported for inline/managed/assume role policy changes."
+        log.error(log_data)
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(status="error", message=log_data["message"],)
+        )
+        return response
+
+    role_name = arn_parsed["resource_path"].split("/")[-1]
+    account_id = await get_resource_account(extended_request.arn)
+    iam_client = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        service_type="client",
+        account_number=account_id,
+        region=config.region,
+        assume_role=config.get("policies.role_name"),
+        session_name="role-updater-v2-" + user,
+    )
+    for change in extended_request.changes.changes:
+        if change.status == Status.applied:
+            # This change has already been applied
+            continue
+        if change.change_type == ChangeType.inline_policy:
+            try:
+                await sync_to_async(iam_client.put_role_policy)(
+                    RoleName=role_name,
+                    PolicyName=change.policy_name,
+                    PolicyDocument=json.dumps(change.policy.policy_document),
+                )
+                response.action_results.append(
+                    ActionResult(
+                        status="success",
+                        message=f"Successfully applied inline policy {change.policy_name} to role: {role_name}",
+                    )
+                )
+                change.status = Status.applied
+            except Exception as e:
+                log_data["message"] = "Exception occurred applying inline policy"
+                log_data["error"] = str(e)
+                log.error(log_data, exc_info=True)
+                config.sentry.captureException()
+                response.errors += 1
+                response.action_results.append(
+                    ActionResult(
+                        status="error",
+                        message=f"Error occurred applying inline policy {change.policy_name} to role: {role_name}: "
+                        + str(e),
+                    )
+                )
+        elif change.change_type == ChangeType.managed_policy:
+            if change.action == Action.attach:
+                try:
+                    await sync_to_async(iam_client.attach_role_policy)(
+                        RoleName=role_name, PolicyArn=change.arn
+                    )
+                    response.action_results.append(
+                        ActionResult(
+                            status="success",
+                            message=f"Successfully attached managed policy {change.arn} to role: {role_name}",
+                        )
+                    )
+                    change.status = Status.applied
+                except Exception as e:
+                    log_data["message"] = "Exception occurred attaching managed policy"
+                    log_data["error"] = str(e)
+                    log.error(log_data, exc_info=True)
+                    config.sentry.captureException()
+                    response.errors += 1
+                    response.action_results.append(
+                        ActionResult(
+                            status="error",
+                            message=f"Error occurred attaching managed policy {change.arn} to role: {role_name}: "
+                            + str(e),
+                        )
+                    )
+            elif change.action == Action.detach:
+                try:
+                    await sync_to_async(iam_client.detach_role_policy)(
+                        RoleName=role_name, PolicyArn=change.arn
+                    )
+                    response.action_results.append(
+                        ActionResult(
+                            status="success",
+                            message=f"Successfully detached managed policy {change.arn} from role: {role_name}",
+                        )
+                    )
+                    change.status = Status.applied
+                except Exception as e:
+                    log_data["message"] = "Exception occurred detaching managed policy"
+                    log_data["error"] = str(e)
+                    log.error(log_data, exc_info=True)
+                    config.sentry.captureException()
+                    response.errors += 1
+                    response.action_results.append(
+                        ActionResult(
+                            status="error",
+                            message=f"Error occurred detaching managed policy {change.arn} from role: {role_name}: "
+                            + str(e),
+                        )
+                    )
+        elif change.change_type == ChangeType.assume_role_policy:
+            try:
+                await sync_to_async(iam_client.update_assume_role_policy)(
+                    RoleName=role_name,
+                    PolicyDocument=json.dumps(change.policy.policy_document),
+                )
+                response.action_results.append(
+                    ActionResult(
+                        status="success",
+                        message=f"Successfully updated assume role policy policy for role: {role_name}",
+                    )
+                )
+                change.status = Status.applied
+            except Exception as e:
+                log_data[
+                    "message"
+                ] = "Exception occurred updating assume role policy policy"
+                log_data["error"] = str(e)
+                log.error(log_data, exc_info=True)
+                config.sentry.captureException()
+                response.errors += 1
+                response.action_results.append(
+                    ActionResult(
+                        status="error",
+                        message=f"Error occurred updating assume role policy for role: {role_name}: "
+                        + str(e),
+                    )
+                )
+        else:
+            # unsupported type for auto-application
+            response.action_results.append(
+                ActionResult(
+                    status="error",
+                    message=f"Error occurred applying: Change type {change.change_type} is not supported",
+                )
+            )
+            response.errors += 1
+
+    log_data["message"] = "Finished applying request changes"
+    log_data["request"] = extended_request
+    log_data["response"] = response
+    log.info(log_data)
+    return response
