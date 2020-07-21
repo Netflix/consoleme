@@ -38,40 +38,7 @@ const tableConfig = {
     {
       key: "account_name",
       placeholder: "Account Name",
-      options: [
-        {
-          key: "application_prod",
-          value: "application_prod",
-          flag: "application_prod",
-          text: "application_prod"
-        },
-        {
-          key: "application_test",
-          value: "application_test",
-          flag: "application_test",
-          text: "application_test"
-        },
-        {
-          key: "management",
-          value: "management",
-          flag: "management",
-          text: "management"
-        },
-        {
-          key: "managementtest",
-          value: "managementtest",
-          flag: "managementtest",
-          text: "managementtest"
-        }
-      ]
-    },
-    {
-      key: "environment",
-      placeholder: "Environment",
-      options: [
-        {key: "prod", value: "prod", flag: "prod", text: "prod"},
-        {key: "test", value: "test", flag: "test", text: "test"}
-      ]
+      options: []
     },
     {
       key: "account_id",
@@ -79,12 +46,14 @@ const tableConfig = {
       options: []
     },
     {
+      key: "environment",
+      placeholder: "Environment",
+      options: []
+    },
+    {
       key: "role",
       placeholder: "Roles",
-      options: [
-        {key: "admin", value: "admin", flag: "admin", text: "admin"},
-        {key: "user", value: "user", flag: "user", text: "user"}
-      ]
+      options: []
     }
   ]
 };
