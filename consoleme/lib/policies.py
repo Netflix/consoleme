@@ -21,6 +21,7 @@ from consoleme.exceptions.exceptions import InvalidRequestParameter
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.handler import update_role
+from consoleme.models import ExtendedRequestModel
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -609,6 +610,13 @@ async def should_auto_approve_policy(events, user, user_groups):
     aws = get_plugin_by_name(config.get("plugins.aws"))()
     result = await aws.should_auto_approve_policy(events, user, user_groups)
     return result
+
+
+async def should_auto_approve_policy_v2(
+    extended_request: ExtendedRequestModel, user, user_groups
+):
+    aws = get_plugin_by_name(config.get("plugins.aws"))()
+    return await aws.should_auto_approve_policy_v2(extended_request, user, user_groups)
 
 
 async def get_url_for_resource(arn, resource_type, account_id, region, resource_name):

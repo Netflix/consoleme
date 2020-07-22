@@ -11,10 +11,14 @@ from consoleme.lib.aws import get_resource_account
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.generic import write_json_error
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.policies import can_manage_policy_requests
+from consoleme.lib.policies import (
+    can_manage_policy_requests,
+    should_auto_approve_policy_v2,
+)
 from consoleme.lib.v2.requests import (
     apply_changes_to_role,
     generate_request_from_change_model_array,
+    is_request_eligible_for_auto_approval,
 )
 from consoleme.models import CommentModel, RequestCreationModel, RequestCreationResponse
 
@@ -113,6 +117,7 @@ class RequestHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
             "ip": self.ip,
             "admin_auto_approved": False,
+            "probe_auto_approved": False,
         }
         log.debug(log_data)
         try:
@@ -157,6 +162,31 @@ class RequestHandler(BaseAPIV2Handler):
                     log.error(log_data)
                     await write_json_error("Unauthorized", obj=self)
                     return
+            else:
+                # If admin auto approve is false, check for auto-approve probe eligibility
+                is_eligible_for_auto_approve_probe = await is_request_eligible_for_auto_approval(
+                    extended_request, self.user
+                )
+                # If we have only made requests that are eligible for auto-approval probe, check against them
+                if is_eligible_for_auto_approve_probe:
+                    should_auto_approve_request = await should_auto_approve_policy_v2(
+                        extended_request, self.user, self.groups
+                    )
+                    if should_auto_approve_request["approved"]:
+                        extended_request.status = "approved"
+                        log_data["probe_auto_approved"] = True
+                        log.debug(log_data)
+                        for approving_probe in should_auto_approve_request[
+                            "approving_probes"
+                        ]:
+                            approving_probe_comment = CommentModel(
+                                id=str(uuid.uuid4()),
+                                timestamp=int(time.time()),
+                                user_email=f"Auto-Approve Probe: {approving_probe['name']}",
+                                last_modified=int(time.time()),
+                                text=f"Policy {approving_probe['policy']} auto-approved by probe: {approving_probe['name']}",
+                            )
+                            extended_request.comments.append(approving_probe_comment)
 
             dynamo = UserDynamoHandler(self.user)
             request = await dynamo.write_policy_request_v2(extended_request)
@@ -189,9 +219,7 @@ class RequestHandler(BaseAPIV2Handler):
 
         # If approved is true, could be auto-approval probe or admin auto-approve, apply the changes
         if extended_request.status == "approved":
-            response = await apply_changes_to_role(
-                extended_request, response, self.user
-            )
+            await apply_changes_to_role(extended_request, response, self.user)
             # Update in dynamo
             await dynamo.write_policy_request_v2(extended_request)
             account_id = await get_resource_account(extended_request.arn)
@@ -199,7 +227,7 @@ class RequestHandler(BaseAPIV2Handler):
                 account_id, extended_request.arn, force_refresh=True
             )
 
-        # TODO: auto-approval probes
+        # TODO: slack message stuff
         self.write(response.json())
 
 
