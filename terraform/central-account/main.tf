@@ -6,7 +6,7 @@ module "server" {
   ami                         = data.aws_ami.amazon_linux.id
   instance_type               = var.instance_type
   key_name                    = var.key_name
-  iam_instance_profile        = aws_iam_instance_profile.consoleme.name
+  iam_instance_profile        = aws_iam_instance_profile.ConsoleMeInstanceProfile.name
   subnet_id                   = module.network.public_subnets[0]
   user_data                   = data.template_file.consoleme_userdata.rendered
   associate_public_ip_address = true

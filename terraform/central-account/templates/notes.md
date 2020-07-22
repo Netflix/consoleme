@@ -35,3 +35,13 @@ you'll want similar systemd/supervisor configurations for Celery scheduler and w
 ```
 
 (Only bring up one scheduler. You can bring up N workers and enable autoscaling if desired)
+
+Tail Celery systemd logs:
+```bash
+journalctl -u celery -f
+```
+
+Tail ConsoleMe systemd logs:
+```bash
+journalctl -u consoleme -f
+```

@@ -28,5 +28,8 @@ data "template_file" "consoleme_userdata" {
     current_account_id = data.aws_caller_identity.current.account_id
     demo_config = data.template_file.consoleme_config.rendered
     region = var.region
+    CONFIG_LOCATION = var.CONFIG_LOCATION
   }
 }
+
+

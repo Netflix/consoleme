@@ -1,11 +1,11 @@
 # ---------------------------------------------------------------------------------------------------------------------
-# Consoleme Instance Profile permissions
-# 1. Policy Document for Consoleme
-# 2. IAM Policy resource for Consoleme in the Consoleme central account
-# 3. Policy Document for the Consoleme
+# ConsoleMe Instance Profile permissions
+# 1. Policy Document for ConsoleMe
+# 2. IAM Policy resource for ConsoleMe in the ConsoleMe central account
+# 3. Policy Document for the ConsoleMe
 # ---------------------------------------------------------------------------------------------------------------------
 
-data "aws_iam_policy_document" "consoleme" {
+data "aws_iam_policy_document" "ConsoleMeInstanceProfile" {
   statement {
     sid       = "CentralAccountPermissions"
     effect    = "Allow"
@@ -37,7 +37,6 @@ data "aws_iam_policy_document" "consoleme" {
       "sns:setendpointattributes",
       "sns:setplatformapplicationattributes",
       "sts:assumerole",
-
       "iam:list*"
     ]
   }
@@ -103,17 +102,17 @@ data "aws_iam_policy_document" "consoleme" {
   }
 }
 
-resource "aws_iam_policy" "consoleme" {
+resource "aws_iam_policy" "ConsoleMeInstanceProfile" {
   name   = "ConsoleMePolicy"
   path   = "/"
-  policy = data.aws_iam_policy_document.consoleme.json
+  policy = data.aws_iam_policy_document.ConsoleMeInstanceProfile.json
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Trust Policy
 # ---------------------------------------------------------------------------------------------------------------------
 
-data "aws_iam_policy_document" "consoleme_trust_policy" {
+data "aws_iam_policy_document" "ConsoleMe_trust_policy" {
   statement {
     sid     = "AssumeRoleEC2"
     effect  = "Allow"
@@ -129,7 +128,7 @@ data "aws_iam_policy_document" "consoleme_trust_policy" {
   //    actions = ["sts:AssumeRole"]
   //    effect  = "Allow"
   //    principals {
-  //      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.consoleme_instance_profile_name}"]
+  //      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.ConsoleMe_instance_profile_name}"]
   //      type        = "AWS"
   //    }
   //  }
@@ -139,18 +138,18 @@ data "aws_iam_policy_document" "consoleme_trust_policy" {
 # Instance Profile
 # ---------------------------------------------------------------------------------------------------------------------
 
-resource "aws_iam_role" "consoleme" {
+resource "aws_iam_role" "ConsoleMeInstanceProfile" {
   name               = var.consoleme_instance_profile_name
-  assume_role_policy = data.aws_iam_policy_document.consoleme_trust_policy.json
+  assume_role_policy = data.aws_iam_policy_document.ConsoleMe_trust_policy.json
 }
 
-resource "aws_iam_role_policy_attachment" "consoleme" {
-  role = aws_iam_role.consoleme.name
-  policy_arn = aws_iam_policy.consoleme.arn
+resource "aws_iam_role_policy_attachment" "ConsoleMeInstanceProfile" {
+  role = aws_iam_role.ConsoleMeInstanceProfile.name
+  policy_arn = aws_iam_policy.ConsoleMeInstanceProfile.arn
 }
 
-resource "aws_iam_instance_profile" "consoleme" {
+resource "aws_iam_instance_profile" "ConsoleMeInstanceProfile" {
   name = var.consoleme_instance_profile_name
-  role = aws_iam_role.consoleme.name
+  role = aws_iam_role.ConsoleMeInstanceProfile.name
 }
 

@@ -140,6 +140,11 @@ variable "kms_key_alias" {
   default     = "alias/consoleme"
 }
 
+variable "CONFIG_LOCATION" {
+  description = "Location of ConsoleMe's YAML configuration file"
+  default =  "/apps/consoleme/example_config/example_config_terraform.yaml"
+}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # NAMING PREFIXES
 # This manages the naming prefixes in this module.

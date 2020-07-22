@@ -8,6 +8,7 @@ tornado:
   uvloop: false
 
 development: true
+environment: prod
 
 logging:
   stdout_enabled: true
@@ -16,7 +17,7 @@ logging:
   file: /logs/consoleme/consoleme_tornado.log
 
 account_ids_to_name:
-  ${current_account_id}:
+  '${current_account_id}':
     - default_account
 
 # A development configuration can specify a specific user to impersonate locally.

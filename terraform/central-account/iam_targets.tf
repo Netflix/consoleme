@@ -37,23 +37,18 @@ data "aws_iam_policy_document" "consoleme_target_trust_policy" {
     actions = ["sts:AssumeRole"]
     effect  = "Allow"
     principals {
-      identifiers = [aws_iam_role.consoleme.arn]
+      identifiers = [aws_iam_role.ConsoleMeInstanceProfile.arn]
       type        = "AWS"
     }
   }
 }
 
 resource "aws_iam_role" "consoleme_target" {
-  name               = "ConsoleMeTargetRole"
-  assume_role_policy = data.aws_iam_policy_document.consoleme_trust_policy.json
+  name               = "ConsoleMeTarget"
+  assume_role_policy = data.aws_iam_policy_document.consoleme_target_trust_policy.json
 }
 
 resource "aws_iam_role_policy_attachment" "consoleme_target" {
   role       = aws_iam_role.consoleme_target.name
   policy_arn = aws_iam_policy.consoleme_target.arn
-}
-
-resource "aws_iam_instance_profile" "consoleme_target" {
-  name = "ConsoleMeTargetInstanceProfile"
-  role = aws_iam_role.consoleme_target.name
 }

@@ -29,3 +29,6 @@ _development_groups_override:
   - groupb@example.com
   - configeditors@example.com
   - consoleme_admins@example.com
+
+policies:
+  role_name: ConsoleMeTarget
