@@ -148,6 +148,12 @@ ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/ce
 WantedBy=multi-user.target
 EOF
 
+cat << EOF >> /root/.bashrc
+export CONFIG_LOCATION=${CONFIG_LOCATION}
+export EC2_REGION=${region}
+EOF
+
+
 cat << EOF > ${CONFIG_LOCATION}
 ${demo_config}
 EOF

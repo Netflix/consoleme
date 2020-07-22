@@ -14,76 +14,14 @@ data "aws_iam_policy_document" "ConsoleMeInstanceProfile" {
       "cloudtrail:*",
       "cloudwatch:*",
       "config:*",
-      "dynamodb:batchgetitem",
-      "dynamodb:batchwriteitem",
-      "dynamodb:deleteitem",
-      "dynamodb:describe*",
-      "dynamodb:getitem",
-      "dynamodb:getrecords",
-      "dynamodb:getsharditerator",
-      "dynamodb:putitem",
-      "dynamodb:query",
-      "dynamodb:scan",
-      "dynamodb:updateitem",
-      "dynamodb:listtables",
-      "sns:createplatformapplication",
-      "sns:createplatformendpoint",
-      "sns:deleteendpoint",
-      "sns:deleteplatformapplication",
-      "sns:getendpointattributes",
-      "sns:getplatformapplicationattributes",
-      "sns:listendpointsbyplatformapplication",
-      "sns:publish",
-      "sns:setendpointattributes",
-      "sns:setplatformapplicationattributes",
+      "dynamodb:*",
+      "iam:list*",
+      "sns:*",
+      "sqs:*",
       "sts:assumerole",
-      "iam:list*"
+      "s3:GetObject"
     ]
   }
-  statement {
-    sid = "GrabConfig"
-    actions = [
-    "s3:GetObject",
-    ]
-    resources = ["*"]
-    effect = "Allow"
-  }
-  statement {
-        sid = "ConsoleMeTypeahead"
-        effect = "Allow"
-        resources = ["*"]
-        actions = [
-            "autoscaling:Describe*",
-            "cloudwatch:Get*",
-            "cloudwatch:List*",
-            "config:BatchGet*",
-            "config:List*",
-            "config:Select*",
-            "ec2:DescribeSubnets",
-            "ec2:describevpcendpoints",
-            "ec2:DescribeVpcs",
-            "iam:*",
-            "s3:GetBucketPolicy",
-            "s3:GetBucketTagging",
-            "s3:ListAllMyBuckets",
-            "s3:ListBucket",
-            "s3:PutBucketPolicy",
-            "s3:PutBucketTagging",
-            "sns:GetTopicAttributes",
-            "sns:ListTagsForResource",
-            "sns:ListTopics",
-            "sns:SetTopicAttributes",
-            "sns:TagResource",
-            "sns:UnTagResource",
-            "sqs:GetQueueAttributes",
-            "sqs:GetQueueUrl",
-            "sqs:ListQueues",
-            "sqs:ListQueueTags",
-            "sqs:SetQueueAttributes",
-            "sqs:TagQueue",
-            "sqs:UntagQueue",
-        ]
-    }
   statement {
     sid    = "SendEmail"
     effect = "Allow"
@@ -102,11 +40,12 @@ data "aws_iam_policy_document" "ConsoleMeInstanceProfile" {
   }
 }
 
-resource "aws_iam_policy" "ConsoleMeInstanceProfile" {
-  name   = "ConsoleMePolicy"
-  path   = "/"
+resource "aws_iam_role_policy" "consoleme_target" {
+  name = "ConsoleMeInstanceProfilePolicy"
+  role = aws_iam_role.ConsoleMeInstanceProfile.id
   policy = data.aws_iam_policy_document.ConsoleMeInstanceProfile.json
 }
+
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Trust Policy
@@ -141,11 +80,6 @@ data "aws_iam_policy_document" "ConsoleMe_trust_policy" {
 resource "aws_iam_role" "ConsoleMeInstanceProfile" {
   name               = var.consoleme_instance_profile_name
   assume_role_policy = data.aws_iam_policy_document.ConsoleMe_trust_policy.json
-}
-
-resource "aws_iam_role_policy_attachment" "ConsoleMeInstanceProfile" {
-  role = aws_iam_role.ConsoleMeInstanceProfile.name
-  policy_arn = aws_iam_policy.ConsoleMeInstanceProfile.arn
 }
 
 resource "aws_iam_instance_profile" "ConsoleMeInstanceProfile" {

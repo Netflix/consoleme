@@ -21,7 +21,7 @@ account_ids_to_name:
     - default_account
 
 # A development configuration can specify a specific user to impersonate locally.
-_development_user_override: consoleme_admin@example.com
+_development_user_override: consolemeadmin@example.com
 
 # A development configuration can specify specific groups to consider the user a member of locally.
 _development_groups_override:
@@ -44,3 +44,6 @@ application_settings:
 #    owner: groupa@example.com
 #    roles:
 #      - arn:aws:iam::123456789012:role/application_2InstanceProfile
+
+policies:
+  role_name: ConsoleMeTarget

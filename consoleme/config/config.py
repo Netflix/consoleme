@@ -86,8 +86,14 @@ class Configuration(object):
     async def load_config(self):
         """Load configuration from the location given to us by config_plugin"""
         path = config_plugin.get_config_location()
-        with open(path, "r") as ymlfile:
-            self.config = yaml.safe_load(ymlfile)
+        try:
+            with open(path, "r") as ymlfile:
+                self.config = yaml.safe_load(ymlfile)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                "File not found. Please set the CONFIG_LOCATION environmental variable "
+                f"to point to ConsoleMe's YAML configuration file: {e}"
+            )
 
         extends = self.get("extends")
         dir_path = os.path.dirname(path)

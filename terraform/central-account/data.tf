@@ -1,4 +1,5 @@
 data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
 
 data "aws_ami" "amazon_linux" {
   most_recent = true
@@ -27,7 +28,7 @@ data "template_file" "consoleme_userdata" {
     bucket = var.bucket
     current_account_id = data.aws_caller_identity.current.account_id
     demo_config = data.template_file.consoleme_config.rendered
-    region = var.region
+    region = data.aws_region.current.name
     CONFIG_LOCATION = var.CONFIG_LOCATION
   }
 }
