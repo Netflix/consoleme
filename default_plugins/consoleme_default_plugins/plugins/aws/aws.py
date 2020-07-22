@@ -527,6 +527,24 @@ class Aws:
         log.warning(log_data)
         return
 
+    async def send_communications_new_policy_request(
+        self, extended_request, admin_approved, approval_probe_approved
+    ):
+        """
+        Optionally send a notification when there's a new policy change request
+
+        :param approval_probe_approved:
+        :param admin_approved:
+        :param extended_request:
+        :return:
+        """
+        log_data: dict = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Function is not configured.",
+        }
+        log.warning(log_data)
+        return
+
     @staticmethod
     def get_account_ids_to_names():
         return config.get("account_ids_to_name")

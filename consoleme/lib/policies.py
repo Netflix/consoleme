@@ -413,6 +413,10 @@ async def get_policy_request_uri(request):
     return f"{config.get('url')}/policies/request/{request['request_id']}"
 
 
+async def get_policy_request_uri_v2(extended_request: ExtendedRequestModel):
+    return f"{config.get('url')}/policies/request/{extended_request.id}"
+
+
 async def validate_policy_name(policy_name):
     p = re.compile("^[a-zA-Z0-9+=,.@\\-_]+$")
     match = p.match(policy_name)

@@ -128,6 +128,8 @@ class RequestHandler(BaseAPIV2Handler):
             )
             log_data["request"] = extended_request.json()
             log.debug(log_data)
+            admin_approved = False
+            approval_probe_approved = False
 
             if changes.admin_auto_approve:
                 # make sure user is allowed to use admin_auto_approve
@@ -136,6 +138,7 @@ class RequestHandler(BaseAPIV2Handler):
                 )
                 if can_manage_policy_request:
                     extended_request.status = "approved"
+                    admin_approved = True
                     log_data["admin_auto_approved"] = True
                     log.debug(log_data)
                     extended_request.reviewer = self.user
@@ -174,8 +177,13 @@ class RequestHandler(BaseAPIV2Handler):
                     )
                     if should_auto_approve_request["approved"]:
                         extended_request.status = "approved"
+                        approval_probe_approved = True
                         log_data["probe_auto_approved"] = True
                         log.debug(log_data)
+                        stats.count(
+                            f"{log_data['function']}.probe_auto_approved",
+                            tags={"user": self.user},
+                        )
                         for approving_probe in should_auto_approve_request[
                             "approving_probes"
                         ]:
@@ -227,7 +235,9 @@ class RequestHandler(BaseAPIV2Handler):
                 account_id, extended_request.arn, force_refresh=True
             )
 
-        # TODO: slack message stuff
+        await aws.send_communications_new_policy_request(
+            extended_request, admin_approved, approval_probe_approved
+        )
         self.write(response.json())
 
 
