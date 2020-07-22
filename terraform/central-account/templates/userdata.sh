@@ -140,6 +140,10 @@ ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/ce
 WantedBy=multi-user.target
 EOF
 
+cat << EOF > /apps/consoleme/example_config/example_config_terraform.yaml
+${demo_config}
+EOF
+
 # TODO: Remove this hacky way of removing the fake account ID... instead, stash the rendered template config in an S3 bucket and pull it from userdata
 grep -rl '123456789012' /apps/consoleme/example_config/example_config_terraform.yaml | xargs sed -i "s/123456789012/${current_account_id}/g"
 # Change permissions on service file

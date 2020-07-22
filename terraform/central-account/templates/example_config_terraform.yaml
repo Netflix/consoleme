@@ -1,0 +1,45 @@
+extends:
+  - example_config_base.yaml
+
+tornado:
+  debug: true
+  port: 8081
+  xsrf: true
+  uvloop: false
+
+development: true
+
+logging:
+  stdout_enabled: true
+  format: '%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s'
+  level: debug
+  file: /logs/consoleme/consoleme_tornado.log
+
+account_ids_to_name:
+  ${current_account_id}:
+    - default_account
+
+# A development configuration can specify a specific user to impersonate locally.
+_development_user_override: consoleme_admin@example.com
+
+# A development configuration can specify specific groups to consider the user a member of locally.
+_development_groups_override:
+  - groupa@example.com
+  - groupb@example.com
+  - configeditors@example.com
+  - consoleme_admins@example.com
+
+
+# You'll probably want to override FUNCTION to generate this data with your own business logic.
+application_settings:
+  application_1:
+    owner: groupa@example.com
+    owner_url: https://www.example.com/groupa@example.com
+    app_url: https://www.example.com/ci_cd_pipeline/application_1
+    roles:
+      - ${demo_target_role_arn}
+#      - arn:aws:iam::123456789013:role/application_1InstanceProfile
+#  application_2:
+#    owner: groupa@example.com
+#    roles:
+#      - arn:aws:iam::123456789012:role/application_2InstanceProfile
