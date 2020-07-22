@@ -3,6 +3,6 @@
     <div id="datatable" />
     <script src="/static/js/dist/consoleMeDataTable.js"></script>
     <script>
-        setTimeout(function(){ consoleMeDataTable.renderDataTable("/api/v2/requests_table_config"); }, 1000);
+        setTimeout(function(){ consoleMeDataTable.renderDataTable("/api/v2/requests_table_config", window.location.search); }, 1000);
     </script>
 </div>

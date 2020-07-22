@@ -1,10 +1,10 @@
 import React, {Component} from 'react'
 import _ from 'lodash'
-
 import ReactDOM from 'react-dom'
 import {sendRequestCommon} from '../helpers/utils'
 import {Dropdown, Header, Icon, Input, Pagination, Segment, Table} from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
+let qs = require('qs');
 
 function maybeParseJsonString(str) {
     try {
@@ -46,7 +46,9 @@ class ConsoleMeDataTable extends Component {
             filters: {},
             activePage: 1
         };
+        console.log(this.state)
         this.generateRows = this.generateRows.bind(this)
+        this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(this)
     }
 
     async componentDidMount() {
@@ -61,6 +63,7 @@ class ConsoleMeDataTable extends Component {
             // Todo: Support filtering based on query parameters
             this.setState({filteredData: data})
         }
+        await this.generateFilterFromQueryString()
         this.setState({loading: false})
     }
 
@@ -157,6 +160,7 @@ class ConsoleMeDataTable extends Component {
                             selection
                             options={options}
                             onChange={this.filterColumn.bind(this)}
+                            defaultValue={'' || filters[item.key]}
                         />
                     }
                     case "input": {
@@ -164,7 +168,7 @@ class ConsoleMeDataTable extends Component {
                             name={item.key}
                             placeholder={item.placeholder}
                             onChange={this.filterColumn.bind(this)}
-                            value={'' || filters[item.name]}
+                            value={'' || filters[item.key]}
                         />
                     }
                 }
@@ -200,6 +204,21 @@ class ConsoleMeDataTable extends Component {
             limit: tableConfig.totalRows,
             loading: false
         });
+    }
+
+    async generateFilterFromQueryString() {
+        const {tableConfig} = this.state
+        const queryString = 'username=ccastrapel@netflix.com'
+        const filters = qs.parse(queryString)
+        console.log(filters)
+        if (filters) {
+            this.setState({filters: filters})
+        }
+        if (tableConfig.serverSideFiltering) {
+            await this.filterColumnServerSide({}, filters);
+        } else {
+            await this.filterColumnClientSide({}, filters);
+        }
     }
 
     async filterColumn(event, data) {
@@ -353,9 +372,9 @@ class ConsoleMeDataTable extends Component {
 }
 
 
-export function renderDataTable(configEndpoint) {
+export function renderDataTable(configEndpoint, queryString = "") {
     ReactDOM.render(
-        <ConsoleMeDataTable configEndpoint={configEndpoint}/>,
+        <ConsoleMeDataTable configEndpoint={configEndpoint} queryString={queryString}/>,
         document.getElementById('datatable')
     )
 }

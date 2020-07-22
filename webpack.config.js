@@ -11,6 +11,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'consoleme/templates/static/js/dist'),
     filename: '[name].js',
+    chunkFilename: '[name].bundle.js',
     publicPath: '/static/js/dist',
     library: '[name]'
   },
@@ -31,7 +32,9 @@ module.exports = {
     extensions: ['.js', '.jsx', '.css'],
     alias: {
       'jquery-ui': 'jquery-ui-dist/jquery-ui.js'
-    }
+    },
+    symlinks: false,
+    cacheWithContext: false
   },
   module: {
     rules: [
@@ -82,6 +85,9 @@ module.exports = {
   // Enable these for easier development when running locally
   devtool: 'source-map',
   optimization: {
-    minimize: false
+    minimize: false,
+    splitChunks: {
+      chunks: 'async'
+    }
   }
 }

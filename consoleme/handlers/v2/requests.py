@@ -23,6 +23,8 @@ class RequestsHandler(BaseAPIV2Handler):
         """
         POST /api/v2/requests
         """
+        arguments = {k: self.get_argument(k) for k in self.request.arguments}
+        markdown = arguments.get("markdown")
         cache_key = config.get(
             "cache_all_policy_requests.redis_key", "ALL_POLICY_REQUESTS"
         )
@@ -58,7 +60,20 @@ class RequestsHandler(BaseAPIV2Handler):
                 await self.finish()
                 raise
 
-        self.write(json.dumps(requests[0:limit]))
+        if markdown:
+            requests_to_write = []
+            for request in requests[0:limit]:
+                # Convert request_id and role ARN to link
+                request[
+                    "request_id"
+                ] = f"[{request['request_id']}](/policies/request/{request['request_id']})"
+                request[
+                    "arn"
+                ] = f"[{request['arn']}](/policies/edit/{request['arn'].split(':')[4]}/iamrole/{request['arn'].split('/')[-1]})"
+                requests_to_write.append(request)
+        else:
+            requests_to_write = requests[0:limit]
+        self.write(json.dumps(requests_to_write))
         return
 
 
@@ -124,7 +139,7 @@ class RequestsTableConfigHandler(BaseHandler):
             "filterColumns": True,
             "tableName": "Requests",
             "tableDescription": "View all IAM policy requests created through ConsoleMe",
-            "dataEndpoint": "/api/v2/requests",
+            "dataEndpoint": "/api/v2/requests?markdown=true",
             "grow": 3,
             "sortable": False,
             "totalRows": 1000,
