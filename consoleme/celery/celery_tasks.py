@@ -783,9 +783,13 @@ def cache_roles_for_account(account_id: str) -> bool:
 
 
 @app.task(soft_time_limit=3600)
-def cache_roles_across_accounts() -> bool:
+def cache_roles_across_accounts() -> Dict:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
+
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
+
+    log_data = {"function": function, "cache_key": cache_key}
+    num_accounts = 0
     if config.region == config.get("celery.active_region") or config.get(
         "unit_testing.override_true"
     ):
@@ -795,9 +799,11 @@ def cache_roles_across_accounts() -> bool:
         for account_id in accounts_d.keys():
             if config.get("environment") == "prod":
                 cache_roles_for_account.delay(account_id)
+                num_accounts += 1
             else:
                 if account_id in config.get("celery.test_account_ids", []):
                     cache_roles_for_account.delay(account_id)
+                    num_accounts += 1
     else:
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
@@ -813,7 +819,9 @@ def cache_roles_across_accounts() -> bool:
             red.hdel(cache_key, arn)
 
     stats.count(f"{function}.success")
-    return True
+    log_data["num_accounts"] = num_accounts
+    log.debug(log_data)
+    return log_data
 
 
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
@@ -845,7 +853,7 @@ def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, 
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file").format(
+        s3_key = config.get("account_resource_cache.s3.file", "").format(
             resource_type="managed_policies", account_id=account_id
         )
         async_to_sync(store_json_results_in_redis_and_s3)(
@@ -957,7 +965,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file").format(
+        s3_key = config.get("account_resource_cache.s3.file", "").format(
             resource_type="sqs_queues", account_id=account_id
         )
         async_to_sync(store_json_results_in_redis_and_s3)(
@@ -997,7 +1005,7 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file").format(
+        s3_key = config.get("account_resource_cache.s3.file", "").format(
             resource_type="sns_topics", account_id=account_id
         )
         async_to_sync(store_json_results_in_redis_and_s3)(
@@ -1035,7 +1043,7 @@ def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file").format(
+        s3_key = config.get("account_resource_cache.s3.file", "").format(
             resource_type="s3_buckets", account_id=account_id
         )
         async_to_sync(store_json_results_in_redis_and_s3)(
@@ -1178,7 +1186,7 @@ def get_inventory_of_iam_keys() -> dict:
 def cache_resources_from_aws_config_for_account(account_id) -> dict:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     s3_bucket = config.get("aws_config_cache.s3.bucket")
-    s3_key = config.get("aws_config_cache.s3.file").format(account_id=account_id)
+    s3_key = config.get("aws_config_cache.s3.file", "").format(account_id=account_id)
     dynamo = UserDynamoHandler()
     # Only query in active region, otherwise get data from DDB
     if config.region == config.get("celery.active_region") or config.get(
@@ -1186,7 +1194,8 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     ) in ["dev"]:
         results = aws_config.query(
             config.get(
-                "cache_all_resources_from_aws_config.aws_config.all_resources_query"
+                "cache_all_resources_from_aws_config.aws_config.all_resources_query",
+                "select * where accountId = '{account_id}'",
             ).format(account_id=account_id),
             use_aggregator=False,
             account_id=account_id,

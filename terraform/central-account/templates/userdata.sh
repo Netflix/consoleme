@@ -2,6 +2,7 @@
 set -x
 
 export HOME=/root
+export EC2_REGION=${region}
 # ---------------------------------------------------------------------------------------------------------------------
 # Filter out useless messages from logs
 # ---------------------------------------------------------------------------------------------------------------------
@@ -97,6 +98,11 @@ yarn install
 # Since the setup ran as root, just chown it again so the consoleme user owns it
 chown -R consoleme:consoleme /apps/consoleme
 
+cat << EOF > /etc/environment
+EC2_REGION=${region}
+CONFIG_LOCATION=/apps/consoleme/example_config/example_config_terraform.yaml
+EOF
+
 cat << EOF > /etc/systemd/system/consoleme.service
 [Unit]
 Description=ConsoleMe Service
@@ -107,6 +113,7 @@ StartLimitIntervalSec=0
 
 [Service]
 #Environment=CONFIG_LOCATION=/apps/consoleme/docker/example_config_alb_auth.yaml
+Environment=EC2_REGION=${region}
 Environment=CONFIG_LOCATION=/apps/consoleme/example_config/example_config_terraform.yaml
 WorkingDirectory=/apps/consoleme
 Type=simple
@@ -134,7 +141,8 @@ Restart=always
 RestartSec=1
 WorkingDirectory=/apps/consoleme
 Environment=CONFIG_LOCATION=/apps/consoleme/example_config/example_config_terraform.yaml
-ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG -B
+Environment=EC2_REGION=${region}
+ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=15
 
 [Install]
 WantedBy=multi-user.target
