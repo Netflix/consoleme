@@ -18,6 +18,10 @@ data "template_file" "consoleme_config" {
   template = file("${path.module}/templates/example_config_terraform.yaml")
   vars = {
     demo_target_role_arn = aws_iam_role.consoleme_target.arn
+    demo_app_role_arn_1 = aws_iam_role.consoleme_example_app_role_1.arn
+    demo_app_role_arn_2 = aws_iam_role.consoleme_example_app_role_2.arn
+    demo_user_role_arn_1 = aws_iam_role.consoleme_example_user_role_1.arn
+    demo_user_role_arn_2 = aws_iam_role.consoleme_example_user_role_2.arn
     current_account_id = data.aws_caller_identity.current.account_id
   }
 }

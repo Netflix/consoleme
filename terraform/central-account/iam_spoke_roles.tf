@@ -1,3 +1,5 @@
+# This role should be distributed across all of your accounts
+
 data "aws_iam_policy_document" "consoleme_target" {
   statement {
     sid = "ConsoleMeWillAccessThis"
@@ -48,20 +50,6 @@ resource "aws_iam_role_policy" "consoleme_target_role_policy" {
 }
 
 data "aws_iam_policy_document" "consoleme_target_trust_policy" {
-  statement {
-    sid = "AssumeRoleEC2"
-    effect = "Allow"
-    actions = [
-      "sts:AssumeRole"
-    ]
-    principals {
-      identifiers = [
-        "ec2.amazonaws.com"
-      ]
-      type = "Service"
-    }
-  }
-
   statement {
     sid = "ConsoleMeAssumesTarget"
     actions = [

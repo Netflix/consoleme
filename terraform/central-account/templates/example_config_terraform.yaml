@@ -34,16 +34,32 @@ _development_groups_override:
 # You'll probably want to override FUNCTION to generate this data with your own business logic.
 application_settings:
   application_1:
-    owner: groupa@example.com
+    owner: consoleme_admins@example.com
     owner_url: https://www.example.com/groupa@example.com
     app_url: https://www.example.com/ci_cd_pipeline/application_1
     roles:
-      - ${demo_target_role_arn}
-#      - arn:aws:iam::123456789013:role/application_1InstanceProfile
-#  application_2:
-#    owner: groupa@example.com
-#    roles:
-#      - arn:aws:iam::123456789012:role/application_2InstanceProfile
+      - ${demo_app_role_arn_1}
+  application_2:
+    owner: groupb@example.com
+    owner_url: https://www.example.com/groupb@example.com
+    app_url: https://www.example.com/ci_cd_pipeline/application_2
+    roles:
+      - ${demo_app_role_arn_2}
+
+dynamic_config:
+  # You can set this key in http://YOUR_CONSOLEME_DOMAIN/config as a rudimentary way to allow groups to access
+  # roles before you override get_eligible_roles with your own custom logic
+  group_mapping:
+    groupa@example.com:
+      roles:
+        - ${demo_user_role_arn_1}
+    groupb@example.com:
+      roles:
+        - ${demo_user_role_arn_2}
+    consoleme_admins@example.com:
+      roles:
+        - ${demo_user_role_arn_1}
+        - ${demo_user_role_arn_2}
 
 policies:
   role_name: ConsoleMeTarget
