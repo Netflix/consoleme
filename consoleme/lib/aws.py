@@ -190,8 +190,16 @@ async def get_resource_policy(account: str, resource_type: str, name: str, regio
     except ClientError:
         # We don't have access to this resource, so we can't get the policy.
         details = {}
+
+    # Default policy
+    default_policy = {"Version": "2012-10-17", "Statement": []}
+
+    # When NoSuchBucketPolicy, the above method returns {"Policy": {}}, so we default to blank policy
+    if "Policy" in details and "Statement" not in details["Policy"]:
+        details = {"Policy": default_policy}
+
     # Default to a blank policy
-    return details.get("Policy", {"Version": "2012-10-17", "Statement": []})
+    return details.get("Policy", default_policy)
 
 
 async def get_resource_policies(
