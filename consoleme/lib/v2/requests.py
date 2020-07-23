@@ -50,7 +50,7 @@ async def generate_request_from_change_model_array(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "request": request_creation,
+        "request": request_creation.dict(),
         "message": "Incoming request",
     }
     log.info(log_data)
@@ -169,7 +169,7 @@ async def is_request_eligible_for_auto_approval(
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
         "arn": extended_request.arn,
-        "request": extended_request,
+        "request": extended_request.dict(),
         "message": "Checking whether request is eligible for auto-approval probes",
     }
     log.info(log_data)
@@ -211,7 +211,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
         "arn": extended_request.arn,
-        "request": extended_request,
+        "request": extended_request.dict(),
         "message": "Generating resource policies",
     }
     log.info(log_data)
@@ -262,7 +262,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
 
     extended_request.changes.changes.extend(auto_generated_resource_policy_changes)
     log_data["message"] = "Finished generating resource policies"
-    log_data["request"] = extended_request
+    log_data["request"] = extended_request.dict()
     log.info(log_data)
 
 
@@ -273,7 +273,7 @@ async def validate_inline_policy_change(
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
         "arn": change.principal_arn,
-        "request": change,
+        "request": change.dict(),
         "message": "Validating inline policy change",
     }
     log.info(log_data)
@@ -331,7 +331,7 @@ async def validate_managed_policy_change(
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
         "arn": change.principal_arn,
-        "request": change,
+        "request": change.dict(),
         "message": "Validating managed policy change",
     }
     log.info(log_data)
@@ -374,7 +374,7 @@ async def validate_assume_role_policy_change(
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
         "arn": change.principal_arn,
-        "request": change,
+        "request": change.dict(),
         "message": "Validating assume role policy change",
     }
     log.info(log_data)
@@ -398,20 +398,20 @@ async def apply_changes_to_role(
     extended_request: ExtendedRequestModel, response: RequestCreationResponse, user: str
 ) -> None:
     """
-            Applies changes based on the changes array in the request, in a best effort manner to a role
+        Applies changes based on the changes array in the request, in a best effort manner to a role
 
-            Caution: this method applies changes blindly... meaning it assumes before calling this method,
-            you have validated the changes being made are authorized.
+        Caution: this method applies changes blindly... meaning it assumes before calling this method,
+        you have validated the changes being made are authorized.
 
-            :param extended_request: ExtendedRequestModel
-            :param user: Str - requester's email address
-            :param response: RequestCreationResponse
-        """
+        :param extended_request: ExtendedRequestModel
+        :param user: Str - requester's email address
+        :param response: RequestCreationResponse
+    """
 
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "request": extended_request,
+        "request": extended_request.dict(),
         "message": "Applying request changes",
     }
     log.info(log_data)
@@ -442,7 +442,15 @@ async def apply_changes_to_role(
     )
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
-            # This change has already been applied
+            # This change has already been applied, this can happen in the future when we have a multi-change request
+            # that an admin approves, and it applies 5 of the changes, but fails to apply 1 change due to an error.
+            # Upon correcting the error, the admin can click approve again, and it will only apply the changes that
+            # haven't already been applied
+            log_data[
+                "message"
+            ] = "Change has already been applied, skipping applying the change"
+            log_data["change"] = change.dict()
+            log.debug(log_data)
             continue
         if change.change_type == ChangeType.inline_policy:
             if change.action == Action.attach:
@@ -581,12 +589,15 @@ async def apply_changes_to_role(
             response.action_results.append(
                 ActionResult(
                     status="error",
-                    message=f"Error occurred applying: Change type {change.change_type} is not supported",
+                    message=f"Error occurred applying: Change type {change.change_type.value} is not supported",
                 )
             )
             response.errors += 1
+            log_data["message"] = "Unsupported type for auto-application detected"
+            log_data["change"] = change.dict()
+            log.debug(log_data)
 
     log_data["message"] = "Finished applying request changes"
-    log_data["request"] = extended_request
-    log_data["response"] = response
+    log_data["request"] = extended_request.dict()
+    log_data["response"] = response.dict()
     log.info(log_data)

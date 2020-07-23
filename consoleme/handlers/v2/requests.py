@@ -126,7 +126,7 @@ class RequestHandler(BaseAPIV2Handler):
             extended_request = await generate_request_from_change_model_array(
                 changes, self.user
             )
-            log_data["request"] = extended_request.json()
+            log_data["request"] = extended_request.dict()
             log.debug(log_data)
             admin_approved = False
             approval_probe_approved = False
@@ -139,8 +139,6 @@ class RequestHandler(BaseAPIV2Handler):
                 if can_manage_policy_request:
                     extended_request.status = "approved"
                     admin_approved = True
-                    log_data["admin_auto_approved"] = True
-                    log.debug(log_data)
                     extended_request.reviewer = self.user
                     self_approval_comment = CommentModel(
                         id=str(uuid.uuid4()),
@@ -150,7 +148,9 @@ class RequestHandler(BaseAPIV2Handler):
                         text=f"Self-approved by admin: {self.user}",
                     )
                     extended_request.comments.append(self_approval_comment)
-
+                    log_data["admin_auto_approved"] = True
+                    log_data["request"] = extended_request.dict()
+                    log.debug(log_data)
                     stats.count(
                         f"{log_data['function']}.post.admin_auto_approved",
                         tags={"user": self.user},
@@ -178,8 +178,6 @@ class RequestHandler(BaseAPIV2Handler):
                     if should_auto_approve_request["approved"]:
                         extended_request.status = "approved"
                         approval_probe_approved = True
-                        log_data["probe_auto_approved"] = True
-                        log.debug(log_data)
                         stats.count(
                             f"{log_data['function']}.probe_auto_approved",
                             tags={"user": self.user},
@@ -195,11 +193,15 @@ class RequestHandler(BaseAPIV2Handler):
                                 text=f"Policy {approving_probe['policy']} auto-approved by probe: {approving_probe['name']}",
                             )
                             extended_request.comments.append(approving_probe_comment)
+                        log_data["probe_auto_approved"] = True
+                        log_data["request"] = extended_request.dict()
+                        log.debug(log_data)
 
             dynamo = UserDynamoHandler(self.user)
             request = await dynamo.write_policy_request_v2(extended_request)
             log_data["message"] = "New request created in Dynamo"
-            log_data["request"] = request
+            log_data["request"] = extended_request.dict()
+            log_data["dynamo_request"] = request
             log.debug(log_data)
         except (InvalidRequestParameter, ValidationError) as e:
             log_data["message"] = "Validation Exception"
@@ -234,6 +236,10 @@ class RequestHandler(BaseAPIV2Handler):
             await aws.fetch_iam_role(
                 account_id, extended_request.arn, force_refresh=True
             )
+            log_data["request"] = extended_request.dict()
+            log_data["message"] = "Applied changes based on approved request"
+            log_data["response"] = response.dict()
+            log.debug(log_data)
 
         await aws.send_communications_new_policy_request(
             extended_request, admin_approved, approval_probe_approved
