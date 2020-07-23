@@ -21,6 +21,7 @@ function ExpandNestedJson(data) {
     })
     return data
 }
+// TODO: Calendar
 
 class ConsoleMeDataTable extends Component {
     constructor(props) {
@@ -31,6 +32,8 @@ class ConsoleMeDataTable extends Component {
             data: [],
             filteredData: [],
             tableConfig: {
+                expandableRows: true, // TODO: Hee Won - We should obey this configuration if possible
+                sortable: true, // TODO: Figure out sorting logic for both frontend / backend
                 totalRows: 1000,
                 rowsPerPage: 50,
                 columns: [],
@@ -39,11 +42,12 @@ class ConsoleMeDataTable extends Component {
                 dataEndpoint: '',
                 tableName: '',
                 tableDescription: '',
-            }, // Default tableConfiguration can be specified here
+            },
             columns: [],
             value: "",
             loading: false,
             filters: {},
+            sort: {},
             activePage: 1
         };
         console.log(this.state)
@@ -84,16 +88,24 @@ class ConsoleMeDataTable extends Component {
         });
     };
 
-    handleRowExpansion = idx => () => {
-        const {filteredData} = this.state;
-
+    handleRowExpansion(event, idx) {
+        const {filteredData, tableConfig} = this.state;
         let newData = [...filteredData];
         if (newData[idx + 1] != null && "raw" in newData[idx + 1]) {
             newData.splice(idx + 1, 1);
-        } else {
-            newData.splice(idx + 1, 0, {raw: ExpandNestedJson(newData[idx])});
-        }
+            event.target.classList.remove("caret", "down")
+            event.target.classList.add("caret", "right")
+            tableConfig.rowsPerPage -= 1
+            // TODO: Change caret icon
 
+        } else {
+            event.target.classList.remove("caret", "right")
+            event.target.classList.add("caret", "down")
+            tableConfig.rowsPerPage += 1
+            newData.splice(idx + 1, 0, {raw: ExpandNestedJson(newData[idx])});
+            // TODO: Change caret icon
+        }
+        this.setState({tableConfig: tableConfig})
         return this.setState({
             filteredData: newData
         });
@@ -151,7 +163,7 @@ class ConsoleMeDataTable extends Component {
                 const options = columnOptions[item.key];
                 let columnCell
                 switch (item.type) {
-                    case "dropdown": {
+                    case "dropdown":
                         columnCell = <Dropdown
                             name={item.key}
                             clearable
@@ -159,18 +171,19 @@ class ConsoleMeDataTable extends Component {
                             search
                             selection
                             options={options}
-                            onChange={this.filterColumn.bind(this)}
+                            onChange={this.filterColumn.bind(this)} // TODO: Hee Won - need debounce
                             defaultValue={'' || filters[item.key]}
                         />
-                    }
-                    case "input": {
+                        break
+                    case "input":
                         columnCell = <Input
                             name={item.key}
+                            autoComplete="off"
                             placeholder={item.placeholder}
-                            onChange={this.filterColumn.bind(this)}
+                            onChange={this.filterColumn.bind(this)} // TODO: Hee Won - need debounce
                             value={'' || filters[item.key]}
                         />
-                    }
+                        break
                 }
                 columns.push(
                     <Table.HeaderCell
@@ -207,10 +220,8 @@ class ConsoleMeDataTable extends Component {
     }
 
     async generateFilterFromQueryString() {
-        const {tableConfig} = this.state
-        const queryString = 'username=ccastrapel@netflix.com'
-        const filters = qs.parse(queryString)
-        console.log(filters)
+        const {tableConfig, queryString} = this.state
+        const filters = qs.parse(queryString, { ignoreQueryPrefix: true })
         if (filters) {
             this.setState({filters: filters})
         }
@@ -240,7 +251,6 @@ class ConsoleMeDataTable extends Component {
         filteredData = data.filter(function (item) {
             for (let key in filters) {
                 let re = filters[key];
-                console.log("re ", re);
                 try {
                     re = new RegExp(filters[key], "g");
                 } catch (e) {
@@ -257,7 +267,6 @@ class ConsoleMeDataTable extends Component {
             }
             return true;
         });
-        console.log(filteredData);
         this.setState({filteredData: filteredData, loading: false});
     }
 
@@ -272,7 +281,7 @@ class ConsoleMeDataTable extends Component {
             if ("raw" in entry) {
                 return (
                     <Table.Row>
-                        <Table.Cell colSpan="7">
+                        <Table.Cell collapsing colSpan="7">
                             <pre>{JSON.stringify(entry.raw, null, 4)}</pre>
                         </Table.Cell>
                     </Table.Row>
@@ -282,7 +291,7 @@ class ConsoleMeDataTable extends Component {
             // Iterate through our configured columns
             tableConfig.columns.forEach(
                 function (column, index) {
-                    cells.push(<Table.Cell>
+                    cells.push(<Table.Cell collapsing>
                         <ReactMarkdown
                             linkTarget="_blank"
                             source={'' || entry[column.key].toString()}
@@ -297,35 +306,10 @@ class ConsoleMeDataTable extends Component {
                         <Icon
                             link
                             name="caret right"
-                            onClick={this.handleRowExpansion(idx)}
+                            onClick={(event) => this.handleRowExpansion(event, idx)} // TODO: Fix caret
                         />
                     </Table.Cell>
-                    {/*{cells.map((cell, idx) => {return cell})}*/}
                     {cells}
-                    {/*<Table.Cell>{account_name}</Table.Cell>*/}
-                    {/*<Table.Cell>{account_id}</Table.Cell>*/}
-                    {/*<Table.Cell>{environment}</Table.Cell>*/}
-                    {/*<Table.Cell>{role}</Table.Cell>*/}
-                    {/*<Table.Cell>*/}
-                    {/*    <Icon*/}
-                    {/*        onClick={e => {*/}
-                    {/*            e.stopPropagation();*/}
-                    {/*            console.log("CLI: ", e);*/}
-                    {/*        }}*/}
-                    {/*        link*/}
-                    {/*        name="key"*/}
-                    {/*    />*/}
-                    {/*</Table.Cell>*/}
-                    {/*<Table.Cell>*/}
-                    {/*    <Icon*/}
-                    {/*        onClick={e => {*/}
-                    {/*            e.stopPropagation();*/}
-                    {/*            console.log("SIGN-IN: ", e);*/}
-                    {/*        }}*/}
-                    {/*        link*/}
-                    {/*        name="sign-in"*/}
-                    {/*    />*/}
-                    {/*</Table.Cell>*/}
                 </Table.Row>
             );
 
@@ -333,9 +317,7 @@ class ConsoleMeDataTable extends Component {
     }
 
     render() {
-        {
-        }
-        const {filteredData, direction, value, tableConfig, activePage} = this.state;
+        const {filteredData, tableConfig, activePage} = this.state;
 
         return (
             <Segment basic>
@@ -343,9 +325,8 @@ class ConsoleMeDataTable extends Component {
                 <ReactMarkdown
                     linkTarget="_blank"
                     source={tableConfig.tableDescription}
-                    //source={`Here you can find your available accounts that are allowed to access its AWS Console. Please refer to this [link](https://manuals.netflix.net/view/consoleme/mkdocs/master/) for more guides.`}
-                />
-                <Table sortable celled compact selectable striped>
+                 />
+                <Table collapsing sortable celled compact selectable striped>
                     {this.generateColumns()}
                     <Table.Body>
                         {this.generateRows()}
