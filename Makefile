@@ -21,7 +21,6 @@ endif
 
 # Set CONSOLEME_CONFIG_ENTRYPOINT make variable to CONSOLEME_CONFIG_ENTRYPOINT env variable, or "default_config"
 CONSOLEME_CONFIG_ENTRYPOINT := $(or ${CONSOLEME_CONFIG_ENTRYPOINT},${CONSOLEME_CONFIG_ENTRYPOINT},default_config)
-
 .PHONY: env_install
 env_install: env/bin/activate
 	# Activate either the virtualenv in env/ or tell conda to activate
@@ -167,3 +166,5 @@ endif
 default_plugins:
 	. env/bin/activate || source activate consoleme;\
 	pip install -e default_plugins
+
+

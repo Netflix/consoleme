@@ -30,5 +30,11 @@ _development_groups_override:
   - configeditors@example.com
   - consoleme_admins@example.com
 
+format_role_name:
+  # You can specify how you would like the role name to appear on the landing page. By default,
+  # We show just the role name. arn:aws:iam::123456789012:role/roleName -> roleName
+  #show_full_arn: true
+  show_account_name_role_name: true
+
 policies:
   role_name: ConsoleMeTarget
