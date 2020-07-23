@@ -74,6 +74,7 @@ clean:
 	rm -rf build/
 	rm -rf *.egg-info
 	rm -f celerybeat-schedule.db
+	rm -rf consoleme.tar.gz
 	find $(project) tests -name "*.pyc" -delete
 	find . -name '*.pyc' -delete
 	find . -name '*.pyo' -delete
