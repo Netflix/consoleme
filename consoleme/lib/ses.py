@@ -256,7 +256,7 @@ async def send_policy_request_to_approvers(
     request, policy_change_uri, pending_requests_url, sending_app="consoleme"
 ):
     app_name = config.get(f"ses.{sending_app}.name")
-    subject = f"{app_name}: A policy change request for {request['arn']} requires your review."
+    subject = f"{app_name}: A Policy change request for {request['arn']} requires your review."
     to_addresses = config.get("groups.can_admin_policies")
     if config.get("development"):
         to_addresses = config.get("groups.developement_notification_emails")

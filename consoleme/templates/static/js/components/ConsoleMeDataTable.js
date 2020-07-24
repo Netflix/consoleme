@@ -5,7 +5,9 @@ import ReactDOM from 'react-dom';
 import {sendRequestCommon} from '../helpers/utils';
 import {Dropdown, Header, Icon, Input, Pagination, Segment, Table} from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
-import DateRangePicker from '@wojtekmaj/react-daterange-picker'
+import SemanticDatepicker from 'react-semantic-ui-datepickers';
+import 'react-semantic-ui-datepickers/dist/react-semantic-ui-datepickers.css';
+
 
 
 const expandNestedJson = (data) => {
@@ -188,6 +190,7 @@ class ConsoleMeDataTable extends Component {
                             options={options}
                             onChange={this.filterColumn.bind(this)}
                             value={filters[item.key] != null ? filters[item.key] : ''}
+                            fluid
                         />
                     );
                     break;
@@ -197,31 +200,16 @@ class ConsoleMeDataTable extends Component {
                         <Input
                             name={item.key}
                             autoComplete="off"
+                            style={item.style}
                             placeholder={item.placeholder}
                             onChange={this.filterColumn.bind(this)}
                             value={filters[item.key] != null ? filters[item.key] : ''}
-                            onChange={this.filterColumn.bind(this)} // TODO: Hee Won - need debounce
-                            value={'' || filters[item.key]}
                         />
                     );
                     break
                 }
                 case "daterange": {
-                    columnCell = <DateRangePicker
-                        name={item.key}
-                        calendarAriaLabel="Toggle calendar"
-                        clearAriaLabel="Clear value"
-                        dayAriaLabel="Day"
-                        monthAriaLabel="Month"
-                        nativeInputAriaLabel="Date"
-                        onChange={async (e) => {
-                            await this.filterDateRangeTime(_, {name: item.key, values: e})
-                        }}
-                        // If a filter for `item.key` exists, multiply the start and end times epochs by 1000
-                        // because DateRangePicker expects epoch time in milliseconds
-                        value={filters[item.key] && [filters[item.key][0] * 1000, filters[item.key][1] * 1000]}
-                        yearAriaLabel="Year"
-                    />
+                    columnCell = <SemanticDatepicker name={item.key} onChange={this.filterDateRangeTime.bind(this)} type="range" />;
 
                     break
                 }
@@ -229,10 +217,17 @@ class ConsoleMeDataTable extends Component {
 
             columns.push(
                 <Table.HeaderCell
-                    onClick={this.handleSort(key)}
-                    sorted={tableConfig.direction}
+                    style={item.style}
+                    fluid
+                    //onClick={this.handleSort(key)}
+                    //sorted={tableConfig.direction}
                 >
                     {columnCell}
+                    <Icon
+                        name={"sort"}
+                        link
+                        onClick={this.handleSort(key)}
+                        sorted={tableConfig.direction} />
                 </Table.HeaderCell>
             );
         });
@@ -263,13 +258,13 @@ class ConsoleMeDataTable extends Component {
     }
 
     async filterDateRangeTime(event, data) {
+        console.log(event)
+        console.log(data)
         // Convert epoch milliseconds to epoch seconds
-        if (data.values) {
-            const startTime = parseInt(data.values[0].getTime() / 1000);
-            const endTime = parseInt(data.values[1].getTime() / 1000);
+        if (data.value && data.value[0] && data.value[1]) {
+            const startTime = parseInt(data.value[0].getTime() / 1000);
+            const endTime = parseInt(data.value[1].getTime() / 1000);
             await this.filterColumn(_, {name: data.name, value: [startTime, endTime]})
-        } else {
-            await this.filterColumn(_, {name: data.name, value: null})
         }
     }
 

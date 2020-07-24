@@ -146,7 +146,12 @@ class RequestsTableConfigHandler(BaseHandler):
             "serverSideFiltering": True,
             "columns": [
                 {"placeholder": "Username", "key": "username", "type": "input"},
-                {"placeholder": "Arn", "key": "arn", "type": "input"},
+                {
+                    "placeholder": "Arn",
+                    "key": "arn",
+                    "type": "input",
+                    "style": {"width": "350px"},
+                },
                 {
                     "placeholder": "Request Time",
                     "key": "request_time",
