@@ -214,7 +214,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
         "request": extended_request.dict(),
         "message": "Generating resource policies",
     }
-    log.info(log_data)
+    log.debug(log_data)
 
     role_account_id = await get_resource_account(extended_request.arn)
     arn_parsed = parse_arn(extended_request.arn)
@@ -263,7 +263,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
     extended_request.changes.changes.extend(auto_generated_resource_policy_changes)
     log_data["message"] = "Finished generating resource policies"
     log_data["request"] = extended_request.dict()
-    log.info(log_data)
+    log.debug(log_data)
 
 
 async def validate_inline_policy_change(
@@ -320,6 +320,13 @@ async def validate_inline_policy_change(
         log.error(log_data)
         raise InvalidRequestParameter(log_data["message"])
 
+    if change.action == Action.attach and not seen_policy_name and not change.new:
+        log_data[
+            "message"
+        ] = "Inline policy not seen but request claims change is not new"
+        log.error(log_data)
+        raise InvalidRequestParameter(log_data["message"])
+
     # TODO: check sha in the request (future feature)
     # If here, then that means inline policy is validated
 
@@ -362,9 +369,7 @@ async def validate_managed_policy_change(
                 "message"
             ] = "The Managed Policy you are trying to detach is not attached to this role."
             log.error(log_data)
-            raise InvalidRequestParameter(
-                log_data[f"{change.arn} is not attached to this role"]
-            )
+            raise InvalidRequestParameter(f"{change.arn} is not attached to this role")
 
 
 async def validate_assume_role_policy_change(
