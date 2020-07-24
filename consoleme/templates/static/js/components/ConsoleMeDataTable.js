@@ -4,6 +4,8 @@ import ReactDOM from 'react-dom'
 import {sendRequestCommon} from '../helpers/utils'
 import {Dropdown, Header, Icon, Input, Pagination, Segment, Table} from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
+import DateRangePicker from '@wojtekmaj/react-daterange-picker'
+
 let qs = require('qs');
 
 function maybeParseJsonString(str) {
@@ -21,6 +23,7 @@ function ExpandNestedJson(data) {
     })
     return data
 }
+
 // TODO: Calendar
 
 class ConsoleMeDataTable extends Component {
@@ -64,7 +67,6 @@ class ConsoleMeDataTable extends Component {
         if (tableConfig.dataEndpoint) {
             const data = await sendRequestCommon({limit: tableConfig.totalRows}, tableConfig.dataEndpoint)
             this.setState({data: data})
-            // Todo: Support filtering based on query parameters
             this.setState({filteredData: data})
         }
         await this.generateFilterFromQueryString()
@@ -93,15 +95,15 @@ class ConsoleMeDataTable extends Component {
         let newData = [...filteredData];
         if (newData[idx + 1] != null && "raw" in newData[idx + 1]) {
             newData.splice(idx + 1, 1);
+            tableConfig.rowsPerPage -= 1
             event.target.classList.remove("caret", "down")
             event.target.classList.add("caret", "right")
-            tableConfig.rowsPerPage -= 1
             // TODO: Change caret icon
 
         } else {
+            tableConfig.rowsPerPage += 1
             event.target.classList.remove("caret", "right")
             event.target.classList.add("caret", "down")
-            tableConfig.rowsPerPage += 1
             newData.splice(idx + 1, 0, {raw: ExpandNestedJson(newData[idx])});
             // TODO: Change caret icon
         }
@@ -184,6 +186,24 @@ class ConsoleMeDataTable extends Component {
                             value={'' || filters[item.key]}
                         />
                         break
+                    case "daterange":
+                        columnCell = <DateRangePicker
+                            name={item.key}
+                            calendarAriaLabel="Toggle calendar"
+                            clearAriaLabel="Clear value"
+                            dayAriaLabel="Day"
+                            monthAriaLabel="Month"
+                            nativeInputAriaLabel="Date"
+                            onChange={async (e) => {
+                                await this.filterDateRangeTime(_, {name: item.key, values: e})
+                            }}
+                            // If a filter for `item.key` exists, multiply the start and end times epochs by 1000
+                            // because DateRangePicker expects epoch time in milliseconds
+                            value={filters[item.key] && [filters[item.key][0] * 1000, filters[item.key][1] * 1000]}
+                            yearAriaLabel="Year"
+                        />
+
+                        break
                 }
                 columns.push(
                     <Table.HeaderCell
@@ -221,7 +241,7 @@ class ConsoleMeDataTable extends Component {
 
     async generateFilterFromQueryString() {
         const {tableConfig, queryString} = this.state
-        const filters = qs.parse(queryString, { ignoreQueryPrefix: true })
+        const filters = qs.parse(queryString, {ignoreQueryPrefix: true})
         if (filters) {
             this.setState({filters: filters})
         }
@@ -230,6 +250,13 @@ class ConsoleMeDataTable extends Component {
         } else {
             await this.filterColumnClientSide({}, filters);
         }
+    }
+
+    async filterDateRangeTime(event, data) {
+        // Convert epoch milliseconds to epoch seconds
+        const startTime = parseInt(data.values[0].getTime() / 1000);
+        const endTime = parseInt(data.values[1].getTime() / 1000);
+        await this.filterColumn(_, {name: data.name, value: [startTime, endTime]})
     }
 
     async filterColumn(event, data) {
@@ -247,8 +274,8 @@ class ConsoleMeDataTable extends Component {
     }
 
     async filterColumnClientSide(event, filters) {
-        let {data, tableConfig, filteredData} = this.state;
-        filteredData = data.filter(function (item) {
+        let {data} = this.state;
+        const filteredData = data.filter(function (item) {
             for (let key in filters) {
                 let re = filters[key];
                 try {
@@ -273,7 +300,7 @@ class ConsoleMeDataTable extends Component {
     generateRows() {
         const {filteredData, tableConfig, activePage} = this.state
         const filteredDataPaginated = filteredData.slice(
-            (activePage-1) * tableConfig.rowsPerPage,
+            (activePage - 1) * tableConfig.rowsPerPage,
             activePage * tableConfig.rowsPerPage
         )
         return filteredDataPaginated.map((entry, idx) => {
@@ -291,12 +318,22 @@ class ConsoleMeDataTable extends Component {
             // Iterate through our configured columns
             tableConfig.columns.forEach(
                 function (column, index) {
-                    cells.push(<Table.Cell collapsing>
+                    if (column.type === "daterange") {
+                        cells.push(<Table.Cell collapsing>
+                        <ReactMarkdown
+                            linkTarget="_blank"
+                            source={'' || new Date(entry[column.key] * 1000).toUTCString()}
+                        />
+                    </Table.Cell>)
+
+                    } else {
+                        cells.push(<Table.Cell collapsing>
                         <ReactMarkdown
                             linkTarget="_blank"
                             source={'' || entry[column.key].toString()}
                         />
                     </Table.Cell>)
+                    }
                 }
             )
 
@@ -325,7 +362,7 @@ class ConsoleMeDataTable extends Component {
                 <ReactMarkdown
                     linkTarget="_blank"
                     source={tableConfig.tableDescription}
-                 />
+                />
                 <Table collapsing sortable celled compact selectable striped>
                     {this.generateColumns()}
                     <Table.Body>

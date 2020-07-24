@@ -141,7 +141,11 @@ class RequestsTableConfigHandler(BaseHandler):
             "columns": [
                 {"placeholder": "Username", "key": "username", "type": "input"},
                 {"placeholder": "Arn", "key": "arn", "type": "input"},
-                {"placeholder": "Request Time", "key": "request_time", "type": "input"},
+                {
+                    "placeholder": "Request Time",
+                    "key": "request_time",
+                    "type": "daterange",
+                },
                 {"placeholder": "Status", "key": "status", "type": "input"},
                 {"placeholder": "Request ID", "key": "request_id", "type": "input"},
                 {"placeholder": "Policy Name", "key": "policy_name", "type": "input"},
