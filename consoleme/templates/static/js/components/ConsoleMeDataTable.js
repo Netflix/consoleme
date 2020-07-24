@@ -1,33 +1,31 @@
-import React, {Component} from 'react'
-import _ from 'lodash'
-import ReactDOM from 'react-dom'
-import {sendRequestCommon} from '../helpers/utils'
+import _ from 'lodash';
+import qs from 'qs';
+import React, {Component} from 'react';
+import ReactDOM from 'react-dom';
+import {sendRequestCommon} from '../helpers/utils';
 import {Dropdown, Header, Icon, Input, Pagination, Segment, Table} from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
-let qs = require('qs');
 
-function maybeParseJsonString(str) {
-    try {
-        return JSON.parse(str)
-    } catch (e) {
-        return str
-    }
-}
 
-function ExpandNestedJson(data) {
-    const keys = Object.keys(data)
-    keys.forEach(function (item, index) {
-        data[item] = maybeParseJsonString(data[item])
-    })
-    return data
-}
+const expandNestedJson = (data) => {
+    Object.keys(data).forEach((key) => {
+        try {
+            data[key] = JSON.parse(data[key]);
+        } catch (e) {
+            data[key] = data[key];
+        }
+    });
+    return data;
+};
+
 
 class ConsoleMeDataTable extends Component {
     constructor(props) {
         super(props);
+        const {configEndpoint, queryString} = props;
         this.state = {
-            configEndpoint: props.configEndpoint,
-            queryString: props.queryString,
+            configEndpoint,
+            queryString,
             data: [],
             filteredData: [],
             tableConfig: {
@@ -44,27 +42,40 @@ class ConsoleMeDataTable extends Component {
             value: "",
             loading: false,
             filters: {},
-            activePage: 1
+            activePage: 1,
+            expandedRow: null,
         };
-        console.log(this.state)
+
         this.generateRows = this.generateRows.bind(this)
         this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(this)
     }
 
     async componentDidMount() {
-        this.setState({loading: true})
         this.timer = null;
-        const configRequest = await fetch(this.state.configEndpoint)
-        const tableConfig = await configRequest.json()
-        this.setState({tableConfig: tableConfig})
-        if (tableConfig.dataEndpoint) {
-            const data = await sendRequestCommon({limit: tableConfig.totalRows}, tableConfig.dataEndpoint)
-            this.setState({data: data})
-            // Todo: Support filtering based on query parameters
-            this.setState({filteredData: data})
-        }
-        await this.generateFilterFromQueryString()
-        this.setState({loading: false})
+
+        this.setState({
+            loading: true,
+        }, async () => {
+            const request = await fetch(this.state.configEndpoint);
+            const tableConfig = await request.json();
+
+            let data = [];
+            if (tableConfig.dataEndpoint) {
+                data = await sendRequestCommon({
+                    limit: tableConfig.totalRows,
+                }, tableConfig.dataEndpoint);
+            }
+
+            // TODO, Support filtering based on query parameters
+            this.setState({
+                data,
+                filteredData: data,
+                loading: false,
+                tableConfig,
+            }, async () => {
+                await this.generateFilterFromQueryString();
+            });
+        });
     }
 
     handleSort = clickedColumn => () => {
@@ -84,19 +95,28 @@ class ConsoleMeDataTable extends Component {
         });
     };
 
-    handleRowExpansion = idx => () => {
-        const {filteredData} = this.state;
+    handleRowExpansion = (idx) => () => {
+        const {expandedRow, filteredData, tableConfig, activePage} = this.state;
 
-        let newData = [...filteredData];
-        if (newData[idx + 1] != null && "raw" in newData[idx + 1]) {
-            newData.splice(idx + 1, 1);
+        // close expansion if there is any expanded row.
+        if (expandedRow && expandedRow.index === idx + 1) {
+            this.setState({
+                expandedRow: null,
+            });
         } else {
-            newData.splice(idx + 1, 0, {raw: ExpandNestedJson(newData[idx])});
+            // expand the row if a row is clicked.
+            const filteredDataPaginated = filteredData.slice(
+                (activePage - 1) * tableConfig.rowsPerPage,
+                activePage * tableConfig.rowsPerPage - 1
+            );
+            const newExpandedRow = {
+                index: idx + 1,
+                data: expandNestedJson(filteredDataPaginated[idx]),
+            };
+            this.setState({
+                expandedRow: newExpandedRow,
+            });
         }
-
-        return this.setState({
-            filteredData: newData
-        });
     };
 
     triggerChange() {
@@ -114,14 +134,15 @@ class ConsoleMeDataTable extends Component {
     generateColumnOptions() {
         const {data} = this.state;
         let columnOptionSet = {};
+
         // Iterate through our data
-        data.forEach(function (item, index) {
-            // Look at the key, value pairs in each row
-            for (const [key, value] of Object.entries(item)) {
-                // Create an empty set for the key if it doesn't already exist in columnOptions
-                !(key in columnOptionSet) && (columnOptionSet[key] = new Set());
-                columnOptionSet[key].add(value);
-            }
+        data.forEach((item) => {
+            Object.keys(item).forEach((key) => {
+                if (!(key in columnOptionSet)) {
+                    columnOptionSet[key] = new Set();
+                }
+                columnOptionSet[key].add(item[key]);
+            });
         });
 
         let columnOptions = {};
@@ -143,16 +164,17 @@ class ConsoleMeDataTable extends Component {
     generateColumns() {
         const {tableConfig, filters} = this.state;
         const columnOptions = this.generateColumnOptions();
-        let columns = [];
-        tableConfig.columns &&
-        tableConfig.columns.forEach(
-            function (item, index) {
-                let key = item.key;
-                const options = columnOptions[item.key];
-                let columnCell
-                switch (item.type) {
-                    case "dropdown": {
-                        columnCell = <Dropdown
+        const columns = [];
+
+        (tableConfig.columns || []).forEach((item) => {
+            let key = item.key;
+            const options = columnOptions[item.key];
+            let columnCell = null;
+
+            switch (item.type) {
+                case "dropdown": {
+                    columnCell = (
+                        <Dropdown
                             name={item.key}
                             clearable
                             placeholder={item.placeholder}
@@ -160,28 +182,33 @@ class ConsoleMeDataTable extends Component {
                             selection
                             options={options}
                             onChange={this.filterColumn.bind(this)}
-                            defaultValue={'' || filters[item.key]}
+                            value={filters[item.key] != null ? filters[item.key] : ''}
                         />
-                    }
-                    case "input": {
-                        columnCell = <Input
+                    );
+                    break;
+                }
+                case "input": {
+                    columnCell = (
+                        <Input
                             name={item.key}
                             placeholder={item.placeholder}
                             onChange={this.filterColumn.bind(this)}
-                            value={'' || filters[item.key]}
+                            value={filters[item.key] != null ? filters[item.key] : ''}
                         />
-                    }
+                    );
+                    break;
                 }
-                columns.push(
-                    <Table.HeaderCell
-                        onClick={this.handleSort(key)}
-                        sorted={tableConfig.direction}
-                    >
-                        {columnCell}
-                    </Table.HeaderCell>
-                );
-            }.bind(this)
-        );
+            }
+
+            columns.push(
+                <Table.HeaderCell
+                    onClick={this.handleSort(key)}
+                    sorted={tableConfig.direction}
+                >
+                    {columnCell}
+                </Table.HeaderCell>
+            );
+        });
         return (
             <Table.Header>
                 <Table.Row>
@@ -192,28 +219,17 @@ class ConsoleMeDataTable extends Component {
         );
     }
 
-    async filterColumnServerSide(event, filters) {
-        const {tableConfig} = this.state;
-        const data = await sendRequestCommon(
-            {filters: filters},
-            tableConfig.dataEndpoint
-        );
-
-        this.setState({
-            filteredData: data,
-            limit: tableConfig.totalRows,
-            loading: false
-        });
-    }
-
     async generateFilterFromQueryString() {
-        const {tableConfig} = this.state
-        const queryString = 'username=ccastrapel@netflix.com'
-        const filters = qs.parse(queryString)
-        console.log(filters)
+        const {tableConfig} = this.state;
+        const queryString = 'username=ccastrapel@netflix.com';
+        const filters = qs.parse(queryString);
+
         if (filters) {
-            this.setState({filters: filters})
+            this.setState({
+                filters: filters
+            });
         }
+
         if (tableConfig.serverSideFiltering) {
             await this.filterColumnServerSide({}, filters);
         } else {
@@ -235,132 +251,127 @@ class ConsoleMeDataTable extends Component {
         }
     }
 
+    async filterColumnServerSide(event, filters) {
+        const {tableConfig} = this.state;
+        const data = await sendRequestCommon(
+            {filters: filters},
+            tableConfig.dataEndpoint
+        );
+
+        this.setState({
+            expandedRow: null,
+            filteredData: data,
+            limit: tableConfig.totalRows,
+            loading: false
+        });
+    }
+
     async filterColumnClientSide(event, filters) {
-        let {data, tableConfig, filteredData} = this.state;
-        filteredData = data.filter(function (item) {
+        const {data} = this.state;
+        const filtered = data.filter((item) => {
             for (let key in filters) {
                 let re = filters[key];
-                console.log("re ", re);
                 try {
                     re = new RegExp(filters[key], "g");
                 } catch (e) {
                     // Invalid Regex. Ignore
                 }
 
-                if (
-                    item[key] === undefined ||
-                    item[key] === "" ||
-                    !String(item[key]).match(re)
-                ) {
+                if (item[key] != null || !String(item[key]).match(re)) {
                     return false;
                 }
             }
             return true;
         });
-        console.log(filteredData);
-        this.setState({filteredData: filteredData, loading: false});
+
+        this.setState({
+            expandedRow: null,
+            filteredData: filtered,
+            loading: false
+        });
     }
 
     generateRows() {
-        const {filteredData, tableConfig, activePage} = this.state
+        const {expandedRow, filteredData, tableConfig, activePage} = this.state;
         const filteredDataPaginated = filteredData.slice(
-            (activePage-1) * tableConfig.rowsPerPage,
-            activePage * tableConfig.rowsPerPage
-        )
+            (activePage - 1) * tableConfig.rowsPerPage,
+            activePage * tableConfig.rowsPerPage - 1
+        );
+
+        if (expandedRow) {
+            const {index, data} = expandedRow;
+            filteredDataPaginated.splice(index, 0, data);
+        }
+
         return filteredDataPaginated.map((entry, idx) => {
             // if a row is clicked then show its associated detail row.
-            if ("raw" in entry) {
+            if (expandedRow && expandedRow.index === idx) {
                 return (
                     <Table.Row>
-                        <Table.Cell colSpan="7">
-                            <pre>{JSON.stringify(entry.raw, null, 4)}</pre>
+                        <Table.Cell colSpan={8}>
+                            <pre>
+                                {JSON.stringify(expandedRow.data, null, 4)}
+                            </pre>
                         </Table.Cell>
                     </Table.Row>
                 );
             }
-            let cells = []
+
+            const cells = [];
             // Iterate through our configured columns
-            tableConfig.columns.forEach(
-                function (column, index) {
-                    cells.push(<Table.Cell>
+            tableConfig.columns.forEach((column) => {
+                cells.push(
+                    <Table.Cell>
                         <ReactMarkdown
                             linkTarget="_blank"
                             source={'' || entry[column.key].toString()}
                         />
-                    </Table.Cell>)
-                }
-            )
+                    </Table.Cell>
+                );
+            });
 
             return (
                 <Table.Row>
                     <Table.Cell collapsing>
                         <Icon
                             link
-                            name="caret right"
+                            name={(expandedRow && expandedRow.index - 1 === idx) ? "caret down" : "caret right"}
                             onClick={this.handleRowExpansion(idx)}
                         />
                     </Table.Cell>
-                    {/*{cells.map((cell, idx) => {return cell})}*/}
                     {cells}
-                    {/*<Table.Cell>{account_name}</Table.Cell>*/}
-                    {/*<Table.Cell>{account_id}</Table.Cell>*/}
-                    {/*<Table.Cell>{environment}</Table.Cell>*/}
-                    {/*<Table.Cell>{role}</Table.Cell>*/}
-                    {/*<Table.Cell>*/}
-                    {/*    <Icon*/}
-                    {/*        onClick={e => {*/}
-                    {/*            e.stopPropagation();*/}
-                    {/*            console.log("CLI: ", e);*/}
-                    {/*        }}*/}
-                    {/*        link*/}
-                    {/*        name="key"*/}
-                    {/*    />*/}
-                    {/*</Table.Cell>*/}
-                    {/*<Table.Cell>*/}
-                    {/*    <Icon*/}
-                    {/*        onClick={e => {*/}
-                    {/*            e.stopPropagation();*/}
-                    {/*            console.log("SIGN-IN: ", e);*/}
-                    {/*        }}*/}
-                    {/*        link*/}
-                    {/*        name="sign-in"*/}
-                    {/*    />*/}
-                    {/*</Table.Cell>*/}
                 </Table.Row>
             );
-
-        })
+        });
     }
 
     render() {
-        {
-        }
-        const {filteredData, direction, value, tableConfig, activePage} = this.state;
-
+        const {filteredData, tableConfig, activePage} = this.state;
+        const columns = this.generateColumns();
         return (
             <Segment basic>
                 <Header as="h2">{tableConfig.tableName}</Header>
                 <ReactMarkdown
                     linkTarget="_blank"
                     source={tableConfig.tableDescription}
-                    //source={`Here you can find your available accounts that are allowed to access its AWS Console. Please refer to this [link](https://manuals.netflix.net/view/consoleme/mkdocs/master/) for more guides.`}
                 />
                 <Table sortable celled compact selectable striped>
-                    {this.generateColumns()}
+                    {columns}
                     <Table.Body>
                         {this.generateRows()}
                     </Table.Body>
                     <Table.Footer>
                         <Table.Row>
-                            <Table.HeaderCell colSpan="7">
+                            <Table.HeaderCell colSpan={8}>
                                 <Pagination
                                     floated="right"
                                     defaultActivePage={activePage}
-                                    totalPages={parseInt(filteredData.length / tableConfig.rowsPerPage)}
+                                    totalPages={parseInt(filteredData.length / tableConfig.rowsPerPage, 10)}
                                     onPageChange={(event, data) => {
-                                        this.setState({activePage: data.activePage})
-                                    }
-                                    }
+                                        this.setState({
+                                            activePage: data.activePage
+                                        });
+                                    }}
                                 />
                             </Table.HeaderCell>
                         </Table.Row>
@@ -374,9 +385,12 @@ class ConsoleMeDataTable extends Component {
 
 export function renderDataTable(configEndpoint, queryString = "") {
     ReactDOM.render(
-        <ConsoleMeDataTable configEndpoint={configEndpoint} queryString={queryString}/>,
-        document.getElementById('datatable')
-    )
+        <ConsoleMeDataTable
+            configEndpoint={configEndpoint}
+            queryString={queryString}
+        />,
+        document.getElementById('datatable'),
+    );
 }
 
 export default ConsoleMeDataTable

@@ -8,6 +8,7 @@
     "gulp": "^4.0.2",
     "jquery": "^3.4.1",
     "prop-types": "^15.7.2",
+    "qs": "^6.9.4",
     "react": "^16.8.6",
     "react-data-table-component": "^6.9.7",
     "react-dom": "^16.8.6",
