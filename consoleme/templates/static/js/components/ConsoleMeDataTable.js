@@ -84,18 +84,18 @@ class ConsoleMeDataTable extends Component {
     }
 
     handleSort = clickedColumn => () => {
-        const {column, data, direction} = this.state;
+        const {column, filteredData, direction} = this.state;
 
         if (column !== clickedColumn) {
             return this.setState({
                 column: clickedColumn,
-                data: _.sortBy(data, [clickedColumn]),
+                filteredData: _.sortBy(filteredData, [clickedColumn]),
                 direction: "ascending"
             });
         }
 
         this.setState({
-            data: data.reverse(),
+            filteredData: filteredData.reverse(),
             direction: direction === "ascending" ? "descending" : "ascending"
         });
     };
@@ -264,9 +264,13 @@ class ConsoleMeDataTable extends Component {
 
     async filterDateRangeTime(event, data) {
         // Convert epoch milliseconds to epoch seconds
-        const startTime = parseInt(data.values[0].getTime() / 1000);
-        const endTime = parseInt(data.values[1].getTime() / 1000);
-        await this.filterColumn(_, {name: data.name, value: [startTime, endTime]})
+        if (data.values) {
+            const startTime = parseInt(data.values[0].getTime() / 1000);
+            const endTime = parseInt(data.values[1].getTime() / 1000);
+            await this.filterColumn(_, {name: data.name, value: [startTime, endTime]})
+        } else {
+            await this.filterColumn(_, {name: data.name, value: null})
+        }
     }
 
     async filterColumn(event, data) {

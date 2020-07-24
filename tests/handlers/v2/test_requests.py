@@ -22,8 +22,16 @@ class TestRequestsHandler(AsyncHTTPTestCase):
 
     def test_post(self):
         mock_request_data = [
-            {"request_id": 12345, "username": "user@example.com"},
-            {"request_id": 12346, "username": "userb@example.com"},
+            {
+                "request_id": 12345,
+                "username": "user@example.com",
+                "request_time": 22345,
+            },
+            {
+                "request_id": 12346,
+                "username": "userb@example.com",
+                "request_time": 12345,
+            },
         ]
 
         from consoleme.lib.redis import RedisHandler
