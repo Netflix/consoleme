@@ -216,7 +216,7 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
             "message": "Endpoint not supported for non-applications",
         }
         response = self.fetch(
-            "/api/v2/mtls/roles/012345678901/fake_account_admin", method="DELETE",
+            "/api/v2/mtls/roles/012345678901/fake_account_admin", method="DELETE"
         )
         self.assertEqual(response.code, 406)
         self.assertDictEqual(json.loads(response.body), expected)
@@ -235,7 +235,7 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
         }
         mock_can_delete_roles.return_value = create_future(False)
         response = self.fetch(
-            "/api/v2/mtls/roles/012345678901/fake_account_admin", method="DELETE",
+            "/api/v2/mtls/roles/012345678901/fake_account_admin", method="DELETE"
         )
         self.assertEqual(response.code, 403)
         self.assertDictEqual(json.loads(response.body), expected)
@@ -254,7 +254,7 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
         }
 
         response = self.fetch(
-            f"/api/v2/mtls/roles/{account_id}/{role_name}", method="DELETE",
+            f"/api/v2/mtls/roles/{account_id}/{role_name}", method="DELETE"
         )
         self.assertEqual(response.code, 200)
         self.assertDictEqual(json.loads(response.body), expected)

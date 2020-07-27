@@ -127,7 +127,7 @@ async def get_role_details(
             account_name=account_ids_to_names.get(account_id, [None])[0],
             arn=arn,
             inline_policies=role["policy"]["RolePolicyList"],
-            assume_role_policies=role["policy"]["AssumeRolePolicyDocument"],
+            assume_role_policy_document=role["policy"]["AssumeRolePolicyDocument"],
             cloudtrail_details=await get_cloudtrail_details_for_role(arn),
             s3_details=await get_s3_details_for_role(
                 account_id=account_id, role_name=role_name

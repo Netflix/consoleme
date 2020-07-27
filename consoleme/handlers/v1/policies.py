@@ -40,6 +40,7 @@ from consoleme.lib.policies import (
     update_role_policy,
 )
 from consoleme.lib.redis import redis_get, redis_hgetall
+from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.timeout import Timeout
 
 log = config.get_logger()
@@ -674,6 +675,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         log_data["finished"] = True
         log.debug(log_data)
         await self.finish()
+        await cache_all_policy_requests()
         return
 
 
@@ -1012,6 +1014,8 @@ class PolicyReviewHandler(BaseHandler):
         if send_email:
             await aws.send_communications_policy_change_request(request)
         self.write(result)
+        await self.finish()
+        await cache_all_policy_requests()
 
 
 class SelfServiceHandler(BaseHandler):

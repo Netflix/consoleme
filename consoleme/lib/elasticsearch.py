@@ -1,4 +1,4 @@
-from logging import ERROR, getLogger, Handler
+from logging import ERROR, Handler, getLogger
 
 import ujson as json
 from elasticsearch import Elasticsearch

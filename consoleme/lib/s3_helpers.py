@@ -1,5 +1,5 @@
 import sys
-from typing import Union, Dict, Any, List
+from typing import Any, Dict, List, Union
 
 import boto3
 import ujson as json
@@ -7,6 +7,7 @@ from asgiref.sync import sync_to_async
 from cloudaux import sts_conn
 from cloudaux.aws.decorators import rate_limited
 from cloudaux.aws.sts import boto3_cached_conn
+
 from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
 

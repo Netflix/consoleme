@@ -441,7 +441,7 @@ async def add_user_to_group(
 
     if user_email in existing:
         log_data["message"] = "Unable to add user to group. User is already a member."
-        log.error(log_data)
+        log.warn(log_data)
         result["done"] = False
         result["message"] = log_data["message"]
         raise UserAlreadyAMemberOfGroupException(result["message"])

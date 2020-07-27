@@ -29,6 +29,7 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
+from consoleme.models import ExtendedRequestModel
 
 DYNAMO_EMPTY_STRING = "---DYNAMO-EMPTY-STRING---"
 
@@ -57,7 +58,7 @@ def parallel_write_table(table, data, overwrite_by_pkeys=None):
                     batch.put_item(Item=item)
 
 
-def parallel_scan_table(table, total_threads=10):
+def parallel_scan_table(table, total_threads=10, loop=None):
     async def _scan_segment(segment, total_segments):
         response = table.scan(Segment=segment, TotalSegments=total_segments)
         items = response.get("Items", [])
@@ -72,7 +73,8 @@ def parallel_scan_table(table, total_threads=10):
 
         return items
 
-    loop = asyncio.get_event_loop()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     tasks = []
     for i in range(total_threads):
         task = asyncio.ensure_future(_scan_segment(i, total_threads))
@@ -410,6 +412,31 @@ class UserDynamoHandler(BaseDynamoHandler):
             log.debug(log_data)
         return new_request
 
+    async def write_policy_request_v2(self, extended_request: ExtendedRequestModel):
+        """
+                    Writes a policy request v2 to the appropriate DynamoDB table
+                    Sample run:
+                    write_policy_request_v2(request)
+        """
+        new_request = {
+            "request_id": extended_request.id,
+            "arn": extended_request.arn,
+            "status": extended_request.status,
+            "last_updated": int(time.time()),
+            "version": "2",
+            "extended_request": extended_request.json(),
+        }
+        try:
+            await sync_to_async(self.policy_requests_table.put_item)(
+                Item=self._data_to_dynamo_replace(new_request)
+            )
+        except Exception:
+            error = f"Unable to add new policy request: {new_request}"
+            log.error(error, exc_info=True)
+            raise Exception(error)
+
+        return new_request
+
     async def update_policy_request(self, updated_request):
         """
             Update a policy request by request ID
@@ -457,25 +484,9 @@ class UserDynamoHandler(BaseDynamoHandler):
         :param status:
         :return:
         """
-        response = await sync_to_async(self.policy_requests_table.scan)()
-        items = []
-
-        if response and "Items" in response:
-            items = self._data_from_dynamo_replace(response["Items"])
-
-        while "LastEvaluatedKey" in response:
-            response = await sync_to_async(self.policy_requests_table.scan)(
-                ExclusiveStartKey=response["LastEvaluatedKey"]
-            )
-            items.extend(self._data_from_dynamo_replace(response["Items"]))
-
-        return_value = []
-        if status:
-            for item in items:
-                if status and item["status"] == status:
-                    return_value.append(item)
-        else:
-            return_value = items
+        return_value = await sync_to_async(parallel_scan_table)(
+            self.policy_requests_table
+        )
 
         return return_value
 

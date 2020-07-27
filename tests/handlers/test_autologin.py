@@ -1,8 +1,7 @@
 """Docstring in public module."""
-
 import os
-
 import sys
+
 from mockredis import mock_strict_redis_client
 from tornado.testing import AsyncHTTPTestCase
 

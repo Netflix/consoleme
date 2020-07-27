@@ -7,7 +7,7 @@ class AuthHandler(BaseHandler):
             if self.request.method.lower() in ["options", "post"]:
                 return
             await super(AuthHandler, self).prepare()
-        except:
+        except:  # noqa
             # NoUserException
             raise
 

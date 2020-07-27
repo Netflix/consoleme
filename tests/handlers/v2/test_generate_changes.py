@@ -1,7 +1,8 @@
 import ujson as json
 from mock import patch
-from tests.conftest import MockBaseHandler
 from tornado.testing import AsyncHTTPTestCase
+
+from tests.conftest import MockBaseHandler
 
 
 class TestGenerateChangesHandler(AsyncHTTPTestCase):
@@ -91,7 +92,8 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result[0]["principal_arn"], input_body["changes"][0]["principal_arn"]
+            result["changes"][0]["principal_arn"],
+            input_body["changes"][0]["principal_arn"],
         )
 
     @patch(
@@ -137,7 +139,8 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result[0]["principal_arn"], input_body["changes"][0]["principal_arn"]
+            result["changes"][0]["principal_arn"],
+            input_body["changes"][0]["principal_arn"],
         )
 
     @patch(
@@ -165,7 +168,8 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/roleName"
+            result["changes"][0]["principal_arn"],
+            "arn:aws:iam::123456789012:role/roleName",
         )
 
     @patch(
@@ -222,7 +226,8 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/exampleRole"
+            result["changes"][0]["principal_arn"],
+            "arn:aws:iam::123456789012:role/exampleRole",
         )
 
     @patch(
@@ -248,5 +253,6 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result[0]["principal_arn"], "arn:aws:iam::123456789012:role/roleName"
+            result["changes"][0]["principal_arn"],
+            "arn:aws:iam::123456789012:role/roleName",
         )

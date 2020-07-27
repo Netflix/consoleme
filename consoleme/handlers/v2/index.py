@@ -179,4 +179,3 @@ class IndexHandler(BaseHandler):
             url = parsed_url._replace(query=updated_query).geturl()
 
         self.redirect(url)
-
