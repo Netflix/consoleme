@@ -22,6 +22,7 @@ from consoleme.models import (
     InlinePolicyChangeModel,
     PolicyModel,
     ResourceModel,
+    Status,
 )
 
 group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
@@ -121,6 +122,7 @@ async def _generate_inline_policy_change_model(
         "policy_name": policy_name,
         "new": is_new,
         "policy": policy_document,
+        "status": Status.not_applied,
     }
     return InlinePolicyChangeModel(**change_details)
 
@@ -450,4 +452,4 @@ async def generate_change_model_array(
         primary_principal_arn, resources, inline_iam_policy_statements, primary_user
     )
     change_models.append(inline_iam_policy_change_model)
-    return ChangeModelArray.parse_obj(change_models)
+    return ChangeModelArray.parse_obj({"changes": change_models})

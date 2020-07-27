@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import random
 import unittest
 from datetime import datetime, timedelta
 
@@ -168,6 +169,11 @@ mock_accountdata_redis = MagicMock(
         )
     )
 )
+
+
+class AWSHelper:
+    async def random_account_id(self):
+        return str(random.randrange(100000000000, 999999999999))
 
 
 @pytest.fixture
