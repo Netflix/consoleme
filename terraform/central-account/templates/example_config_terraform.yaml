@@ -69,3 +69,5 @@ format_role_name:
 
 policies:
   role_name: ConsoleMeTarget
+
+# TODO: SAML / Oauth / TLS configuration / Secufre JWT / CLI Auth / Generic CloudTrail log support
