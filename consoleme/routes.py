@@ -49,6 +49,7 @@ from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
 from consoleme.handlers.v2.requests import (
     RequestDetailHandler,
+    RequestHandler,
     RequestsHandler,
     RequestsTableConfigHandler,
     RequestsWebHandler,

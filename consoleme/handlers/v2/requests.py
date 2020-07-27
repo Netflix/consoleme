@@ -2,14 +2,16 @@ import sys
 import time
 import uuid
 
+import ujson as json
+from pydantic import ValidationError
+
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter, MustBeFte
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.dynamo import UserDynamoHandler
-from consoleme.lib.generic import filter_table
-from consoleme.lib.generic import write_json_error
+from consoleme.lib.generic import filter_table, write_json_error
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import (
     can_manage_policy_requests,
@@ -22,7 +24,6 @@ from consoleme.lib.v2.requests import (
     is_request_eligible_for_auto_approval,
 )
 from consoleme.models import CommentModel, RequestCreationModel, RequestCreationResponse
-from pydantic import ValidationError
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
