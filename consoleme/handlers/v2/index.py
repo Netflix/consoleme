@@ -1,5 +1,4 @@
-import ujson as json
-import re
+import json
 from operator import itemgetter
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -13,7 +12,6 @@ log = config.get_logger()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 
-ARN_REGEX = r'^arn:aws:iam::(\d{12}):role\/(.+)'
 
 # TODO, move followings to util file
 async def _filter_by_extension(bundle, extension):
@@ -60,57 +58,6 @@ async def get_as_tags(name="main", extension=None, config=config, attrs=""):
     return tags
 
 
-class LandingTableConfigHandler(BaseHandler):
-    async def get(self):
-        """
-        /landing_table_config
-        ---
-        get:
-            description: Retrieve Landing Table Configuration
-            responses:
-                200:
-                    description: Returns Landing Table Configuration
-        """
-        default_configuration = {
-            "expandableRows": True,
-            "tableName": "Select a Role to Login AWS Console",
-            "tableDescription": "Followings are the accounts you are eligible to sign-in with permission associated the role you are given.",
-            "dataEndpoint": "/landing",
-            "sortable": False,
-            "totalRows": 1000,
-            "rowsPerPage": 50,
-            "serverSideFiltering": False,
-            "columns": [
-                {"placeholder": "Account Name", "key": "account_name", "type": "input"},
-                {
-                    "placeholder": "Account ID",
-                    "key": "account_id",
-                    "type": "input",
-                },
-                {"placeholder": "Environment", "key": "environment", "type": "input"},
-                {"placeholder": "Role", "key": "role", "type": "dropdown"},
-                {
-                    "placeholder": "CLI",
-                    "key": "credential",
-                    "type": "icon",
-                    "icon": "key"
-                },
-                {
-                    "placeholder": "Console",
-                    "key": "redirect",
-                    "type": "icon",
-                    "icon": "sign-in"
-                },
-            ],
-        }
-
-        # table_configuration = config.get(
-        #     "RequestsTableConfigHandler.configuration", default_configuration
-        # )
-
-        self.write(default_configuration)
-
-
 class IndexHandler(BaseHandler):
     async def get(self) -> None:
         """
@@ -122,34 +69,19 @@ class IndexHandler(BaseHandler):
                 description: Index page
         """
 
-        region = self.request.arguments.get("r", ["us-east-1"])[0]
-        redirect = self.request.arguments.get("redirect", [""])[0]
-
         await self.render(
-            "landing.html",
+            "index_new.html",
             page_title="ConsoleMe - Console Access",
-            # bundles=await get_as_tags(name="main", config=config),
-            current_page="index",
-            user=self.user,
-            eligible_roles=self.eligible_roles,
-            eligible_accounts=self.eligible_accounts,
-            itemgetter=itemgetter,
-            recent_roles=True,
-            error=None,
-            region=region,
-            redirect=redirect,
-            format_role_name=format_role_name,
-            user_groups=self.groups,
-            config=config,
+            bundles=await get_as_tags(name="main", config=config),
         )
 
     async def post(self):
         """
-        Post to the index endpoint. This will attempt to retrieve roles and its credentials.
+        Post to the index endpoint. This will attempt to retrieve credentials for the end-user.
         ---
-        description: Retrieves roles and its credentials for AWS console access.
+        description: Retrieves credentials and redirects user to AWS console.
         responses:
-            200:
+            302:
                 description: Redirects to AWS console
         """
 
@@ -157,36 +89,93 @@ class IndexHandler(BaseHandler):
             return
 
         arguments = json.loads(self.request.body)
-        log.info(f"DEBUG1 {arguments}")
+        role = arguments.get("role")
+        region = arguments.get("region")
+        redirect = arguments.get("redirect")
 
-        group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
-        swag_accounts = await group_mapping.get_swag_accounts_cache()
+        user_role = False
+        account_id = None
 
-        account_map = {}
-        for account in swag_accounts:
-            account_map[account.get('id')] = account.get('name')
+        if not role or role not in self.eligible_roles:
+            # Not authorized
+            self.set_status(403)
+            return
 
-        roles = []
-        for arn in self.eligible_roles:
-            match = re.match(ARN_REGEX, arn)
-            if not match:
-                continue
-            account_id = match.group(1)
-            account_role = match.group(2).split('/')[-1]
-            if account_role == self.user_role_name:
-                account_name = account_map.get(account_id)
-                role = account_role
-            else:
-                account_name, role = account_role.rsplit('_', 1)
-            roles.append({
-                "account_name": account_name,
-                "account_id": account_id,
-                "environment": "N/A",
-                "role": role,
-                "credential": "",
-                "redirect": "",
-            })
+        # User role must be defined as a user attribute
+        if self.user_role_name and role.split("role/")[1] == self.user_role_name:
+            user_role = True
+            account_id = role.split("arn:aws:iam::")[1].split(":role")[0]
 
-        self.set_header("Content-Type", "application/json")
-        self.write(json.dumps(roles, escape_forward_slashes=False))
-        await self.finish()
+        url = await aws.generate_url(
+            self.user, role, region, user_role=user_role, account_id=account_id
+        )
+
+        self.write({"redirect": url})
+        return
+
+        # if not role or role not in self.eligible_roles:
+        #     # Not authorized
+        #     self.set_status(403)
+        #     await self.render(
+        #         "index.html",
+        #         page_title="ConsoleMe - Console Access",
+        #         current_page="index",
+        #         user=self.user,
+        #         eligible_roles=self.eligible_roles,
+        #         eligible_accounts=self.eligible_accounts,
+        #         itemgetter=itemgetter,
+        #         recent_roles=True,
+        #         error=log_data["message"],
+        #         region=region or config.get("aws.region"),
+        #         redirect=redirect,
+        #         format_role_name=format_role_name,
+        #         user_groups=self.groups,
+        #         config=config,
+        #     )
+        #     return
+
+        # User is authorized
+        try:
+            # User-role logic:
+            # User-role should come in as cm-[username or truncated username]_[N or NC]
+            user_role = False
+            account_id = None
+
+            # User role must be defined as a user attribute
+            if self.user_role_name and role.split("role/")[1] == self.user_role_name:
+                user_role = True
+                account_id = role.split("arn:aws:iam::")[1].split(":role")[0]
+
+            url = await aws.generate_url(
+                self.user, role, region, user_role=user_role, account_id=account_id
+            )
+        except Exception as e:
+            self.set_status(403)
+            await self.render(
+                "index.html",
+                page_title="ConsoleMe - Console Access",
+                current_page="index",
+                user=self.user,
+                eligible_roles=self.eligible_roles,
+                eligible_accounts=self.eligible_accounts,
+                itemgetter=itemgetter,
+                recent_roles=True,
+                error=f"Error assuming role: {str(e)}",
+                region=region,
+                redirect=redirect,
+                format_role_name=format_role_name,
+                user_groups=self.groups,
+                config=config,
+            )
+            return
+
+        if redirect:
+            redirect = redirect.replace("|HASHSYMBOL|", "#")
+            redirect = redirect.replace("|SEMICOLON|", ";")
+            parsed_url = urlparse(url)
+            parsed_url_query = parse_qs(parsed_url.query)
+            parsed_url_query["Destination"] = redirect
+            updated_query = urlencode(parsed_url_query, doseq=True)
+            url = parsed_url._replace(query=updated_query).geturl()
+
+        self.redirect(url)

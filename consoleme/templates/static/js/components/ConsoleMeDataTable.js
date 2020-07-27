@@ -53,10 +53,12 @@ class ConsoleMeDataTable extends Component {
             activePage: 1,
             expandedRow: null,
             direction: "descending",
+            debounceWait: 300,
         };
 
         this.generateRows = this.generateRows.bind(this)
         this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(this)
+        this.handleInputChange = this.handleInputChange.bind(this)
     }
 
     async componentDidMount() {
@@ -136,7 +138,7 @@ class ConsoleMeDataTable extends Component {
     handleInputChange(e, {value}) {
         clearTimeout(this.timer);
         this.setState({value});
-        this.timer = setTimeout(this.triggerChange.bind(this), WAIT_INTERVAL);
+        this.timer = setTimeout(this.triggerChange.bind(this), this.state.debounceWait);
     }
 
     generateColumnOptions() {
@@ -295,9 +297,19 @@ class ConsoleMeDataTable extends Component {
         filters[name] = value;
         this.setState({filters: filters});
         if (tableConfig.serverSideFiltering) {
-            await this.filterColumnServerSide(event, filters);
+            clearTimeout(this.timer);
+            this.timer = setTimeout(
+                async() => {
+                    await this.filterColumnServerSide({}, filters);
+                },
+                this.state.debounceWait);
         } else {
-            await this.filterColumnClientSide(event, filters);
+            clearTimeout(this.timer);
+            this.timer = setTimeout(
+                async() => {
+                    await this.filterColumnClientSide(event, filters);
+                },
+                this.state.debounceWait);
         }
     }
 
