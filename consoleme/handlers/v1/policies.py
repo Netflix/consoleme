@@ -642,6 +642,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
             resources,
             resource_policies,
             cross_account_request=cross_account_request,
+            dry_run=policy_status == "approved",
         )
         if policy_status == "approved":
             try:
