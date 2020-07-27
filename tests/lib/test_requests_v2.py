@@ -1,4 +1,3 @@
-import random
 import time
 
 import boto3
@@ -24,11 +23,7 @@ from consoleme.models import (
     ResourcePolicyChangeModel,
     UserModel,
 )
-
-
-class TestRequestsLibV2Helper:
-    async def random_account_id(self):
-        return str(random.randrange(100000000000, 999999999999))
+from tests.conftest import AWSHelper
 
 
 class TestRequestsLibV2(AsyncTestCase):
@@ -328,8 +323,7 @@ class TestRequestsLibV2(AsyncTestCase):
         )
 
     @patch(
-        "consoleme.lib.v2.requests.get_resource_account",
-        TestRequestsLibV2Helper.random_account_id,
+        "consoleme.lib.v2.requests.get_resource_account", AWSHelper.random_account_id,
     )
     @tornado.testing.gen_test
     async def test_generate_resource_policies(self):

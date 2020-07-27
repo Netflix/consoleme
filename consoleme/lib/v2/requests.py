@@ -600,7 +600,7 @@ async def apply_changes_to_role(
             response.errors += 1
             log_data["message"] = "Unsupported type for auto-application detected"
             log_data["change"] = change.dict()
-            log.debug(log_data)
+            log.error(log_data)
 
     log_data["message"] = "Finished applying request changes"
     log_data["request"] = extended_request.dict()

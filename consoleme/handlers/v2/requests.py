@@ -108,6 +108,12 @@ class RequestHandler(BaseAPIV2Handler):
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
+        # TODO: remove this check once v2 requests page is ready
+        can_manage_policy_request = await can_manage_policy_requests(self.groups)
+        if not can_manage_policy_request:
+            self.write_error(403, message="This page is not yet available to all users")
+            return
+
         tags = {
             "user": self.user,
         }
