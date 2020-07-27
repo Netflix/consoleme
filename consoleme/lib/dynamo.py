@@ -363,9 +363,11 @@ class UserDynamoHandler(BaseDynamoHandler):
         request_uuid=None,
         policy_status="pending",
         cross_account_request: bool = False,
+        dry_run: bool = False,
     ):
         """
             Writes a policy request to the appropriate DynamoDB table
+            dry_run will create the request format, but won't actually write it
             Sample run:
             write_policy_request(policy_changes)
         """
@@ -391,15 +393,22 @@ class UserDynamoHandler(BaseDynamoHandler):
             "cross_account_request": cross_account_request,
         }
 
-        try:
-            await sync_to_async(self.policy_requests_table.put_item)(
-                Item=self._data_to_dynamo_replace(new_request)
-            )
-        except Exception:
-            error = f"Unable to add new policy request: {new_request}"
-            log.error(error, exc_info=True)
-            raise Exception(error)
-
+        if not dry_run:
+            try:
+                await sync_to_async(self.policy_requests_table.put_item)(
+                    Item=self._data_to_dynamo_replace(new_request)
+                )
+            except Exception:
+                error = f"Unable to add new policy request: {new_request}"
+                log.error(error, exc_info=True)
+                raise Exception(error)
+        else:
+            log_data = {
+                "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+                "request": new_request,
+                "message": "Dry run, skipping adding request to dynamo",
+            }
+            log.debug(log_data)
         return new_request
 
     async def update_policy_request(self, updated_request):
