@@ -6,7 +6,7 @@ module.exports = {
     policyEditor: './consoleme/templates/static/js/policy_editor.jsx',
     selfService: './consoleme/templates/static/js/components/SelfService.js',
     createCloneFeature: './consoleme/templates/static/js/components/CreateCloneFeature.js',
-    consoleMeDataTable: './consoleme/templates/static/js/components/ConsoleMeDataTable.js'
+    consoleMeDataTable: './consoleme/templates/static/js/components/ConsoleMeDataTable.js',
   },
   output: {
     path: path.resolve(__dirname, 'consoleme/templates/static/js/dist'),

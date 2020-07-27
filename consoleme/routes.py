@@ -47,6 +47,7 @@ from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 
 # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
 from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
+from consoleme.handlers.v2.index import LandingTableConfigHandler
 from consoleme.handlers.v2.requests import (
     RequestDetailHandler,
     RequestsHandler,
@@ -88,6 +89,7 @@ def make_app(jwt_validator=None):
 
     oss_routes = [
         (r"/", IndexHandler),
+        (r"/landing", IndexHandlerV2),
         (r"/login", IndexHandler),
         (r"/auth", AuthHandler),
         (r"/role/(.*)", AutoLoginHandler),
@@ -115,6 +117,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
+        (r"/api/v2/landing_table_config", LandingTableConfigHandler),
         (r"/api/v2/requests", RequestsHandler),
         (r"/api/v2/requests/([a-zA-Z0-9_-]+)", RequestDetailHandler),
         (r"/api/v2/requests_table_config", RequestsTableConfigHandler),

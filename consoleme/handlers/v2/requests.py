@@ -157,7 +157,7 @@ class RequestsTableConfigHandler(BaseHandler):
                     "key": "request_time",
                     "type": "daterange",
                 },
-                {"placeholder": "Status", "key": "status", "type": "input"},
+                {"placeholder": "Status", "key": "status", "type": "dropdown"},
                 {"placeholder": "Request ID", "key": "request_id", "type": "input"},
                 {"placeholder": "Policy Name", "key": "policy_name", "type": "input"},
                 {

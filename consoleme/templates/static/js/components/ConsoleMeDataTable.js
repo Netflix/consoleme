@@ -52,6 +52,7 @@ class ConsoleMeDataTable extends Component {
             sort: {},
             activePage: 1,
             expandedRow: null,
+            direction: "descending",
         };
 
         this.generateRows = this.generateRows.bind(this)
@@ -169,7 +170,7 @@ class ConsoleMeDataTable extends Component {
     }
 
     generateColumns() {
-        const {tableConfig, filters} = this.state;
+        const {direction, tableConfig, filters} = this.state;
         const columnOptions = this.generateColumnOptions();
         const columns = [];
 
@@ -189,8 +190,10 @@ class ConsoleMeDataTable extends Component {
                             selection
                             options={options}
                             onChange={this.filterColumn.bind(this)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                            }}
                             value={filters[item.key] != null ? filters[item.key] : ''}
-                            fluid
                         />
                     );
                     break;
@@ -203,31 +206,49 @@ class ConsoleMeDataTable extends Component {
                             style={item.style}
                             placeholder={item.placeholder}
                             onChange={this.filterColumn.bind(this)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                            }}
                             value={filters[item.key] != null ? filters[item.key] : ''}
                         />
                     );
-                    break
+                    break;
                 }
                 case "daterange": {
-                    columnCell = <SemanticDatepicker name={item.key} onChange={this.filterDateRangeTime.bind(this)} type="range" />;
-
-                    break
+                    columnCell = (
+                        <SemanticDatepicker
+                            name={item.key}
+                            onChange={this.filterDateRangeTime.bind(this)}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                            }}
+                            type="range"
+                        />
+                    );
+                    break;
+                }
+                case "icon": {
+                    columnCell = (
+                        <Header
+                            as="h4"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                            }}
+                        >
+                            {item.placeholder}
+                        </Header>
+                    );
+                    break;
                 }
             }
 
             columns.push(
                 <Table.HeaderCell
                     style={item.style}
-                    fluid
-                    //onClick={this.handleSort(key)}
-                    //sorted={tableConfig.direction}
+                    onClick={this.handleSort(key)}
+                    sorted={item.type !== 'icon' ? direction : null}
                 >
                     {columnCell}
-                    <Icon
-                        name={"sort"}
-                        link
-                        onClick={this.handleSort(key)}
-                        sorted={tableConfig.direction} />
                 </Table.HeaderCell>
             );
         });
@@ -258,8 +279,6 @@ class ConsoleMeDataTable extends Component {
     }
 
     async filterDateRangeTime(event, data) {
-        console.log(event)
-        console.log(data)
         // Convert epoch milliseconds to epoch seconds
         if (data.value && data.value[0] && data.value[1]) {
             const startTime = parseInt(data.value[0].getTime() / 1000);
@@ -299,21 +318,26 @@ class ConsoleMeDataTable extends Component {
 
     async filterColumnClientSide(event, filters) {
         const {data} = this.state;
-        const filtered = data.filter((item) => {
-            for (let key in filters) {
-                let re = filters[key];
-                try {
-                    re = new RegExp(filters[key], "g");
-                } catch (e) {
-                    // Invalid Regex. Ignore
-                }
 
-                if (item[key] != null || !String(item[key]).match(re)) {
-                    return false;
-                }
-            }
-            return true;
-        });
+        let filtered = [];
+        if (Object.keys(filters).length > 0) {
+            filtered = data.filter((item) => {
+                let isMatched = true;
+                Object.keys(filters).map((key) => {
+                    const filter = filters[key];
+                    if (!filter) {
+                        return;
+                    }
+                    const re = new RegExp(filter, 'g');
+                    if (!re.test(item[key])) {
+                        isMatched = false;
+                    }
+                });
+                return isMatched;
+            });
+        } else {
+            filtered = data;
+        }
 
         this.setState({
             expandedRow: null,
@@ -350,6 +374,7 @@ class ConsoleMeDataTable extends Component {
 
             const cells = [];
             // Iterate through our configured columns
+            // TODO(heewonk), instead of rendering by column type, create separate component for these types
             tableConfig.columns.forEach((column) => {
                 if (column.type === "daterange") {
                     cells.push(<Table.Cell collapsing>
@@ -358,7 +383,19 @@ class ConsoleMeDataTable extends Component {
                             source={'' || new Date(entry[column.key] * 1000).toUTCString()}
                         />
                     </Table.Cell>)
-
+                } else if (column.type === 'icon') {
+                    // TODO(heewonk), instead of using icon here, use custom component instead.
+                    cells.push(
+                        <Table.Cell collapsing>
+                            <Icon
+                                onClick={(e) => {
+                                    console.log("CLI: ", e, entry[column.key].toString());
+                                }}
+                                link
+                                name={column.icon}
+                            />
+                        </Table.Cell>
+                    );
                 } else {
                     cells.push(<Table.Cell collapsing>
                         <ReactMarkdown
