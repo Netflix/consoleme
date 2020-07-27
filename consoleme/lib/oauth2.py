@@ -1,6 +1,6 @@
 import base64
 import sys
-from urllib.parse import urlencode, urlparse, parse_qs
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import jwt
 import tornado.httpclient

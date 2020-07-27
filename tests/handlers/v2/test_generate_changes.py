@@ -1,7 +1,8 @@
 import ujson as json
 from mock import patch
-from tests.conftest import MockBaseHandler
 from tornado.testing import AsyncHTTPTestCase
+
+from tests.conftest import MockBaseHandler
 
 
 class TestGenerateChangesHandler(AsyncHTTPTestCase):

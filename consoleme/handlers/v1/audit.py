@@ -4,12 +4,12 @@ import sys
 import dateutil
 import pkg_resources
 from asgiref.sync import sync_to_async
-from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from tornado.template import Loader
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import UnauthorizedToAccess
 from consoleme.handlers.base import BaseHandler
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.generic import is_in_group, regex_filter
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.timeout import Timeout

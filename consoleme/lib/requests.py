@@ -5,9 +5,9 @@ from asgiref.sync import sync_to_async
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import NoMatchingRequest
+from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
-
 
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 
@@ -90,6 +90,24 @@ async def get_app_pending_requests_policies(user):
     if not all_policy_requests:
         all_policy_requests = []
     return all_policy_requests
+
+
+async def get_all_policy_requests(user, status=None):
+    dynamo_handler = UserDynamoHandler(user)
+    all_policy_requests = await dynamo_handler.get_all_policy_requests(status=status)
+    if not all_policy_requests:
+        all_policy_requests = []
+    return all_policy_requests
+
+
+async def cache_all_policy_requests(
+    user="consoleme", redis_key=None, s3_bucket=None, s3_key=None
+):
+    requests = await get_all_policy_requests(user)
+    await store_json_results_in_redis_and_s3(
+        requests, redis_key, s3_bucket=s3_bucket, s3_key=s3_key
+    )
+    return requests
 
 
 async def get_all_pending_requests(user, groups):

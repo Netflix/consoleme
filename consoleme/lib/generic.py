@@ -185,3 +185,37 @@ async def get_random_security_logo():
 async def generate_random_string(string_length=4):
     letters = string.ascii_lowercase
     return "".join(random.choice(letters) for i in range(string_length))  # nosec
+
+
+async def filter_table(filter_key, filter_value, data):
+    if not (filter_key and filter_value):
+        # Filter parameters are incorrect. Don't filter
+        return data
+    results = []
+    if isinstance(filter_value, str):
+        try:
+            regexp = re.compile(r"{}".format(str(filter_value).strip()), re.IGNORECASE)
+        except:  # noqa
+            # Regex is incorrect. Don't filter
+            return data
+
+        for d in data:
+            try:
+                if regexp.search(str(d.get(filter_key))):
+                    results.append(d)
+            except re.error:
+                # Regex error. Return no results
+                pass
+        return results
+    elif (
+        isinstance(filter_value, list)
+        and len(filter_value) == 2
+        and isinstance(filter_value[0], int)
+        and isinstance(filter_value[1], int)
+    ):
+        # Handles epoch time filter. We expect a start_time and an end_time in
+        # a list of elements, and they should be integers
+        for d in data:
+            if filter_value[0] < int(d.get(filter_key)) < filter_value[1]:
+                results.append(d)
+        return results

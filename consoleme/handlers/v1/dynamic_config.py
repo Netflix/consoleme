@@ -1,8 +1,8 @@
+import json
 import sys
 
 import tornado.escape
 import tornado.web
-import json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
