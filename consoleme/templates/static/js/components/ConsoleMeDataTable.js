@@ -276,7 +276,7 @@ class ConsoleMeDataTable extends Component {
         if (tableConfig.serverSideFiltering) {
             await this.filterColumnServerSide({}, filters);
         } else {
-            await this.filterColumnClientSide({}, filters);
+            this.filterColumnClientSide({}, filters);
         }
     }
 
@@ -306,8 +306,8 @@ class ConsoleMeDataTable extends Component {
         } else {
             clearTimeout(this.timer);
             this.timer = setTimeout(
-                async() => {
-                    await this.filterColumnClientSide(event, filters);
+                () => {
+                    this.filterColumnClientSide(event, filters);
                 },
                 this.state.debounceWait);
         }
@@ -328,7 +328,7 @@ class ConsoleMeDataTable extends Component {
         });
     }
 
-    async filterColumnClientSide(event, filters) {
+    filterColumnClientSide(event, filters) {
         const {data} = this.state;
 
         let filtered = [];
