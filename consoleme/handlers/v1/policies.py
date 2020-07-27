@@ -674,8 +674,8 @@ class PolicyReviewSubmitHandler(BaseHandler):
         self.write(request)
         log_data["finished"] = True
         log.debug(log_data)
-        await cache_all_policy_requests()
         await self.finish()
+        await cache_all_policy_requests()
         return
 
 
@@ -1014,6 +1014,7 @@ class PolicyReviewHandler(BaseHandler):
         if send_email:
             await aws.send_communications_policy_change_request(request)
         self.write(result)
+        await self.finish()
         await cache_all_policy_requests()
 
 
