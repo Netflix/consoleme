@@ -103,6 +103,9 @@
                     {% if config.get("enable_self_service") %}
                     <a class="item" href="/self_service">Self Service Permissions</a>
                     {% end %}
+                    {% if config.get("enable_requests_table") %}
+                    <a class="item" href="/requests">Policy Requests</a>
+                    {% end %}
                     {% if is_in_group(user_groups, config.get("groups.can_edit_health_alert", [])) %}
                     <a class="item" href="/api_health">API Health</a>
                     {% end %}

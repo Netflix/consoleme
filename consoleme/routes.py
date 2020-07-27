@@ -49,8 +49,9 @@ from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
 from consoleme.handlers.v2.requests import (
     RequestDetailHandler,
-    RequestHandler,
     RequestsHandler,
+    RequestsTableConfigHandler,
+    RequestsWebHandler,
 )
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
@@ -117,6 +118,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/request", RequestHandler),
         (r"/api/v2/requests", RequestsHandler),
         (r"/api/v2/requests/([a-zA-Z0-9_-]+)", RequestDetailHandler),
+        (r"/api/v2/requests_table_config", RequestsTableConfigHandler),
         (r"/api/v2/roles/?", RolesHandler),
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
@@ -144,6 +146,7 @@ def make_app(jwt_validator=None):
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service_v1", SelfServiceHandler),
         (r"/self_service", SelfServiceV2Handler),
+        (r"/requests", RequestsWebHandler),
     ]
 
     # Prioritize internal routes before OSS routes so that OSS routes can be overrided if desired.
