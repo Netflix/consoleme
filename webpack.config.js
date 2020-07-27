@@ -7,7 +7,7 @@ module.exports = {
     selfService: './consoleme/templates/static/js/components/SelfService.js',
     createCloneFeature: './consoleme/templates/static/js/components/CreateCloneFeature.js',
     consoleMeDataTable: './consoleme/templates/static/js/components/ConsoleMeDataTable.js',
-    landingPage: './consoleme/templates/static/js/components/Landing.js',
+    landingPage: './consoleme/templates/static/js/components/Landing.js'
   },
   output: {
     path: path.resolve(__dirname, 'consoleme/templates/static/js/dist'),
@@ -82,6 +82,13 @@ module.exports = {
   },
   externals: {
     jquery: 'jQuery'
+  },
+  devtool: 'source-map',
+  optimization: {
+    minimize: false,
+    splitChunks: {
+      chunks: 'async'
+    }
   }
   // Enable these for easier development when running locally
   // devtool: 'source-map',

@@ -7,8 +7,7 @@ import {Dropdown, Header, Icon, Input, Pagination, Segment, Table} from "semanti
 import ReactMarkdown from "react-markdown";
 import SemanticDatepicker from 'react-semantic-ui-datepickers';
 import 'react-semantic-ui-datepickers/dist/react-semantic-ui-datepickers.css';
-
-
+import {Redirect, BrowserRouter} from "react-router-dom";
 
 const expandNestedJson = (data) => {
     Object.keys(data).forEach((key) => {
@@ -31,6 +30,7 @@ class ConsoleMeDataTable extends Component {
         this.state = {
             configEndpoint,
             queryString,
+            redirect: false,
             data: [],
             filteredData: [],
             tableConfig: {
@@ -59,6 +59,8 @@ class ConsoleMeDataTable extends Component {
         this.generateRows = this.generateRows.bind(this)
         this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(this)
         this.handleInputChange = this.handleInputChange.bind(this)
+        this.handleCellClick = this.handleCellClick.bind(this)
+        this.renderRedirect = this.renderRedirect.bind(this)
     }
 
     async componentDidMount() {
@@ -257,7 +259,9 @@ class ConsoleMeDataTable extends Component {
         return (
             <Table.Header>
                 <Table.Row>
-                    <Table.HeaderCell/>
+                    {tableConfig.expandableRows && (
+                        <Table.HeaderCell/>
+                    )}
                     {columns}
                 </Table.Row>
             </Table.Header>
@@ -299,7 +303,7 @@ class ConsoleMeDataTable extends Component {
         if (tableConfig.serverSideFiltering) {
             clearTimeout(this.timer);
             this.timer = setTimeout(
-                async() => {
+                async () => {
                     await this.filterColumnServerSide({}, filters);
                 },
                 this.state.debounceWait);
@@ -358,6 +362,24 @@ class ConsoleMeDataTable extends Component {
         });
     }
 
+    async handleCellClick(e, column, entry) {
+        // This function should appropriately handle a Cell Click given a desired
+        // action by the column configuration
+        if (column.onClick) {
+            if (column.onClick.action === "redirect") {
+                this.setState({
+                    redirect: entry[column.key]
+                })
+            }
+        }
+    }
+
+    renderRedirect() {
+        if (this.state.redirect) {
+            return <Redirect to={this.state.redirect}/>
+        }
+    }
+
     generateRows() {
         const {expandedRow, filteredData, tableConfig, activePage} = this.state;
         const filteredDataPaginated = filteredData.slice(
@@ -400,8 +422,8 @@ class ConsoleMeDataTable extends Component {
                     cells.push(
                         <Table.Cell collapsing>
                             <Icon
-                                onClick={(e) => {
-                                    console.log("CLI: ", e, entry[column.key].toString());
+                                onClick={async (e) => {
+                                    await this.handleCellClick(e, column, entry)
                                 }}
                                 link
                                 name={column.icon}
@@ -420,13 +442,14 @@ class ConsoleMeDataTable extends Component {
 
             return (
                 <Table.Row>
-                    <Table.Cell collapsing>
+                    {tableConfig.expandableRows &&
+                    (<Table.Cell collapsing>
                         <Icon
                             link
                             name={(expandedRow && expandedRow.index - 1 === idx) ? "caret down" : "caret right"}
                             onClick={this.handleRowExpansion(idx)}
                         />
-                    </Table.Cell>
+                    </Table.Cell>)}
                     {cells}
                 </Table.Row>
             );
@@ -434,8 +457,17 @@ class ConsoleMeDataTable extends Component {
     }
 
     render() {
-        const {filteredData, tableConfig, activePage} = this.state;
+        const {filteredData, tableConfig, activePage, redirect} = this.state;
         const columns = this.generateColumns();
+        if (redirect) {
+            return (
+                <div>
+                    <BrowserRouter forceRefresh={true}>
+                    {this.renderRedirect()}
+                    </BrowserRouter>
+                </div>
+            )
+        }
         return (
             <Segment basic>
                 <Header as="h2">{tableConfig.tableName}</Header>
