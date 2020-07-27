@@ -4,8 +4,9 @@ from random import random
 from typing import Dict, Optional
 
 import aiozipkin as az
-from consoleme.config import config
 from pydantic import BaseModel
+
+from consoleme.config import config
 
 SERVER = "SERVER"
 log = config.get_logger()
