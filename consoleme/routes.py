@@ -50,6 +50,7 @@ from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
 from consoleme.handlers.v2.index import LandingTableConfigHandler
 from consoleme.handlers.v2.requests import (
     RequestDetailHandler,
+    RequestHandler,
     RequestsHandler,
     RequestsTableConfigHandler,
     RequestsWebHandler,
@@ -118,6 +119,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
         (r"/api/v2/landing_table_config", LandingTableConfigHandler),
+        (r"/api/v2/request", RequestHandler),
         (r"/api/v2/requests", RequestsHandler),
         (r"/api/v2/requests/([a-zA-Z0-9_-]+)", RequestDetailHandler),
         (r"/api/v2/requests_table_config", RequestsTableConfigHandler),

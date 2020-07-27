@@ -29,6 +29,7 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
+from consoleme.models import ExtendedRequestModel
 
 DYNAMO_EMPTY_STRING = "---DYNAMO-EMPTY-STRING---"
 
@@ -409,6 +410,31 @@ class UserDynamoHandler(BaseDynamoHandler):
                 "message": "Dry run, skipping adding request to dynamo",
             }
             log.debug(log_data)
+        return new_request
+
+    async def write_policy_request_v2(self, extended_request: ExtendedRequestModel):
+        """
+                    Writes a policy request v2 to the appropriate DynamoDB table
+                    Sample run:
+                    write_policy_request_v2(request)
+        """
+        new_request = {
+            "request_id": extended_request.id,
+            "arn": extended_request.arn,
+            "status": extended_request.status,
+            "last_updated": int(time.time()),
+            "version": "2",
+            "extended_request": extended_request.json(),
+        }
+        try:
+            await sync_to_async(self.policy_requests_table.put_item)(
+                Item=self._data_to_dynamo_replace(new_request)
+            )
+        except Exception:
+            error = f"Unable to add new policy request: {new_request}"
+            log.error(error, exc_info=True)
+            raise Exception(error)
+
         return new_request
 
     async def update_policy_request(self, updated_request):

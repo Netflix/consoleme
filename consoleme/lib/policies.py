@@ -21,12 +21,15 @@ from consoleme.exceptions.exceptions import InvalidRequestParameter
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.handler import update_role
+from consoleme.models import ExtendedRequestModel
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 
 
 async def invalid_characters_in_policy(policy_value):
+    if not policy_value:
+        return False
     if "<" in policy_value or ">" in policy_value:
         return True
     return False
@@ -410,6 +413,10 @@ async def get_policy_request_uri(request):
     return f"{config.get('url')}/policies/request/{request['request_id']}"
 
 
+async def get_policy_request_uri_v2(extended_request: ExtendedRequestModel):
+    return f"{config.get('url')}/policies/request/{extended_request.id}"
+
+
 async def validate_policy_name(policy_name):
     p = re.compile("^[a-zA-Z0-9+=,.@\\-_]+$")
     match = p.match(policy_name)
@@ -607,6 +614,13 @@ async def should_auto_approve_policy(events, user, user_groups):
     aws = get_plugin_by_name(config.get("plugins.aws"))()
     result = await aws.should_auto_approve_policy(events, user, user_groups)
     return result
+
+
+async def should_auto_approve_policy_v2(
+    extended_request: ExtendedRequestModel, user, user_groups
+):
+    aws = get_plugin_by_name(config.get("plugins.aws"))()
+    return await aws.should_auto_approve_policy_v2(extended_request, user, user_groups)
 
 
 async def get_url_for_resource(arn, resource_type, account_id, region, resource_name):

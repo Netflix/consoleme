@@ -45,24 +45,27 @@ class GenerateChangesHandler(BaseAPIV2Handler):
 
         Response example:
 
-        [{
-            "principal_arn": "arn:aws:iam::123456789012:role/aRole",
-            "change_type": "inline_policy",
-            "resource_arns": [
-                "arn:aws:s3:::123456789012-bucket"
-            ],
-            "resource": null,
-            "condition": null,
-            "policy_name": "cm_user_1592499820_gmli",
-            "new": true,
-            "policy": {
-                "version": "2012-10-17",
-                "statements": null,
-                "policy_document": "{\"Version\":\"2012-10-17\",\"Statement\":[[{\"Action\"...",
-                "policy_sha256": "cb300def8dd1deaf4db2bfeef4bc6fc740be18e8ccae74c399affe781f82ba6e"
-            },
-            "old_policy": null
-        }]
+        { "changes" : [
+                {
+                    "principal_arn": "arn:aws:iam::123456789012:role/aRole",
+                    "change_type": "inline_policy",
+                    "resource_arns": [
+                        "arn:aws:s3:::123456789012-bucket"
+                    ],
+                    "resource": null,
+                    "condition": null,
+                    "policy_name": "cm_user_1592499820_gmli",
+                    "new": true,
+                    "policy": {
+                        "version": "2012-10-17",
+                        "statements": null,
+                        "policy_document": "{\"Version\":\"2012-10-17\",\"Statement\":[[{\"Action\"...",
+                        "policy_sha256": "cb300def8dd1deaf4db2bfeef4bc6fc740be18e8ccae74c399affe781f82ba6e"
+                    },
+                    "old_policy": null
+                }
+            ]
+        }
         """
 
         log_data = {
