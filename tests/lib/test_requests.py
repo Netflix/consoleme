@@ -7,6 +7,7 @@ from tornado.testing import AsyncTestCase
 from consoleme.config import config
 from consoleme.exceptions.exceptions import NoMatchingRequest
 from consoleme.lib.plugins import get_plugin_by_name
+from tests.conftest import create_future
 
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 
@@ -27,7 +28,7 @@ class TestRequestsLibrary(AsyncTestCase):
             {"username": "clair"},
         ]
         mock_secondary_approver = [{"name": "group1"}]
-        mock_user_dynamo_handler.return_value.get_all_requests.return_value = (
+        mock_user_dynamo_handler.return_value.get_all_requests.return_value = create_future(
             mock_requests
         )
 
@@ -56,14 +57,14 @@ class TestRequestsLibrary(AsyncTestCase):
             {"username": "edward", "group": "group1", "status": "pending"},
             {"username": "clair", "status": "approved"},
         ]
-        mock_secondary_approver = ["group1"]
-        mock_user_dynamo_handler.return_value.get_all_requests.return_value = (
+        mock_secondary_approver = {"group1": ["group1"]}
+        mock_user_dynamo_handler.return_value.get_all_requests.return_value = create_future(
             mock_requests
         )
 
-        mock_sa = Future()
-        mock_sa.set_result(mock_secondary_approver)
-        mock_auth.get_secondary_approvers.return_value = mock_sa
+        mock_auth.get_secondary_approvers.return_value = create_future(
+            mock_secondary_approver
+        )
 
         requests = asyncio.get_event_loop().run_until_complete(
             get_all_pending_requests_api(mock_user)

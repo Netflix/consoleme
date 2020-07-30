@@ -48,45 +48,6 @@ crypto = Crypto()
 red = RedisHandler().redis_sync()
 
 
-def parallel_write_table(table, data, overwrite_by_pkeys=None):
-    if not overwrite_by_pkeys:
-        overwrite_by_pkeys = []
-    with table.batch_writer(overwrite_by_pkeys=overwrite_by_pkeys) as batch:
-        for item in data:
-            for attempt in Retrying(stop=stop_after_attempt(3), wait=wait_fixed(2)):
-                with attempt:
-                    batch.put_item(Item=item)
-
-
-def parallel_scan_table(table, total_threads=10, loop=None):
-    async def _scan_segment(segment, total_segments):
-        response = table.scan(Segment=segment, TotalSegments=total_segments)
-        items = response.get("Items", [])
-
-        while "LastEvaluatedKey" in response:
-            response = table.scan(
-                ExclusiveStartKey=response["LastEvaluatedKey"],
-                Segment=segment,
-                TotalSegments=total_segments,
-            )
-            items.extend(response.get("Items", []))
-
-        return items
-
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    tasks = []
-    for i in range(total_threads):
-        task = asyncio.ensure_future(_scan_segment(i, total_threads))
-        tasks.append(task)
-
-    results = loop.run_until_complete(asyncio.gather(*tasks))
-    items = []
-    for result in results:
-        items.extend(result)
-    return items
-
-
 class BaseDynamoHandler:
     """Base class for interacting with DynamoDB."""
 
@@ -176,6 +137,43 @@ class BaseDynamoHandler:
                 obj = Decimal(obj.timestamp())
             return obj
 
+    def parallel_write_table(self, table, data, overwrite_by_pkeys=None):
+        if not overwrite_by_pkeys:
+            overwrite_by_pkeys = []
+        with table.batch_writer(overwrite_by_pkeys=overwrite_by_pkeys) as batch:
+            for item in data:
+                for attempt in Retrying(stop=stop_after_attempt(3), wait=wait_fixed(2)):
+                    with attempt:
+                        batch.put_item(Item=self._data_to_dynamo_replace(item))
+
+    def parallel_scan_table(self, table, total_threads=10, loop=None):
+        async def _scan_segment(segment, total_segments):
+            response = table.scan(Segment=segment, TotalSegments=total_segments)
+            items = response.get("Items", [])
+
+            while "LastEvaluatedKey" in response:
+                response = table.scan(
+                    ExclusiveStartKey=response["LastEvaluatedKey"],
+                    Segment=segment,
+                    TotalSegments=total_segments,
+                )
+                items.extend(self._data_from_dynamo_replace(response["Items"]))
+
+            return items
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        tasks = []
+        for i in range(total_threads):
+            task = asyncio.ensure_future(_scan_segment(i, total_threads))
+            tasks.append(task)
+
+        results = loop.run_until_complete(asyncio.gather(*tasks))
+        items = []
+        for result in results:
+            items.extend(result)
+        return items
+
 
 class UserDynamoHandler(BaseDynamoHandler):
     def __init__(self, user_email: Optional[str] = None) -> None:
@@ -230,7 +228,7 @@ class UserDynamoHandler(BaseDynamoHandler):
                 raise
 
     def write_resource_cache_data(self, data):
-        parallel_write_table(
+        self.parallel_write_table(
             self.resource_cache_table, data, ["resourceId", "resourceType"]
         )
 
@@ -484,9 +482,17 @@ class UserDynamoHandler(BaseDynamoHandler):
         :param status:
         :return:
         """
-        return_value = await sync_to_async(parallel_scan_table)(
+        requests = await sync_to_async(self.parallel_scan_table)(
             self.policy_requests_table
         )
+
+        return_value = []
+        if status:
+            for item in requests:
+                if status and item["status"] == status:
+                    return_value.append(item)
+        else:
+            return_value = requests
 
         return return_value
 
@@ -697,23 +703,13 @@ class UserDynamoHandler(BaseDynamoHandler):
 
         return new_request
 
-    def get_all_requests(self, status=None):
+    async def get_all_requests(self, status=None):
         """Return all requests. If a status is specified, only requests with the specified status will be returned.
 
         :param status:
         :return:
         """
-        response = self.requests_table.scan()
-        items = []
-
-        if response and "Items" in response:
-            items = self._data_from_dynamo_replace(response["Items"])
-
-        while "LastEvaluatedKey" in response:
-            response = self.requests_table.scan(
-                ExclusiveStartKey=response["LastEvaluatedKey"]
-            )
-            items.extend(self._data_from_dynamo_replace(response["Items"]))
+        items = await sync_to_async(self.parallel_scan_table)(self.requests_table)
 
         return_value = []
         if status:
