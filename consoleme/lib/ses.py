@@ -285,10 +285,16 @@ async def send_policy_request_status_update(
 ):
     app_name = config.get(f"ses.{sending_app}.name")
     subject = f"{app_name}: Policy change request for {request['arn']} has been {request['status']}"
+    if request["status"] == "pending":
+        subject = (
+            f"{app_name}: Policy change request for {request['arn']} has been created"
+        )
     to_addresses = [request.get("username")]
     message = (
         f"A policy change request for {request['arn']} has been {request['status']}"
     )
+    if request["status"] == "pending":
+        message = f"A policy change request for {request['arn']} has been created."
     if {request["status"]} == "approved":
         message += " and committed"
         subject += " and committed"

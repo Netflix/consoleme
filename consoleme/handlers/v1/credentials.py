@@ -89,7 +89,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
         except CertTooOldException as e:
             log_data["message"] = "Unable to get credentials for user"
             log_data["eligible_roles"] = self.eligible_roles
-            log.error(log_data, exc_info=True)
+            log.warn(log_data, exc_info=True)
             stats.count(
                 "GetCredentialsHandler.post.exception",
                 tags={"user": self.user, "requested_role": role, "authorized": False},
@@ -134,7 +134,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
                         },
                     )
                     log_data["message"] = "Can't find the passed in account."
-                    log.error(log_data)
+                    log.warn(log_data)
                     error = {
                         "code": "906",
                         "message": "No matching account.",
@@ -222,7 +222,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
             or arn_parts[2] != "iam"
         ):
             log_data["message"] = "Invalid Role ARN"
-            log.error(log_data)
+            log.warn(log_data)
             error = {
                 "code": "899",
                 "message": "Invalid Role ARN. Applications must pass the full role ARN when requesting credentials",
@@ -246,7 +246,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
 
         if not authorized:
             log_data["message"] = "Unauthorized"
-            log.error(log_data)
+            log.warn(log_data)
             error = {
                 "code": "900",
                 "message": "Unauthorized",
@@ -298,7 +298,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
                 tags={"user": self.user, "requested_role": None, "authorized": False},
             )
             log_data["message"] = "No matching roles"
-            log.error(log_data)
+            log.warn(log_data)
             error = {
                 "code": "900",
                 "message": "No matching roles",
@@ -314,7 +314,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
                 tags={"user": self.user, "requested_role": None, "authorized": False},
             )
             log_data["message"] = "More than one matching role"
-            log.error(log_data)
+            log.warn(log_data)
             error = {
                 "code": "901",
                 "message": log_data["message"],
@@ -349,7 +349,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
                     else:
                         # Log and emit a metric
                         log_data["message"] = "MFA Denied or Timeout"
-                        log.error(log_data)
+                        log.warn(log_data)
                         stats.count(
                             "GetCredentialsHandler.post.no_ip_restriction.failure",
                             tags={"user": self.user, "requested_role": requested_role},
@@ -417,7 +417,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
                 return
         if not credentials:
             log_data["message"] = "Unauthorized or invalid role"
-            log.error(log_data)
+            log.warn(log_data)
             stats.count(
                 "GetCredentialsHandler.post.unauthorized",
                 tags={
