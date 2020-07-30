@@ -66,7 +66,7 @@ async def update_role(event):
         client = boto3_cached_conn(
             "iam",
             account_number=account_number,
-            assume_role="ConsoleMe",
+            assume_role=config.get("policies.role_name", "ConsoleMe"),
             session_name=aws_session_name,
         )
         inline_policies = d.get("inline_policies", [])

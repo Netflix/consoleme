@@ -30,7 +30,8 @@ def main():
     return app
 
 
-asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+if config.get("tornado.uvloop", True):
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 AsyncIOMainLoop().install()
 app = main()
 
