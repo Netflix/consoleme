@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Any
 
@@ -71,16 +72,30 @@ async def get_request_by_id(user, request_id):
 async def get_all_pending_requests_api(user):
     """Get all pending requests and add the group's secondary approvers"""
     dynamo_handler = UserDynamoHandler(user)
-    all_requests = await sync_to_async(dynamo_handler.get_all_requests)()
+    all_requests = await dynamo_handler.get_all_requests()
 
     pending_requests = []
 
+    # Get secondary approvers for groups asynchronously, otherwise this can be a bottleneck
+    tasks = []
     for req in all_requests:
         if req.get("status") == "pending":
             group = req.get("group")
-            secondary_approvers = await auth.get_secondary_approvers(group)
-            req["secondary_approvers"] = ",".join(secondary_approvers)
+            task = asyncio.ensure_future(
+                auth.get_secondary_approvers(group, return_dict=True)
+            )
+            tasks.append(task)
             pending_requests.append(req)
+    secondary_approver_responses = asyncio.gather(*tasks)
+    secondary_approver_mapping = {}
+    for mapping in await secondary_approver_responses:
+        for group, secondary_approvers in mapping.items():
+            secondary_approver_mapping[group] = ",".join(secondary_approvers)
+
+    for req in pending_requests:
+        req["secondary_approvers"] = secondary_approver_mapping.get(
+            req.get("group"), ""
+        )
     return pending_requests
 
 
@@ -165,7 +180,7 @@ async def get_user_requests(user, groups):
     secondary approver
     """
     dynamo_handler = UserDynamoHandler(user)
-    all_requests = await sync_to_async(dynamo_handler.get_all_requests)()
+    all_requests = await dynamo_handler.get_all_requests()
     query = {
         "domains": config.get("dynamo.get_user_requests.domains", []),
         "filters": [

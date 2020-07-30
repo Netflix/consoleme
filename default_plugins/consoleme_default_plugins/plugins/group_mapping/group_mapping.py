@@ -35,7 +35,7 @@ class GroupMapping:
                     username, groups, console_only
                 )
             )
-        return roles
+        return list(set(roles))
 
     @staticmethod
     async def filter_eligible_roles(query: str, obj: object) -> list:
