@@ -75,8 +75,9 @@ class LandingTableConfigHandler(BaseHandler):
                 200:
                     description: Returns Landing Table Configuration
         """
+        # TODO: Support getting CLI Credentials via web interface
         default_configuration = {
-            "expandableRows": False,
+            "expandableRows": True,
             "tableName": "Select a Role to Login AWS Console",
             "tableDescription": "Followings are the accounts you are eligible to sign-in with permission associated the role you are given.",
             "dataEndpoint": "/landing",
@@ -88,18 +89,12 @@ class LandingTableConfigHandler(BaseHandler):
                 {"placeholder": "Account Name", "key": "account_name", "type": "input"},
                 {"placeholder": "Account ID", "key": "account_id", "type": "input"},
                 {"placeholder": "Role Name", "key": "role_name", "type": "input"},
-                # TODO: Support getting CLI Credentials via web interface
-                # {
-                #     "placeholder": "CLI",
-                #     "key": "credential",
-                #     "type": "icon",
-                #     "icon": "key",
-                # },
                 {
-                    "placeholder": "Console",
+                    "placeholder": "AWS Console Sign-In",
                     "key": "redirect",
-                    "type": "icon",
+                    "type": "button",
                     "icon": "sign-in",
+                    "content": "account_name",
                     "onClick": {"action": "redirect"},
                 },
             ],
@@ -157,16 +152,24 @@ class IndexHandler(BaseHandler):
         roles = []
         for arn in self.eligible_roles:
             match = re.match(ARN_REGEX, arn)
+
             account_id = match.group(1)
-            role_name = match.group(2).split("/")[-1]
+            account_role = match.group(2).split("/")[-1]
             account_name = self.eligible_accounts.get(account_id, "")
+
+            # check whether this is a user role
+            match = re.match(r'^cm_(.+)_N$', account_role)
+            if match:
+                role_name = account_role
+            else:
+                account_name, role_name = account_role.rsplit('_', 1)
+
             roles.append(
                 {
                     "arn": arn,
                     "account_name": account_name,
                     "account_id": account_id,
                     "role_name": f"[{role_name}](/policies/edit/{arn.split(':')[4]}/iamrole/{arn.split('/')[-1]})",
-                    "credential": "",
                     "redirect": f"/role/{arn}",
                 }
             )

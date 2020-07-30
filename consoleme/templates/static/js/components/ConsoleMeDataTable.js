@@ -3,7 +3,7 @@ import qs from 'qs';
 import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
 import {sendRequestCommon} from '../helpers/utils';
-import {Dropdown, Header, Icon, Input, Pagination, Segment, Table} from "semantic-ui-react";
+import {Button, Dropdown, Header, Icon, Input, Pagination, Segment, Table} from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
 import SemanticDatepicker from 'react-semantic-ui-datepickers';
 import 'react-semantic-ui-datepickers/dist/react-semantic-ui-datepickers.css';
@@ -34,8 +34,8 @@ class ConsoleMeDataTable extends Component {
             data: [],
             filteredData: [],
             tableConfig: {
-                expandableRows: true, // TODO: Hee Won - We should obey this configuration if possible
-                sortable: true, // TODO: Figure out sorting logic for both frontend / backend
+                expandableRows: true,
+                sortable: true,
                 totalRows: 1000,
                 rowsPerPage: 50,
                 columns: [],
@@ -56,11 +56,11 @@ class ConsoleMeDataTable extends Component {
             debounceWait: 300,
         };
 
-        this.generateRows = this.generateRows.bind(this)
-        this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(this)
-        this.handleInputChange = this.handleInputChange.bind(this)
-        this.handleCellClick = this.handleCellClick.bind(this)
-        this.renderRedirect = this.renderRedirect.bind(this)
+        this.calculateColumnSize = this.calculateColumnSize.bind(this);
+        this.generateRows = this.generateRows.bind(this);
+        this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(this);
+        this.handleCellClick = this.handleCellClick.bind(this);
+        this.renderRedirect = this.renderRedirect.bind(this);
     }
 
     async componentDidMount() {
@@ -90,6 +90,10 @@ class ConsoleMeDataTable extends Component {
         });
     }
 
+    calculateColumnSize(tableConfig) {
+        return (tableConfig.columns || []).length + (tableConfig.expandableRows ? 1 : 0);
+    }
+
     handleSort = clickedColumn => () => {
         const {column, filteredData, direction} = this.state;
 
@@ -97,7 +101,7 @@ class ConsoleMeDataTable extends Component {
             return this.setState({
                 column: clickedColumn,
                 filteredData: _.sortBy(filteredData, [clickedColumn]),
-                direction: "ascending"
+                direction: "ascending",
             });
         }
 
@@ -130,18 +134,6 @@ class ConsoleMeDataTable extends Component {
             });
         }
     };
-
-    triggerChange() {
-        const {value} = this.state;
-        // send value to the backend
-        console.log("Triggered", value);
-    }
-
-    handleInputChange(e, {value}) {
-        clearTimeout(this.timer);
-        this.setState({value});
-        this.timer = setTimeout(this.triggerChange.bind(this), this.state.debounceWait);
-    }
 
     generateColumnOptions() {
         const {data} = this.state;
@@ -231,6 +223,19 @@ class ConsoleMeDataTable extends Component {
                     );
                     break;
                 }
+                case "button": {
+                    columnCell = (
+                        <Header
+                            as="h4"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                            }}
+                        >
+                            {item.placeholder}
+                        </Header>
+                    );
+                    break;
+                }
                 case "icon": {
                     columnCell = (
                         <Header
@@ -250,7 +255,8 @@ class ConsoleMeDataTable extends Component {
                 <Table.HeaderCell
                     style={item.style}
                     onClick={this.handleSort(key)}
-                    sorted={item.type !== 'icon' ? direction : null}
+                    sorted={!(['button', 'icon'].includes(item.type)) ? direction : null}
+                    textAlign={item.type === 'button' ? 'center' : null}
                 >
                     {columnCell}
                 </Table.HeaderCell>
@@ -297,23 +303,29 @@ class ConsoleMeDataTable extends Component {
         this.setState({loading: true});
         const {name, value} = data;
         const {tableConfig} = this.state;
+
         let filters = this.state.filters;
         filters[name] = value;
-        this.setState({filters: filters});
+        this.setState({
+            filters: filters,
+        });
+
         if (tableConfig.serverSideFiltering) {
             clearTimeout(this.timer);
             this.timer = setTimeout(
                 async () => {
                     await this.filterColumnServerSide({}, filters);
                 },
-                this.state.debounceWait);
+                this.state.debounceWait,
+            );
         } else {
             clearTimeout(this.timer);
             this.timer = setTimeout(
                 () => {
                     this.filterColumnClientSide(event, filters);
                 },
-                this.state.debounceWait);
+                this.state.debounceWait,
+            );
         }
     }
 
@@ -321,14 +333,14 @@ class ConsoleMeDataTable extends Component {
         const {tableConfig} = this.state;
         const data = await sendRequestCommon(
             {filters: filters},
-            tableConfig.dataEndpoint
+            tableConfig.dataEndpoint,
         );
 
         this.setState({
             expandedRow: null,
             filteredData: data,
             limit: tableConfig.totalRows,
-            loading: false
+            loading: false,
         });
     }
 
@@ -358,25 +370,25 @@ class ConsoleMeDataTable extends Component {
         this.setState({
             expandedRow: null,
             filteredData: filtered,
-            loading: false
+            loading: false,
         });
     }
 
-    async handleCellClick(e, column, entry) {
+    handleCellClick(e, column, entry) {
         // This function should appropriately handle a Cell Click given a desired
         // action by the column configuration
         if (column.onClick) {
             if (column.onClick.action === "redirect") {
                 this.setState({
                     redirect: entry[column.key]
-                })
+                });
             }
         }
     }
 
     renderRedirect() {
         if (this.state.redirect) {
-            return <Redirect to={this.state.redirect}/>
+            return <Redirect to={this.state.redirect}/>;
         }
     }
 
@@ -397,7 +409,7 @@ class ConsoleMeDataTable extends Component {
             if (expandedRow && expandedRow.index === idx) {
                 return (
                     <Table.Row>
-                        <Table.Cell collapsing colSpan={8}>
+                        <Table.Cell collapsing colSpan={this.calculateColumnSize(tableConfig)}>
                             <pre>
                                 {JSON.stringify(expandedRow.data, null, 4)}
                             </pre>
@@ -406,24 +418,39 @@ class ConsoleMeDataTable extends Component {
                 );
             }
 
-            const cells = [];
-            // Iterate through our configured columns
             // TODO(heewonk), instead of rendering by column type, create separate component for these types
+            const cells = [];
             tableConfig.columns.forEach((column) => {
                 if (column.type === "daterange") {
-                    cells.push(<Table.Cell collapsing>
-                        <ReactMarkdown
-                            linkTarget="_blank"
-                            source={'' || new Date(entry[column.key] * 1000).toUTCString()}
-                        />
-                    </Table.Cell>)
+                    cells.push(
+                        <Table.Cell collapsing>
+                            <ReactMarkdown
+                                linkTarget="_blank"
+                                source={'' || new Date(entry[column.key] * 1000).toUTCString()}
+                            />
+                        </Table.Cell>
+                    )
+                } else if (column.type === 'button') {
+                    cells.push(
+                        <Table.Cell collapsing>
+                            <Button
+                                content={entry[column.content]}
+                                fluid
+                                labelPosition="right"
+                                icon={column.icon}
+                                onClick={(e) => {
+                                    this.handleCellClick(e, column, entry)
+                                }}
+                                primary
+                            />
+                        </Table.Cell>
+                    )
                 } else if (column.type === 'icon') {
-                    // TODO(heewonk), instead of using icon here, use custom component instead.
                     cells.push(
                         <Table.Cell collapsing>
                             <Icon
-                                onClick={async (e) => {
-                                    await this.handleCellClick(e, column, entry)
+                                onClick={(e) => {
+                                    this.handleCellClick(e, column, entry)
                                 }}
                                 link
                                 name={column.icon}
@@ -431,12 +458,14 @@ class ConsoleMeDataTable extends Component {
                         </Table.Cell>
                     );
                 } else {
-                    cells.push(<Table.Cell collapsing>
-                        <ReactMarkdown
-                            linkTarget="_blank"
-                            source={'' || entry[column.key].toString()}
-                        />
-                    </Table.Cell>)
+                    cells.push(
+                        <Table.Cell collapsing>
+                            <ReactMarkdown
+                                linkTarget="_blank"
+                                source={'' || entry[column.key].toString()}
+                            />
+                        </Table.Cell>
+                    )
                 }
             })
 
@@ -468,6 +497,7 @@ class ConsoleMeDataTable extends Component {
                 </div>
             )
         }
+
         return (
             <Segment basic>
                 <Header as="h2">{tableConfig.tableName}</Header>
@@ -482,7 +512,7 @@ class ConsoleMeDataTable extends Component {
                     </Table.Body>
                     <Table.Footer>
                         <Table.Row>
-                            <Table.HeaderCell colSpan={8}>
+                            <Table.HeaderCell colSpan={this.calculateColumnSize(tableConfig)}>
                                 <Pagination
                                     floated="right"
                                     defaultActivePage={activePage}
