@@ -1,0 +1,8 @@
+{% include "header.html" %}
+<div id="wrapper" class="container">
+    <div id="policy_request_review" />
+    <script src="/static/js/dist/policyRequestsReview.js"></script>
+    <script>
+        setTimeout(function(){ policyRequestsReview.renderPolicyRequestsReview('{{ escape(request_id) }}') }, 1000);
+    </script>
+</div>

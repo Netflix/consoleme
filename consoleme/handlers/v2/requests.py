@@ -15,6 +15,7 @@ from consoleme.lib.generic import filter_table, write_json_error
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import (
     can_manage_policy_requests,
+    can_update_cancel_requests_v2,
     should_auto_approve_policy_v2,
 )
 from consoleme.lib.timeout import Timeout
@@ -22,8 +23,14 @@ from consoleme.lib.v2.requests import (
     apply_changes_to_role,
     generate_request_from_change_model_array,
     is_request_eligible_for_auto_approval,
+    populate_old_policies,
 )
-from consoleme.models import CommentModel, RequestCreationModel, RequestCreationResponse
+from consoleme.models import (
+    CommentModel,
+    ExtendedRequestModel,
+    RequestCreationModel,
+    RequestCreationResponse,
+)
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
@@ -153,6 +160,7 @@ class RequestHandler(BaseAPIV2Handler):
                         id=str(uuid.uuid4()),
                         timestamp=int(time.time()),
                         user_email=self.user,
+                        user=extended_request.requester_info,
                         last_modified=int(time.time()),
                         text=f"Self-approved by admin: {self.user}",
                     )
@@ -343,14 +351,75 @@ class RequestDetailHandler(BaseAPIV2Handler):
         tags = {"user": self.user}
         stats.count("RequestDetailHandler.get", tags=tags)
         log_data = {
-            "function": "RequestDetailHandler.get",
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "user": self.user,
-            "message": "Writing request details",
+            "message": "Get request details",
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
+            "request": request_id,
         }
         log.debug(log_data)
-        self.write_error(501, message="Get request details")
+
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                self.write_error(
+                    403, message="Only FTEs are authorized to view this page."
+                )
+                return
+
+        dynamo = UserDynamoHandler(self.user)
+        requests = await dynamo.get_policy_requests(request_id=request_id)
+        if len(requests) == 0:
+            log_data["message"] = "Request with that ID not found"
+            log.error(log_data)
+            stats.count(f"{log_data['function']}.not_found", tags={"user": self.user})
+            self.write_error(404, message="Request with that ID not found")
+            return
+        if len(requests) > 1:
+            log_data["message"] = "Multiple requests with that ID found"
+            log.error(log_data)
+            stats.count(
+                f"{log_data['function']}.multiple_requests_found",
+                tags={"user": self.user},
+            )
+            self.write_error(500, message="Multiple requests with that ID found")
+            return
+        request = requests[0]
+
+        if "version" not in request or request.get("version") != "2":
+            # Request format is not compitable with this endpoint version
+            self.write_error(400, message="Request with that ID is not a v2 request")
+            return
+
+        extended_request = ExtendedRequestModel.parse_raw(
+            request.get("extended_request")
+        )
+        await populate_old_policies(extended_request, self.user)
+
+        # TODO: do stuff with extended request - Generate cross-account resource policies
+
+        can_approve_reject = await can_manage_policy_requests(self.groups)
+        can_update_cancel = await can_update_cancel_requests_v2(
+            extended_request.requester_email, self.user, self.groups
+        )
+
+        # TODO: can_change_to_pending = await can_move_back_to_pending(request, self.groups)
+
+        # In the future request_specific_config will have specific approvers for specific changes based on ABAC
+        request_specific_config = {
+            "can_approve_reject": can_approve_reject,
+            "can_update_cancel": can_update_cancel,
+        }
+
+        response = {
+            "request": extended_request.json(),
+            "last_updated": request.get("last_updated"),
+            "request_config": request_specific_config,
+        }
+
+        self.write(response)
 
     async def put(self, request_id):
         """

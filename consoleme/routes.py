@@ -47,6 +47,7 @@ from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 
 # Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
 from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
+from consoleme.handlers.v2.policies import PolicyReviewV2Handler
 from consoleme.handlers.v2.requests import (
     RequestDetailHandler,
     RequestHandler,
@@ -142,6 +143,7 @@ def make_app(jwt_validator=None):
             ResourcePolicyEditHandler,
         ),
         (r"/policies/request/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
+        (r"/policies/request_v2/([a-zA-Z0-9_-]+)", PolicyReviewV2Handler),
         (r"/policies/submit_for_review", PolicyReviewSubmitHandler),
         (r"/policies/typeahead", ResourceTypeAheadHandler),
         (r"/saml/(.*)", SamlHandler),

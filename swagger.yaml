@@ -444,6 +444,9 @@ components:
           readOnly: true
         status:
           type: string
+        cross_account:
+          description: if true, the request touches cross-account resources
+          type: boolean
     ExtendedRequestModel:
       allOf:
         - $ref: '#/components/schemas/RequestModel'
@@ -701,6 +704,8 @@ components:
           enum:
             - applied
             - not_applied
+        id:
+          type: string
     InlinePolicyChangeModel:
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
