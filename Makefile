@@ -21,7 +21,6 @@ endif
 
 # Set CONSOLEME_CONFIG_ENTRYPOINT make variable to CONSOLEME_CONFIG_ENTRYPOINT env variable, or "default_config"
 CONSOLEME_CONFIG_ENTRYPOINT := $(or ${CONSOLEME_CONFIG_ENTRYPOINT},${CONSOLEME_CONFIG_ENTRYPOINT},default_config)
-
 .PHONY: env_install
 env_install: env/bin/activate
 	# Activate either the virtualenv in env/ or tell conda to activate
@@ -74,6 +73,7 @@ clean:
 	rm -rf build/
 	rm -rf *.egg-info
 	rm -f celerybeat-schedule.db
+	rm -rf consoleme.tar.gz
 	find $(project) tests -name "*.pyc" -delete
 	find . -name '*.pyc' -delete
 	find . -name '*.pyo' -delete
@@ -127,7 +127,7 @@ endif
 
 consoleme.tar.gz:
 	# Tar contents of the current directory
-	tar --exclude='consoleme.tar.gz' --exclude='build*' --exclude='env*' --exclude='venv*' --exclude='node_modules*' --exclude='debian*' --exclude='staging*' -czf consoleme.tar.gz .
+	tar --exclude='consoleme.tar.gz' --exclude='build*' --exclude='.tox/*' --exclude='env*' --exclude='venv*' --exclude='node_modules*' --exclude='debian*' --exclude='staging*' -czf consoleme.tar.gz .
 
 .PHONY: create_ami
 create_ami: consoleme.tar.gz packer clean
@@ -166,3 +166,5 @@ endif
 default_plugins:
 	. env/bin/activate || source activate consoleme;\
 	pip install -e default_plugins
+
+

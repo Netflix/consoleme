@@ -1,0 +1,40 @@
+extends:
+  - example_config_base.yaml
+
+tornado:
+  debug: true
+  port: 8081
+  xsrf: true
+  uvloop: false
+
+development: true
+environment: prod
+
+logging:
+  stdout_enabled: true
+  format: '%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s'
+  level: debug
+  file: /logs/consoleme/consoleme_tornado.log
+
+account_ids_to_name:
+  "123456789012":
+    - default_account
+
+# A development configuration can specify a specific user to impersonate locally.
+_development_user_override: consolemeadmin@example.com
+
+# A development configuration can specify specific groups to consider the user a member of locally.
+_development_groups_override:
+  - groupa@example.com
+  - groupb@example.com
+  - configeditors@example.com
+  - consoleme_admins@example.com
+
+format_role_name:
+  # You can specify how you would like the role name to appear on the landing page. By default,
+  # We show just the role name. arn:aws:iam::123456789012:role/roleName -> roleName
+  #show_full_arn: true
+  show_account_name_role_name: true
+
+policies:
+  role_name: ConsoleMeTarget

@@ -1,3 +1,13 @@
+### Terraform ###
+# Local .terraform directories
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+terraform.tfvars
+state.tf
+consoleme.tar.gz
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -111,6 +121,8 @@ dynamodb-data/
 redis-data/
 node_modules/
 **/node_modules/
+tmp/*
+tmp*
 
 # FrontEnd Ignores
 **/static/bundles/

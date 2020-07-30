@@ -1,0 +1,73 @@
+extends:
+  - example_config_base.yaml
+
+tornado:
+  debug: true
+  port: 8081
+  xsrf: true
+  uvloop: false
+
+development: true
+environment: prod
+
+logging:
+  stdout_enabled: true
+  format: '%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s'
+  level: debug
+  file: /logs/consoleme/consoleme_tornado.log
+
+account_ids_to_name:
+  '${current_account_id}':
+    - default_account
+
+# A development configuration can specify a specific user to impersonate locally.
+_development_user_override: consolemeadmin@example.com
+
+# A development configuration can specify specific groups to consider the user a member of locally.
+_development_groups_override:
+  - groupa@example.com
+  - groupb@example.com
+  - configeditors@example.com
+  - consoleme_admins@example.com
+
+
+# You'll probably want to override FUNCTION to generate this data with your own business logic.
+application_settings:
+  application_1:
+    owner: consoleme_admins@example.com
+    owner_url: https://www.example.com/groupa@example.com
+    app_url: https://www.example.com/ci_cd_pipeline/application_1
+    roles:
+      - ${demo_app_role_arn_1}
+  application_2:
+    owner: groupb@example.com
+    owner_url: https://www.example.com/groupb@example.com
+    app_url: https://www.example.com/ci_cd_pipeline/application_2
+    roles:
+      - ${demo_app_role_arn_2}
+
+dynamic_config:
+  # You can set this key in http://YOUR_CONSOLEME_DOMAIN/config as a rudimentary way to allow groups to access
+  # roles before you override get_eligible_roles with your own custom logic
+  group_mapping:
+    groupa@example.com:
+      roles:
+        - ${demo_user_role_arn_1}
+    groupb@example.com:
+      roles:
+        - ${demo_user_role_arn_2}
+    consoleme_admins@example.com:
+      roles:
+        - ${demo_user_role_arn_1}
+        - ${demo_user_role_arn_2}
+
+format_role_name:
+  # You can specify how you would like the role name to appear on the landing page. By default,
+  # We show just the role name. arn:aws:iam::123456789012:role/roleName -> roleName
+  #show_full_arn: true
+  show_account_name_role_name: true
+
+policies:
+  role_name: ConsoleMeTarget
+
+# TODO: SAML / Oauth / TLS configuration / Secufre JWT / CLI Auth / Generic CloudTrail log support
