@@ -78,8 +78,11 @@ class LandingTableConfigHandler(BaseHandler):
         # TODO: Support getting CLI Credentials via web interface
         default_configuration = {
             "expandableRows": True,
-            "tableName": "Select a Role to Login AWS Console",
-            "tableDescription": "Followings are the accounts you are eligible to sign-in with permission associated the role you are given.",
+            "tableName": "Select a Role",
+            "tableDescription": config.get(
+                "landing_page.table_description",
+                "Select a role to login to the AWS console.",
+            ),
             "dataEndpoint": "/landing",
             "sortable": False,
             "totalRows": 1000,
@@ -94,7 +97,7 @@ class LandingTableConfigHandler(BaseHandler):
                     "key": "redirect",
                     "type": "button",
                     "icon": "sign-in",
-                    "content": "account_name",
+                    "content": "Sign-In",
                     "onClick": {"action": "redirect"},
                 },
             ],
@@ -158,11 +161,11 @@ class IndexHandler(BaseHandler):
             account_name = self.eligible_accounts.get(account_id, "")
 
             # check whether this is a user role
-            match = re.match(r'^cm_(.+)_N$', account_role)
+            match = re.match(r"^cm_(.+)_N$", account_role)
             if match:
                 role_name = account_role
             else:
-                account_name, role_name = account_role.rsplit('_', 1)
+                account_name, role_name = account_role.rsplit("_", 1)
 
             roles.append(
                 {

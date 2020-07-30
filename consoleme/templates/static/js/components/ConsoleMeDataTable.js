@@ -434,7 +434,7 @@ class ConsoleMeDataTable extends Component {
                     cells.push(
                         <Table.Cell collapsing>
                             <Button
-                                content={entry[column.content]}
+                                content={entry[column.content] || column.content}
                                 fluid
                                 labelPosition="right"
                                 icon={column.icon}
