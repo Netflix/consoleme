@@ -4,10 +4,12 @@ import React, {Component} from 'react';
 import ReactDOM from 'react-dom';
 import {sendRequestCommon} from '../helpers/utils';
 import {Button, Dropdown, Header, Icon, Input, Pagination, Segment, Table} from "semantic-ui-react";
+import ReactJson from "react-json-view";
 import ReactMarkdown from "react-markdown";
 import SemanticDatepicker from 'react-semantic-ui-datepickers';
 import 'react-semantic-ui-datepickers/dist/react-semantic-ui-datepickers.css';
 import {Redirect, BrowserRouter} from "react-router-dom";
+
 
 const expandNestedJson = (data) => {
     Object.keys(data).forEach((key) => {
@@ -410,9 +412,13 @@ class ConsoleMeDataTable extends Component {
                 return (
                     <Table.Row>
                         <Table.Cell collapsing colSpan={this.calculateColumnSize(tableConfig)}>
-                            <pre>
-                                {JSON.stringify(expandedRow.data, null, 4)}
-                            </pre>
+                            <ReactJson
+                                displayDataTypes={false}
+                                enableClipboard={false}
+                                indentWidth={4}
+                                name={false}
+                                src={expandedRow.data}
+                            />
                         </Table.Cell>
                     </Table.Row>
                 );
@@ -442,6 +448,7 @@ class ConsoleMeDataTable extends Component {
                                     this.handleCellClick(e, column, entry)
                                 }}
                                 primary
+                                size="mini"
                             />
                         </Table.Cell>
                     )
@@ -492,7 +499,7 @@ class ConsoleMeDataTable extends Component {
             return (
                 <div>
                     <BrowserRouter forceRefresh={true}>
-                    {this.renderRedirect()}
+                        {this.renderRedirect()}
                     </BrowserRouter>
                 </div>
             )
