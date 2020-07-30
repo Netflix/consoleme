@@ -93,3 +93,38 @@ function restrictCharacters(myfield, e, restrictionType) {
     return !!character.match(restrictionType);
   }
 }
+
+function parseLocalStorageCache() {
+    key = "consoleMeLocalStorage";
+    if (typeof(Storage) == "undefined") {
+        return null;
+    }
+    stored_values = localStorage.getItem(key);
+    if (stored_values == null) {
+        return null;
+    }
+    return JSON.parse(stored_values)
+}
+
+function reset_options() {
+    $('#account').val('').trigger('chosen:updated');
+}
+
+function setLocalStorageCache(role) {
+    key = "consoleMeLocalStorage";
+    roles = parseLocalStorageCache();
+    // We don't use "Set()" because we want the last selected role to be on top of the recent roles list
+    if (roles == null) {
+        roles = [];
+        roles[0] = role;
+    }
+    else {
+        var uniqueRoles = [];
+        len = roles.unshift(role);
+        roles = roles.unique();
+        if (len > 5) {
+            roles = roles.slice(0, 5)
+        }
+    }
+    localStorage.setItem(key, JSON.stringify(roles))
+}

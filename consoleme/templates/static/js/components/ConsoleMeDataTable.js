@@ -414,7 +414,7 @@ class ConsoleMeDataTable extends Component {
                         <Table.Cell collapsing colSpan={this.calculateColumnSize(tableConfig)}>
                             <ReactJson
                                 displayDataTypes={false}
-                                enableClipboard={false}
+                                displayObjectSize={false}
                                 indentWidth={4}
                                 name={false}
                                 src={expandedRow.data}

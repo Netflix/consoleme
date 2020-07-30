@@ -64,26 +64,26 @@ async def get_as_tags(name="main", extension=None, config=config, attrs=""):
     return tags
 
 
-class LandingTableConfigHandler(BaseHandler):
+class EligibleRoleTableConfigHandler(BaseHandler):
     async def get(self):
         """
-        /landing_table_config
+        /role_table_config
         ---
         get:
-            description: Retrieve Landing Table Configuration
+            description: Retrieve Role Table Configuration
             responses:
                 200:
-                    description: Returns Landing Table Configuration
+                    description: Returns Role Table Configuration
         """
         # TODO: Support getting CLI Credentials via web interface
         default_configuration = {
             "expandableRows": True,
             "tableName": "Select a Role",
             "tableDescription": config.get(
-                "landing_page.table_description",
+                "role_table_config.table_description",
                 "Select a role to login to the AWS console.",
             ),
-            "dataEndpoint": "/landing",
+            "dataEndpoint": "/",
             "sortable": False,
             "totalRows": 1000,
             "rowsPerPage": 50,
@@ -104,7 +104,7 @@ class LandingTableConfigHandler(BaseHandler):
         }
 
         table_configuration = config.get(
-            "LandingTableConfigHandler.configuration", default_configuration
+            "role_table_config.table_configuration_override", default_configuration
         )
 
         self.write(table_configuration)
@@ -125,15 +125,15 @@ class IndexHandler(BaseHandler):
         redirect = self.request.arguments.get("redirect", [""])[0]
 
         await self.render(
-            "landing.html",
+            "index.html",
             page_title="ConsoleMe - Console Access",
             # bundles=await get_as_tags(name="main", config=config),
             current_page="index",
             user=self.user,
+            recent_roles=True,
             eligible_roles=self.eligible_roles,
             eligible_accounts=self.eligible_accounts,
             itemgetter=itemgetter,
-            recent_roles=True,
             error=None,
             region=region,
             redirect=redirect,
