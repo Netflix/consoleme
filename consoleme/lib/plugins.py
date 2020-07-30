@@ -3,6 +3,8 @@ from typing import Any
 
 import pkg_resources
 
+global_plugins = {}
+
 
 def iter_namespace(ns_pkg):
     # Specifying the second argument (prefix) to iter_modules makes the
@@ -13,11 +15,14 @@ def iter_namespace(ns_pkg):
 
 
 def get_plugin_by_name(plugin_name: str) -> Any:
+    if global_plugins.get(plugin_name):
+        return global_plugins[plugin_name]
     plugins = []
     for ep in pkg_resources.iter_entry_points("consoleme.plugins"):
         plugins.append(ep.name)
         if ep.name == plugin_name:
-            return ep.load()
+            global_plugins[ep.name] = ep.load()
+            return global_plugins[ep.name]
     initial_exception_message = f"Could not find the specified plugin: {plugin_name}. "
     if plugin_name == "default_config":
         initial_exception_message = (
