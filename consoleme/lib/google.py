@@ -76,7 +76,7 @@ async def add_user_to_group_task(
                 result["Error"] = True
                 error = f"There was at least one problem. {result['Result']}"
                 log_data["error"] = error
-                log.error(log_data, exc_info=True)
+                log.warn(log_data, exc_info=True)
 
                 return result
             if not validate_email(member):
@@ -84,7 +84,7 @@ async def add_user_to_group_task(
                 result["Error"] = True
                 log_data["message"] = "Error"
                 log_data["error"] = result["Result"]
-                log.error(log_data, exc_info=True)
+                log.warn(log_data, exc_info=True)
                 return result
 
             if (
@@ -97,7 +97,7 @@ async def add_user_to_group_task(
                 result["Error"] = True
                 log_data["message"] = "Error"
                 log_data["error"] = result["Result"]
-                log.error(log_data, exc_info=True)
+                log.warn(log_data, exc_info=True)
                 return result
 
             await add_user_to_group(member, group, requesting_user, service=service)
@@ -156,7 +156,7 @@ async def remove_user_from_group_task(
                 result["Error"] = True
                 error = f"There was at least one problem. {result['Result']}"
                 log_data["error"] = error
-                log.error(log_data, exc_info=True)
+                log.warn(log_data, exc_info=True)
 
                 return result
 
@@ -167,7 +167,7 @@ async def remove_user_from_group_task(
                 result["Error"] = True
                 log_data["message"] = "Error"
                 log_data["error"] = result["Result"]
-                log.error(log_data, exc_info=True)
+                log.warn(log_data, exc_info=True)
                 return result
 
             await remove_user_from_group(
@@ -558,7 +558,7 @@ async def remove_user_from_group(
         log_data[
             "message"
         ] = "Unable to remove user from group. User is not currently in the group."
-        log.error(log_data)
+        log.warn(log_data)
         result["done"] = False
         result["message"] = log_data["message"]
         raise NotAMemberException(result["message"])
