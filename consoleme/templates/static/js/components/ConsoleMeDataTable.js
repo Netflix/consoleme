@@ -551,6 +551,7 @@ class ConsoleMeDataTable extends Component {
                   onPageChange={(event, data) => {
                     this.setState({
                       activePage: data.activePage,
+                      expandedRow: null,
                     });
                   }}
                 />

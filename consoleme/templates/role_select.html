@@ -8,180 +8,89 @@
             });
         }
 
-    function maybeRemoveCookies() {
-        var isChrome = !!window.chrome && !!window.chrome.webstore;
-        if (isChrome) {
-            log("Sending message to extension to remove cookies")
-            var editorExtensionId = "gjnncfdppibgppmmkmlffcfehfhfbhko";
-            try {
-                chrome.runtime.sendMessage(
-                    editorExtensionId,
-                    {action: "reset_aws_auth_cookie"},
-                    function (r) {
-                        log("Received response from helper extension: " + r);
-                    }
-                )
-                return true
-            }
-            catch(err) {
-                console.log("Error - User does not have ConsoleMe Extension: " + err.message);
-                return false
+        function log(message) {
+            if (debug) {
+                console.log(message);
             }
         }
-    }
 
-    function log(message) {
-        if (debug) {
-            console.log(message);
+        function selectRole(role, url, method) {
+            // Create hidden iframe to log user out
+            document.getElementsByName('logOutIframe')[0].src = "https://signin.aws.amazon.com/oauth?Action=logout";
+            // If the user has the Consoleme Helper chrome extension, this will tell the extension that a role has been
+            // selected. The extension will delete the AWS login cookie to facilitate quick role redirection.
+            // Wait for hidden iframe to log the user out, and then call the
+            // Redirect function
+            log("Setting delay=" + consoleme_delay);
+            log("Selecting role=" + role);
+            setTimeout(function () {
+                selectRoleRedirect(role, url, method);
+                log_completion();
+            }, consoleme_delay);
         }
-    }
 
-    function selectRole(role, url, method) {
-        // Create hidden iframe to log user out
-        document.getElementsByName('logOutIframe')[0].src = "https://signin.aws.amazon.com/oauth?Action=logout";
-        // If the user has the Consoleme Helper chrome extension, this will tell the extension that a role has been
-        // selected. The extension will delete the AWS login cookie to facilitate quick role redirection.
-        var result = maybeRemoveCookies();
-        // Wait for hidden iframe to log the user out, and then call the
-        // Redirect function
-        log("Setting delay=" + consoleme_delay);
-        log("Selecting role=" + role);
-        setTimeout(function () {
-            selectRoleRedirect(role, url, method);
-            log_completion();
-        }, consoleme_delay);
-    }
+        function getCookie(name) {
+            var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
+            return r ? r[1] : undefined;
+        }
 
-    function getCookie(name) {
-        var r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
-        return r ? r[1] : undefined;
-    }
+        function selectRoleRedirect(role, url, method = 'post') {
+            // Create the form object
+            var form = document.createElement("form");
+            form.setAttribute("method", method);
+            form.setAttribute("action", url);
+            var hiddenField = document.createElement("input");
+            hiddenField.setAttribute("type", "hidden");
+            hiddenField.setAttribute("name", "role");
+            hiddenField.setAttribute("value", role);
 
-    function selectRoleRedirect(role, url, method = 'post') {
-        // Create the form object
-        var form = document.createElement("form");
-        form.setAttribute("method", method);
-        form.setAttribute("action", url);
-        var hiddenField = document.createElement("input");
-        hiddenField.setAttribute("type", "hidden");
-        hiddenField.setAttribute("name", "role");
-        hiddenField.setAttribute("value", role);
+            form.appendChild(hiddenField);
 
-        form.appendChild(hiddenField);
+            var region = document.createElement("input");
+            region.setAttribute("type", "hidden");
+            region.setAttribute("name", "region");
+            {% if region %}
+                region.setAttribute("value", "{{ escape(region) }}");
+            {% end %}
+            form.appendChild(region);
 
-        var region = document.createElement("input");
-        region.setAttribute("type", "hidden");
-        region.setAttribute("name", "region");
-        {% if region %}
-            region.setAttribute("value", "{{ escape(region) }}");
-        {% end %}
-        form.appendChild(region);
+            let redirect = document.createElement("input");
+            redirect.setAttribute("type", "hidden");
+            redirect.setAttribute("name", "redirect");
+            {% if globals().get("redirect") and redirect %}
+                redirect.setAttribute("value", "{{ escape(redirect) }}");
+            {% end %}
+            form.appendChild(redirect);
 
-        let redirect = document.createElement("input");
-        redirect.setAttribute("type", "hidden");
-        redirect.setAttribute("name", "redirect");
-        {% if globals().get("redirect") and redirect %}
-            redirect.setAttribute("value", "{{ escape(redirect) }}");
-        {% end %}
-        form.appendChild(redirect);
+            var xsrf_cookie = getCookie("_xsrf");
+            var xsrf = document.createElement("input");
+            xsrf.setAttribute("type", "hidden");
+            xsrf.setAttribute("name", "_xsrf");
+            xsrf.setAttribute("value", xsrf_cookie);
 
-        var xsrf_cookie = getCookie("_xsrf");
-        var xsrf = document.createElement("input");
-        xsrf.setAttribute("type", "hidden");
-        xsrf.setAttribute("name", "_xsrf");
-        xsrf.setAttribute("value", xsrf_cookie);
+            form.appendChild(xsrf);
 
-        form.appendChild(xsrf);
+            document.body.appendChild(form); // inject the form object into the body section
+            form.submit();
+        }
 
-        document.body.appendChild(form); // inject the form object into the body section
-        form.submit();
-    }
+        function showRolesForAccount(account) {
+            // Hide all roles not associated with this account
+            {% for r in eligible_roles %}
+            var e = document.getElementById("{{ escape(r) }}");
 
-    function setRecentRole(field) {
-        let radios = document.getElementsByName(field);
-        log("Adding " + field + " to recent roles localstorage.")
-        for (var i = 0, length = radios.length; i < length; i++) {
-            if (radios[i].checked) {
-                return setLocalStorageCache(radios[i].value);
-                break;
+            if (!("{{ escape(r)}}".indexOf(account) !== -1)) {
+                e.style.display = "none";
+
+            } else {
+                e.style.display = "block";
             }
-        }
-    }
-
-    function showRolesForAccount(account) {
-        // Hide all roles not associated with this account
-        {% for r in eligible_roles %}
-        var e = document.getElementById("{{ escape(r) }}");
-
-        if (!("{{ escape(r)}}".indexOf(account) !== -1)) {
-            e.style.display = "none";
-
-        } else {
-            e.style.display = "block";
-        }
-        {% end %}
-    }
-
-    function parseLocalStorageCache() {
-        key = "consoleMeLocalStorage";
-
-        if (typeof(Storage) == "undefined") {
-            return null;
+            {% end %}
         }
 
-        stored_values = localStorage.getItem(key);
-        if (stored_values == null) {
-            return null;
+        if (typeof consoleme_delay == 'undefined') {
+            var consoleme_delay = 2000;
         }
-
-        return JSON.parse(stored_values)
-    }
-
-    function getDebugLoggingKey() {
-        key = "consoleMeDebugLogging";
-
-        if (typeof(Storage) == "undefined") {
-            return null;
-        }
-
-        stored_values = localStorage.getItem(key);
-        if (stored_values == null) {
-            return null;
-        }
-
-        return true;
-    }
-
-    function setLocalStorageCache(role) {
-        key = "consoleMeLocalStorage";
-        roles = parseLocalStorageCache();
-        // We don't use "Set()" because we want the last selected role to be on top of the recent roles list
-        if (roles == null) {
-            roles = [];
-            roles[0] = role;
-        }
-        else {
-            var uniqueRoles = [];
-            len = roles.unshift(role);
-            roles = roles.unique();
-            if (len > 5) {
-                roles = roles.slice(0, 5)
-            }
-        }
-        localStorage.setItem(key, JSON.stringify(roles))
-    }
-
-    function reset_options() {
-        $('#account').val('').trigger('chosen:updated');
-    }
-
-    function log_completion() {
-        log("Request completed.")
-    }
-
-    if (typeof consoleme_delay == 'undefined') {
-        var consoleme_delay = 2000;
-    }
 </script>
 {% if error %}
     <div class="ui error message">
@@ -290,7 +199,6 @@
         setRecentRole("role");
         document.getElementsByName('logOutIframe')[0].src = "https://signin.aws.amazon.com/oauth?Action=logout";
         log("Setting delay=" + consoleme_delay);
-        maybeRemoveCookies();
         selectRole(form.currentTarget.value, "/role/");
     });
 </script>
