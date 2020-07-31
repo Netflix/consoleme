@@ -22,9 +22,6 @@ from consoleme.handlers.v1.headers import (
     UserProfileHandler,
 )
 from consoleme.handlers.v1.health import HealthHandler
-from consoleme.handlers.v1.index import IndexHandler
-
-# from consoleme.handlers.v1.index import IndexHandler
 from consoleme.handlers.v1.policies import (
     ApiResourceTypeAheadHandler,
     AutocompleteHandler,
@@ -45,9 +42,10 @@ from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 
-# Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
-from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
+
+from consoleme.handlers.v2.index import EligibleRoleTableConfigHandler, IndexHandler
 from consoleme.handlers.v2.policies import PolicyReviewV2Handler
+
 from consoleme.handlers.v2.requests import (
     RequestDetailHandler,
     RequestHandler,
@@ -90,8 +88,8 @@ def make_app(jwt_validator=None):
 
     oss_routes = [
         (r"/", IndexHandler),
-        (r"/login", IndexHandler),
         (r"/auth", AuthHandler),
+        (r"/role/?", AutoLoginHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),
         (
@@ -117,6 +115,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
+        (r"/api/v2/role_table_config", EligibleRoleTableConfigHandler),
         (r"/api/v2/request", RequestHandler),
         (r"/api/v2/requests", RequestsHandler),
         (r"/api/v2/requests/([a-zA-Z0-9_-]+)", RequestDetailHandler),

@@ -16,7 +16,7 @@ module.exports = {
     path: path.resolve(__dirname, 'consoleme/templates/static/js/dist/'),
     filename: '[name].js',
     chunkFilename: '[name].bundle.js',
-    publicPath: '/static/js/dist/',
+    publicPath: '/static/js/dist',
     library: '[name]',
   },
   plugins: [
@@ -96,11 +96,11 @@ module.exports = {
     jquery: 'jQuery',
   },
   // Enable these for easier development when running locally
-  devtool: 'source-map',
-  optimization: {
-    minimize: false,
-    splitChunks: {
-      chunks: 'async',
-    },
-  },
+  //   devtool: 'source-map',
+  //   optimization: {
+  //     minimize: false,
+  //     splitChunks: {
+  //       chunks: 'async',
+  //     },
+  //   },
 };
