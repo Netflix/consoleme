@@ -1,5 +1,6 @@
-const webpack = require('webpack')
-const path = require('path')
+const webpack = require('webpack');
+const path = require('path');
+
 module.exports = {
   mode: 'production',
   entry: {
@@ -7,14 +8,13 @@ module.exports = {
     selfService: './consoleme/templates/static/js/components/SelfService.js',
     createCloneFeature: './consoleme/templates/static/js/components/CreateCloneFeature.js',
     consoleMeDataTable: './consoleme/templates/static/js/components/ConsoleMeDataTable.js',
-    landingPage: './consoleme/templates/static/js/components/Landing.js'
   },
   output: {
     path: path.resolve(__dirname, 'consoleme/templates/static/js/dist'),
     filename: '[name].js',
     chunkFilename: '[name].bundle.js',
     publicPath: '/static/js/dist',
-    library: '[name]'
+    library: '[name]',
   },
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
@@ -22,36 +22,36 @@ module.exports = {
       $: 'jquery',
       jquery: 'jquery',
       'window.jquery': 'jquery',
-      'window.$': 'jquery'
-    })
+      'window.$': 'jquery',
+    }),
   ],
   devServer: {
     contentBase: './consoleme/templates/static/js/dist',
-    hot: true
+    hot: true,
   },
   resolve: {
     extensions: ['.js', '.jsx', '.css'],
     alias: {
-      'jquery-ui': 'jquery-ui-dist/jquery-ui.js'
+      'jquery-ui': 'jquery-ui-dist/jquery-ui.js',
     },
     symlinks: false,
-    cacheWithContext: false
+    cacheWithContext: false,
   },
   module: {
     rules: [
       {
         test: /\.css$/i,
-        use: ['style-loader', 'css-loader']
+        use: ['style-loader', 'css-loader'],
       },
       {
         test: require.resolve('jquery'),
         use: [{
           loader: 'expose-loader',
-          options: 'jquery'
+          options: 'jquery',
         }, {
           loader: 'expose-loader',
-          options: '$'
-        }]
+          options: '$',
+        }],
       },
       {
         test: /\.(js|jsx)$/,
@@ -64,32 +64,32 @@ module.exports = {
                 '@babel/preset-env',
                 '@babel/preset-react',
                 {
-                  'plugins': [
-                    '@babel/plugin-proposal-class-properties']
+                  plugins: [
+                    '@babel/plugin-proposal-class-properties'],
                 }],
               plugins: [
                 ['@babel/plugin-transform-runtime',
                   {
-                    'regenerator': true
-                  }
-                ]
-              ]
-            }
-          }
-        ]
-      }
-    ]
+                    regenerator: true,
+                  },
+                ],
+              ],
+            },
+          },
+        ],
+      },
+    ],
   },
   externals: {
-    jquery: 'jQuery'
+    jquery: 'jQuery',
   },
   devtool: 'source-map',
   optimization: {
     minimize: false,
     splitChunks: {
-      chunks: 'async'
-    }
-  }
+      chunks: 'async',
+    },
+  },
   // Enable these for easier development when running locally
   // devtool: 'source-map',
   // optimization: {
@@ -98,4 +98,4 @@ module.exports = {
   //     chunks: 'async'
   //   }
   // }
-}
+};

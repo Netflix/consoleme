@@ -1,4 +1,3 @@
-import re
 from operator import itemgetter
 
 import ujson as json
@@ -13,10 +12,6 @@ log = config.get_logger()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
-
-ARN_REGEX = (
-    r"^arn:aws:iam::(\d{12}):role\/(.+)"
-)  # TODO: This should be in config or use policy universe/policy sentry
 
 
 # TODO, move followings to util file
@@ -154,25 +149,16 @@ class IndexHandler(BaseHandler):
 
         roles = []
         for arn in self.eligible_roles:
-            match = re.match(ARN_REGEX, arn)
-
-            account_id = match.group(1)
-            account_role = match.group(2).split("/")[-1]
+            role_name = arn.split("/")[-1]
+            account_id = arn.split(":")[4]
             account_name = self.eligible_accounts.get(account_id, "")
-
-            # check whether this is a user role
-            match = re.match(r"^cm_(.+)_N$", account_role)
-            if match:
-                role_name = account_role
-            else:
-                account_name, role_name = account_role.rsplit("_", 1)
 
             roles.append(
                 {
                     "arn": arn,
                     "account_name": account_name,
                     "account_id": account_id,
-                    "role_name": f"[{role_name}](/policies/edit/{arn.split(':')[4]}/iamrole/{arn.split('/')[-1]})",
+                    "role_name": f"[{role_name}](/policies/edit/{account_id}/iamrole/{role_name})",
                     "redirect": f"/role/{arn}",
                 }
             )

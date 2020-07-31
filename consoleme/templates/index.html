@@ -4,7 +4,7 @@
     <script src="/static/js/dist/consoleMeDataTable.js"></script>
     <script>
         setTimeout(function(){
-            consoleMeDataTable.renderDataTable("/api/v2/role_table_config");
+            consoleMeDataTable.renderDataTable("/api/v2/role_table_config", window.location.search);
         }, 1000);
     </script>
 </div>
