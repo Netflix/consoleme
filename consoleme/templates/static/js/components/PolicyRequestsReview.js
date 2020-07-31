@@ -1,234 +1,258 @@
-import ReactDOM from 'react-dom'
+import ReactDOM from 'react-dom';
 
-import React, { Component } from 'react'
-import { Button, Dimmer, Grid, Header, Icon, Image, Loader, Message, Segment, Table } from 'semantic-ui-react'
-import CommentsFeedBlockComponent from './blocks/CommentsFeedBlockComponent'
-// import InlinePolicyChangeComponent from './blocks/InlinePolicyChangeComponent'
-import InlinePolicyChangeComponentMonaco from './blocks/InlinePolicyChangeComponentMonaco'
-import ManagedPolicyChangeComponent from './blocks/ManagedPolicyChangeComponent'
-import AssumeRolePolicyChangeComponent from './blocks/AssumeRolePolicyChangeComponent'
+import React, { Component } from 'react';
+import {
+  Button, Dimmer, Grid, Header, Icon, Image, Loader, Message, Segment, Table,
+} from 'semantic-ui-react';
+import CommentsFeedBlockComponent from './blocks/CommentsFeedBlockComponent';
+import InlinePolicyChangeComponent from './blocks/InlinePolicyChangeComponent';
+import ManagedPolicyChangeComponent from './blocks/ManagedPolicyChangeComponent';
+import AssumeRolePolicyChangeComponent from './blocks/AssumeRolePolicyChangeComponent';
 
 class PolicyRequestReview extends Component {
-  constructor (props) {
-    super(props)
-    const { request_id } = props
+  constructor(props) {
+    super(props);
+    const { requestID } = props;
     this.state = {
-      request_id,
+      requestID,
       loading: false,
-      extended_request: {},
+      extendedRequest: {},
       messages: [],
       isSubmitting: false,
-      last_updated: null,
-      request_config: {}
-    }
+      lastUpdated: null,
+      requestConfig: {},
+    };
   }
 
-  async componentDidMount () {
-    const { request_id } = this.state
+  async componentDidMount() {
+    const { requestID } = this.state;
     this.setState({
-      loading: true
+      loading: true,
     }, () => {
-      fetch(`/api/v2/requests/${request_id}`).then((resp) => {
-        resp.text().then((resp) => {
-          const response = JSON.parse(resp)
+      fetch(`/api/v2/requests/${requestID}`).then((resp) => {
+        resp.text().then((responseString) => {
+          const response = JSON.parse(responseString);
           if (response.status === 404 || response.status === 500) {
             this.setState({
               loading: false,
-              messages: [response.message]
-            })
+              messages: [response.message],
+            });
           } else {
             this.setState({
-              extended_request: JSON.parse(response.request),
-              request_config: response.request_config,
-              last_updated: response.last_updated
-            })
+              extendedRequest: JSON.parse(response.request),
+              requestConfig: response.request_config,
+              lastUpdated: response.last_updated,
+              loading: false,
+            });
           }
-        })
-      })
-    })
+        });
+      });
+    });
   }
 
-  render () {
-    const { last_updated, extended_request, messages, isSubmitting, request_config } = this.state
-    const extended_info = (extended_request.requester_info && extended_request.requester_info.extended_info)
-      ? (extended_request.requester_info.extended_info)
-      : null
+  render() {
+    const {
+      lastUpdated, extendedRequest, messages, isSubmitting, requestConfig, loading,
+    } = this.state;
+    const extendedInfo = (extendedRequest.requester_info
+        && extendedRequest.requester_info.extended_info)
+      ? (extendedRequest.requester_info.extended_info)
+      : null;
     const messagesToShow = (messages.length > 0)
       ? (
         <Message negative>
           <Message.Header>
-                        There was a problem with your request
+            There was a problem with your request
           </Message.Header>
           <Message.List>
             {
-              messages.map(message => {
-                return <Message.Item>{message}</Message.Item>
-              })
+              messages.map((message) => <Message.Item>{message}</Message.Item>)
             }
           </Message.List>
         </Message>
-      ) : null
-    console.log(extended_request)
-    console.log(request_config)
-    const request_details = (extended_request)
+      ) : null;
+    console.log(extendedRequest);
+    console.log(requestConfig);
+    const requestDetails = (extendedRequest)
       ? (
         <Table celled definition striped>
           <Table.Body>
             <Table.Row>
               <Table.Cell>
-                          User
+                User
               </Table.Cell>
               <Table.Cell>
-                {extended_info
+                {extendedInfo
                   ? (
-                    <Header size={'medium'}>
-                      {extended_info.name && extended_info.name.fullName + ' - ' || ''}
-                      {extended_request.requester_info.details_url
-                        ? <a href={extended_request.requester_info.details_url}
-                          target={'_blank'}>{extended_request.requester_email}</a>
-                        : <span>
-                          {extended_request.requester_email}
-                        </span>
-                      }
-                      {extended_info.thumbnailPhotoUrl
-                        ? (<Image src={extended_info.thumbnailPhotoUrl} size={'small'} inline/>)
-                        : null
-                      }
+                    <Header size="medium">
+                      {(extendedInfo.name && `${extendedInfo.name.fullName} - `) || ''}
+                      {extendedRequest.requester_info.details_url
+                        ? (
+                          <a
+                            href={extendedRequest.requester_info.details_url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {extendedRequest.requester_email}
+                          </a>
+                        )
+                        : (
+                          <span>
+                            {extendedRequest.requester_email}
+                          </span>
+                        )}
+                      {extendedInfo.thumbnailPhotoUrl
+                        ? (<Image src={extendedInfo.thumbnailPhotoUrl} size="small" inline />)
+                        : null}
                     </Header>
                   )
-                  : <span>
-                    {extended_request.requester_info && extended_request.requester_info.details_url
-                      ? <a href={extended_request.requester_info.details_url}
-                        target={'_blank'}>{extended_request.requester_email}</a>
-                      : <span>
-                        {extended_request.requester_email}
-                      </span>
-                    }
-                  </span>
-                }
+                  : (
+                    <span>
+                      {extendedRequest.requester_info && extendedRequest.requester_info.details_url
+                        ? (
+                          <a
+                            href={extendedRequest.requester_info.details_url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {extendedRequest.requester_email}
+                          </a>
+                        )
+                        : (
+                          <span>
+                            {extendedRequest.requester_email}
+                          </span>
+                        )}
+                    </span>
+                  )}
               </Table.Cell>
             </Table.Row>
             <Table.Row>
               <Table.Cell>Request Time</Table.Cell>
-              <Table.Cell>{new Date(extended_request.timestamp).toLocaleString()}</Table.Cell>
+              <Table.Cell>{new Date(extendedRequest.timestamp).toLocaleString()}</Table.Cell>
             </Table.Row>
             <Table.Row>
               <Table.Cell>Title</Table.Cell>
               <Table.Cell>
-                {extended_info
-                  ? <p>
-                    {extended_info.customAttributes && extended_info.customAttributes.title || ''}
-                  </p>
-                  : null
-                }
+                {extendedInfo
+                  ? (
+                    <p>
+                      {(extendedInfo.customAttributes && extendedInfo.customAttributes.title) || ''}
+                    </p>
+                  )
+                  : null}
               </Table.Cell>
             </Table.Row>
             <Table.Row>
               <Table.Cell>Manager</Table.Cell>
               <Table.Cell>
-                {extended_info
-                  ? <p>
-                    {extended_info.customAttributes && extended_info.customAttributes.manager + ' - ' || ''}
-                    {extended_info.relations && extended_info.relations.length > 0 && extended_info.relations[0].value
-                      ? <a href={'mailto:' + extended_info.relations[0].value}>{extended_info.relations[0].value}</a>
-                      : null
-                    }
-                  </p>
-                  : null
-                }
+                {extendedInfo
+                  ? (
+                    <p>
+                      {(extendedInfo.customAttributes && `${extendedInfo.customAttributes.manager} - `) || ''}
+                      {extendedInfo.relations && extendedInfo.relations.length > 0
+                      && extendedInfo.relations[0].value
+                        ? <a href={`mailto:${extendedInfo.relations[0].value}`}>{extendedInfo.relations[0].value}</a>
+                        : null}
+                    </p>
+                  )
+                  : null}
               </Table.Cell>
             </Table.Row>
             <Table.Row>
               <Table.Cell>User Justification</Table.Cell>
               <Table.Cell>
-                {extended_request.justification}
+                {extendedRequest.justification}
               </Table.Cell>
             </Table.Row>
             <Table.Row>
               <Table.Cell>Status</Table.Cell>
-              {extended_request.status === 'approved'
+              {extendedRequest.status === 'approved'
                 ? (
                   <Table.Cell positive>
-                    {extended_request.status}
+                    {extendedRequest.status}
                   </Table.Cell>
                 )
                 : (
                   <Table.Cell negative>
-                    {extended_request.status}
+                    {extendedRequest.status}
                   </Table.Cell>
-                )
-
-              }
+                )}
             </Table.Row>
             <Table.Row>
               <Table.Cell>Reviewer</Table.Cell>
               <Table.Cell>
-                {extended_request.reviewer || ''}
+                {extendedRequest.reviewer || ''}
               </Table.Cell>
             </Table.Row>
             <Table.Row>
               <Table.Cell>Last Updated</Table.Cell>
-              <Table.Cell>{new Date(last_updated * 1000).toLocaleString()}</Table.Cell>
+              <Table.Cell>{new Date(lastUpdated * 1000).toLocaleString()}</Table.Cell>
             </Table.Row>
             <Table.Row>
               <Table.Cell>Cross-Account</Table.Cell>
-              {extended_request.cross_account === true
+              {extendedRequest.cross_account === true
                 ? (
                   <Table.Cell negative>
-                    <Icon name='attention' /> True
+                    <Icon name="attention" />
+                    {' '}
+                    True
                   </Table.Cell>
                 )
                 : (
                   <Table.Cell positive>
-                                      False
+                    False
                   </Table.Cell>
-                )
-
-              }
+                )}
             </Table.Row>
           </Table.Body>
 
         </Table>
       )
-      : null
+      : null;
 
-    const commentsContent = extended_request.comments
+    const commentsContent = extendedRequest.comments
       ? (
         <CommentsFeedBlockComponent
-          comments={extended_request.comments}
+          comments={extendedRequest.comments}
         />
       )
-      : null
+      : null;
 
-    const changesContent = extended_request.changes && extended_request.changes.changes && extended_request.changes.changes.length > 0
+    const changesContent = extendedRequest.changes && extendedRequest.changes.changes
+            && extendedRequest.changes.changes.length > 0
       ? (
-        <React.Fragment>
-          {extended_request.changes.changes.map(function (change, i) {
+        <>
+          {extendedRequest.changes.changes.map((change) => {
             if (change.change_type === 'inline_policy') {
-              return <InlinePolicyChangeComponentMonaco
-                change={change}
-                config={request_config}
-              />
-            } else if (change.change_type === 'managed_policy') {
-              return <ManagedPolicyChangeComponent
-                change={change}
-                config={request_config}
-              />
-            } else if (change.change_type === 'assume_role_policy') {
-              return <AssumeRolePolicyChangeComponent
-                change={change}
-                config={request_config}
-              />
-            } else {
-              return null
+              return (
+                <InlinePolicyChangeComponent
+                  change={change}
+                  config={requestConfig}
+                />
+              );
+            } if (change.change_type === 'managed_policy') {
+              return (
+                <ManagedPolicyChangeComponent
+                  change={change}
+                  config={requestConfig}
+                />
+              );
+            } if (change.change_type === 'assume_role_policy') {
+              return (
+                <AssumeRolePolicyChangeComponent
+                  change={change}
+                  config={requestConfig}
+                />
+              );
             }
-          })
-          }
-        </React.Fragment>
+            return null;
+          })}
+        </>
       )
-      : null
+      : null;
 
-    const approveRequestButton = request_config.can_approve_reject
+    const approveRequestButton = requestConfig.can_approve_reject
       ? (
         <Grid.Column>
           <Button
@@ -238,9 +262,9 @@ class PolicyRequestReview extends Component {
           />
         </Grid.Column>
       )
-      : null
+      : null;
 
-    const rejectRequestButton = request_config.can_approve_reject
+    const rejectRequestButton = requestConfig.can_approve_reject
       ? (
         <Grid.Column>
           <Button
@@ -250,9 +274,9 @@ class PolicyRequestReview extends Component {
           />
         </Grid.Column>
       )
-      : null
+      : null;
 
-    const cancelRequestButton = request_config.can_update_cancel
+    const cancelRequestButton = requestConfig.can_update_cancel
       ? (
         <Grid.Column>
           <Button
@@ -262,63 +286,72 @@ class PolicyRequestReview extends Component {
           />
         </Grid.Column>
       )
-      : null
+      : null;
 
-    const viewOnly = !(approveRequestButton || rejectRequestButton || cancelRequestButton)
+    const viewOnly = !(approveRequestButton || rejectRequestButton || cancelRequestButton);
     const requestButtons = !viewOnly
       ? (
         <Grid container>
-          <Grid.Row columns={'equal'}>
+          <Grid.Row columns="equal">
             {approveRequestButton}
             {rejectRequestButton}
             {cancelRequestButton}
           </Grid.Row>
         </Grid>
       )
-      : null
+      : null;
 
-    const requestButtonsContent = (extended_request.status === 'pending')
+    const requestButtonsContent = (extendedRequest.status === 'pending')
       ? (
         requestButtons
       )
       : (
         <Message info fluid>
           <Message.Header>This request can no longer be modified</Message.Header>
-          <p>This request can no longer be modified as it's status is {extended_request.status}</p>
+          <p>
+            This request can no longer be modified as the status is
+            {extendedRequest.status}
+          </p>
         </Message>
-      )
+      );
 
     const pageContent = (messagesToShow === null)
-      ? <Segment>
-        {request_details}
-        {changesContent}
-        {commentsContent}
-        {requestButtonsContent}
-      </Segment>
-      : messagesToShow
+      ? (
+        <Segment>
+          {requestDetails}
+          {changesContent}
+          {commentsContent}
+          {requestButtonsContent}
+        </Segment>
+      )
+      : messagesToShow;
 
-    return <React.Fragment>
-      <Dimmer
-        active={isSubmitting}
-        inverted
-      >
-        <Loader />
-      </Dimmer>
-      <Header size='huge'>
-                    Request Review for: {extended_request.arn}
-      </Header>
-      {pageContent}
-    </React.Fragment>
+    return (
+      <>
+        <Dimmer
+          active={isSubmitting || loading}
+          inverted
+        >
+          <Loader />
+        </Dimmer>
+        <Header size="huge">
+          Request Review for:
+          {' '}
+          {extendedRequest.arn}
+        </Header>
+        {pageContent}
+      </>
+    );
   }
 }
 
-export function renderPolicyRequestsReview (request_id) {
+export function renderPolicyRequestsReview(requestID) {
   ReactDOM.render(
     <PolicyRequestReview
-      request_id={request_id}
+      requestID={requestID}
     />,
-    document.getElementById('policy_request_review')
-  )
+    document.getElementById('policy_request_review'),
+  );
 }
 
-export default PolicyRequestReview
+export default PolicyRequestReview;
