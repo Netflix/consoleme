@@ -83,19 +83,12 @@ module.exports = {
   externals: {
     jquery: 'jQuery',
   },
-  devtool: 'source-map',
-  optimization: {
-    minimize: false,
-    splitChunks: {
-      chunks: 'async',
-    },
-  },
   // Enable these for easier development when running locally
   // devtool: 'source-map',
   // optimization: {
   //   minimize: false,
   //   splitChunks: {
-  //     chunks: 'async'
-  //   }
-  // }
+  //     chunks: 'async',
+  //   },
+  // },
 };
