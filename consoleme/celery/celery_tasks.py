@@ -45,6 +45,7 @@ from raven.contrib.celery import register_logger_signal, register_signal
 from retrying import retry
 
 from consoleme.config import config
+from consoleme.lib.aws import cache_cloud_accounts
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
@@ -1368,6 +1369,24 @@ def cache_policy_requests() -> Dict:
     }
 
     return log_data
+
+
+@app.task(soft_time_limit=300)
+def cache_cloud_account_mapping() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+
+    account_mapping = async_to_sync(cache_cloud_accounts)()
+
+    log_data = {
+        "function": function,
+        "num_accounts": len(account_mapping),
+        "message": "Successfully cached accounts from AWS Organizations",
+    }
+
+    return log_data
+
+
+cache_cloud_account_mapping()
 
 
 schedule_30_minute = timedelta(seconds=1800)

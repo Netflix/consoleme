@@ -959,3 +959,24 @@ def is_role_instance_profile(role: Dict) -> bool:
     :return:
     """
     return role.get("RoleName").endswith("InstanceProfile")
+
+
+async def cache_cloud_accounts() -> Dict:
+    """
+    Gets Cloud Account Information from either ConsoleMe's configuration, AWS Organizations, or an internal plugin,
+    depending on configuration
+    :return:
+    """
+
+    # Get the accounts
+
+    # Store the results
+    await store_json_results_in_redis_and_s3(
+        account_id_to_name_mapping,
+        redis_key=redis_key,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+    )
+
+    # Return the results
+    pass
