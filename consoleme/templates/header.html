@@ -168,14 +168,23 @@
                         if (!roleName) {
                             continue;
                         }
-                        text += '<li><a style="height: 40px;padding: 0px 0px; */"><div class="text-center" data-toggle="buttons" style="display: block; margin-bottom:2px;margin-left:30px;margin-top:10px;"><label class="btn" style="width: 200px;display: inline-block;margin-left: 10px;height: 40px;">'
-                        text += '<input type="radio" display="block" class="btn btn-link" name="role" style="vertical-align: middle;" value="' + pastRoles[i] + '"/>' + roleName
+                        text += '<li><a style="height: 40px;padding: 0px 0px; */" href="/role/' + pastRoles[i] + '"><div class="text-center" data-toggle="buttons" style="display: block; margin-bottom:2px;margin-left:30px;margin-top:10px;"><label class="btn" style="width: 200px;display: inline-block;margin-left: 10px;height: 40px;">'
+                        text += roleName
                         text += '</label></div></a></li>'
                     }
                     document.getElementById("RoleHistory").innerHTML = text;
                 }
 
                 window.onload = reset_options();
+                $(".chosen-select").chosen({
+                search_contains: true
+                });
+
+                $('input[type=radio]').on('change', function(form) {
+                    setRecentRole("role");
+                    document.getElementsByName('logOutIframe')[0].src = "https://signin.aws.amazon.com/oauth?Action=logout";
+                    selectRole(form.currentTarget.value, "/");
+                });
             {% end %}
             </script>
             <h4>Help</h4>

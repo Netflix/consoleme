@@ -294,12 +294,19 @@ class ConsoleMeDataTable extends Component {
 
   async generateFilterFromQueryString() {
     const { tableConfig, queryString } = this.state;
-    const filters = qs.parse(queryString, { ignoreQueryPrefix: true });
-    if (filters) {
-      this.setState({
-        filters,
+    const parsedQueryString = qs.parse(queryString, { ignoreQueryPrefix: true });
+    const filters = {};
+    if (parsedQueryString) {
+      tableConfig.columns.forEach((column) => {
+        if (parsedQueryString[column.key] != null && parsedQueryString[column.key]) {
+          filters[column.key] = parsedQueryString[column.key];
+        }
       });
     }
+
+    this.setState({
+      filters,
+    });
 
     if (tableConfig.serverSideFiltering) {
       await this.filterColumnServerSide({}, filters);
@@ -392,12 +399,13 @@ class ConsoleMeDataTable extends Component {
   }
 
   handleCellClick(e, column, entry) {
+    const { queryString } = this.state;
     // This function should appropriately handle a Cell Click given a desired
     // action by the column configuration
     if (column.onClick) {
       if (column.onClick.action === 'redirect') {
         this.setState({
-          redirect: entry[column.key],
+          redirect: entry[column.key] + queryString,
         });
       }
     }
@@ -426,7 +434,8 @@ class ConsoleMeDataTable extends Component {
               <ReactJson
                 displayDataTypes={false}
                 displayObjectSize={false}
-                indentWidth={4}
+                collapseStringsAfterLength={70}
+                indentWidth={2}
                 name={false}
                 src={expandedRow.data}
               />

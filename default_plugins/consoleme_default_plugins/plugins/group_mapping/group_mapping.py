@@ -155,6 +155,8 @@ class GroupMapping:
             account_friendlyname = friendly_names.get(account_id, "")
             if account_friendlyname and isinstance(account_friendlyname, list):
                 account_ids[account_id] = account_friendlyname[0]
+            elif account_friendlyname and isinstance(account_friendlyname, str):
+                account_ids[account_id] = account_friendlyname
         return account_ids
 
     async def get_account_mappings(self) -> dict:
