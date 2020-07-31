@@ -57,9 +57,7 @@ class AssumeRolePolicyChangeComponent extends Component {
 
     const headerContent = (
       <Header size="large">
-        Assume Role Policy Change -
-        {' '}
-        {change.policy_name}
+        Assume Role Policy Change
       </Header>
     );
 
