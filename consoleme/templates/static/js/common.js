@@ -1,3 +1,7 @@
+Array.prototype.unique = function () {
+  return this.filter((value, index, self) => self.indexOf(value) === index);
+};
+
 async function sendRequestCommon(json, location = window.location.href) {
   const xsrf = await getCookie('_xsrf');
   const rawResponse = await fetch(location, {
@@ -127,6 +131,12 @@ function setLocalStorageCache(role) {
   localStorage.setItem(key, JSON.stringify(roles));
 }
 
+function log(message, debug = false) {
+  if (debug) {
+    console.log(message);
+  }
+}
+
 function log_completion() {
   log('Request completed.');
 }
@@ -148,11 +158,9 @@ function getDebugLoggingKey() {
 
 function setRecentRole(field) {
   const radios = document.getElementsByName(field);
-  log('Adding ' + field + ' to recent roles localstorage.');
   for (let i = 0, length = radios.length; i < length; i++) {
     if (radios[i].checked) {
       return setLocalStorageCache(radios[i].value);
-      break;
     }
   }
 }

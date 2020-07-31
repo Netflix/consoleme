@@ -1,19 +1,6 @@
 {% include header.html %}
 <div id="wrapper" class="container">
     <script>
-        var debug = true;
-        Array.prototype.unique = function () {
-            return this.filter(function (value, index, self) {
-                return self.indexOf(value) === index;
-            });
-        }
-
-        function log(message) {
-            if (debug) {
-                console.log(message);
-            }
-        }
-
         function selectRole(role, url, method) {
             // Create hidden iframe to log user out
             document.getElementsByName('logOutIframe')[0].src = "https://signin.aws.amazon.com/oauth?Action=logout";
