@@ -427,7 +427,7 @@ async def validate_policy_name(policy_name):
         )
 
 
-async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, List[str]]:
+async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, dict]:
     """Returns a dict of resources affected by a list of policy changes along with
     the actions and other data points that are relevant to them.
 

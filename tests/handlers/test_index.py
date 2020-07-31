@@ -34,9 +34,9 @@ class TestIndexHandler(AsyncHTTPTestCase):
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
 
-        response = self.fetch("/", headers=headers)
+        response = self.fetch("/role/role", headers=headers)
         self.assertEqual(response.code, 200)
-        self.assertIn(b"reset_aws_auth_cookie", response.body)
+        self.assertIn(b"signin.aws.amazon.com/oauth", response.body)
 
 
 @pytest.mark.usefixtures(
@@ -82,7 +82,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
         }
 
         result = self.fetch(
-            "/",
+            "/role/",
             headers=headers,
             method="POST",
             body=urllib.parse.urlencode(body),
@@ -99,7 +99,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
         body["role"] = f"arn:aws:iam::123456789012:role/userrolename"
 
         result = self.fetch(
-            "/",
+            "/role/",
             headers=headers,
             method="POST",
             body=urllib.parse.urlencode(body),
@@ -116,7 +116,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
         # And an account that doesn't exist:
         body["role"] = "arn:aws:iam::222222222222:role/rolename"
         result = self.fetch(
-            "/",
+            "/role/",
             headers=headers,
             method="POST",
             body=urllib.parse.urlencode(body),
@@ -142,7 +142,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
         )
         body["role"] = f"arn:aws:iam::123456789012:role/cm_someuser_N"
         result = self.fetch(
-            "/",
+            "/role/",
             headers=headers,
             method="POST",
             body=urllib.parse.urlencode(body),
