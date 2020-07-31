@@ -1,5 +1,14 @@
 {% include "header.html" %}
 <div id="wrapper" class="container">
+    {% if error %}
+        <div class="ui error message">
+            <div class="header">
+                Oops!
+            </div>
+            <p>{{ escape(error) }}
+            </p>
+        </div>
+    {% end %}
     <div id="datatable" />
     <script src="/static/js/dist/consoleMeDataTable.js"></script>
     <script>

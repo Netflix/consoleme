@@ -434,7 +434,8 @@ class ConsoleMeDataTable extends Component {
               <ReactJson
                 displayDataTypes={false}
                 displayObjectSize={false}
-                indentWidth={4}
+                collapseStringsAfterLength={70}
+                indentWidth={2}
                 name={false}
                 src={expandedRow.data}
               />
