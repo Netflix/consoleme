@@ -298,7 +298,9 @@ class ConsoleMeDataTable extends Component {
     const filters = {};
     if (parsedQueryString) {
       tableConfig.columns.forEach((column) => {
-        if (parsedQueryString[column.key]) filters[column.key] = parsedQueryString[column.key];
+        if (parsedQueryString[column.key] != null && parsedQueryString[column.key]) {
+          filters[column.key] = parsedQueryString[column.key];
+        }
       });
     }
 
