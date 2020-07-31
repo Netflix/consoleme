@@ -89,7 +89,7 @@ class EligibleRoleTableConfigHandler(BaseHandler):
                 {"placeholder": "Role Name", "key": "role_name", "type": "input"},
                 {
                     "placeholder": "AWS Console Sign-In",
-                    "key": "redirect",
+                    "key": "redirect_uri",
                     "type": "button",
                     "icon": "sign-in",
                     "content": "Sign-In",
@@ -139,12 +139,12 @@ class IndexHandler(BaseHandler):
 
     async def post(self):
         """
-        Post to the index endpoint. This will attempt to retrieve roles and its credentials.
+        Post to the index endpoint. This will generate a list of roles the user is eligible to access on the console
         ---
-        description: Retrieves roles and its credentials for AWS console access.
+        description: Retrieves a user's eligible roles for AWS console access.
         responses:
             200:
-                description: Redirects to AWS console
+                description: json list of roles
         """
 
         roles = []
@@ -159,7 +159,7 @@ class IndexHandler(BaseHandler):
                     "account_name": account_name,
                     "account_id": account_id,
                     "role_name": f"[{role_name}](/policies/edit/{account_id}/iamrole/{role_name})",
-                    "redirect": f"/role/{arn}",
+                    "redirect_uri": f"/role/{arn}",
                 }
             )
 
