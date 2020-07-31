@@ -543,7 +543,7 @@ class ConsoleMeDataTable extends Component {
           </Table.Body>
           <Table.Footer>
             <Table.Row>
-              <Table.HeaderCell colSpan={this.calculateColumnSize()}>
+              <Table.HeaderCell collapsing colSpan={this.calculateColumnSize()}>
                 <Pagination
                   floated="right"
                   defaultActivePage={activePage}
