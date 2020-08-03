@@ -16,7 +16,7 @@ from consoleme.lib.aws import (
     update_resource_policy,
 )
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.policies import invalid_characters_in_policy
+from consoleme.lib.policies import get_url_for_resource, invalid_characters_in_policy
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import (
     Action,
@@ -116,6 +116,16 @@ async def generate_request_from_change_model_array(
 
     account_id = await get_resource_account(primary_principal_arn)
     arn_parsed = parse_arn(primary_principal_arn)
+    arn_type = arn_parsed["service"]
+    arn_name = arn_parsed["resource"]
+    arn_region = arn_parsed["region"]
+    arn_url = await get_url_for_resource(
+        arn=primary_principal_arn,
+        resource_type=arn_type,
+        account_id=account_id,
+        region=arn_region,
+        resource_name=arn_name,
+    )
 
     # Only one assume role policy change allowed per request
     if len(assume_role_policy_changes) > 1:
@@ -172,6 +182,7 @@ async def generate_request_from_change_model_array(
         ),
         comments=[],
         cross_account=False,
+        arn_url=arn_url,
     )
     await generate_resource_policies(extended_request, user)
     return extended_request

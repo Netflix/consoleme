@@ -447,6 +447,10 @@ components:
         cross_account:
           description: if true, the request touches cross-account resources
           type: boolean
+        arn_url:
+          type: string
+          description: the principal arn's URL
+          readOnly: true
     ExtendedRequestModel:
       allOf:
         - $ref: '#/components/schemas/RequestModel'

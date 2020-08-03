@@ -156,6 +156,22 @@ class PolicyRequestReview extends Component {
                   </Table.Cell>
                 )}
             </Table.Row>
+            {extendedRequest.arn_url
+              ? (
+                <Table.Row>
+                  <Table.Cell>ARN</Table.Cell>
+                  <Table.Cell>
+                    <a
+                      href={extendedRequest.arn_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    > {extendedRequest.arn}
+                    </a>
+
+                  </Table.Cell>
+                </Table.Row>
+              )
+              : null}
             {extendedRequest.reviewer
               ? (
                 <Table.Row>

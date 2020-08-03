@@ -407,8 +407,6 @@ class RequestDetailHandler(BaseAPIV2Handler):
             dynamo = UserDynamoHandler(self.user)
             await dynamo.write_policy_request_v2(extended_request)
 
-        # TODO: do stuff with extended request - Generate cross-account resource policies
-
         can_approve_reject = await can_manage_policy_requests(self.groups)
         can_update_cancel = await can_update_cancel_requests_v2(
             extended_request.requester_email, self.user, self.groups
