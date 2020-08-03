@@ -11,9 +11,6 @@ from consoleme.lib.cache import (
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import CloudAccountModelArray
 
-ALL_IAM_MANAGED_POLICIES: dict = {}
-ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
-
 log = config.get_logger(__name__)
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()

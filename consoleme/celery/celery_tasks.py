@@ -1388,9 +1388,6 @@ def cache_cloud_account_mapping() -> Dict:
     return log_data
 
 
-cache_cloud_account_mapping()
-
-
 schedule_30_minute = timedelta(seconds=1800)
 schedule_45_minute = timedelta(seconds=2700)
 schedule_6_hours = timedelta(hours=6)
