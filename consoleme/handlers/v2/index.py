@@ -75,7 +75,7 @@ class EligibleRoleTableConfigHandler(BaseHandler):
             "expandableRows": True,
             "tableName": "Select a Role",
             "tableDescription": config.get(
-                "role_table_config.table_description",
+                "role_select_page.table_description",
                 "Select a role to login to the AWS console.",
             ),
             "dataEndpoint": "/",
@@ -152,11 +152,13 @@ class IndexHandler(BaseHandler):
             role_name = arn.split("/")[-1]
             account_id = arn.split(":")[4]
             account_name = self.eligible_accounts.get(account_id, "")
-
+            formatted_account_name = config.get(
+                "role_select_page.formatted_account_name", "{account_name}"
+            ).format(account_name=account_name, account_id=account_id)
             roles.append(
                 {
                     "arn": arn,
-                    "account_name": account_name,
+                    "account_name": formatted_account_name,
                     "account_id": account_id,
                     "role_name": f"[{role_name}](/policies/edit/{account_id}/iamrole/{role_name})",
                     "redirect_uri": f"/role/{arn}",
