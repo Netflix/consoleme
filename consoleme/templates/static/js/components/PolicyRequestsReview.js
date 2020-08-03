@@ -8,6 +8,7 @@ import CommentsFeedBlockComponent from './blocks/CommentsFeedBlockComponent';
 import InlinePolicyChangeComponent from './blocks/InlinePolicyChangeComponent';
 import ManagedPolicyChangeComponent from './blocks/ManagedPolicyChangeComponent';
 import AssumeRolePolicyChangeComponent from './blocks/AssumeRolePolicyChangeComponent';
+import ResourcePolicyChangeComponent from './blocks/ResourcePolicyChangeComponent';
 
 class PolicyRequestReview extends Component {
   constructor(props) {
@@ -71,8 +72,6 @@ class PolicyRequestReview extends Component {
           </Message.List>
         </Message>
       ) : null;
-    console.log(extendedRequest);
-    console.log(requestConfig);
     const requestDetails = (extendedRequest)
       ? (
         <Table celled definition striped>
@@ -82,49 +81,27 @@ class PolicyRequestReview extends Component {
                 User
               </Table.Cell>
               <Table.Cell>
-                {extendedInfo
-                  ? (
-                    <Header size="medium">
-                      {(extendedInfo.name && `${extendedInfo.name.fullName} - `) || ''}
-                      {extendedRequest.requester_info.details_url
-                        ? (
-                          <a
-                            href={extendedRequest.requester_info.details_url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {extendedRequest.requester_email}
-                          </a>
-                        )
-                        : (
-                          <span>
-                            {extendedRequest.requester_email}
-                          </span>
-                        )}
-                      {extendedInfo.thumbnailPhotoUrl
-                        ? (<Image src={extendedInfo.thumbnailPhotoUrl} size="small" inline />)
-                        : null}
-                    </Header>
-                  )
-                  : (
-                    <span>
-                      {extendedRequest.requester_info && extendedRequest.requester_info.details_url
-                        ? (
-                          <a
-                            href={extendedRequest.requester_info.details_url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {extendedRequest.requester_email}
-                          </a>
-                        )
-                        : (
-                          <span>
-                            {extendedRequest.requester_email}
-                          </span>
-                        )}
-                    </span>
-                  )}
+                <Header size="medium">
+                  {(extendedInfo && extendedInfo.name && `${extendedInfo.name.fullName} - `) || ''}
+                  {extendedRequest.requester_info && extendedRequest.requester_info.details_url
+                    ? (
+                      <a
+                        href={extendedRequest.requester_info.details_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {extendedRequest.requester_email}
+                      </a>
+                    )
+                    : (
+                      <span>
+                        {extendedRequest.requester_email}
+                      </span>
+                    )}
+                  {extendedRequest.requester_info && extendedRequest.requester_info.photo_url
+                    ? (<Image src={extendedRequest.requester_info.photo_url} size="small" inline />)
+                    : null}
+                </Header>
               </Table.Cell>
             </Table.Row>
             <Table.Row>
@@ -179,12 +156,16 @@ class PolicyRequestReview extends Component {
                   </Table.Cell>
                 )}
             </Table.Row>
-            <Table.Row>
-              <Table.Cell>Reviewer</Table.Cell>
-              <Table.Cell>
-                {extendedRequest.reviewer || ''}
-              </Table.Cell>
-            </Table.Row>
+            {extendedRequest.reviewer
+              ? (
+                <Table.Row>
+                  <Table.Cell>Reviewer</Table.Cell>
+                  <Table.Cell>
+                    {extendedRequest.reviewer || ''}
+                  </Table.Cell>
+                </Table.Row>
+              )
+              : null}
             <Table.Row>
               <Table.Cell>Last Updated</Table.Cell>
               <Table.Cell>{new Date(lastUpdated * 1000).toLocaleString()}</Table.Cell>
@@ -241,6 +222,13 @@ class PolicyRequestReview extends Component {
             } if (change.change_type === 'assume_role_policy') {
               return (
                 <AssumeRolePolicyChangeComponent
+                  change={change}
+                  config={requestConfig}
+                />
+              );
+            } if (change.change_type === 'resource_policy') {
+              return (
+                <ResourcePolicyChangeComponent
                   change={change}
                   config={requestConfig}
                 />

@@ -1032,6 +1032,9 @@ components:
         details_url:
           type: string
           example: https://details_about/user
+        photo_url:
+          type: string
+          example: https://user_photos/user_thumbnail.jpg
     ApiErrorModel:
       type: object
       properties:

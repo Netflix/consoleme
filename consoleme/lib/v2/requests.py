@@ -167,7 +167,8 @@ async def generate_request_from_change_model_array(
         requester_info=UserModel(
             email=user,
             extended_info=await auth.get_user_info(user),
-            details_url=f"/accessui/user/{user}",
+            details_url=config.config_plugin().get_employee_info_url(user),
+            photo_url=config.config_plugin().get_employee_photo_url(user),
         ),
         comments=[],
         cross_account=False,
@@ -748,6 +749,7 @@ async def populate_cross_account_resource_policies(
             )
             # Have to grab the actions from the source inline change
             actions = []
+            resource_arns = []
             for source_change in extended_request.changes.changes:
                 # Find the specific inline policy associated with this change
                 if (
@@ -760,10 +762,11 @@ async def populate_cross_account_resource_policies(
                         # Find the specific statement within the inline policy associated with this resource
                         if change.arn in statement.get("Resource"):
                             actions.extend(statement.get("Action", []))
+                            resource_arns.extend(statement.get("Resource", []))
             new_policy = await update_resource_policy(
                 existing=old_policy,
                 principal_arn=extended_request.arn,
-                resource_arns=[change.arn],
+                resource_arns=list(set(resource_arns)),
                 actions=actions,
             )
             new_policy_sha256 = sha256(json.dumps(new_policy).encode()).hexdigest()
