@@ -130,9 +130,12 @@ class ConsoleMeDataTable extends Component {
         (activePage - 1) * tableConfig.rowsPerPage,
         activePage * tableConfig.rowsPerPage - 1,
       );
+
+      // get an offset if there is any expanded row and trying to expand row underneath
+      const offset = (expandedRow && expandedRow.index < idx) ? 1 : 0;
       const newExpandedRow = {
-        index: idx + 1,
-        data: expandNestedJson(filteredDataPaginated[idx]),
+        index: idx + 1 - offset,
+        data: expandNestedJson(filteredDataPaginated[idx - offset]),
       };
       this.setState({
         expandedRow: newExpandedRow,
