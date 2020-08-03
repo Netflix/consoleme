@@ -566,6 +566,7 @@ class ConsoleMeDataTable extends Component {
         <ReactMarkdown
           linkTarget="_blank"
           source={tableConfig.tableDescription}
+          escapeHtml={false}
         />
         <Table collapsing sortable celled compact selectable striped>
           {columns}
