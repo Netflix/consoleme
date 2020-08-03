@@ -2,9 +2,10 @@ from datetime import datetime, timedelta
 from typing import Union
 
 import ujson as json
-from asgiref.sync import sync_to_async
+from asgiref.sync import async_to_sync, sync_to_async
 
 from consoleme.config import config
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_get
@@ -26,7 +27,7 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
 internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
 red = RedisHandler().redis_sync()
-account_ids_to_names = aws.get_account_ids_to_names()
+account_ids_to_name = async_to_sync(get_account_id_to_name_mapping)()
 
 
 async def get_cloudtrail_details_for_role(arn: str):
@@ -124,7 +125,7 @@ async def get_role_details(
         return ExtendedRoleModel(
             name=role_name,
             account_id=account_id,
-            account_name=account_ids_to_names.get(account_id, [None])[0],
+            account_name=account_ids_to_name.get(account_id, [None]),
             arn=arn,
             inline_policies=role["policy"]["RolePolicyList"],
             assume_role_policy_document=role["policy"]["AssumeRolePolicyDocument"],
@@ -142,6 +143,6 @@ async def get_role_details(
         return RoleModel(
             name=role_name,
             account_id=account_id,
-            account_name=account_ids_to_names.get(account_id, [None])[0],
+            account_name=account_ids_to_name.get(account_id, [None]),
             arn=arn,
         )

@@ -45,7 +45,10 @@ from raven.contrib.celery import register_logger_signal, register_signal
 from retrying import retry
 
 from consoleme.config import config
-from consoleme.lib.aws import cache_cloud_accounts
+from consoleme.lib.account_indexers import (
+    cache_cloud_accounts,
+    get_account_id_to_name_mapping,
+)
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
@@ -576,7 +579,7 @@ def cache_policies_table_details() -> bool:
     iam_role_redis_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
     arns = red.hkeys(iam_role_redis_key)
     items = []
-    accounts_d = aws.get_account_ids_to_names()
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
 
     cloudtrail_errors = {}
     cloudtrail_errors_j = red.get(
@@ -603,7 +606,7 @@ def cache_policies_table_details() -> bool:
             error_count += int(error.get("count"))
 
         account_id = arn.split(":")[4]
-        account_name = accounts_d.get(str(account_id), ["Unknown"])[0]
+        account_name = accounts_d.get(str(account_id), ["Unknown"])
         items.append(
             {
                 "account_id": account_id,
@@ -621,7 +624,7 @@ def cache_policies_table_details() -> bool:
     s3_accounts = red.hkeys(s3_bucket_key)
     if s3_accounts:
         for account in s3_accounts:
-            account_name = accounts_d.get(str(account), ["Unknown"])[0]
+            account_name = accounts_d.get(str(account), ["Unknown"])
             buckets = json.loads(red.hget(s3_bucket_key, account))
 
             for bucket in buckets:
@@ -646,7 +649,7 @@ def cache_policies_table_details() -> bool:
     sns_accounts = red.hkeys(sns_topic_key)
     if sns_accounts:
         for account in sns_accounts:
-            account_name = accounts_d.get(str(account), ["Unknown"])[0]
+            account_name = accounts_d.get(str(account), ["Unknown"])
             topics = json.loads(red.hget(sns_topic_key, account))
 
             for topic in topics:
@@ -666,7 +669,7 @@ def cache_policies_table_details() -> bool:
     sqs_accounts = red.hkeys(sqs_queue_key)
     if sqs_accounts:
         for account in sqs_accounts:
-            account_name = accounts_d.get(str(account), ["Unknown"])[0]
+            account_name = accounts_d.get(str(account), ["Unknown"])
             queues = json.loads(red.hget(sqs_queue_key, account))
 
             for queue in queues:
@@ -697,7 +700,7 @@ def cache_policies_table_details() -> bool:
             ]:
                 continue
             account_id = arn.split(":")[4]
-            account_name = accounts_d.get(account_id, ["Unknown"])[0]
+            account_name = accounts_d.get(account_id, ["Unknown"])
             items.append(
                 {
                     "account_id": account_id,
@@ -795,7 +798,7 @@ def cache_roles_across_accounts() -> Dict:
         "unit_testing.override_true"
     ):
         # First, get list of accounts
-        accounts_d = aws.get_account_ids_to_names()
+        accounts_d = async_to_sync(get_account_id_to_name_mapping)()
         # Second, call tasks to enumerate all the roles across all accounts
         for account_id in accounts_d.keys():
             if config.get("environment") == "prod":
@@ -867,7 +870,7 @@ def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, 
 def cache_managed_policies_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d = aws.get_account_ids_to_names()
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -884,7 +887,7 @@ def cache_managed_policies_across_accounts() -> bool:
 def cache_s3_buckets_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = aws.get_account_ids_to_names()
+    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -900,7 +903,7 @@ def cache_s3_buckets_across_accounts() -> bool:
 def cache_sqs_queues_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = aws.get_account_ids_to_names()
+    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -916,7 +919,7 @@ def cache_sqs_queues_across_accounts() -> bool:
 def cache_sns_topics_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = aws.get_account_ids_to_names()
+    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
             cache_sns_topics_for_account.delay(account_id)
@@ -1146,7 +1149,7 @@ def get_inventory_of_iam_keys() -> dict:
         config.region == config.get("celery.active_region")
         and config.get("environment") == "prod"
     ):
-        accounts_d: list = aws.get_account_ids_to_names()
+        accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
         for account_id in accounts_d.keys():
             try:
                 iam_users = get_account_authorization_details(
@@ -1245,7 +1248,7 @@ def cache_resources_from_aws_config_across_accounts() -> bool:
     resource_redis_cache_key = config.get("aws_config_cache.redis_key")
 
     # First, get list of accounts
-    accounts_d = aws.get_account_ids_to_names()
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") in ["prod", "dev"]:
@@ -1289,10 +1292,9 @@ def get_iam_role_limit() -> dict:
         success_message = "Task successfully completed"
 
         # First, get list of accounts
-        accounts_d: dict = aws.get_account_ids_to_names()
+        accounts_d: dict = async_to_sync(get_account_id_to_name_mapping)()
         num_accounts = len(accounts_d.keys())
-        for account_id, account_aliases in accounts_d.items():
-            account_name = account_aliases[0]
+        for account_id, account_name in accounts_d.items():
             try:
                 iam_summary = _get_delivery_channels(
                     account_number=account_id,
@@ -1379,7 +1381,7 @@ def cache_cloud_account_mapping() -> Dict:
 
     log_data = {
         "function": function,
-        "num_accounts": len(account_mapping),
+        "num_accounts": len(account_mapping.accounts),
         "message": "Successfully cached accounts from AWS Organizations",
     }
 
@@ -1479,6 +1481,11 @@ schedule = {
     },
     "cache_policy_requests": {
         "task": "consoleme.celery.celery_tasks.cache_policy_requests",
+        "options": {"expires": 1000},
+        "schedule": schedule_1_hour,
+    },
+    "cache_cloud_account_mapping": {
+        "task": "consoleme.celery.celery_tasks.cache_cloud_account_mapping",
         "options": {"expires": 1000},
         "schedule": schedule_1_hour,
     },

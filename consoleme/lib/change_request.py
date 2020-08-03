@@ -11,6 +11,7 @@ from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
     MissingConfigurationValue,
 )
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.generic import generate_random_string
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import (
@@ -26,7 +27,7 @@ from consoleme.models import (
 )
 
 group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
-account_ids_to_names = group_mapping.get_account_ids_to_names()
+ALL_ACCOUNTS = None
 
 
 async def _generate_policy_statement(
@@ -366,7 +367,10 @@ async def _generate_resource_model_from_arn(arn: str) -> Optional[ResourceModel]
         name = arn.split(":")[5].split("/")[-1]
         if not region:
             region = "global"
-        account_name = account_ids_to_names.get(account_id, [""])[0]
+        global ALL_ACCOUNTS
+        if not ALL_ACCOUNTS:
+            ALL_ACCOUNTS = await get_account_id_to_name_mapping()
+        account_name = ALL_ACCOUNTS.get(account_id, "")
 
         return ResourceModel(
             arn=arn,

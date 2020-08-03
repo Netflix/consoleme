@@ -793,12 +793,15 @@ components:
       items:
         type: string
         pattern: '^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$'
-    AccountArray:
-      type: array
-      items:
-        anyOf:
-          - $ref: '#/components/schemas/AccountModel'
-    AccountModel:
+    CloudAccountModelArray:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/CloudAccountModel'
+    CloudAccountModel:
       type: object
       properties:
         id:
@@ -807,12 +810,32 @@ components:
           type: string
         status:
           type: string
+          enum:
+            - active # AKA: ready
+            - deleted
+            - created
+            - suspended
+        type:
+          type: string
+          enum:
+            - aws
+            - gcp
         sync_enabled:
           type: boolean
+        sensitive:
+          type: boolean
+          default: false
+        environment:
+          type: string
+          enum:
+            - prod
+            - test
         aliases:
           type: array
           items:
             type: string
+        email:
+          type: string
     PolicyModel:
       type: object
       required:
