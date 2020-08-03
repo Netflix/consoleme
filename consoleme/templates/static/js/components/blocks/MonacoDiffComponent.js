@@ -1,6 +1,14 @@
 import React from 'react';
 import { MonacoDiffEditor } from 'react-monaco-editor';
 import PropTypes from 'prop-types';
+import { getMonacoCompletions } from '../../helpers/utils';
+
+monaco.languages.registerCompletionItemProvider('json', {
+  async provideCompletionItems(model, position) {
+    const response = await getMonacoCompletions(model, position);
+    return response;
+  },
+});
 
 class MonacoDiffComponent extends React.Component {
   constructor(props) {
@@ -14,13 +22,11 @@ class MonacoDiffComponent extends React.Component {
     };
   }
 
-  onChange(newValue, e) {
-    console.log('onChange', newValue, e);
+  onChange(newValue) {
     this.onValueChange(newValue);
   }
 
   editorDidMount(editor) {
-    console.log('editorDidMount');
     editor.modifiedEditor.onDidChangeModelDecorations(() => {
       const { modifiedEditor } = this.state;
       const model = modifiedEditor.getModel();
@@ -30,10 +36,7 @@ class MonacoDiffComponent extends React.Component {
 
       const owner = model.getModeId();
       const uri = model.uri;
-      // eslint-disable-next-line no-undef
       const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
-      // do something with the markers
-      console.log(markers);
       this.onLintError(markers.map((marker) => `Lint error on line ${marker.startLineNumber} columns ${marker.startColumn}-${marker.endColumn}: ${marker.message}`));
     });
     this.setState({
@@ -47,6 +50,7 @@ class MonacoDiffComponent extends React.Component {
       selectOnLineNumbers: true,
       renderSideBySide: true,
       enableSplitViewResizing: false,
+      quickSuggestions: true,
       readOnly,
     };
     return (
