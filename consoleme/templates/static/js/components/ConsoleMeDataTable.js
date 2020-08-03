@@ -538,7 +538,7 @@ class ConsoleMeDataTable extends Component {
       redirect,
       tableConfig,
     } = this.state;
-
+    const totalPages = parseInt(filteredData.length / tableConfig.rowsPerPage, 10);
     const columns = this.generateColumns();
 
     if (isLoading) {
@@ -575,17 +575,20 @@ class ConsoleMeDataTable extends Component {
           <Table.Footer>
             <Table.Row>
               <Table.HeaderCell collapsing colSpan={this.calculateColumnSize()}>
-                <Pagination
-                  floated="right"
-                  defaultActivePage={activePage}
-                  totalPages={parseInt(filteredData.length / tableConfig.rowsPerPage, 10)}
-                  onPageChange={(event, data) => {
-                    this.setState({
-                      activePage: data.activePage,
-                      expandedRow: null,
-                    });
-                  }}
-                />
+                { totalPages > 0
+                  ? (
+                    <Pagination
+                      floated="right"
+                      defaultActivePage={activePage}
+                      totalPages={totalPages}
+                      onPageChange={(event, data) => {
+                        this.setState({
+                          activePage: data.activePage,
+                          expandedRow: null,
+                        });
+                      }}
+                    />
+                  ) : ''}
               </Table.HeaderCell>
             </Table.Row>
           </Table.Footer>
