@@ -23,6 +23,7 @@ from consoleme.lib.v2.requests import (
     apply_changes_to_role,
     generate_request_from_change_model_array,
     is_request_eligible_for_auto_approval,
+    populate_cross_account_resource_policies,
     populate_old_policies,
 )
 from consoleme.models import (
@@ -397,6 +398,14 @@ class RequestDetailHandler(BaseAPIV2Handler):
             request.get("extended_request")
         )
         await populate_old_policies(extended_request, self.user)
+        resource_policies_changed = await populate_cross_account_resource_policies(
+            extended_request, self.user
+        )
+
+        if resource_policies_changed:
+            # Update in dynamo with the latest resource policy changes
+            dynamo = UserDynamoHandler(self.user)
+            await dynamo.write_policy_request_v2(extended_request)
 
         # TODO: do stuff with extended request - Generate cross-account resource policies
 

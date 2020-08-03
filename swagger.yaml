@@ -755,6 +755,14 @@ components:
               type: boolean
               readOnly: true
               default: false
+            sourceChangeID:
+              type: string
+              readOnly: true
+              description: the change model ID of the source change, that this change was generated from
+            supported:
+              type: boolean
+              readOnly: true
+              description: whether we currently support this type of resource policy change or not
             policy:
               $ref: '#/components/schemas/PolicyModel'
             old_policy:
