@@ -84,16 +84,32 @@ class EligibleRoleTableConfigHandler(BaseHandler):
             "rowsPerPage": 50,
             "serverSideFiltering": False,
             "columns": [
-                {"placeholder": "Account Name", "key": "account_name", "type": "input"},
-                {"placeholder": "Account ID", "key": "account_id", "type": "input"},
-                {"placeholder": "Role Name", "key": "role_name", "type": "input"},
+                {
+                    "placeholder": "Account Name",
+                    "key": "account_name",
+                    "type": "input",
+                    "useLabel": True,
+                },
+                {
+                    "placeholder": "Account ID",
+                    "key": "account_id",
+                    "type": "input",
+                    "useLabel": True,
+                },
+                {
+                    "placeholder": "Role Name",
+                    "key": "role_name",
+                    "type": "input",
+                },
                 {
                     "placeholder": "AWS Console Sign-In",
                     "key": "redirect_uri",
                     "type": "button",
                     "icon": "sign-in",
                     "content": "Sign-In",
-                    "onClick": {"action": "redirect"},
+                    "onClick": {
+                        "action": "redirect",
+                    },
                 },
             ],
         }
