@@ -5,6 +5,7 @@ boto3
 cchardet
 celery[redis]
 cloudaux
+datamodel-code-generator==0.5.15 # Pinned due to bug in generating consoleme/models.py in later versions.
 deepdiff[murmur]
 defusedxml
 ed25519
