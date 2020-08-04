@@ -20,6 +20,15 @@ account_ids_to_name:
   '${current_account_id}':
     - default_account
 
+cache_cloud_accounts:
+  from_aws_organizations: ${sync_accounts_from_organizations}
+  redis:
+    all_accounts_key: ALL_AWS_ACCOUNTS
+
+cache_accounts_from_aws_organizations:
+  organizations_master_account_id: '${sync_accounts_from_organizations_master_account_id}'
+  organizations_master_role_to_assume: '${sync_accounts_from_organizations_role_to_assume}'
+
 # A development configuration can specify a specific user to impersonate locally.
 _development_user_override: consolemeadmin@example.com
 
