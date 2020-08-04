@@ -206,6 +206,35 @@ class ArnArray(BaseModel):
     ]
 
 
+class Status1(Enum):
+    active = "active"
+    deleted = "deleted"
+    created = "created"
+    suspended = "suspended"
+
+
+class Type(Enum):
+    aws = "aws"
+    gcp = "gcp"
+
+
+class Environment(Enum):
+    prod = "prod"
+    test = "test"
+
+
+class CloudAccountModel(BaseModel):
+    id: Optional[str] = None
+    name: Optional[str] = None
+    status: Optional[Status1] = None
+    type: Optional[Type] = None
+    sync_enabled: Optional[bool] = None
+    sensitive: Optional[bool] = False
+    environment: Optional[Environment] = None
+    aliases: Optional[List[str]] = None
+    email: Optional[str] = None
+
+
 class PolicyModel(BaseModel):
     version: Optional[str] = Field(None, description="AWS Policy Version")
     policy_document: Optional[Dict[str, Any]] = Field(
@@ -401,6 +430,10 @@ class ChangeModelArray(BaseModel):
             AssumeRolePolicyChangeModel,
         ]
     ]
+
+
+class CloudAccountModelArray(BaseModel):
+    accounts: Optional[List[CloudAccountModel]] = None
 
 
 class CommentModel(BaseModel):

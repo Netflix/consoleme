@@ -241,7 +241,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         self.user = user
         self.groups = None
         self.user_role_name = None
-        self.legacy_user_role_mapping = {}
 
         log_data = {
             "function": "Basehandler.authorization_flow",
@@ -339,7 +338,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                 self.eligible_roles = cache.get("eligible_roles")
                 self.eligible_accounts = cache.get("eligible_accounts")
                 self.user_role_name = cache.get("user_role_name")
-                self.legacy_user_role_mapping = cache.get("legacy_user_role_mapping")
                 return
 
         try:
@@ -371,11 +369,7 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
             self.user_role_name = await auth.get_or_create_user_role_name(self.user)
 
         self.eligible_roles = await group_mapping.get_eligible_roles(
-            self.user,
-            self.groups,
-            self.user_role_name,
-            legacy_mapping=self.legacy_user_role_mapping,
-            console_only=console_only,
+            self.user, self.groups, self.user_role_name, console_only=console_only
         )
 
         if not self.eligible_roles:
@@ -407,7 +401,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                             "eligible_roles": self.eligible_roles,
                             "eligible_accounts": self.eligible_accounts,
                             "user_role_name": self.user_role_name,
-                            "legacy_user_role_mapping": self.legacy_user_role_mapping,
                         }
                     ),
                 )

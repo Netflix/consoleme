@@ -165,6 +165,9 @@ class IndexHandler(BaseHandler):
                 }
             )
 
+        # Default sort by account name
+        roles = sorted(roles, key=lambda i: i.get("account_name", 0))
+
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(roles, escape_forward_slashes=False))
         await self.finish()

@@ -1,6 +1,9 @@
 import sys
 
+from asgiref.sync import async_to_sync
+
 from consoleme.config import config
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.plugins import get_plugin_by_name
 
 aws = get_plugin_by_name(config.get("plugins.aws"))()
@@ -8,12 +11,8 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
 # ALL ACCOUNTS is a dictionary of account ID to a list of account names (including aliases)
-# ex: {"123456": ["account_name", "account_alias_1",...], ...}
-ALL_ACCOUNTS = aws.get_account_ids_to_names()
-
-# We only want to consider the primary (first) account name in the list for the purposes of displaying them to the user
-for k, v in ALL_ACCOUNTS.items():
-    ALL_ACCOUNTS[k] = v[0]
+# ex: {"123456": "account_name", ...}
+ALL_ACCOUNTS = async_to_sync(get_account_id_to_name_mapping)(status=None)
 
 
 def format_role_name(arn: str, accounts: dict) -> str:
