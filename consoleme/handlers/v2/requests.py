@@ -357,7 +357,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             "message": "Get request details",
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
-            "request": request_id,
+            "policy_request_id": request_id,
         }
         log.debug(log_data)
 
@@ -389,7 +389,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             return
         request = requests[0]
 
-        if "version" not in request or request.get("version") != "2":
+        if request.get("version") != "2":
             # Request format is not compitable with this endpoint version
             self.write_error(400, message="Request with that ID is not a v2 request")
             return
@@ -397,12 +397,15 @@ class RequestDetailHandler(BaseAPIV2Handler):
         extended_request = ExtendedRequestModel.parse_raw(
             request.get("extended_request")
         )
-        await populate_old_policies(extended_request, self.user)
-        resource_policies_changed = await populate_cross_account_resource_policies(
+        extended_request = await populate_old_policies(extended_request, self.user)
+        populate_cross_account_resource_policies_result = await populate_cross_account_resource_policies(
             extended_request, self.user
         )
 
-        if resource_policies_changed:
+        if populate_cross_account_resource_policies_result["changed"]:
+            extended_request = populate_cross_account_resource_policies_result[
+                "extended_request"
+            ]
             # Update in dynamo with the latest resource policy changes
             dynamo = UserDynamoHandler(self.user)
             await dynamo.write_policy_request_v2(extended_request)

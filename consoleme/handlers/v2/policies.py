@@ -26,11 +26,11 @@ class PolicyReviewV2Handler(BaseHandler):
             "message": "Incoming request",
             "user-agent": self.request.headers.get("User-Agent"),
             "ip": self.ip,
-            "request": request_id,
+            "policy_request_id": request_id,
         }
         log.debug(log_data)
         stats.count(
-            f"{log_data['function']}", tags={"user": self.user, "request": request_id},
+            f"{log_data['function']}", tags={"user": self.user},
         )
 
         await self.render(
@@ -40,5 +40,4 @@ class PolicyReviewV2Handler(BaseHandler):
             user=self.user,
             user_groups=self.groups,
             config=config,
-            request_id=request_id,
         )

@@ -759,7 +759,7 @@ components:
               type: boolean
               readOnly: true
               default: false
-            sourceChangeID:
+            source_change_id:
               type: string
               readOnly: true
               description: the change model ID of the source change, that this change was generated from

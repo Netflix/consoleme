@@ -3,6 +3,6 @@
     <div id="policy_request_review" />
     <script src="/static/js/dist/policyRequestsReview.js"></script>
     <script>
-        setTimeout(function(){ policyRequestsReview.renderPolicyRequestsReview('{{ escape(request_id) }}') }, 1000);
+        setTimeout(function(){ policyRequestsReview.renderPolicyRequestsReview(window.location.pathname) }, 1000);
     </script>
 </div>

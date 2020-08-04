@@ -25,7 +25,7 @@ class PolicyRequestReview extends Component {
     };
   }
 
-  async componentDidMount() {
+  componentDidMount() {
     const { requestID } = this.state;
     this.setState({
       loading: true,
@@ -39,10 +39,11 @@ class PolicyRequestReview extends Component {
               messages: [response.message],
             });
           } else {
+            const { request, request_config, last_updated } = response;
             this.setState({
-              extendedRequest: JSON.parse(response.request),
-              requestConfig: response.request_config,
-              lastUpdated: response.last_updated,
+              extendedRequest: JSON.parse(request),
+              requestConfig: request_config,
+              lastUpdated: last_updated,
               loading: false,
             });
           }
@@ -55,10 +56,42 @@ class PolicyRequestReview extends Component {
     const {
       lastUpdated, extendedRequest, messages, isSubmitting, requestConfig, loading,
     } = this.state;
-    const extendedInfo = (extendedRequest.requester_info
-        && extendedRequest.requester_info.extended_info)
-      ? (extendedRequest.requester_info.extended_info)
+
+    // Checks whether extendedInfo is available for the requester or not, if it is, saves it as a variable
+    const extendedInfo = (extendedRequest.requester_info && extendedRequest.requester_info.extended_info)
+      ? (
+        extendedRequest.requester_info.extended_info
+      )
       : null;
+
+    const requesterName = (extendedInfo && extendedInfo.name && extendedInfo.name.fullName)
+      ? (
+        extendedInfo.name.fullName + ' - '
+      )
+      : null;
+
+    const requesterImage = (extendedRequest.requester_info && extendedRequest.requester_info.photo_url)
+      ? (
+        <Image src={extendedRequest.requester_info.photo_url} size="small" inline />
+      )
+      : null;
+
+    const requesterEmail = (extendedRequest.requester_info && extendedRequest.requester_info.details_url)
+      ? (
+        <a
+          href={extendedRequest.requester_info.details_url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {extendedRequest.requester_email}
+        </a>
+      )
+      : (
+        <span>
+          {extendedRequest.requester_email}
+        </span>
+      );
+
     const messagesToShow = (messages.length > 0)
       ? (
         <Message negative>
@@ -82,25 +115,9 @@ class PolicyRequestReview extends Component {
               </Table.Cell>
               <Table.Cell>
                 <Header size="medium">
-                  {(extendedInfo && extendedInfo.name && `${extendedInfo.name.fullName} - `) || ''}
-                  {extendedRequest.requester_info && extendedRequest.requester_info.details_url
-                    ? (
-                      <a
-                        href={extendedRequest.requester_info.details_url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {extendedRequest.requester_email}
-                      </a>
-                    )
-                    : (
-                      <span>
-                        {extendedRequest.requester_email}
-                      </span>
-                    )}
-                  {extendedRequest.requester_info && extendedRequest.requester_info.photo_url
-                    ? (<Image src={extendedRequest.requester_info.photo_url} size="small" inline />)
-                    : null}
+                  {requesterName}
+                  {requesterEmail}
+                  {requesterImage}
                 </Header>
               </Table.Cell>
             </Table.Row>
@@ -292,9 +309,12 @@ class PolicyRequestReview extends Component {
       )
       : null;
 
-    const viewOnly = !(approveRequestButton || rejectRequestButton || cancelRequestButton);
-    const requestButtons = !viewOnly
-      ? (
+    // If none of the buttons are visible to user, then user can only view this request
+    const userCanViewOnly = !approveRequestButton && !rejectRequestButton && !cancelRequestButton;
+    // If user can only view the request, but not modify, don't show any requestButtons
+    const requestButtons = userCanViewOnly
+      ? null
+      : (
         <Grid container>
           <Grid.Row columns="equal">
             {approveRequestButton}
@@ -302,8 +322,7 @@ class PolicyRequestReview extends Component {
             {cancelRequestButton}
           </Grid.Row>
         </Grid>
-      )
-      : null;
+      );
 
     const requestButtonsContent = (extendedRequest.status === 'pending')
       ? (
@@ -349,7 +368,8 @@ class PolicyRequestReview extends Component {
   }
 }
 
-export function renderPolicyRequestsReview(requestID) {
+export function renderPolicyRequestsReview(windowLocationPath) {
+  const requestID = windowLocationPath.substring(windowLocationPath.lastIndexOf('/') + 1, windowLocationPath.length);
   ReactDOM.render(
     <PolicyRequestReview
       requestID={requestID}

@@ -28,7 +28,6 @@ class CommentsFeedBlockComponent extends Component {
       isLoading: true,
     }, () => {
       // TODO: make request to backend to add comment
-      console.log(commentText);
       this.setState({
         isLoading: false,
         commentText: '',

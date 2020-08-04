@@ -8,10 +8,19 @@ class ResourcePolicyChangeComponent extends Component {
   constructor(props) {
     super(props);
     const { change, config } = props;
-    const oldPolicyDoc = (change.old_policy && change.old_policy.policy_document) || {};
+    const oldPolicyDoc = (change.old_policy && change.old_policy.policy_document)
+      ? (
+        change.old_policy.policy_document
+      )
+      : {};
     const allOldKeys = [];
     JSON.stringify(oldPolicyDoc, (key, value) => { allOldKeys.push(key); return value; });
-    const newPolicyDoc = (change.policy.policy_document && change.policy.policy_document) || {};
+
+    const newPolicyDoc = (change.policy.policy_document && change.policy.policy_document)
+      ? (
+        change.policy.policy_document
+      )
+      : {};
     const allnewKeys = [];
     JSON.stringify(newPolicyDoc, (key, value) => { allnewKeys.push(key); return value; });
 
