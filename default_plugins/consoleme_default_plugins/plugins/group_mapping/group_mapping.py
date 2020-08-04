@@ -1,5 +1,6 @@
 """Group mapping plugin."""
 import time
+from typing import List
 
 import simplejson as json
 from redis.exceptions import ConnectionError
@@ -39,8 +40,12 @@ class GroupMapping:
         return list(set(roles))
 
     @staticmethod
-    async def filter_eligible_roles(query: str, obj: object) -> list:
-        return []
+    async def filter_eligible_roles(query: str, obj: object) -> List:
+        selected_roles: List = []
+        for r in obj.eligible_roles:
+            if query.lower() in r.lower():
+                selected_roles.append(r)
+        return selected_roles
 
     async def set_recent_user(self, user):
         pass

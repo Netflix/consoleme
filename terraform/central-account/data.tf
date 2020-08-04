@@ -23,6 +23,9 @@ data "template_file" "consoleme_config" {
     demo_user_role_arn_1 = aws_iam_role.consoleme_example_user_role_1.arn
     demo_user_role_arn_2 = aws_iam_role.consoleme_example_user_role_2.arn
     current_account_id = data.aws_caller_identity.current.account_id
+    sync_accounts_from_organizations = var.sync_accounts_from_organizations
+    sync_accounts_from_organizations_master_account_id = var.sync_accounts_from_organizations_master_account_id != null ? var.sync_accounts_from_organizations_master_account_id : data.aws_caller_identity.current.account_id
+    sync_accounts_from_organizations_role_to_assume = var.sync_accounts_from_organizations_role_to_assume
   }
 }
 

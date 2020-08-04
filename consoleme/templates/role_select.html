@@ -149,33 +149,6 @@
     </div>
 </div>
 <script>
-    {% if recent_roles %}
-        pastRoles = parseLocalStorageCache();
-        let accounts = {% raw eligible_accounts %};
-
-        if (pastRoles != null) {
-            text = '<h3>Recent roles</h3>'
-            text += '<form id="recent_roles" name="recent_roles" action="/role/" method="post" enctype="application/json"><ul>'
-            text += '{% module xsrf_form_html() %}'
-            text += '<input type=hidden name="region" value="{{ escape(region) }}">'
-            {% if globals().get("redirect") and redirect %}
-                text += '<input type=hidden name="redirect" value="{{ escape(redirect) }}">'
-            {% end %}
-            for (i = 0; i < pastRoles.length; i++) {
-                let roleName = formatRoleName(pastRoles[i].split('role/')[1], accounts);
-                // Does the role-account mapping not exist anymore?
-                if (!roleName) {
-                    continue;
-                }
-                text += '<li><a style="height: 40px;padding: 0px 0px; */"><div class="text-center" data-toggle="buttons" style="display: block; margin-bottom:2px;margin-left:30px;margin-top:10px;"><label class="btn" style="width: 200px;display: inline-block;margin-left: 10px;height: 40px;">'
-                text += '<input type="radio" display="block" class="btn btn-link" name="role" style="vertical-align: middle;" value="' + pastRoles[i] + '"/>' + roleName
-                text += '</label></div></a></li>'
-            }
-            document.getElementById("RoleHistory").innerHTML = text;
-        }
-
-        window.onload = reset_options();
-    {% end %}
     $(".chosen-select").chosen({
         search_contains: true
     });

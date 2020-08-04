@@ -145,6 +145,21 @@ variable "CONFIG_LOCATION" {
   default =  "/apps/consoleme/example_config/example_config_terraform.yaml"
 }
 
+variable "sync_accounts_from_organizations" {
+  description = "Sync accounts from AWS organizations?"
+  default = false
+}
+
+variable "sync_accounts_from_organizations_master_account_id" {
+  description = "Organizations master account ID"
+  default = null
+}
+
+variable "sync_accounts_from_organizations_role_to_assume" {
+  description = "Organizations master role to assume"
+  default = "ConsoleMeTarget"
+}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # NAMING PREFIXES
 # This manages the naming prefixes in this module.
