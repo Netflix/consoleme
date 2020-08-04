@@ -3,7 +3,7 @@ import qs from 'qs';
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import {
-  Button, Dropdown, Header, Icon, Input, Pagination, Segment, Table,
+  Button, Dimmer, Dropdown, Header, Icon, Input, Label, Loader, Pagination, Segment, Table,
 } from 'semantic-ui-react';
 import ReactJson from 'react-json-view';
 import ReactMarkdown from 'react-markdown';
@@ -23,8 +23,6 @@ const expandNestedJson = (data) => {
   });
   return data;
 };
-
-// TODO: Calendar
 
 class ConsoleMeDataTable extends Component {
   constructor(props) {
@@ -54,6 +52,7 @@ class ConsoleMeDataTable extends Component {
       expandedRow: null,
       direction: 'descending',
       debounceWait: 300,
+      isLoading: false,
     };
 
     this.generateRows = this.generateRows.bind(this);
@@ -68,7 +67,7 @@ class ConsoleMeDataTable extends Component {
     const { configEndpoint } = this.state;
     this.timer = null;
     this.setState({
-      loading: true,
+      isLoading: true,
     }, async () => {
       const request = await fetch(configEndpoint);
       const tableConfig = await request.json();
@@ -84,7 +83,7 @@ class ConsoleMeDataTable extends Component {
       this.setState({
         data,
         filteredData: data,
-        loading: false,
+        isLoading: false,
         tableConfig,
       }, async () => {
         await this.generateFilterFromQueryString();
@@ -131,9 +130,12 @@ class ConsoleMeDataTable extends Component {
         (activePage - 1) * tableConfig.rowsPerPage,
         activePage * tableConfig.rowsPerPage - 1,
       );
+
+      // get an offset if there is any expanded row and trying to expand row underneath
+      const offset = (expandedRow && expandedRow.index < idx) ? 1 : 0;
       const newExpandedRow = {
-        index: idx + 1,
-        data: expandNestedJson(filteredDataPaginated[idx]),
+        index: idx + 1 - offset,
+        data: expandNestedJson(filteredDataPaginated[idx - offset]),
       };
       this.setState({
         expandedRow: newExpandedRow,
@@ -284,7 +286,7 @@ class ConsoleMeDataTable extends Component {
       <Table.Header>
         <Table.Row>
           {tableConfig.expandableRows && (
-          <Table.HeaderCell />
+            <Table.HeaderCell />
           )}
           {columns}
         </Table.Row>
@@ -485,6 +487,14 @@ class ConsoleMeDataTable extends Component {
               />
             </Table.Cell>,
           );
+        } else if (column.useLabel) {
+          cells.push(
+            <Table.Cell collapsing>
+              <Label>
+                {'' || entry[column.key].toString()}
+              </Label>
+            </Table.Cell>,
+          );
         } else {
           cells.push(
             <Table.Cell collapsing>
@@ -500,15 +510,15 @@ class ConsoleMeDataTable extends Component {
       return (
         <Table.Row>
           {tableConfig.expandableRows
-                    && (
-                    <Table.Cell collapsing>
-                      <Icon
-                        link
-                        name={(expandedRow && expandedRow.index - 1 === idx) ? 'caret down' : 'caret right'}
-                        onClick={() => this.handleRowExpansion(idx)}
-                      />
-                    </Table.Cell>
-                    )}
+          && (
+            <Table.Cell collapsing>
+              <Icon
+                link
+                name={(expandedRow && expandedRow.index - 1 === idx) ? 'caret down' : 'caret right'}
+                onClick={() => this.handleRowExpansion(idx)}
+              />
+            </Table.Cell>
+          )}
           {cells}
         </Table.Row>
       );
@@ -525,17 +535,31 @@ class ConsoleMeDataTable extends Component {
 
   render() {
     const {
-      filteredData, tableConfig, activePage, redirect,
+      activePage,
+      filteredData,
+      isLoading,
+      redirect,
+      tableConfig,
     } = this.state;
     const totalPages = parseInt(filteredData.length / tableConfig.rowsPerPage, 10);
     const columns = this.generateColumns();
+
+    if (isLoading) {
+      return (
+        <Segment basic>
+          <Dimmer active inverted size="large">
+            <Loader inverted content='Loading' />
+          </Dimmer>
+        </Segment>
+      );
+    }
+
+    // TODO (heewonk), revisit following redirection logic when moving to SPA again
     if (redirect) {
       return (
-        <div>
-          <BrowserRouter forceRefresh>
-            {this.renderRedirect()}
-          </BrowserRouter>
-        </div>
+        <BrowserRouter forceRefresh>
+          {this.renderRedirect()}
+        </BrowserRouter>
       );
     }
 
@@ -545,6 +569,7 @@ class ConsoleMeDataTable extends Component {
         <ReactMarkdown
           linkTarget="_blank"
           source={tableConfig.tableDescription}
+          escapeHtml={false}
         />
         <Table collapsing sortable celled compact selectable striped>
           {columns}
