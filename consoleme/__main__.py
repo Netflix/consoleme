@@ -18,6 +18,7 @@ from consoleme.routes import make_app
 logging.basicConfig(level=logging.DEBUG, format=config.get("logging.format"))
 logging.getLogger("urllib3.connectionpool").setLevel(logging.CRITICAL)
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
+log = config.get_logger()
 
 
 def main():
@@ -55,6 +56,7 @@ def init():
                     for f in files
                     if not f.startswith(".")
                 ]
+        log.debug({"message": "Server started"})
         asyncio.get_event_loop().run_forever()
 
 
