@@ -26,6 +26,7 @@ from consoleme.exceptions.exceptions import (
     UserRoleLambdaException,
     UserRoleNotAssumableYet,
 )
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.dynamo import IAMRoleDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -295,8 +296,8 @@ class Aws:
     ) -> str:
         """Call out to the lambda function to provision the per-user role for the account."""
         # Get the template's name based on the account and user role name:
-        accounts = self.get_account_ids_to_names()
-        account_name = accounts[account_id][0]
+        accounts = await get_account_id_to_name_mapping()
+        account_name = accounts[account_id]
         role_to_fetch = (
             f"arn:aws:iam::{account_id}:role/{account_name}_{user_role_name}"
         )

@@ -207,10 +207,6 @@ aws_config_cache:
   #  bucket: consoleme_bucket
   #  file: aws_config_cache/cache_{account_id}_v1.json
 
-
-swag:
-  redis_id_name_key: ACCOUNT_ID_TO_NAME_MAPPING
-
 api_protect:
   exclude_regions:
     - af-south-1

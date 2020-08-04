@@ -606,7 +606,7 @@ def cache_policies_table_details() -> bool:
             error_count += int(error.get("count"))
 
         account_id = arn.split(":")[4]
-        account_name = accounts_d.get(str(account_id), ["Unknown"])
+        account_name = accounts_d.get(str(account_id), "Unknown")
         items.append(
             {
                 "account_id": account_id,
@@ -624,7 +624,7 @@ def cache_policies_table_details() -> bool:
     s3_accounts = red.hkeys(s3_bucket_key)
     if s3_accounts:
         for account in s3_accounts:
-            account_name = accounts_d.get(str(account), ["Unknown"])
+            account_name = accounts_d.get(str(account), "Unknown")
             buckets = json.loads(red.hget(s3_bucket_key, account))
 
             for bucket in buckets:
@@ -649,7 +649,7 @@ def cache_policies_table_details() -> bool:
     sns_accounts = red.hkeys(sns_topic_key)
     if sns_accounts:
         for account in sns_accounts:
-            account_name = accounts_d.get(str(account), ["Unknown"])
+            account_name = accounts_d.get(str(account), "Unknown")
             topics = json.loads(red.hget(sns_topic_key, account))
 
             for topic in topics:
@@ -669,7 +669,7 @@ def cache_policies_table_details() -> bool:
     sqs_accounts = red.hkeys(sqs_queue_key)
     if sqs_accounts:
         for account in sqs_accounts:
-            account_name = accounts_d.get(str(account), ["Unknown"])
+            account_name = accounts_d.get(str(account), "Unknown")
             queues = json.loads(red.hget(sqs_queue_key, account))
 
             for queue in queues:
@@ -700,7 +700,7 @@ def cache_policies_table_details() -> bool:
             ]:
                 continue
             account_id = arn.split(":")[4]
-            account_name = accounts_d.get(account_id, ["Unknown"])
+            account_name = accounts_d.get(account_id, "Unknown")
             items.append(
                 {
                     "account_id": account_id,

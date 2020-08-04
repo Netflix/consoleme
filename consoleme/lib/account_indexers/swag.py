@@ -29,7 +29,11 @@ async def retrieve_accounts_from_swag() -> CloudAccountModelArray:
 
     except (ConnectionError, HTTPClientError) as e:
         log.error(
-            {"message": "Unable to connect to SWAG", "error": e, "function": function},
+            {
+                "message": "Unable to connect to SWAG",
+                "error": str(e),
+                "function": function,
+            },
             exc_info=True,
         )
         stats.count(f"{function}.connectionerror")

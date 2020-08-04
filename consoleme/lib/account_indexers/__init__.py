@@ -51,12 +51,6 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
     await store_json_results_in_redis_and_s3(
         account_mapping.json(), redis_key=redis_key, s3_bucket=s3_bucket, s3_key=s3_key
     )
-    # Store Account ID to Account Name mapping
-    redis_key = config.get(
-        "cache_cloud_accounts.redis.key.account_id_to_name_key",
-        "ACCOUNT_ID_TO_NAME_MAPPING",
-    )
-    await store_json_results_in_redis_and_s3(account_id_to_name, redis_key=redis_key)
 
     return account_mapping
 

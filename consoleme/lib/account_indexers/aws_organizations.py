@@ -9,10 +9,8 @@ from consoleme.models import CloudAccountModel, CloudAccountModelArray
 async def retrieve_accounts_from_aws_organizations() -> CloudAccountModelArray:
     """
     Polls AWS Organizations for our Account ID to Account Name mapping
-    :param: redis_key: A redis key where we'll store account_id -> account_name mapping
-            s3_bucket: Optional s3 bucket name in which to store account_id -> account_name mapping
-            s3_key: Optional s3 key in which to store account_id -> account_name mapping
-    :return: account_id to account_name mapping
+    :param: null
+    :return: CloudAccountModelArray
     """
 
     organizations_master_account_id = config.get(
@@ -38,6 +36,7 @@ async def retrieve_accounts_from_aws_organizations() -> CloudAccountModelArray:
         "organizations",
         account_number=organizations_master_account_id,
         assume_role=role_to_assume,
+        session_name="ConsoleMeOrganizationsSync",
     )
     paginator = await sync_to_async(client.get_paginator)("list_accounts")
     page_iterator = await sync_to_async(paginator.paginate)()

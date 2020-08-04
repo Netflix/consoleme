@@ -125,7 +125,7 @@ async def get_role_details(
         return ExtendedRoleModel(
             name=role_name,
             account_id=account_id,
-            account_name=account_ids_to_name.get(account_id, [None]),
+            account_name=account_ids_to_name.get(account_id, None),
             arn=arn,
             inline_policies=role["policy"]["RolePolicyList"],
             assume_role_policy_document=role["policy"]["AssumeRolePolicyDocument"],
@@ -143,6 +143,6 @@ async def get_role_details(
         return RoleModel(
             name=role_name,
             account_id=account_id,
-            account_name=account_ids_to_name.get(account_id, [None]),
+            account_name=account_ids_to_name.get(account_id, None),
             arn=arn,
         )

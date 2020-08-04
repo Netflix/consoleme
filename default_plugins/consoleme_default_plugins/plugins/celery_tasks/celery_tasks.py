@@ -10,7 +10,6 @@ from asgiref.sync import async_to_sync
 from celery import Celery
 
 from consoleme.config import config
-from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.redis import RedisHandler
 
@@ -24,23 +23,6 @@ app = Celery(
 
 if config.get("celery.purge"):
     app.control.purge()
-
-
-@app.task(soft_time_limit=30)
-def cache_aws_account_information():
-    """
-    This task retrieves AWS account information from configuration. You may want to override this function to
-    utilize another source of data for this information.
-    :return:
-    """
-    account_information = config.get("account_ids_to_name")
-
-    async_to_sync(store_json_results_in_redis_and_s3)(
-        account_information,
-        redis_key=config.get("swag.redis_id_name_key", "ACCOUNT_ID_TO_NAME_MAPPING"),
-        s3_bucket=config.get("swag.redis_id_name.s3.bucket"),
-        s3_key=config.get("swag.redis_id_name.s3.file"),
-    )
 
 
 @app.task(soft_time_limit=600)
@@ -79,11 +61,6 @@ internal_schedule = {
     },
     "cache_application_information": {
         "task": "consoleme_default_plugins.plugins.celery_tasks.celery_tasks.cache_application_information",
-        "options": {"expires": 4000},
-        "schedule": schedule,
-    },
-    "cache_aws_account_information": {
-        "task": "consoleme_default_plugins.plugins.celery_tasks.celery_tasks.cache_aws_account_information",
         "options": {"expires": 4000},
         "schedule": schedule,
     },

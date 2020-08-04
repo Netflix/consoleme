@@ -15,6 +15,7 @@ from consoleme.exceptions.exceptions import (
     Unauthorized,
 )
 from consoleme.handlers.base import BaseAPIV1Handler, BaseHandler, BaseMtlsHandler
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.aws import (
     can_delete_roles,
     fetch_resource_details,
@@ -1206,11 +1207,7 @@ async def handle_resource_type_ahead_request(cls):
         # ConsoleMe (Account: Test, Arn: arn)
         # TODO: Make this OSS compatible and configurable
         try:
-            accounts = json.loads(
-                await redis_get(
-                    config.get("swag.redis_id_name_key", "SWAG_SETTINGS_ID_TO_NAMEv2")
-                )
-            )
+            accounts = await get_account_id_to_name_mapping()
         except Exception as e:  # noqa
             accounts = {}
         app_to_role_map = json.loads(data)
@@ -1223,7 +1220,7 @@ async def handle_resource_type_ahead_request(cls):
                 results[app_name] = {"name": app_name, "results": []}
                 for role in roles:
                     account_id = role.split(":")[4]
-                    account = accounts.get(account_id, [""])[0]
+                    account = accounts.get(account_id, "")
                     parsed_app_name = (
                         f"{app_name} on {account} ({account_id}) ({role})]"
                     )
@@ -1241,7 +1238,7 @@ async def handle_resource_type_ahead_request(cls):
                 if seen_roles.get(role):
                     continue
                 account_id = role.split(":")[4]
-                account = accounts.get(account_id, [""])[0]
+                account = accounts.get(account_id, "")
                 results[role] = {
                     "name": role.replace("arn:aws:iam::", "").replace(":role", ""),
                     "results": [{"title": role, "description": account}],
