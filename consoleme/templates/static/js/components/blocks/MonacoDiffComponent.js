@@ -1,9 +1,10 @@
 import React from 'react';
 import { MonacoDiffEditor } from 'react-monaco-editor';
 import PropTypes from 'prop-types';
-import { getMonacoCompletions } from '../../helpers/utils';
+import { getMonacoCompletions, getMonacoTriggerCharacters } from '../../helpers/utils';
 
 monaco.languages.registerCompletionItemProvider('json', {
+  triggerCharacters: getMonacoTriggerCharacters,
   async provideCompletionItems(model, position) {
     const response = await getMonacoCompletions(model, position);
     return response;
@@ -17,12 +18,22 @@ class MonacoDiffComponent extends React.Component {
     this.onValueChange = props.onValueChange;
     this.editorDidMount = this.editorDidMount.bind(this);
     this.onChange = this.onChange.bind(this);
+    this.timer = null;
     this.state = {
+      debounceWait: 300,
       modifiedEditor: null,
     };
   }
 
   onChange(newValue) {
+    const { modifiedEditor, debounceWait } = this.state;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(
+      () => {
+        modifiedEditor.trigger('manual_trigger', 'editor.action.triggerSuggest');
+      },
+      debounceWait,
+    );
     this.onValueChange(newValue);
   }
 

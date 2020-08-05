@@ -120,7 +120,7 @@ export async function getMonacoCompletions(model, position) {
     startLineNumber: 1,
     startColumn: 1,
     endLineNumber: position.lineNumber,
-    endColumn: position.column,
+    endColumn: position.column + 1,
   });
   const lines = textUntilPosition.split('\n');
 
@@ -135,9 +135,9 @@ export async function getMonacoCompletions(model, position) {
       break;
     }
   }
-
-  const prefix = model.getWordUntilPosition(position).word;
-  const limit = 500000;
+  const lastLine = lines[lines.length - 1];
+  const prefix = lastLine.trim().replace(/"/g, '');
+  const limit = 500;
   const defaultWordList = [];
   if (action === true) {
     const resp = await fetch('/api/v1/policyuniverse/autocomplete?prefix=' + prefix);
@@ -168,4 +168,9 @@ export async function getMonacoCompletions(model, position) {
     // TODO: error handling other than returning empty list ?
   }
   return { suggestions: defaultWordList };
+}
+
+export function getMonacoTriggerCharacters() {
+  const lowerCase = 'abcdefghijklmnopqrstuvwxyz';
+  return lowerCase + lowerCase.toUpperCase() + '0123456789' + '_-:';
 }
