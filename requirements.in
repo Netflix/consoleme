@@ -38,11 +38,11 @@ pylint
 python-dateutil
 python3-saml
 pytz
-raven
 redis
 requests
 retry
 retrying
+sentry-sdk
 simplejson
 six
 tenacity

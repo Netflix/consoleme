@@ -175,7 +175,6 @@ logging_levels:
   elasticsearch: ERROR
   nose: CRITICAL
   parso.python.diff: WARNING
-  raven.base.client: WARNING
   s3transfer: CRITICAL
   spectator.HttpClient: WARNING
   spectator.Registry: WARNING

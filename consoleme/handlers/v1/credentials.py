@@ -1,3 +1,4 @@
+import sentry_sdk
 import tornado.escape
 import tornado.web
 import ujson as json
@@ -70,7 +71,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
         try:
             max_cert_age = await group_mapping.get_max_cert_age_for_role(role)
         except Exception as e:
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             log_data["error"] = e
             log_data[
                 "message"
