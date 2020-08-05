@@ -41,6 +41,9 @@ async def retrieve_accounts_from_swag() -> CloudAccountModelArray:
     swag_accounts = json.loads(resp.body)
     cloud_accounts = []
     for account in swag_accounts:
+        # Ignore third party accounts
+        if account.get("owner") == "third-party":
+            continue
         account_status = account["account_status"]
         sync_enabled = False
         if account_status == "ready":
