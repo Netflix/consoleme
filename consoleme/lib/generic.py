@@ -177,6 +177,7 @@ def is_in_time_range(t, time_range):
 async def get_random_security_logo():
     month = datetime.now().month
     summer = True if month in [6, 7, 8] else False
+
     dir = "sunglasses" if summer else "nosunglasses"
     file = f"{randint(1, 3)}.png"  # nosec
     return f"/static/logos/{dir}/{file}"

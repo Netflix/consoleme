@@ -7,7 +7,6 @@ import sentry_sdk
 import tornado.autoreload
 import tornado.web
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
-from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 from sentry_sdk.integrations.tornado import TornadoIntegration
 
@@ -182,7 +181,6 @@ def make_app(jwt_validator=None):
             dsn=sentry_dsn,
             integrations=[
                 TornadoIntegration(),
-                CeleryIntegration(),
                 AioHttpIntegration(),
                 RedisIntegration(),
             ],
