@@ -10,7 +10,6 @@ import tornado.httputil
 import tornado.web
 import ujson as json
 from asgiref.sync import sync_to_async
-from raven.contrib.tornado import SentryMixin
 from tornado import httputil
 
 from consoleme.config import config
@@ -40,7 +39,7 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 
 
-class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
+class BaseJSONHandler(tornado.web.RequestHandler):
     # These methods are returned in OPTIONS requests.
     # Default methods can be overridden by setting this variable in child classes.
     allowed_methods = ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]
@@ -109,7 +108,7 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
             return tkn
 
 
-class BaseHandler(SentryMixin, tornado.web.RequestHandler):
+class BaseHandler(tornado.web.RequestHandler):
     """Default BaseHandler."""
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:

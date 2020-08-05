@@ -1,5 +1,6 @@
 import sys
 
+import sentry_sdk
 from pydantic import ValidationError
 
 from consoleme.config import config
@@ -99,7 +100,7 @@ class GenerateChangesHandler(BaseAPIV2Handler):
             log_data["message"] = "Unknown Exception occurred while generating changes"
             log.error(log_data, exc_info=True)
             stats.count(f"{log_data['function']}.exception", tags={"user": self.user})
-            config.sentry.captureException(tags={"user": self.user})
+            sentry_sdk.capture_exception(tags={"user": self.user})
             self.write_error(500, message="Error generating changes: " + str(e))
             return
 
