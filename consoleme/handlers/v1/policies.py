@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from urllib.parse import quote_plus
 
+import sentry_sdk
 import tornado.escape
 import ujson as json
 from policyuniverse.expander_minimizer import _expand_wildcard_action
@@ -624,7 +625,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
                 arn, resource_actions, account_id
             )
         except Exception as e:
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             log_data["error"] = e
             log.error(log_data, exc_info=True)
             resource_actions = {}
@@ -652,7 +653,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
                     account_id, arn, request
                 )
             except Exception as e:
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 await write_json_error(e, obj=self)
                 await self.finish()
                 return
@@ -932,7 +933,7 @@ class PolicyReviewHandler(BaseHandler):
                     arn, resource_actions, account_id
                 )
             except Exception as e:
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 log_data["error"] = e
                 log.error(log_data, exc_info=True)
                 resource_actions = {}

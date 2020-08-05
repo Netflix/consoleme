@@ -2,6 +2,7 @@ import sys
 import time
 import uuid
 
+import sentry_sdk
 import ujson as json
 from pydantic import ValidationError
 
@@ -122,9 +123,7 @@ class RequestHandler(BaseAPIV2Handler):
             self.write_error(403, message="This page is not yet available to all users")
             return
 
-        tags = {
-            "user": self.user,
-        }
+        tags = {"user": self.user}
         stats.count("RequestHandler.post", tags=tags)
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -233,7 +232,7 @@ class RequestHandler(BaseAPIV2Handler):
             log_data["message"] = "Unknown Exception occurred while parsing request"
             log.error(log_data, exc_info=True)
             stats.count(f"{log_data['function']}.exception", tags={"user": self.user})
-            config.sentry.captureException(tags={"user": self.user})
+            sentry_sdk.capture_exception(tags={"user": self.user})
             self.write_error(500, message="Error parsing request: " + str(e))
             return
 

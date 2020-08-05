@@ -4,6 +4,7 @@ import uuid
 from hashlib import sha256
 from typing import Dict
 
+import sentry_sdk
 import ujson as json
 from asgiref.sync import sync_to_async
 from cloudaux.aws.sts import boto3_cached_conn
@@ -471,7 +472,7 @@ async def apply_changes_to_role(
         log.error(log_data)
         response.errors += 1
         response.action_results.append(
-            ActionResult(status="error", message=log_data["message"],)
+            ActionResult(status="error", message=log_data["message"])
         )
         return
 
@@ -516,7 +517,7 @@ async def apply_changes_to_role(
                     log_data["message"] = "Exception occurred applying inline policy"
                     log_data["error"] = str(e)
                     log.error(log_data, exc_info=True)
-                    config.sentry.captureException()
+                    sentry_sdk.capture_exception()
                     response.errors += 1
                     response.action_results.append(
                         ActionResult(
@@ -541,7 +542,7 @@ async def apply_changes_to_role(
                     log_data["message"] = "Exception occurred deleting inline policy"
                     log_data["error"] = str(e)
                     log.error(log_data, exc_info=True)
-                    config.sentry.captureException()
+                    sentry_sdk.capture_exception()
                     response.errors += 1
                     response.action_results.append(
                         ActionResult(
@@ -567,7 +568,7 @@ async def apply_changes_to_role(
                     log_data["message"] = "Exception occurred attaching managed policy"
                     log_data["error"] = str(e)
                     log.error(log_data, exc_info=True)
-                    config.sentry.captureException()
+                    sentry_sdk.capture_exception()
                     response.errors += 1
                     response.action_results.append(
                         ActionResult(
@@ -592,7 +593,7 @@ async def apply_changes_to_role(
                     log_data["message"] = "Exception occurred detaching managed policy"
                     log_data["error"] = str(e)
                     log.error(log_data, exc_info=True)
-                    config.sentry.captureException()
+                    sentry_sdk.capture_exception()
                     response.errors += 1
                     response.action_results.append(
                         ActionResult(
@@ -620,7 +621,7 @@ async def apply_changes_to_role(
                 ] = "Exception occurred updating assume role policy policy"
                 log_data["error"] = str(e)
                 log.error(log_data, exc_info=True)
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 response.errors += 1
                 response.action_results.append(
                     ActionResult(

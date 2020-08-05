@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import pytz
+import sentry_sdk
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
@@ -602,7 +603,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
             }
         )
         results["errors"] += 1
-        config.sentry.captureException()
+        sentry_sdk.capture_exception()
         # Since we were unable to create the role, no point continuing, just return
         return results
 
@@ -643,7 +644,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
             ] = "Exception occurred creating/attaching instance profile"
             log_data["error"] = str(e)
             log.error(log_data, exc_info=True)
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             results["action_results"].append(
                 {
                     "status": "error",
@@ -763,7 +764,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
             }
         )
         results["errors"] += 1
-        config.sentry.captureException()
+        sentry_sdk.capture_exception()
         # Since we were unable to create the role, no point continuing, just return
         return results
 
@@ -831,7 +832,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
             ] = "Exception occurred creating/attaching instance profile"
             log_data["error"] = str(e)
             log.error(log_data, exc_info=True)
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             results["action_results"].append(
                 {
                     "status": "error",
@@ -866,7 +867,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
                 log_data["message"] = "Exception occurred copying inline policy"
                 log_data["error"] = str(e)
                 log.error(log_data, exc_info=True)
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 results["action_results"].append(
                     {
                         "status": "error",
@@ -897,7 +898,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
                 log_data["message"] = "Exception occurred copying managed policy"
                 log_data["error"] = str(e)
                 log.error(log_data, exc_info=True)
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 results["action_results"].append(
                     {
                         "status": "error",
