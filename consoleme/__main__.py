@@ -26,8 +26,6 @@ def main():
         app = make_app(jwt_validator=lambda x: {})
     else:
         app = make_app()
-    if config.sentry:
-        app.sentry_client = config.sentry
     return app
 
 

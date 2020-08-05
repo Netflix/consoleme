@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Tuple, Union
 
 import celery
-import raven
+import sentry_sdk
 import ujson
 from asgiref.sync import async_to_sync
 from billiard.exceptions import SoftTimeLimitExceeded
@@ -41,8 +41,8 @@ from cloudaux.aws.iam import (
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
-from raven.contrib.celery import register_logger_signal, register_signal
 from retrying import retry
+from sentry_sdk.integrations.celery import CeleryIntegration
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import (
@@ -76,11 +76,7 @@ class Celery(celery.Celery):
     def on_configure(self) -> None:
         sentry_dsn = config.get("sentry.dsn")
         if sentry_dsn:
-            client = raven.Client(sentry_dsn)
-            # register a custom filter to filter out duplicate logs
-            register_logger_signal(client)
-            # hook into the Celery error handler
-            register_signal(client)
+            sentry_sdk.init(sentry_dsn, integrations=[CeleryIntegration()])
 
 
 app = Celery(
@@ -1336,7 +1332,7 @@ def get_iam_role_limit() -> dict:
                 }
                 stats.count(f"{function}.error", tags={"account_id": account_id})
                 log.error(log_data, exc_info=True)
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 raise
 
     log_data = {

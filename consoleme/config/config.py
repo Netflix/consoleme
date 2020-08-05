@@ -14,7 +14,6 @@ import logmatic
 import yaml
 from asgiref.sync import async_to_sync
 from pytz import timezone
-from raven.contrib.tornado import AsyncSentryClient
 
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -217,5 +216,3 @@ region = os.environ.get("EC2_REGION", "us-east-1")
 hostname = socket.gethostname()
 api_spec = {}
 dir_ref = dir
-
-sentry: AsyncSentryClient = AsyncSentryClient(get("sentry.dsn"))

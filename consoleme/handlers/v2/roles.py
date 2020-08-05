@@ -1,5 +1,6 @@
 import sys
 
+import sentry_sdk
 import ujson as json
 from pydantic import ValidationError
 
@@ -69,7 +70,7 @@ class RolesHandler(BaseAPIV2Handler):
             stats.count(
                 f"{log_data['function']}.validation_exception", tags={"user": self.user}
             )
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             self.write_error(400, message="Error validating input: " + str(e))
             return
 
@@ -89,7 +90,7 @@ class RolesHandler(BaseAPIV2Handler):
                     "role_name": create_model.role_name,
                 },
             )
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             self.write_error(500, message="Exception occurred cloning role: " + str(e))
             return
 
@@ -363,7 +364,7 @@ class RoleCloneHandler(BaseAPIV2Handler):
             stats.count(
                 f"{log_data['function']}.validation_exception", tags={"user": self.user}
             )
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             self.write_error(400, message="Error validating input: " + str(e))
             return
 
@@ -383,7 +384,7 @@ class RoleCloneHandler(BaseAPIV2Handler):
                     "role_name": clone_model.role_name,
                 },
             )
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             self.write_error(500, message="Exception occurred cloning role: " + str(e))
             return
 

@@ -3,9 +3,10 @@ import os
 
 import pkg_resources
 import requests
+import sentry_sdk
 import tornado.autoreload
 import tornado.web
-from raven.contrib.tornado import AsyncSentryClient
+from sentry_sdk.integrations.tornado import TornadoIntegration
 
 import consoleme
 from consoleme.config import config
@@ -171,6 +172,6 @@ def make_app(jwt_validator=None):
     sentry_dsn = config.get("sentry.dsn")
 
     if sentry_dsn:
-        app.sentry_client = AsyncSentryClient(config.get("sentry.dsn"))
+        sentry_sdk.init(dsn=sentry_dsn, integrations=[TornadoIntegration()])
 
     return app
