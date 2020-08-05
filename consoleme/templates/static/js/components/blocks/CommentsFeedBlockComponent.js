@@ -76,16 +76,18 @@ class CommentsFeedBlockComponent extends Component {
       )
       : null;
 
+    const addCommentButton = (
+      <Button
+        content="Add comment"
+        primary
+        disabled={commentText === ''}
+        onClick={this.handleSubmitComment}
+      />
+    );
+
     const commentInput = (
       <Input
-        action={(
-          <Button
-            content="Add comment"
-            primary
-            disabled={commentText === ''}
-            onClick={this.handleSubmitComment}
-          />
-                      )}
+        action={addCommentButton}
         placeholder="Add a new comment..."
         fluid
         icon="comment"
