@@ -42,7 +42,10 @@ from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
 from retrying import retry
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
+from sentry_sdk.integrations.tornado import TornadoIntegration
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import (
@@ -76,7 +79,15 @@ class Celery(celery.Celery):
     def on_configure(self) -> None:
         sentry_dsn = config.get("sentry.dsn")
         if sentry_dsn:
-            sentry_sdk.init(sentry_dsn, integrations=[CeleryIntegration()])
+            sentry_sdk.init(
+                sentry_dsn,
+                integrations=[
+                    TornadoIntegration(),
+                    CeleryIntegration(),
+                    AioHttpIntegration(),
+                    RedisIntegration(),
+                ],
+            )
 
 
 app = Celery(
