@@ -15,11 +15,8 @@ auth:
 
 get_user_by_oidc_settings:
   resource: consoleme-oidc
-  authorize_url: http://localhost:9000/auth
-  issuer: http://simple-oidc-provider
-  token_endpoint: http://consoleme_oidc:9000/token
-  token_introspection_endpoint: http://localhost:9000/token/introspection
-  userinfo_endpoint: http://localhost:9000/me
+  authorize_url: https://dev-876967.okta.com/oauth2/default/v1/authorize
+  token_endpoint: https://dev-876967.okta.com/oauth2/default/v1/token
   jwt_verify: false
   jwt_email_key: email
   jwt_groups_key: groups

@@ -224,6 +224,8 @@ class BaseHandler(tornado.web.RequestHandler):
         self, user: str = None, console_only: bool = True, refresh_cache: bool = False
     ) -> None:
         """Perform high level authorization flow."""
+        self.eligible_roles = []
+        self.eligible_accounts = []
         self.request_uuid = str(uuid.uuid4())
         refresh_cache = (
             self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
@@ -281,7 +283,8 @@ class BaseHandler(tornado.web.RequestHandler):
             if config.get("auth.get_user_by_oidc"):
                 res = await authenticate_user_by_oauth2(self)
                 if not res:
-                    return
+                    # Or should we finish?
+                    raise Exception("Unable to authenticate the user by oAuth2")
                 if res and isinstance(res, dict):
                     self.user = res.get("user")
                     self.groups = res.get("groups")
@@ -290,7 +293,7 @@ class BaseHandler(tornado.web.RequestHandler):
             if config.get("auth.get_user_by_aws_alb_auth"):
                 res = await authenticate_user_by_alb_auth(self)
                 if not res:
-                    return
+                    raise Exception("Unable to authenticate the user by ALB Auth")
                 if res and isinstance(res, dict):
                     self.user = res.get("user")
                     self.groups = res.get("groups")

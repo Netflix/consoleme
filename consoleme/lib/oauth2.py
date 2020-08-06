@@ -29,6 +29,7 @@ async def authenticate_user_by_oauth2(request):
             args["client_id"] = client_id
         if client_scope:
             args["scope"] = " ".join(client_scope)
+        args["state"] = request.ip
         request.redirect(
             httputil.url_concat(
                 config.get("get_user_by_oidc_settings.authorize_url"), args
