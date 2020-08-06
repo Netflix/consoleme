@@ -58,7 +58,6 @@ from consoleme.lib.cache import (
     store_json_results_in_redis_and_s3,
 )
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
-from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import cache_all_policy_requests, get_request_review_url
@@ -755,7 +754,7 @@ def cache_roles_for_account(account_id: str) -> bool:
         )
 
         async_to_sync(store_json_results_in_redis_and_s3)(
-            json.dumps(iam_roles, cls=SetEncoder),
+            iam_roles,
             redis_key=config.get("cache_roles_for_account.redis_key", "").format(
                 account_id=account_id
             ),
