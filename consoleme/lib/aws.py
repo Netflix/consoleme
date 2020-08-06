@@ -220,7 +220,7 @@ async def get_resource_policies(
             )
             arns = resource_info.get("arns", [])
             actions = resource_info.get("actions", [])
-            new_policy = await update_resource_policy(
+            new_policy = await generate_updated_resource_policy(
                 old_policy, principal_arn, arns, actions
             )
 
@@ -236,9 +236,17 @@ async def get_resource_policies(
     return resource_policies, cross_account_request
 
 
-async def update_resource_policy(
+async def generate_updated_resource_policy(
     existing: Dict, principal_arn: str, resource_arns: List[str], actions: List[str]
 ) -> Dict:
+    """
+
+    :param existing: Dict: the current existing policy document
+    :param principal_arn: the Principal ARN which wants access to the resource
+    :param resource_arns: the Resource ARNs
+    :param actions: The list of Actions to be added
+    :return: Dict: generated updated resource policy that includes a new statement for the listed actions
+    """
     policy_dict = deepcopy(existing)
     new_statement = {
         "Effect": "Allow",

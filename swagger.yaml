@@ -444,6 +444,13 @@ components:
           readOnly: true
         status:
           type: string
+        cross_account:
+          description: if true, the request touches cross-account resources
+          type: boolean
+        arn_url:
+          type: string
+          description: the principal arn's URL
+          readOnly: true
     ExtendedRequestModel:
       allOf:
         - $ref: '#/components/schemas/RequestModel'
@@ -701,6 +708,8 @@ components:
           enum:
             - applied
             - not_applied
+        id:
+          type: string
     InlinePolicyChangeModel:
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
@@ -750,6 +759,14 @@ components:
               type: boolean
               readOnly: true
               default: false
+            source_change_id:
+              type: string
+              readOnly: true
+              description: the change model ID of the source change, that this change was generated from
+            supported:
+              type: boolean
+              readOnly: true
+              description: whether we currently support this type of resource policy change or not
             policy:
               $ref: '#/components/schemas/PolicyModel'
             old_policy:
@@ -1062,6 +1079,9 @@ components:
         details_url:
           type: string
           example: https://details_about/user
+        photo_url:
+          type: string
+          example: https://user_photos/user_thumbnail.jpg
     ApiErrorModel:
       type: object
       properties:

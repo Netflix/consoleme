@@ -231,6 +231,19 @@ async def can_update_requests(request, user, groups):
     return can_update
 
 
+async def can_update_cancel_requests_v2(requester_username, user, groups):
+    # Users can update their own requests
+    can_update = True if user == requester_username else False
+
+    # Allow admins to update / cancel requests
+    if not can_update:
+        for g in config.get("groups.can_admin_policies", []):
+            if g in groups:
+                return True
+
+    return can_update
+
+
 async def update_resource_policy(
     arn: str,
     resource_type: str,
