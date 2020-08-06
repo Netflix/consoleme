@@ -47,7 +47,7 @@ class SelfServiceStep3 extends Component {
         principal_arn: role.arn,
         generator_type: permission.service,
         action_groups: permission.actions,
-        conditions: permission.conditions,
+        condition: permission.condition,
         effect: 'Allow',
         ...permission,
       };
@@ -137,7 +137,7 @@ class SelfServiceStep3 extends Component {
           <Table.Cell collapsing textAlign='left'>
             {
                             Object.keys(permission).map((key) => {
-                              if (key === 'actions' || key === 'service') {
+                              if (key === 'actions' || key === 'service' || key === 'condition') {
                                 return;
                               }
                               return (

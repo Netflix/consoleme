@@ -60,19 +60,19 @@ class SelfServiceStep2 extends Component {
               <Item.Meta>
                 <List relaxed>
                   {
-                                    Object.keys(permission).map((key) => {
-                                      if (key === 'actions' || key === 'service') {
-                                        return;
-                                      }
-                                      const inputConfig = _.find(inputs, { name: key });
-                                      return (
-                                        <List.Item>
-                                          <List.Header>{inputConfig.text}</List.Header>
-                                          {permission[key]}
-                                        </List.Item>
-                                      );
-                                    })
-                                }
+                      Object.keys(permission).map((key) => {
+                        if (key === 'actions' || key === 'service' || key === 'condition') {
+                          return;
+                        }
+                        const inputConfig = _.find(inputs, { name: key });
+                        return (
+                          <List.Item>
+                            <List.Header>{inputConfig.text}</List.Header>
+                            {permission[key]}
+                          </List.Item>
+                        );
+                      })
+                  }
                 </List>
               </Item.Meta>
               <Item.Extra>

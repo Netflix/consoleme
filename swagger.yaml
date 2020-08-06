@@ -618,9 +618,15 @@ components:
         - $ref: '#/components/schemas/ChangeGeneratorModel'
         - type: object
           required:
+            - resource_arn
             - action_groups
             - bucket_prefix
           properties:
+            resource_arn:
+              description: |-
+                The ARN of the S3 resource being accessed.
+              example: arn:aws:s3:::example_bucket
+              type: string
             bucket_prefix:
               type: string
               example: /awesome/prefix/*
@@ -674,6 +680,9 @@ components:
           required:
             - from_address
           properties:
+            from_address:
+              type: string
+              default: from_address@example.com
             action_groups:
               type: array
               items:

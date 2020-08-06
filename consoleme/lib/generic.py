@@ -220,3 +220,29 @@ async def filter_table(filter_key, filter_value, data):
             if filter_value[0] < int(d.get(filter_key)) < filter_value[1]:
                 results.append(d)
         return results
+
+
+async def iterate_and_format_dict(d: Dict, replacements: Dict):
+    """
+    Iterates through the values of a dictionary (with or without nested dictionaries), and formats values accordingly
+    if they exist in the `replacements` dictionary.
+
+    Example args:
+        d = {"something": {"nested": "1{thing}1"},
+        replacements = {"thing": "toreplace", "thing2": "dontreplace"}
+    Returns: {"something": {"nested": "1toreplace1"}
+
+
+    :param d:
+    :param replacements:
+    :return:
+    """
+    for k, v in d.items():
+        if isinstance(v, dict):
+            await iterate_and_format_dict(v, replacements)
+        else:
+            try:
+                d[k] = v.format(**replacements)
+            except KeyError:
+                pass
+    return d
