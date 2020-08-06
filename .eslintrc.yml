@@ -36,3 +36,4 @@ rules:
   prefer-template: 0
   jsx-quotes: 0
   array-callback-return: 0
+  max-len: [2, 128, 4]
