@@ -5,6 +5,8 @@ env:
 extends:
   - 'plugin:react/recommended'
   - airbnb
+  - prettier
+  - prettier/react
 globals:
   Atomics: readonly
   SharedArrayBuffer: readonly
@@ -18,7 +20,9 @@ plugins:
   - react
   - jsx-a11y
   - import
+  - prettier
 rules:
+  prettier/prettier: error
   import/no-extraneous-dependencies:
     - error
     - devDependencies: true

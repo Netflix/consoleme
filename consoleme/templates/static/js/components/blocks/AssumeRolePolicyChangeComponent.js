@@ -1,28 +1,30 @@
-import React, { Component } from 'react';
-import {
-  Button, Grid, Header, Message, Segment,
-} from 'semantic-ui-react';
-import MonacoDiffComponent from './MonacoDiffComponent';
+import React, { Component } from "react";
+import { Button, Grid, Header, Message, Segment } from "semantic-ui-react";
+import MonacoDiffComponent from "./MonacoDiffComponent";
 
 class AssumeRolePolicyChangeComponent extends Component {
   constructor(props) {
     super(props);
     const { change, config } = this.props;
-    const oldPolicyDoc = (change.old_policy && change.old_policy.policy_document)
-      ? (
-        change.old_policy.policy_document
-      )
-      : {};
+    const oldPolicyDoc =
+      change.old_policy && change.old_policy.policy_document
+        ? change.old_policy.policy_document
+        : {};
     const allOldKeys = [];
-    JSON.stringify(oldPolicyDoc, (key, value) => { allOldKeys.push(key); return value; });
+    JSON.stringify(oldPolicyDoc, (key, value) => {
+      allOldKeys.push(key);
+      return value;
+    });
 
-    const newPolicyDoc = (change.policy.policy_document && change.policy.policy_document)
-      ? (
-        change.policy.policy_document
-      )
-      : {};
+    const newPolicyDoc =
+      change.policy.policy_document && change.policy.policy_document
+        ? change.policy.policy_document
+        : {};
     const allnewKeys = [];
-    JSON.stringify(newPolicyDoc, (key, value) => { allnewKeys.push(key); return value; });
+    JSON.stringify(newPolicyDoc, (key, value) => {
+      allnewKeys.push(key);
+      return value;
+    });
 
     this.state = {
       newStatement: JSON.stringify(newPolicyDoc, allnewKeys.sort(), 4),
@@ -60,109 +62,93 @@ class AssumeRolePolicyChangeComponent extends Component {
 
   render() {
     const {
-      oldStatement, newStatement, change, config, isError, messages,
+      oldStatement,
+      newStatement,
+      change,
+      config,
+      isError,
+      messages,
     } = this.state;
 
     const headerContent = (
-      <Header size="large">
-        Assume Role Policy Change
-      </Header>
+      <Header size="large">Assume Role Policy Change</Header>
     );
 
-    const applyChangesButton = config.can_approve_reject && change.status === 'not_applied'
-      ? (
+    const applyChangesButton =
+      config.can_approve_reject && change.status === "not_applied" ? (
         <Grid.Column>
-          <Button
-            content="Apply Change"
-            positive
-            fluid
-            disabled={isError}
-          />
+          <Button content="Apply Change" positive fluid disabled={isError} />
         </Grid.Column>
-      )
-      : null;
+      ) : null;
 
-    const updateChangesButton = config.can_update_cancel && change.status === 'not_applied'
-      ? (
+    const updateChangesButton =
+      config.can_update_cancel && change.status === "not_applied" ? (
         <Grid.Column>
-          <Button
-            content="Update Change"
-            positive
-            fluid
-            disabled={isError}
-          />
+          <Button content="Update Change" positive fluid disabled={isError} />
         </Grid.Column>
-      )
-      : null;
+      ) : null;
 
-    const changesAlreadyAppliedContent = (change.status === 'applied')
-      ? (
+    const changesAlreadyAppliedContent =
+      change.status === "applied" ? (
         <Grid.Column>
           <Message info>
             <Message.Header>Change already applied</Message.Header>
             <p>This change has already been applied and cannot be modified.</p>
           </Message>
         </Grid.Column>
-      )
-      : null;
+      ) : null;
 
-    const messagesToShow = (messages.length > 0)
-      ? (
+    const messagesToShow =
+      messages.length > 0 ? (
         <Message negative>
-          <Message.Header>
-            There was a problem with your request
-          </Message.Header>
+          <Message.Header>There was a problem with your request</Message.Header>
           <Message.List>
-            {
-              messages.map((message) => <Message.Item>{message}</Message.Item>)
-            }
+            {messages.map((message) => (
+              <Message.Item>{message}</Message.Item>
+            ))}
           </Message.List>
         </Message>
       ) : null;
 
-    const policyChangeContent = (change)
-      ? (
-        <Grid fluid>
-          <Grid.Row columns="equal">
-            <Grid.Column>
-              <Header
-                size="medium"
-                content="Current Policy"
-                subheader="This is a read-only view of the current policy in AWS."
-              />
-            </Grid.Column>
-            <Grid.Column>
-              <Header
-                size="medium"
-                content="Proposed Policy"
-                subheader="This is an editable view of the proposed policy. An approver can modify the proposed policy before approving and applying it."
-              />
-            </Grid.Column>
-          </Grid.Row>
-          <Grid.Row>
-            <Grid.Column>
-              <MonacoDiffComponent
-                oldValue={oldStatement}
-                newValue={newStatement}
-                readOnly={!config.can_update_cancel && !config.can_approve_reject}
-                onLintError={this.onLintError}
-                onValueChange={this.onValueChange}
-              />
-            </Grid.Column>
-          </Grid.Row>
-          <Grid.Row columns="equal">
-            <Grid.Column>
-              {messagesToShow}
-            </Grid.Column>
-          </Grid.Row>
-          <Grid.Row columns="equal">
-            {updateChangesButton}
-            {applyChangesButton}
-            {changesAlreadyAppliedContent}
-          </Grid.Row>
-        </Grid>
-      )
-      : null;
+    const policyChangeContent = change ? (
+      <Grid fluid>
+        <Grid.Row columns="equal">
+          <Grid.Column>
+            <Header
+              size="medium"
+              content="Current Policy"
+              subheader="This is a read-only view of the current policy in AWS."
+            />
+          </Grid.Column>
+          <Grid.Column>
+            <Header
+              size="medium"
+              content="Proposed Policy"
+              subheader="This is an editable view of the proposed policy. An approver can modify the proposed policy before approving and applying it."
+            />
+          </Grid.Column>
+        </Grid.Row>
+        <Grid.Row>
+          <Grid.Column>
+            <MonacoDiffComponent
+              oldValue={oldStatement}
+              newValue={newStatement}
+              readOnly={!config.can_update_cancel && !config.can_approve_reject}
+              onLintError={this.onLintError}
+              onValueChange={this.onValueChange}
+            />
+          </Grid.Column>
+        </Grid.Row>
+        <Grid.Row columns="equal">
+          <Grid.Column>{messagesToShow}</Grid.Column>
+        </Grid.Row>
+        <Grid.Row columns="equal">
+          {updateChangesButton}
+          {applyChangesButton}
+          {changesAlreadyAppliedContent}
+        </Grid.Row>
+      </Grid>
+    ) : null;
 
     return (
       <Segment>
