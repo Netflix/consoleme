@@ -474,6 +474,7 @@ components:
               - $ref: '#/components/schemas/S3ChangeGeneratorModel'
               - $ref: '#/components/schemas/SQSChangeGeneratorModel'
               - $ref: '#/components/schemas/SNSChangeGeneratorModel'
+              - $ref: '#/components/schemas/SESChangeGeneratorModel'
               - $ref: '#/components/schemas/CrudChangeGeneratorModel'
               - $ref: '#/components/schemas/GenericChangeGeneratorModel'
             discriminator:
@@ -503,6 +504,7 @@ components:
             - rds
             - route53
             - s3
+            - ses
             - sns
             - sqs
             - sts
@@ -516,6 +518,7 @@ components:
               rds: '#/components/schemas/GenericChangeGeneratorModel'
               route53: '#/components/schemas/GenericChangeGeneratorModel'
               s3: '#/components/schemas/S3ChangeGeneratorModel'
+              ses: '#/components/schemas/SESChangeGeneratorModel'
               sns: '#/components/schemas/SNSChangeGeneratorModel'
               sqs: '#/components/schemas/SQSChangeGeneratorModel'
         resource_arn:
@@ -664,6 +667,19 @@ components:
                   - publish
                   - subscribe
                   - unsubscribe
+    SESChangeGeneratorModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - from_address
+          properties:
+            action_groups:
+              type: array
+              items:
+                type: string
+                enum:
+                  - send_email
     ChangeModel:
       type: object
       required:
