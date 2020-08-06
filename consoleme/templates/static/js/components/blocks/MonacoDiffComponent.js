@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import { getMonacoCompletions, getMonacoTriggerCharacters } from '../../helpers/utils';
 
 monaco.languages.registerCompletionItemProvider('json', {
-  triggerCharacters: getMonacoTriggerCharacters,
+  triggerCharacters: [],
   async provideCompletionItems(model, position) {
     const response = await getMonacoCompletions(model, position);
     return response;
@@ -22,18 +22,24 @@ class MonacoDiffComponent extends React.Component {
     this.state = {
       debounceWait: 300,
       modifiedEditor: null,
+      triggerCharacters: getMonacoTriggerCharacters(),
     };
   }
 
-  onChange(newValue) {
-    const { modifiedEditor, debounceWait } = this.state;
-    clearTimeout(this.timer);
-    this.timer = setTimeout(
-      () => {
-        modifiedEditor.trigger('manual_trigger', 'editor.action.triggerSuggest');
-      },
-      debounceWait,
-    );
+  onChange(newValue, e) {
+    const { modifiedEditor, debounceWait, triggerCharacters } = this.state;
+    if (e.changes.length > 0) {
+      const characterTyped = e.changes[0].text;
+      if (triggerCharacters.includes(characterTyped)) {
+        clearTimeout(this.timer);
+        this.timer = setTimeout(
+          () => {
+            modifiedEditor.trigger('manual_trigger', 'editor.action.triggerSuggest');
+          },
+          debounceWait,
+        );
+      }
+    }
     this.onValueChange(newValue);
   }
 

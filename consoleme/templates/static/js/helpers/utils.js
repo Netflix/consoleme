@@ -116,15 +116,10 @@ export function getCompletions(editor, session, pos, prefix, callback) {
 export async function getMonacoCompletions(model, position) {
   let resource = false;
   let action = false;
-  const textUntilPosition = model.getValueInRange({
-    startLineNumber: 1,
-    startColumn: 1,
-    endLineNumber: position.lineNumber,
-    endColumn: position.column + 1,
-  });
-  const lines = textUntilPosition.split('\n');
 
-  for (let i = lines.length - 1; i >= 0; i--) {
+  const lines = model.getLinesContent();
+
+  for (let i = position.lineNumber - 1; i >= 0; i--) {
     if (lines[i].indexOf('"Resource"') > -1) {
       resource = true;
       break;
@@ -134,9 +129,15 @@ export async function getMonacoCompletions(model, position) {
       action = true;
       break;
     }
+
+    if (lines[i].indexOf('"Sid"') > -1) {
+      return { suggestions: [] };
+    }
   }
-  const lastLine = lines[lines.length - 1];
+  const lastLine = model.getLineContent(position.lineNumber);
   const prefix = lastLine.trim().replace(/"/g, '');
+  // prefixRange is the range of the prefix that will be replaced if someone selects the suggestion
+  const prefixRange = model.findPreviousMatch(prefix, position);
   const limit = 500;
   const defaultWordList = [];
   if (action === true) {
@@ -148,6 +149,7 @@ export async function getMonacoCompletions(model, position) {
         label: ea.permission,
         insertText: ea.permission,
         kind: monaco.languages.CompletionItemKind.Property,
+        range: prefixRange.range,
       }));
       return { suggestions: suggestedWordList };
     }
@@ -162,6 +164,7 @@ export async function getMonacoCompletions(model, position) {
         label: ea,
         insertText: ea,
         kind: monaco.languages.CompletionItemKind.Function,
+        range: prefixRange.range,
       }));
       return { suggestions: suggestedWordList };
     }
@@ -172,5 +175,5 @@ export async function getMonacoCompletions(model, position) {
 
 export function getMonacoTriggerCharacters() {
   const lowerCase = 'abcdefghijklmnopqrstuvwxyz';
-  return lowerCase + lowerCase.toUpperCase() + '0123456789' + '_-:';
+  return (lowerCase + lowerCase.toUpperCase() + '0123456789' + '_-:').split('');
 }
