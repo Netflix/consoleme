@@ -1,30 +1,31 @@
-import React, { Component } from 'react';
-import {
-  Form,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Form } from "semantic-ui-react";
 
 class TextInputBlockComponent extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      value: '',
+      value: "",
     };
   }
 
   componentDidMount() {
     const { defaultValue } = this.props;
     this.setState({
-      value: defaultValue || '',
+      value: defaultValue || "",
     });
   }
 
   handleTextInputChange(e) {
     const { value } = e.target;
-    this.setState({
-      value,
-    }, () => {
-      this.props.handleInputUpdate(value);
-    });
+    this.setState(
+      {
+        value,
+      },
+      () => {
+        this.props.handleInputUpdate(value);
+      }
+    );
   }
 
   render() {
@@ -33,7 +34,7 @@ class TextInputBlockComponent extends Component {
 
     return (
       <Form.Field required={required}>
-        <label>{label || 'Enter Value'}</label>
+        <label>{label || "Enter Value"}</label>
         <input
           onChange={this.handleTextInputChange.bind(this)}
           placeholder="Enter your value here"

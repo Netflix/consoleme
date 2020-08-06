@@ -1,9 +1,12 @@
-import React from 'react';
-import { MonacoDiffEditor } from 'react-monaco-editor';
-import PropTypes from 'prop-types';
-import { getMonacoCompletions, getMonacoTriggerCharacters } from '../../helpers/utils';
+import React from "react";
+import { MonacoDiffEditor } from "react-monaco-editor";
+import PropTypes from "prop-types";
+import {
+  getMonacoCompletions,
+  getMonacoTriggerCharacters,
+} from "../../helpers/utils";
 
-monaco.languages.registerCompletionItemProvider('json', {
+monaco.languages.registerCompletionItemProvider("json", {
   triggerCharacters: [],
   async provideCompletionItems(model, position) {
     const response = await getMonacoCompletions(model, position);
@@ -32,12 +35,12 @@ class MonacoDiffComponent extends React.Component {
       const characterTyped = e.changes[0].text;
       if (triggerCharacters.includes(characterTyped)) {
         clearTimeout(this.timer);
-        this.timer = setTimeout(
-          () => {
-            modifiedEditor.trigger('manual_trigger', 'editor.action.triggerSuggest');
-          },
-          debounceWait,
-        );
+        this.timer = setTimeout(() => {
+          modifiedEditor.trigger(
+            "manual_trigger",
+            "editor.action.triggerSuggest"
+          );
+        }, debounceWait);
       }
     }
     this.onValueChange(newValue);
@@ -47,14 +50,19 @@ class MonacoDiffComponent extends React.Component {
     editor.modifiedEditor.onDidChangeModelDecorations(() => {
       const { modifiedEditor } = this.state;
       const model = modifiedEditor.getModel();
-      if (model === null || model.getModeId() !== 'json') {
+      if (model === null || model.getModeId() !== "json") {
         return;
       }
 
       const owner = model.getModeId();
       const uri = model.uri;
       const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
-      this.onLintError(markers.map((marker) => `Lint error on line ${marker.startLineNumber} columns ${marker.startColumn}-${marker.endColumn}: ${marker.message}`));
+      this.onLintError(
+        markers.map(
+          (marker) =>
+            `Lint error on line ${marker.startLineNumber} columns ${marker.startColumn}-${marker.endColumn}: ${marker.message}`
+        )
+      );
     });
     this.setState({
       modifiedEditor: editor.modifiedEditor,

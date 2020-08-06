@@ -1,7 +1,13 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 import {
-  Button, Comment, Divider, Header, Icon, Input, Segment,
-} from 'semantic-ui-react';
+  Button,
+  Comment,
+  Divider,
+  Header,
+  Icon,
+  Input,
+  Segment,
+} from "semantic-ui-react";
 
 class CommentsFeedBlockComponent extends Component {
   constructor(props) {
@@ -9,7 +15,7 @@ class CommentsFeedBlockComponent extends Component {
     this.state = {
       comments: this.props.comments,
       isLoading: false,
-      commentText: '',
+      commentText: "",
       messages: [],
     };
     this.handleCommentChange = this.handleCommentChange.bind(this);
@@ -24,46 +30,53 @@ class CommentsFeedBlockComponent extends Component {
 
   handleSubmitComment(e) {
     const { commentText } = this.state;
-    this.setState({
-      isLoading: true,
-    }, () => {
-      // TODO: make request to backend to add comment
-      this.setState({
-        isLoading: false,
-        commentText: '',
-      });
-    });
+    this.setState(
+      {
+        isLoading: true,
+      },
+      () => {
+        // TODO: make request to backend to add comment
+        this.setState({
+          isLoading: false,
+          commentText: "",
+        });
+      }
+    );
   }
 
   render() {
     const { comments, commentText, isLoading } = this.state;
 
-    const commentsContent = (comments && comments.length > 0)
-      ? (
+    const commentsContent =
+      comments && comments.length > 0 ? (
         <Comment.Group>
           {comments.map((comment) => (
             <Comment>
-              {comment.user && comment.user.photo_url
-                ? <Comment.Avatar src={comment.user.photo_url} />
-                : <Comment.Avatar src="/static/logos/sunglasses/1.png" />}
+              {comment.user && comment.user.photo_url ? (
+                <Comment.Avatar src={comment.user.photo_url} />
+              ) : (
+                <Comment.Avatar src="/static/logos/sunglasses/1.png" />
+              )}
               <Comment.Content>
-                {comment.user && comment.user.details_url
-                  ? (
-                    <Comment.Author as="a">
-                      <a href={comment.user.details_url} target="_blank" rel="noreferrer">{comment.user_email}</a>
-                    </Comment.Author>
-                  )
-                  : (
-                    <Comment.Author as="text">
+                {comment.user && comment.user.details_url ? (
+                  <Comment.Author as="a">
+                    <a
+                      href={comment.user.details_url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
                       {comment.user_email}
-                    </Comment.Author>
-                  )}
+                    </a>
+                  </Comment.Author>
+                ) : (
+                  <Comment.Author as="text">
+                    {comment.user_email}
+                  </Comment.Author>
+                )}
                 <Comment.Metadata>
                   <div>{new Date(comment.timestamp).toLocaleString()}</div>
                 </Comment.Metadata>
-                <Comment.Text>
-                  {comment.text}
-                </Comment.Text>
+                <Comment.Text>{comment.text}</Comment.Text>
                 <Comment.Actions>
                   <Comment.Action>
                     <Divider />
@@ -73,14 +86,13 @@ class CommentsFeedBlockComponent extends Component {
             </Comment>
           ))}
         </Comment.Group>
-      )
-      : null;
+      ) : null;
 
     const addCommentButton = (
       <Button
         content="Add comment"
         primary
-        disabled={commentText === ''}
+        disabled={commentText === ""}
         onClick={this.handleSubmitComment}
       />
     );
@@ -101,7 +113,7 @@ class CommentsFeedBlockComponent extends Component {
     return (
       <Segment>
         <Header size="medium">
-          Comments <Icon name='comments' />
+          Comments <Icon name="comments" />
         </Header>
         {commentsContent}
         {commentInput}
