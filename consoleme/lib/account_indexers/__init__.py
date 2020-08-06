@@ -59,11 +59,11 @@ async def get_account_id_to_name_mapping(status="active"):
     redis_key = config.get(
         "cache_cloud_accounts.redis.key.all_accounts_key", "ALL_AWS_ACCOUNTS"
     )
-    accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default=[])
+    accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default={})
     if not accounts:
         # Force a re-sync and then retry
         await cache_cloud_accounts()
-        accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default=[])
+        accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default={})
 
     account_id_to_name = {}
     for account in accounts.get("accounts", []):
