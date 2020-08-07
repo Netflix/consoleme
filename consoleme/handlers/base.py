@@ -385,7 +385,7 @@ class BaseHandler(tornado.web.RequestHandler):
             self.eligible_accounts = await group_mapping.get_eligible_accounts(
                 self.eligible_roles
             )
-            log_data["eligible_accounts"] = self.eligible_accounts
+            log_data["eligible_accounts"] = len(self.eligible_accounts)
             log_data["message"] = "Successfully authorized user."
             log.debug(log_data)
         except Exception:

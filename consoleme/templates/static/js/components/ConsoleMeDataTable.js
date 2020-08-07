@@ -1,17 +1,27 @@
-import _ from 'lodash';
-import qs from 'qs';
-import React, { Component } from 'react';
-import ReactDOM from 'react-dom';
+import _ from "lodash";
+import qs from "qs";
+import React, { Component } from "react";
+import ReactDOM from "react-dom";
 import {
-  Button, Dimmer, Dropdown, Header, Icon, Input, Label, Loader, Pagination, Segment, Table,
-} from 'semantic-ui-react';
-import ReactJson from 'react-json-view';
-import ReactMarkdown from 'react-markdown';
-import SemanticDatepicker from 'react-semantic-ui-datepickers';
-import 'react-semantic-ui-datepickers/dist/react-semantic-ui-datepickers.css';
-import { Redirect, BrowserRouter } from 'react-router-dom';
-import PropTypes from 'prop-types';
-import { sendRequestCommon } from '../helpers/utils';
+  Button,
+  Dimmer,
+  Dropdown,
+  Header,
+  Icon,
+  Input,
+  Label,
+  Loader,
+  Pagination,
+  Segment,
+  Table,
+} from "semantic-ui-react";
+import ReactJson from "react-json-view";
+import ReactMarkdown from "react-markdown";
+import SemanticDatepicker from "react-semantic-ui-datepickers";
+import "react-semantic-ui-datepickers/dist/react-semantic-ui-datepickers.css";
+import { Redirect, BrowserRouter } from "react-router-dom";
+import PropTypes from "prop-types";
+import { sendRequestCommon } from "../helpers/utils";
 
 const expandNestedJson = (data) => {
   Object.keys(data).forEach((key) => {
@@ -40,23 +50,25 @@ class ConsoleMeDataTable extends Component {
         totalRows: 1000,
         rowsPerPage: 50,
         columns: [],
-        direction: 'descending',
+        direction: "descending",
         serverSideFiltering: true,
-        dataEndpoint: '',
-        tableName: '',
-        tableDescription: '',
+        dataEndpoint: "",
+        tableName: "",
+        tableDescription: "",
       },
       filters: {},
       loading: false,
       activePage: 1,
       expandedRow: null,
-      direction: 'descending',
+      direction: "descending",
       debounceWait: 300,
       isLoading: false,
     };
 
     this.generateRows = this.generateRows.bind(this);
-    this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(this);
+    this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(
+      this
+    );
     this.handleCellClick = this.handleCellClick.bind(this);
     this.renderRedirect = this.renderRedirect.bind(this);
     this.filterColumn = this.filterColumn.bind(this);
@@ -66,34 +78,45 @@ class ConsoleMeDataTable extends Component {
   async componentDidMount() {
     const { configEndpoint } = this.state;
     this.timer = null;
-    this.setState({
-      isLoading: true,
-    }, async () => {
-      const request = await fetch(configEndpoint);
-      const tableConfig = await request.json();
+    this.setState(
+      {
+        isLoading: true,
+      },
+      async () => {
+        const request = await fetch(configEndpoint);
+        const tableConfig = await request.json();
 
-      let data = [];
-      if (tableConfig.dataEndpoint) {
-        data = await sendRequestCommon({
-          limit: tableConfig.totalRows,
-        }, tableConfig.dataEndpoint);
+        let data = [];
+        if (tableConfig.dataEndpoint) {
+          data = await sendRequestCommon(
+            {
+              limit: tableConfig.totalRows,
+            },
+            tableConfig.dataEndpoint
+          );
+        }
+
+        // TODO, Support filtering based on query parameters
+        this.setState(
+          {
+            data,
+            filteredData: data,
+            isLoading: false,
+            tableConfig,
+          },
+          async () => {
+            await this.generateFilterFromQueryString();
+          }
+        );
       }
-
-      // TODO, Support filtering based on query parameters
-      this.setState({
-        data,
-        filteredData: data,
-        isLoading: false,
-        tableConfig,
-      }, async () => {
-        await this.generateFilterFromQueryString();
-      });
-    });
+    );
   }
 
   calculateColumnSize() {
     const { tableConfig } = this.state;
-    return (tableConfig.columns || []).length + (tableConfig.expandableRows ? 1 : 0);
+    return (
+      (tableConfig.columns || []).length + (tableConfig.expandableRows ? 1 : 0)
+    );
   }
 
   handleSort(clickedColumn) {
@@ -103,21 +126,19 @@ class ConsoleMeDataTable extends Component {
       return this.setState({
         column: clickedColumn,
         filteredData: _.sortBy(filteredData, [clickedColumn]),
-        direction: 'ascending',
+        direction: "ascending",
       });
     }
 
     this.setState({
       filteredData: filteredData.reverse(),
-      direction: direction === 'ascending' ? 'descending' : 'ascending',
+      direction: direction === "ascending" ? "descending" : "ascending",
     });
     return true;
   }
 
   handleRowExpansion(idx) {
-    const {
-      expandedRow, filteredData, tableConfig, activePage,
-    } = this.state;
+    const { expandedRow, filteredData, tableConfig, activePage } = this.state;
 
     // close expansion if there is any expanded row.
     if (expandedRow && expandedRow.index === idx + 1) {
@@ -128,11 +149,11 @@ class ConsoleMeDataTable extends Component {
       // expand the row if a row is clicked.
       const filteredDataPaginated = filteredData.slice(
         (activePage - 1) * tableConfig.rowsPerPage,
-        activePage * tableConfig.rowsPerPage - 1,
+        activePage * tableConfig.rowsPerPage - 1
       );
 
       // get an offset if there is any expanded row and trying to expand row underneath
-      const offset = (expandedRow && expandedRow.index < idx) ? 1 : 0;
+      const offset = expandedRow && expandedRow.index < idx ? 1 : 0;
       const newExpandedRow = {
         index: idx + 1 - offset,
         data: expandNestedJson(filteredDataPaginated[idx - offset]),
@@ -185,7 +206,7 @@ class ConsoleMeDataTable extends Component {
       let columnCell = null;
 
       switch (item.type) {
-        case 'dropdown': {
+        case "dropdown": {
           columnCell = (
             <Dropdown
               name={item.key}
@@ -198,12 +219,12 @@ class ConsoleMeDataTable extends Component {
               onClick={(e) => {
                 e.stopPropagation();
               }}
-              value={filters[item.key] != null ? filters[item.key] : ''}
+              value={filters[item.key] != null ? filters[item.key] : ""}
             />
           );
           break;
         }
-        case 'input': {
+        case "input": {
           columnCell = (
             <Input
               name={item.key}
@@ -214,12 +235,12 @@ class ConsoleMeDataTable extends Component {
               onClick={(e) => {
                 e.stopPropagation();
               }}
-              value={filters[item.key] != null ? filters[item.key] : ''}
+              value={filters[item.key] != null ? filters[item.key] : ""}
             />
           );
           break;
         }
-        case 'daterange': {
+        case "daterange": {
           columnCell = (
             <SemanticDatepicker
               name={item.key}
@@ -232,7 +253,7 @@ class ConsoleMeDataTable extends Component {
           );
           break;
         }
-        case 'button': {
+        case "button": {
           columnCell = (
             <Header
               as="h4"
@@ -245,7 +266,7 @@ class ConsoleMeDataTable extends Component {
           );
           break;
         }
-        case 'icon': {
+        case "icon": {
           columnCell = (
             <Header
               as="h4"
@@ -262,7 +283,9 @@ class ConsoleMeDataTable extends Component {
           columnCell = (
             <Header
               as="h4"
-              onClick={(e) => { e.stopPropagation(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
             >
               {item.placeholder}
             </Header>
@@ -275,19 +298,17 @@ class ConsoleMeDataTable extends Component {
         <Table.HeaderCell
           style={item.style}
           onClick={() => this.handleSort(key)}
-          sorted={!(['button', 'icon'].includes(item.type)) ? direction : null}
-          textAlign={item.type === 'button' ? 'center' : null}
+          sorted={!["button", "icon"].includes(item.type) ? direction : null}
+          textAlign={item.type === "button" ? "center" : null}
         >
           {columnCell}
-        </Table.HeaderCell>,
+        </Table.HeaderCell>
       );
     });
     return (
       <Table.Header>
         <Table.Row>
-          {tableConfig.expandableRows && (
-            <Table.HeaderCell />
-          )}
+          {tableConfig.expandableRows && <Table.HeaderCell />}
           {columns}
         </Table.Row>
       </Table.Header>
@@ -296,11 +317,16 @@ class ConsoleMeDataTable extends Component {
 
   async generateFilterFromQueryString() {
     const { tableConfig, queryString } = this.state;
-    const parsedQueryString = qs.parse(queryString, { ignoreQueryPrefix: true });
+    const parsedQueryString = qs.parse(queryString, {
+      ignoreQueryPrefix: true,
+    });
     const filters = {};
     if (parsedQueryString) {
       tableConfig.columns.forEach((column) => {
-        if (parsedQueryString[column.key] != null && parsedQueryString[column.key]) {
+        if (
+          parsedQueryString[column.key] != null &&
+          parsedQueryString[column.key]
+        ) {
           filters[column.key] = parsedQueryString[column.key];
         }
       });
@@ -322,7 +348,10 @@ class ConsoleMeDataTable extends Component {
     if (data.value && data.value[0] && data.value[1]) {
       const startTime = parseInt(data.value[0].getTime() / 1000, 10);
       const endTime = parseInt(data.value[1].getTime() / 1000, 10);
-      await this.filterColumn(_, { name: data.name, value: [startTime, endTime] });
+      await this.filterColumn(_, {
+        name: data.name,
+        value: [startTime, endTime],
+      });
     }
   }
 
@@ -339,29 +368,20 @@ class ConsoleMeDataTable extends Component {
 
     if (tableConfig.serverSideFiltering) {
       clearTimeout(this.timer);
-      this.timer = setTimeout(
-        async () => {
-          await this.filterColumnServerSide({}, filters);
-        },
-        this.state.debounceWait,
-      );
+      this.timer = setTimeout(async () => {
+        await this.filterColumnServerSide({}, filters);
+      }, this.state.debounceWait);
     } else {
       clearTimeout(this.timer);
-      this.timer = setTimeout(
-        () => {
-          this.filterColumnClientSide(event, filters);
-        },
-        this.state.debounceWait,
-      );
+      this.timer = setTimeout(() => {
+        this.filterColumnClientSide(event, filters);
+      }, this.state.debounceWait);
     }
   }
 
   async filterColumnServerSide(event, filters) {
     const { tableConfig } = this.state;
-    const data = await sendRequestCommon(
-      { filters },
-      tableConfig.dataEndpoint,
-    );
+    const data = await sendRequestCommon({ filters }, tableConfig.dataEndpoint);
 
     this.setState({
       expandedRow: null,
@@ -381,7 +401,7 @@ class ConsoleMeDataTable extends Component {
           if (!filter) {
             return;
           }
-          const re = new RegExp(filter, 'g');
+          const re = new RegExp(filter, "g");
           if (!re.test(item[key])) {
             isMatched = false;
           }
@@ -405,7 +425,7 @@ class ConsoleMeDataTable extends Component {
     // This function should appropriately handle a Cell Click given a desired
     // action by the column configuration
     if (column.onClick) {
-      if (column.onClick.action === 'redirect') {
+      if (column.onClick.action === "redirect") {
         this.setState({
           redirect: entry[column.key] + queryString,
         });
@@ -414,12 +434,10 @@ class ConsoleMeDataTable extends Component {
   }
 
   generateRows() {
-    const {
-      expandedRow, filteredData, tableConfig, activePage,
-    } = this.state;
+    const { expandedRow, filteredData, tableConfig, activePage } = this.state;
     const filteredDataPaginated = filteredData.slice(
       (activePage - 1) * tableConfig.rowsPerPage,
-      activePage * tableConfig.rowsPerPage - 1,
+      activePage * tableConfig.rowsPerPage - 1
     );
 
     if (expandedRow) {
@@ -450,16 +468,16 @@ class ConsoleMeDataTable extends Component {
       //  create separate component for these types
       const cells = [];
       tableConfig.columns.forEach((column) => {
-        if (column.type === 'daterange') {
+        if (column.type === "daterange") {
           cells.push(
             <Table.Cell collapsing>
               <ReactMarkdown
                 linkTarget="_blank"
-                source={'' || new Date(entry[column.key] * 1000).toUTCString()}
+                source={"" || new Date(entry[column.key] * 1000).toUTCString()}
               />
-            </Table.Cell>,
+            </Table.Cell>
           );
-        } else if (column.type === 'button') {
+        } else if (column.type === "button") {
           cells.push(
             <Table.Cell collapsing>
               <Button
@@ -473,9 +491,9 @@ class ConsoleMeDataTable extends Component {
                 primary
                 size="mini"
               />
-            </Table.Cell>,
+            </Table.Cell>
           );
-        } else if (column.type === 'icon') {
+        } else if (column.type === "icon") {
           cells.push(
             <Table.Cell collapsing>
               <Icon
@@ -485,36 +503,37 @@ class ConsoleMeDataTable extends Component {
                 link
                 name={column.icon}
               />
-            </Table.Cell>,
+            </Table.Cell>
           );
         } else if (column.useLabel) {
           cells.push(
             <Table.Cell collapsing>
-              <Label>
-                {'' || entry[column.key].toString()}
-              </Label>
-            </Table.Cell>,
+              <Label>{"" || entry[column.key].toString()}</Label>
+            </Table.Cell>
           );
         } else {
           cells.push(
             <Table.Cell collapsing>
               <ReactMarkdown
                 linkTarget="_blank"
-                source={'' || entry[column.key].toString()}
+                source={"" || entry[column.key].toString()}
               />
-            </Table.Cell>,
+            </Table.Cell>
           );
         }
       });
 
       return (
         <Table.Row>
-          {tableConfig.expandableRows
-          && (
+          {tableConfig.expandableRows && (
             <Table.Cell collapsing>
               <Icon
                 link
-                name={(expandedRow && expandedRow.index - 1 === idx) ? 'caret down' : 'caret right'}
+                name={
+                  expandedRow && expandedRow.index - 1 === idx
+                    ? "caret down"
+                    : "caret right"
+                }
                 onClick={() => this.handleRowExpansion(idx)}
               />
             </Table.Cell>
@@ -541,14 +560,17 @@ class ConsoleMeDataTable extends Component {
       redirect,
       tableConfig,
     } = this.state;
-    const totalPages = parseInt(filteredData.length / tableConfig.rowsPerPage, 10);
+    const totalPages = parseInt(
+      filteredData.length / tableConfig.rowsPerPage,
+      10
+    );
     const columns = this.generateColumns();
 
     if (isLoading) {
       return (
         <Segment basic>
           <Dimmer active inverted size="large">
-            <Loader inverted content='Loading' />
+            <Loader inverted content="Loading" />
           </Dimmer>
         </Segment>
       );
@@ -557,9 +579,7 @@ class ConsoleMeDataTable extends Component {
     // TODO (heewonk), revisit following redirection logic when moving to SPA again
     if (redirect) {
       return (
-        <BrowserRouter forceRefresh>
-          {this.renderRedirect()}
-        </BrowserRouter>
+        <BrowserRouter forceRefresh>{this.renderRedirect()}</BrowserRouter>
       );
     }
 
@@ -573,26 +593,25 @@ class ConsoleMeDataTable extends Component {
         />
         <Table collapsing sortable celled compact selectable striped>
           {columns}
-          <Table.Body>
-            {this.generateRows()}
-          </Table.Body>
+          <Table.Body>{this.generateRows()}</Table.Body>
           <Table.Footer>
             <Table.Row>
               <Table.HeaderCell collapsing colSpan={this.calculateColumnSize()}>
-                { totalPages > 0
-                  ? (
-                    <Pagination
-                      floated="right"
-                      defaultActivePage={activePage}
-                      totalPages={totalPages}
-                      onPageChange={(event, data) => {
-                        this.setState({
-                          activePage: data.activePage,
-                          expandedRow: null,
-                        });
-                      }}
-                    />
-                  ) : ''}
+                {totalPages > 0 ? (
+                  <Pagination
+                    floated="right"
+                    defaultActivePage={activePage}
+                    totalPages={totalPages}
+                    onPageChange={(event, data) => {
+                      this.setState({
+                        activePage: data.activePage,
+                        expandedRow: null,
+                      });
+                    }}
+                  />
+                ) : (
+                  ""
+                )}
               </Table.HeaderCell>
             </Table.Row>
           </Table.Footer>
@@ -608,16 +627,16 @@ ConsoleMeDataTable.propTypes = {
 };
 
 ConsoleMeDataTable.defaultProps = {
-  queryString: '',
+  queryString: "",
 };
 
-export function renderDataTable(configEndpoint, queryString = '') {
+export function renderDataTable(configEndpoint, queryString = "") {
   ReactDOM.render(
     <ConsoleMeDataTable
       configEndpoint={configEndpoint}
       queryString={queryString}
     />,
-    document.getElementById('datatable'),
+    document.getElementById("datatable")
   );
 }
 

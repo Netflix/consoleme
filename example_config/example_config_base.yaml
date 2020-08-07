@@ -403,6 +403,27 @@ self_service_iam:
           text: Assume Role
           permissions:
             - sts:AssumeRole
+    ses:
+      text: SES - Send Email
+      inputs:
+        - name: from_address
+          type: text_input
+          text: Email Address to send from
+          required: true
+          default: "emailaddress@example.com"
+        - name: resource_arn
+          type: text_input
+          text: ARN of the resource to send from
+          required: true
+      condition:
+        StringLike:
+          ses:FromAddress: "{from_address}"
+      action_map:
+        - name: send_email
+          text: Send Email
+          permissions:
+            - ses:SendEmail
+            - ses:SendRawEmail
     crud_lookup:
       text: Other
       description: |-

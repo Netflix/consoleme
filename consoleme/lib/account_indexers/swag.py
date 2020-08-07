@@ -1,4 +1,5 @@
 import sys
+from typing import List
 
 import ujson as json
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError
@@ -14,6 +15,9 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 
 async def retrieve_accounts_from_swag() -> CloudAccountModelArray:
     function: str = f"{sys._getframe().f_code.co_name}"
+    expected_owners: List = config.get(
+        "retrieve_accounts_from_swag.expected_owners", []
+    )
 
     swag_base_url = config.get("retrieve_accounts_from_swag.base_url")
     if not swag_base_url:
@@ -42,7 +46,7 @@ async def retrieve_accounts_from_swag() -> CloudAccountModelArray:
     cloud_accounts = []
     for account in swag_accounts:
         # Ignore third party accounts
-        if account.get("owner") == "third-party":
+        if expected_owners and account.get("owner") not in expected_owners:
             continue
         account_status = account["account_status"]
         sync_enabled = False
