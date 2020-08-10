@@ -981,7 +981,14 @@ async def parse_and_apply_policy_request_modification(
         response = await _update_dynamo_with_change(
             user, extended_request, log_data, response, success_message, error_message
         )
-        # TODO: send emails appropriately
+        if user == extended_request.requester_email:
+            # User who created the request adding a comment, notification should go to reviewers
+            await aws.send_communications_new_comment(extended_request, user)
+        else:
+            # A reviewer or someone else making the comment, notification should go to original requester
+            await aws.send_communications_new_comment(
+                extended_request, user, to_addresses=[extended_request.requester_email]
+            )
 
     elif request_changes.command == Command.update_change:
         update_change_model = UpdateChangeModificationModel.parse_obj(request_changes)
@@ -1085,6 +1092,7 @@ async def parse_and_apply_policy_request_modification(
         response = await _update_dynamo_with_change(
             user, extended_request, log_data, response, success_message, error_message
         )
+        await aws.send_communications_policy_change_request_v2(extended_request)
 
     elif request_changes.command == Command.reject_request:
         if extended_request.request_status != RequestStatus.pending:
@@ -1104,6 +1112,7 @@ async def parse_and_apply_policy_request_modification(
         response = await _update_dynamo_with_change(
             user, extended_request, log_data, response, success_message, error_message
         )
+        await aws.send_communications_policy_change_request_v2(extended_request)
 
     elif request_changes.command == Command.move_back_to_pending:
         extended_request.request_status = RequestStatus.pending
@@ -1166,6 +1175,7 @@ async def parse_and_apply_policy_request_modification(
         response = await _update_dynamo_with_change(
             user, extended_request, log_data, response, success_message, error_message
         )
+        await aws.send_communications_policy_change_request_v2(extended_request)
         account_id = await get_resource_account(extended_request.arn)
         await aws.fetch_iam_role(account_id, extended_request.arn, force_refresh=True)
 
