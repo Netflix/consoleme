@@ -7,7 +7,12 @@ import ujson as json
 from pydantic import ValidationError
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import InvalidRequestParameter, MustBeFte
+from consoleme.exceptions.exceptions import (
+    InvalidRequestParameter,
+    MustBeFte,
+    NoMatchingRequest,
+    Unauthorized,
+)
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
@@ -24,14 +29,17 @@ from consoleme.lib.v2.requests import (
     apply_changes_to_role,
     generate_request_from_change_model_array,
     is_request_eligible_for_auto_approval,
+    parse_and_apply_policy_request_modification,
     populate_cross_account_resource_policies,
     populate_old_policies,
 )
 from consoleme.models import (
     CommentModel,
     ExtendedRequestModel,
+    PolicyRequestModificationRequestModel,
     RequestCreationModel,
     RequestCreationResponse,
+    RequestStatus,
 )
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -153,7 +161,7 @@ class RequestHandler(BaseAPIV2Handler):
                     self.groups
                 )
                 if can_manage_policy_request:
-                    extended_request.status = "approved"
+                    extended_request.request_status = RequestStatus.approved
                     admin_approved = True
                     extended_request.reviewer = self.user
                     self_approval_comment = CommentModel(
@@ -193,7 +201,7 @@ class RequestHandler(BaseAPIV2Handler):
                         extended_request, self.user, self.groups
                     )
                     if should_auto_approve_request["approved"]:
-                        extended_request.status = "approved"
+                        extended_request.request_status = RequestStatus.approved
                         approval_probe_approved = True
                         stats.count(
                             f"{log_data['function']}.probe_auto_approved",
@@ -245,7 +253,7 @@ class RequestHandler(BaseAPIV2Handler):
         )
 
         # If approved is true, could be auto-approval probe or admin auto-approve, apply the changes
-        if extended_request.status == "approved":
+        if extended_request.request_status == RequestStatus.approved:
             await apply_changes_to_role(extended_request, response, self.user)
             # Update in dynamo
             await dynamo.write_policy_request_v2(extended_request)
@@ -344,6 +352,33 @@ class RequestDetailHandler(BaseAPIV2Handler):
 
     allowed_methods = ["GET", "PUT"]
 
+    async def _get_extended_request(self, request_id, log_data):
+        dynamo = UserDynamoHandler(self.user)
+        requests = await dynamo.get_policy_requests(request_id=request_id)
+        if len(requests) == 0:
+            log_data["message"] = "Request with that ID not found"
+            log.warn(log_data)
+            stats.count(f"{log_data['function']}.not_found", tags={"user": self.user})
+            raise NoMatchingRequest(log_data["message"])
+        if len(requests) > 1:
+            log_data["message"] = "Multiple requests with that ID found"
+            log.error(log_data)
+            stats.count(
+                f"{log_data['function']}.multiple_requests_found",
+                tags={"user": self.user},
+            )
+            raise InvalidRequestParameter(log_data["message"])
+        request = requests[0]
+
+        if request.get("version") != "2":
+            # Request format is not compitable with this endpoint version
+            raise InvalidRequestParameter("Request with that ID is not a v2 request")
+
+        extended_request = ExtendedRequestModel.parse_raw(
+            request.get("extended_request")
+        )
+        return extended_request, request.get("last_updated")
+
     async def get(self, request_id):
         """
         GET /api/v2/requests/{request_id}
@@ -369,33 +404,18 @@ class RequestDetailHandler(BaseAPIV2Handler):
                 )
                 return
 
-        dynamo = UserDynamoHandler(self.user)
-        requests = await dynamo.get_policy_requests(request_id=request_id)
-        if len(requests) == 0:
-            log_data["message"] = "Request with that ID not found"
-            log.error(log_data)
-            stats.count(f"{log_data['function']}.not_found", tags={"user": self.user})
-            self.write_error(404, message="Request with that ID not found")
-            return
-        if len(requests) > 1:
-            log_data["message"] = "Multiple requests with that ID found"
-            log.error(log_data)
-            stats.count(
-                f"{log_data['function']}.multiple_requests_found",
-                tags={"user": self.user},
+        try:
+            extended_request, last_updated = await self._get_extended_request(
+                request_id, log_data
             )
-            self.write_error(500, message="Multiple requests with that ID found")
+        except InvalidRequestParameter as e:
+            sentry_sdk.capture_exception(tags={"user": self.user})
+            self.write_error(400, message="Error validating input: " + str(e))
             return
-        request = requests[0]
-
-        if request.get("version") != "2":
-            # Request format is not compitable with this endpoint version
-            self.write_error(400, message="Request with that ID is not a v2 request")
+        except NoMatchingRequest as e:
+            sentry_sdk.capture_exception(tags={"user": self.user})
+            self.write_error(404, message="Error getting request:" + str(e))
             return
-
-        extended_request = ExtendedRequestModel.parse_raw(
-            request.get("extended_request")
-        )
         extended_request = await populate_old_policies(extended_request, self.user)
         populate_cross_account_resource_policies_result = await populate_cross_account_resource_policies(
             extended_request, self.user
@@ -407,7 +427,8 @@ class RequestDetailHandler(BaseAPIV2Handler):
             ]
             # Update in dynamo with the latest resource policy changes
             dynamo = UserDynamoHandler(self.user)
-            await dynamo.write_policy_request_v2(extended_request)
+            updated_request = await dynamo.write_policy_request_v2(extended_request)
+            last_updated = updated_request.get("last_updated")
 
         can_approve_reject = await can_manage_policy_requests(self.groups)
         can_update_cancel = await can_update_cancel_requests_v2(
@@ -424,7 +445,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
 
         response = {
             "request": extended_request.json(),
-            "last_updated": request.get("last_updated"),
+            "last_updated": last_updated,
             "request_config": request_specific_config,
         }
 
@@ -439,12 +460,54 @@ class RequestDetailHandler(BaseAPIV2Handler):
         log_data = {
             "function": "RequestDetailHandler.put",
             "user": self.user,
-            "message": "Updating request details",
+            "message": "Incoming request",
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
+            "policy_request_id": request_id,
         }
         log.debug(log_data)
-        self.write_error(501, message="Update request details")
+
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+
+        try:
+            # Validate the request body
+            request_changes = PolicyRequestModificationRequestModel.parse_raw(
+                self.request.body
+            )
+            log_data["message"] = "Parsed request body"
+            log_data["request"] = request_changes.dict()
+            log.debug(log_data)
+
+            extended_request, last_updated = await self._get_extended_request(
+                request_id, log_data
+            )
+            response = await parse_and_apply_policy_request_modification(
+                extended_request, request_changes, self.user, self.groups, last_updated
+            )
+
+        except (NoMatchingRequest, InvalidRequestParameter, ValidationError) as e:
+            log_data["message"] = "Validation Exception"
+            log.error(log_data, exc_info=True)
+            sentry_sdk.capture_exception(tags={"user": self.user})
+            stats.count(
+                f"{log_data['function']}.validation_exception", tags={"user": self.user}
+            )
+            self.write_error(400, message="Error validating input: " + str(e))
+            return
+        except Unauthorized as e:
+            log_data["message"] = "Unauthorized"
+            log.error(log_data, exc_info=True)
+            sentry_sdk.capture_exception(tags={"user": self.user})
+            stats.count(
+                f"{log_data['function']}.unauthorized", tags={"user": self.user}
+            )
+            self.write_error(403, message=str(e))
+            return
+        self.write(response.json())
 
 
 class RequestsTableConfigHandler(BaseHandler):

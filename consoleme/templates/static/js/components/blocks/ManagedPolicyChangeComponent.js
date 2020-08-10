@@ -16,11 +16,12 @@ class ManagedPolicyChangeComponent extends Component {
       messages: [],
       change: this.props.change,
       config: this.props.config,
+      requestReadOnly: this.props.requestReadOnly,
     };
   }
 
   render() {
-    const { change, config } = this.state;
+    const { change, config, requestReadOnly } = this.state;
 
     const action =
       change.action === "detach" ? (
@@ -36,9 +37,21 @@ class ManagedPolicyChangeComponent extends Component {
     );
 
     const applyChangesButton =
-      config.can_approve_reject && change.status === "not_applied" ? (
+      config.can_approve_reject &&
+      change.status === "not_applied" &&
+      !requestReadOnly ? (
         <Grid.Column>
           <Button content="Apply Change" positive fluid />
+        </Grid.Column>
+      ) : null;
+
+    const viewOnlyInfo =
+      requestReadOnly && change.status === "not_applied" ? (
+        <Grid.Column>
+          <Message info>
+            <Message.Header>View only</Message.Header>
+            <p>This change is view only and can no longer be modified.</p>
+          </Message>
         </Grid.Column>
       ) : null;
 
@@ -82,6 +95,7 @@ class ManagedPolicyChangeComponent extends Component {
         </Grid.Row>
         <Grid.Row columns="equal">
           {applyChangesButton}
+          {viewOnlyInfo}
           {changesAlreadyAppliedContent}
         </Grid.Row>
       </Grid>

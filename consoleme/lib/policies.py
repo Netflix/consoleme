@@ -21,7 +21,7 @@ from consoleme.exceptions.exceptions import InvalidRequestParameter
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.handler import update_role
-from consoleme.models import ExtendedRequestModel
+from consoleme.models import ExtendedRequestModel, RequestStatus
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -210,6 +210,23 @@ async def can_move_back_to_pending(request, groups):
     if request.get("status") in ["cancelled", "rejected"]:
         # Don't allow returning requests to pending state if more than a day has passed since the last update
         if request.get("last_updated", 0) < int(time.time()) - 86400:
+            return False
+        # Allow admins to return requests back to pending state
+        for g in config.get("groups.can_admin_policies", []):
+            if g in groups:
+                return True
+    return False
+
+
+async def can_move_back_to_pending_v2(
+    extended_request: ExtendedRequestModel, last_updated, groups
+):
+    if extended_request.request_status in [
+        RequestStatus.cancelled,
+        RequestStatus.rejected,
+    ]:
+        # Don't allow returning requests to pending state if more than a day has passed since the last update
+        if last_updated < int(time.time()) - 86400:
             return False
         # Allow admins to return requests back to pending state
         for g in config.get("groups.can_admin_policies", []):

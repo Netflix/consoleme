@@ -2,7 +2,7 @@ import sys
 import time
 import uuid
 from hashlib import sha256
-from typing import Dict
+from typing import Dict, Union
 
 import sentry_sdk
 import ujson as json
@@ -11,37 +11,58 @@ from cloudaux.aws.sts import boto3_cached_conn
 from policy_sentry.util.arns import parse_arn
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import InvalidRequestParameter
+from consoleme.exceptions.exceptions import (
+    InvalidRequestParameter,
+    NoMatchingRequest,
+    Unauthorized,
+)
 from consoleme.lib.aws import (
     generate_updated_resource_policy,
     get_resource_account,
     get_resource_policy,
 )
+from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.policies import get_url_for_resource, invalid_characters_in_policy
+from consoleme.lib.policies import (
+    can_manage_policy_requests,
+    can_move_back_to_pending_v2,
+    can_update_cancel_requests_v2,
+    get_url_for_resource,
+    invalid_characters_in_policy,
+)
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import (
     Action,
     Action1,
     ActionResult,
+    ApplyChangeModificationModel,
+    ApproveRequestModificationModel,
     AssumeRolePolicyChangeModel,
     ChangeModelArray,
     ChangeType,
+    Command,
+    CommentModel,
+    CommentRequestModificationModel,
     ExtendedRequestModel,
     ExtendedRoleModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
     PolicyModel,
+    PolicyRequestModificationRequestModel,
+    PolicyRequestModificationResponseModel,
     RequestCreationModel,
     RequestCreationResponse,
+    RequestStatus,
     ResourceModel,
     ResourcePolicyChangeModel,
     Status,
+    UpdateChangeModificationModel,
     UserModel,
 )
 
 log = config.get_logger()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
+aws = get_plugin_by_name(config.get("plugins.aws"))()
 
 
 async def generate_request_from_change_model_array(
@@ -174,7 +195,7 @@ async def generate_request_from_change_model_array(
         justification=request_creation.justification,
         requester_email=user,
         approvers=[],  # TODO: approvers logic (future feature)
-        status="pending",
+        request_status=RequestStatus.pending,
         changes=request_changes,
         requester_info=UserModel(
             email=user,
@@ -441,7 +462,10 @@ async def validate_assume_role_policy_change(
 
 
 async def apply_changes_to_role(
-    extended_request: ExtendedRequestModel, response: RequestCreationResponse, user: str
+    extended_request: ExtendedRequestModel,
+    response: Union[RequestCreationResponse, PolicyRequestModificationResponseModel],
+    user: str,
+    specific_change_id: str = None,
 ) -> None:
     """
         Applies changes based on the changes array in the request, in a best effort manner to a role
@@ -452,6 +476,8 @@ async def apply_changes_to_role(
         :param extended_request: ExtendedRequestModel
         :param user: Str - requester's email address
         :param response: RequestCreationResponse
+        :param specific_change_id: if this function is being used to apply only one specific change
+                if not provided, all changes are applied
     """
 
     log_data: dict = {
@@ -459,6 +485,7 @@ async def apply_changes_to_role(
         "user": user,
         "request": extended_request.dict(),
         "message": "Applying request changes",
+        "specific_change_id": specific_change_id,
     }
     log.info(log_data)
 
@@ -497,6 +524,8 @@ async def apply_changes_to_role(
             ] = "Change has already been applied, skipping applying the change"
             log_data["change"] = change.dict()
             log.debug(log_data)
+            continue
+        if specific_change_id and change.id != specific_change_id:
             continue
         if change.change_type == ChangeType.inline_policy:
             if change.action == Action.attach:
@@ -684,6 +713,9 @@ async def populate_old_policies(
     role = await get_role_details(role_account_id, role_name=role_name, extended=True)
 
     for change in extended_request.changes.changes:
+        if change.status == Status.applied:
+            # Skip changing any old policies that are saved for historical record (already applied)
+            continue
         if change.change_type == ChangeType.assume_role_policy:
             change.old_policy = PolicyModel(
                 policy_sha256=sha256(
@@ -807,3 +839,339 @@ async def populate_cross_account_resource_policies(
     log_data["resource_policies_changed"] = resource_policies_changed
     log.debug(log_data)
     return {"changed": resource_policies_changed, "extended_request": extended_request}
+
+
+async def _add_error_to_response(
+    log_data: Dict,
+    response: PolicyRequestModificationResponseModel,
+    message: str,
+    error=None,
+):
+    log_data["message"] = message
+    log_data["error"] = error
+    log.error(log_data)
+    response.errors += 1
+    response.action_results.append(
+        ActionResult(status="error", message=log_data["message"])
+    )
+    return response
+
+
+async def _update_dynamo_with_change(
+    user: str,
+    extended_request: ExtendedRequestModel,
+    log_data: Dict,
+    response: PolicyRequestModificationResponseModel,
+    success_message: str,
+    error_message: str,
+):
+    dynamo = UserDynamoHandler(user)
+    try:
+        await dynamo.write_policy_request_v2(extended_request)
+        response.action_results.append(
+            ActionResult(status="success", message=success_message,)
+        )
+    except Exception as e:
+        log_data["message"] = error_message
+        log_data["error"] = str(e)
+        log.error(log_data, exc_info=True)
+        sentry_sdk.capture_exception()
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(status="error", message=error_message + ": " + str(e),)
+        )
+    return response
+
+
+async def _get_specific_change(changes: ChangeModelArray, change_id: str):
+    for change in changes.changes:
+        if change.id == change_id:
+            return change
+
+    return None
+
+
+async def parse_and_apply_policy_request_modification(
+    extended_request: ExtendedRequestModel,
+    policy_request_model: PolicyRequestModificationRequestModel,
+    user: str,
+    user_groups,
+    last_updated,
+) -> PolicyRequestModificationResponseModel:
+    """
+        Parses the policy request modification changes
+
+        :param extended_request: ExtendedRequestModel
+        :param user: Str - requester's email address
+        :param policy_request_model: PolicyRequestModificationRequestModel
+        :param user_groups:  user's groups
+        :param last_updated:
+        :return PolicyRequestModificationResponseModel
+    """
+
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "request": extended_request.dict(),
+        "request_changes": policy_request_model.dict(),
+        "message": "Parsing request modification changes",
+    }
+    log.debug(log_data)
+
+    response = PolicyRequestModificationResponseModel(errors=0, action_results=[])
+    request_changes = policy_request_model.modification_model
+
+    if request_changes.command in [Command.update_change, Command.cancel_request]:
+        can_update_cancel = await can_update_cancel_requests_v2(
+            extended_request.requester_email, user, user_groups
+        )
+        if not can_update_cancel:
+            raise Unauthorized("Unauthorized to make that change")
+
+    if request_changes.command in [
+        Command.apply_change,
+        Command.approve_request,
+        Command.reject_request,
+    ]:
+        can_manage_policy_request = await can_manage_policy_requests(user_groups)
+        if not can_manage_policy_request:
+            raise Unauthorized("Unauthorized to make that change")
+
+    if request_changes.command == Command.move_back_to_pending:
+        can_move_back_to_pending = await can_move_back_to_pending_v2(
+            extended_request, last_updated, user_groups
+        )
+        if not can_move_back_to_pending:
+            raise Unauthorized("Cannot move this request back to pending")
+
+    # If here, then the person is authorized to make the change they want
+
+    # For cancelled / rejected requests, only moving back to pending, adding comments is permitted
+    if extended_request.request_status in [
+        RequestStatus.cancelled,
+        RequestStatus.rejected,
+    ] and request_changes.command not in [
+        Command.add_comment,
+        Command.move_back_to_pending,
+    ]:
+        raise InvalidRequestParameter(
+            f"Cannot perform {request_changes.command.value} on "
+            f"{extended_request.request_status.value} requests"
+        )
+
+    if request_changes.command == Command.add_comment:
+        # TODO: max comment size? prevent spamming?
+        comment_model = CommentRequestModificationModel.parse_obj(request_changes)
+        user_comment = CommentModel(
+            id=str(uuid.uuid4()),
+            timestamp=int(time.time()),
+            user_email=user,
+            user=UserModel(
+                email=user,
+                extended_info=await auth.get_user_info(user),
+                details_url=config.config_plugin().get_employee_info_url(user),
+                photo_url=config.config_plugin().get_employee_photo_url(user),
+            ),
+            last_modified=int(time.time()),
+            text=comment_model.comment_text,
+        )
+        extended_request.comments.append(user_comment)
+        success_message = "Successfully added comment"
+        error_message = "Error occurred adding comment"
+        response = await _update_dynamo_with_change(
+            user, extended_request, log_data, response, success_message, error_message
+        )
+        # TODO: send emails appropriately
+
+    elif request_changes.command == Command.update_change:
+        update_change_model = UpdateChangeModificationModel.parse_obj(request_changes)
+        specific_change = await _get_specific_change(
+            extended_request.changes, update_change_model.change_id
+        )
+        # We only support updating inline policies, assume role policy documents and resource policies that haven't
+        # applied already
+        if (
+            specific_change
+            and specific_change.change_type
+            in [
+                ChangeType.inline_policy,
+                ChangeType.resource_policy,
+                ChangeType.assume_role_policy,
+            ]
+            and specific_change.status == Status.not_applied
+        ):
+            specific_change.policy.policy_document = update_change_model.policy_document
+            if specific_change.change_type == ChangeType.resource_policy:
+                # Special case, if it's autogenerated and a user modifies it, update status to
+                # not autogenerated, so we don't overwrite it on page refresh
+                specific_change.autogenerated = False
+            success_message = "Successfully updated policy document"
+            error_message = "Error occurred updating policy document"
+            response = await _update_dynamo_with_change(
+                user,
+                extended_request,
+                log_data,
+                response,
+                success_message,
+                error_message,
+            )
+        else:
+            raise NoMatchingRequest(
+                "Unable to find a compatible non-applied change with "
+                "that ID in this policy request"
+            )
+
+    elif request_changes.command == Command.apply_change:
+        apply_change_model = ApplyChangeModificationModel.parse_obj(request_changes)
+        specific_change = await _get_specific_change(
+            extended_request.changes, apply_change_model.change_id
+        )
+        if specific_change and specific_change.status == Status.not_applied:
+            # Update the policy doc locally for supported changes, if it needs to be updated
+            if apply_change_model.policy_document and specific_change.change_type in [
+                ChangeType.inline_policy,
+                ChangeType.resource_policy,
+                ChangeType.assume_role_policy,
+            ]:
+                specific_change.policy.policy_document = (
+                    apply_change_model.policy_document
+                )
+            if specific_change.change_type == ChangeType.resource_policy:
+                # TODO: special case, need a new method
+                pass
+            else:
+                # Save current policy by populating "old" policies at the time of application for historical record
+                await populate_old_policies(extended_request, user)
+                await apply_changes_to_role(
+                    extended_request, response, user, specific_change.id
+                )
+                if specific_change.status == Status.applied:
+                    # Change was successful, update in dynamo and force refresh role
+                    success_message = "Successfully updated change in dynamo"
+                    error_message = "Error updating change in dynamo"
+                    response = await _update_dynamo_with_change(
+                        user,
+                        extended_request,
+                        log_data,
+                        response,
+                        success_message,
+                        error_message,
+                    )
+                    account_id = await get_resource_account(extended_request.arn)
+                    await aws.fetch_iam_role(
+                        account_id, extended_request.arn, force_refresh=True
+                    )
+        else:
+            raise NoMatchingRequest(
+                "Unable to find a compatible non-applied change with "
+                "that ID in this policy request"
+            )
+
+    elif request_changes.command == Command.cancel_request:
+        if extended_request.request_status != RequestStatus.pending:
+            raise InvalidRequestParameter(
+                "Request cannot be cancelled as it's status "
+                f"is {extended_request.request_status.value}"
+            )
+        for change in extended_request.changes.changes:
+            if change.status == Status.applied:
+                raise InvalidRequestParameter(
+                    "Request cannot be cancelled as atleast one change has been applied already"
+                )
+
+        extended_request.request_status = RequestStatus.cancelled
+        success_message = "Successfully cancelled request"
+        error_message = "Error cancelling request"
+        response = await _update_dynamo_with_change(
+            user, extended_request, log_data, response, success_message, error_message
+        )
+
+    elif request_changes.command == Command.reject_request:
+        if extended_request.request_status != RequestStatus.pending:
+            raise InvalidRequestParameter(
+                f"Request cannot be rejected "
+                f"as it's status is {extended_request.request_status.value}"
+            )
+        for change in extended_request.changes.changes:
+            if change.status == Status.applied:
+                raise InvalidRequestParameter(
+                    "Request cannot be rejected as atleast one change has been applied already"
+                )
+
+        extended_request.request_status = RequestStatus.rejected
+        success_message = "Successfully rejected request"
+        error_message = "Error rejected request"
+        response = await _update_dynamo_with_change(
+            user, extended_request, log_data, response, success_message, error_message
+        )
+
+    elif request_changes.command == Command.move_back_to_pending:
+        extended_request.request_status = RequestStatus.pending
+        success_message = "Successfully moved request back to pending"
+        error_message = "Error moving request back to pending"
+        response = await _update_dynamo_with_change(
+            user, extended_request, log_data, response, success_message, error_message
+        )
+
+    elif request_changes.command == Command.approve_request:
+        if extended_request.request_status != RequestStatus.pending:
+            raise InvalidRequestParameter(
+                "Request cannot be approved as it's "
+                f"status is {extended_request.request_status.value}"
+            )
+
+        approve_change_model = ApproveRequestModificationModel.parse_obj(
+            request_changes
+        )
+        # Save current policy by populating "old" policies at the time of application for historical record
+        await populate_old_policies(extended_request, user)
+        for change in extended_request.changes.changes:
+            if change.status == Status.applied:
+                log_data["message"] = "Change already applied, skipping change"
+                log_data["change"] = change.dict()
+                log.warn(log_data)
+                continue
+                # TODO: how should we inform user that this change was skipped since already applied? Should we?
+
+            if approve_change_model.policy_request_changes:
+                # Iterate through the request body for any optional updates before applying
+                for (
+                    policy_request_change
+                ) in approve_change_model.policy_request_changes:
+                    if (
+                        policy_request_change.change_id == change.id
+                        and change.change_type
+                        in [
+                            ChangeType.inline_policy,
+                            ChangeType.resource_policy,
+                            ChangeType.assume_role_policy,
+                        ]
+                    ):
+                        change.policy.policy_document = (
+                            policy_request_change.policy_document
+                        )
+                        break
+
+            if change.change_type == ChangeType.resource_policy:
+                # We don't support auto-application of resource policies
+                # TODO: how to inform user that this resource policy wasn't applied on approving request?
+                continue
+            else:
+                await apply_changes_to_role(extended_request, response, user, change.id)
+
+        success_message = "Successfully updated changes in dynamo"
+        error_message = "Error updating changes in dynamo"
+        extended_request.request_status = RequestStatus.approved
+        extended_request.reviewer = user
+        response = await _update_dynamo_with_change(
+            user, extended_request, log_data, response, success_message, error_message
+        )
+        account_id = await get_resource_account(extended_request.arn)
+        await aws.fetch_iam_role(account_id, extended_request.arn, force_refresh=True)
+
+    log_data["message"] = "Done parsing/applying request modification changes"
+    log_data["request"] = extended_request.dict()
+    log_data["response"] = response.dict()
+    log_data["error"] = None
+    log.debug(log_data)
+    return response
