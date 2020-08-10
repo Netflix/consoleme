@@ -7,6 +7,7 @@ crash.log
 terraform.tfvars
 state.tf
 consoleme.tar.gz
+consoleme.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
