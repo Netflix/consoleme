@@ -206,7 +206,11 @@ class AutoLoginHandler(BaseHandler):
             account_id = None
 
             # User role must be defined as a user attribute
-            if self.user_role_name and role.split("role/")[1] == self.user_role_name:
+            if (
+                self.user_role_name
+                and "role/" in role
+                and role.split("role/")[1] == self.user_role_name
+            ):
                 user_role = True
                 account_id = role.split("arn:aws:iam::")[1].split(":role")[0]
 
