@@ -1,5 +1,6 @@
 """Handle the base."""
 import asyncio
+import copy
 import traceback
 import uuid
 from typing import Any, Union
@@ -10,9 +11,11 @@ import tornado.httputil
 import tornado.web
 import ujson as json
 from asgiref.sync import sync_to_async
+from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
 from tornado import httputil
 
 from consoleme.config import config
+from consoleme.config.config import dict_merge
 from consoleme.exceptions.exceptions import (
     InvalidCertificateException,
     MissingCertificateException,
@@ -437,8 +440,19 @@ class BaseHandler(tornado.web.RequestHandler):
 
     @staticmethod
     async def init_saml_auth(req):
+        saml_config = copy.deepcopy(
+            config.get("get_user_by_saml_settings.saml_settings", {})
+        )
+        idp_metadata_url = config.get("get_user_by_saml_settings.idp_metadata_url")
+        if idp_metadata_url:
+            idp_metadata = OneLogin_Saml2_IdPMetadataParser.parse_remote(
+                idp_metadata_url
+            )
+            saml_config = dict_merge(saml_config, idp_metadata)
         auth = await sync_to_async(OneLogin_Saml2_Auth)(
-            req, custom_base_path=config.get("get_user_by_saml_settings.saml_path")
+            req,
+            saml_config,
+            custom_base_path=config.get("get_user_by_saml_settings.saml_path"),
         )
         return auth
 

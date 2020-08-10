@@ -15,13 +15,19 @@ auth:
 
 get_user_by_oidc_settings:
   resource: consoleme-oidc
-  authorize_url: https://dev-876967.okta.com/oauth2/default/v1/authorize
-  token_endpoint: https://dev-876967.okta.com/oauth2/default/v1/token
-  jwt_verify: false
+  metadata_url: https://dev-123456.okta.com/oauth2/default/.well-known/oauth-authorization-server
+  # If you have a metadata URL and it returns JSON with authorization_endpoint, token_endpoint, and jwks_uri, you do
+  # not need to specify those values in the configuration.
+  #authorization_endpoint: https://dev-123456.okta.com/oauth2/default/v1/authorize
+  #token_endpoint: https://dev-123456.okta.com/oauth2/default/v1/token
+  #jwks_uri: https://dev-123456.okta.com/oauth2/default/v1/keys
+  jwt_verify: true
   jwt_email_key: email
   jwt_groups_key: groups
   grant_type: authorization_code
-  token_response_key: id_token
+  id_token_response_key: id_token
+  access_token_response_key: access_token
+  access_token_audience: "consoleme"
 
 development: true
 
