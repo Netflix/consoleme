@@ -450,32 +450,34 @@ Run `make test` or `make testhtml` to run unit tests
 
 ### SAML
 
-We're using the wonderful `kristophjunge/test-saml-idp` docker container to demonstrate an example SAML flow through ConsoleMe performed locally. The SimpleSaml configuration is not secure, and you should not use this in any sort of production environment. this is purely used as a demonstration of SAML auth within ConsoleMe.
+1. Update ConsoleMe's configuration with your configuration parameters (This is under `get_user_by_saml_settings`). [Example](example_config/example_config_saml.yaml)
+1. Put your Service Provider certificate and private key in the location you specified in your
+`get_user_by_saml_settings.saml_path` configuration value. Default: [example_config/saml_example/certs/](example_config/saml_example/certs/)
+as `sp.crt` and `sp.key`
+1. Start ConsoleMe with your desired configuration, and test the flow:
 
-The configuration for the SAML exists in `docker-compose-simplesaml.yaml` You can start the IDP locally with the following command ran from your `consoleme` directory:
+```bash
+CONFIG_LOCATION=example_config/example_config_saml.yaml python consoleme/__main__.py
+```
 
-`docker-compose -f docker-compose-saml.yaml up`
+Important configuration variables:
 
-You will need to browse to the [Simplesaml metadata url](http://localhost:8080/simplesaml/saml2/idp/metadata.php?output=xml) and copy the x509 certificate
-for the IDP (The first one), and replace the x509cert value specified in `example_config/saml_example/settings.json`.
-
-
-You can start ConsoleMe and point it to this IDP with the following command:
-
-`CONFIG_LOCATION=example_config/example_config_saml.yaml python consoleme/__main__.py`
-
-The configuration in `docker-compose-saml.yaml` specifies the expected service provider Acs location (`http://localhost:8081/saml/acs`) and the entity ID it expects to receive ('http://localhost:8081').
-
-A simple configuration for SimpleSaml users exists at `example_config/simplesamlphp/authsources.php`. It specifies an example user (consoleme_user:consoleme_user), and an admin user (consoleme_admin:consoleme_admin).
-
-ConsoleMe's configuration (`example_config/example_config_saml.yaml`) specifies the following configuration:
-
+`get_user_by_saml_settings.idp_metadata_url`: The URL of the SAML Metadata that ConsoleMe can load SAML configuration from.
 `get_user_by_saml_settings.saml_path`: Location of SAML settings used by the OneLoginSaml2 library
 	- You'll need to configure the entity ID, IdP Binding urls, and ACS urls in this file
 
 `get_user_by_saml_settings.jwt`: After the user has authenticated, ConsoleMe will give them a jwt valid for the time specified in this configuration, along with the jwt attribute names for the user's email and groups.
 
 `get_user_by_saml_settings.attributes`: Specifies the attributes that we expect to see in the SAML response, including the user's username, groups, and e-mail address
+
+### OpenID Connect & OAuth 2.0
+1. Update ConsoleMe's configuration with your configuration parameters (This is under `get_user_by_oidc_settings`). [Example](example_config/example_config_oidc.yaml)
+1. Update ConsoleMe's configuration with your client ID, client secret, and scopes. (This is under `oidc_secrets`). [Example](example_config/example_secrets.yaml)
+1. Start ConsoleMe with your desired configuration, and test the flow:
+
+```bash
+CONFIG_LOCATION=example_config/example_config_oidc.yaml python consoleme/__main__.py
+```
 
 ### Local development with Docker (PyCharm specific instructions)  # TODO: Docs with screenshots
 

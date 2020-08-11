@@ -12,6 +12,8 @@ auth:
   set_auth_cookie: true
 
 get_user_by_saml_settings:
+  # On the provider, set ACS url to https://your_consoleme_url/saml/acs and saml audience to "https://your_consoleme_url/"
+  idp_metadata_url: https://portal.sso.us-east-1.amazonaws.com/saml/metadata/CUSTOMENDPOINT
   saml_path: example_config/saml_example
   jwt:
     expiration_hours: 1
@@ -21,6 +23,54 @@ get_user_by_saml_settings:
     user: user
     groups: groups
     email: email
+  saml_settings:
+    debug: true
+    # IDP settings are not necessary if you provided the get_user_by_saml_settings.idp_metadata_url configuration setting
+    # They are provided here as an example
+    #    idp:
+    #      entityId: https://portal.sso.us-east-1.amazonaws.com/saml/assertion/CUSTOMENDPOINT
+    #      singleLogoutService:
+    #        binding: urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect
+    #        url: https://portal.sso.us-east-1.amazonaws.com/saml/logout/CUSTOMENDPOINT
+    #      singleSignOnService:
+    #        binding: urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect
+    #        url: https://portal.sso.us-east-1.amazonaws.com/saml/assertion/CUSTOMENDPOINT
+    #      x509cert: MIIDAz.....
+    sp:
+      NameIDFormat: urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
+      assertionConsumerService:
+        binding: urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST
+        url: http://localhost:8081/saml/acs
+      entityId: http://localhost:8081
+      singleLogoutService:
+        binding: urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect
+        url: https://localhost:8081/saml/sls
+    strict: false
+    support:
+      emailAddress: support@example.com
+      givenName: support_name
+      technical:
+        emailAddress: technical@example.com
+        givenName: technical_name
+    organization:
+      en-US:
+        displayname: ConsoleMe
+        name: ConsoleMe
+        url: http://localhost:8081
+    security:
+      authnRequestsSigned: true
+      digestAlgorithm: http://www.w3.org/2000/09/xmldsig#sha1
+      logoutRequestSigned: true
+      logoutResponseSigned: true
+      nameIdEncrypted: true
+      signMetadata: true
+      signatureAlgorithm: http://www.w3.org/2000/09/xmldsig#rsa-sha1
+      wantAssertionsEncrypted: true
+      wantAssertionsSigned: true
+      wantMessagesSigned: true
+      wantNameId: true
+      wantNameIdEncrypted: false
+
 
 development: true
 
