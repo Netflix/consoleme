@@ -7,12 +7,10 @@ Default plugins for ConsoleMe
 """
 import distutils.cmd
 import distutils.log
-import distutils.cmd
-import distutils.log
 import os
 from shutil import rmtree
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 
 class CleanAllCommand(distutils.cmd.Command):

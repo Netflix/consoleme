@@ -21,12 +21,14 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 async def store_json_results_in_redis_and_s3(
     data: Union[
         Dict[str, set],
+        Dict[str, str],
         List[
             Union[
                 Dict[str, Union[Union[str, int], Any]],
                 Dict[str, Union[Union[str, None, int], Any]],
             ]
         ],
+        str,
     ],
     redis_key: str = None,
     redis_data_type: str = "str",
@@ -58,7 +60,10 @@ async def store_json_results_in_redis_and_s3(
 
     if redis_key:
         if redis_data_type == "str":
-            red.set(redis_key, json.dumps(data, cls=SetEncoder))
+            if isinstance(data, str):
+                red.set(redis_key, data)
+            else:
+                red.set(redis_key, json.dumps(data, cls=SetEncoder))
         elif redis_data_type == "hash":
             red.hmset(redis_key, data)
         else:
@@ -82,7 +87,7 @@ async def retrieve_json_data_from_redis_or_s3(
     s3_key: str = None,
     cache_to_redis_if_data_in_s3: bool = True,
     max_age: Optional[int] = None,
-    default: Optional = None
+    default: Optional = None,
 ):
     """
     Retrieve data from Redis as a priority. If data is unavailable in Redis, fall back to S3 and attempt to store

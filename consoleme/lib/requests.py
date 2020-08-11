@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Any
 
@@ -5,9 +6,9 @@ from asgiref.sync import sync_to_async
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import NoMatchingRequest
+from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
-
 
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 
@@ -71,16 +72,30 @@ async def get_request_by_id(user, request_id):
 async def get_all_pending_requests_api(user):
     """Get all pending requests and add the group's secondary approvers"""
     dynamo_handler = UserDynamoHandler(user)
-    all_requests = await sync_to_async(dynamo_handler.get_all_requests)()
+    all_requests = await dynamo_handler.get_all_requests()
 
     pending_requests = []
 
+    # Get secondary approvers for groups asynchronously, otherwise this can be a bottleneck
+    tasks = []
     for req in all_requests:
         if req.get("status") == "pending":
             group = req.get("group")
-            secondary_approvers = await auth.get_secondary_approvers(group)
-            req["secondary_approvers"] = ",".join(secondary_approvers)
+            task = asyncio.ensure_future(
+                auth.get_secondary_approvers(group, return_dict=True)
+            )
+            tasks.append(task)
             pending_requests.append(req)
+    secondary_approver_responses = asyncio.gather(*tasks)
+    secondary_approver_mapping = {}
+    for mapping in await secondary_approver_responses:
+        for group, secondary_approvers in mapping.items():
+            secondary_approver_mapping[group] = ",".join(secondary_approvers)
+
+    for req in pending_requests:
+        req["secondary_approvers"] = secondary_approver_mapping.get(
+            req.get("group"), ""
+        )
     return pending_requests
 
 
@@ -90,6 +105,30 @@ async def get_app_pending_requests_policies(user):
     if not all_policy_requests:
         all_policy_requests = []
     return all_policy_requests
+
+
+async def get_all_policy_requests(user, status=None):
+    dynamo_handler = UserDynamoHandler(user)
+    all_policy_requests = await dynamo_handler.get_all_policy_requests(status=status)
+    if not all_policy_requests:
+        all_policy_requests = []
+    return all_policy_requests
+
+
+async def cache_all_policy_requests(
+    user="consoleme", redis_key=None, s3_bucket=None, s3_key=None
+):
+    requests = await get_all_policy_requests(user)
+    # TODO: cache all once v2 requests are ready, for now only v1 requests
+    requests_v1 = []
+    for request in requests:
+        if "version" not in request:
+            requests_v1.append(request)
+
+    await store_json_results_in_redis_and_s3(
+        requests_v1, redis_key, s3_bucket=s3_bucket, s3_key=s3_key
+    )
+    return requests_v1
 
 
 async def get_all_pending_requests(user, groups):
@@ -141,7 +180,7 @@ async def get_user_requests(user, groups):
     secondary approver
     """
     dynamo_handler = UserDynamoHandler(user)
-    all_requests = await sync_to_async(dynamo_handler.get_all_requests)()
+    all_requests = await dynamo_handler.get_all_requests()
     query = {
         "domains": config.get("dynamo.get_user_requests.domains", []),
         "filters": [

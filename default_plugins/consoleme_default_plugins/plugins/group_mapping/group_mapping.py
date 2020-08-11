@@ -1,10 +1,12 @@
 """Group mapping plugin."""
 import time
+from typing import List
 
 import simplejson as json
 from redis.exceptions import ConnectionError
 
 from consoleme.config import config
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -35,11 +37,15 @@ class GroupMapping:
                     username, groups, console_only
                 )
             )
-        return roles
+        return list(set(roles))
 
     @staticmethod
-    async def filter_eligible_roles(query: str, obj: object) -> list:
-        return []
+    async def filter_eligible_roles(query: str, obj: object) -> List:
+        selected_roles: List = []
+        for r in obj.eligible_roles:
+            if query.lower() in r.lower():
+                selected_roles.append(r)
+        return list(set(selected_roles))
 
     async def set_recent_user(self, user):
         pass
@@ -149,12 +155,14 @@ class GroupMapping:
         stats.count("get_eligible_accounts")
         account_ids = {}
 
-        friendly_names = aws.get_account_ids_to_names()
+        friendly_names = await get_account_id_to_name_mapping()
         for r in role_arns:
             account_id = r.split(":")[4]
             account_friendlyname = friendly_names.get(account_id, "")
             if account_friendlyname and isinstance(account_friendlyname, list):
                 account_ids[account_id] = account_friendlyname[0]
+            elif account_friendlyname and isinstance(account_friendlyname, str):
+                account_ids[account_id] = account_friendlyname
         return account_ids
 
     async def get_account_mappings(self) -> dict:

@@ -21,8 +21,7 @@ endif
 
 # Set CONSOLEME_CONFIG_ENTRYPOINT make variable to CONSOLEME_CONFIG_ENTRYPOINT env variable, or "default_config"
 CONSOLEME_CONFIG_ENTRYPOINT := $(or ${CONSOLEME_CONFIG_ENTRYPOINT},${CONSOLEME_CONFIG_ENTRYPOINT},default_config)
-
-prod_install:
+.PHONY: env_install
 env_install: env/bin/activate
 	# Activate either the virtualenv in env/ or tell conda to activate
 	. env/bin/activate || source activate consoleme;\
@@ -74,6 +73,7 @@ clean:
 	rm -rf build/
 	rm -rf *.egg-info
 	rm -f celerybeat-schedule.db
+	rm -rf consoleme.tar.gz
 	find $(project) tests -name "*.pyc" -delete
 	find . -name '*.pyc' -delete
 	find . -name '*.pyo' -delete
@@ -115,9 +115,9 @@ endif
 	pip install --upgrade pip
 	pip install --upgrade pip-tools
 	pip install --upgrade setuptools
-	pip-compile --output-file requirements.txt requirements.in -U --no-index
-	pip-compile --output-file requirements-test.txt requirements-test.in -U --no-index
-	pip-compile --output-file requirements-docs.txt requirements-docs.in -U --no-index
+	pip-compile --output-file requirements.txt requirements.in -U --no-emit-index-url
+	pip-compile --output-file requirements-test.txt requirements-test.in -U --no-emit-index-url
+	pip-compile --output-file requirements-docs.txt requirements-docs.in -U --no-emit-index-url
 	@echo "--> Done updating Python requirements"
 	@echo "--> Installing new dependencies"
 	pip install -e .
@@ -125,8 +125,15 @@ endif
 	pip install -r requirements-docs.txt
 	@echo "--> Done installing new dependencies"
 
+consoleme.tar.gz:
+	# Tar contents of the current directory
+	tar --exclude='consoleme.tar.gz' --exclude='build*' --exclude='.tox/*' --exclude='env*' --exclude='venv*' --exclude='node_modules*' --exclude='debian*' --exclude='staging*' -czf consoleme.tar.gz .
+
 .PHONY: create_ami
-create_ami:
+create_ami: consoleme.tar.gz packer clean
+
+.PHONY: packer
+packer:
 ifdef CONFIG_LOCATION
 	@echo "--> Using configuration at $(CONFIG_LOCATION)"
 	export CONFIG_LOCATION=$(CONFIG_LOCATION)
@@ -135,12 +142,8 @@ ifdef CONSOLEME_CONFIG_ENTRYPOINT
 	@echo "--> Using configuration entrypoint at at $(CONSOLEME_CONFIG_ENTRYPOINT)"
 	export CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT)
 endif
-	# Tar contents of the current directory
-	tar --exclude='env*' --exclude='venv*' -cf /tmp/consoleme.tar .
 	# Call Packer to build AMI
-	packer build -var 'app_archive=/tmp/consoleme.tar' packer/create_consoleme_ami.json
-	# Remove Temporary Tar file
-	rm /tmp/consoleme.tar
+	packer build --debug -var 'app_archive=consoleme.tar.gz' packer/create_consoleme_ami.json
 
 .PHONY: packer_ubuntu_oss
 packer_ubuntu_oss: ubuntu_redis env_install default_plugins
@@ -163,3 +166,5 @@ endif
 default_plugins:
 	. env/bin/activate || source activate consoleme;\
 	pip install -e default_plugins
+
+

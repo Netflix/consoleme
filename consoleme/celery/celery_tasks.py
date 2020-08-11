@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Tuple, Union
 
 import celery
-import raven
+import sentry_sdk
 import ujson
 from asgiref.sync import async_to_sync
 from billiard.exceptions import SoftTimeLimitExceeded
@@ -41,20 +41,26 @@ from cloudaux.aws.iam import (
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
-from raven.contrib.celery import register_logger_signal, register_signal
 from retrying import retry
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
+from sentry_sdk.integrations.tornado import TornadoIntegration
 
 from consoleme.config import config
+from consoleme.lib.account_indexers import (
+    cache_cloud_accounts,
+    get_account_id_to_name_mapping,
+)
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
     store_json_results_in_redis_and_s3,
 )
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
-from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
-from consoleme.lib.requests import get_request_review_url
+from consoleme.lib.requests import cache_all_policy_requests, get_request_review_url
 from consoleme.lib.s3_helpers import put_object
 from consoleme.lib.ses import send_group_modification_notification
 from consoleme.lib.timeout import Timeout
@@ -72,11 +78,15 @@ class Celery(celery.Celery):
     def on_configure(self) -> None:
         sentry_dsn = config.get("sentry.dsn")
         if sentry_dsn:
-            client = raven.Client(sentry_dsn)
-            # register a custom filter to filter out duplicate logs
-            register_logger_signal(client)
-            # hook into the Celery error handler
-            register_signal(client)
+            sentry_sdk.init(
+                sentry_dsn,
+                integrations=[
+                    TornadoIntegration(),
+                    CeleryIntegration(),
+                    AioHttpIntegration(),
+                    RedisIntegration(),
+                ],
+            )
 
 
 app = Celery(
@@ -575,7 +585,7 @@ def cache_policies_table_details() -> bool:
     iam_role_redis_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
     arns = red.hkeys(iam_role_redis_key)
     items = []
-    accounts_d = aws.get_account_ids_to_names()
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
 
     cloudtrail_errors = {}
     cloudtrail_errors_j = red.get(
@@ -602,7 +612,7 @@ def cache_policies_table_details() -> bool:
             error_count += int(error.get("count"))
 
         account_id = arn.split(":")[4]
-        account_name = accounts_d.get(str(account_id), ["Unknown"])[0]
+        account_name = accounts_d.get(str(account_id), "Unknown")
         items.append(
             {
                 "account_id": account_id,
@@ -620,7 +630,7 @@ def cache_policies_table_details() -> bool:
     s3_accounts = red.hkeys(s3_bucket_key)
     if s3_accounts:
         for account in s3_accounts:
-            account_name = accounts_d.get(str(account), ["Unknown"])[0]
+            account_name = accounts_d.get(str(account), "Unknown")
             buckets = json.loads(red.hget(s3_bucket_key, account))
 
             for bucket in buckets:
@@ -645,7 +655,7 @@ def cache_policies_table_details() -> bool:
     sns_accounts = red.hkeys(sns_topic_key)
     if sns_accounts:
         for account in sns_accounts:
-            account_name = accounts_d.get(str(account), ["Unknown"])[0]
+            account_name = accounts_d.get(str(account), "Unknown")
             topics = json.loads(red.hget(sns_topic_key, account))
 
             for topic in topics:
@@ -665,7 +675,7 @@ def cache_policies_table_details() -> bool:
     sqs_accounts = red.hkeys(sqs_queue_key)
     if sqs_accounts:
         for account in sqs_accounts:
-            account_name = accounts_d.get(str(account), ["Unknown"])[0]
+            account_name = accounts_d.get(str(account), "Unknown")
             queues = json.loads(red.hget(sqs_queue_key, account))
 
             for queue in queues:
@@ -696,7 +706,7 @@ def cache_policies_table_details() -> bool:
             ]:
                 continue
             account_id = arn.split(":")[4]
-            account_name = accounts_d.get(account_id, ["Unknown"])[0]
+            account_name = accounts_d.get(account_id, "Unknown")
             items.append(
                 {
                     "account_id": account_id,
@@ -744,10 +754,7 @@ def cache_roles_for_account(account_id: str) -> bool:
         )
 
         async_to_sync(store_json_results_in_redis_and_s3)(
-            json.dumps(iam_roles, cls=SetEncoder),
-            redis_key=config.get("cache_roles_for_account.redis_key", "").format(
-                account_id=account_id
-            ),
+            iam_roles,
             s3_bucket=config.get("cache_roles_for_account.s3.bucket"),
             s3_key=config.get("cache_roles_for_account.s3.file", "").format(
                 resource_type="iam_roles", account_id=account_id
@@ -783,21 +790,27 @@ def cache_roles_for_account(account_id: str) -> bool:
 
 
 @app.task(soft_time_limit=3600)
-def cache_roles_across_accounts() -> bool:
+def cache_roles_across_accounts() -> Dict:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
+
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
+
+    log_data = {"function": function, "cache_key": cache_key}
+    num_accounts = 0
     if config.region == config.get("celery.active_region") or config.get(
         "unit_testing.override_true"
     ):
         # First, get list of accounts
-        accounts_d = aws.get_account_ids_to_names()
+        accounts_d = async_to_sync(get_account_id_to_name_mapping)()
         # Second, call tasks to enumerate all the roles across all accounts
         for account_id in accounts_d.keys():
             if config.get("environment") == "prod":
                 cache_roles_for_account.delay(account_id)
+                num_accounts += 1
             else:
                 if account_id in config.get("celery.test_account_ids", []):
                     cache_roles_for_account.delay(account_id)
+                    num_accounts += 1
     else:
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
@@ -813,7 +826,9 @@ def cache_roles_across_accounts() -> bool:
             red.hdel(cache_key, arn)
 
     stats.count(f"{function}.success")
-    return True
+    log_data["num_accounts"] = num_accounts
+    log.debug(log_data)
+    return log_data
 
 
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
@@ -845,7 +860,7 @@ def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, 
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file").format(
+        s3_key = config.get("account_resource_cache.s3.file", "").format(
             resource_type="managed_policies", account_id=account_id
         )
         async_to_sync(store_json_results_in_redis_and_s3)(
@@ -858,7 +873,7 @@ def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, 
 def cache_managed_policies_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d = aws.get_account_ids_to_names()
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -875,7 +890,7 @@ def cache_managed_policies_across_accounts() -> bool:
 def cache_s3_buckets_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = aws.get_account_ids_to_names()
+    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -891,7 +906,7 @@ def cache_s3_buckets_across_accounts() -> bool:
 def cache_sqs_queues_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = aws.get_account_ids_to_names()
+    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -907,7 +922,7 @@ def cache_sqs_queues_across_accounts() -> bool:
 def cache_sns_topics_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = aws.get_account_ids_to_names()
+    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
             cache_sns_topics_for_account.delay(account_id)
@@ -926,7 +941,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         client = boto3_cached_conn(
             "sqs",
             account_number=account_id,
-            assume_role=config.get("policies.role_name"),
+            assume_role=config.get("policies.role_name", "ConsoleMe"),
             region=region,
             read_only=True,
         )
@@ -957,7 +972,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file").format(
+        s3_key = config.get("account_resource_cache.s3.file", "").format(
             resource_type="sqs_queues", account_id=account_id
         )
         async_to_sync(store_json_results_in_redis_and_s3)(
@@ -997,7 +1012,7 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file").format(
+        s3_key = config.get("account_resource_cache.s3.file", "").format(
             resource_type="sns_topics", account_id=account_id
         )
         async_to_sync(store_json_results_in_redis_and_s3)(
@@ -1035,7 +1050,7 @@ def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file").format(
+        s3_key = config.get("account_resource_cache.s3.file", "").format(
             resource_type="s3_buckets", account_id=account_id
         )
         async_to_sync(store_json_results_in_redis_and_s3)(
@@ -1137,7 +1152,7 @@ def get_inventory_of_iam_keys() -> dict:
         config.region == config.get("celery.active_region")
         and config.get("environment") == "prod"
     ):
-        accounts_d: list = aws.get_account_ids_to_names()
+        accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
         for account_id in accounts_d.keys():
             try:
                 iam_users = get_account_authorization_details(
@@ -1178,7 +1193,7 @@ def get_inventory_of_iam_keys() -> dict:
 def cache_resources_from_aws_config_for_account(account_id) -> dict:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     s3_bucket = config.get("aws_config_cache.s3.bucket")
-    s3_key = config.get("aws_config_cache.s3.file").format(account_id=account_id)
+    s3_key = config.get("aws_config_cache.s3.file", "").format(account_id=account_id)
     dynamo = UserDynamoHandler()
     # Only query in active region, otherwise get data from DDB
     if config.region == config.get("celery.active_region") or config.get(
@@ -1186,7 +1201,8 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     ) in ["dev"]:
         results = aws_config.query(
             config.get(
-                "cache_all_resources_from_aws_config.aws_config.all_resources_query"
+                "cache_all_resources_from_aws_config.aws_config.all_resources_query",
+                "select * where accountId = '{account_id}'",
             ).format(account_id=account_id),
             use_aggregator=False,
             account_id=account_id,
@@ -1235,7 +1251,7 @@ def cache_resources_from_aws_config_across_accounts() -> bool:
     resource_redis_cache_key = config.get("aws_config_cache.redis_key")
 
     # First, get list of accounts
-    accounts_d = aws.get_account_ids_to_names()
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") in ["prod", "dev"]:
@@ -1279,10 +1295,9 @@ def get_iam_role_limit() -> dict:
         success_message = "Task successfully completed"
 
         # First, get list of accounts
-        accounts_d: dict = aws.get_account_ids_to_names()
+        accounts_d: dict = async_to_sync(get_account_id_to_name_mapping)()
         num_accounts = len(accounts_d.keys())
-        for account_id, account_aliases in accounts_d.items():
-            account_name = account_aliases[0]
+        for account_id, account_name in accounts_d.items():
             try:
                 iam_summary = _get_delivery_channels(
                     account_number=account_id,
@@ -1324,7 +1339,7 @@ def get_iam_role_limit() -> dict:
                 }
                 stats.count(f"{function}.error", tags={"account_id": account_id})
                 log.error(log_data, exc_info=True)
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 raise
 
     log_data = {
@@ -1334,6 +1349,45 @@ def get_iam_role_limit() -> dict:
         "message": success_message,
     }
     log.debug(log_data)
+    return log_data
+
+
+@app.task(soft_time_limit=300)
+def cache_policy_requests() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    s3_bucket = None
+    s3_key = None
+    redis_key = config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS")
+    if config.region == config.get("celery.active_region") or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("cache_policy_requests.s3.bucket")
+        s3_key = config.get("cache_policy_requests.s3.file")
+    requests = async_to_sync(cache_all_policy_requests)(
+        redis_key=redis_key, s3_bucket=s3_bucket, s3_key=s3_key
+    )
+
+    log_data = {
+        "function": function,
+        "num_requests": len(requests),
+        "message": "Successfully cached requests",
+    }
+
+    return log_data
+
+
+@app.task(soft_time_limit=300)
+def cache_cloud_account_mapping() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+
+    account_mapping = async_to_sync(cache_cloud_accounts)()
+
+    log_data = {
+        "function": function,
+        "num_accounts": len(account_mapping.accounts),
+        "message": "Successfully cached accounts from AWS Organizations",
+    }
+
     return log_data
 
 
@@ -1424,6 +1478,16 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.cache_resources_from_aws_config_across_accounts",
         "options": {"expires": 300},
         "schedule": schedule_6_hours,
+    },
+    "cache_policy_requests": {
+        "task": "consoleme.celery.celery_tasks.cache_policy_requests",
+        "options": {"expires": 1000},
+        "schedule": schedule_1_hour,
+    },
+    "cache_cloud_account_mapping": {
+        "task": "consoleme.celery.celery_tasks.cache_cloud_account_mapping",
+        "options": {"expires": 1000},
+        "schedule": schedule_1_hour,
     },
 }
 

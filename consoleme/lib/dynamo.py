@@ -29,6 +29,7 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
+from consoleme.models import ExtendedRequestModel
 
 DYNAMO_EMPTY_STRING = "---DYNAMO-EMPTY-STRING---"
 
@@ -45,44 +46,6 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger("consoleme")
 crypto = Crypto()
 red = RedisHandler().redis_sync()
-
-
-def parallel_write_table(table, data, overwrite_by_pkeys=None):
-    if not overwrite_by_pkeys:
-        overwrite_by_pkeys = []
-    with table.batch_writer(overwrite_by_pkeys=overwrite_by_pkeys) as batch:
-        for item in data:
-            for attempt in Retrying(stop=stop_after_attempt(3), wait=wait_fixed(2)):
-                with attempt:
-                    batch.put_item(Item=item)
-
-
-def parallel_scan_table(table, total_threads=10):
-    async def _scan_segment(segment, total_segments):
-        response = table.scan(Segment=segment, TotalSegments=total_segments)
-        items = response.get("Items", [])
-
-        while "LastEvaluatedKey" in response:
-            response = table.scan(
-                ExclusiveStartKey=response["LastEvaluatedKey"],
-                Segment=segment,
-                TotalSegments=total_segments,
-            )
-            items.extend(response.get("Items", []))
-
-        return items
-
-    loop = asyncio.get_event_loop()
-    tasks = []
-    for i in range(total_threads):
-        task = asyncio.ensure_future(_scan_segment(i, total_threads))
-        tasks.append(task)
-
-    results = loop.run_until_complete(asyncio.gather(*tasks))
-    items = []
-    for result in results:
-        items.extend(result)
-    return items
 
 
 class BaseDynamoHandler:
@@ -174,6 +137,43 @@ class BaseDynamoHandler:
                 obj = Decimal(obj.timestamp())
             return obj
 
+    def parallel_write_table(self, table, data, overwrite_by_pkeys=None):
+        if not overwrite_by_pkeys:
+            overwrite_by_pkeys = []
+        with table.batch_writer(overwrite_by_pkeys=overwrite_by_pkeys) as batch:
+            for item in data:
+                for attempt in Retrying(stop=stop_after_attempt(3), wait=wait_fixed(2)):
+                    with attempt:
+                        batch.put_item(Item=self._data_to_dynamo_replace(item))
+
+    def parallel_scan_table(self, table, total_threads=10, loop=None):
+        async def _scan_segment(segment, total_segments):
+            response = table.scan(Segment=segment, TotalSegments=total_segments)
+            items = response.get("Items", [])
+
+            while "LastEvaluatedKey" in response:
+                response = table.scan(
+                    ExclusiveStartKey=response["LastEvaluatedKey"],
+                    Segment=segment,
+                    TotalSegments=total_segments,
+                )
+                items.extend(self._data_from_dynamo_replace(response["Items"]))
+
+            return items
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        tasks = []
+        for i in range(total_threads):
+            task = asyncio.ensure_future(_scan_segment(i, total_threads))
+            tasks.append(task)
+
+        results = loop.run_until_complete(asyncio.gather(*tasks))
+        items = []
+        for result in results:
+            items.extend(result)
+        return items
+
 
 class UserDynamoHandler(BaseDynamoHandler):
     def __init__(self, user_email: Optional[str] = None) -> None:
@@ -228,7 +228,7 @@ class UserDynamoHandler(BaseDynamoHandler):
                 raise
 
     def write_resource_cache_data(self, data):
-        parallel_write_table(
+        self.parallel_write_table(
             self.resource_cache_table, data, ["resourceId", "resourceType"]
         )
 
@@ -362,9 +362,11 @@ class UserDynamoHandler(BaseDynamoHandler):
         request_uuid=None,
         policy_status="pending",
         cross_account_request: bool = False,
+        dry_run: bool = False,
     ):
         """
             Writes a policy request to the appropriate DynamoDB table
+            dry_run will create the request format, but won't actually write it
             Sample run:
             write_policy_request(policy_changes)
         """
@@ -390,6 +392,38 @@ class UserDynamoHandler(BaseDynamoHandler):
             "cross_account_request": cross_account_request,
         }
 
+        if not dry_run:
+            try:
+                await sync_to_async(self.policy_requests_table.put_item)(
+                    Item=self._data_to_dynamo_replace(new_request)
+                )
+            except Exception:
+                error = f"Unable to add new policy request: {new_request}"
+                log.error(error, exc_info=True)
+                raise Exception(error)
+        else:
+            log_data = {
+                "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+                "request": new_request,
+                "message": "Dry run, skipping adding request to dynamo",
+            }
+            log.debug(log_data)
+        return new_request
+
+    async def write_policy_request_v2(self, extended_request: ExtendedRequestModel):
+        """
+                    Writes a policy request v2 to the appropriate DynamoDB table
+                    Sample run:
+                    write_policy_request_v2(request)
+        """
+        new_request = {
+            "request_id": extended_request.id,
+            "arn": extended_request.arn,
+            "status": extended_request.status,
+            "last_updated": int(time.time()),
+            "version": "2",
+            "extended_request": extended_request.json(),
+        }
         try:
             await sync_to_async(self.policy_requests_table.put_item)(
                 Item=self._data_to_dynamo_replace(new_request)
@@ -448,25 +482,17 @@ class UserDynamoHandler(BaseDynamoHandler):
         :param status:
         :return:
         """
-        response = await sync_to_async(self.policy_requests_table.scan)()
-        items = []
-
-        if response and "Items" in response:
-            items = self._data_from_dynamo_replace(response["Items"])
-
-        while "LastEvaluatedKey" in response:
-            response = await sync_to_async(self.policy_requests_table.scan)(
-                ExclusiveStartKey=response["LastEvaluatedKey"]
-            )
-            items.extend(self._data_from_dynamo_replace(response["Items"]))
+        requests = await sync_to_async(self.parallel_scan_table)(
+            self.policy_requests_table
+        )
 
         return_value = []
         if status:
-            for item in items:
+            for item in requests:
                 if status and item["status"] == status:
                     return_value.append(item)
         else:
-            return_value = items
+            return_value = requests
 
         return return_value
 
@@ -677,23 +703,13 @@ class UserDynamoHandler(BaseDynamoHandler):
 
         return new_request
 
-    def get_all_requests(self, status=None):
+    async def get_all_requests(self, status=None):
         """Return all requests. If a status is specified, only requests with the specified status will be returned.
 
         :param status:
         :return:
         """
-        response = self.requests_table.scan()
-        items = []
-
-        if response and "Items" in response:
-            items = self._data_from_dynamo_replace(response["Items"])
-
-        while "LastEvaluatedKey" in response:
-            response = self.requests_table.scan(
-                ExclusiveStartKey=response["LastEvaluatedKey"]
-            )
-            items.extend(self._data_from_dynamo_replace(response["Items"]))
+        items = await sync_to_async(self.parallel_scan_table)(self.requests_table)
 
         return_value = []
         if status:

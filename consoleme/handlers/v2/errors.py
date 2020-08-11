@@ -1,9 +1,3 @@
-import ujson as json
-from typing import Dict
-from typing import Optional
-
-from tornado.web import RequestHandler
-
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.plugins import get_plugin_by_name

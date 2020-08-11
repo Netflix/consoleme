@@ -1,8 +1,7 @@
 """Docstring in public module."""
-
 import os
-
 import sys
+
 from mockredis import mock_strict_redis_client
 from tornado.testing import AsyncHTTPTestCase
 
@@ -29,4 +28,4 @@ class TestAutologinHandler(AsyncHTTPTestCase):
 
         response = self.fetch("/role/role123", headers=headers)
         self.assertEqual(response.code, 200)
-        self.assertIn(b"reset_aws_auth_cookie", response.body)
+        self.assertIn(b"signin.aws.amazon.com/oauth", response.body)

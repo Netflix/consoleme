@@ -6,10 +6,15 @@ api_auth:
 auth_cookie_name: consoleme_auth
 application_admin: consoleme_admins@example.com
 application_name: consoleme
+
+# We support account aliases, which is why the mapping of account names below is a list
 account_ids_to_name:
-  123456789012: default_account
-  123456789013: prod
-  123456789014: test
+  "123456789012":
+    - default_account
+  "123456789013":
+    - prod
+  "123456789014":
+    - test
 
 auth:
   get_groups_by_header: true
@@ -19,6 +24,20 @@ auth:
   groups_header_name: group_header
   user_header_name: user_header
 
+# You'll probably want to override FUNCTION to generate this data with your own business logic.
+application_settings:
+  application_1:
+    owner: groupa@example.com
+    owner_url: https://www.example.com/groupa@example.com
+    app_url: https://www.example.com/ci_cd_pipeline/application_1
+    roles:
+      - arn:aws:iam::123456789012:role/application_1InstanceProfile
+      - arn:aws:iam::123456789013:role/application_1InstanceProfile
+  application_2:
+    owner: groupa@example.com
+    roles:
+      - arn:aws:iam::123456789012:role/application_2InstanceProfile
+
 aws:
   console_url: 'https://{}.console.aws.amazon.com'
   federation_url: 'https://signin.aws.amazon.com/federation'
@@ -27,8 +46,14 @@ aws:
   issuer: YourCompany
   requests_dynamo_table: consoleme_requests_global
   session_duration: 43200
+
 celery:
   active_region: us-west-2 # Some jobs should only run in one region.
+  # celery.sync_regions specifies which regions to sync resources from, such as SQS queues and SNS topics
+  sync_regions:
+    - us-east-1
+    - us-west-2
+    - eu-west-1
 challenge:
   token_expiration: 3600
 cli_auth:
@@ -67,6 +92,8 @@ dynamic_config:
 groups:
   can_edit_config:
     - configeditors@example.com
+  can_admin_policies:
+    - consoleme_admins@example.com
 
 jwt:
   groups_key: groups
@@ -148,11 +175,11 @@ logging_levels:
   elasticsearch: ERROR
   nose: CRITICAL
   parso.python.diff: WARNING
-  raven.base.client: WARNING
   s3transfer: CRITICAL
   spectator.HttpClient: WARNING
   spectator.Registry: WARNING
   urllib3: ERROR
+
 
 # Warning: Tracing has performance implications. We recommend against 100% sample_rate in a production environment.
 # Enabling tracing in development will also override your ability to debug in your IDE. If you're
@@ -175,10 +202,16 @@ cache_all_resources_from_aws_config:
 
 aws_config_cache:
   redis_key: AWSCONFIG_RESOURCE_CACHE
-  s3:
-    bucket: consoleme_bucket
-    file: aws_config_cache/cache_{account_id}_v1.json
+  # s3:
+  #  bucket: consoleme_bucket
+  #  file: aws_config_cache/cache_{account_id}_v1.json
 
+api_protect:
+  exclude_regions:
+    - af-south-1
+    - ap-east-1
+    - eu-south-1
+    - me-south-1
 #policies:
 #  role_name: ConsoleMeRole
 
@@ -197,6 +230,9 @@ aws_config_cache:
 
 # Note: Do not put anything sensitive in the self_service_iam key. This may be exposed to the frontend UI
 self_service_iam:
+  custom_header_message: |-
+    Welcome to the new and improved IAM Self-Service Wizard beta!
+    Please click [here](/self_service_v1) if you need to access the older version.
   permissions_map:
     s3:
       text: S3 Bucket
@@ -235,7 +271,6 @@ self_service_iam:
             - s3:PutObjectVersionTagging
             - s3:ListMultipartUploadParts*
             - s3:AbortMultipartUpload
-            - s3:RestoreObject
         - name: delete
           text: Delete
           permissions:
@@ -253,22 +288,18 @@ self_service_iam:
           required: true
           typeahead_endpoint: /policies/typeahead?resource=sqs&search={query}
       action_map:
-        - name: get_queue_attributes
-          text: Get Queue Attributes
+        - name: send_messages
+          text: Send Message (Queue Producer)
           permissions:
             - sqs:GetQueueAttributes
             - sqs:GetQueueUrl
-        - name: send_messages
-          text: Send Message
-          permissions:
             - sqs:SendMessage
         - name: receive_messages
-          text: Receive Message
+          text: Receive/Delete Messages (Queue Consumer)
           permissions:
+            - sqs:GetQueueAttributes
+            - sqs:GetQueueUrl
             - sqs:ReceiveMessage
-        - name: delete_messages
-          text: Delete Message
-          permissions:
             - sqs:DeleteMessage
         - name: set_queue_attributes
           text: Set Queue Attributes
@@ -336,6 +367,10 @@ self_service_iam:
             - ec2:detachvolume
             - ec2:reportinstancestatus
             - ec2:resetsnapshotattribute
+        - name: ipv6
+          text: Enable IPv6
+          permissions:
+            - ec2:AssignIpv6Addresses
     route53:
       text: Route53
       description: ""
@@ -360,7 +395,7 @@ self_service_iam:
       inputs:
         - name: resource_arn
           type: typeahead_input
-          text: Role ARN yhat you wish to assume
+          text: Role ARN that you wish to assume
           required: true
           typeahead_endpoint: /policies/typeahead?resource=iam_arn&search={query}
       action_map:
@@ -368,17 +403,39 @@ self_service_iam:
           text: Assume Role
           permissions:
             - sts:AssumeRole
+    ses:
+      text: SES - Send Email
+      inputs:
+        - name: from_address
+          type: text_input
+          text: Email Address to send from
+          required: true
+          default: "emailaddress@example.com"
+        - name: resource_arn
+          type: text_input
+          text: ARN of the resource to send from
+          required: true
+      condition:
+        StringLike:
+          ses:FromAddress: "{from_address}"
+      action_map:
+        - name: send_email
+          text: Send Email
+          permissions:
+            - ses:SendEmail
+            - ses:SendRawEmail
     crud_lookup:
       text: Other
       description: |-
-        Define the service (ssm, rds, route53, etc), the resource (An ARN or a wildcard), and the list of actions
+        Define the service (rds, route53, rekognition, etc), the resource (An ARN or a wildcard), and the list of actions
         (List, Read, Write, Permissions Management, Tagging) that you need access to. If you know the specific IAM
         permissions you need, use "Advanced Mode" from the dropdown instead.
       inputs:
-        - name: service
-          type: text_input
-          text: Service (s3, sqs, sns, ssm, etc)
+        - name: service_name
+          type: typeahead_input
+          text: Service (s3, sqs, sns, rekognition, etc)
           required: true
+          typeahead_endpoint: /api/v1/policyuniverse/autocomplete/?only_filter_services=true&prefix={query}
         - name: resource_arn
           type: text_input
           text: Resource ARN or Wildcard (*)
@@ -397,7 +454,7 @@ self_service_iam:
           text: Write
           permissions:
             - Write
-        - name: permissions_management
+        - name: permissions-management
           text: Permissions Management
           permissions:
             - Permissions management
@@ -405,3 +462,307 @@ self_service_iam:
           text: Tagging
           permissions:
             - Tagging
+
+# In your deployment, you'll probably want to move these to Dynamic Configuration at
+# https://YOUR_CONSOLEME_DOMAIN/config
+permission_templates:
+    default:
+        default: true
+        label: Default Template
+        policy: |-
+            {
+                 "Statement":[
+                     {
+                         "Action":[
+                             ""
+                         ],
+                         "Effect":"Allow",
+                         "Resource": [
+                             ""
+                         ]
+                     }
+                 ],
+                 "Version":"2012-10-17"
+             }
+    s3hermesreadwrite:
+        label: S3 Read/Write Access for Hermes
+        policy: |-
+            {
+                "Statement":[
+                    {
+                        "Action":[
+                            "s3:ListBucket",
+                            "s3:GetObject",
+                            "s3:PutObject",
+                            "s3:DeleteObject"
+                        ],
+                        "Effect":"Allow",
+                        "Resource":[
+                            "arn:aws:s3:::BUCKET_NAME",
+                            "arn:aws:s3:::eu-west-1.BUCKET_NAME",
+                            "arn:aws:s3:::us-west-2.BUCKET_NAME",
+                            "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/\*",
+                            "arn:aws:s3:::eu-west-1.BUCKET_NAME/OPTIONAL_PREFIX/\*",
+                            "arn:aws:s3:::us-west-2.BUCKET_NAME/OPTIONAL_PREFIX/\*"
+                        ],
+                        "Sid":"s3hermesreadwrite"
+                    }
+                ]
+            }
+    s3hermesread:
+        label: S3 Read Access for Hermes
+        policy: |-
+            {
+                "Statement":[
+                    {
+                        "Action":[
+                            "s3:ListBucket",
+                            "s3:GetObject"
+                        ],
+                        "Effect":"Allow",
+                        "Resource":[
+                            "arn:aws:s3:::BUCKET_NAME",
+                            "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/*"
+                        ],
+                        "Sid":"s3hermesreadonly"
+                    }
+                ]
+            }
+    s3write:
+        label: S3 Write Access
+        policy: |-
+            {
+                "Statement":[
+                    {
+                        "Action":[
+                            "s3:ListBucket",
+                            "s3:GetObject",
+                            "s3:PutObject",
+                            "s3:DeleteObject"
+                        ],
+                        "Effect":"Allow",
+                        "Resource":[
+                            "arn:aws:s3:::BUCKET_NAME",
+                            "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/\*"
+                        ],
+                        "Sid":"s3readwrite"
+                    }
+                ]
+            }
+    s3read:
+        label: S3 Read Access
+        policy: |-
+            {
+                "Statement":[
+                    {
+                        "Action":[
+                            "s3:ListBucket",
+                            "s3:GetObject"
+                        ],
+                        "Effect":"Allow",
+                        "Resource":[
+                            "arn:aws:s3:::BUCKET_NAME",
+                            "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/\*"
+                        ],
+                        "Sid":"s3readonly"
+                    }
+                ]
+            }
+    sqs:
+        label: SQS
+        policy: |-
+            {
+              "Statement": [
+                {
+                  "Action": [
+                    "sqs:ReceiveMessage",
+                    "sqs:SendMessage",
+                    "sqs:DeleteMessage",
+                    "sqs:GetQueueUrl",
+                    "sqs:GetQueueAttributes"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "QUEUE_ARN"
+                }
+              ]
+            }
+    sns:
+        label: SNS
+        policy: |-
+            {
+              "Statement": [
+                {
+                  "Action": [
+                    "sns:Publish",
+                    "sns:Subscribe",
+                    "sns:Unsubscribe"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "TOPIC_ARN"
+                }
+              ]
+            }
+    rdspassrole:
+        label: RDS Monitoring PassRole
+        policy: |-
+            {
+              "Statement": [
+                {
+                  "Action": [
+                    "iam:PassRole"
+                  ],
+                  "Effect": "Allow",
+                  "Resource": "arn:aws:iam::<ACCOUNTID>:role/rds-monitoring-role"
+                }
+              ]
+            }
+    ses:
+        label: SES
+        policy: |-
+            {
+                "Statement": [
+                    {
+                        "Action": [
+                            "ses:SendEmail",
+                            "ses:SendRawEmail"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": "arn:aws:ses:*:436874060379:identity/saasmail.netflix.com",
+                        "Condition": {
+                            "StringLike": {
+                                "ses:FromAddress": "SENDER@saasmail.netflix.com"
+                            }
+                        }
+                    }
+                ]
+            }
+    sts:
+        label: STS - Assume role
+        policy: |-
+            {
+                "Statement": [
+                    {
+                        "Action": [
+                            "sts:AssumeRole"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": "arn:aws:iam::ACCOUNT_NUMBER:role/ROLE"
+                    }
+                ]
+            }
+    route53:
+        label: Route53 List/Change Record Sets
+        policy: |-
+            {
+                "Statement": [
+                    {
+                        "Action": [
+                            "route53:changeresourcerecordsets",
+                            "route53:listresourcerecordsets"
+                        ],
+                        "Resource": [
+                            "*"
+                        ],
+                        "Effect": "Allow"
+                    }
+                ]
+            }
+    ec2_create_volume:
+        label: EC2 Volmount
+        policy: |-
+            {
+                "Statement": [
+                    {
+                        "Action": [
+                            "ec2:attachvolume",
+                            "ec2:createvolume",
+                            "ec2:describelicenses",
+                            "ec2:describevolumes",
+                            "ec2:detachvolume",
+                            "ec2:reportinstancestatus",
+                            "ec2:resetsnapshotattribute"
+                        ],
+                        "Resource": [
+                            "*"
+                        ],
+                        "Effect": "Allow"
+                    }
+                ]
+            }
+    put_cloudwatch_data:
+        label: Cloudwatch - putmetricdata
+        policy: |-
+            {
+                "Statement":[
+                    {
+                        "Action":[
+                            "cloudwatch:putmetricdata"
+                        ],
+                        "Effect":"Allow",
+                        "Resource":[
+                            "*"
+                        ]
+                    }
+                ],
+                "Version":"2012-10-17"
+            }
+    eni_auto_attach:
+        label: ENI - Auto attach
+        policy: |-
+            {
+                "Statement":[
+                    {
+                        "Action":[
+                            "ec2:AttachNetworkInterface",
+                            "ec2:Describe*",
+                            "ec2:DetachNetworkInterface"
+                        ],
+                        "Effect":"Allow",
+                        "Resource":[
+                            "*"
+                        ],
+                        "Sid":"eniauto"
+                    }
+                ],
+                "Version":"2012-10-17"
+            }
+    ec2_ipv6:
+        label: EC2 - AssignIpv6Addresses
+        policy: |-
+            {
+                "Statement":[
+                    {
+                        "Action":[
+                            "ec2:AssignIpv6Addresses"
+                        ],
+                        "Effect":"Allow",
+                        "Resource":[
+                            "*"
+                        ]
+                    }
+                ]
+            }
+    volmount:
+        label: EC2 - volmount
+        policy: |-
+            {
+                "Statement":[
+                    {
+                        "Action":[
+                              "ec2:attachvolume",
+                              "ec2:createsnapshot",
+                              "ec2:createtags",
+                              "ec2:createvolume",
+                              "ec2:deletesnapshot",
+                              "ec2:describeinstances",
+                              "ec2:describetags",
+                              "ec2:describevolumes",
+                              "ec2:modifyinstanceattribute"
+                        ],
+                        "Effect":"Allow",
+                        "Resource":[
+                            "*"
+                        ]
+                    }
+                ]
+            }

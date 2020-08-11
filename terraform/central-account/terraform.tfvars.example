@@ -1,0 +1,13 @@
+name                = "consoleme"
+stage               = "somestage"
+namespace           = "sfdc"
+region              = "us-east-1"
+default_tags        = {}
+key_name            = "kinnaird"
+vpc_cidr            = "10.1.1.0/24"
+public_subnet_cidrs = ["10.1.1.0/28"]
+subnet_azs          = ["us-east-1a"]
+
+allowed_inbound_cidr_blocks = []
+
+bucket = "my-bucket-containing-consoleme-tarball"

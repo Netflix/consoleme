@@ -133,7 +133,7 @@
       let langTools = ace.require("ace/ext/language_tools");
       langTools.addCompleter(permissionCompleter);
       let permission_value = {};
-      {% for k, v in config.get('dynamic_config.permission_templates', {}).items() %}
+      {% for k, v in config.get('dynamic_config.permission_templates', config.get('permission_templates', {})).items() %}
       permission_value["{{ k }}"] = {};
       permission_value["{{ k }}"]["label"] = "{{ v["label"] }}";
       permission_value["{{ k }}"]["policy"] = `{% raw v["policy"] %}`;
@@ -267,11 +267,11 @@
                                 <p>
                                     <input type="text" id="newpolicy_name" placeholder="Policy Name" required>
                                 </p>
-                                {% if config.get('dynamic_config.permission_templates') %}
+                                {% if config.get('dynamic_config.permission_templates', config.get('permission_templates')) %}
                                 <select id="policy-template-dropdown" class="ui search dropdown"
                                         onchange="policyEditor.changeNewPolicyTemplate(this)">
                                     {# Show policies in alphabetical order by policy label #}
-                                    {% for policy_name, policy in sorted(config.get('dynamic_config.permission_templates').items(), key=lambda item: item[1]["label"]) %}
+                                    {% for policy_name, policy in sorted(config.get('dynamic_config.permission_templates', config.get('permission_templates')).items(), key=lambda item: item[1]["label"]) %}
                                     <option value="{{ policy_name }}"
                                             {% if policy.get("default") %}selected="selected"{% end %}>{{ policy.get("label") }}</option>
                                     {% end %}
@@ -289,14 +289,16 @@
                 <div class="ui center floated">
                     <button class="ui primary button" type="save"
                             {% if read_only or not can_save_delete %}style="display: none;"{% end %}
-                            onClick="policyEditor.editPolicy('InlinePolicy', $('#newpolicy_name').val(), neweditor, is_new=true);"
+                            {% if config.get("policies.admin_changes_must_be_requests", False) %}onClick="policyEditor.submitPolicyForReview('InlinePolicy', $('#newpolicy_name').val(), neweditor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=true, admin_auto_approve=true);"
+                            {% else %}onClick="policyEditor.editPolicy('InlinePolicy', $('#newpolicy_name').val(), neweditor, is_new=true);"
+                            {% end %}
                             style="margin: 10px;">Save new policy
                     </button>
                 </div>
 
                 <div class="ui center floated">
                     <button class="ui primary button" type="save" {% if read_only %}style="display: none;"{% end %}
-                            onClick="policyEditor.submitPolicyForReview('InlinePolicy', $('#newpolicy_name').val(), neweditor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=true);"
+                            onClick="policyEditor.submitPolicyForReview('InlinePolicy', $('#newpolicy_name').val(), neweditor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=true, admin_auto_approve=false);"
                             style="margin: 10px;">submit new policy for review
                     </button>
                 </div>
@@ -372,13 +374,15 @@
             <div class="ui center floated">
                 <button class="ui primary button" type="save"
                         {% if read_only or not can_save_delete %}style="display: none;"{% end %}
-                        onClick="policyEditor.editPolicy('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }});"
+                        {% if config.get("policies.admin_changes_must_be_requests", False) %}onClick="policyEditor.submitPolicyForReview('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }}, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=true);"
+                        {% else %}onClick="policyEditor.editPolicy('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }});"
+                        {% end %}
                         style="margin: 10px;">Save {{ policy.get("PolicyName") }}
                 </button>
             </div>
             <div class="ui center floated">
                 <button class="ui primary button" type="save" {% if read_only %}style="display: none;"{% end %}
-                        onClick="policyEditor.submitPolicyForReview('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }}, '{{ role.get("arn") }}', '{{ account_id }}');"
+                        onClick="policyEditor.submitPolicyForReview('InlinePolicy', '{{ policy.get("PolicyName") }}', {{ editor }}, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=false);"
                         style="margin: 10px;">Submit {{ policy.get("PolicyName") }} for review
                 </button>
             </div>
@@ -445,13 +449,15 @@
         <div class="ui center floated">
             <button class="ui primary button" type="save"
                     {% if read_only or not can_save_delete %}style="display: none;"{% end %}
-                    onClick="policyEditor.editPolicy('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor);"
+                    {% if config.get("policies.admin_changes_must_be_requests", False) %}onClick="policyEditor.submitPolicyForReview('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=true);"
+                    {% else %}onClick="policyEditor.editPolicy('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor);"
+                    {% end %}
                     style="margin: 10px;">Save Assume Role Policy
             </button>
         </div>
         <div class="ui center floated">
             <button class="ui primary button" type="save" {% if read_only %}style="display: none;"{% end %}
-                    onClick="policyEditor.submitPolicyForReview('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor, '{{ role.get("arn") }}', '{{ account_id }}');"
+                    onClick="policyEditor.submitPolicyForReview('AssumeRolePolicyDocument', 'AssumeRolePolicyDocument', ar_editor, '{{ role.get("arn") }}', '{{ account_id }}', is_new=false, admin_auto_approve=false);"
                     style="margin: 10px;">Submit Assume Role Policy for review
             </button>
         </div>
@@ -487,7 +493,7 @@
     <select name="managed_policy_add" id="managed_policy_add"
             data-placeholder="Choose a managed policy to add to this role" class="chosen-select"
             tabindex="2"
-            onChange="policyEditor.AddManagedPolicy('{{ policy.get('PolicyName') }}', this.value, '{{ role.get("arn") }}')">
+            onChange="policyEditor.AddManagedPolicy(this.value.split('/')[1], this.value, '{{ role.get("arn") }}')">
         {% for policy in sorted(all_account_managed_policies) %}
         <option value="{{ policy }}"> {{ policy }}</option>
         {% end %}
@@ -508,6 +514,10 @@
             {% if config.get("security_monkey_search_uri") %}
             <div class="field" style="margin: 7px;">
                 <a href="{{config.get("security_monkey_search_uri")}}{{ url_encode(policy.get('PolicyArn')) }}/-/-/-/-/1/25">{{ policy.get('PolicyArn') }}</a>
+            </div>
+            {% else %}
+            <div class="field" style="margin: 7px;">
+                {{ policy.get('PolicyArn') }}
             </div>
             {% end %}
         </div>

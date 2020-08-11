@@ -14,7 +14,6 @@ import logmatic
 import yaml
 from asgiref.sync import async_to_sync
 from pytz import timezone
-from raven.contrib.tornado import AsyncSentryClient
 
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -86,8 +85,14 @@ class Configuration(object):
     async def load_config(self):
         """Load configuration from the location given to us by config_plugin"""
         path = config_plugin.get_config_location()
-        with open(path, "r") as ymlfile:
-            self.config = yaml.safe_load(ymlfile)
+        try:
+            with open(path, "r") as ymlfile:
+                self.config = yaml.safe_load(ymlfile)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(
+                "File not found. Please set the CONFIG_LOCATION environmental variable "
+                f"to point to ConsoleMe's YAML configuration file: {e}"
+            )
 
         extends = self.get("extends")
         dir_path = os.path.dirname(path)
@@ -211,5 +216,3 @@ region = os.environ.get("EC2_REGION", "us-east-1")
 hostname = socket.gethostname()
 api_spec = {}
 dir_ref = dir
-
-sentry: AsyncSentryClient = AsyncSentryClient(get("sentry.dsn"))

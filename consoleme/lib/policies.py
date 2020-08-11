@@ -21,12 +21,15 @@ from consoleme.exceptions.exceptions import InvalidRequestParameter
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.handler import update_role
+from consoleme.models import ExtendedRequestModel
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 
 
 async def invalid_characters_in_policy(policy_value):
+    if not policy_value:
+        return False
     if "<" in policy_value or ">" in policy_value:
         return True
     return False
@@ -209,7 +212,7 @@ async def can_move_back_to_pending(request, groups):
         if request.get("last_updated", 0) < int(time.time()) - 86400:
             return False
         # Allow admins to return requests back to pending state
-        for g in config.get("groups.can_admin_policies"):
+        for g in config.get("groups.can_admin_policies", []):
             if g in groups:
                 return True
     return False
@@ -221,7 +224,20 @@ async def can_update_requests(request, user, groups):
 
     # Allow admins to return requests back to pending state
     if not can_update:
-        for g in config.get("groups.can_admin_policies"):
+        for g in config.get("groups.can_admin_policies", []):
+            if g in groups:
+                return True
+
+    return can_update
+
+
+async def can_update_cancel_requests_v2(requester_username, user, groups):
+    # Users can update their own requests
+    can_update = True if user == requester_username else False
+
+    # Allow admins to update / cancel requests
+    if not can_update:
+        for g in config.get("groups.can_admin_policies", []):
             if g in groups:
                 return True
 
@@ -410,6 +426,10 @@ async def get_policy_request_uri(request):
     return f"{config.get('url')}/policies/request/{request['request_id']}"
 
 
+async def get_policy_request_uri_v2(extended_request: ExtendedRequestModel):
+    return f"{config.get('url')}/policies/request/{extended_request.id}"
+
+
 async def validate_policy_name(policy_name):
     p = re.compile("^[a-zA-Z0-9+=,.@\\-_]+$")
     match = p.match(policy_name)
@@ -420,7 +440,7 @@ async def validate_policy_name(policy_name):
         )
 
 
-async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, List[str]]:
+async def get_resources_from_events(policy_changes: List[Dict]) -> Dict[str, dict]:
     """Returns a dict of resources affected by a list of policy changes along with
     the actions and other data points that are relevant to them.
 
@@ -607,6 +627,13 @@ async def should_auto_approve_policy(events, user, user_groups):
     aws = get_plugin_by_name(config.get("plugins.aws"))()
     result = await aws.should_auto_approve_policy(events, user, user_groups)
     return result
+
+
+async def should_auto_approve_policy_v2(
+    extended_request: ExtendedRequestModel, user, user_groups
+):
+    aws = get_plugin_by_name(config.get("plugins.aws"))()
+    return await aws.should_auto_approve_policy_v2(extended_request, user, user_groups)
 
 
 async def get_url_for_resource(arn, resource_type, account_id, region, resource_name):

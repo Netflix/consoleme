@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import pytz
+import sentry_sdk
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
@@ -157,11 +158,11 @@ async def get_all_iam_managed_policies_for_account(account_id):
         return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
     else:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file").format(
+        s3_key = config.get("account_resource_cache.s3.file", "").format(
             resource_type="managed_policies", account_id=account_id
         )
         return await retrieve_json_data_from_redis_or_s3(
-            s3_bucket=s3_bucket, s3_key=s3_key
+            s3_bucket=s3_bucket, s3_key=s3_key, default=[]
         )
 
 
@@ -190,8 +191,16 @@ async def get_resource_policy(account: str, resource_type: str, name: str, regio
     except ClientError:
         # We don't have access to this resource, so we can't get the policy.
         details = {}
+
+    # Default policy
+    default_policy = {"Version": "2012-10-17", "Statement": []}
+
+    # When NoSuchBucketPolicy, the above method returns {"Policy": {}}, so we default to blank policy
+    if "Policy" in details and "Statement" not in details["Policy"]:
+        details = {"Policy": default_policy}
+
     # Default to a blank policy
-    return details.get("Policy", {"Version": "2012-10-17", "Statement": []})
+    return details.get("Policy", default_policy)
 
 
 async def get_resource_policies(
@@ -211,7 +220,7 @@ async def get_resource_policies(
             )
             arns = resource_info.get("arns", [])
             actions = resource_info.get("actions", [])
-            new_policy = await update_resource_policy(
+            new_policy = await generate_updated_resource_policy(
                 old_policy, principal_arn, arns, actions
             )
 
@@ -227,9 +236,17 @@ async def get_resource_policies(
     return resource_policies, cross_account_request
 
 
-async def update_resource_policy(
+async def generate_updated_resource_policy(
     existing: Dict, principal_arn: str, resource_arns: List[str], actions: List[str]
 ) -> Dict:
+    """
+
+    :param existing: Dict: the current existing policy document
+    :param principal_arn: the Principal ARN which wants access to the resource
+    :param resource_arns: the Resource ARNs
+    :param actions: The list of Actions to be added
+    :return: Dict: generated updated resource policy that includes a new statement for the listed actions
+    """
     policy_dict = deepcopy(existing)
     new_statement = {
         "Effect": "Allow",
@@ -435,7 +452,7 @@ async def delete_iam_role(account_id, role_name, username) -> bool:
                 "instance_profile": instance_profile.name,
             }
         )
-        await sync_to_async(instance_profile.remove_role)(RoleName=role.name,)
+        await sync_to_async(instance_profile.remove_role)(RoleName=role.name)
         await sync_to_async(instance_profile.delete)()
 
     # Detach managed policies
@@ -586,7 +603,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
             }
         )
         results["errors"] += 1
-        config.sentry.captureException()
+        sentry_sdk.capture_exception()
         # Since we were unable to create the role, no point continuing, just return
         return results
 
@@ -627,7 +644,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
             ] = "Exception occurred creating/attaching instance profile"
             log_data["error"] = str(e)
             log.error(log_data, exc_info=True)
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             results["action_results"].append(
                 {
                     "status": "error",
@@ -747,7 +764,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
             }
         )
         results["errors"] += 1
-        config.sentry.captureException()
+        sentry_sdk.capture_exception()
         # Since we were unable to create the role, no point continuing, just return
         return results
 
@@ -815,7 +832,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
             ] = "Exception occurred creating/attaching instance profile"
             log_data["error"] = str(e)
             log.error(log_data, exc_info=True)
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             results["action_results"].append(
                 {
                     "status": "error",
@@ -850,7 +867,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
                 log_data["message"] = "Exception occurred copying inline policy"
                 log_data["error"] = str(e)
                 log.error(log_data, exc_info=True)
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 results["action_results"].append(
                     {
                         "status": "error",
@@ -881,7 +898,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
                 log_data["message"] = "Exception occurred copying managed policy"
                 log_data["error"] = str(e)
                 log.error(log_data, exc_info=True)
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 results["action_results"].append(
                     {
                         "status": "error",

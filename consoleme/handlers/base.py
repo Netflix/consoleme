@@ -10,7 +10,6 @@ import tornado.httputil
 import tornado.web
 import ujson as json
 from asgiref.sync import sync_to_async
-from raven.contrib.tornado import SentryMixin
 from tornado import httputil
 
 from consoleme.config import config
@@ -40,7 +39,7 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 
 
-class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
+class BaseJSONHandler(tornado.web.RequestHandler):
     # These methods are returned in OPTIONS requests.
     # Default methods can be overridden by setting this variable in child classes.
     allowed_methods = ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]
@@ -109,7 +108,7 @@ class BaseJSONHandler(SentryMixin, tornado.web.RequestHandler):
             return tkn
 
 
-class BaseHandler(SentryMixin, tornado.web.RequestHandler):
+class BaseHandler(tornado.web.RequestHandler):
     """Default BaseHandler."""
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:
@@ -241,7 +240,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
         self.user = user
         self.groups = None
         self.user_role_name = None
-        self.legacy_user_role_mapping = {}
 
         log_data = {
             "function": "Basehandler.authorization_flow",
@@ -339,7 +337,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                 self.eligible_roles = cache.get("eligible_roles")
                 self.eligible_accounts = cache.get("eligible_accounts")
                 self.user_role_name = cache.get("user_role_name")
-                self.legacy_user_role_mapping = cache.get("legacy_user_role_mapping")
                 return
 
         try:
@@ -371,11 +368,7 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
             self.user_role_name = await auth.get_or_create_user_role_name(self.user)
 
         self.eligible_roles = await group_mapping.get_eligible_roles(
-            self.user,
-            self.groups,
-            self.user_role_name,
-            legacy_mapping=self.legacy_user_role_mapping,
-            console_only=console_only,
+            self.user, self.groups, self.user_role_name, console_only=console_only
         )
 
         if not self.eligible_roles:
@@ -389,7 +382,7 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
             self.eligible_accounts = await group_mapping.get_eligible_accounts(
                 self.eligible_roles
             )
-            log_data["eligible_accounts"] = self.eligible_accounts
+            log_data["eligible_accounts"] = len(self.eligible_accounts)
             log_data["message"] = "Successfully authorized user."
             log.debug(log_data)
         except Exception:
@@ -407,7 +400,6 @@ class BaseHandler(SentryMixin, tornado.web.RequestHandler):
                             "eligible_roles": self.eligible_roles,
                             "eligible_accounts": self.eligible_accounts,
                             "user_role_name": self.user_role_name,
-                            "legacy_user_role_mapping": self.legacy_user_role_mapping,
                         }
                     ),
                 )

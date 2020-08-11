@@ -103,6 +103,9 @@
                     {% if config.get("enable_self_service") %}
                     <a class="item" href="/self_service">Self Service Permissions</a>
                     {% end %}
+                    {% if config.get("enable_requests_table") %}
+                    <a class="item" href="/requests">Policy Requests</a>
+                    {% end %}
                     {% if is_in_group(user_groups, config.get("groups.can_edit_health_alert", [])) %}
                     <a class="item" href="/api_health">API Health</a>
                     {% end %}
@@ -146,6 +149,44 @@
         <ul>
             <div id="RoleHistory">
             </div>
+            <script>
+            {% if globals().get("recent_roles") and recent_roles %}
+                pastRoles = parseLocalStorageCache();
+                let accounts = {% raw eligible_accounts %};
+
+                if (pastRoles != null) {
+                    text = '<h3>Recent roles</h3>'
+                    text += '<form id="recent_roles" name="recent_roles" action="/role/" method="post" enctype="application/json"><ul>'
+                    text += '{% module xsrf_form_html() %}'
+                    text += '<input type=hidden name="region" value="{{ escape(region) }}">'
+                    {% if globals().get("redirect") and redirect %}
+                        text += '<input type=hidden name="redirect" value="{{ escape(redirect) }}">'
+                    {% end %}
+                    for (i = 0; i < pastRoles.length; i++) {
+                        let roleName = formatRoleName(pastRoles[i].split('role/')[1], accounts);
+                        // Does the role-account mapping not exist anymore?
+                        if (!roleName) {
+                            continue;
+                        }
+                        text += '<li><a style="height: 40px;padding: 0px 0px; */" href="/role/' + pastRoles[i] + '"><div class="text-center" data-toggle="buttons" style="display: block; margin-bottom:2px;margin-left:30px;margin-top:10px;"><label class="btn" style="width: 200px;display: inline-block;margin-left: 10px;height: 40px;">'
+                        text += roleName
+                        text += '</label></div></a></li>'
+                    }
+                    document.getElementById("RoleHistory").innerHTML = text;
+                }
+
+                window.onload = reset_options();
+                $(".chosen-select").chosen({
+                search_contains: true
+                });
+
+                $('input[type=radio]').on('change', function(form) {
+                    setRecentRole("role");
+                    document.getElementsByName('logOutIframe')[0].src = "https://signin.aws.amazon.com/oauth?Action=logout";
+                    selectRole(form.currentTarget.value, "/");
+                });
+            {% end %}
+            </script>
             <h4>Help</h4>
             {% if config.get("documentation_page") %}
             <li>
@@ -178,7 +219,7 @@
                 {% from random import randint %}
                 {% set month=datetime.now().month %}
                 {% set summer=True if month in [6,7,8] else False %}
-                {% set dir="sunglasses" if summer else "nosunglasses" %}
+                {% set dir="quarantine" %}
                 {% set file = f"{randint(1, 3)}.png" %}
                 <img id="consoleme_logo" src="/static/logos/{{ dir }}/{{ file }}">
             </div>

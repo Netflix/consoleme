@@ -26,6 +26,7 @@ from consoleme.exceptions.exceptions import (
     UserRoleLambdaException,
     UserRoleNotAssumableYet,
 )
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.dynamo import IAMRoleDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -295,8 +296,8 @@ class Aws:
     ) -> str:
         """Call out to the lambda function to provision the per-user role for the account."""
         # Get the template's name based on the account and user role name:
-        accounts = self.get_account_ids_to_names()
-        account_name = accounts[account_id][0]
+        accounts = await get_account_id_to_name_mapping()
+        account_name = accounts[account_id]
         role_to_fetch = (
             f"arn:aws:iam::{account_id}:role/{account_name}_{user_role_name}"
         )
@@ -512,8 +513,38 @@ class Aws:
     async def sns_publish_policy_requests(self, request, request_uri):
         raise NotImplementedError()
 
-    async def send_communications_policy_change_request(self, request):
-        raise NotImplementedError()
+    async def send_communications_policy_change_request(self, request, send_sns=False):
+        """
+        Optionally send a notification when there's a new policy change request
+
+        :param request:
+        :param send_sns:
+        :return:
+        """
+        log_data: dict = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Function is not configured.",
+        }
+        log.warning(log_data)
+        return
+
+    async def send_communications_new_policy_request(
+        self, extended_request, admin_approved, approval_probe_approved
+    ):
+        """
+        Optionally send a notification when there's a new policy change request
+
+        :param approval_probe_approved:
+        :param admin_approved:
+        :param extended_request:
+        :return:
+        """
+        log_data: dict = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Function is not configured.",
+        }
+        log.warning(log_data)
+        return
 
     @staticmethod
     def get_account_ids_to_names():
@@ -525,6 +556,9 @@ class Aws:
 
     async def should_auto_approve_policy(self, events, user, user_groups):
         return False
+
+    async def should_auto_approve_policy_v2(self, extended_request, user, user_groups):
+        return {"approved": False}
 
 
 def init():

@@ -1,7 +1,7 @@
 from tornado.escape import xhtml_escape
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseHandler, BaseMtlsHandler, BaseAPIV1Handler
+from consoleme.handlers.base import BaseAPIV1Handler, BaseHandler, BaseMtlsHandler
 from consoleme.lib.generic import get_random_security_logo, is_in_group
 from consoleme.lib.plugins import get_plugin_by_name
 

@@ -18,6 +18,7 @@ from consoleme.routes import make_app
 logging.basicConfig(level=logging.DEBUG, format=config.get("logging.format"))
 logging.getLogger("urllib3.connectionpool").setLevel(logging.CRITICAL)
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
+log = config.get_logger()
 
 
 def main():
@@ -25,12 +26,11 @@ def main():
         app = make_app(jwt_validator=lambda x: {})
     else:
         app = make_app()
-    if config.sentry:
-        app.sentry_client = config.sentry
     return app
 
 
-asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+if config.get("tornado.uvloop", True):
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 AsyncIOMainLoop().install()
 app = main()
 
@@ -54,6 +54,7 @@ def init():
                     for f in files
                     if not f.startswith(".")
                 ]
+        log.debug({"message": "Server started"})
         asyncio.get_event_loop().run_forever()
 
 

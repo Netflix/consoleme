@@ -11,7 +11,8 @@ from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
     MissingConfigurationValue,
 )
-from consoleme.lib.generic import generate_random_string
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.generic import generate_random_string, iterate_and_format_dict
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import (
     ChangeGeneratorModel,
@@ -22,10 +23,11 @@ from consoleme.models import (
     InlinePolicyChangeModel,
     PolicyModel,
     ResourceModel,
+    Status,
 )
 
 group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
-account_ids_to_names = group_mapping.get_account_ids_to_names()
+ALL_ACCOUNTS = None
 
 
 async def _generate_policy_statement(
@@ -121,6 +123,7 @@ async def _generate_inline_policy_change_model(
         "policy_name": policy_name,
         "new": is_new,
         "policy": policy_document,
+        "status": Status.not_applied,
     }
     return InlinePolicyChangeModel(**change_details)
 
@@ -200,6 +203,19 @@ async def _generate_s3_inline_policy_statement_from_mapping(
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
 
+async def _generate_condition_with_substitutions(generator: ChangeGeneratorModel):
+    """
+    Generates a condition with substitutions if they are needed.
+
+    :param generator:
+    :return:
+    """
+    condition: Optional[Dict] = generator.condition
+    if isinstance(condition, dict):
+        condition = await iterate_and_format_dict(condition, generator.dict())
+    return condition
+
+
 async def _generate_inline_policy_statement_from_mapping(
     generator: ChangeGeneratorModel,
 ) -> Dict:
@@ -223,7 +239,6 @@ async def _generate_inline_policy_statement_from_mapping(
     action_group_actions: List[str] = []
     resource_arns = [generator.resource_arn]
     effect = generator.effect
-    condition = generator.condition
 
     for action in generator.action_groups:
         # TODO: Seems like a datamodel bug when we don't have a enum defined for an array type, but I need to access
@@ -233,6 +248,7 @@ async def _generate_inline_policy_statement_from_mapping(
         else:
             action_group_actions.append(action.value)
     actions = await _get_actions_from_groups(action_group_actions, permissions_map)
+    condition: Optional[Dict] = await _generate_condition_with_substitutions(generator)
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
 
@@ -364,7 +380,10 @@ async def _generate_resource_model_from_arn(arn: str) -> Optional[ResourceModel]
         name = arn.split(":")[5].split("/")[-1]
         if not region:
             region = "global"
-        account_name = account_ids_to_names.get(account_id, [""])[0]
+        global ALL_ACCOUNTS
+        if not ALL_ACCOUNTS:
+            ALL_ACCOUNTS = await get_account_id_to_name_mapping()
+        account_name = ALL_ACCOUNTS.get(account_id, "")
 
         return ResourceModel(
             arn=arn,
@@ -450,4 +469,4 @@ async def generate_change_model_array(
         primary_principal_arn, resources, inline_iam_policy_statements, primary_user
     )
     change_models.append(inline_iam_policy_change_model)
-    return ChangeModelArray.parse_obj(change_models)
+    return ChangeModelArray.parse_obj({"changes": change_models})

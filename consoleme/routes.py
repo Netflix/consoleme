@@ -3,9 +3,12 @@ import os
 
 import pkg_resources
 import requests
+import sentry_sdk
 import tornado.autoreload
 import tornado.web
-from raven.contrib.tornado import AsyncSentryClient
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
+from sentry_sdk.integrations.tornado import TornadoIntegration
 
 import consoleme
 from consoleme.config import config
@@ -22,9 +25,6 @@ from consoleme.handlers.v1.headers import (
     UserProfileHandler,
 )
 from consoleme.handlers.v1.health import HealthHandler
-from consoleme.handlers.v1.index import IndexHandler
-
-# from consoleme.handlers.v1.index import IndexHandler
 from consoleme.handlers.v1.policies import (
     ApiResourceTypeAheadHandler,
     AutocompleteHandler,
@@ -45,9 +45,17 @@ from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 
-# Todo: UIREFACTOR: Remove reference to /v2 when new UI is complete
-from consoleme.handlers.v2.index import IndexHandler as IndexHandlerV2  # noqa
-from consoleme.handlers.v2.requests import RequestDetailHandler, RequestsHandler
+
+from consoleme.handlers.v2.index import EligibleRoleTableConfigHandler, IndexHandler
+from consoleme.handlers.v2.policies import PolicyReviewV2Handler
+
+from consoleme.handlers.v2.requests import (
+    RequestDetailHandler,
+    RequestHandler,
+    RequestsHandler,
+    RequestsTableConfigHandler,
+    RequestsWebHandler,
+)
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
@@ -83,8 +91,8 @@ def make_app(jwt_validator=None):
 
     oss_routes = [
         (r"/", IndexHandler),
-        (r"/login", IndexHandler),
         (r"/auth", AuthHandler),
+        (r"/role/?", AutoLoginHandler),
         (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),
         (
@@ -110,8 +118,11 @@ def make_app(jwt_validator=None):
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
+        (r"/api/v2/role_table_config", EligibleRoleTableConfigHandler),
+        (r"/api/v2/request", RequestHandler),
         (r"/api/v2/requests", RequestsHandler),
         (r"/api/v2/requests/([a-zA-Z0-9_-]+)", RequestDetailHandler),
+        (r"/api/v2/requests_table_config", RequestsTableConfigHandler),
         (r"/api/v2/roles/?", RolesHandler),
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
@@ -134,11 +145,13 @@ def make_app(jwt_validator=None):
             ResourcePolicyEditHandler,
         ),
         (r"/policies/request/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
+        (r"/policies/request_v2/([a-zA-Z0-9_-]+)", PolicyReviewV2Handler),
         (r"/policies/submit_for_review", PolicyReviewSubmitHandler),
         (r"/policies/typeahead", ResourceTypeAheadHandler),
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service_v1", SelfServiceHandler),
         (r"/self_service", SelfServiceV2Handler),
+        (r"/requests", RequestsWebHandler),
     ]
 
     # Prioritize internal routes before OSS routes so that OSS routes can be overrided if desired.
@@ -164,6 +177,13 @@ def make_app(jwt_validator=None):
     sentry_dsn = config.get("sentry.dsn")
 
     if sentry_dsn:
-        app.sentry_client = AsyncSentryClient(config.get("sentry.dsn"))
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            integrations=[
+                TornadoIntegration(),
+                AioHttpIntegration(),
+                RedisIntegration(),
+            ],
+        )
 
     return app

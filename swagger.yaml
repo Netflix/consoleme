@@ -21,6 +21,24 @@ tags:
   - name: privileged
     description: Endpoints requiring elevated permissions
 paths:
+  /request:
+    post:
+      summary: submit a new request
+      tags:
+        - requests
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestCreationModel'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtendedRequestModel'
   /requests:
     get:
       summary: get a list of requests
@@ -35,23 +53,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/RequestModel'
-    post:
-      summary: submit a new request
-      tags:
-        - requests
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ExtendedRequestModel'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ExtendedRequestModel'
   /requests/{request_id}:
     get:
       summary: get details about a request
@@ -443,6 +444,13 @@ components:
           readOnly: true
         status:
           type: string
+        cross_account:
+          description: if true, the request touches cross-account resources
+          type: boolean
+        arn_url:
+          type: string
+          description: the principal arn's URL
+          readOnly: true
     ExtendedRequestModel:
       allOf:
         - $ref: '#/components/schemas/RequestModel'
@@ -458,7 +466,9 @@ components:
             reviewer:
               type: string
             comments:
-              $ref: '#/components/schemas/CommentModel'
+              type: array
+              items:
+                $ref: '#/components/schemas/CommentModel'
     ChangeGeneratorModelArray:
       type: object
       required:
@@ -471,6 +481,7 @@ components:
               - $ref: '#/components/schemas/S3ChangeGeneratorModel'
               - $ref: '#/components/schemas/SQSChangeGeneratorModel'
               - $ref: '#/components/schemas/SNSChangeGeneratorModel'
+              - $ref: '#/components/schemas/SESChangeGeneratorModel'
               - $ref: '#/components/schemas/CrudChangeGeneratorModel'
               - $ref: '#/components/schemas/GenericChangeGeneratorModel'
             discriminator:
@@ -500,6 +511,7 @@ components:
             - rds
             - route53
             - s3
+            - ses
             - sns
             - sqs
             - sts
@@ -513,6 +525,7 @@ components:
               rds: '#/components/schemas/GenericChangeGeneratorModel'
               route53: '#/components/schemas/GenericChangeGeneratorModel'
               s3: '#/components/schemas/S3ChangeGeneratorModel'
+              ses: '#/components/schemas/SESChangeGeneratorModel'
               sns: '#/components/schemas/SNSChangeGeneratorModel'
               sqs: '#/components/schemas/SQSChangeGeneratorModel'
         resource_arn:
@@ -612,9 +625,15 @@ components:
         - $ref: '#/components/schemas/ChangeGeneratorModel'
         - type: object
           required:
+            - resource_arn
             - action_groups
             - bucket_prefix
           properties:
+            resource_arn:
+              description: |-
+                The ARN of the S3 resource being accessed.
+              example: arn:aws:s3:::example_bucket
+              type: string
             bucket_prefix:
               type: string
               example: /awesome/prefix/*
@@ -661,12 +680,29 @@ components:
                   - publish
                   - subscribe
                   - unsubscribe
+    SESChangeGeneratorModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - type: object
+          required:
+            - from_address
+          properties:
+            from_address:
+              type: string
+              default: from_address@example.com
+            action_groups:
+              type: array
+              items:
+                type: string
+                enum:
+                  - send_email
     ChangeModel:
       type: object
       required:
         - principal_arn
         - change_type
         - resources
+        - status
       properties:
         principal_arn:
           type: string
@@ -677,6 +713,14 @@ components:
             - inline_policy
             - managed_policy
             - resource_policy
+            - assume_role_policy
+          discriminator:
+            propertyName: change_type
+            mapping:
+              inline_policy: '#/components/schemas/InlinePolicyChangeModel'
+              managed_policy: '#/components/schemas/ManagedPolicyChangeModel'
+              resource_policy: '#/components/schemas/ResourcePolicyChangeModel'
+              assume_role_policy: '#/components/schemas/AssumeRolePolicyChangeModel'
         resources:
           type: array
           items:
@@ -684,6 +728,13 @@ components:
         version:
           type: string
           default: 2.0
+        status:
+          type: string
+          enum:
+            - applied
+            - not_applied
+        id:
+          type: string
     InlinePolicyChangeModel:
       allOf:
         - $ref: '#/components/schemas/ChangeModel'
@@ -697,6 +748,23 @@ components:
               type: string
             new:
               type: boolean
+            action:
+              type: string
+              enum:
+                - attach
+                - detach
+              default: attach
+            policy:
+              $ref: '#/components/schemas/PolicyModel'
+            old_policy:
+              $ref: '#/components/schemas/PolicyModel'
+    AssumeRolePolicyChangeModel:
+      allOf:
+        - $ref: '#/components/schemas/ChangeModel'
+        - type: object
+          required:
+            - policy
+          properties:
             policy:
               $ref: '#/components/schemas/PolicyModel'
             old_policy:
@@ -712,6 +780,18 @@ components:
             arn:
               type: string
               pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+            autogenerated:
+              type: boolean
+              readOnly: true
+              default: false
+            source_change_id:
+              type: string
+              readOnly: true
+              description: the change model ID of the source change, that this change was generated from
+            supported:
+              type: boolean
+              readOnly: true
+              description: whether we currently support this type of resource policy change or not
             policy:
               $ref: '#/components/schemas/PolicyModel'
             old_policy:
@@ -736,19 +816,68 @@ components:
                 - attach
                 - detach
     ChangeModelArray:
-      type: array
-      items:
-        anyOf:
-          - $ref: '#/components/schemas/InlinePolicyChangeModel'
-          - $ref: '#/components/schemas/ManagedPolicyChangeModel'
-          - $ref: '#/components/schemas/ResourcePolicyChangeModel'
-        discriminator:
-          propertyName: change_model
+      type: object
+      required:
+        - changes
+      properties:
+        changes:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/InlinePolicyChangeModel'
+              - $ref: '#/components/schemas/ManagedPolicyChangeModel'
+              - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+              - $ref: '#/components/schemas/AssumeRolePolicyChangeModel'
+            discriminator:
+              propertyName: change_model
     ArnArray:
       type: array
       items:
         type: string
         pattern: '^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$'
+    CloudAccountModelArray:
+      type: object
+      properties:
+        accounts:
+          type: array
+          items:
+            anyOf:
+              - $ref: '#/components/schemas/CloudAccountModel'
+    CloudAccountModel:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active # AKA: ready
+            - deleted
+            - created
+            - suspended
+        type:
+          type: string
+          enum:
+            - aws
+            - gcp
+        sync_enabled:
+          type: boolean
+        sensitive:
+          type: boolean
+          default: false
+        environment:
+          type: string
+          enum:
+            - prod
+            - test
+        aliases:
+          type: array
+          items:
+            type: string
+        email:
+          type: string
     PolicyModel:
       type: object
       required:
@@ -975,6 +1104,9 @@ components:
         details_url:
           type: string
           example: https://details_about/user
+        photo_url:
+          type: string
+          example: https://user_photos/user_thumbnail.jpg
     ApiErrorModel:
       type: object
       properties:
@@ -1058,3 +1190,35 @@ components:
         instance_profile:
           type: boolean
           default: True
+    RequestCreationModel:
+      type: object
+      required:
+        - changes
+        - justification
+      properties:
+        changes:
+          $ref: '#/components/schemas/ChangeModelArray'
+        justification:
+          type: string
+        admin_auto_approve:
+          type: boolean
+          default: False
+    RequestCreationResponse:
+      type: object
+      properties:
+        errors:
+          type: integer
+        request_created:
+          type: boolean
+        request_id:
+          type: string
+        action_results:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              message:
+                type: string
+

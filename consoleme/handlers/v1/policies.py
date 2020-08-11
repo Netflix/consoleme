@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from urllib.parse import quote_plus
 
+import sentry_sdk
 import tornado.escape
 import ujson as json
 from policyuniverse.expander_minimizer import _expand_wildcard_action
@@ -15,6 +16,7 @@ from consoleme.exceptions.exceptions import (
     Unauthorized,
 )
 from consoleme.handlers.base import BaseAPIV1Handler, BaseHandler, BaseMtlsHandler
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.aws import (
     can_delete_roles,
     fetch_resource_details,
@@ -40,6 +42,7 @@ from consoleme.lib.policies import (
     update_role_policy,
 )
 from consoleme.lib.redis import redis_get, redis_hgetall
+from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.timeout import Timeout
 
 log = config.get_logger()
@@ -308,7 +311,7 @@ class PolicyEditHandler(BaseHandler):
         all_account_managed_policies = await get_all_iam_managed_policies_for_account(
             account_id
         )
-        account_name = self.account_ids_to_names.get(account_id, [""])[0]
+        account_name = self.account_ids_to_names.get(account_id, "")
 
         await self.render(
             "policy_editor.html",
@@ -375,6 +378,24 @@ class PolicyEditHandler(BaseHandler):
             return
 
         events = result["events"]
+
+        if config.get("policies.admin_changes_must_be_requests", False):
+            # For now, we only support admin policy requests for certain actions, those actions must go through
+            # the policy request flow:
+            # 1. Inline policy changes (non-delete)
+            # 2. All AssumeRolePolicy changes
+            for event in events:
+                for inline_policy_event in event["inline_policies"]:
+                    if inline_policy_event["action"] != "detach":
+                        await write_json_error(
+                            "Admin requests must be made as policy requests", obj=self
+                        )
+                        return
+                if "assume_role_policy_document" in event:
+                    await write_json_error(
+                        "Admin requests must be made as policy requests", obj=self
+                    )
+                    return
 
         result = await update_role_policy(events)
 
@@ -604,7 +625,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
                 arn, resource_actions, account_id
             )
         except Exception as e:
-            config.sentry.captureException()
+            sentry_sdk.capture_exception()
             log_data["error"] = e
             log.error(log_data, exc_info=True)
             resource_actions = {}
@@ -624,6 +645,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
             resources,
             resource_policies,
             cross_account_request=cross_account_request,
+            dry_run=policy_status == "approved",
         )
         if policy_status == "approved":
             try:
@@ -631,7 +653,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
                     account_id, arn, request
                 )
             except Exception as e:
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 await write_json_error(e, obj=self)
                 await self.finish()
                 return
@@ -655,6 +677,7 @@ class PolicyReviewSubmitHandler(BaseHandler):
         log_data["finished"] = True
         log.debug(log_data)
         await self.finish()
+        await cache_all_policy_requests()
         return
 
 
@@ -910,7 +933,7 @@ class PolicyReviewHandler(BaseHandler):
                     arn, resource_actions, account_id
                 )
             except Exception as e:
-                config.sentry.captureException()
+                sentry_sdk.capture_exception()
                 log_data["error"] = e
                 log.error(log_data, exc_info=True)
                 resource_actions = {}
@@ -993,6 +1016,8 @@ class PolicyReviewHandler(BaseHandler):
         if send_email:
             await aws.send_communications_policy_change_request(request)
         self.write(result)
+        await self.finish()
+        await cache_all_policy_requests()
 
 
 class SelfServiceHandler(BaseHandler):
@@ -1183,11 +1208,7 @@ async def handle_resource_type_ahead_request(cls):
         # ConsoleMe (Account: Test, Arn: arn)
         # TODO: Make this OSS compatible and configurable
         try:
-            accounts = json.loads(
-                await redis_get(
-                    config.get("swag.redis_id_name_key", "SWAG_SETTINGS_ID_TO_NAMEv2")
-                )
-            )
+            accounts = await get_account_id_to_name_mapping()
         except Exception as e:  # noqa
             accounts = {}
         try:
@@ -1208,7 +1229,7 @@ async def handle_resource_type_ahead_request(cls):
                 results[app_name] = {"name": app_name, "results": []}
                 for role in roles:
                     account_id = role.split(":")[4]
-                    account = accounts.get(account_id, [""])[0]
+                    account = accounts.get(account_id, "")
                     environment = accounts_to_env.get(account_id, "")
                     parsed_app_name = (
                         f"{app_name} on {account} ({account_id}) ({role})]"
@@ -1231,8 +1252,8 @@ async def handle_resource_type_ahead_request(cls):
                 if seen_roles.get(role):
                     continue
                 account_id = role.split(":")[4]
-                account = accounts.get(account_id, [""])[0]
                 environment = accounts_to_env.get(account_id, "")
+                account = accounts.get(account_id, "")
                 results[role] = {
                     "name": role.replace("arn:aws:iam::", "").replace(":role", ""),
                     "results": [

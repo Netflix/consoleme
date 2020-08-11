@@ -12,7 +12,10 @@ from consoleme.exceptions.exceptions import (
 
 settings = {}
 
-BASE_DIR = config.get("webpack.loader.base_directory", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = config.get(
+    "webpack.loader.base_directory",
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+)
 DEV_STATS = config.get("webpack.loader.dev_stats", "webpack-stats.dev.json")
 PROD_STATS = config.get("webpack.loader.prod_stats", "webpack-stats.prod.json")
 BUNDLE_DIR_NAME = config.get("webpack.loader.bundle_dir", "bundles/")
@@ -75,8 +78,7 @@ class WebpackLoader(object):
 
             if timed_out:
                 raise WebpackLoaderTimeoutError(
-                    f"Timed Out. Bundle took more than {timeout} seconds "
-                    "to compile."
+                    f"Timed Out. Bundle took more than {timeout} seconds " "to compile."
                 )
 
         if assets.get("status") == "done":
@@ -94,11 +96,8 @@ class WebpackLoader(object):
                 assets["error"] = "Unknown Error"
             if "message" not in assets:
                 assets["message"] = ""
-            error = u"""
-            {error} in {file}
-            {message}
-            """.format(
-                **assets
+            error = "{} in {} {}".format(
+                assets["error"], assets["file"], assets["message"]
             )
             raise WebpackError(error)
 
