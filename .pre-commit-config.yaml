@@ -1,64 +1,69 @@
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v1.4.0  # Use the ref you want to point at
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v1.4.0 # Use the ref you want to point at
     hooks:
-    -   id: trailing-whitespace
-    -   id: check-ast
-    -   id: check-case-conflict
-    -   id: check-yaml
-    -   id: flake8
+      - id: trailing-whitespace
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-yaml
+      - id: flake8
         args: ["--exclude", "consoleme/models.py"]
-    -   id: pretty-format-json
+      - id: pretty-format-json
         args: ["--autofix"]
 
--   repo: https://github.com/asottile/seed-isort-config
+  - repo: https://github.com/asottile/seed-isort-config
     rev: v1.9.3
     hooks:
-    - id: seed-isort-config
+      - id: seed-isort-config
 
--   repo: https://github.com/timothycrosley/isort
-    rev: ''  # Use the revision sha / tag you want to point at
+  - repo: https://github.com/timothycrosley/isort
+    rev: "" # Use the revision sha / tag you want to point at
     hooks:
-    - id: isort # Run `isort -rc <filepath>` to autofix
-      pass_filenames: true
-      args: ["--profile", "black"]
+      - id: isort # Run `isort -rc <filepath>` to autofix
+        pass_filenames: true
+        args: ["--profile", "black"]
 
--   repo: https://github.com/ambv/black
+  - repo: https://github.com/ambv/black
     rev: stable
     hooks:
-    - id: black
-      language_version: python3.8
+      - id: black
+        language_version: python3.8
 
--   repo: https://github.com/pre-commit/pygrep-hooks
+  - repo: https://github.com/pre-commit/pygrep-hooks
     rev: master
     hooks:
-    -   id: python-use-type-annotations
-    -   id: python-no-eval
+      - id: python-use-type-annotations
+      - id: python-no-eval
 
-# TODO: Implement ESLint on pre-commit
-#-   repo: https://github.com/pre-commit/mirrors-eslint
-#    rev: ''  # Use the sha / tag you want to point at
-#    hooks:
-#    - id: eslint
-#      additional_dependencies:
-#        - babel-eslint
-#        - eslint
-#        - eslint-config-airbnb
-#        - eslint-config-standard
-#        - eslint-loader
-#        - eslint-plugin-import
-#        - eslint-plugin-jsx-a11y
-#        - eslint-plugin-node
-#        - eslint-plugin-promise
-#        - eslint-plugin-react
-#        - eslint-plugin-react-hooks
-#        - eslint-plugin-standard
-#        - babel-eslint
-#      args: ["--fix"]
-
--   repo: local
+  - repo: https://github.com/prettier/prettier
+    rev: master
     hooks:
-    -   id: pytest
+      - id: prettier
+
+  # TODO: Implement ESLint on pre-commit if you're brave enough...
+  #-   repo: https://github.com/pre-commit/mirrors-eslint
+  #    rev: ''  # Use the sha / tag you want to point at
+  #    hooks:
+  #    - id: eslint
+  #      additional_dependencies:
+  #        - babel-eslint
+  #        - eslint
+  #        - eslint-config-airbnb
+  #        - eslint-config-standard
+  #        - eslint-loader
+  #        - eslint-plugin-import
+  #        - eslint-plugin-jsx-a11y
+  #        - eslint-plugin-node
+  #        - eslint-plugin-promise
+  #        - eslint-plugin-react
+  #        - eslint-plugin-react-hooks
+  #        - eslint-plugin-standard
+  #        - babel-eslint
+  #      args: ["--fix"]
+
+  - repo: local
+    hooks:
+      - id: pytest
         name: pytest
         entry: pytest tests
         language: system
@@ -67,9 +72,9 @@ repos:
         # though tests might be invalidated if you were to say change a data file
         always_run: true
 
-    -   id: python-bandit-vulnerability-check
+      - id: python-bandit-vulnerability-check
         name: bandit
         entry: bandit
-        args: ['--ini', 'tox.ini', '-r', 'consoleme']
+        args: ["--ini", "tox.ini", "-r", "consoleme"]
         language: system
         pass_filenames: false
