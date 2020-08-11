@@ -45,7 +45,7 @@ class GroupMapping:
         for r in obj.eligible_roles:
             if query.lower() in r.lower():
                 selected_roles.append(r)
-        return selected_roles
+        return list(set(selected_roles))
 
     async def set_recent_user(self, user):
         pass

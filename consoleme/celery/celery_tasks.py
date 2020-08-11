@@ -755,9 +755,6 @@ def cache_roles_for_account(account_id: str) -> bool:
 
         async_to_sync(store_json_results_in_redis_and_s3)(
             iam_roles,
-            redis_key=config.get("cache_roles_for_account.redis_key", "").format(
-                account_id=account_id
-            ),
             s3_bucket=config.get("cache_roles_for_account.s3.bucket"),
             s3_key=config.get("cache_roles_for_account.s3.file", "").format(
                 resource_type="iam_roles", account_id=account_id
@@ -1493,6 +1490,7 @@ schedule = {
         "schedule": schedule_1_hour,
     },
 }
+
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
