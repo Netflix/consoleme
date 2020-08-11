@@ -41,8 +41,8 @@ data "aws_iam_policy_document" "ConsoleMeInstanceProfile" {
 }
 
 resource "aws_iam_role_policy" "consoleme_target" {
-  name = "ConsoleMeInstanceProfilePolicy"
-  role = aws_iam_role.ConsoleMeInstanceProfile.id
+  name   = "ConsoleMeInstanceProfilePolicy"
+  role   = aws_iam_role.ConsoleMeInstanceProfile.id
   policy = data.aws_iam_policy_document.ConsoleMeInstanceProfile.json
 }
 

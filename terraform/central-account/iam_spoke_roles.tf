@@ -2,8 +2,8 @@
 
 data "aws_iam_policy_document" "consoleme_target" {
   statement {
-    sid = "ConsoleMeWillAccessThis"
-    effect = "Allow"
+    sid       = "ConsoleMeWillAccessThis"
+    effect    = "Allow"
     resources = ["*"]
     actions = [
       "autoscaling:Describe*",
@@ -44,8 +44,8 @@ data "aws_iam_policy_document" "consoleme_target" {
 }
 
 resource "aws_iam_role_policy" "consoleme_target_role_policy" {
-  name = "ConsoleMeTargetPolicy"
-  role = aws_iam_role.consoleme_target.id
+  name   = "ConsoleMeTargetPolicy"
+  role   = aws_iam_role.consoleme_target.id
   policy = data.aws_iam_policy_document.consoleme_target.json
 }
 
@@ -53,18 +53,18 @@ data "aws_iam_policy_document" "consoleme_target_trust_policy" {
   statement {
     sid = "ConsoleMeAssumesTarget"
     actions = [
-      "sts:AssumeRole"]
+    "sts:AssumeRole"]
     effect = "Allow"
     principals {
       identifiers = [
-        aws_iam_role.ConsoleMeInstanceProfile.arn]
+      aws_iam_role.ConsoleMeInstanceProfile.arn]
       type = "AWS"
     }
   }
 }
 
 resource "aws_iam_role" "consoleme_target" {
-  name = "ConsoleMeTarget"
+  name               = "ConsoleMeTarget"
   assume_role_policy = data.aws_iam_policy_document.consoleme_target_trust_policy.json
 }
 
