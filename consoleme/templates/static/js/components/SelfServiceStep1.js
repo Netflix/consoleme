@@ -15,13 +15,16 @@ import "./SelfService.css";
 const ARN_REGEX = /^arn:aws:iam::(?<accountId>\d{12}):role\/(?<roleName>.+)$/;
 
 class SelfServiceStep1 extends Component {
-  state = {
-    isLoading: false,
-    isRoleLoading: false,
-    messages: [],
-    results: [],
-    value: "",
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      isLoading: false,
+      isRoleLoading: false,
+      messages: [],
+      results: [],
+      value: "",
+    };
+  }
 
   handleSearchChange(event, { value }) {
     this.setState(
@@ -109,9 +112,10 @@ class SelfServiceStep1 extends Component {
   }
 
   handleResultSelect(e, { result }) {
+    const value = _.isString(result.title) ? result.title.trim() : result.title;
     this.setState(
       {
-        value: result.title,
+        value,
         isRoleLoading: true,
       },
       () => {

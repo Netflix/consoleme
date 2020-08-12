@@ -1,7 +1,7 @@
 data "aws_iam_policy_document" "consoleme_user_deny_all" {
   statement {
-    sid = "ConsoleMeWillAssumeThis"
-    effect = "Deny"
+    sid       = "ConsoleMeWillAssumeThis"
+    effect    = "Deny"
     resources = ["*"]
     actions = [
       "*"
@@ -10,26 +10,26 @@ data "aws_iam_policy_document" "consoleme_user_deny_all" {
 }
 
 resource "aws_iam_role_policy" "consoleme_user_role_policy1" {
-  name = "ConsoleMeTargetPolicy"
-  role = aws_iam_role.consoleme_example_user_role_1.id
+  name   = "ConsoleMeTargetPolicy"
+  role   = aws_iam_role.consoleme_example_user_role_1.id
   policy = data.aws_iam_policy_document.consoleme_user_deny_all.json
 }
 
 resource "aws_iam_role_policy" "consoleme_user_role_policy2" {
-  name = "ConsoleMeTargetPolicy"
-  role = aws_iam_role.consoleme_example_user_role_2.id
+  name   = "ConsoleMeTargetPolicy"
+  role   = aws_iam_role.consoleme_example_user_role_2.id
   policy = data.aws_iam_policy_document.consoleme_user_deny_all.json
 }
 
 resource "aws_iam_role_policy" "consoleme_app_role_policy1" {
-  name = "ConsoleMeTargetPolicy"
-  role = aws_iam_role.consoleme_example_app_role_1.id
+  name   = "ConsoleMeTargetPolicy"
+  role   = aws_iam_role.consoleme_example_app_role_1.id
   policy = data.aws_iam_policy_document.consoleme_user_deny_all.json
 }
 
 resource "aws_iam_role_policy" "consoleme_app_role_policy2" {
-  name = "ConsoleMeTargetPolicy"
-  role = aws_iam_role.consoleme_example_app_role_2.id
+  name   = "ConsoleMeTargetPolicy"
+  role   = aws_iam_role.consoleme_example_app_role_2.id
   policy = data.aws_iam_policy_document.consoleme_user_deny_all.json
 }
 
@@ -37,33 +37,33 @@ data "aws_iam_policy_document" "consoleme_user_trust_policy" {
   statement {
     sid = "ConsoleMeCanAssumeAllRoles"
     actions = [
-      "sts:AssumeRole"]
+    "sts:AssumeRole"]
     effect = "Allow"
     principals {
       identifiers = [
-        aws_iam_role.ConsoleMeInstanceProfile.arn]
+      aws_iam_role.ConsoleMeInstanceProfile.arn]
       type = "AWS"
     }
   }
 }
 
 resource "aws_iam_role" "consoleme_example_user_role_1" {
-  name = "ConsoleMeUserA"
+  name               = "ConsoleMeUserA"
   assume_role_policy = data.aws_iam_policy_document.consoleme_target_trust_policy.json
 }
 
 resource "aws_iam_role" "consoleme_example_user_role_2" {
-  name = "ConsoleMeUserB"
+  name               = "ConsoleMeUserB"
   assume_role_policy = data.aws_iam_policy_document.consoleme_target_trust_policy.json
 }
 
 
 resource "aws_iam_role" "consoleme_example_app_role_1" {
-  name = "ConsoleMeAppA"
+  name               = "ConsoleMeAppA"
   assume_role_policy = data.aws_iam_policy_document.consoleme_target_trust_policy.json
 }
 
 resource "aws_iam_role" "consoleme_example_app_role_2" {
-  name = "ConsoleMeAppB"
+  name               = "ConsoleMeAppB"
   assume_role_policy = data.aws_iam_policy_document.consoleme_target_trust_policy.json
 }

@@ -1491,6 +1491,7 @@ schedule = {
     },
 }
 
+
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
 
