@@ -1,3 +1,4 @@
+import _ from "lodash";
 import React, { Component } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button, Form, Header, Message } from "semantic-ui-react";
@@ -6,15 +7,22 @@ import TextInputBlockComponent from "./blocks/TextInputBlockComponent";
 import TypeaheadBlockComponent from "./blocks/TypeaheadBlockComponent";
 
 class SelfServiceComponent extends Component {
-  state = {
-    messages: [],
-    values: {},
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      messages: [],
+      values: {},
+    };
+  }
 
   handleInputUpdate(context, value) {
-    const values = Object.assign(this.state.values, { [context]: value });
+    const { values } = this.state;
+    const newValues = {
+      ...values,
+      [context]: _.isString(value) ? value.trim() : value,
+    };
     this.setState({
-      values,
+      values: newValues,
     });
   }
 

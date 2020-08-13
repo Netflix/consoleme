@@ -10,4 +10,4 @@ subnet_azs          = ["us-east-1a"]
 
 allowed_inbound_cidr_blocks = []
 
-bucket = "my-bucket-containing-consoleme-tarball"
+bucket_name_prefix = "random-name-prefix"

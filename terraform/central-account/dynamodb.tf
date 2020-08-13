@@ -1,12 +1,12 @@
 resource "aws_dynamodb_table" "consoleme_audit_global" {
-  name           = "consoleme_audit_global"
+  name             = "consoleme_audit_global"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "uuid"
-  range_key      = "group"
+  billing_mode     = "PROVISIONED"
+  read_capacity    = 5
+  write_capacity   = 5
+  hash_key         = "uuid"
+  range_key        = "group"
 
   attribute {
     name = "uuid"
@@ -19,19 +19,19 @@ resource "aws_dynamodb_table" "consoleme_audit_global" {
   }
 
   ttl {
-    attribute_name = "ttl"
+    attribute_name = ""
     enabled        = false
   }
 }
 
 resource "aws_dynamodb_table" "consoleme_config_global" {
-  name           = "consoleme_config_global"
+  name             = "consoleme_config_global"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "id"
+  billing_mode     = "PROVISIONED"
+  read_capacity    = 5
+  write_capacity   = 5
+  hash_key         = "id"
 
   attribute {
     name = "id"
@@ -40,21 +40,21 @@ resource "aws_dynamodb_table" "consoleme_config_global" {
 
 
   ttl {
-    attribute_name = "ttl"
+    attribute_name = ""
     enabled        = false
   }
 }
 
 
 resource "aws_dynamodb_table" "consoleme_iamroles_global" {
-  name           = "consoleme_iamroles_global"
+  name             = "consoleme_iamroles_global"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "arn"
-  range_key      = "accountId"
+  billing_mode     = "PROVISIONED"
+  read_capacity    = 5
+  write_capacity   = 5
+  hash_key         = "arn"
+  range_key        = "accountId"
 
   attribute {
     name = "arn"
@@ -73,13 +73,13 @@ resource "aws_dynamodb_table" "consoleme_iamroles_global" {
 }
 
 resource "aws_dynamodb_table" "consoleme_policy_requests" {
-  name           = "consoleme_policy_requests"
+  name             = "consoleme_policy_requests"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "request_id"
+  billing_mode     = "PROVISIONED"
+  read_capacity    = 5
+  write_capacity   = 5
+  hash_key         = "request_id"
 
   attribute {
     name = "request_id"
@@ -87,20 +87,20 @@ resource "aws_dynamodb_table" "consoleme_policy_requests" {
   }
 
   ttl {
-    attribute_name = "ttl"
+    attribute_name = ""
     enabled        = false
   }
 }
 
 
 resource "aws_dynamodb_table" "consoleme_requests_global" {
-  name           = "consoleme_requests_global"
+  name             = "consoleme_requests_global"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "request_id"
+  billing_mode     = "PROVISIONED"
+  read_capacity    = 5
+  write_capacity   = 5
+  hash_key         = "request_id"
 
   attribute {
     name = "request_id"
@@ -108,20 +108,20 @@ resource "aws_dynamodb_table" "consoleme_requests_global" {
   }
 
   ttl {
-    attribute_name = "ttl"
+    attribute_name = ""
     enabled        = false
   }
 }
 
 resource "aws_dynamodb_table" "consoleme_resource_cache" {
-  name           = "consoleme_resource_cache"
+  name             = "consoleme_resource_cache"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "resourceId"
-  range_key      = "resourceType"
+  billing_mode     = "PROVISIONED"
+  read_capacity    = 5
+  write_capacity   = 5
+  hash_key         = "resourceId"
+  range_key        = "resourceType"
 
   attribute {
     name = "resourceId"
@@ -141,13 +141,13 @@ resource "aws_dynamodb_table" "consoleme_resource_cache" {
 
 
 resource "aws_dynamodb_table" "consoleme_users_global" {
-  name           = "consoleme_users_global"
+  name             = "consoleme_users_global"
   stream_enabled   = true
   stream_view_type = "NEW_AND_OLD_IMAGES"
-  billing_mode   = "PROVISIONED"
-  read_capacity  = 5
-  write_capacity = 5
-  hash_key       = "username"
+  billing_mode     = "PROVISIONED"
+  read_capacity    = 5
+  write_capacity   = 5
+  hash_key         = "username"
 
   attribute {
     name = "username"
@@ -155,7 +155,7 @@ resource "aws_dynamodb_table" "consoleme_users_global" {
   }
 
   ttl {
-    attribute_name = "ttl"
+    attribute_name = ""
     enabled        = false
   }
 }
