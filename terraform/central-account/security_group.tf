@@ -1,11 +1,9 @@
-
 resource "aws_security_group" "external" {
   vpc_id      = module.network.vpc_id
   name        = module.security_group_label.id
   description = "Allow ingress from authorized IPs to self, and egress to everywhere."
   tags        = module.security_group_label.tags
 }
-
 
 resource "aws_security_group_rule" "internal_ingress_all_self" {
   from_port         = 0

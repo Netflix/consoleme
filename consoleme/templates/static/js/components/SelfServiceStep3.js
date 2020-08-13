@@ -57,7 +57,6 @@ class SelfServiceStep3 extends Component {
       changes: [],
     };
     payload.changes = permissions.map((permission) => {
-      console.log(permission);
       const change = {
         principal_arn: role.arn,
         generator_type: permission.service,

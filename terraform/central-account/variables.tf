@@ -94,10 +94,6 @@ variable "key_name" {
   description = "The name of the SSH key in AWS to use for accessing the EC2 instance."
 }
 
-variable "bucket" {
-  description = "The name of the S3 bucket containing the consoleme.tar.gz in the root of the bucket"
-}
-
 # ---------------------------------------------------------------------------------------------------------------------
 # NAMING
 # This manages the names of resources in this module.
@@ -142,25 +138,29 @@ variable "kms_key_alias" {
 
 variable "CONFIG_LOCATION" {
   description = "Location of ConsoleMe's YAML configuration file"
-  default =  "/apps/consoleme/example_config/example_config_terraform.yaml"
+  default     = "/apps/consoleme/example_config/example_config_terraform.yaml"
 }
 
 variable "sync_accounts_from_organizations" {
   description = "Sync accounts from AWS organizations?"
-  default = false
+  default     = false
 }
 
 variable "sync_accounts_from_organizations_master_account_id" {
   description = "Organizations master account ID"
-  default = null
+  default     = null
 }
 
 variable "sync_accounts_from_organizations_role_to_assume" {
   description = "Organizations master role to assume"
-  default = "ConsoleMeTarget"
+  default     = "ConsoleMeTarget"
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
 # NAMING PREFIXES
 # This manages the naming prefixes in this module.
 # ---------------------------------------------------------------------------------------------------------------------
+variable "bucket_name_prefix" {
+  description = "The name prefix of the S3 bucket that you want to upload the consoleme.tar.gz to, in the root of the bucket."
+  type        = string
+}
