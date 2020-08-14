@@ -61,7 +61,7 @@ class ConsoleMeDataTable extends Component {
       activePage: 1,
       expandedRow: null,
       direction: "descending",
-      debounceWait: 300,
+      debounceWait: 500,
       isLoading: false,
     };
 
@@ -210,10 +210,12 @@ class ConsoleMeDataTable extends Component {
           columnCell = (
             <Dropdown
               name={item.key}
+              style={item.style}
               clearable
               placeholder={item.placeholder}
               search
               selection
+              compact
               options={options}
               onChange={this.filterColumn}
               onClick={(e) => {
@@ -244,11 +246,13 @@ class ConsoleMeDataTable extends Component {
           columnCell = (
             <SemanticDatepicker
               name={item.key}
+              style={item.style}
               onChange={this.filterDateRangeTime}
               onClick={(e) => {
                 e.stopPropagation();
               }}
               type="range"
+              compact
             />
           );
           break;
@@ -257,6 +261,7 @@ class ConsoleMeDataTable extends Component {
           columnCell = (
             <Header
               as="h4"
+              style={item.style}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -270,6 +275,7 @@ class ConsoleMeDataTable extends Component {
           columnCell = (
             <Header
               as="h4"
+              style={item.style}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -281,14 +287,16 @@ class ConsoleMeDataTable extends Component {
         }
         default: {
           columnCell = (
-            <Header
-              as="h4"
+            <Label
+              style={item.style}
+              color={item.color}
               onClick={(e) => {
                 e.stopPropagation();
               }}
+              basic
             >
               {item.placeholder}
-            </Header>
+            </Label>
           );
           break;
         }
@@ -297,8 +305,9 @@ class ConsoleMeDataTable extends Component {
       columns.push(
         <Table.HeaderCell
           style={item.style}
+          width={item.width}
           onClick={() => this.handleSort(key)}
-          sorted={!["button", "icon"].includes(item.type) ? direction : null}
+          sorted={!["button"].includes(item.type) ? direction : null}
           textAlign={item.type === "button" ? "center" : null}
         >
           {columnCell}
@@ -470,7 +479,7 @@ class ConsoleMeDataTable extends Component {
       tableConfig.columns.forEach((column) => {
         if (column.type === "daterange") {
           cells.push(
-            <Table.Cell collapsing>
+            <Table.Cell collapsing style={column.style}>
               <ReactMarkdown
                 linkTarget="_blank"
                 source={"" || new Date(entry[column.key] * 1000).toUTCString()}
@@ -479,7 +488,7 @@ class ConsoleMeDataTable extends Component {
           );
         } else if (column.type === "button") {
           cells.push(
-            <Table.Cell collapsing>
+            <Table.Cell collapsing style={column.style}>
               <Button
                 content={entry[column.content] || column.content}
                 fluid
@@ -495,7 +504,7 @@ class ConsoleMeDataTable extends Component {
           );
         } else if (column.type === "icon") {
           cells.push(
-            <Table.Cell collapsing>
+            <Table.Cell collapsing style={column.style}>
               <Icon
                 onClick={(e) => {
                   this.handleCellClick(e, column, entry);
@@ -507,16 +516,22 @@ class ConsoleMeDataTable extends Component {
           );
         } else if (column.useLabel) {
           cells.push(
-            <Table.Cell collapsing>
-              <Label>{"" || entry[column.key].toString()}</Label>
+            <Table.Cell collapsing style={column.style}>
+              <Label>
+                {"" ||
+                  (entry[column.key] != null && entry[column.key].toString())}
+              </Label>
             </Table.Cell>
           );
         } else {
           cells.push(
-            <Table.Cell collapsing>
+            <Table.Cell collapsing style={column.style}>
               <ReactMarkdown
                 linkTarget="_blank"
-                source={"" || entry[column.key].toString()}
+                source={
+                  "" ||
+                  (entry[column.key] != null && entry[column.key].toString())
+                }
               />
             </Table.Cell>
           );
@@ -622,7 +637,7 @@ class ConsoleMeDataTable extends Component {
 }
 
 ConsoleMeDataTable.propTypes = {
-  configEndpoint: PropTypes.element.isRequired,
+  configEndpoint: PropTypes.string.isRequired,
   queryString: PropTypes.string,
 };
 
