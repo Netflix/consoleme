@@ -1416,10 +1416,11 @@ class TestRequestsLibV2(AsyncTestCase):
             resource_policy_change_model.policy.policy_document,
         )
 
+    @patch("consoleme.lib.v2.requests.send_communications_new_comment")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
     @tornado.testing.gen_test
     async def test_parse_and_apply_policy_request_modification_add_comment(
-        self, mock_dynamo_write
+        self, mock_dynamo_write, mock_send_comment
     ):
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
@@ -1433,7 +1434,7 @@ class TestRequestsLibV2(AsyncTestCase):
         )
         last_updated = extended_request.timestamp
         mock_dynamo_write.return_value = create_future(None)
-
+        mock_send_comment.return_value = create_future(None)
         # Trying to set an empty comment
         with pytest.raises(ValidationError) as e:
             await parse_and_apply_policy_request_modification(
@@ -1580,7 +1581,7 @@ class TestRequestsLibV2(AsyncTestCase):
         )
         last_updated = extended_request.timestamp
         mock_dynamo_write.return_value = create_future(None)
-        mock_populate_old_policies.return_value = create_future(None)
+        mock_populate_old_policies.return_value = create_future(extended_request)
         mock_fetch_iam_role.return_value = create_future(None)
         mock_can_manage_policy_requests.return_value = create_future(False)
         client = boto3.client("iam", region_name="us-east-1")
@@ -1638,10 +1639,11 @@ class TestRequestsLibV2(AsyncTestCase):
             inline_policy.get("PolicyDocument"),
         )
 
+    @patch("consoleme.lib.v2.requests.send_communications_policy_change_request_v2")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
     @tornado.testing.gen_test
     async def test_parse_and_apply_policy_request_modification_cancel_request(
-        self, mock_dynamo_write
+        self, mock_dynamo_write, mock_send_email
     ):
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
@@ -1655,7 +1657,7 @@ class TestRequestsLibV2(AsyncTestCase):
         )
         last_updated = extended_request.timestamp
         mock_dynamo_write.return_value = create_future(None)
-
+        mock_send_email.return_value = create_future(None)
         # Trying to cancel while not being authorized
         with pytest.raises(Unauthorized) as e:
             await parse_and_apply_policy_request_modification(
@@ -1701,6 +1703,7 @@ class TestRequestsLibV2(AsyncTestCase):
         # Make sure request got cancelled
         self.assertEqual(RequestStatus.cancelled, extended_request.request_status)
 
+    @patch("consoleme.lib.v2.requests.send_communications_policy_change_request_v2")
     @patch("consoleme.lib.v2.requests.can_move_back_to_pending_v2")
     @patch("consoleme.lib.v2.requests.can_manage_policy_requests")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
@@ -1710,6 +1713,7 @@ class TestRequestsLibV2(AsyncTestCase):
         mock_dynamo_write,
         mock_can_manage_policy_requests,
         mock_move_back_to_pending,
+        mock_send_email,
     ):
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
@@ -1724,6 +1728,7 @@ class TestRequestsLibV2(AsyncTestCase):
         last_updated = extended_request.timestamp
         mock_dynamo_write.return_value = create_future(None)
         mock_can_manage_policy_requests.return_value = create_future(False)
+        mock_send_email.return_value = create_future(None)
         # Trying to reject while not being authorized
         with pytest.raises(Unauthorized) as e:
             await parse_and_apply_policy_request_modification(
@@ -1796,6 +1801,7 @@ class TestRequestsLibV2(AsyncTestCase):
         self.assertEqual(RequestStatus.pending, extended_request.request_status)
 
     @mock_iam
+    @patch("consoleme.lib.v2.requests.send_communications_policy_change_request_v2")
     @patch("consoleme.lib.v2.requests.aws.fetch_iam_role")
     @patch("consoleme.lib.v2.requests.populate_old_policies")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
@@ -1807,6 +1813,7 @@ class TestRequestsLibV2(AsyncTestCase):
         mock_dynamo_write,
         mock_populate_old_policies,
         mock_fetch_iam_role,
+        mock_send_email,
     ):
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
@@ -1868,9 +1875,10 @@ class TestRequestsLibV2(AsyncTestCase):
         )
         last_updated = extended_request.timestamp
         mock_dynamo_write.return_value = create_future(None)
-        mock_populate_old_policies.return_value = create_future(None)
+        mock_populate_old_policies.return_value = create_future(extended_request)
         mock_fetch_iam_role.return_value = create_future(None)
         mock_can_manage_policy_requests.return_value = create_future(False)
+        mock_send_email.return_value = create_future(None)
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "test"
         client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")

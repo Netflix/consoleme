@@ -546,38 +546,6 @@ class Aws:
         log.warning(log_data)
         return
 
-    async def send_communications_policy_change_request_v2(self, extended_request):
-        """
-                Optionally send an email when there's a change in policy request
-
-                :param extended_request:
-                :return:
-                """
-        log_data: dict = {
-            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
-            "message": "Function is not configured.",
-        }
-        log.warning(log_data)
-        return
-
-    async def send_communications_new_comment(
-        self, extended_request, user: str, to_addresses=None
-    ):
-        """
-                Send an email for a new comment.
-
-        :param to_addresses: optional parameter for who to send the email to
-        :param extended_request:
-        :param user: user making the comment
-        :return:
-        """
-        log_data: dict = {
-            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
-            "message": "Function is not configured.",
-        }
-        log.warning(log_data)
-        return
-
     @staticmethod
     def get_account_ids_to_names():
         return config.get("account_ids_to_name")

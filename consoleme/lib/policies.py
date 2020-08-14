@@ -21,6 +21,10 @@ from consoleme.exceptions.exceptions import InvalidRequestParameter
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.handler import update_role
+from consoleme.lib.ses import (
+    send_new_comment_notification,
+    send_policy_request_status_update_v2,
+)
 from consoleme.models import ExtendedRequestModel, RequestStatus
 
 log = config.get_logger()
@@ -651,6 +655,41 @@ async def should_auto_approve_policy_v2(
 ):
     aws = get_plugin_by_name(config.get("plugins.aws"))()
     return await aws.should_auto_approve_policy_v2(extended_request, user, user_groups)
+
+
+async def send_communications_policy_change_request_v2(
+    extended_request: ExtendedRequestModel,
+):
+    """
+        Send an email for a status change for a policy request
+
+    :param extended_request: ExtendedRequestModel
+    :return:
+    """
+    request_uri = await get_policy_request_uri_v2(extended_request)
+    await send_policy_request_status_update_v2(extended_request, request_uri)
+
+
+async def send_communications_new_comment(
+    extended_request: ExtendedRequestModel, user: str, to_addresses=None
+):
+    """
+            Send an email for a new comment.
+            Note: until ABAC work is completed, if to_addresses is empty, we will send an email to
+                fallback reviewers
+
+    :param extended_request: ExtendedRequestModel
+    :param user: user making the comment
+    :param to_addresses: List of addresses to send the email to
+    :return:
+    """
+    if not to_addresses:
+        to_addresses = config.get("groups.fallback_policy_request_reviewers", [])
+
+    request_uri = await get_policy_request_uri_v2(extended_request)
+    await send_new_comment_notification(
+        extended_request, to_addresses, user, request_uri
+    )
 
 
 async def get_url_for_resource(arn, resource_type, account_id, region, resource_name):
