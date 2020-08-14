@@ -468,25 +468,52 @@ class RequestsTableConfigHandler(BaseHandler):
             "rowsPerPage": 50,
             "serverSideFiltering": True,
             "columns": [
-                {"placeholder": "Username", "key": "username", "type": "input"},
+                {
+                    "placeholder": "Username",
+                    "key": "username",
+                    "type": "input",
+                    "style": {"width": "100px"},
+                },
                 {
                     "placeholder": "Arn",
                     "key": "arn",
                     "type": "input",
-                    "style": {"width": "350px"},
+                    "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
+                    "width": 3,
                 },
                 {
                     "placeholder": "Request Time",
                     "key": "request_time",
                     "type": "daterange",
                 },
-                {"placeholder": "Status", "key": "status", "type": "dropdown"},
-                {"placeholder": "Request ID", "key": "request_id", "type": "input"},
-                {"placeholder": "Policy Name", "key": "policy_name", "type": "input"},
+                {
+                    "placeholder": "Status",
+                    "key": "status",
+                    "type": "dropdown",
+                    "style": {"width": "90px"},
+                },
+                {
+                    "placeholder": "Request ID",
+                    "key": "request_id",
+                    "type": "input",
+                    "style": {
+                        "width": "110px",
+                        "whiteSpace": "normal",
+                        "wordBreak": "break-all",
+                    },
+                    "width": 2,
+                },
+                {
+                    "placeholder": "Policy Name",
+                    "key": "policy_name",
+                    "type": "input",
+                    "style": {"width": "110px"},
+                },
                 {
                     "placeholder": "Last Updated By",
                     "key": "updated_by",
                     "type": "input",
+                    "style": {"width": "110px"},
                 },
             ],
         }
