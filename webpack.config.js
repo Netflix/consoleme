@@ -25,7 +25,7 @@ module.exports = {
   plugins: [
     // Useful for Development:
     // new webpack.DefinePlugin({
-    //   'process.env.NODE_ENV': JSON.stringify('development'),
+    //   "process.env.NODE_ENV": JSON.stringify("development"),
     // }),
     new webpack.HotModuleReplacementPlugin(),
     new webpack.ProvidePlugin({
@@ -107,11 +107,11 @@ module.exports = {
     jquery: "jQuery",
   },
   // Enable these for easier development when running locally
-  // devtool: 'source-map',
+  // devtool: "source-map",
   // optimization: {
   //   minimize: false,
   //   splitChunks: {
-  //     chunks: 'async',
+  //     chunks: "async",
   //   },
   // },
 };
