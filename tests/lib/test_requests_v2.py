@@ -6,26 +6,69 @@ import tornado
 import ujson as json
 from mock import patch
 from moto import mock_iam, mock_s3, mock_sns, mock_sqs
+from pydantic import ValidationError
 from tornado.testing import AsyncTestCase
 
-from consoleme.exceptions.exceptions import InvalidRequestParameter
+from consoleme.exceptions.exceptions import (
+    InvalidRequestParameter,
+    NoMatchingRequest,
+    Unauthorized,
+)
 from consoleme.models import (
     Action,
     Action1,
     AssumeRolePolicyChangeModel,
     ChangeModelArray,
     ChangeType,
+    Command,
     ExtendedRequestModel,
     ExtendedRoleModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
+    PolicyRequestModificationRequestModel,
     PolicyRequestModificationResponseModel,
     RequestCreationResponse,
+    RequestStatus,
     ResourcePolicyChangeModel,
     Status,
     UserModel,
 )
 from tests.conftest import AWSHelper, create_future
+
+
+async def get_extended_request_helper():
+    inline_policy_change = {
+        "principal_arn": "arn:aws:iam::123456789012:role/test",
+        "change_type": "inline_policy",
+        "resources": [],
+        "version": 2.0,
+        "status": "not_applied",
+        "policy_name": "test_inline_policy_change",
+        "id": "1234_0",
+        "new": False,
+        "action": "attach",
+        "policy": {
+            "version": None,
+            "policy_document": {},
+            "policy_sha256": "55d03ad7a2a447e6e883c520edcd8e5e3083c2f83fa1c390cee3f7dbedf28533",
+        },
+        "old_policy": None,
+    }
+    inline_policy_change_model = InlinePolicyChangeModel.parse_obj(inline_policy_change)
+
+    extended_request = ExtendedRequestModel(
+        id="1234",
+        arn="arn:aws:iam::123456789012:role/test",
+        timestamp=int(time.time()),
+        justification="Test justification",
+        requester_email="user@example.com",
+        approvers=[],
+        request_status="pending",
+        changes=ChangeModelArray(changes=[inline_policy_change_model]),
+        requester_info=UserModel(email="user@example.com"),
+        comments=[],
+    )
+    return extended_request
 
 
 class TestRequestsLibV2(AsyncTestCase):
@@ -1371,4 +1414,511 @@ class TestRequestsLibV2(AsyncTestCase):
         self.assertDictEqual(
             json.loads(attributes.get("Attributes").get("Policy")),
             resource_policy_change_model.policy.policy_document,
+        )
+
+    @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
+    @tornado.testing.gen_test
+    async def test_parse_and_apply_policy_request_modification_add_comment(
+        self, mock_dynamo_write
+    ):
+        from consoleme.lib.v2.requests import (
+            parse_and_apply_policy_request_modification,
+        )
+
+        extended_request = await get_extended_request_helper()
+        input_body = {"modification_model": {"command": "add_comment"}}
+
+        policy_request_model = PolicyRequestModificationRequestModel.parse_obj(
+            input_body
+        )
+        last_updated = extended_request.timestamp
+        mock_dynamo_write.return_value = create_future(None)
+
+        # Trying to set an empty comment
+        with pytest.raises(ValidationError) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user2@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("validation error", str(e))
+
+        input_body["modification_model"]["comment_text"] = "Sample comment"
+        policy_request_model = PolicyRequestModificationRequestModel.parse_obj(
+            input_body
+        )
+        response = await parse_and_apply_policy_request_modification(
+            extended_request,
+            policy_request_model,
+            "user2@example.com",
+            [],
+            last_updated,
+        )
+        self.assertEqual(0, response.errors)
+        # Make sure comment got added to the request
+        self.assertEqual(1, len(extended_request.comments))
+        comment = extended_request.comments[0]
+        self.assertEqual(comment.user_email, "user2@example.com")
+        self.assertEqual(comment.text, "Sample comment")
+
+    @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
+    @tornado.testing.gen_test
+    async def test_parse_and_apply_policy_request_modification_update_change(
+        self, mock_dynamo_write
+    ):
+        from consoleme.lib.v2.requests import (
+            parse_and_apply_policy_request_modification,
+        )
+
+        extended_request = await get_extended_request_helper()
+        updated_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": ["s3:*"],
+                    "Effect": "Allow",
+                    "Resource": [
+                        "arn:aws:s3:::test_bucket",
+                        "arn:aws:s3:::test_bucket/abc/*",
+                    ],
+                    "Sid": "sid_test",
+                }
+            ],
+        }
+        input_body = {
+            "modification_model": {
+                "command": "update_change",
+                "change_id": extended_request.changes.changes[0].id + "non-existent",
+                "policy_document": updated_policy_doc,
+            }
+        }
+        policy_request_model = PolicyRequestModificationRequestModel.parse_obj(
+            input_body
+        )
+        last_updated = extended_request.timestamp
+        mock_dynamo_write.return_value = create_future(None)
+
+        # Trying to update while not being authorized
+        with pytest.raises(Unauthorized) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user2@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("Unauthorized", str(e))
+
+        # Trying to update a non-existent change
+        with pytest.raises(NoMatchingRequest) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("Unable to find", str(e))
+
+        # Valid change to be updated
+        policy_request_model.modification_model.change_id = extended_request.changes.changes[
+            0
+        ].id
+        response = await parse_and_apply_policy_request_modification(
+            extended_request, policy_request_model, "user@example.com", [], last_updated
+        )
+        self.assertEqual(0, response.errors)
+        # Make sure change got updated in the request
+        self.assertDictEqual(
+            extended_request.changes.changes[0].policy.policy_document,
+            updated_policy_doc,
+        )
+
+    @mock_iam
+    @patch("consoleme.lib.v2.requests.aws.fetch_iam_role")
+    @patch("consoleme.lib.v2.requests.populate_old_policies")
+    @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
+    @patch("consoleme.lib.v2.requests.can_manage_policy_requests")
+    @tornado.testing.gen_test
+    async def test_parse_and_apply_policy_request_modification_apply_change(
+        self,
+        mock_can_manage_policy_requests,
+        mock_dynamo_write,
+        mock_populate_old_policies,
+        mock_fetch_iam_role,
+    ):
+        from consoleme.lib.v2.requests import (
+            parse_and_apply_policy_request_modification,
+        )
+
+        extended_request = await get_extended_request_helper()
+        updated_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": ["s3:*"],
+                    "Effect": "Allow",
+                    "Resource": [
+                        "arn:aws:s3:::test_bucket",
+                        "arn:aws:s3:::test_bucket/abc/*",
+                    ],
+                    "Sid": "sid_test",
+                }
+            ],
+        }
+        input_body = {
+            "modification_model": {
+                "command": "apply_change",
+                "change_id": extended_request.changes.changes[0].id + "non-existent",
+                "policy_document": updated_policy_doc,
+            }
+        }
+        policy_request_model = PolicyRequestModificationRequestModel.parse_obj(
+            input_body
+        )
+        last_updated = extended_request.timestamp
+        mock_dynamo_write.return_value = create_future(None)
+        mock_populate_old_policies.return_value = create_future(None)
+        mock_fetch_iam_role.return_value = create_future(None)
+        mock_can_manage_policy_requests.return_value = create_future(False)
+        client = boto3.client("iam", region_name="us-east-1")
+        role_name = "test"
+        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
+
+        # Trying to apply while not being authorized
+        with pytest.raises(Unauthorized) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("Unauthorized", str(e))
+
+        mock_can_manage_policy_requests.return_value = create_future(True)
+        # Trying to apply a non-existent change
+        with pytest.raises(NoMatchingRequest) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("Unable to find", str(e))
+
+        # Valid change to be applied
+        policy_request_model.modification_model.change_id = extended_request.changes.changes[
+            0
+        ].id
+        response = await parse_and_apply_policy_request_modification(
+            extended_request, policy_request_model, "user@example.com", [], last_updated
+        )
+        self.assertEqual(0, response.errors)
+        # Make sure change got updated in the request
+        self.assertDictEqual(
+            extended_request.changes.changes[0].policy.policy_document,
+            updated_policy_doc,
+        )
+        self.assertEqual(extended_request.changes.changes[0].status, Status.applied)
+        # Make sure this change got applied
+        inline_policy = client.get_role_policy(
+            RoleName=role_name,
+            PolicyName=extended_request.changes.changes[0].policy_name,
+        )
+        self.assertEqual(
+            extended_request.changes.changes[0].policy_name,
+            inline_policy.get("PolicyName"),
+        )
+        self.assertDictEqual(
+            extended_request.changes.changes[0].policy.policy_document,
+            inline_policy.get("PolicyDocument"),
+        )
+
+    @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
+    @tornado.testing.gen_test
+    async def test_parse_and_apply_policy_request_modification_cancel_request(
+        self, mock_dynamo_write
+    ):
+        from consoleme.lib.v2.requests import (
+            parse_and_apply_policy_request_modification,
+        )
+
+        extended_request = await get_extended_request_helper()
+
+        input_body = {"modification_model": {"command": "cancel_request"}}
+        policy_request_model = PolicyRequestModificationRequestModel.parse_obj(
+            input_body
+        )
+        last_updated = extended_request.timestamp
+        mock_dynamo_write.return_value = create_future(None)
+
+        # Trying to cancel while not being authorized
+        with pytest.raises(Unauthorized) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user2@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("Unauthorized", str(e))
+
+        extended_request.changes.changes[0].status = Status.applied
+        # Trying to cancel while atleast one change is applied
+        with pytest.raises(InvalidRequestParameter) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("cannot be cancelled", str(e))
+        extended_request.changes.changes[0].status = Status.not_applied
+
+        # Trying to cancel an approved request
+        extended_request.request_status = RequestStatus.approved
+        with pytest.raises(InvalidRequestParameter) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("cannot be cancelled", str(e))
+
+        # Cancelling valid request
+        extended_request.request_status = RequestStatus.pending
+        response = await parse_and_apply_policy_request_modification(
+            extended_request, policy_request_model, "user@example.com", [], last_updated
+        )
+        self.assertEqual(0, response.errors)
+        # Make sure request got cancelled
+        self.assertEqual(RequestStatus.cancelled, extended_request.request_status)
+
+    @patch("consoleme.lib.v2.requests.can_move_back_to_pending_v2")
+    @patch("consoleme.lib.v2.requests.can_manage_policy_requests")
+    @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
+    @tornado.testing.gen_test
+    async def test_parse_and_apply_policy_request_modification_reject_and_move_back_to_pending_request(
+        self,
+        mock_dynamo_write,
+        mock_can_manage_policy_requests,
+        mock_move_back_to_pending,
+    ):
+        from consoleme.lib.v2.requests import (
+            parse_and_apply_policy_request_modification,
+        )
+
+        extended_request = await get_extended_request_helper()
+
+        input_body = {"modification_model": {"command": "reject_request"}}
+        policy_request_model = PolicyRequestModificationRequestModel.parse_obj(
+            input_body
+        )
+        last_updated = extended_request.timestamp
+        mock_dynamo_write.return_value = create_future(None)
+        mock_can_manage_policy_requests.return_value = create_future(False)
+        # Trying to reject while not being authorized
+        with pytest.raises(Unauthorized) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user2@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("Unauthorized", str(e))
+        mock_can_manage_policy_requests.return_value = create_future(True)
+        extended_request.changes.changes[0].status = Status.applied
+        # Trying to reject while atleast one change is applied
+        with pytest.raises(InvalidRequestParameter) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("cannot be rejeccted", str(e))
+        extended_request.changes.changes[0].status = Status.not_applied
+
+        # Trying to cancel an approved request
+        extended_request.request_status = RequestStatus.approved
+        with pytest.raises(InvalidRequestParameter) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("cannot be rejected", str(e))
+
+        # Rejecting valid request
+        extended_request.request_status = RequestStatus.pending
+        response = await parse_and_apply_policy_request_modification(
+            extended_request, policy_request_model, "user@example.com", [], last_updated
+        )
+        self.assertEqual(0, response.errors)
+        # Make sure request got rejected
+        self.assertEqual(RequestStatus.rejected, extended_request.request_status)
+
+        policy_request_model.modification_model.command = Command.move_back_to_pending
+        mock_move_back_to_pending.return_value = create_future(False)
+        # Trying to move back to pending request - not authorized
+        with pytest.raises(Unauthorized) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user2@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("Cannot move this request back to pending", str(e))
+
+        mock_move_back_to_pending.return_value = create_future(True)
+        # Trying to move back to pending request - authorized
+        response = await parse_and_apply_policy_request_modification(
+            extended_request,
+            policy_request_model,
+            "user2@example.com",
+            [],
+            last_updated,
+        )
+        self.assertEqual(0, response.errors)
+        # Make sure request got moved back
+        self.assertEqual(RequestStatus.pending, extended_request.request_status)
+
+    @mock_iam
+    @patch("consoleme.lib.v2.requests.aws.fetch_iam_role")
+    @patch("consoleme.lib.v2.requests.populate_old_policies")
+    @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
+    @patch("consoleme.lib.v2.requests.can_manage_policy_requests")
+    @tornado.testing.gen_test
+    async def test_parse_and_apply_policy_request_modification_approve_request(
+        self,
+        mock_can_manage_policy_requests,
+        mock_dynamo_write,
+        mock_populate_old_policies,
+        mock_fetch_iam_role,
+    ):
+        from consoleme.lib.v2.requests import (
+            parse_and_apply_policy_request_modification,
+        )
+
+        extended_request = await get_extended_request_helper()
+        resource_policy_change = {
+            "principal_arn": "arn:aws:iam::123456789012:role/test",
+            "change_type": "resource_policy",
+            "resources": [
+                {
+                    "arn": "arn:aws:iam::123456789012:role/test",
+                    "name": "test",
+                    "account_id": "311271679914",
+                    "resource_type": "iam",
+                }
+            ],
+            "version": 2,
+            "status": "not_applied",
+            "arn": "arn:aws:s3:::test_bucket",
+            "autogenerated": False,
+            "supported": True,
+            "policy": {
+                "policy_document": {"Version": "2012-10-17", "Statement": []},
+                "policy_sha256": "8f907b489532ad56fb7c52f3acc89b27680ed51296bf03984ce78d2b7b96076a",
+            },
+        }
+        resource_policy_change_model = ResourcePolicyChangeModel.parse_obj(
+            resource_policy_change
+        )
+        extended_request.changes.changes.append(resource_policy_change_model)
+        updated_policy_doc = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": ["s3:*"],
+                    "Effect": "Allow",
+                    "Resource": [
+                        "arn:aws:s3:::test_bucket",
+                        "arn:aws:s3:::test_bucket/abc/*",
+                    ],
+                    "Sid": "sid_test",
+                }
+            ],
+        }
+        input_body = {
+            "modification_model": {
+                "command": "approve_request",
+                "policy_request_changes": [
+                    {
+                        "change_id": extended_request.changes.changes[0].id,
+                        "policy_document": updated_policy_doc,
+                    }
+                ],
+            }
+        }
+        policy_request_model = PolicyRequestModificationRequestModel.parse_obj(
+            input_body
+        )
+        last_updated = extended_request.timestamp
+        mock_dynamo_write.return_value = create_future(None)
+        mock_populate_old_policies.return_value = create_future(None)
+        mock_fetch_iam_role.return_value = create_future(None)
+        mock_can_manage_policy_requests.return_value = create_future(False)
+        client = boto3.client("iam", region_name="us-east-1")
+        role_name = "test"
+        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
+
+        # Trying to approve while not being authorized
+        with pytest.raises(Unauthorized) as e:
+            await parse_and_apply_policy_request_modification(
+                extended_request,
+                policy_request_model,
+                "user@example.com",
+                [],
+                last_updated,
+            )
+            self.assertIn("Unauthorized", str(e))
+
+        mock_can_manage_policy_requests.return_value = create_future(True)
+
+        # Authorized person approving request
+        response = await parse_and_apply_policy_request_modification(
+            extended_request, policy_request_model, "user@example.com", [], last_updated
+        )
+        # 1 error for the resource policy change, which shouldn't be applied
+        self.assertEqual(1, response.errors)
+        # Make sure inline policy change got updated in the request
+        self.assertDictEqual(
+            extended_request.changes.changes[0].policy.policy_document,
+            updated_policy_doc,
+        )
+        self.assertEqual(extended_request.changes.changes[0].status, Status.applied)
+        # Make sure this change got applied
+        inline_policy = client.get_role_policy(
+            RoleName=role_name,
+            PolicyName=extended_request.changes.changes[0].policy_name,
+        )
+        self.assertEqual(
+            extended_request.changes.changes[0].policy_name,
+            inline_policy.get("PolicyName"),
+        )
+        self.assertDictEqual(
+            extended_request.changes.changes[0].policy.policy_document,
+            inline_policy.get("PolicyDocument"),
+        )
+        # Make sure request got approved status
+        self.assertEqual(RequestStatus.approved, extended_request.request_status)
+        # Make sure resource policy change is still not applied
+        self.assertEqual(extended_request.changes.changes[1].status, Status.not_applied)
+        self.assertEqual(response.action_results[1].status, "error")
+        self.assertIn("not included in approve", response.action_results[1].message)
+        self.assertIn(
+            extended_request.changes.changes[1].arn, response.action_results[1].message
         )
