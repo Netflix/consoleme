@@ -496,11 +496,7 @@ class RequestsTableConfigHandler(BaseHandler):
                     "placeholder": "Request ID",
                     "key": "request_id",
                     "type": "input",
-                    "style": {
-                        "width": "110px",
-                        "whiteSpace": "normal",
-                        "wordBreak": "break-all",
-                    },
+                    "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
                     "width": 2,
                 },
                 {
