@@ -374,7 +374,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             # Request format is not compitable with this endpoint version
             raise InvalidRequestParameter("Request with that ID is not a v2 request")
 
-        extended_request = ExtendedRequestModel.parse_raw(
+        extended_request = ExtendedRequestModel.parse_obj(
             request.get("extended_request")
         )
         return extended_request, request.get("last_updated")
