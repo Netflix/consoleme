@@ -44,11 +44,12 @@ from consoleme.handlers.v2.create_role import CreateRoleViewHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
-
-
 from consoleme.handlers.v2.index import EligibleRoleTableConfigHandler, IndexHandler
-from consoleme.handlers.v2.policies import PolicyReviewV2Handler
-
+from consoleme.handlers.v2.policies import (
+    PoliciesHandler,
+    PoliciesTableConfigHandler,
+    PolicyReviewV2Handler,
+)
 from consoleme.handlers.v2.requests import (
     RequestDetailHandler,
     RequestHandler,
@@ -118,6 +119,8 @@ def make_app(jwt_validator=None):
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
+        (r"/api/v2/policies", PoliciesHandler),
+        (r"/api/v2/policies_table_config", PoliciesTableConfigHandler),
         (r"/api/v2/role_table_config", EligibleRoleTableConfigHandler),
         (r"/api/v2/request", RequestHandler),
         (r"/api/v2/requests", RequestsHandler),
