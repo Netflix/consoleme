@@ -10,6 +10,7 @@ import {
   Message,
   Search,
   Segment,
+  Table,
 } from "semantic-ui-react";
 
 import RoleDetails from "./RoleDetails";
@@ -18,6 +19,19 @@ import "./SelfService.css";
 const ARN_REGEX = /^arn:aws:iam::(?<accountId>\d{12}):role\/(?<roleName>.+)$/;
 
 const categoryLayoutRenderer = ({ categoryContent, resultsContent }) => (
+  <Table basic="very" celled collapsing>
+    <Table.Header>
+      <Table.Row>
+        <Table.HeaderCell>Role</Table.HeaderCell>
+        <Table.HeaderCell>Account</Table.HeaderCell>
+        <Table.HeaderCell>Application</Table.HeaderCell>
+      </Table.Row>
+    </Table.Header>
+    {resultsContent}
+  </Table>
+);
+
+const categoryLayoutRendererOld = ({ categoryContent, resultsContent }) => (
   <div style={{ background: "white" }}>
     {/* <div style={{ textAlign: "center", background: "white" }} className="category">{categoryContent}</div> */}
     <div style={{ background: "white" }} className="results">
@@ -29,6 +43,34 @@ const categoryLayoutRenderer = ({ categoryContent, resultsContent }) => (
 const categoryRenderer = ({ name }) => <h3>{name}</h3>;
 
 const resultRenderer = ({ title, content, description }) => (
+  <Table.Body>
+    <Table.Row>
+      <Table.Cell>
+        <div className="title">{title}</div>
+      </Table.Cell>
+      <Table.Cell>
+        {content && content === "prod" ? (
+          <Label color="red" horizontal>
+            {description}
+          </Label>
+        ) : (
+          <Label color="grey" horizontal>
+            {description}
+          </Label>
+        )}
+      </Table.Cell>
+      <Table.Cell>
+        {description && description.split("-").length === 2 ? (
+          <Label color="teal" horizontal>
+            {description.split("-")[1]}
+          </Label>
+        ) : null}
+      </Table.Cell>
+    </Table.Row>
+  </Table.Body>
+);
+
+const resultRenderer2 = ({ title, content, description }) => (
   <>
     <div className="title">{title}</div>
     {content && content === "prod" ? (
