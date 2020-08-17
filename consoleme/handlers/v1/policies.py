@@ -1229,7 +1229,7 @@ async def handle_resource_type_ahead_request(cls):
                     seen[parsed_app_name] = True
                     seen_roles[role] = True
                     results[app_name]["results"].append(
-                        {"title": role, "description": account + "-" + app_name}
+                        {"title": role, "description": account}
                     )
         for role in all_role_arns:
             if len(results.keys()) > 9:
