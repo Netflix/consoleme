@@ -1254,12 +1254,12 @@ async def handle_resource_type_ahead_request(cls):
                 account_id = role.split(":")[4]
                 environment = accounts_to_env.get(account_id, "")
                 account = accounts.get(account_id, "")
-                results[role] = {
-                    "name": role.replace("arn:aws:iam::", "").replace(":role", ""),
-                    "results": [
-                        {"title": role, "description": account, "content": environment}
-                    ],
-                }
+                if not results.get("Unknown App"):
+                    results["Unknown App"] = {"name": "Unknown App", "results": []}
+                results["Unknown App"]["results"].append(
+                    {"title": role, "description": account, "content": environment}
+                )
+
     else:
         for k, v in data.items():
             if account_id and k != account_id:

@@ -37,8 +37,7 @@ class TestPoliciesHandler(AsyncHTTPTestCase):
     def test_policies_pageload(self):
         response = self.fetch("/policies")
         self.assertEqual(response.code, 200)
-        self.assertIn(b"All Policies", response.body)
-        self.assertIn(b"Templated", response.body)
+        self.assertIn(b"/api/v2/policies_table_config", response.body)
 
 
 class TestPolicyEditHandler(AsyncHTTPTestCase):

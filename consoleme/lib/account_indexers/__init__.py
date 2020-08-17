@@ -55,12 +55,14 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
     return account_mapping
 
 
-async def get_account_id_to_name_mapping(status="active"):
+async def get_account_id_to_name_mapping(
+    status="active", environment=None, force_sync=False
+):
     redis_key = config.get(
         "cache_cloud_accounts.redis.key.all_accounts_key", "ALL_AWS_ACCOUNTS"
     )
     accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default={})
-    if not accounts:
+    if force_sync or not accounts:
         # Force a re-sync and then retry
         await cache_cloud_accounts()
         accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default={})
@@ -68,6 +70,8 @@ async def get_account_id_to_name_mapping(status="active"):
     account_id_to_name = {}
     for account in accounts.get("accounts", []):
         if status and account.get("status") != status:
+            continue
+        if environment and account.get("environment") != environment:
             continue
         account_id_to_name[account["id"]] = account["name"]
     return account_id_to_name

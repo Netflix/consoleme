@@ -35,18 +35,21 @@
                 {% for r in pending_requests.get("pending_requests_waiting_my_approval", []) %}
                     <tr>
                         {% if r.get("group") %}
-                            <td data-label="Request"><a href="/accessui/request/{{ escape(r.get("request_id")) }}">{{ escape(r.get("request_id")) }}</a>
+                            <td data-label="Request"><a href="/accessui/request/{{ escape(r.get("request_id", "")) }}">{{ escape(r.get("request_id", "")) }}</a>
                             </td>
-                            <td data-label="Group">{{ escape(r.get("group")) }}</td>
+                            <td data-label="Group">{{ escape(r.get("group", "")) }}</td>
                         {% elif r.get("arn") %}
-                            <td data-label="Request"><a href="/policies/request/{{ escape(r.get("request_id")) }}">{{ escape(r.get("request_id")) }}</a>
-                            </td>
-                            <td data-label="Group">{{ escape(r.get("arn")) }}</td>
+                            {% if r.get("version") == "2" %}
+                                <td data-label="Request"><a href="/policies/request_v2/{{ escape(r.get("request_id", "")) }}">{{ escape(r.get("request_id", "")) }}</a></td>
+                            {% else %}
+                                <td data-label="Request"><a href="/policies/request/{{ escape(r.get("request_id", "")) }}">{{ escape(r.get("request_id", "")) }}</a></td>
+                            {% end %}
+                            <td data-label="Group">{{ escape(r.get("arn", "")) }}</td>
                         {% end %}
-                        <td data-label="User">{{ escape(r.get("username")) }}</td>
-                        <td data-label="Justification">{{ escape(r.get("justification")) }}</td>
-                        <td data-label="Secondary Approvers">{{ escape(",".join(r.get("secondary_approvers"))) }}</td>
-                        <td data-label="Request Time"><script>document.write(toLocalDate({{ r.get("request_time") * 1000}}))</script></td>
+                        <td data-label="User">{{ escape(r.get("username", "")) }}</td>
+                        <td data-label="Justification">{{ escape(r.get("justification", "")) }}</td>
+                        <td data-label="Secondary Approvers">{{ escape(",".join(r.get("secondary_approvers", []))) }}</td>
+                        <td data-label="Request Time"><script>document.write(toLocalDate({{ r.get("request_time", 0) * 1000}}))</script></td>
                     </tr>
                 {% end %}
             </tbody>
@@ -68,18 +71,21 @@
                 {% for r in pending_requests.get("all_pending_requests", []) %}
                     <tr>
                         {% if r.get("group") %}
-                            <td data-label="Request"><a href="/accessui/request/{{ escape(r.get("request_id")) }}">{{ escape(r.get("request_id")) }}</a>
+                            <td data-label="Request"><a href="/accessui/request/{{ escape(r.get("request_id", "")) }}">{{ escape(r.get("request_id")) }}</a>
                             </td>
-                            <td data-label="Group">{{ escape(r.get("group")) }}</td>
+                            <td data-label="Group">{{ escape(r.get("group", "")) }}</td>
                         {% elif r.get("arn") %}
-                            <td data-label="Request"><a href="/policies/request/{{ escape(r.get("request_id")) }}">{{ escape(r.get("request_id")) }}</a>
-                            </td>
-                            <td data-label="Group">{{ escape(r.get("arn")) }}</td>
+                            {% if r.get("version") == "2" %}
+                                <td data-label="Request"><a href="/policies/request_v2/{{ escape(r.get("request_id", "")) }}">{{ escape(r.get("request_id", "")) }}</a></td>
+                            {% else %}
+                                <td data-label="Request"><a href="/policies/request/{{ escape(r.get("request_id", "")) }}">{{ escape(r.get("request_id", "")) }}</a></td>
+                            {% end %}
+                            <td data-label="Group">{{ escape(r.get("arn", "")) }}</td>
                         {% end %}
-                        <td data-label="User">{{ escape(r.get("username")) }}</td>
-                        <td data-label="Justification">{{ escape(r.get("justification")) }}</td>
-                        <td data-label="Secondary Approvers">{{ escape(",".join(r.get("secondary_approvers"))) }}</td>
-                        <td data-label="Request Time"><script>document.write(toLocalDate({{ r.get("request_time") * 1000}}))</script></td>
+                        <td data-label="User">{{ escape(r.get("username", "")) }}</td>
+                        <td data-label="Justification">{{ escape(r.get("justification", "")) }}</td>
+                        <td data-label="Secondary Approvers">{{ escape(",".join(r.get("secondary_approvers", []))) }}</td>
+                        <td data-label="Request Time"><script>document.write(toLocalDate({{ r.get("request_time", 0) * 1000}}))</script></td>
                     </tr>
                 {% end %}
             </tbody>
@@ -104,16 +110,19 @@
                         {% if r.get("group") %}
                             <td data-label="Request"><a href="/accessui/request/{{ escape(r.get("request_id")) }}">{{ escape(r.get("request_id")) }}</a>
                             </td>
-                            <td data-label="Group">{{ escape(r.get("group")) }}</td>
+                            <td data-label="Group">{{ escape(r.get("group", "")) }}</td>
                         {% elif r.get("arn") %}
-                            <td data-label="Request"><a href="/policies/request/{{ escape(r.get("request_id")) }}">{{ escape(r.get("request_id")) }}</a>
-                            </td>
-                            <td data-label="Group">{{ escape(r.get("arn")) }}</td>
+                            {% if r.get("version") == "2" %}
+                                <td data-label="Request"><a href="/policies/request_v2/{{ escape(r.get("request_id", "")) }}">{{ escape(r.get("request_id", "")) }}</a></td>
+                            {% else %}
+                                <td data-label="Request"><a href="/policies/request/{{ escape(r.get("request_id", "")) }}">{{ escape(r.get("request_id", "")) }}</a></td>
+                            {% end %}
+                            <td data-label="Group">{{ escape(r.get("arn", "")) }}</td>
                         {% end %}
-                        <td data-label="User">{{ escape(r.get("username")) }}</td>
-                        <td data-label="Justification">{{ escape(r.get("justification")) }}</td>
-                        <td data-label="Secondary Approvers">{{ escape(",".join(r.get("secondary_approvers"))) }}</td>
-                        <td data-label="Request Time"><script>document.write(toLocalDate({{ r.get("request_time") * 1000}}))</script></td>
+                        <td data-label="User">{{ escape(r.get("username", "")) }}</td>
+                        <td data-label="Justification">{{ escape(r.get("justification", "")) }}</td>
+                        <td data-label="Secondary Approvers">{{ escape(",".join(r.get("secondary_approvers", []))) }}</td>
+                        <td data-label="Request Time"><script>document.write(toLocalDate({{ r.get("request_time", 0) * 1000}}))</script></td>
                     </tr>
                 {% end %}
             </tbody>

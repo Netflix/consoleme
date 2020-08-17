@@ -1,94 +1,18 @@
 import _ from "lodash";
-import React, { Component, Fragment } from "react";
+import React, { Component } from "react";
 import {
-  Divider,
   Form,
   Grid,
   Header,
-  Label,
   Loader,
   Message,
   Search,
   Segment,
-  Table,
 } from "semantic-ui-react";
-
 import RoleDetails from "./RoleDetails";
 import "./SelfService.css";
 
 const ARN_REGEX = /^arn:aws:iam::(?<accountId>\d{12}):role\/(?<roleName>.+)$/;
-
-const categoryLayoutRenderer = ({ categoryContent, resultsContent }) => (
-  <Table basic="very" celled collapsing>
-    <Table.Header>
-      <Table.Row>
-        <Table.HeaderCell>Role</Table.HeaderCell>
-        <Table.HeaderCell>Account</Table.HeaderCell>
-        <Table.HeaderCell>Application</Table.HeaderCell>
-      </Table.Row>
-    </Table.Header>
-    {resultsContent}
-  </Table>
-);
-
-const categoryLayoutRendererOld = ({ categoryContent, resultsContent }) => (
-  <div style={{ background: "white" }}>
-    {/* <div style={{ textAlign: "center", background: "white" }} className="category">{categoryContent}</div> */}
-    <div style={{ background: "white" }} className="results">
-      {resultsContent}
-    </div>
-  </div>
-);
-
-const categoryRenderer = ({ name }) => <h3>{name}</h3>;
-
-const resultRenderer = ({ title, content, description }) => (
-  <Table.Body>
-    <Table.Row>
-      <Table.Cell>
-        <div className="title">{title}</div>
-      </Table.Cell>
-      <Table.Cell>
-        {content && content === "prod" ? (
-          <Label color="red" horizontal>
-            {description}
-          </Label>
-        ) : (
-          <Label color="grey" horizontal>
-            {description}
-          </Label>
-        )}
-      </Table.Cell>
-      <Table.Cell>
-        {description && description.split("-").length === 2 ? (
-          <Label color="teal" horizontal>
-            {description.split("-")[1]}
-          </Label>
-        ) : null}
-      </Table.Cell>
-    </Table.Row>
-  </Table.Body>
-);
-
-const resultRenderer2 = ({ title, content, description }) => (
-  <>
-    <div className="title">{title}</div>
-    {content && content === "prod" ? (
-      <Label color="red" horizontal>
-        {description}
-      </Label>
-    ) : (
-      <Label color="grey" horizontal>
-        {description}
-      </Label>
-    )}
-    {description && description.split("-").length === 2 ? (
-      <Label color="teal" horizontal>
-        {description.split("-")[1]}
-      </Label>
-    ) : null}
-  </>
-);
 
 class SelfServiceStep1 extends Component {
   constructor(props) {
@@ -238,9 +162,9 @@ class SelfServiceStep1 extends Component {
             We found some problems for this request.
           </Message.Header>
           <Message.List>
-            {messages.map((message) => {
-              return <Message.Item>{message}</Message.Item>;
-            })}
+            {messages.map((message) => (
+              <Message.Item>{message}</Message.Item>
+            ))}
           </Message.List>
         </Message>
       ) : null;
@@ -263,14 +187,11 @@ class SelfServiceStep1 extends Component {
                   go/selfserviceiamtldr
                 </a>
               </p>
-              <Form>
+              <Form widths="equal">
                 <Form.Field required>
                   <label>Search Your Application Roles</label>
                   <Search
                     category
-                    categoryLayoutRenderer={categoryLayoutRenderer}
-                    categoryRenderer={categoryRenderer}
-                    resultRenderer={resultRenderer}
                     loading={isLoading}
                     onResultSelect={this.handleResultSelect.bind(this)}
                     onSearchChange={_.debounce(
@@ -282,7 +203,6 @@ class SelfServiceStep1 extends Component {
                     )}
                     results={results}
                     value={value}
-                    fluid
                   />
                 </Form.Field>
               </Form>
