@@ -234,9 +234,6 @@ class GetPoliciesHandler(BaseHandler):
 
 
 class PolicyEditHandler(BaseHandler):
-    def initialize(self):
-        self.account_ids_to_names = group_mapping.get_account_ids_to_names()
-
     async def get(self, account_id, role_name):
 
         if not self.user:
@@ -311,7 +308,8 @@ class PolicyEditHandler(BaseHandler):
         all_account_managed_policies = await get_all_iam_managed_policies_for_account(
             account_id
         )
-        account_name = self.account_ids_to_names.get(account_id, "")
+        account_ids_to_names = await get_account_id_to_name_mapping()
+        account_name = account_ids_to_names.get(account_id, "")
 
         await self.render(
             "policy_editor.html",
@@ -1211,14 +1209,7 @@ async def handle_resource_type_ahead_request(cls):
             accounts = await get_account_id_to_name_mapping()
         except Exception as e:  # noqa
             accounts = {}
-        try:
-            accounts_to_env = json.loads(
-                await redis_get(
-                    config.get("swag.redis_accounts_to_env_key", "SWAG_ACCOUNTS_TO_ENV")
-                )
-            )
-        except Exception as e:  # noqa
-            accounts_to_env = {}
+
         app_to_role_map = json.loads(data)
         seen: Dict = {}
         seen_roles = {}
@@ -1230,7 +1221,6 @@ async def handle_resource_type_ahead_request(cls):
                 for role in roles:
                     account_id = role.split(":")[4]
                     account = accounts.get(account_id, "")
-                    environment = accounts_to_env.get(account_id, "")
                     parsed_app_name = (
                         f"{app_name} on {account} ({account_id}) ({role})]"
                     )
@@ -1239,11 +1229,7 @@ async def handle_resource_type_ahead_request(cls):
                     seen[parsed_app_name] = True
                     seen_roles[role] = True
                     results[app_name]["results"].append(
-                        {
-                            "title": role,
-                            "description": account + "-" + app_name,
-                            "content": environment,
-                        }
+                        {"title": role, "description": account + "-" + app_name}
                     )
         for role in all_role_arns:
             if len(results.keys()) > 9:
@@ -1252,12 +1238,11 @@ async def handle_resource_type_ahead_request(cls):
                 if seen_roles.get(role):
                     continue
                 account_id = role.split(":")[4]
-                environment = accounts_to_env.get(account_id, "")
                 account = accounts.get(account_id, "")
                 if not results.get("Unknown App"):
                     results["Unknown App"] = {"name": "Unknown App", "results": []}
                 results["Unknown App"]["results"].append(
-                    {"title": role, "description": account, "content": environment}
+                    {"title": role, "description": account}
                 )
 
     else:
