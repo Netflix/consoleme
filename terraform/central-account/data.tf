@@ -37,6 +37,7 @@ data "template_file" "consoleme_userdata" {
     demo_config        = data.template_file.consoleme_config.rendered
     region             = data.aws_region.current.name
     CONFIG_LOCATION    = var.CONFIG_LOCATION
+    custom_user_data   = var.custom_user_data
   }
 }
 

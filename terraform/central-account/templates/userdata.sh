@@ -181,3 +181,6 @@ systemctl enable consoleme
 systemctl start consoleme
 
 python /apps/consoleme/scripts/initialize_redis_oss.py
+
+echo "Running custom userdata"
+${custom_user_data}
