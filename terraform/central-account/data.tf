@@ -32,12 +32,12 @@ data "template_file" "consoleme_config" {
 data "template_file" "consoleme_userdata" {
   template = file("${path.module}/templates/userdata.sh")
   vars = {
-    bucket             = aws_s3_bucket.consoleme_source_bucket.bucket
-    current_account_id = data.aws_caller_identity.current.account_id
-    demo_config        = data.template_file.consoleme_config.rendered
-    region             = data.aws_region.current.name
-    CONFIG_LOCATION    = var.CONFIG_LOCATION
-    custom_user_data   = var.custom_user_data
+    bucket                  = aws_s3_bucket.consoleme_source_bucket.bucket
+    current_account_id      = data.aws_caller_identity.current.account_id
+    demo_config             = data.template_file.consoleme_config.rendered
+    region                  = data.aws_region.current.name
+    CONFIG_LOCATION         = var.CONFIG_LOCATION
+    custom_user_data_script = var.custom_user_data_script
   }
 }
 
