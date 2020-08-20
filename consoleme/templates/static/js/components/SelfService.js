@@ -1,3 +1,4 @@
+import qs from "qs";
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
 import { Button, Icon, Message, Segment, Step } from "semantic-ui-react";
@@ -6,6 +7,8 @@ import SelfServiceStep1 from "./SelfServiceStep1";
 import SelfServiceStep2 from "./SelfServiceStep2";
 import SelfServiceStep3 from "./SelfServiceStep3";
 import { SelfServiceStepEnum } from "./SelfServiceEnums";
+
+const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):role\/(.+\/)?(?<roleName>(.+))/;
 
 class SelfService extends Component {
   state = {
@@ -32,11 +35,55 @@ class SelfService extends Component {
             value: name,
           });
         });
-        this.setState({
-          config,
-          services,
-          admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+
+        // If Self Service page is redirected with account and role information
+        // TODO(heewonk), revisit following redirection once move to SPA
+        const paramSearch = qs.parse(window.location.search, {
+          ignoreQueryPrefix: true,
         });
+
+        if (arnRegex.test(paramSearch.arn)) {
+          const match = arnRegex.exec(paramSearch.arn);
+          const { accountId, roleName } = match.groups;
+
+          this.setState({
+            admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+            config,
+            currStep: SelfServiceStepEnum.STEP2,
+            // TODO(heewonk), define the role type
+            role: {
+              account_id: accountId,
+              account_name: "",
+              apps: {
+                app_details: [],
+              },
+              arn: `arn:aws:iam::${accountId}:role/${roleName}`,
+              name: roleName,
+              owner: "",
+              tags: [],
+              templated: false,
+              cloudtrail_details: {
+                error_url: "",
+                errors: {
+                  cloudtrail_errors: [],
+                },
+              },
+              s3_details: {
+                error_url: "",
+                errors: {
+                  s3_errors: [],
+                },
+              },
+            },
+            services,
+          });
+        } else {
+          this.setState({
+            config,
+            services,
+            admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+          });
+        }
       });
     });
   }
@@ -93,15 +140,15 @@ class SelfService extends Component {
   }
 
   getCurrentSelfServiceStep() {
-    const { currStep } = this.state;
+    const { admin_bypass_approval_enabled, config, currStep, permissions, role, services } = this.state;
 
     let SelfServiceStep = null;
     switch (currStep) {
       case SelfServiceStepEnum.STEP1:
         SelfServiceStep = (
           <SelfServiceStep1
-            config={this.state.config}
-            role={this.state.role}
+            config={config}
+            role={role}
             handleRoleUpdate={this.handleRoleUpdate.bind(this)}
           />
         );
@@ -109,10 +156,10 @@ class SelfService extends Component {
       case SelfServiceStepEnum.STEP2:
         SelfServiceStep = (
           <SelfServiceStep2
-            config={this.state.config}
-            role={this.state.role}
-            services={this.state.services}
-            permissions={this.state.permissions}
+            config={config}
+            role={role}
+            services={services}
+            permissions={permissions}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
           />
         );
@@ -120,13 +167,11 @@ class SelfService extends Component {
       case SelfServiceStepEnum.STEP3:
         SelfServiceStep = (
           <SelfServiceStep3
-            config={this.state.config}
-            role={this.state.role}
-            services={this.state.services}
-            permissions={this.state.permissions}
-            admin_bypass_approval_enabled={
-              this.state.admin_bypass_approval_enabled
-            }
+            config={config}
+            role={role}
+            services={services}
+            permissions={permissions}
+            admin_bypass_approval_enabled={admin_bypass_approval_enabled}
           />
         );
         break;
