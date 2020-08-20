@@ -1262,10 +1262,30 @@ def cache_resources_from_aws_config_across_accounts() -> bool:
 
     # Delete roles in Redis cache with expired TTL
     all_resources = red.hgetall(resource_redis_cache_key)
-    for arn, resource_entry_j in all_resources.items():
-        resource_entry = json.loads(resource_entry_j)
-        if datetime.fromtimestamp(resource_entry["ttl"]) < datetime.utcnow():
-            red.hdel(resource_redis_cache_key, arn)
+    if all_resources:
+        expired_arns = []
+        for arn, resource_entry_j in all_resources.items():
+            resource_entry = ujson.loads(resource_entry_j)
+            if datetime.fromtimestamp(resource_entry["ttl"]) < datetime.utcnow():
+                expired_arns.append(arn)
+        if expired_arns:
+            red.hdel(resource_redis_cache_key, expired_arns)
+
+        # Cache all resource ARNs into a single file. Note: This runs synchronously with this task. This task triggers
+        # resource collection on all accounts to happen asynchronously. That means when we store or delete data within
+        # this task, we're always going to be caching the results from the previous task.
+        if config.region == config.get("celery.active_region") or config.get(
+                "environment"
+        ) in ["dev"]:
+            # Refresh all resources after deletion of expired entries
+            all_resources = red.hgetall(resource_redis_cache_key)
+            s3_bucket = config.get("aws_config_cache_combined.s3.bucket")
+            s3_key = config.get("aws_config_cache_combined.s3.file")
+            async_to_sync(store_json_results_in_redis_and_s3)(
+                all_resources,
+                s3_bucket=s3_bucket,
+                s3_key=s3_key,
+            )
     stats.count(f"{function}.success")
     return True
 
@@ -1477,7 +1497,7 @@ schedule = {
     "cache_resources_from_aws_config_across_accounts": {
         "task": "consoleme.celery.celery_tasks.cache_resources_from_aws_config_across_accounts",
         "options": {"expires": 300},
-        "schedule": schedule_6_hours,
+        "schedule": schedule_1_hour,
     },
     "cache_policy_requests": {
         "task": "consoleme.celery.celery_tasks.cache_policy_requests",
