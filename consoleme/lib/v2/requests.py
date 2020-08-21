@@ -975,6 +975,7 @@ async def apply_resource_policy_change(
     log_data["response"] = response.dict()
     log_data["request"] = extended_request.dict()
     log_data["change"] = change.dict()
+    log.debug(log_data)
     return response
 
 
@@ -1277,8 +1278,14 @@ async def parse_and_apply_policy_request_modification(
                 log_data["message"] = "Change already applied, skipping change"
                 log_data["change"] = change.dict()
                 log.warn(log_data)
+                response.errors += 1
+                response.action_results.append(
+                    ActionResult(
+                        status="error",
+                        message=f"{change.change_type.value} change already applied, skipping change",
+                    )
+                )
                 continue
-                # TODO: how should we inform user that this change was skipped since already applied? Should we?
 
             if approve_change_model.policy_request_changes:
                 # Iterate through the request body for any optional updates before applying
