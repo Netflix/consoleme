@@ -419,7 +419,7 @@ components:
         - justification
         - requester_email
         - approvers
-        - status
+        - request_status
       properties:
         id:
           type: string
@@ -442,8 +442,13 @@ components:
           items:
             type: string
           readOnly: true
-        status:
+        request_status:
           type: string
+          enum:
+            - pending
+            - cancelled
+            - approved
+            - rejected
         cross_account:
           description: if true, the request touches cross-account resources
           type: boolean
@@ -1212,6 +1217,109 @@ components:
           type: boolean
         request_id:
           type: string
+        action_results:
+          type: array
+          items:
+            type: object
+            properties:
+              status:
+                type: string
+              message:
+                type: string
+    RequestModificationBaseModel:
+      type: object
+      required:
+        - command
+      properties:
+        command:
+          type: string
+          enum:
+            - add_comment
+            - approve_request
+            - reject_request
+            - cancel_request
+            - apply_change
+            - update_change
+            - move_back_to_pending
+    CommentRequestModificationModel:
+      allOf:
+        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - type: object
+          required:
+            - comment_text
+          properties:
+            comment_text:
+              type: string
+    UpdateChangeModificationModel:
+      allOf:
+        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - type: object
+          required:
+            - policy_document
+            - change_id
+          properties:
+            policy_document:
+              type: object
+            change_id:
+              type: string
+    ApplyChangeModificationModel:
+      allOf:
+        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - type: object
+          required:
+            - change_id
+          properties:
+            policy_document:
+              type: object
+            change_id:
+              type: string
+    CancelRequestModificationModel:
+      allOf:
+        - $ref: '#/components/schemas/RequestModificationBaseModel'
+    MoveToPendingRequestModificationModel:
+      allOf:
+        - $ref: '#/components/schemas/RequestModificationBaseModel'
+    ApproveRequestModificationModel:
+      allOf:
+        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - type: object
+          properties:
+            policy_request_changes:
+              type: array
+              items:
+                type: object
+                required:
+                  - policy_document
+                  - change_id
+                properties:
+                  policy_document:
+                    type: object
+                  change_id:
+                    type: string
+    PolicyRequestModificationRequestModel:
+      type: object
+      required:
+        - modification_model
+      properties:
+        modification_model:
+          type: object
+          oneOf:
+            - $ref: '#/components/schemas/CommentRequestModificationModel'
+            - $ref: '#/components/schemas/UpdateChangeModificationModel'
+            - $ref: '#/components/schemas/ApplyChangeModificationModel'
+            - $ref: '#/components/schemas/ApproveRequestModificationModel'
+            - $ref: '#/components/schemas/MoveToPendingRequestModificationModel'
+            - $ref: '#/components/schemas/CancelRequestModificationModel'
+          discriminator:
+            propertyName: command
+            mapping:
+              add_comment: '#/components/schemas/CommentRequestModificationModel'
+              update_change: '#/components/schemas/UpdateChangeModificationModel'
+    PolicyRequestModificationResponseModel:
+      type: object
+      properties:
+        errors:
+          type: integer
         action_results:
           type: array
           items:

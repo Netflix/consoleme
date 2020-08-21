@@ -8,6 +8,7 @@ from consoleme.config import config
 from consoleme.lib.generic import generate_html
 from consoleme.lib.groups import get_group_url
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.models import ExtendedRequestModel, RequestStatus
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
@@ -227,7 +228,7 @@ async def send_new_aws_groups_notification(
 ):
     app_name = config.get(f"ses.{sending_app}.name")
     subject = f"{app_name}: New AWS groups detected"
-    message = f"""New AWS login groups were created.<br>
+    message = """New AWS login groups were created.<br>
     ConsoleMe is configured to send notifications when new AWS-related google groups are detected.
     This is to detect any accidentally or maliciously created google groups.<br>"""
     added_groups_snippet = ""
@@ -313,4 +314,74 @@ async def send_policy_request_status_update(
             <meta http-equiv="content-type" content="text/html; charset=UTF-8">
             </body>
             </html>"""
+    await send_email(to_addresses, subject, body, sending_app=sending_app)
+
+
+async def send_policy_request_status_update_v2(
+    extended_request: ExtendedRequestModel, policy_change_uri, sending_app="consoleme"
+):
+    app_name = config.get(f"ses.{sending_app}.name")
+
+    if extended_request.request_status == RequestStatus.pending:
+        subject = f"{app_name}: Policy change request for {extended_request.arn} has been created"
+        message = (
+            f"A policy change request for {extended_request.arn} has been created."
+        )
+    else:
+        subject = (
+            f"{app_name}: Policy change request for {extended_request.arn} has been "
+            f"updated to {extended_request.request_status.value}"
+        )
+        message = (
+            f"A policy change request for {extended_request.arn} "
+            f"has been updated to {extended_request.request_status.value}"
+        )
+    to_addresses = [extended_request.requester_email]
+
+    if extended_request.request_status == RequestStatus.approved:
+        message += " and committed"
+        subject += " and committed"
+    body = f"""<html>
+            <head>
+            <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+            <title>Policy Change Request Status Change</title>
+            </head>
+            <body>
+            {message} <br>
+            <br>
+            See the request here: {policy_change_uri}.<br>
+            <br>
+            <br>
+            {config.get('ses.support_reference', '')}
+            <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+            </body>
+            </html>"""
+    await send_email(to_addresses, subject, body, sending_app=sending_app)
+
+
+async def send_new_comment_notification(
+    extended_request: ExtendedRequestModel,
+    to_addresses,
+    user,
+    policy_change_uri,
+    sending_app="consoleme",
+):
+    app_name = config.get(f"ses.{sending_app}.name")
+    subject = f"{app_name}: A new comment has been added to Policy Change request for {extended_request.arn}"
+    message = f"A new comment has been added to the policy change request for {extended_request.arn} by {user}"
+    body = f"""<html>
+                <head>
+                <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+                <title>Policy Change Request Comment Notification</title>
+                </head>
+                <body>
+                {message} <br>
+                <br>
+                See the request here: {policy_change_uri}.<br>
+                <br>
+                <br>
+                {config.get('ses.support_reference', '')}
+                <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+                </body>
+                </html>"""
     await send_email(to_addresses, subject, body, sending_app=sending_app)
