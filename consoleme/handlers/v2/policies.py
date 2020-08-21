@@ -113,6 +113,10 @@ class PoliciesHandler(BaseAPIV2Handler):
                 policy["arn"] = f"[{policy['arn']}]({url})"
                 if not policy.get("templated"):
                     policy["templated"] = "N/A"
+                else:
+                    if "/" in policy["templated"]:
+                        link_name = policy["templated"].split("/")[-1]
+                        policy["templated"] = f"[{link_name}]({policy['templated']})"
                 policies_to_write.append(policy)
         else:
             policies_to_write = policies[0:limit]
