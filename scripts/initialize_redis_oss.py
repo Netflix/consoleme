@@ -5,6 +5,8 @@ from consoleme_default_plugins.plugins.celery_tasks import (
 
 # Initialize Redis with an appropriate cache
 # Must have S3 permissions to access Template list.
+# You must also have Celery running. You can run this locally with the following command:
+# celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=8
 
 celery.cache_roles_across_accounts()
 celery.cache_s3_buckets_across_accounts()

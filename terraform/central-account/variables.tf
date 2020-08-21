@@ -73,6 +73,10 @@ variable "volume_size" {
   default     = 50
 }
 
+variable "custom_user_data_script" {
+  description = "Additional userdata to pass in at runtime"
+  default     = ""
+}
 
 # ---------------------------------------------------------------------------------------------------------------------
 # RESOURCE REFERENCES
