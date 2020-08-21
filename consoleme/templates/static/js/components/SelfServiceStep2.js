@@ -119,8 +119,13 @@ class SelfServiceStep2 extends Component {
               <Header>
                 Add Permission
                 <Header.Subheader>
-                  Please add desired permissions. You can also select multiple
-                  permissions.
+                  Please add permissions to your role&nbsp;
+                  <a
+                    href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
+                    target="_blank"
+                  >
+                    {role.arn}
+                  </a>.&nbsp; You can also select multiple permissions.
                 </Header.Subheader>
               </Header>
               <Form>

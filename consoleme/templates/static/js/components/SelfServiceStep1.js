@@ -26,6 +26,43 @@ class SelfServiceStep1 extends Component {
     };
   }
 
+  componentDidMount() {
+    const { role } = this.props;
+    if (role) {
+      this.fetchRoleDetail(role.arn);
+    }
+  }
+
+  fetchRoleDetail(value) {
+    let {
+      groups: { accountId, roleName },
+    } = ARN_REGEX.exec(value);;
+    roleName = roleName.split("/").splice(-1, 1)[0];
+    fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
+      resp.text().then((resp) => {
+        // if the given role doesn't exist.
+        const response = JSON.parse(resp);
+        if (response.status === 404) {
+          this.props.handleRoleUpdate(null);
+          this.setState({
+            isLoading: false,
+            isRoleLoading: false,
+            messages: [response.message],
+          });
+        } else {
+          const role = response;
+          this.props.handleRoleUpdate(role);
+          this.setState({
+            isLoading: false,
+            isRoleLoading: false,
+            value: role.arn,
+            messages: [],
+          });
+        }
+      });
+    });
+  }
+
   handleSearchChange(event, { value }) {
     this.setState(
       {
@@ -35,32 +72,7 @@ class SelfServiceStep1 extends Component {
       () => {
         const match = ARN_REGEX.exec(value);
         if (match) {
-          let {
-            groups: { accountId, roleName },
-          } = match;
-          roleName = roleName.split("/").splice(-1, 1)[0];
-          fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
-            resp.text().then((resp) => {
-              // if the given role doesn't exist.
-              const response = JSON.parse(resp);
-              if (response.status === 404) {
-                this.props.handleRoleUpdate(null);
-                this.setState({
-                  isLoading: false,
-                  isRoleLoading: false,
-                  messages: [response.message],
-                });
-              } else {
-                const role = response;
-                this.props.handleRoleUpdate(role);
-                this.setState({
-                  isLoading: false,
-                  value: role.arn,
-                  messages: [],
-                });
-              }
-            });
-          });
+          this.fetchRoleDetail(value);
         } else {
           // If the given ARN is not a valid one.
           this.setState(
@@ -121,32 +133,7 @@ class SelfServiceStep1 extends Component {
       () => {
         const match = ARN_REGEX.exec(result.title);
         if (match) {
-          let {
-            groups: { accountId, roleName },
-          } = match;
-          roleName = roleName.split("/").splice(-1, 1)[0];
-          fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
-            resp.text().then((resp) => {
-              const response = JSON.parse(resp);
-              if (response.status === 404) {
-                this.props.handleRoleUpdate(null);
-                this.setState({
-                  isLoading: false,
-                  isRoleLoading: false,
-                  messages: [response.message],
-                });
-              } else {
-                const role = response;
-                this.props.handleRoleUpdate(role);
-                this.setState({
-                  isLoading: false,
-                  isRoleLoading: false,
-                  messages: [],
-                  value: role.arn,
-                });
-              }
-            });
-          });
+          this.fetchRoleDetail(value);
         }
       }
     );

@@ -596,7 +596,11 @@
     search_contains: true
   });
   $('#managed_policy_add').val('').trigger('chosen:updated');
-  document.getElementById("wizard-policy-button").addEventListener("click", policyEditor.renderIAMSelfServiceWizard);
+  document.getElementById("wizard-policy-button").addEventListener("click", (event) => {
+      const url = new URL('/self_service', window.location.origin);
+      url.searchParams.set('arn', '{{ role.get("arn") }}');
+      window.location.replace(url);
+  });
   document.getElementById("wizard-policy-button").classList.remove("loading")
   document.getElementById("wizard-policy-button").classList.remove("disabled")
 </script>
