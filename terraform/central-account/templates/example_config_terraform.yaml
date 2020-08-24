@@ -7,17 +7,21 @@ tornado:
   xsrf: true
   uvloop: false
 
+challenge_url:
+  enabled: true
+  redis_key: TOKEN_CHALLENGES_TEMP
+
 development: true
 environment: prod
 
 logging:
   stdout_enabled: true
-  format: '%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s'
+  format: "%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s"
   level: debug
   file: /logs/consoleme/consoleme_tornado.log
 
 account_ids_to_name:
-  '${current_account_id}':
+  "${current_account_id}":
     - default_account
 
 cache_cloud_accounts:
@@ -26,8 +30,8 @@ cache_cloud_accounts:
     all_accounts_key: ALL_AWS_ACCOUNTS
 
 cache_accounts_from_aws_organizations:
-  organizations_master_account_id: '${sync_accounts_from_organizations_master_account_id}'
-  organizations_master_role_to_assume: '${sync_accounts_from_organizations_role_to_assume}'
+  organizations_master_account_id: "${sync_accounts_from_organizations_master_account_id}"
+  organizations_master_role_to_assume: "${sync_accounts_from_organizations_role_to_assume}"
 
 # A development configuration can specify a specific user to impersonate locally.
 _development_user_override: consolemeadmin@example.com
@@ -38,7 +42,6 @@ _development_groups_override:
   - groupb@example.com
   - configeditors@example.com
   - consoleme_admins@example.com
-
 
 # You'll probably want to override FUNCTION to generate this data with your own business logic.
 application_settings:
@@ -78,5 +81,4 @@ format_role_name:
 
 policies:
   role_name: ConsoleMeTarget
-
 # TODO: SAML / Oauth / TLS configuration / Secufre JWT / CLI Auth / Generic CloudTrail log support

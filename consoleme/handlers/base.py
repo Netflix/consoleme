@@ -1,6 +1,7 @@
 """Handle the base."""
 import asyncio
 import copy
+import time
 import traceback
 import uuid
 from typing import Any, Union
@@ -19,6 +20,7 @@ from consoleme.config.config import dict_merge
 from consoleme.exceptions.exceptions import (
     InvalidCertificateException,
     MissingCertificateException,
+    MissingConfigurationValue,
     NoGroupsException,
     NoUserException,
     WebAuthNError,
@@ -195,7 +197,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 self.set_header(k, v)
 
     def on_finish(self) -> None:
-        if hasattr(self, "tracer"):
+        if hasattr(self, "tracer") and self.tracer:
             asyncio.ensure_future(
                 self.tracer.set_additional_tags({"http.status_code": self.get_status()})
             )
@@ -258,8 +260,10 @@ class BaseHandler(tornado.web.RequestHandler):
         log.debug(log_data)
 
         # Check to see if user has a valid auth cookie
-        if config.get("auth_cookie_name"):
-            auth_cookie = self.get_cookie(config.get("auth_cookie_name"))
+        if config.get("auth_cookie_name", "consoleme_auth"):
+            auth_cookie = self.get_cookie(
+                config.get("auth_cookie_name", "consoleme_auth")
+            )
             if auth_cookie:
                 res = await validate_and_return_jwt_token(auth_cookie)
                 if res and isinstance(res, dict):
@@ -413,11 +417,13 @@ class BaseHandler(tornado.web.RequestHandler):
                 pass
         if (
             config.get("auth.set_auth_cookie")
-            and config.get("auth_cookie_name")
-            and not self.get_cookie(config.get("auth_cookie_name"))
+            and config.get("auth_cookie_name", "consoleme_auth")
+            and not self.get_cookie(config.get("auth_cookie_name", "consoleme_auth"))
         ):
             encoded_cookie = await generate_jwt_token(self.user, self.groups)
-            self.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
+            self.set_cookie(
+                config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie
+            )
         if self.tracer:
             await self.tracer.set_additional_tags({"USER": self.user})
 
@@ -502,35 +508,69 @@ class BaseMtlsHandler(BaseAPIV2Handler):
         self.responses = []
         self.request_uuid = str(uuid.uuid4())
         stats.timer("base_handler.incoming_request")
-        try:
-            await auth.validate_certificate(self.request.headers)
-        except InvalidCertificateException:
-            stats.count("GetCredentialsHandler.post.invalid_certificate_header_value")
-            self.set_status(403)
-            self.write({"code": "403", "message": "Invalid Certificate"})
-            await self.finish()
-            return
+        if config.get("auth.require_mtls", True):
+            try:
+                await auth.validate_certificate(self.request.headers)
+            except InvalidCertificateException:
+                stats.count(
+                    "GetCredentialsHandler.post.invalid_certificate_header_value"
+                )
+                self.set_status(403)
+                self.write({"code": "403", "message": "Invalid Certificate"})
+                await self.finish()
+                return
 
-        # Extract user from valid certificate
-        try:
-            self.requester = await auth.extract_user_from_certificate(
-                self.request.headers
-            )
-        except (MissingCertificateException, Exception) as e:
-            if isinstance(e, MissingCertificateException):
-                stats.count("GetCredentialsHandler.post.missing_certificate_header")
-                message = "Missing Certificate in Header."
+            # Extract user from valid certificate
+            try:
+                self.requester = await auth.extract_user_from_certificate(
+                    self.request.headers
+                )
+                self.current_cert_age = await auth.get_cert_age_seconds(
+                    self.request.headers
+                )
+            except (MissingCertificateException, Exception) as e:
+                if isinstance(e, MissingCertificateException):
+                    stats.count("GetCredentialsHandler.post.missing_certificate_header")
+                    message = "Missing Certificate in Header."
+                else:
+                    stats.count("GetCredentialsHandler.post.invalid_mtls_certificate")
+                    message = "Invalid Mtls Certificate."
+                self.set_status(400)
+                self.write({"code": "400", "message": message})
+                await self.finish()
+                return
+        elif config.get("auth.require_jwt"):
+            # Check to see if user has a valid auth cookie
+            if config.get("auth_cookie_name", "consoleme_auth"):
+                auth_cookie = self.get_cookie(
+                    config.get("auth_cookie_name", "consoleme_auth")
+                )
+                if auth_cookie:
+                    res = await validate_and_return_jwt_token(auth_cookie)
+                    if not res:
+                        error = {
+                            "code": "invalid_jwt",
+                            "message": "JWT is invalid or has expired.",
+                            "request_id": self.request_uuid,
+                        }
+                        self.set_status(403)
+                        self.write(error)
+                        await self.finish()
+                    self.user = res.get("user")
+                    self.groups = res.get("groups")
+                    self.requester = {"type": "user", "email": self.user}
+                    self.current_cert_age = int(time.time()) - res.get("iat")
             else:
-                stats.count("GetCredentialsHandler.post.invalid_mtls_certificate")
-                message = "Invalid Mtls Certificate."
-            self.set_status(400)
-            self.write({"code": "400", "message": message})
-            await self.finish()
-            return
+                raise MissingConfigurationValue(
+                    "Auth cookie name is not defined in configuration."
+                )
+        else:
+            raise MissingConfigurationValue("Unsupported authentication scheme.")
+        if not hasattr(self, "requester"):
+            raise tornado.web.HTTPError(403, "Unable to authenticate user.")
         self.ip = self.request.headers.get(
             "X-Forwarded-For", self.request.remote_ip
         ).split(",")[0]
-        self.current_cert_age = await auth.get_cert_age_seconds(self.request.headers)
         await self.configure_tracing()
 
     def write(self, chunk: Union[str, bytes, dict]) -> None:

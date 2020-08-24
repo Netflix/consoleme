@@ -40,6 +40,11 @@ from consoleme.handlers.v1.policies import (
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
+from consoleme.handlers.v2.challenge import (
+    ChallengeGeneratorHandler,
+    ChallengePollerHandler,
+    ChallengeValidatorHandler,
+)
 from consoleme.handlers.v2.create_role import CreateRoleViewHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
@@ -155,6 +160,9 @@ def make_app(jwt_validator=None):
         (r"/self_service_v1", SelfServiceHandler),
         (r"/self_service", SelfServiceV2Handler),
         (r"/requests", RequestsWebHandler),
+        (r"/challenge_validator/([a-zA-Z0-9_-]+)", ChallengeValidatorHandler),
+        (r"/noauth/v1/challenge_generator/?", ChallengeGeneratorHandler),
+        (r"/noauth/v1/challenge_poller/([a-zA-Z0-9_-]+)", ChallengePollerHandler),
     ]
 
     # Prioritize internal routes before OSS routes so that OSS routes can be overrided if desired.
