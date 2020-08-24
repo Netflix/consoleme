@@ -12,7 +12,7 @@ import MonacoDiffComponent from "./MonacoDiffComponent";
 class InlinePolicyChangeComponent extends Component {
   constructor(props) {
     super(props);
-    const { change, config } = props;
+    const { change, config, requestReadOnly } = props;
     const oldPolicyDoc =
       change.old_policy && change.old_policy.policy_document
         ? change.old_policy.policy_document
@@ -41,6 +41,7 @@ class InlinePolicyChangeComponent extends Component {
       oldStatement: JSON.stringify(oldPolicyDoc, allOldKeys.sort(), 4),
       change,
       config,
+      requestReadOnly,
     };
 
     this.onLintError = this.onLintError.bind(this);
@@ -75,6 +76,7 @@ class InlinePolicyChangeComponent extends Component {
       config,
       isError,
       messages,
+      requestReadOnly,
     } = this.state;
 
     const newPolicy = change.new ? (
@@ -87,16 +89,30 @@ class InlinePolicyChangeComponent extends Component {
       </Header>
     );
     const applyChangesButton =
-      config.can_approve_reject && change.status === "not_applied" ? (
+      config.can_approve_reject &&
+      change.status === "not_applied" &&
+      !requestReadOnly ? (
         <Grid.Column>
           <Button content="Apply Change" positive fluid disabled={isError} />
         </Grid.Column>
       ) : null;
 
     const updateChangesButton =
-      config.can_update_cancel && change.status === "not_applied" ? (
+      config.can_update_cancel &&
+      change.status === "not_applied" &&
+      !requestReadOnly ? (
         <Grid.Column>
           <Button content="Update Change" positive fluid disabled={isError} />
+        </Grid.Column>
+      ) : null;
+
+    const readOnlyInfo =
+      requestReadOnly && change.status === "not_applied" ? (
+        <Grid.Column>
+          <Message info>
+            <Message.Header>View only</Message.Header>
+            <p>This change is view only and can no longer be modified.</p>
+          </Message>
         </Grid.Column>
       ) : null;
 
@@ -122,6 +138,8 @@ class InlinePolicyChangeComponent extends Component {
         </Grid.Column>
       ) : null;
 
+    const changeReadOnly = requestReadOnly || change.status === "applied";
+
     const policyChangeContent = change ? (
       <Grid fluid>
         <Grid.Row columns="equal">
@@ -136,7 +154,8 @@ class InlinePolicyChangeComponent extends Component {
             <Header
               size="medium"
               content="Proposed Policy"
-              subheader="This is an editable view of the proposed policy. An approver can modify the proposed policy before approving and applying it."
+              subheader="This is an editable view of the proposed policy.
+              An approver can modify the proposed policy before approving and applying it."
             />
           </Grid.Column>
         </Grid.Row>
@@ -145,7 +164,10 @@ class InlinePolicyChangeComponent extends Component {
             <MonacoDiffComponent
               oldValue={oldStatement}
               newValue={newStatement}
-              readOnly={!config.can_update_cancel && !config.can_approve_reject}
+              readOnly={
+                (!config.can_update_cancel && !config.can_approve_reject) ||
+                changeReadOnly
+              }
               onLintError={this.onLintError}
               onValueChange={this.onValueChange}
             />
@@ -155,8 +177,9 @@ class InlinePolicyChangeComponent extends Component {
           <Grid.Column>{messagesToShow}</Grid.Column>
         </Grid.Row>
         <Grid.Row columns="equal">
-          {updateChangesButton}
           {applyChangesButton}
+          {updateChangesButton}
+          {readOnlyInfo}
           {changesAlreadyAppliedContent}
         </Grid.Row>
       </Grid>

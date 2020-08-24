@@ -159,6 +159,7 @@ def make_app(jwt_validator=None):
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service_v1", SelfServiceHandler),
         (r"/self_service", SelfServiceV2Handler),
+        (r"/self_service/\d{12}/.+", SelfServiceV2Handler),
         (r"/requests", RequestsWebHandler),
         (r"/challenge_validator/([a-zA-Z0-9_-]+)", ChallengeValidatorHandler),
         (r"/noauth/v1/challenge_generator/?", ChallengeGeneratorHandler),

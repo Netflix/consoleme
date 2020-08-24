@@ -21,7 +21,11 @@ from consoleme.exceptions.exceptions import InvalidRequestParameter
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.handler import update_role
-from consoleme.models import ExtendedRequestModel
+from consoleme.lib.ses import (
+    send_new_comment_notification,
+    send_policy_request_status_update_v2,
+)
+from consoleme.models import ExtendedRequestModel, RequestStatus
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -210,6 +214,23 @@ async def can_move_back_to_pending(request, groups):
     if request.get("status") in ["cancelled", "rejected"]:
         # Don't allow returning requests to pending state if more than a day has passed since the last update
         if request.get("last_updated", 0) < int(time.time()) - 86400:
+            return False
+        # Allow admins to return requests back to pending state
+        for g in config.get("groups.can_admin_policies", []):
+            if g in groups:
+                return True
+    return False
+
+
+async def can_move_back_to_pending_v2(
+    extended_request: ExtendedRequestModel, last_updated, groups
+):
+    if extended_request.request_status in [
+        RequestStatus.cancelled,
+        RequestStatus.rejected,
+    ]:
+        # Don't allow returning requests to pending state if more than a day has passed since the last update
+        if last_updated < int(time.time()) - 86400:
             return False
         # Allow admins to return requests back to pending state
         for g in config.get("groups.can_admin_policies", []):
@@ -427,7 +448,7 @@ async def get_policy_request_uri(request):
 
 
 async def get_policy_request_uri_v2(extended_request: ExtendedRequestModel):
-    return f"{config.get('url')}/policies/request/{extended_request.id}"
+    return f"{config.get('url')}/policies/request_v2/{extended_request.id}"
 
 
 async def validate_policy_name(policy_name):
@@ -634,6 +655,41 @@ async def should_auto_approve_policy_v2(
 ):
     aws = get_plugin_by_name(config.get("plugins.aws"))()
     return await aws.should_auto_approve_policy_v2(extended_request, user, user_groups)
+
+
+async def send_communications_policy_change_request_v2(
+    extended_request: ExtendedRequestModel,
+):
+    """
+        Send an email for a status change for a policy request
+
+    :param extended_request: ExtendedRequestModel
+    :return:
+    """
+    request_uri = await get_policy_request_uri_v2(extended_request)
+    await send_policy_request_status_update_v2(extended_request, request_uri)
+
+
+async def send_communications_new_comment(
+    extended_request: ExtendedRequestModel, user: str, to_addresses=None
+):
+    """
+            Send an email for a new comment.
+            Note: until ABAC work is completed, if to_addresses is empty, we will send an email to
+                fallback reviewers
+
+    :param extended_request: ExtendedRequestModel
+    :param user: user making the comment
+    :param to_addresses: List of addresses to send the email to
+    :return:
+    """
+    if not to_addresses:
+        to_addresses = config.get("groups.fallback_policy_request_reviewers", [])
+
+    request_uri = await get_policy_request_uri_v2(extended_request)
+    await send_new_comment_notification(
+        extended_request, to_addresses, user, request_uri
+    )
 
 
 async def get_url_for_resource(arn, resource_type, account_id, region, resource_name):

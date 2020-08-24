@@ -18,6 +18,14 @@ class Config:
     def is_contractor(user):
         return False
 
+    @staticmethod
+    def get_employee_photo_url(user):
+        return None
+
+    @staticmethod
+    def get_employee_info_url(user):
+        return None
+
 
 def init():
     """Initialize the Config plugin."""

@@ -419,18 +419,33 @@ class UserDynamoHandler(BaseDynamoHandler):
         new_request = {
             "request_id": extended_request.id,
             "arn": extended_request.arn,
-            "status": extended_request.status,
+            "status": extended_request.request_status.value,
+            "justification": extended_request.justification,
+            "request_time": extended_request.timestamp,
             "last_updated": int(time.time()),
             "version": "2",
-            "extended_request": extended_request.json(),
+            "extended_request": json.loads(extended_request.json()),
+            "username": extended_request.requester_email,
         }
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Writing policy request v2 to Dynamo",
+            "request": new_request,
+        }
+        log.debug(log_data)
         try:
             await sync_to_async(self.policy_requests_table.put_item)(
                 Item=self._data_to_dynamo_replace(new_request)
             )
-        except Exception:
-            error = f"Unable to add new policy request: {new_request}"
-            log.error(error, exc_info=True)
+            log_data[
+                "message"
+            ] = "Successfully finished writing policy request v2 to Dynamo"
+            log.debug(log_data)
+        except Exception as e:
+            log_data["message"] = "Error occurred writing policy request v2 to Dynamo"
+            log_data["error"] = str(e)
+            log.error(log_data, exc_info=True)
+            error = f"{log_data['message']}: {str(e)}"
             raise Exception(error)
 
         return new_request

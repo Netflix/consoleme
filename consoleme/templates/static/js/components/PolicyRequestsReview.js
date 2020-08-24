@@ -177,10 +177,10 @@ class PolicyRequestReview extends Component {
           </Table.Row>
           <Table.Row>
             <Table.Cell>Status</Table.Cell>
-            {extendedRequest.status === "approved" ? (
-              <Table.Cell positive>{extendedRequest.status}</Table.Cell>
+            {extendedRequest.request_status === "approved" ? (
+              <Table.Cell positive>{extendedRequest.request_status}</Table.Cell>
             ) : (
-              <Table.Cell negative>{extendedRequest.status}</Table.Cell>
+              <Table.Cell negative>{extendedRequest.request_status}</Table.Cell>
             )}
           </Table.Row>
           {extendedRequest.arn_url ? (
@@ -228,6 +228,10 @@ class PolicyRequestReview extends Component {
       <CommentsFeedBlockComponent comments={extendedRequest.comments} />
     ) : null;
 
+    const requestReadOnly =
+      extendedRequest.request_status === "rejected" ||
+      extendedRequest.request_status === "cancelled";
+
     const changesContent =
       extendedRequest.changes &&
       extendedRequest.changes.changes &&
@@ -239,6 +243,7 @@ class PolicyRequestReview extends Component {
                 <InlinePolicyChangeComponent
                   change={change}
                   config={requestConfig}
+                  requestReadOnly={requestReadOnly}
                 />
               );
             }
@@ -247,6 +252,7 @@ class PolicyRequestReview extends Component {
                 <ManagedPolicyChangeComponent
                   change={change}
                   config={requestConfig}
+                  requestReadOnly={requestReadOnly}
                 />
               );
             }
@@ -255,6 +261,7 @@ class PolicyRequestReview extends Component {
                 <AssumeRolePolicyChangeComponent
                   change={change}
                   config={requestConfig}
+                  requestReadOnly={requestReadOnly}
                 />
               );
             }
@@ -263,6 +270,7 @@ class PolicyRequestReview extends Component {
                 <ResourcePolicyChangeComponent
                   change={change}
                   config={requestConfig}
+                  requestReadOnly={requestReadOnly}
                 />
               );
             }
@@ -304,7 +312,7 @@ class PolicyRequestReview extends Component {
     );
 
     const requestButtonsContent =
-      extendedRequest.status === "pending" ? (
+      extendedRequest.request_status === "pending" ? (
         requestButtons
       ) : (
         <Message info fluid>
@@ -313,7 +321,7 @@ class PolicyRequestReview extends Component {
           </Message.Header>
           <p>
             This request can no longer be modified as the status is
-            {extendedRequest.status}
+            {extendedRequest.request_status}
           </p>
         </Message>
       );

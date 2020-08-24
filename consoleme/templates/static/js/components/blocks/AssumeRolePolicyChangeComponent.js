@@ -5,7 +5,7 @@ import MonacoDiffComponent from "./MonacoDiffComponent";
 class AssumeRolePolicyChangeComponent extends Component {
   constructor(props) {
     super(props);
-    const { change, config } = this.props;
+    const { change, config, requestReadOnly } = this.props;
     const oldPolicyDoc =
       change.old_policy && change.old_policy.policy_document
         ? change.old_policy.policy_document
@@ -34,6 +34,7 @@ class AssumeRolePolicyChangeComponent extends Component {
       oldStatement: JSON.stringify(oldPolicyDoc, allOldKeys.sort(), 4),
       change,
       config,
+      requestReadOnly,
     };
 
     this.onLintError = this.onLintError.bind(this);
@@ -68,6 +69,7 @@ class AssumeRolePolicyChangeComponent extends Component {
       config,
       isError,
       messages,
+      requestReadOnly,
     } = this.state;
 
     const headerContent = (
@@ -75,14 +77,18 @@ class AssumeRolePolicyChangeComponent extends Component {
     );
 
     const applyChangesButton =
-      config.can_approve_reject && change.status === "not_applied" ? (
+      config.can_approve_reject &&
+      change.status === "not_applied" &&
+      !requestReadOnly ? (
         <Grid.Column>
           <Button content="Apply Change" positive fluid disabled={isError} />
         </Grid.Column>
       ) : null;
 
     const updateChangesButton =
-      config.can_update_cancel && change.status === "not_applied" ? (
+      config.can_update_cancel &&
+      change.status === "not_applied" &&
+      !requestReadOnly ? (
         <Grid.Column>
           <Button content="Update Change" positive fluid disabled={isError} />
         </Grid.Column>
@@ -98,6 +104,16 @@ class AssumeRolePolicyChangeComponent extends Component {
         </Grid.Column>
       ) : null;
 
+    const readOnlyInfo =
+      requestReadOnly && change.status === "not_applied" ? (
+        <Grid.Column>
+          <Message info>
+            <Message.Header>View only</Message.Header>
+            <p>This change is view only and can no longer be modified.</p>
+          </Message>
+        </Grid.Column>
+      ) : null;
+
     const messagesToShow =
       messages.length > 0 ? (
         <Message negative>
@@ -109,6 +125,8 @@ class AssumeRolePolicyChangeComponent extends Component {
           </Message.List>
         </Message>
       ) : null;
+
+    const changeReadOnly = requestReadOnly || change.status === "applied";
 
     const policyChangeContent = change ? (
       <Grid fluid>
@@ -133,7 +151,10 @@ class AssumeRolePolicyChangeComponent extends Component {
             <MonacoDiffComponent
               oldValue={oldStatement}
               newValue={newStatement}
-              readOnly={!config.can_update_cancel && !config.can_approve_reject}
+              readOnly={
+                (!config.can_update_cancel && !config.can_approve_reject) ||
+                changeReadOnly
+              }
               onLintError={this.onLintError}
               onValueChange={this.onValueChange}
             />
@@ -143,8 +164,9 @@ class AssumeRolePolicyChangeComponent extends Component {
           <Grid.Column>{messagesToShow}</Grid.Column>
         </Grid.Row>
         <Grid.Row columns="equal">
-          {updateChangesButton}
           {applyChangesButton}
+          {updateChangesButton}
+          {readOnlyInfo}
           {changesAlreadyAppliedContent}
         </Grid.Row>
       </Grid>
