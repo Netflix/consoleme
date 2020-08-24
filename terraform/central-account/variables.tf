@@ -168,13 +168,3 @@ variable "bucket_name_prefix" {
   description = "The name prefix of the S3 bucket that you want to upload the consoleme.tar.gz to, in the root of the bucket."
   type        = string
 }
-
-# ---------------------------------------------------------------------------------------------------------------------
-# EXISTING_ROUTE53_SETTINGS
-# This manages the existing ROUTE53 domains you want to use for ConsoleMe
-# ---------------------------------------------------------------------------------------------------------------------
-//variable "import_and_use_route53_domain" {
-//  description = "Existing Route53 settings to be used for ConsoleMe Deployment"
-//  type        = map(string)
-//  default     = {}
-//}
