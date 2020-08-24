@@ -2,6 +2,7 @@ import sys
 import uuid
 from datetime import datetime, timedelta
 
+import pytz
 import tornado.web
 import ujson as json
 from asgiref.sync import async_to_sync
@@ -40,7 +41,11 @@ class ChallengeGeneratorHandler(tornado.web.RequestHandler):
 
         token = str(uuid.uuid4())
         entry = {
-            "ttl": int((datetime.utcnow() + timedelta(minutes=2)).timestamp()),
+            "ttl": int(
+                (
+                    datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(minutes=2)
+                ).timestamp()
+            ),
             "ip": ip,
             "status": "pending",
             "user": user,
@@ -94,7 +99,7 @@ class ChallengeValidatorHandler(BaseHandler):
         log.debug(log_data)
 
         all_challenges = red.hgetall(config.get("challenge_url.redis_key"))
-        current_time = int((datetime.utcnow()).timestamp())
+        current_time = int(datetime.utcnow().replace(tzinfo=pytz.UTC).timestamp())
         expired_challenge_tokens = []
         # Delete expired tokens
         if all_challenges:
@@ -182,7 +187,7 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
             return
         challenge = json.loads(challenge_j)
         if challenge.get("status") == "success":
-            jwt_expiration = datetime.utcnow() + timedelta(
+            jwt_expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
                 hours=config.get("jwt.expiration_hours", 1)
             )
             encoded_jwt = await generate_jwt_token(
