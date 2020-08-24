@@ -1,3 +1,4 @@
+import sys
 import uuid
 from datetime import datetime, timedelta
 
@@ -11,6 +12,7 @@ from consoleme.handlers.base import BaseHandler
 from consoleme.lib.jwt import generate_jwt_token
 from consoleme.lib.redis import RedisHandler
 
+log = config.get_logger()
 red = async_to_sync(RedisHandler().redis)()
 
 
@@ -25,23 +27,23 @@ class ChallengeGeneratorHandler(tornado.web.RequestHandler):
     The ChallengeUrlGenerator endpoint must be unauthenticated because the CLI client will be requesting URLs
     """
 
-    async def get(self):
+    async def get(self, user):
         if not config.get("challenge_url.enabled", False):
             raise MissingConfigurationValue(
                 "Challenge URL Authentication is not enabled in ConsoleMe's configuration"
             )
         ip = self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
             ","
-        )[0]
+        )
+        if isinstance(ip, list):
+            ip = ip[0]
 
-        # TODO: Can we rate limit this call?
-        # TODO: Can we limit the UUID to the IP requesting it?
-        # TODO: Logging and metrics
         token = str(uuid.uuid4())
         entry = {
             "ttl": int((datetime.utcnow() + timedelta(minutes=2)).timestamp()),
             "ip": ip,
             "status": "pending",
+            "user": user,
         }
         red.hset(config.get("challenge_url.redis_key"), token, json.dumps(entry))
 
@@ -51,15 +53,24 @@ class ChallengeGeneratorHandler(tornado.web.RequestHandler):
         polling_url = "{url}/noauth/v1/challenge_poller/{token}".format(
             url=config.get("url"), token=token
         )
-        # TODO: Clean up the tokens here or somewhere else?
         self.write({"challenge_url": challenge_url, "polling_url": polling_url})
+
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "challenge_url": challenge_url,
+            "polling_url": polling_url,
+            "message": "Incoming request",
+            "ip": ip,
+            "user": user,
+        }
+        log.debug(log_data)
 
 
 class ChallengeValidatorHandler(BaseHandler):
     """
 
-    This is an authenticated endpoint. Once the user has authenticated successfully, we validate their information
-    and return a signed jwt to the frontend.
+    This is the challenge authentication endpoint.
+    Once the user has authenticated successfully, we validate their information and mark the challenge as successful.
 
     """
 
@@ -70,10 +81,18 @@ class ChallengeValidatorHandler(BaseHandler):
             )
         ip = self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
             ","
-        )[0]
-        # TODO: ttl
-        # Can we force auth here?
-        # self.user , self.ip, self.groups, self.eligible_roles, self.eligible_accounts
+        )
+        if isinstance(ip, list):
+            ip = ip[0]
+        log_data = {
+            "user": self.user,
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "requested_challenge_token": requested_challenge_token,
+            "message": "Incoming request",
+            "ip": ip,
+        }
+        log.debug(log_data)
+
         all_challenges = red.hgetall(config.get("challenge_url.redis_key"))
         current_time = int((datetime.utcnow()).timestamp())
         expired_challenge_tokens = []
@@ -88,25 +107,42 @@ class ChallengeValidatorHandler(BaseHandler):
                     config.get("challenge_url.redis_key"), *expired_challenge_tokens
                 )
         else:
-            raise Exception(
-                "No challenge tokens were found in the cache. Did it expire?"
+            self.write(
+                "Unable to find a matching challenge URL. This usually means that it has expired. Please try "
+                "requesting a new challenge URL."
             )
+            return
         # Get fresh challenge for user's request
         user_challenge_j = red.hget(
             config.get("challenge_url.redis_key"), requested_challenge_token
         )
         if user_challenge_j:
-            # TODO: Write errors for better debuggability
             # Do a double-take check on the ttl
             # Delete the token
             user_challenge = json.loads(user_challenge_j)
             if user_challenge.get("ttl", 0) < current_time:
-                raise Exception("Challenge URL has expired")
+                self.write(
+                    "This challenge URL has expired. Please try requesting a new challenge URL."
+                )
+                return
             if ip != user_challenge.get("ip"):
                 # Todo: Sometimes the request from the CLI will be IPv6, and the request from browser is ipv4. How
                 # can we reconcile this so that we can perform validation?
                 pass
                 # raise Exception("IP address used to generate challenge URL is different than IP you are using now.")
+            if self.user != user_challenge.get("user"):
+                log_data = {
+                    **log_data,
+                    "message": "Authenticated user is different then user that requested token",
+                    "authenticated_user": self.user,
+                    "challenge_user": user_challenge.get("user"),
+                }
+                log.error(log_data)
+                self.write(
+                    "This challenge URL is associated with a different user. Ensure that your client configuration is "
+                    "specifying the correct user."
+                )
+                return
             user_challenge["status"] = "success"
             user_challenge["user"] = self.user
             user_challenge["groups"] = self.groups
@@ -115,9 +151,14 @@ class ChallengeValidatorHandler(BaseHandler):
                 requested_challenge_token,
                 json.dumps(user_challenge),
             )
-            self.write("You've successfully authenticated and may now close this page.")
+            self.write(
+                "You've successfully authenticated to ConsoleMe and may now close this page."
+            )
         else:
-            raise Exception("Requested challenge token was not found in the cache.")
+            self.write(
+                "The requested challenge URL was not found. Please try requesting a new challenge URL."
+            )
+            return
 
 
 class ChallengePollerHandler(tornado.web.RequestHandler):
@@ -141,13 +182,18 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
             return
         challenge = json.loads(challenge_j)
         if challenge.get("status") == "success":
-            encoded_jwt = await generate_jwt_token(
-                challenge.get("user"), challenge.get("groups")
+            jwt_expiration = datetime.utcnow() + timedelta(
+                hours=config.get("jwt.expiration_hours", 1)
             )
+            encoded_jwt = await generate_jwt_token(
+                challenge.get("user"), challenge.get("groups"), exp=jwt_expiration
+            )
+
             self.write(
                 {
                     "status": challenge["status"],
                     "cookie_name": config.get("auth_cookie_name", "consoleme_auth"),
+                    "expiration": int(jwt_expiration.timestamp()),
                     "encoded_jwt": encoded_jwt.decode("utf-8"),
                 }
             )
