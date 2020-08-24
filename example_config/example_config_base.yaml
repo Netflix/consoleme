@@ -61,9 +61,6 @@ cli_auth:
   required_headers:
     - RequiredMTLSHeader: RequiredMTLSHeaderValue
 
-consoleme:
-  recently_used_cookie_name: consoleme_activity
-  show_recently_used_roles: true
 errors:
   custom_max_cert_age_message: "Please refresh your certificate."
 get_eligible_roles:
@@ -98,7 +95,7 @@ groups:
 jwt:
   groups_key: groups
   email_key: email
-  expiration_hours: 1
+  expiration_hours: 6
 
 # If desired, you can configure Google Analytics here
 # google_analytics:
@@ -192,7 +189,6 @@ tracing:
   zipkin_address: http://consoleme_zipkin:9411/api/v2/spans
   in_scope_function_calls:
     - /consoleme/
-    - /consoleme-internal/
 
 cache_all_resources_from_aws_config:
   aws_config:
@@ -205,12 +201,6 @@ aws_config_cache:
   #  bucket: consoleme_bucket
   #  file: aws_config_cache/cache_{account_id}_v1.json
 
-api_protect:
-  exclude_regions:
-    - af-south-1
-    - ap-east-1
-    - eu-south-1
-    - me-south-1
 #policies:
 #  role_name: ConsoleMeRole
 
@@ -483,50 +473,6 @@ permission_templates:
            ],
            "Version":"2012-10-17"
        }
-  s3hermesreadwrite:
-    label: S3 Read/Write Access for Hermes
-    policy: |-
-      {
-          "Statement":[
-              {
-                  "Action":[
-                      "s3:ListBucket",
-                      "s3:GetObject",
-                      "s3:PutObject",
-                      "s3:DeleteObject"
-                  ],
-                  "Effect":"Allow",
-                  "Resource":[
-                      "arn:aws:s3:::BUCKET_NAME",
-                      "arn:aws:s3:::eu-west-1.BUCKET_NAME",
-                      "arn:aws:s3:::us-west-2.BUCKET_NAME",
-                      "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/\*",
-                      "arn:aws:s3:::eu-west-1.BUCKET_NAME/OPTIONAL_PREFIX/\*",
-                      "arn:aws:s3:::us-west-2.BUCKET_NAME/OPTIONAL_PREFIX/\*"
-                  ],
-                  "Sid":"s3hermesreadwrite"
-              }
-          ]
-      }
-  s3hermesread:
-    label: S3 Read Access for Hermes
-    policy: |-
-      {
-          "Statement":[
-              {
-                  "Action":[
-                      "s3:ListBucket",
-                      "s3:GetObject"
-                  ],
-                  "Effect":"Allow",
-                  "Resource":[
-                      "arn:aws:s3:::BUCKET_NAME",
-                      "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/*"
-                  ],
-                  "Sid":"s3hermesreadonly"
-              }
-          ]
-      }
   s3write:
     label: S3 Write Access
     policy: |-
@@ -626,7 +572,7 @@ permission_templates:
                       "ses:SendRawEmail"
                   ],
                   "Effect": "Allow",
-                  "Resource": "arn:aws:ses:*:436874060379:identity/saasmail.netflix.com",
+                  "Resource": "arn:aws:ses:*:123456789012:identity/saasmail.netflix.com",
                   "Condition": {
                       "StringLike": {
                           "ses:FromAddress": "SENDER@saasmail.netflix.com"

@@ -14,7 +14,7 @@ async def authenticate_user_by_credentials(request):
     if email and groups and config.get("auth.set_auth_cookie"):
         pass
         # encoded_cookie = await generate_jwt_token(email, groups)
-        # request.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
+        # request.set_cookie(config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie)
 
     if request.request.path != "/auth":
         request.redirect("/auth")

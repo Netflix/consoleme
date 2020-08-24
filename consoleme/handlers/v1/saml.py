@@ -44,7 +44,9 @@ class SamlHandler(BaseHandler):
 
                 self_url = await sync_to_async(OneLogin_Saml2_Utils.get_self_url)(req)
                 encoded_cookie = await generate_jwt_token(email, groups)
-                self.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
+                self.set_cookie(
+                    config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie
+                )
                 if "RelayState" in self.request.arguments and self_url != self.request.arguments[
                     "RelayState"
                 ][

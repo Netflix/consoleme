@@ -52,6 +52,6 @@ class GetRolesHandler(BaseMtlsHandler):
         stats.count("GetRolesHandler.get", tags={"user": self.user})
 
         await self.authorization_flow(user=self.user, console_only=console_only)
-        self.write(json.dumps(self.eligible_roles))
+        self.write(json.dumps(sorted(self.eligible_roles)))
         self.set_header("Content-Type", "application/json")
         await self.finish()

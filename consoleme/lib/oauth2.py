@@ -160,7 +160,9 @@ async def authenticate_user_by_oauth2(request):
 
         if config.get("auth.set_auth_cookie"):
             encoded_cookie = await generate_jwt_token(email, groups)
-            request.set_cookie(config.get("auth_cookie_name"), encoded_cookie)
+            request.set_cookie(
+                config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie
+            )
         redirect_uri = urlparse(redirect_uri)
         query = parse_qs(redirect_uri.query, keep_blank_values=True)
         query.pop("session_state", None)
