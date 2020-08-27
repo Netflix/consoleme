@@ -6,7 +6,10 @@ import {
   Message,
   Table,
   Segment,
+  Loader,
+  Dimmer,
 } from "semantic-ui-react";
+import { sendProposedPolicy } from "../../helpers/utils";
 
 class ManagedPolicyChangeComponent extends Component {
   constructor(props) {
@@ -14,14 +17,51 @@ class ManagedPolicyChangeComponent extends Component {
     this.state = {
       isLoading: false,
       messages: [],
+      buttonResponseMessage: [],
       change: this.props.change,
       config: this.props.config,
+      requestID: this.props.requestID,
       requestReadOnly: this.props.requestReadOnly,
     };
+
+    this.sendProposedPolicy = sendProposedPolicy.bind(this);
+    this.onSubmitChange = this.onSubmitChange.bind(this);
+    this.reloadDataFromBackend = props.reloadDataFromBackend;
+  }
+
+  componentDidUpdate(prevProps) {
+    if (
+      JSON.stringify(prevProps.change) !== JSON.stringify(this.props.change)
+    ) {
+      this.setState(
+        {
+          isLoading: true,
+        },
+        () => {
+          const { change, config, requestReadOnly } = this.props;
+          this.setState({
+            change,
+            config,
+            requestReadOnly,
+            isLoading: false,
+          });
+        }
+      );
+    }
+  }
+
+  onSubmitChange() {
+    this.sendProposedPolicy("apply_change");
   }
 
   render() {
-    const { change, config, requestReadOnly } = this.state;
+    const {
+      change,
+      config,
+      requestReadOnly,
+      isLoading,
+      buttonResponseMessage,
+    } = this.state;
 
     const action =
       change.action === "detach" ? (
@@ -41,7 +81,12 @@ class ManagedPolicyChangeComponent extends Component {
       change.status === "not_applied" &&
       !requestReadOnly ? (
         <Grid.Column>
-          <Button content="Apply Change" positive fluid />
+          <Button
+            content="Apply Change"
+            positive
+            fluid
+            onClick={this.onSubmitChange}
+          />
         </Grid.Column>
       ) : null;
 
@@ -88,10 +133,32 @@ class ManagedPolicyChangeComponent extends Component {
       </Table>
     ) : null;
 
+    const responseMessagesToShow =
+      buttonResponseMessage.length > 0 ? (
+        <Grid.Column>
+          {buttonResponseMessage.map((message) =>
+            message.status === "error" ? (
+              <Message negative>
+                <Message.Header>An error occurred</Message.Header>
+                <Message.Content>{message.message}</Message.Content>
+              </Message>
+            ) : (
+              <Message positive>
+                <Message.Header>Success</Message.Header>
+                <Message.Content>{message.message}</Message.Content>
+              </Message>
+            )
+          )}
+        </Grid.Column>
+      ) : null;
+
     const policyChangeContent = change ? (
       <Grid fluid>
         <Grid.Row columns="equal">
           <Grid.Column>{requestDetailsContent}</Grid.Column>
+        </Grid.Row>
+        <Grid.Row columns="equal">
+          <Grid.Column>{responseMessagesToShow}</Grid.Column>
         </Grid.Row>
         <Grid.Row columns="equal">
           {applyChangesButton}
@@ -103,6 +170,9 @@ class ManagedPolicyChangeComponent extends Component {
 
     return (
       <Segment>
+        <Dimmer active={isLoading} inverted>
+          <Loader />
+        </Dimmer>
         {headerContent}
         {policyChangeContent}
       </Segment>

@@ -1002,12 +1002,13 @@ async def _update_dynamo_with_change(
     response: PolicyRequestModificationResponseModel,
     success_message: str,
     error_message: str,
+    visible: bool = True,
 ):
     dynamo = UserDynamoHandler(user)
     try:
         await dynamo.write_policy_request_v2(extended_request)
         response.action_results.append(
-            ActionResult(status="success", message=success_message,)
+            ActionResult(status="success", message=success_message, visible=visible)
         )
     except Exception as e:
         log_data["message"] = error_message
@@ -1206,6 +1207,7 @@ async def parse_and_apply_policy_request_modification(
                     response,
                     success_message,
                     error_message,
+                    visible=False,
                 )
         else:
             raise NoMatchingRequest(
@@ -1337,7 +1339,13 @@ async def parse_and_apply_policy_request_modification(
         extended_request.request_status = RequestStatus.approved
         extended_request.reviewer = user
         response = await _update_dynamo_with_change(
-            user, extended_request, log_data, response, success_message, error_message
+            user,
+            extended_request,
+            log_data,
+            response,
+            success_message,
+            error_message,
+            visible=False,
         )
         await send_communications_policy_change_request_v2(extended_request)
         account_id = await get_resource_account(extended_request.arn)

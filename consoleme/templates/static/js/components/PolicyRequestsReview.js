@@ -31,10 +31,25 @@ class PolicyRequestReview extends Component {
       isSubmitting: false,
       lastUpdated: null,
       requestConfig: {},
+      policyDocuments: {},
     };
+    this.reloadDataFromBackend = this.reloadDataFromBackend.bind(this);
+    this.updatePolicyDocument = this.updatePolicyDocument.bind(this);
   }
 
   componentDidMount() {
+    this.reloadDataFromBackend();
+  }
+
+  updatePolicyDocument(changeID, policyDocument) {
+    const { policyDocuments } = this.state;
+    policyDocuments[changeID] = policyDocument;
+    this.setState({
+      policyDocuments,
+    });
+  }
+
+  reloadDataFromBackend() {
     const { requestID } = this.state;
     this.setState(
       {
@@ -72,6 +87,7 @@ class PolicyRequestReview extends Component {
       isSubmitting,
       requestConfig,
       loading,
+      requestID,
     } = this.state;
 
     // Checks whether extendedInfo is available for the requester or not, if it is, saves it as a variable
@@ -225,7 +241,11 @@ class PolicyRequestReview extends Component {
     ) : null;
 
     const commentsContent = extendedRequest.comments ? (
-      <CommentsFeedBlockComponent comments={extendedRequest.comments} />
+      <CommentsFeedBlockComponent
+        comments={extendedRequest.comments}
+        reloadDataFromBackend={this.reloadDataFromBackend}
+        requestID={requestID}
+      />
     ) : null;
 
     const requestReadOnly =
@@ -244,6 +264,9 @@ class PolicyRequestReview extends Component {
                   change={change}
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}
+                  updatePolicyDocument={this.updatePolicyDocument}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
                 />
               );
             }
@@ -253,6 +276,8 @@ class PolicyRequestReview extends Component {
                   change={change}
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
                 />
               );
             }
@@ -262,6 +287,9 @@ class PolicyRequestReview extends Component {
                   change={change}
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}
+                  updatePolicyDocument={this.updatePolicyDocument}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
                 />
               );
             }
@@ -271,6 +299,9 @@ class PolicyRequestReview extends Component {
                   change={change}
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}
+                  updatePolicyDocument={this.updatePolicyDocument}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
                 />
               );
             }

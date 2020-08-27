@@ -6,20 +6,23 @@ import {
   Header,
   Icon,
   Input,
+  Message,
   Segment,
 } from "semantic-ui-react";
+import { sendRequestCommon } from "../../helpers/utils";
 
 class CommentsFeedBlockComponent extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      comments: this.props.comments,
+      requestID: this.props.requestID,
       isLoading: false,
       commentText: "",
       messages: [],
     };
     this.handleCommentChange = this.handleCommentChange.bind(this);
     this.handleSubmitComment = this.handleSubmitComment.bind(this);
+    this.reloadDataFromBackend = props.reloadDataFromBackend;
   }
 
   handleCommentChange(e) {
@@ -28,24 +31,57 @@ class CommentsFeedBlockComponent extends Component {
     });
   }
 
-  handleSubmitComment(e) {
-    const { commentText } = this.state;
-    this.setState(
+  handleSubmitComment() {
+    const { commentText, requestID } = this.state;
+    return this.setState(
       {
         isLoading: true,
+        messages: [],
       },
-      () => {
-        // TODO: make request to backend to add comment
+      async () => {
+        const request = {
+          modification_model: {
+            command: "add_comment",
+            comment_text: commentText,
+          },
+        };
+        const response = await sendRequestCommon(
+          request,
+          "/api/v2/requests/" + requestID,
+          "PUT"
+        );
+        if (response.status === 403 || response.status === 400) {
+          // Error occurred making the request
+          this.setState({
+            isLoading: false,
+            messages: [response.message],
+          });
+          return;
+        }
+        this.reloadDataFromBackend();
         this.setState({
           isLoading: false,
           commentText: "",
+          messages: [],
         });
       }
     );
   }
 
   render() {
-    const { comments, commentText, isLoading } = this.state;
+    const { commentText, isLoading, messages } = this.state;
+    const { comments } = this.props;
+    const messagesToShow =
+      messages != null && messages.length > 0 ? (
+        <Message negative>
+          <Message.Header>An error occurred</Message.Header>
+          <Message.List>
+            {messages.map((message) => (
+              <Message.Item>{message}</Message.Item>
+            ))}
+          </Message.List>
+        </Message>
+      ) : null;
 
     const commentsContent =
       comments && comments.length > 0 ? (
@@ -116,6 +152,7 @@ class CommentsFeedBlockComponent extends Component {
           Comments <Icon name="comments" />
         </Header>
         {commentsContent}
+        {messagesToShow}
         {commentInput}
       </Segment>
     );

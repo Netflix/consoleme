@@ -1,7 +1,8 @@
-const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const ALPHABET =
+  "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 export function random_id() {
-  let rtn = '';
+  let rtn = "";
   for (let i = 0; i < 8; i++) {
     rtn += ALPHABET.charAt(Math.floor(Math.random() * ALPHABET.length));
   }
@@ -9,25 +10,29 @@ export function random_id() {
 }
 
 export function generate_id() {
-  return 'ConsoleMe' + random_id();
+  return "ConsoleMe" + random_id();
 }
 
 export function generate_temp_id(expiration_date) {
-  return 'temp_' + expiration_date + '_' + random_id();
+  return "temp_" + expiration_date + "_" + random_id();
 }
 
 export async function getCookie(name) {
-  const r = document.cookie.match('\\b' + name + '=([^;]*)\\b');
+  const r = document.cookie.match("\\b" + name + "=([^;]*)\\b");
   return r ? r[1] : undefined;
 }
 
-export async function sendRequestCommon(json, location = window.location.href) {
-  const xsrf = await getCookie('_xsrf');
+export async function sendRequestCommon(
+  json,
+  location = window.location.href,
+  method = "post"
+) {
+  const xsrf = await getCookie("_xsrf");
   const rawResponse = await fetch(location, {
-    method: 'post',
+    method,
     headers: {
-      'Content-type': 'application/json',
-      'X-Xsrftoken': xsrf,
+      "Content-type": "application/json",
+      "X-Xsrftoken": xsrf,
     },
     body: JSON.stringify(json),
   });
@@ -45,7 +50,8 @@ export async function sendRequestCommon(json, location = window.location.href) {
 }
 
 export function PolicyTypeahead(value, callback, limit = 20) {
-  const url = '/api/v2/typeahead/resources?typeahead=' + value + '&limit=' + limit;
+  const url =
+    "/api/v2/typeahead/resources?typeahead=" + value + "&limit=" + limit;
 
   fetch(url).then((resp) => {
     resp.text().then((resp) => {
@@ -54,7 +60,10 @@ export function PolicyTypeahead(value, callback, limit = 20) {
       results.forEach((result) => {
         // Strip out what the user has currently typed (`row`) from the full value returned from typeahead
         matching_resources.push({
-          name: result, value: result, meta: 'Resource', score: 1000,
+          name: result,
+          value: result,
+          meta: "Resource",
+          score: 1000,
         });
       });
       callback(null, matching_resources);
@@ -66,7 +75,7 @@ export function getCompletions(editor, session, pos, prefix, callback) {
   let resource = false;
   let action = false;
 
-  const lines = editor.getValue().split('\n');
+  const lines = editor.getValue().split("\n");
   for (let i = pos.row; i >= 0; i--) {
     if (lines[i].indexOf('"Resource"') > -1) {
       resource = true;
@@ -90,21 +99,27 @@ export function getCompletions(editor, session, pos, prefix, callback) {
     return;
   }
 
-  const row = session.getDocument().getLine(pos.row).trim().replace(/\"/g, '');
+  const row = session.getDocument().getLine(pos.row).trim().replace(/\"/g, "");
   if (action === true) {
-    fetch('/api/v1/policyuniverse/autocomplete?prefix=' + row).then((resp) => {
+    fetch("/api/v1/policyuniverse/autocomplete?prefix=" + row).then((resp) => {
       resp.text().then((resp) => {
         const wordList = JSON.parse(resp);
         // wordList like [{"permission":"s3:GetObject"}]
-        callback(null, wordList.map((ea) => {
-          let value = ea.permission;
-          if (row.indexOf(':') > -1) {
-            value = value.split(':')[1];
-          }
-          return {
-            name: ea.permission, value, meta: 'Permission', score: 1000,
-          };
-        }));
+        callback(
+          null,
+          wordList.map((ea) => {
+            let value = ea.permission;
+            if (row.indexOf(":") > -1) {
+              value = value.split(":")[1];
+            }
+            return {
+              name: ea.permission,
+              value,
+              meta: "Permission",
+              score: 1000,
+            };
+          })
+        );
       });
     });
   } else if (resource === true) {
@@ -135,13 +150,15 @@ export async function getMonacoCompletions(model, position) {
     }
   }
   const lastLine = model.getLineContent(position.lineNumber);
-  const prefix = lastLine.trim().replace(/"/g, '');
+  const prefix = lastLine.trim().replace(/"/g, "");
   // prefixRange is the range of the prefix that will be replaced if someone selects the suggestion
   const prefixRange = model.findPreviousMatch(prefix, position);
   const limit = 500;
   const defaultWordList = [];
   if (action === true) {
-    const resp = await fetch('/api/v1/policyuniverse/autocomplete?prefix=' + prefix);
+    const resp = await fetch(
+      "/api/v1/policyuniverse/autocomplete?prefix=" + prefix
+    );
     if (resp && resp.ok) {
       const respText = await resp.text();
       const wordList = JSON.parse(respText);
@@ -155,7 +172,8 @@ export async function getMonacoCompletions(model, position) {
     }
     // TODO: error handling other than returning empty list ?
   } else if (resource === true) {
-    const url = '/api/v2/typeahead/resources?typeahead=' + prefix + '&limit=' + limit;
+    const url =
+      "/api/v2/typeahead/resources?typeahead=" + prefix + "&limit=" + limit;
     const resp = await fetch(url);
     if (resp && resp.ok) {
       const respText = await resp.text();
@@ -174,6 +192,70 @@ export async function getMonacoCompletions(model, position) {
 }
 
 export function getMonacoTriggerCharacters() {
-  const lowerCase = 'abcdefghijklmnopqrstuvwxyz';
-  return (lowerCase + lowerCase.toUpperCase() + '0123456789' + '_-:').split('');
+  const lowerCase = "abcdefghijklmnopqrstuvwxyz";
+  return (lowerCase + lowerCase.toUpperCase() + "0123456789" + "_-:").split("");
+}
+
+export function sortAndStringifyNestedJSONObject(input = {}) {
+  const allOldKeys = [];
+  JSON.stringify(input, (key, value) => {
+    allOldKeys.push(key);
+    return value;
+  });
+  return JSON.stringify(input, allOldKeys.sort(), 4);
+}
+
+export function sendProposedPolicy(command) {
+  const { change, newStatement, requestID } = this.state;
+  this.setState(
+    {
+      isLoading: true,
+    },
+    () => {
+      const request = {
+        modification_model: {
+          command,
+          change_id: change.id,
+        },
+      };
+      if (newStatement) {
+        request.modification_model.policy_document = JSON.parse(newStatement);
+      }
+      sendRequestCommon(request, "/api/v2/requests/" + requestID, "PUT").then(
+        (response) => {
+          if (
+            response.status === 403 ||
+            response.status === 400 ||
+            response.status === 500
+          ) {
+            // Error occurred making the request
+            this.setState({
+              isLoading: false,
+              buttonResponseMessage: [
+                {
+                  status: "error",
+                  message: response.message,
+                },
+              ],
+            });
+          } else {
+            // Successful request
+            this.setState({
+              isLoading: false,
+              buttonResponseMessage: response.action_results.reduce(
+                (resultsReduced, result) => {
+                  if (result.visible === true) {
+                    resultsReduced.push(result);
+                  }
+                  return resultsReduced;
+                },
+                []
+              ),
+            });
+          }
+          this.reloadDataFromBackend();
+        }
+      );
+    }
+  );
 }

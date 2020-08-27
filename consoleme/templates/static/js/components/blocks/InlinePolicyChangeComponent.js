@@ -1,51 +1,89 @@
 import React, { Component } from "react";
 import {
   Button,
+  Dimmer,
   Divider,
   Grid,
   Header,
+  Loader,
   Message,
   Segment,
 } from "semantic-ui-react";
 import MonacoDiffComponent from "./MonacoDiffComponent";
+import {
+  sendProposedPolicy,
+  sortAndStringifyNestedJSONObject,
+} from "../../helpers/utils";
 
 class InlinePolicyChangeComponent extends Component {
   constructor(props) {
     super(props);
-    const { change, config, requestReadOnly } = props;
+    const { change, config, requestReadOnly, requestID } = props;
     const oldPolicyDoc =
       change.old_policy && change.old_policy.policy_document
         ? change.old_policy.policy_document
         : {};
-    const allOldKeys = [];
-    JSON.stringify(oldPolicyDoc, (key, value) => {
-      allOldKeys.push(key);
-      return value;
-    });
 
     const newPolicyDoc =
       change.policy.policy_document && change.policy.policy_document
         ? change.policy.policy_document
         : {};
-    const allnewKeys = [];
-    JSON.stringify(newPolicyDoc, (key, value) => {
-      allnewKeys.push(key);
-      return value;
-    });
-
+    const newStatement = sortAndStringifyNestedJSONObject(newPolicyDoc);
     this.state = {
-      newStatement: JSON.stringify(newPolicyDoc, allnewKeys.sort(), 4),
+      newStatement,
+      lastSavedStatement: newStatement,
       isError: false,
-      isLoading: false,
       messages: [],
-      oldStatement: JSON.stringify(oldPolicyDoc, allOldKeys.sort(), 4),
+      buttonResponseMessage: [],
+      oldStatement: sortAndStringifyNestedJSONObject(oldPolicyDoc),
       change,
       config,
       requestReadOnly,
+      requestID,
+      isLoading: false,
     };
 
     this.onLintError = this.onLintError.bind(this);
     this.onValueChange = this.onValueChange.bind(this);
+    this.onSubmitChange = this.onSubmitChange.bind(this);
+    this.sendProposedPolicy = sendProposedPolicy.bind(this);
+    this.updatePolicyDocument = props.updatePolicyDocument;
+    this.reloadDataFromBackend = props.reloadDataFromBackend;
+  }
+
+  componentDidUpdate(prevProps) {
+    if (
+      JSON.stringify(prevProps.change) !== JSON.stringify(this.props.change) ||
+      prevProps.requestReadOnly !== this.props.requestReadOnly
+    ) {
+      this.setState(
+        {
+          isLoading: true,
+        },
+        () => {
+          const { change, config, requestReadOnly } = this.props;
+          const oldPolicyDoc =
+            change.old_policy && change.old_policy.policy_document
+              ? change.old_policy.policy_document
+              : {};
+
+          const newPolicyDoc =
+            change.policy.policy_document && change.policy.policy_document
+              ? change.policy.policy_document
+              : {};
+          const newStatement = sortAndStringifyNestedJSONObject(newPolicyDoc);
+          this.setState({
+            newStatement,
+            lastSavedStatement: newStatement,
+            oldStatement: sortAndStringifyNestedJSONObject(oldPolicyDoc),
+            change,
+            config,
+            requestReadOnly,
+            isLoading: false,
+          });
+        }
+      );
+    }
   }
 
   onLintError(lintErrors) {
@@ -63,9 +101,16 @@ class InlinePolicyChangeComponent extends Component {
   }
 
   onValueChange(newValue) {
+    const { change } = this.state;
     this.setState({
       newStatement: newValue,
+      buttonResponseMessage: [],
     });
+    this.updatePolicyDocument(change.id, newValue);
+  }
+
+  onSubmitChange() {
+    this.sendProposedPolicy("apply_change");
   }
 
   render() {
@@ -77,6 +122,9 @@ class InlinePolicyChangeComponent extends Component {
       isError,
       messages,
       requestReadOnly,
+      lastSavedStatement,
+      isLoading,
+      buttonResponseMessage,
     } = this.state;
 
     const newPolicy = change.new ? (
@@ -93,16 +141,30 @@ class InlinePolicyChangeComponent extends Component {
       change.status === "not_applied" &&
       !requestReadOnly ? (
         <Grid.Column>
-          <Button content="Apply Change" positive fluid disabled={isError} />
+          <Button
+            content="Apply Change"
+            positive
+            fluid
+            disabled={isError}
+            onClick={this.onSubmitChange}
+          />
         </Grid.Column>
       ) : null;
+
+    const noChangesDetected = lastSavedStatement === newStatement;
 
     const updateChangesButton =
       config.can_update_cancel &&
       change.status === "not_applied" &&
       !requestReadOnly ? (
         <Grid.Column>
-          <Button content="Update Change" positive fluid disabled={isError} />
+          <Button
+            content="Update Proposed Policy"
+            positive
+            fluid
+            disabled={isError || noChangesDetected}
+            onClick={sendProposedPolicy.bind(this, "update_change")}
+          />
         </Grid.Column>
       ) : null;
 
@@ -126,6 +188,25 @@ class InlinePolicyChangeComponent extends Component {
             ))}
           </Message.List>
         </Message>
+      ) : null;
+
+    const responseMessagesToShow =
+      buttonResponseMessage.length > 0 ? (
+        <Grid.Column>
+          {buttonResponseMessage.map((message) =>
+            message.status === "error" ? (
+              <Message negative>
+                <Message.Header>An error occurred</Message.Header>
+                <Message.Content>{message.message}</Message.Content>
+              </Message>
+            ) : (
+              <Message positive>
+                <Message.Header>Success</Message.Header>
+                <Message.Content>{message.message}</Message.Content>
+              </Message>
+            )
+          )}
+        </Grid.Column>
       ) : null;
 
     const changesAlreadyAppliedContent =
@@ -177,6 +258,9 @@ class InlinePolicyChangeComponent extends Component {
           <Grid.Column>{messagesToShow}</Grid.Column>
         </Grid.Row>
         <Grid.Row columns="equal">
+          <Grid.Column>{responseMessagesToShow}</Grid.Column>
+        </Grid.Row>
+        <Grid.Row columns="equal">
           {applyChangesButton}
           {updateChangesButton}
           {readOnlyInfo}
@@ -187,6 +271,9 @@ class InlinePolicyChangeComponent extends Component {
 
     return (
       <Segment>
+        <Dimmer active={isLoading} inverted>
+          <Loader />
+        </Dimmer>
         {headerContent}
         <Divider hidden />
         {policyChangeContent}
