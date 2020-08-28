@@ -35,17 +35,19 @@ class UserProfileHandler(BaseAPIV1Handler):
                 "self_service": {"enabled": config.get("enable_self_service")},
                 "api_health": {
                     "enabled": is_in_group(
-                        self.groups, config.get("groups.can_edit_health_alert", [])
+                        self.user,
+                        self.groups,
+                        config.get("groups.can_edit_health_alert", []),
                     )
                 },
                 "audit": {
                     "enabled": is_in_group(
-                        self.groups, config.get("groups.can_audit", [])
+                        self.user, self.groups, config.get("groups.can_audit", [])
                     )
                 },
                 "config": {
                     "enabled": is_in_group(
-                        self.groups, config.get("groups.can_edit_config", [])
+                        self.user, self.groups, config.get("groups.can_edit_config", [])
                     )
                 },
             },

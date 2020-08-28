@@ -16,7 +16,7 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 async def can_approve_reject_request(user, secondary_approvers, groups):
     # Allow admins to approve and reject all requests
     for g in config.get("groups.can_admin"):
-        if g in groups:
+        if g in groups or g == user:
             return True
 
     if secondary_approvers:
@@ -33,7 +33,7 @@ async def can_cancel_request(current_user, requesting_user, groups):
 
     # Allow admins to cancel requests
     for g in config.get("groups.can_admin"):
-        if g in groups:
+        if g in groups or g == current_user:
             return True
 
     # Allow restricted admins to cancel requests
@@ -44,13 +44,13 @@ async def can_cancel_request(current_user, requesting_user, groups):
     return False
 
 
-async def can_move_back_to_pending(request, groups):
+async def can_move_back_to_pending(current_user, request, groups):
     # Don't allow returning requests to pending state if more than a day has passed since the last update
     if request.get("last_updated", 0) < int(time.time()) - 86400:
         return False
     # Allow admins to return requests back to pending state
     for g in config.get("groups.can_admin"):
-        if g in groups:
+        if g in groups or g == current_user:
             return True
     return False
 

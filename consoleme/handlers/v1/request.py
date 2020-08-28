@@ -601,7 +601,7 @@ class JSONRequestHandler(BaseJSONHandler):
 
         if request.get("status") in ["cancelled", "rejected"]:
             can_change_to_pending = await can_move_back_to_pending(
-                request, user_groups_including_indirect
+                self.user, request, user_groups_including_indirect
             )
 
         log_data["status"] = new_status

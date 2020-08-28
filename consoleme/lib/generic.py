@@ -112,9 +112,9 @@ def regex_filter(
         return items
 
 
-def is_in_group(user_groups: List[str], required_groups: List[str]) -> bool:
+def is_in_group(user: str, user_groups: List[str], required_groups: List[str]) -> bool:
     for group in required_groups:
-        if group in user_groups:
+        if group in user_groups or user == group:
             return True
     return False
 
