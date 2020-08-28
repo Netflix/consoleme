@@ -360,13 +360,9 @@ class BaseHandler(tornado.web.RequestHandler):
                 )
 
         except NoGroupsException:
-            self.clear()
-            self.set_status(403)
             stats.count("Basehandler.authorization_flow.no_groups_detected")
             log_data["message"] = "No groups detected. Check configuration."
             log.error(log_data)
-            await self.finish(log_data["message"])
-            return
 
         # Set User Role Name
 

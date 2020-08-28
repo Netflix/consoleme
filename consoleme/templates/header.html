@@ -132,11 +132,11 @@
             {% if "get_employee_info_url" in config.dir_ref(config.config_plugin) and config.config_plugin().get_employee_info_url(escape(user)) %}
             <div class="right menu">
                 <a class="ui item" href="{{ config.config_plugin().get_employee_info_url(escape(user)) }}">
-                    {% if "get_employee_photo_url" in config.dir_ref(config.config_plugin) and config.config_plugin().get_employee_photo_url(escape(user))%}
+                    {% if "get_employee_photo_url" in config.dir_ref(config.config_plugin and config.config_plugin().get_employee_photo_url(escape(user))) %}
                     <img class="ui mini spaced image"
                          src="{{ config.config_plugin().get_employee_photo_url(escape(user)) }}"/> {{ escape(user) }}
                     {% else %}
-                    {{ escape(user) }}
+                        {{ escape(user) }}
                     {% end %}
                 </a>
             </div>
