@@ -73,7 +73,7 @@ apt-get install build-essential libxml2-dev libxmlsec1 libxmlsec1-dev libxmlsec1
 #### Clone the ConsoleMe repo
 
 ```bash
-git clone git@github.com:Netflix-Skunkworks/consoleme.git
+git clone git@github.com:Netflix/consoleme.git
 ```
 
 #### Start Redis and DynamoDB containers
