@@ -21,6 +21,7 @@ from consoleme.lib.generic import filter_table, write_json_error
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import (
     can_manage_policy_requests,
+    can_move_back_to_pending_v2,
     can_update_cancel_requests_v2,
     should_auto_approve_policy_v2,
 )
@@ -434,13 +435,15 @@ class RequestDetailHandler(BaseAPIV2Handler):
         can_update_cancel = await can_update_cancel_requests_v2(
             extended_request.requester_email, self.user, self.groups
         )
-
-        # TODO: can_change_to_pending = await can_move_back_to_pending(request, self.groups)
+        can_move_back_to_pending = await can_move_back_to_pending_v2(
+            extended_request, last_updated, self.groups
+        )
 
         # In the future request_specific_config will have specific approvers for specific changes based on ABAC
         request_specific_config = {
             "can_approve_reject": can_approve_reject,
             "can_update_cancel": can_update_cancel,
+            "can_move_back_to_pending": can_move_back_to_pending,
         }
 
         response = {
