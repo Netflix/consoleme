@@ -9,7 +9,7 @@ ConsoleMe's configuration needs to specify one authentication method
 (`auth.get_user_by_oidc` must be `true`).
 
 `get_user_by_saml_settings.saml_path` must point to the configuration path for OneLogin's SAML Python Toolkit.
-An example configuration exists [here](https://github.com/Netflix-Skunkworks/consoleme/tree/master/docker/saml_example).
+An example configuration exists [here](https://github.com/Netflix/consoleme/tree/master/docker/saml_example).
 
 ConsoleMe expects to receive attributes in the SAML Response from the IdP which identify the user and their groups.
 These attribute names can be customized by the
