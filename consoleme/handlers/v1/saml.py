@@ -39,8 +39,7 @@ class SamlHandler(BaseHandler):
                 if isinstance(email, list) and len(email) > 0:
                     email = email[0]
                 groups = saml_attributes.get(
-                    config.get("get_user_by_saml_settings.attributes.groups"),
-                    []
+                    config.get("get_user_by_saml_settings.attributes.groups"), []
                 )
 
                 self_url = await sync_to_async(OneLogin_Saml2_Utils.get_self_url)(req)
