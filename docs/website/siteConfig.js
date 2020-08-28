@@ -21,38 +21,38 @@ const users = [
 ];
 
 const siteConfig = {
-  title: 'ConsoleMe',
-  tagline: 'ConsoleMe simplifies multi-account AWS',
-  url: 'https://netflix-skunkworks.github.io/',
-  baseUrl: '/consoleme/',
+  title: "ConsoleMe",
+  tagline: "ConsoleMe simplifies multi-account AWS",
+  url: "https://netflix.github.io/",
+  baseUrl: "/consoleme/",
 
   // Used for publishing and more
-  projectName: 'ConsoleMe',
-  organizationName: 'Netflix-Skunkworks',
+  projectName: "ConsoleMe",
+  organizationName: "Netflix",
   // For top-level user or org sites, the organization is still the same.
   // e.g., for the https://JoelMarcey.github.io site, it would be set like...
   //   organizationName: 'JoelMarcey'
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
-    {doc: 'QuickStart', label: 'Quick Start'},
-    {doc: 'Docs', label: 'Docs'},
-    {doc: 'Demo', label: 'Demo'},
-    {page: 'help', label: 'Help'},
+    { doc: "QuickStart", label: "Quick Start" },
+    { doc: "Docs", label: "Docs" },
+    { doc: "Demo", label: "Demo" },
+    { page: "help", label: "Help" },
   ],
 
   // If you have users set above, you add it here:
   users,
 
   /* path to images for header/footer */
-  headerIcon: 'img/favicon.ico',
-  footerIcon: 'img/favicon.ico',
-  favicon: 'img/favicon.ico',
+  headerIcon: "img/favicon.ico",
+  footerIcon: "img/favicon.ico",
+  favicon: "img/favicon.ico",
 
   /* Colors for website */
   colors: {
-    primaryColor: '#c11a1b',
-    secondaryColor: '#737274',
+    primaryColor: "#c11a1b",
+    secondaryColor: "#737274",
   },
 
   /* Custom fonts for website */
@@ -74,20 +74,20 @@ const siteConfig = {
 
   highlight: {
     // Highlight.js theme to use for syntax highlighting in code blocks.
-    theme: 'default',
+    theme: "default",
   },
 
   // Add custom scripts here that would be placed in <script> tags.
-  scripts: ['https://buttons.github.io/buttons.js'],
+  scripts: ["https://buttons.github.io/buttons.js"],
 
   // On page navigation for the current documentation page.
-  onPageNav: 'separate',
+  onPageNav: "separate",
   // No .html extensions for paths.
   cleanUrl: true,
 
   // Open Graph and Twitter card images.
-  ogImage: 'img/undraw_online.svg',
-  twitterImage: 'img/undraw_tweetstorm.svg',
+  ogImage: "img/undraw_online.svg",
+  twitterImage: "img/undraw_tweetstorm.svg",
 
   // For sites with a sizable amount of content, set collapsible to true.
   // Expand/collapse the links and subcategories under categories.
