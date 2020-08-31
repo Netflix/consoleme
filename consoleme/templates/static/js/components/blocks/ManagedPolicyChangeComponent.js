@@ -3,6 +3,7 @@ import {
   Button,
   Grid,
   Header,
+  Icon,
   Message,
   Table,
   Segment,
@@ -69,6 +70,14 @@ class ManagedPolicyChangeComponent extends Component {
       ) : (
         <span style={{ color: "green" }}>Attach</span>
       );
+
+    const closeIcon = (
+      <Header textAlign="right">
+        <Button negative circular icon color="white">
+          <Icon name="close" />
+        </Button>
+      </Header>
+    );
 
     const headerContent = (
       <Header size="large">
@@ -173,6 +182,7 @@ class ManagedPolicyChangeComponent extends Component {
         <Dimmer active={isLoading} inverted>
           <Loader />
         </Dimmer>
+        {closeIcon}
         {headerContent}
         {policyChangeContent}
       </Segment>

@@ -312,19 +312,19 @@ class PolicyRequestReview extends Component {
 
     const approveRequestButton = requestConfig.can_approve_reject ? (
       <Grid.Column>
-        <Button content="Approve and Commit Changes" positive fluid />
+        <Button content="Approve and Commit All Changes" positive fluid />
       </Grid.Column>
     ) : null;
 
     const rejectRequestButton = requestConfig.can_approve_reject ? (
       <Grid.Column>
-        <Button content="Reject Request" negative fluid />
+        <Button content="Reject Entire Request" negative fluid />
       </Grid.Column>
     ) : null;
 
     const cancelRequestButton = requestConfig.can_update_cancel ? (
       <Grid.Column>
-        <Button content="Cancel Request" negative fluid />
+        <Button content="Cancel Entire Request" negative fluid />
       </Grid.Column>
     ) : null;
 

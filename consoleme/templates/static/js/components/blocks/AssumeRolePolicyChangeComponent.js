@@ -5,6 +5,7 @@ import {
   Divider,
   Grid,
   Header,
+  Icon,
   Loader,
   Message,
   Segment,
@@ -125,6 +126,14 @@ class AssumeRolePolicyChangeComponent extends Component {
       isLoading,
       buttonResponseMessage,
     } = this.state;
+
+    const closeIcon = (
+      <Header textAlign="right">
+        <Button negative circular icon color="white">
+          <Icon name="close" />
+        </Button>
+      </Header>
+    );
 
     const headerContent = (
       <Header size="large">Assume Role Policy Change</Header>
@@ -267,6 +276,7 @@ class AssumeRolePolicyChangeComponent extends Component {
         <Dimmer active={isLoading} inverted>
           <Loader />
         </Dimmer>
+        {closeIcon}
         {headerContent}
         <Divider hidden />
         {policyChangeContent}

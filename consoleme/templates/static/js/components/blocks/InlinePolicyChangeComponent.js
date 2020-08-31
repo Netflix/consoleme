@@ -5,6 +5,7 @@ import {
   Divider,
   Grid,
   Header,
+  Icon,
   Loader,
   Message,
   Segment,
@@ -131,11 +132,20 @@ class InlinePolicyChangeComponent extends Component {
       <span style={{ color: "red" }}>- New Policy</span>
     ) : null;
 
+    const closeIcon = (
+      <Header textAlign="right">
+        <Button negative circular icon color="white">
+          <Icon name="close" />
+        </Button>
+      </Header>
+    );
+
     const headerContent = (
       <Header size="large">
         Inline Policy Change - {change.policy_name} {newPolicy}
       </Header>
     );
+
     const applyChangesButton =
       config.can_approve_reject &&
       change.status === "not_applied" &&
@@ -274,6 +284,7 @@ class InlinePolicyChangeComponent extends Component {
         <Dimmer active={isLoading} inverted>
           <Loader />
         </Dimmer>
+        {closeIcon}
         {headerContent}
         <Divider hidden />
         {policyChangeContent}
