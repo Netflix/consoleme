@@ -99,7 +99,7 @@
                     {% if "get_employee_info_url" in config.dir_ref(config.config_plugin) %}
                         <a target="_blank" href="{{ config.config_plugin().get_employee_info_url(escape(request.get("username", ""))) }}">
 
-                            {% if "get_employee_photo_url" in config.dir_ref(config.config_plugin) %}
+                            {% if "get_employee_photo_url" in config.dir_ref(config.config_plugin) and config.config_plugin().get_employee_photo_url(escape(request.get("username", "")))%}
                             <img
                                 class="ui mini spaced image" src="{{ config.config_plugin().get_employee_photo_url(escape(request.get("username", ""))) }}"
                             />

@@ -51,7 +51,7 @@ aws = get_plugin_by_name(config.get("plugins.aws"))()
 class RequestHandler(BaseAPIV2Handler):
     """Handler for /api/v2/request
 
-        Allows for creation of a request.
+    Allows for creation of a request.
     """
 
     allowed_methods = ["POST"]
@@ -127,7 +127,9 @@ class RequestHandler(BaseAPIV2Handler):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
         # TODO: remove this check once v2 requests page is ready
-        can_manage_policy_request = await can_manage_policy_requests(self.groups)
+        can_manage_policy_request = await can_manage_policy_requests(
+            self.user, self.groups
+        )
         if not can_manage_policy_request:
             self.write_error(403, message="This page is not yet available to all users")
             return
@@ -159,7 +161,7 @@ class RequestHandler(BaseAPIV2Handler):
             if changes.admin_auto_approve:
                 # make sure user is allowed to use admin_auto_approve
                 can_manage_policy_request = await can_manage_policy_requests(
-                    self.groups
+                    self.user, self.groups
                 )
                 if can_manage_policy_request:
                     extended_request.request_status = RequestStatus.approved
@@ -193,8 +195,10 @@ class RequestHandler(BaseAPIV2Handler):
                     return
             else:
                 # If admin auto approve is false, check for auto-approve probe eligibility
-                is_eligible_for_auto_approve_probe = await is_request_eligible_for_auto_approval(
-                    extended_request, self.user
+                is_eligible_for_auto_approve_probe = (
+                    await is_request_eligible_for_auto_approval(
+                        extended_request, self.user
+                    )
                 )
                 # If we have only made requests that are eligible for auto-approval probe, check against them
                 if is_eligible_for_auto_approve_probe:
@@ -418,8 +422,8 @@ class RequestDetailHandler(BaseAPIV2Handler):
             self.write_error(404, message="Error getting request:" + str(e))
             return
         extended_request = await populate_old_policies(extended_request, self.user)
-        populate_cross_account_resource_policies_result = await populate_cross_account_resource_policies(
-            extended_request, self.user
+        populate_cross_account_resource_policies_result = (
+            await populate_cross_account_resource_policies(extended_request, self.user)
         )
 
         if populate_cross_account_resource_policies_result["changed"]:
@@ -431,7 +435,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             updated_request = await dynamo.write_policy_request_v2(extended_request)
             last_updated = updated_request.get("last_updated")
 
-        can_approve_reject = await can_manage_policy_requests(self.groups)
+        can_approve_reject = await can_manage_policy_requests(self.user, self.groups)
         can_update_cancel = await can_update_cancel_requests_v2(
             extended_request.requester_email, self.user, self.groups
         )

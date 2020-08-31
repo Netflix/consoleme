@@ -39,7 +39,9 @@ class AuditHandler(BaseHandler):
         if not self.user:
             return
 
-        authorized = is_in_group(self.groups, config.get("groups.can_audit", []))
+        authorized = is_in_group(
+            self.user, self.groups, config.get("groups.can_audit", [])
+        )
 
         if not authorized:
             raise UnauthorizedToAccess("You are not authorized to view this page.")
@@ -80,7 +82,9 @@ class GetAuditLogsHandler(BaseHandler):
                     description: User has failed authn/authz.
         """
 
-        authorized = is_in_group(self.groups, config.get("groups.can_audit", []))
+        authorized = is_in_group(
+            self.user, self.groups, config.get("groups.can_audit", [])
+        )
 
         if not authorized:
             raise UnauthorizedToAccess("You are not authorized to view this page.")

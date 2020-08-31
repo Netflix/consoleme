@@ -72,7 +72,12 @@ async def authenticate_user_by_oauth2(request):
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     log_data = {"function": function}
     code = request.get_argument("code", None)
-    redirect_uri = f"{request.request.protocol}://{request.request.host}/"
+    protocol = request.request.protocol
+    if "https://" in config.get("url"):
+        # If we're behind a load balancer that terminates tls for us, request.request.protocol will be "http://" and our
+        # oidc redirect will be invalid
+        protocol = "https"
+    redirect_uri = f"{protocol}://{request.request.host}/"
     if code is None:
         args = {"response_type": "code"}
         client_scope = config.get("oidc_secrets.client_scope")

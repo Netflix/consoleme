@@ -34,7 +34,7 @@ celery_jobs:
     sleep_time: 0
 
 logging:
-  format: '%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s'
+  format: "%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s"
   stdout_enabled: true
   level: debug
   elasticsearch:
@@ -55,6 +55,6 @@ ses:
 
 support_contact: consoleme-support@example.com
 support_slack: https://www.example.com/slack/channel
-documentation_page: https://github.com/Netflix-Skunkworks/consoleme/
+documentation_page: https://github.com/Netflix/consoleme/
 # You can add a custom Security logo here
 # security_logo: /path/to/your/security_logo.png

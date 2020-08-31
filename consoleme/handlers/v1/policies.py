@@ -245,7 +245,7 @@ class PolicyEditHandler(BaseHandler):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         read_only = False
 
-        can_save_delete = await can_manage_policy_requests(self.groups)
+        can_save_delete = await can_manage_policy_requests(self.user, self.groups)
         can_delete_role = await can_delete_roles(self.groups)
         arn = f"arn:aws:iam::{account_id}:role/{role_name}"
 
@@ -343,7 +343,7 @@ class PolicyEditHandler(BaseHandler):
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
-        can_save_delete = await can_manage_policy_requests(self.groups)
+        can_save_delete = await can_manage_policy_requests(self.user, self.groups)
 
         if not can_save_delete:
             raise Unauthorized("You are not authorized to edit policies.")
@@ -416,7 +416,7 @@ class ResourcePolicyEditHandler(BaseHandler):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         read_only = False
 
-        can_save_delete = await can_manage_policy_requests(self.groups)
+        can_save_delete = await can_manage_policy_requests(self.user, self.groups)
 
         account_id_for_arn: str = account_id
         if resource_type == "s3":
@@ -486,7 +486,7 @@ class ResourcePolicyEditHandler(BaseHandler):
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
-        can_save_delete = await can_manage_policy_requests(self.groups)
+        can_save_delete = await can_manage_policy_requests(self.user, self.groups)
 
         if not can_save_delete:
             raise Unauthorized("You are not authorized to edit policies.")
@@ -571,7 +571,9 @@ class PolicyReviewSubmitHandler(BaseHandler):
         policy_status = "pending"
         if admin_auto_approve:
             # make sure user is allowed to use admin_auto_approve
-            can_manage_policy_request = await can_manage_policy_requests(self.groups)
+            can_manage_policy_request = await can_manage_policy_requests(
+                self.user, self.groups
+            )
             if can_manage_policy_request:
                 policy_status = "approved"
                 log_data["admin_auto_approved"] = True
@@ -732,7 +734,9 @@ class PolicyReviewHandler(BaseHandler):
         show_update_button: bool = False
         read_only = True
 
-        can_apply_resource_policies = await can_manage_policy_requests(self.groups)
+        can_apply_resource_policies = await can_manage_policy_requests(
+            self.user, self.groups
+        )
         supported_resource_policies = config.get(
             "policies.supported_resource_types_for_policy_application", []
         )
@@ -762,14 +766,18 @@ class PolicyReviewHandler(BaseHandler):
                 )
 
         if status == "pending":
-            show_approve_reject_buttons = await can_manage_policy_requests(self.groups)
+            show_approve_reject_buttons = await can_manage_policy_requests(
+                self.user, self.groups
+            )
             show_update_button = await can_update_requests(
                 request, self.user, self.groups
             )
             can_cancel = show_update_button
             read_only = False
 
-        show_pending_button = await can_move_back_to_pending(request, self.groups)
+        show_pending_button = await can_move_back_to_pending(
+            request, self.user, self.groups
+        )
         await self.render(
             "policy_review.html",
             page_title="ConsoleMe - Policy Review",
@@ -853,8 +861,10 @@ class PolicyReviewHandler(BaseHandler):
             tags={"user": self.user, "arn": arn, "updated_status": updated_status},
         )
 
-        can_approve_reject = await can_manage_policy_requests(self.groups)
-        can_change_to_pending = await can_move_back_to_pending(request, self.groups)
+        can_approve_reject = await can_manage_policy_requests(self.user, self.groups)
+        can_change_to_pending = await can_move_back_to_pending(
+            request, self.user, self.groups
+        )
         result: Dict = {"status": "success"}
 
         can_update_request: bool = await can_update_requests(

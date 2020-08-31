@@ -7,29 +7,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v1
-      with:
-        python-version: 3.8
-    - name: Install dependencies
-      run: |
-        curl -sL https://deb.nodesource.com/setup_10.x | sudo bash
-        curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-        echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-        sudo apt-get update
-        sudo apt-get install yarn
-        sudo apt-get install libssl-dev libcurl4-openssl-dev python3-dev build-essential libxml2-dev libxmlsec1-dev libxmlsec1-openssl musl-dev nodejs
-        python3 -m pip install --upgrade pip setuptools
-        pip3 install -r requirements.txt
-        pip3 install -r requirements-test.txt
-        pip3 install -r requirements-docs.txt
-        pip3 install -e .
-        pip3 install -e default_plugins
-        yarn --cwd consoleme-ui
-        yarn --cwd consoleme-ui install
-        CI=false yarn --cwd consoleme-ui start &
-        pre-commit install
-    - name: Run pre-commit
-      run: |
-        pre-commit run
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          curl -sL https://deb.nodesource.com/setup_10.x | sudo bash
+          curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+          echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+          sudo apt-get update
+          sudo apt-get install yarn
+          sudo apt-get install libssl-dev libcurl4-openssl-dev python3-dev build-essential libxml2-dev libxmlsec1-dev libxmlsec1-openssl musl-dev nodejs
+          python3 -m pip install --upgrade pip
+          pip install "setuptools==44.0.0"
+          pip3 install -r requirements.txt
+          pip3 install -r requirements-test.txt
+          pip3 install -r requirements-docs.txt
+          pip3 install -e .
+          pip3 install -e default_plugins
+          yarn --cwd consoleme-ui
+          yarn --cwd consoleme-ui install
+          CI=false yarn --cwd consoleme-ui start &
+          pre-commit install
+      - name: Run pre-commit
+        run: |
+          pre-commit run
