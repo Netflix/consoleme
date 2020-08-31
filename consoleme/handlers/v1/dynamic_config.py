@@ -7,6 +7,7 @@ import tornado.web
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.dynamo import UserDynamoHandler
+from consoleme.lib.generic import is_in_group
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -32,7 +33,7 @@ class DynamicConfigHandler(BaseHandler):
         if not self.user:
             return
 
-        if config.get("application_admin") not in self.groups:
+        if not is_in_group(self.user, self.groups, config.get("application_admin")):
             raise tornado.web.HTTPError(
                 403, "Only the owner is authorized to view this page."
             )
@@ -63,7 +64,7 @@ class DynamicConfigHandler(BaseHandler):
 
         if not self.user:
             return
-        if config.get("application_admin") not in self.groups:
+        if not is_in_group(self.user, self.groups, config.get("application_admin")):
             raise tornado.web.HTTPError(
                 403, "Only the owner is authorized to view this page."
             )

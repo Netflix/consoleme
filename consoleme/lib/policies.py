@@ -210,20 +210,20 @@ async def parse_policy_change_request(
     return result
 
 
-async def can_move_back_to_pending(request, groups):
+async def can_move_back_to_pending(request, current_user, groups):
     if request.get("status") in ["cancelled", "rejected"]:
         # Don't allow returning requests to pending state if more than a day has passed since the last update
         if request.get("last_updated", 0) < int(time.time()) - 86400:
             return False
         # Allow admins to return requests back to pending state
         for g in config.get("groups.can_admin_policies", []):
-            if g in groups:
+            if g in groups or g == current_user:
                 return True
     return False
 
 
 async def can_move_back_to_pending_v2(
-    extended_request: ExtendedRequestModel, last_updated, groups
+    extended_request: ExtendedRequestModel, last_updated, current_user, groups
 ):
     if extended_request.request_status in [
         RequestStatus.cancelled,
@@ -234,7 +234,7 @@ async def can_move_back_to_pending_v2(
             return False
         # Allow admins to return requests back to pending state
         for g in config.get("groups.can_admin_policies", []):
-            if g in groups:
+            if g in groups or g == current_user:
                 return True
     return False
 
@@ -246,7 +246,7 @@ async def can_update_requests(request, user, groups):
     # Allow admins to return requests back to pending state
     if not can_update:
         for g in config.get("groups.can_admin_policies", []):
-            if g in groups:
+            if g in groups or g == user:
                 return True
 
     return can_update
@@ -259,7 +259,7 @@ async def can_update_cancel_requests_v2(requester_username, user, groups):
     # Allow admins to update / cancel requests
     if not can_update:
         for g in config.get("groups.can_admin_policies", []):
-            if g in groups:
+            if g in groups or g == user:
                 return True
 
     return can_update
@@ -434,11 +434,11 @@ async def update_role_policy(events):
     return result
 
 
-async def can_manage_policy_requests(groups):
+async def can_manage_policy_requests(user, groups):
     approval_groups = config.get("groups.can_admin_policies", [])
 
     for g in approval_groups:
-        if g in groups:
+        if g in groups or g == user:
             return True
     return False
 

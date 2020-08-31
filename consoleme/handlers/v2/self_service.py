@@ -8,7 +8,7 @@ class SelfServiceConfigHandler(BaseAPIV2Handler):
 
     async def get(self):
         admin_bypass_approval_enabled: bool = await can_manage_policy_requests(
-            self.groups
+            self.user, self.groups
         )
         self_service_iam_config: dict = config.get("self_service_iam")
         self.write(

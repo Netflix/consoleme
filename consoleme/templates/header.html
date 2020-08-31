@@ -100,36 +100,36 @@
                 <i class="dropdown icon"></i>
                 <div class="menu transition hidden">
                     <a class="item" href="/policies">Policies</a>
-                    {% if config.get("enable_self_service") %}
+                    {% if config.get("enable_self_service", True) %}
                     <a class="item" href="/self_service">Self Service Permissions</a>
                     {% end %}
-                    {% if config.get("enable_requests_table") %}
+                    {% if config.get("enable_requests_table", True) %}
                     <a class="item" href="/requests">Policy Requests</a>
                     {% end %}
-                    {% if is_in_group(user_groups, config.get("groups.can_edit_health_alert", [])) %}
+                    {% if is_in_group(user, user_groups, config.get("groups.can_edit_health_alert", [])) %}
                     <a class="item" href="/api_health">API Health</a>
                     {% end %}
-                    {% if is_in_group(user_groups, config.get("groups.can_create_roles", [])) or is_in_group([user], config.get("groups.can_create_roles", [])) %}
+                    {% if is_in_group(user, user_groups, config.get("groups.can_create_roles", [])) %}
                     <a class="item" href="/create_role">Create Role</a>
                     {% end %}
                 </div>
             </div>
             {% end %}
-            {% if config.get("headers.config.enabled", True) and (is_in_group(user_groups, config.get("groups.can_edit_config", [])) or is_in_group(user_groups, config.get("groups.can_audit", []))) %}
+            {% if config.get("headers.config.enabled", True) and (is_in_group(user, user_groups, config.get("groups.can_edit_config", [])) or is_in_group(user, user_groups, config.get("groups.can_audit", []))) %}
             <div class="ui dropdown link item {% if current_page in ['audit', 'config'] %}partial_active{% end %}">
                 <span class="text">Advanced</span>
                 <i class="dropdown icon"></i>
                 <div class="menu transition hidden">
-                    {% if is_in_group(user_groups, config.get("groups.can_audit", [])) %}
+                    {% if is_in_group(user, user_groups, config.get("groups.can_audit", [])) %}
                     <a class="item" href="/audit">Audit</a>
                     {% end %}
-                    {% if is_in_group(user_groups, config.get("groups.can_edit_config", [])) %}
+                    {% if is_in_group(user, user_groups, config.get("groups.can_edit_config", [])) %}
                     <a class="item" href="/config">Config</a>
                     {% end %}
                 </div>
             </div>
             {% end %}
-            {% if "get_employee_info_url" in config.dir_ref(config.config_plugin) %}
+            {% if "get_employee_info_url" in config.dir_ref(config.config_plugin) and config.config_plugin().get_employee_info_url(escape(user)) %}
             <div class="right menu">
                 <a class="ui item" href="{{ config.config_plugin().get_employee_info_url(escape(user)) }}">
                     {% if "get_employee_photo_url" in config.dir_ref(config.config_plugin and config.config_plugin().get_employee_photo_url(escape(user))) %}
@@ -139,6 +139,10 @@
                         {{ escape(user) }}
                     {% end %}
                 </a>
+            </div>
+            {% else %}
+            <div class="right menu">
+               {{ escape(user) }}
             </div>
             {% end %}
         </div>

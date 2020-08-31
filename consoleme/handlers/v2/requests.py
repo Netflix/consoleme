@@ -126,7 +126,9 @@ class RequestHandler(BaseAPIV2Handler):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
         # TODO: remove this check once v2 requests page is ready
-        can_manage_policy_request = await can_manage_policy_requests(self.groups)
+        can_manage_policy_request = await can_manage_policy_requests(
+            self.user, self.groups
+        )
         if not can_manage_policy_request:
             self.write_error(403, message="This page is not yet available to all users")
             return
@@ -158,7 +160,7 @@ class RequestHandler(BaseAPIV2Handler):
             if changes.admin_auto_approve:
                 # make sure user is allowed to use admin_auto_approve
                 can_manage_policy_request = await can_manage_policy_requests(
-                    self.groups
+                    self.user, self.groups
                 )
                 if can_manage_policy_request:
                     extended_request.request_status = RequestStatus.approved
@@ -430,7 +432,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             updated_request = await dynamo.write_policy_request_v2(extended_request)
             last_updated = updated_request.get("last_updated")
 
-        can_approve_reject = await can_manage_policy_requests(self.groups)
+        can_approve_reject = await can_manage_policy_requests(self.user, self.groups)
         can_update_cancel = await can_update_cancel_requests_v2(
             extended_request.requester_email, self.user, self.groups
         )
