@@ -440,7 +440,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             extended_request.requester_email, self.user, self.groups
         )
         can_move_back_to_pending = await can_move_back_to_pending_v2(
-            extended_request, last_updated, self.groups
+            extended_request, last_updated, self.user, self.groups
         )
 
         # In the future request_specific_config will have specific approvers for specific changes based on ABAC
