@@ -250,6 +250,7 @@ class Aws:
             result = {
                 "arn": role.get("Arn"),
                 "name": role.pop("RoleName"),
+                "resourceId": role.pop("RoleId"),
                 "accountId": account_id,
                 "ttl": int((datetime.utcnow() + timedelta(hours=36)).timestamp()),
                 "policy": self.dynamo.convert_role_to_json(role),
