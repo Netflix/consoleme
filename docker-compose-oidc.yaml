@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 # Never use this in a production environment.
 # Run with docker-compose -f docker-compose-saml.yaml up
 services:
@@ -14,6 +14,7 @@ services:
       - ~/.ssh:/root/.ssh:cached
     environment:
       - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_oidc.yaml
+      - SETUPTOOLS_USE_DISTUTILS=stdlib
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
     command: >
       bash -c 'pip install argh watchdog; pip install -e /apps/consoleme/default_plugins;

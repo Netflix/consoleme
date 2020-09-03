@@ -59,6 +59,7 @@ from consoleme.lib.cache import (
 )
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import cache_all_policy_requests, get_request_review_url
 from consoleme.lib.s3_helpers import put_object
@@ -583,7 +584,7 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
 @app.task(soft_time_limit=1800)
 def cache_policies_table_details() -> bool:
     iam_role_redis_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
-    arns = red.hkeys(iam_role_redis_key)
+    all_iam_roles = red.hgetall(iam_role_redis_key)
     items = []
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()
 
@@ -605,7 +606,8 @@ def cache_policies_table_details() -> bool:
     if all_s3_errors:
         s3_errors = json.loads(all_s3_errors)
 
-    for arn in arns:
+    for arn, role_details_j in all_iam_roles.items():
+        role_details = ujson.loads(role_details_j)
         error_count = cloudtrail_errors.get(arn, 0)
         s3_errors_for_arn = s3_errors.get(arn, [])
         for error in s3_errors_for_arn:
@@ -613,6 +615,7 @@ def cache_policies_table_details() -> bool:
 
         account_id = arn.split(":")[4]
         account_name = accounts_d.get(str(account_id), "Unknown")
+        resource_id = role_details.get("resourceId")
         items.append(
             {
                 "account_id": account_id,
@@ -624,6 +627,9 @@ def cache_policies_table_details() -> bool:
                     arn.lower(),
                 ),
                 "errors": error_count,
+                "config_history_url": async_to_sync(
+                    get_aws_config_history_url_for_resource
+                )(account_id, resource_id, "AWS::IAM::Role"),
             }
         )
     s3_bucket_key: str = config.get("redis.s3_bucket_key", "S3_BUCKETS")
@@ -731,7 +737,10 @@ def cache_policies_table_details() -> bool:
         s3_bucket=s3_bucket,
         s3_key=s3_key,
     )
-    stats.count("cache_policies_table_details.success", tags={"num_roles": len(arns)})
+    stats.count(
+        "cache_policies_table_details.success",
+        tags={"num_roles": len(all_iam_roles.keys())},
+    )
     return True
 
 
@@ -767,6 +776,7 @@ def cache_roles_for_account(account_id: str) -> bool:
             role_entry = {
                 "arn": role.get("Arn"),
                 "name": role.get("RoleName"),
+                "resourceId": role.get("RoleId"),
                 "accountId": account_id,
                 "ttl": ttl,
                 "policy": dynamo.convert_role_to_json(role),
