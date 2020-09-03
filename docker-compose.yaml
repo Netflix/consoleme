@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 # Never use this in a production environment.
 services:
   consoleme:
@@ -11,8 +11,10 @@ services:
       - .:/apps/consoleme:delegated
       - ~/.aws:/root/.aws:cached
       - ~/.ssh:/root/.ssh:cached
+      - ~/.config/consoleme:/etc/consoleme/
     environment:
       - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_docker_development.yaml
+      - SETUPTOOLS_USE_DISTUTILS=stdlib
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
     command: >
       bash -c '/apps/consoleme/node_modules/.bin/webpack --progress --watch &
@@ -25,4 +27,3 @@ services:
     links:
       - consoleme-redis
       - consoleme-dynamodb
-

@@ -33,6 +33,7 @@ from consoleme.lib.policies import (
     can_move_back_to_pending,
     can_update_requests,
     escape_json,
+    get_aws_config_history_url_for_resource,
     get_formatted_policy_changes,
     get_resources_from_events,
     get_url_for_resource,
@@ -274,6 +275,13 @@ class PolicyEditHandler(BaseHandler):
             )
             return
 
+        config_history_url = None
+        resource_id = role.get("resourceId")
+        if resource_id:
+            config_history_url = await get_aws_config_history_url_for_resource(
+                account_id, resource_id, "AWS::IAM::Role"
+            )
+
         cloudtrail_errors = await internal_policies.get_errors_by_role(
             arn, config.get("policies.number_cloudtrail_errors_to_display", 5)
         )
@@ -316,6 +324,7 @@ class PolicyEditHandler(BaseHandler):
             page_title="ConsoleMe - Policy Editor",
             current_page="policies",
             role=role,
+            config_history_url=config_history_url,
             account_id=account_id,
             account_name=account_name,
             cloudtrail_errors=cloudtrail_errors,

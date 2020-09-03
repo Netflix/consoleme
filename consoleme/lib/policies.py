@@ -1,6 +1,7 @@
 import re
 import sys
 import time
+import urllib
 from collections import defaultdict
 from typing import Dict, List
 
@@ -73,9 +74,11 @@ async def parse_policy_change_request(
         # Make sure the requester is only ever 64 chars with domain
         if len(requester) > 64:
             split_items: list = requester.split("@")
-            requester: str = split_items[0][
-                : (64 - (len(split_items[-1]) + 1))
-            ] + "@" + split_items[-1]
+            requester: str = (
+                split_items[0][: (64 - (len(split_items[-1]) + 1))]
+                + "@"
+                + split_items[-1]
+            )
 
         event: dict = {
             "arn": arn,
@@ -880,4 +883,15 @@ async def get_url_for_resource(arn, resource_type, account_id, region, resource_
             f"/role/{account_id}?redirect=" f"https://console.aws.amazon.com/wafv2/home"
         )
 
+    return url
+
+
+async def get_aws_config_history_url_for_resource(
+    account_id, resource_id, technology, region="us-east-1"
+):
+    encoded_redirect = urllib.parse.quote_plus(
+        f"https://{region}.console.aws.amazon.com/config/home?#/timeline/{technology}/{resource_id}/configuration"
+    )
+
+    url = f"/role/{account_id}?redirect={encoded_redirect}"
     return url

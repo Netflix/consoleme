@@ -3,6 +3,7 @@ FROM python:3.8
 MAINTAINER Curtis Castrapel
 COPY . /apps/consoleme
 WORKDIR /apps/consoleme
+ENV SETUPTOOLS_USE_DISTUTILS=stdlib
 RUN apt-get clean
 RUN apt-get update
 RUN apt-get install build-essential libxml2-dev libxmlsec1-dev libxmlsec1-openssl musl-dev libcurl4-nss-dev python3-dev -y
