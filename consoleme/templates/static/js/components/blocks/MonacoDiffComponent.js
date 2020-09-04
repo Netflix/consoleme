@@ -80,6 +80,7 @@ class MonacoDiffComponent extends React.Component {
         alwaysConsumeMouseWheel: false,
       },
       scrollBeyondLastLine: false,
+      automaticLayout: true,
       readOnly,
     };
     return (

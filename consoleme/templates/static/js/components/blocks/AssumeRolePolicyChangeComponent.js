@@ -54,7 +54,8 @@ class AssumeRolePolicyChangeComponent extends Component {
 
   componentDidUpdate(prevProps) {
     if (
-      JSON.stringify(prevProps.change) !== JSON.stringify(this.props.change)
+      JSON.stringify(prevProps.change) !== JSON.stringify(this.props.change) ||
+      prevProps.requestReadOnly !== this.props.requestReadOnly
     ) {
       this.setState(
         {
@@ -127,14 +128,6 @@ class AssumeRolePolicyChangeComponent extends Component {
       buttonResponseMessage,
     } = this.state;
 
-    const closeIcon = (
-      <Header textAlign="right">
-        <Button negative circular icon color="white">
-          <Icon name="close" />
-        </Button>
-      </Header>
-    );
-
     const headerContent = (
       <Header size="large">Assume Role Policy Change</Header>
     );
@@ -166,6 +159,21 @@ class AssumeRolePolicyChangeComponent extends Component {
             fluid
             disabled={isError || noChangesDetected}
             onClick={sendProposedPolicy.bind(this, "update_change")}
+          />
+        </Grid.Column>
+      ) : null;
+
+    const cancelChangesButton =
+      (config.can_approve_reject || config.can_update_cancel) &&
+      change.status === "not_applied" &&
+      !requestReadOnly ? (
+        <Grid.Column>
+          <Button
+            content="Cancel Change"
+            negative
+            fluid
+            disabled={isError}
+            onClick={sendProposedPolicy.bind(this, "cancel_change")}
           />
         </Grid.Column>
       ) : null;
@@ -214,14 +222,27 @@ class AssumeRolePolicyChangeComponent extends Component {
     const changesAlreadyAppliedContent =
       change.status === "applied" ? (
         <Grid.Column>
-          <Message info>
+          <Message positive>
             <Message.Header>Change already applied</Message.Header>
             <p>This change has already been applied and cannot be modified.</p>
           </Message>
         </Grid.Column>
       ) : null;
 
-    const changeReadOnly = requestReadOnly || change.status === "applied";
+    const changesAlreadyCancelledContent =
+      change.status === "cancelled" ? (
+        <Grid.Column>
+          <Message negative>
+            <Message.Header>Change cancelled</Message.Header>
+            <p>This change has been cancelled and cannot be modified.</p>
+          </Message>
+        </Grid.Column>
+      ) : null;
+
+    const changeReadOnly =
+      requestReadOnly ||
+      change.status === "applied" ||
+      change.status === "cancelled";
 
     const policyChangeContent = change ? (
       <Grid fluid>
@@ -265,8 +286,10 @@ class AssumeRolePolicyChangeComponent extends Component {
         <Grid.Row columns="equal">
           {applyChangesButton}
           {updateChangesButton}
+          {cancelChangesButton}
           {readOnlyInfo}
           {changesAlreadyAppliedContent}
+          {changesAlreadyCancelledContent}
         </Grid.Row>
       </Grid>
     ) : null;
@@ -276,7 +299,6 @@ class AssumeRolePolicyChangeComponent extends Component {
         <Dimmer active={isLoading} inverted>
           <Loader />
         </Dimmer>
-        {closeIcon}
         {headerContent}
         <Divider hidden />
         {policyChangeContent}

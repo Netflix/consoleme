@@ -205,13 +205,66 @@ export function sortAndStringifyNestedJSONObject(input = {}) {
   return JSON.stringify(input, allOldKeys.sort(), 4);
 }
 
+export function updateRequestStatus(command) {
+  const { requestID } = this.state;
+  this.setState(
+    {
+      isLoading: true,
+    },
+    async () => {
+      const request = {
+        modification_model: {
+          command,
+        },
+      };
+      await sendRequestCommon(
+        request,
+        "/api/v2/requests/" + requestID,
+        "PUT"
+      ).then((response) => {
+        if (
+          response.status === 403 ||
+          response.status === 400 ||
+          response.status === 500
+        ) {
+          // Error occurred making the request
+          this.setState({
+            isLoading: false,
+            buttonResponseMessage: [
+              {
+                status: "error",
+                message: response.message,
+              },
+            ],
+          });
+        } else {
+          // Successful request
+          this.setState({
+            isLoading: false,
+            buttonResponseMessage: response.action_results.reduce(
+              (resultsReduced, result) => {
+                if (result.visible === true) {
+                  resultsReduced.push(result);
+                }
+                return resultsReduced;
+              },
+              []
+            ),
+          });
+          this.reloadDataFromBackend();
+        }
+      });
+    }
+  );
+}
+
 export function sendProposedPolicy(command) {
   const { change, newStatement, requestID } = this.state;
   this.setState(
     {
       isLoading: true,
     },
-    () => {
+    async () => {
       const request = {
         modification_model: {
           command,
@@ -221,41 +274,43 @@ export function sendProposedPolicy(command) {
       if (newStatement) {
         request.modification_model.policy_document = JSON.parse(newStatement);
       }
-      sendRequestCommon(request, "/api/v2/requests/" + requestID, "PUT").then(
-        (response) => {
-          if (
-            response.status === 403 ||
-            response.status === 400 ||
-            response.status === 500
-          ) {
-            // Error occurred making the request
-            this.setState({
-              isLoading: false,
-              buttonResponseMessage: [
-                {
-                  status: "error",
-                  message: response.message,
-                },
-              ],
-            });
-          } else {
-            // Successful request
-            this.setState({
-              isLoading: false,
-              buttonResponseMessage: response.action_results.reduce(
-                (resultsReduced, result) => {
-                  if (result.visible === true) {
-                    resultsReduced.push(result);
-                  }
-                  return resultsReduced;
-                },
-                []
-              ),
-            });
-          }
+      await sendRequestCommon(
+        request,
+        "/api/v2/requests/" + requestID,
+        "PUT"
+      ).then((response) => {
+        if (
+          response.status === 403 ||
+          response.status === 400 ||
+          response.status === 500
+        ) {
+          // Error occurred making the request
+          this.setState({
+            isLoading: false,
+            buttonResponseMessage: [
+              {
+                status: "error",
+                message: response.message,
+              },
+            ],
+          });
+        } else {
+          // Successful request
+          this.setState({
+            isLoading: false,
+            buttonResponseMessage: response.action_results.reduce(
+              (resultsReduced, result) => {
+                if (result.visible === true) {
+                  resultsReduced.push(result);
+                }
+                return resultsReduced;
+              },
+              []
+            ),
+          });
           this.reloadDataFromBackend();
         }
-      );
+      });
     }
   );
 }

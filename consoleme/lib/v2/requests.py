@@ -37,9 +37,9 @@ from consoleme.models import (
     Action,
     Action1,
     ActionResult,
-    ApplyChangeModificationModel,
-    ApproveRequestModificationModel,
+    ApplyChangeModificationModel,   
     AssumeRolePolicyChangeModel,
+    CancelChangeModificationModel,
     ChangeModelArray,
     ChangeType,
     Command,
@@ -364,7 +364,9 @@ async def validate_inline_policy_change(
     for existing_policy in role.inline_policies:
         # Check if a new policy is being created, ensure that we don't overwrite another policy with same name
         if change.new and change.policy_name == existing_policy.get("PolicyName"):
-            log_data["message"] = "Inline Policy with that name already exists."
+            log_data[
+                "message"
+            ] = f"Inline Policy with the name {change.policy_name} already exists."
             log.error(log_data)
             raise InvalidRequestParameter(log_data["message"])
         # Check if policy being updated is the same as existing policy.
@@ -383,7 +385,9 @@ async def validate_inline_policy_change(
 
     # Trying to detach inline policy with name that isn't attached
     if change.action == Action.detach and not seen_policy_name:
-        log_data["message"] = "Can't detach an inline policy that is not attached."
+        log_data[
+            "message"
+        ] = f"An inline policy named '{seen_policy_name}' is not attached, so we cannot remove it"
         log.error(log_data)
         raise InvalidRequestParameter(log_data["message"])
 
@@ -1030,6 +1034,56 @@ async def _get_specific_change(changes: ChangeModelArray, change_id: str):
     return None
 
 
+async def maybe_approve_reject_request(
+    extended_request: ExtendedRequestModel,
+    user: str,
+    log_data: Dict,
+    response: PolicyRequestModificationResponseModel,
+) -> PolicyRequestModificationResponseModel:
+    any_changes_applied = False
+    any_changes_pending = False
+    any_changes_cancelled = False
+    request_status_changed = False
+
+    for change in extended_request.changes.changes:
+        if change.status == Status.applied:
+            any_changes_applied = True
+        if change.status == Status.not_applied:
+            # Don't consider "unsupported" resource policies as "pending", since they can't be applied.
+            if (
+                change.change_type == ChangeType.resource_policy
+                and change.supported is False
+            ):
+                continue
+            any_changes_pending = True
+        if change.status == Status.cancelled:
+            any_changes_cancelled = True
+    # Automatically mark request as "approved" if at least one of the changes in the request is approved, and
+    # nothing else is pending
+    if any_changes_applied and not any_changes_pending:
+        extended_request.request_status = RequestStatus.approved
+        request_status_changed = True
+
+    # Automatically mark request as "cancelled" if all changes in the request are cancelled
+    if not any_changes_applied and not any_changes_pending and any_changes_cancelled:
+        extended_request.request_status = RequestStatus.cancelled
+        request_status_changed = True
+    if request_status_changed:
+        response = await _update_dynamo_with_change(
+            user,
+            extended_request,
+            log_data,
+            response,
+            "Successfully updated request status",
+            "Error updating request in dynamo",
+            visible=False,
+        )
+        await send_communications_policy_change_request_v2(extended_request)
+        account_id = await get_resource_account(extended_request.arn)
+        await aws.fetch_iam_role(account_id, extended_request.arn, force_refresh=True)
+    return response
+
+
 async def parse_and_apply_policy_request_modification(
     extended_request: ExtendedRequestModel,
     policy_request_model: PolicyRequestModificationRequestModel,
@@ -1048,7 +1102,7 @@ async def parse_and_apply_policy_request_modification(
     :return PolicyRequestModificationResponseModel
     """
 
-    log_data: dict = {
+    log_data: Dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
         "request": extended_request.dict(),
@@ -1065,7 +1119,9 @@ async def parse_and_apply_policy_request_modification(
             extended_request.requester_email, user, user_groups
         )
         if not can_update_cancel:
-            raise Unauthorized("Unauthorized to make that change")
+            raise Unauthorized(
+                "You are unauthorized to update or cancel changes in this request"
+            )
 
     if request_changes.command in [
         Command.apply_change,
@@ -1074,7 +1130,7 @@ async def parse_and_apply_policy_request_modification(
     ]:
         can_manage_policy_request = await can_manage_policy_requests(user, user_groups)
         if not can_manage_policy_request:
-            raise Unauthorized("Unauthorized to make that change")
+            raise Unauthorized("You are unauthorized to manage this request")
 
     if request_changes.command == Command.move_back_to_pending:
         can_move_back_to_pending = await can_move_back_to_pending_v2(
@@ -1215,6 +1271,32 @@ async def parse_and_apply_policy_request_modification(
                 "that ID in this policy request"
             )
 
+    elif request_changes.command == Command.cancel_change:
+        cancel_change_model = CancelChangeModificationModel.parse_obj(request_changes)
+        specific_change = await _get_specific_change(
+            extended_request.changes, cancel_change_model.change_id
+        )
+        if specific_change and specific_change.status == Status.not_applied:
+            # Update the status
+            specific_change.status = Status.cancelled
+            # Update in dynamo
+            success_message = "Successfully updated change in dynamo"
+            error_message = "Error updating change in dynamo"
+            response = await _update_dynamo_with_change(
+                user,
+                extended_request,
+                log_data,
+                response,
+                success_message,
+                error_message,
+                visible=False,
+            )
+        else:
+            raise NoMatchingRequest(
+                "Unable to find a compatible non-applied change with "
+                "that ID in this policy request"
+            )
+
     elif request_changes.command == Command.cancel_request:
         if extended_request.request_status != RequestStatus.pending:
             raise InvalidRequestParameter(
@@ -1223,9 +1305,20 @@ async def parse_and_apply_policy_request_modification(
             )
         for change in extended_request.changes.changes:
             if change.status == Status.applied:
-                raise InvalidRequestParameter(
-                    "Request cannot be cancelled as at least one change has been applied already"
+                response.errors += 1
+                response.action_results.append(
+                    ActionResult(
+                        status="error",
+                        message=(
+                            "Request cannot be cancelled because at least one change has been applied already. "
+                            "Please apply or cancel the other changes."
+                        ),
+                    )
                 )
+                response = await maybe_approve_reject_request(
+                    extended_request, user, log_data, response
+                )
+                return response
 
         extended_request.request_status = RequestStatus.cancelled
         success_message = "Successfully cancelled request"
@@ -1243,9 +1336,20 @@ async def parse_and_apply_policy_request_modification(
             )
         for change in extended_request.changes.changes:
             if change.status == Status.applied:
-                raise InvalidRequestParameter(
-                    "Request cannot be rejected as at least one change has been applied already"
+                response.errors += 1
+                response.action_results.append(
+                    ActionResult(
+                        status="error",
+                        message=(
+                            "Request cannot be rejected because at least one change has been applied already. "
+                            "Please apply or cancel the other changes."
+                        ),
+                    )
                 )
+                response = await maybe_approve_reject_request(
+                    extended_request, user, log_data, response
+                )
+                return response
 
         extended_request.request_status = RequestStatus.rejected
         success_message = "Successfully rejected request"
@@ -1263,6 +1367,8 @@ async def parse_and_apply_policy_request_modification(
             user, extended_request, log_data, response, success_message, error_message
         )
 
+    # This marks a request as complete. This essentially means that all necessary actions have been taken with the
+    # request, and doesn't apply any changes.
     elif request_changes.command == Command.approve_request:
         if extended_request.request_status != RequestStatus.pending:
             raise InvalidRequestParameter(
@@ -1270,74 +1376,14 @@ async def parse_and_apply_policy_request_modification(
                 f"status is {extended_request.request_status.value}"
             )
 
-        approve_change_model = ApproveRequestModificationModel.parse_obj(
-            request_changes
-        )
         # Save current policy by populating "old" policies at the time of application for historical record
         extended_request = await populate_old_policies(extended_request, user)
-        for change in extended_request.changes.changes:
-            if change.status == Status.applied:
-                log_data["message"] = "Change already applied, skipping change"
-                log_data["change"] = change.dict()
-                log.warn(log_data)
-                response.errors += 1
-                response.action_results.append(
-                    ActionResult(
-                        status="error",
-                        message=f"{change.change_type.value} change already applied, skipping change",
-                    )
-                )
-                continue
-
-            if approve_change_model.policy_request_changes:
-                # Iterate through the request body for any optional updates before applying
-                for (
-                    policy_request_change
-                ) in approve_change_model.policy_request_changes:
-                    if (
-                        policy_request_change.change_id == change.id
-                        and change.change_type
-                        in [
-                            ChangeType.inline_policy,
-                            ChangeType.resource_policy,
-                            ChangeType.assume_role_policy,
-                        ]
-                    ):
-                        change.policy.policy_document = (
-                            policy_request_change.policy_document
-                        )
-                        break
-
-            if change.change_type == ChangeType.resource_policy:
-                if not change.supported:
-                    response.errors += 1
-                    response.action_results.append(
-                        ActionResult(
-                            status="error",
-                            message=f"Resource policy change for {change.arn} "
-                            "not supported",
-                        )
-                    )
-                    continue
-                # We don't support auto-application of resource policies on clicking the approve button currently
-                # An admin has to manually click the apply change button for this to work
-                response.errors += 1
-                response.action_results.append(
-                    ActionResult(
-                        status="error",
-                        message=f"Resource policy change for {change.arn} "
-                        "not included in approve, please apply "
-                        "this change individually",
-                    )
-                )
-                continue
-            else:
-                await apply_changes_to_role(extended_request, response, user, change.id)
-
-        success_message = "Successfully updated changes in dynamo"
-        error_message = "Error updating changes in dynamo"
         extended_request.request_status = RequestStatus.approved
         extended_request.reviewer = user
+
+        success_message = "Successfully updated request status"
+        error_message = "Error updating request in dynamo"
+
         response = await _update_dynamo_with_change(
             user,
             extended_request,
@@ -1350,6 +1396,10 @@ async def parse_and_apply_policy_request_modification(
         await send_communications_policy_change_request_v2(extended_request)
         account_id = await get_resource_account(extended_request.arn)
         await aws.fetch_iam_role(account_id, extended_request.arn, force_refresh=True)
+
+    response = await maybe_approve_reject_request(
+        extended_request, user, log_data, response
+    )
 
     log_data["message"] = "Done parsing/applying request modification changes"
     log_data["request"] = extended_request.dict()

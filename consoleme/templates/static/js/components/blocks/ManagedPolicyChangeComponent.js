@@ -27,12 +27,14 @@ class ManagedPolicyChangeComponent extends Component {
 
     this.sendProposedPolicy = sendProposedPolicy.bind(this);
     this.onSubmitChange = this.onSubmitChange.bind(this);
+    this.onCancelChange = this.onCancelChange.bind(this);
     this.reloadDataFromBackend = props.reloadDataFromBackend;
   }
 
   componentDidUpdate(prevProps) {
     if (
-      JSON.stringify(prevProps.change) !== JSON.stringify(this.props.change)
+      JSON.stringify(prevProps.change) !== JSON.stringify(this.props.change) ||
+      prevProps.requestReadOnly !== this.props.requestReadOnly
     ) {
       this.setState(
         {
@@ -55,6 +57,10 @@ class ManagedPolicyChangeComponent extends Component {
     this.sendProposedPolicy("apply_change");
   }
 
+  onCancelChange() {
+    this.sendProposedPolicy("cancel_change");
+  }
+
   render() {
     const {
       change,
@@ -70,14 +76,6 @@ class ManagedPolicyChangeComponent extends Component {
       ) : (
         <span style={{ color: "green" }}>Attach</span>
       );
-
-    const closeIcon = (
-      <Header textAlign="right">
-        <Button negative circular icon color="white">
-          <Icon name="close" />
-        </Button>
-      </Header>
-    );
 
     const headerContent = (
       <Header size="large">
@@ -99,6 +97,20 @@ class ManagedPolicyChangeComponent extends Component {
         </Grid.Column>
       ) : null;
 
+    const cancelChangesButton =
+      (config.can_approve_reject || config.can_update_cancel) &&
+      change.status === "not_applied" &&
+      !requestReadOnly ? (
+        <Grid.Column>
+          <Button
+            content="Cancel Change"
+            negative
+            fluid
+            onClick={this.onCancelChange}
+          />
+        </Grid.Column>
+      ) : null;
+
     const viewOnlyInfo =
       requestReadOnly && change.status === "not_applied" ? (
         <Grid.Column>
@@ -112,9 +124,19 @@ class ManagedPolicyChangeComponent extends Component {
     const changesAlreadyAppliedContent =
       change.status === "applied" ? (
         <Grid.Column>
-          <Message info>
+          <Message positive>
             <Message.Header>Change already applied</Message.Header>
             <p>This change has already been applied and cannot be modified.</p>
+          </Message>
+        </Grid.Column>
+      ) : null;
+
+    const changesAlreadyCancelledContent =
+      change.status === "cancelled" ? (
+        <Grid.Column>
+          <Message negative>
+            <Message.Header>Change cancelled</Message.Header>
+            <p>This change has been cancelled and cannot be modified.</p>
           </Message>
         </Grid.Column>
       ) : null;
@@ -171,8 +193,10 @@ class ManagedPolicyChangeComponent extends Component {
         </Grid.Row>
         <Grid.Row columns="equal">
           {applyChangesButton}
+          {cancelChangesButton}
           {viewOnlyInfo}
           {changesAlreadyAppliedContent}
+          {changesAlreadyCancelledContent}
         </Grid.Row>
       </Grid>
     ) : null;
@@ -182,7 +206,6 @@ class ManagedPolicyChangeComponent extends Component {
         <Dimmer active={isLoading} inverted>
           <Loader />
         </Dimmer>
-        {closeIcon}
         {headerContent}
         {policyChangeContent}
       </Segment>

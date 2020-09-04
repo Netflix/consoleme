@@ -738,6 +738,7 @@ components:
           enum:
             - applied
             - not_applied
+            - cancelled
         id:
           type: string
     InlinePolicyChangeModel:
@@ -1240,6 +1241,7 @@ components:
             - cancel_request
             - apply_change
             - update_change
+            - cancel_change
             - move_back_to_pending
     CommentRequestModificationModel:
       allOf:
@@ -1273,7 +1275,18 @@ components:
               type: object
             change_id:
               type: string
-    CancelRequestModificationModel:
+    CancelChangeModificationModel:
+      allOf:
+        - $ref: "#/components/schemas/RequestModificationBaseModel"
+        - type: object
+          required:
+            - change_id
+          properties:
+            policy_document:
+              type: object
+            change_id:
+              type: string
+    ChangeRequestStatusodificationModel:
       allOf:
         - $ref: "#/components/schemas/RequestModificationBaseModel"
     MoveToPendingRequestModificationModel:
@@ -1309,7 +1322,7 @@ components:
             - $ref: "#/components/schemas/ApplyChangeModificationModel"
             - $ref: "#/components/schemas/ApproveRequestModificationModel"
             - $ref: "#/components/schemas/MoveToPendingRequestModificationModel"
-            - $ref: "#/components/schemas/CancelRequestModificationModel"
+            - $ref: "#/components/schemas/ChangeRequestStatusodificationModel"
           discriminator:
             propertyName: command
             mapping:
