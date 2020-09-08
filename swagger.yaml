@@ -706,8 +706,6 @@ components:
       required:
         - principal_arn
         - change_type
-        - resources
-        - status
       properties:
         principal_arn:
           type: string
@@ -728,6 +726,7 @@ components:
               assume_role_policy: "#/components/schemas/AssumeRolePolicyChangeModel"
         resources:
           type: array
+          default: []
           items:
             $ref: "#/components/schemas/ResourceModel"
         version:
@@ -735,6 +734,7 @@ components:
           default: 2.0
         status:
           type: string
+          default: not_applied
           enum:
             - applied
             - not_applied
@@ -745,14 +745,11 @@ components:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
         - type: object
-          required:
-            - policy_name
-            - new
-            - policy
           properties:
             policy_name:
               type: string
             new:
+              default: true
               type: boolean
             action:
               type: string
@@ -886,8 +883,6 @@ components:
           type: string
     PolicyModel:
       type: object
-      required:
-        - policy_sha256
       properties:
         version:
           type: string

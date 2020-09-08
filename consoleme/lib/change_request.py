@@ -63,7 +63,7 @@ async def _generate_policy_sid(user: str) -> str:
     return f"cm{user_stripped}{int(time.time())}{random_string}"
 
 
-async def _generate_policy_name(policy_name: str, user: str) -> str:
+async def generate_policy_name(policy_name: str, user: str) -> str:
     """
     Generate a unique policy name identifying the user and time of the change request.
 
@@ -114,7 +114,7 @@ async def _generate_inline_policy_change_model(
     :param policy_name: Optional policy name. If not provided, one will be generated
     :return: InlinePolicyChangeModel
     """
-    policy_name = await _generate_policy_name(policy_name, user)
+    policy_name = await generate_policy_name(policy_name, user)
     policy_document = await _generate_inline_policy_model_from_statements(statements)
     change_details = {
         "change_type": ChangeType.inline_policy,
@@ -433,8 +433,8 @@ async def generate_change_model_array(
             )
 
         # Generate inline policy for the change, if applicable
-        inline_policy = await _generate_inline_iam_policy_statement_from_change_generator(
-            change
+        inline_policy = (
+            await _generate_inline_iam_policy_statement_from_change_generator(change)
         )
         if inline_policy and (
             not inline_policy.get("Action")

@@ -21,6 +21,7 @@ from consoleme.lib.aws import (
     get_resource_account,
     get_resource_policy,
 )
+from consoleme.lib.change_request import generate_policy_name
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import (
@@ -37,7 +38,7 @@ from consoleme.models import (
     Action,
     Action1,
     ActionResult,
-    ApplyChangeModificationModel,   
+    ApplyChangeModificationModel,
     AssumeRolePolicyChangeModel,
     CancelChangeModificationModel,
     ChangeModelArray,
@@ -179,6 +180,9 @@ async def generate_request_from_change_model_array(
         role_name = arn_parsed["resource_path"].split("/")[-1]
         role = await get_role_details(account_id, role_name=role_name, extended=True)
         for inline_policy_change in inline_policy_changes:
+            inline_policy_change.policy_name = await generate_policy_name(
+                inline_policy_change.policy_name, user
+            )
             await validate_inline_policy_change(inline_policy_change, user, role)
         for managed_policy_change in managed_policy_changes:
             await validate_managed_policy_change(managed_policy_change, user, role)
@@ -340,6 +344,7 @@ async def validate_inline_policy_change(
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
         "arn": change.principal_arn,
+        "policy_name": change.policy_name,
         "request": change.dict(),
         "message": "Validating inline policy change",
     }
@@ -377,7 +382,7 @@ async def validate_inline_policy_change(
         ):
             log_data[
                 "message"
-            ] = "No changes were found between the updated and existing policy."
+            ] = f"No changes were found between the updated and existing policy for policy {change.policy_name}."
             log.error(log_data)
             raise InvalidRequestParameter(log_data["message"])
         if change.policy_name == existing_policy.get("PolicyName"):
@@ -394,7 +399,7 @@ async def validate_inline_policy_change(
     if change.action == Action.attach and not seen_policy_name and not change.new:
         log_data[
             "message"
-        ] = "Inline policy not seen but request claims change is not new"
+        ] = f"Inline policy {change.policy_name} not seen but request claims change is not new"
         log.error(log_data)
         raise InvalidRequestParameter(log_data["message"])
 
