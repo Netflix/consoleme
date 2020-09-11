@@ -24,8 +24,6 @@ from consoleme.lib.cloud_credential_authorization_mapping.role_tags import (
 )
 from consoleme.lib.singleton import Singleton
 
-# TODO: Dynamic Configuration refresh story
-
 
 class CredentialAuthorizationMapping(metaclass=Singleton):
     def __init__(self) -> None:
