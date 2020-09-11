@@ -48,7 +48,6 @@ class TestHandler(AsyncTestCase):
         role_name = await handler.parse_role_name_from_arn(arn)
         self.assertEqual(role_name, "testrole")
 
-    @mock_iam
     def test_update_inline_policy_attach(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
@@ -60,7 +59,6 @@ class TestHandler(AsyncTestCase):
         }
         async_to_sync(handler.update_inline_policy)(client, role_name, policy)
 
-    @mock_iam
     def test_update_inline_policy_attach_then_detach(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
@@ -78,7 +76,6 @@ class TestHandler(AsyncTestCase):
         }
         async_to_sync(handler.update_inline_policy)(client, role_name, detach_policy)
 
-    @mock_iam
     def test_update_managed_policy_attach(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
@@ -89,7 +86,6 @@ class TestHandler(AsyncTestCase):
         }
         async_to_sync(handler.update_managed_policy)(client, role_name, policy)
 
-    @mock_iam
     def test_update_managed_policy_attach_then_detach(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
@@ -105,7 +101,6 @@ class TestHandler(AsyncTestCase):
         }
         async_to_sync(handler.update_managed_policy)(client, role_name, detach_policy)
 
-    @mock_iam
     def test_update_assume_role_policy_document(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
@@ -122,7 +117,6 @@ class TestHandler(AsyncTestCase):
         }
         async_to_sync(handler.update_assume_role_document)(client, role_name, policy)
 
-    @mock_iam
     def test_add_tag(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
@@ -130,7 +124,6 @@ class TestHandler(AsyncTestCase):
         tag = {"action": "add", "key": "testkey", "value": "testvalue"}
         async_to_sync(handler.update_tags)(client, role_name, tag)
 
-    @mock_iam
     def test_remove_tag(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
@@ -138,8 +131,6 @@ class TestHandler(AsyncTestCase):
         tag = {"action": "remove", "key": "testkey"}
         async_to_sync(handler.update_tags)(client, role_name, tag)
 
-    @mock_iam
-    @mock_sts
     def test_handler(self):
         event = [
             {
@@ -173,8 +164,6 @@ class TestHandler(AsyncTestCase):
         client.create_role(RoleName="ConsoleMe", AssumeRolePolicyDocument="{}")
         async_to_sync(handler.update_role)(event)
 
-    @mock_iam
-    @mock_sts
     def test_handler_d(self):
         event = [
             {

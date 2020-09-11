@@ -6,11 +6,12 @@ import unittest
 from datetime import datetime, timedelta
 
 import boto3
-import fakeredis
+import redislite
 import pytest
+from consoleme.config import config
 from mock import MagicMock, Mock, patch
 from mockredis import mock_strict_redis_client
-from moto import mock_dynamodb2, mock_iam, mock_lambda, mock_sts
+from moto import mock_dynamodb2, mock_iam, mock_lambda, mock_sts, mock_s3, mock_sqs, mock_sns
 from tornado.concurrent import Future
 
 MOCK_ROLE = {
@@ -27,9 +28,15 @@ MOCK_ROLE = {
             "Version": "2008-10-17",
             "Statement": [
                 {
-                    "Sid": "",
+                    "Sid": "2",
                     "Effect": "Allow",
                     "Principal": {"AWS": "arn:aws:iam::123456789012:role/FakeRole"},
+                    "Action": "sts:AssumeRole",
+                },
+                {
+                    "Sid": "1",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": "arn:aws:iam::123456789012:role/ConsoleMeInstanceProfile"},
                     "Action": "sts:AssumeRole",
                 }
             ],
@@ -76,7 +83,13 @@ MOCK_ROLE = {
     "templated": "fake/file.json",
 }
 
-fakeredis_server = fakeredis.FakeServer()
+MOCK_REDIS_DB_PATH = "/tmp/consoleme_unit_test.rdb"
+if os.path.exists(MOCK_REDIS_DB_PATH):
+    os.remove(MOCK_REDIS_DB_PATH)
+if os.path.exists(f"{MOCK_REDIS_DB_PATH}.settings"):
+    os.remove(f"{MOCK_REDIS_DB_PATH}.settings")
+
+all_roles = None
 
 
 class AioTestCase(unittest.TestCase):
@@ -104,7 +117,7 @@ class AioTestCase(unittest.TestCase):
 
 class MockBaseHandler:
     async def authorization_flow(
-        self, user=None, console_only=True, refresh_cache=False
+            self, user=None, console_only=True, refresh_cache=False
     ):
         self.user = "test@domain.com"
         self.ip = "1.2.3.4"
@@ -127,7 +140,7 @@ class MockBaseMtlsHandler:
 
 class MockAuth:
     def __init__(
-        self, restricted=False, compliance_restricted=False, get_groups_val=[]
+            self, restricted=False, compliance_restricted=False, get_groups_val=[]
     ):
         self.restricted = restricted
         self.compliance_restricted = compliance_restricted
@@ -176,7 +189,7 @@ class AWSHelper:
         return str(random.randrange(100000000000, 999999999999))
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def aws_credentials():
     """Mocked AWS Credentials for moto."""
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
@@ -185,21 +198,78 @@ def aws_credentials():
     os.environ["AWS_SESSION_TOKEN"] = "testing"
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def sts(aws_credentials):
     """Mocked STS Fixture."""
     with mock_sts():
         yield boto3.client("sts", region_name="us-east-1")
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def iam(aws_credentials):
     """Mocked IAM Fixture."""
     with mock_iam():
         yield boto3.client("iam", region_name="us-east-1")
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
+def s3(aws_credentials):
+    """Mocked S3 Fixture."""
+    with mock_s3():
+        yield boto3.client("s3", region_name="us-east-1")
+
+
+@pytest.fixture(autouse=True, scope="session")
+def sqs(aws_credentials):
+    """Mocked S3 Fixture."""
+    with mock_sqs():
+        yield boto3.client("sqs", region_name="us-east-1")
+
+
+@pytest.fixture(autouse=True, scope="session")
+def sns(aws_credentials):
+    """Mocked S3 Fixture."""
+    with mock_sns():
+        yield boto3.client("sns", region_name="us-east-1")
+
+
+@pytest.fixture(autouse=True, scope="session")
+def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
+    from asgiref.sync import async_to_sync
+    from consoleme.lib.cache import store_json_results_in_redis_and_s3
+    global all_roles
+    buckets = [
+        config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket")
+    ]
+    for bucket in buckets:
+        s3.create_bucket(Bucket=bucket)
+
+    if all_roles:
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            all_roles,
+            s3_bucket=config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket"),
+            s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file")
+        )
+        return
+    from consoleme.celery.celery_tasks import cache_roles_for_account
+    from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+    from consoleme.lib.redis import RedisHandler
+    red = RedisHandler().redis_sync()
+
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
+    for account_id in accounts_d.keys():
+        cache_roles_for_account(account_id)
+
+    cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
+    all_roles = red.hgetall(cache_key)
+    async_to_sync(store_json_results_in_redis_and_s3)(
+        all_roles,
+        s3_bucket=config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket"),
+        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file")
+    )
+
+
+@pytest.fixture(autouse=True, scope="session")
 def dynamodb(aws_credentials):
     """Mocked DynamoDB Fixture."""
     with mock_dynamodb2():
@@ -214,14 +284,14 @@ def dynamodb(aws_credentials):
         CONFIG.config["dynamodb_server"] = old_value
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True, scope="session")
 def aws_lambda(aws_credentials):
     """Mocked AWS Lambda Fixture."""
     with mock_lambda():
         yield boto3.client("lambda", region_name="us-east-1")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(autouse=True, scope="session")
 def retry():
     """Mock the retry library so that it doesn't retry."""
 
@@ -238,7 +308,7 @@ def retry():
     patch_retry.stop()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(autouse=True, scope="session")
 def iamrole_table(dynamodb):
     # Create the table:
     dynamodb.create_table(
@@ -263,7 +333,7 @@ def iamrole_table(dynamodb):
     yield dynamodb
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(autouse=True, scope="session")
 def requests_table(dynamodb):
     # Create the table:
     dynamodb.create_table(
@@ -276,7 +346,7 @@ def requests_table(dynamodb):
     yield dynamodb
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(autouse=True, scope="session")
 def users_table(dynamodb):
     # Create the table:
     dynamodb.create_table(
@@ -289,7 +359,7 @@ def users_table(dynamodb):
     yield dynamodb
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(autouse=True, scope="session")
 def dummy_requests_data(requests_table):
     user = {
         "request_id": {"S": "abc-def-ghi"},
@@ -315,7 +385,7 @@ def dummy_requests_data(requests_table):
     yield requests_table
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(autouse=True, scope="session")
 def dummy_users_data(users_table):
     user = {
         "username": {"S": "test@user.xyz"},
@@ -334,7 +404,7 @@ def dummy_users_data(users_table):
     yield users_table
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True, scope="session")
 def iam_sync_roles(iam):
     statement_policy = json.dumps(
         {
@@ -343,10 +413,25 @@ def iam_sync_roles(iam):
         }
     )
 
+    assume_role_policy = json.dumps(
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {
+                        "AWS": "arn:aws:iam::123456789012:role/ConsoleMeInstanceProfile"
+                    },
+                    "Action": "sts:AssumeRole"
+                }
+            ]
+        }
+    )
+
     # Create the role that CloudAux will assume:
-    iam.create_role(RoleName="ConsoleMe", AssumeRolePolicyDocument="{}")
+    iam.create_role(RoleName="ConsoleMe", AssumeRolePolicyDocument=assume_role_policy)
     # Create a generic test instance profile
-    iam.create_role(RoleName="TestInstanceProfile", AssumeRolePolicyDocument="{}")
+    iam.create_role(RoleName="TestInstanceProfile", AssumeRolePolicyDocument=assume_role_policy)
 
     # Create a managed policy:
     policy_one = iam.create_policy(
@@ -358,20 +443,24 @@ def iam_sync_roles(iam):
 
     # Create 50 IAM roles for syncing:
     for x in range(0, 10):
-        iam.create_role(RoleName=f"RoleNumber{x}", AssumeRolePolicyDocument="{}")
+        iam.create_role(RoleName=f"RoleNumber{x}", AssumeRolePolicyDocument=assume_role_policy)
         iam.put_role_policy(
             RoleName=f"RoleNumber{x}",
             PolicyName="SomePolicy",
             PolicyDocument=statement_policy,
         )
         iam.tag_role(
-            RoleName=f"RoleNumber{x}", Tags=[{"Key": "Number", "Value": f"{x}"}]
+            RoleName=f"RoleNumber{x}", Tags=[
+                {"Key": "Number", "Value": f"{x}"},
+                {"Key": "authorized_groups", "Value": f"group{x},group{x}@example.com"},
+                {"Key": "authorized_groups_cli_only", "Value": f"group{x}-cli,group{x}-cli@example.com"}
+            ]
         )
         iam.attach_role_policy(RoleName=f"RoleNumber{x}", PolicyArn=policy_one)
         iam.attach_role_policy(RoleName=f"RoleNumber{x}", PolicyArn=policy_two)
 
     # Create the dynamic user role:
-    iam.create_role(RoleName="awsaccount_user", AssumeRolePolicyDocument="{}")
+    iam.create_role(RoleName="awsaccount_user", AssumeRolePolicyDocument=assume_role_policy)
     iam.put_role_policy(
         RoleName="awsaccount_user",
         PolicyName="SomePolicy",
@@ -381,7 +470,7 @@ def iam_sync_roles(iam):
 
     # Create another dynamic user role
 
-    iam.create_role(RoleName="cm_someuser_N", AssumeRolePolicyDocument="{}")
+    iam.create_role(RoleName="cm_someuser_N", AssumeRolePolicyDocument=assume_role_policy)
     iam.put_role_policy(
         RoleName="cm_someuser_N",
         PolicyName="SomePolicy",
@@ -392,7 +481,7 @@ def iam_sync_roles(iam):
     yield iam
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True, scope="session")
 def www_user():
     return json.loads(
         """{
@@ -481,19 +570,31 @@ def www_user():
     )
 
 
-class FakeRedis(fakeredis.FakeStrictRedis):
+class FakeRedis(redislite.StrictRedis):
     def __init__(self, *args, **kwargs):
-        super(FakeRedis, self).__init__(*args, **kwargs, server=fakeredis_server)
+        if kwargs.get('connection_pool'):
+            del kwargs['connection_pool']
+        super(FakeRedis, self).__init__(MOCK_REDIS_DB_PATH, *args, **kwargs, decode_responses=True)
 
 
-@pytest.fixture(autouse=True)
-def redis(mocker):
-    mocker.patch("redis.Redis", FakeRedis)
-    mocker.patch("redis.StrictRedis", FakeRedis)
+@pytest.fixture(autouse=True, scope="session")
+def redis(session_mocker):
+    session_mocker.patch("redis.Redis", FakeRedis)
+    session_mocker.patch("redis.StrictRedis", FakeRedis)
+    session_mocker.patch("consoleme.lib.redis.redis.StrictRedis", FakeRedis)
+    session_mocker.patch("consoleme.lib.redis.redis.Redis", FakeRedis)
+    session_mocker.patch(
+        "consoleme.lib.redis.RedisHandler.redis_sync",
+        return_value=FakeRedis(),
+    )
+    session_mocker.patch(
+        "consoleme.lib.redis.RedisHandler.redis",
+        return_value=FakeRedis(),
+    )
     return True
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def user_iam_role(iamrole_table, www_user):
     from consoleme.lib.dynamo import IAMRoleDynamoHandler
 
@@ -508,7 +609,7 @@ def user_iam_role(iamrole_table, www_user):
     ddb.sync_iam_role_for_account(role_entry)
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True, scope="session")
 def mock_exception_stats():
     p = patch("consoleme.exceptions.exceptions.get_plugin_by_name")
 
@@ -517,7 +618,7 @@ def mock_exception_stats():
     p.stop()
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True, scope="session")
 def mock_celery_stats(mock_exception_stats):
     p = patch("consoleme.celery.celery_tasks.stats")
 
@@ -526,7 +627,7 @@ def mock_celery_stats(mock_exception_stats):
     p.stop()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def mock_async_http_client():
     p_return_value = Mock()
     p_return_value.body = "{}"
@@ -539,7 +640,7 @@ def mock_async_http_client():
     p.stop()
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def user_role_lambda(aws_lambda):
     aws_lambda.create_function(
         FunctionName="UserRoleCreator",

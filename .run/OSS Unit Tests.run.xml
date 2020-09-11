@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="OSS Unit Tests" type="tests" factoryName="py.test">
-    <module name="consoleme-deploy" />
+    <module name="consoleme-deploy-2" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -25,7 +25,7 @@
     </EXTENSION>
     <option name="_new_keywords" value="&quot;&quot;" />
     <option name="_new_parameters" value="&quot;&quot;" />
-    <option name="_new_additionalArguments" value="&quot;-k test_generate_changes&quot;" />
+    <option name="_new_additionalArguments" value="&quot;-k test_cache_roles_for_account&quot;" />
     <option name="_new_target" value="&quot;$PROJECT_DIR$/consoleme/tests&quot;" />
     <option name="_new_targetType" value="&quot;PATH&quot;" />
     <method v="2" />

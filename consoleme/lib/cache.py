@@ -34,6 +34,7 @@ async def store_json_results_in_redis_and_s3(
     redis_data_type: str = "str",
     s3_bucket: str = None,
     s3_key: str = None,
+    json_encoder=None,
 ):
     """
     Stores data in Redis and S3, depending on configuration
@@ -63,7 +64,7 @@ async def store_json_results_in_redis_and_s3(
             if isinstance(data, str):
                 red.set(redis_key, data)
             else:
-                red.set(redis_key, json.dumps(data, cls=SetEncoder))
+                red.set(redis_key, json.dumps(data, cls=SetEncoder, default=json_encoder))
         elif redis_data_type == "hash":
             red.hmset(redis_key, data)
         else:
@@ -76,7 +77,7 @@ async def store_json_results_in_redis_and_s3(
         put_object(
             Bucket=s3_bucket,
             Key=s3_key,
-            Body=json.dumps(data_for_s3, cls=SetEncoder, indent=2).encode(),
+            Body=json.dumps(data_for_s3, cls=SetEncoder, default=json_encoder, indent=2).encode(),
         )
 
 
@@ -88,6 +89,8 @@ async def retrieve_json_data_from_redis_or_s3(
     cache_to_redis_if_data_in_s3: bool = True,
     max_age: Optional[int] = None,
     default: Optional = None,
+    json_object_hook: Optional = None,
+    json_encoder: Optional = None,
 ):
     """
     Retrieve data from Redis as a priority. If data is unavailable in Redis, fall back to S3 and attempt to store
@@ -114,7 +117,7 @@ async def retrieve_json_data_from_redis_or_s3(
         if redis_data_type == "str":
             data_s = red.get(redis_key)
             if data_s:
-                data = json.loads(data_s)
+                data = json.loads(data_s, object_hook=json_object_hook)
         elif redis_data_type == "hash":
             data = red.hgetall(redis_key)
         else:
@@ -129,7 +132,7 @@ async def retrieve_json_data_from_redis_or_s3(
     if not data and s3_bucket and s3_key:
         s3_object = get_object(Bucket=s3_bucket, Key=s3_key)
         s3_object_content = s3_object["Body"].read()
-        data_object = json.loads(s3_object_content)
+        data_object = json.loads(s3_object_content, object_hook=json_object_hook)
         data = data_object["data"]
 
         if data and max_age:
@@ -139,7 +142,7 @@ async def retrieve_json_data_from_redis_or_s3(
                 raise ExpiredData(f"Data in S3 is older than {max_age} seconds.")
         if redis_key and cache_to_redis_if_data_in_s3:
             await store_json_results_in_redis_and_s3(
-                data, redis_key=redis_key, redis_data_type=redis_data_type
+                data, redis_key=redis_key, redis_data_type=redis_data_type, json_encoder=json_encoder
             )
 
     if data is not None:

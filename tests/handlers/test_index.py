@@ -40,7 +40,7 @@ class TestIndexHandler(AsyncHTTPTestCase):
 
 
 @pytest.mark.usefixtures(
-    "retry", "user_role_lambda", "iam_sync_roles", "sts", "iamrole_table"
+    "retry", "user_role_lambda", "iam_sync_roles", "sts"
 )
 class TestIndexPostHandler(AsyncHTTPTestCase):
     def __init__(self, *args, **kwargs):
