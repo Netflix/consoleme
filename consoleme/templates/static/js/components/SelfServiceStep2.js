@@ -125,8 +125,7 @@ class SelfServiceStep2 extends Component {
                     target="_blank"
                   >
                     {role.arn}
-                  </a>
-                  .&nbsp; You can also select multiple permissions.
+                  </a>.&nbsp; You can also select multiple permissions.
                 </Header.Subheader>
               </Header>
               <Form>

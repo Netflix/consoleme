@@ -140,14 +140,7 @@ class SelfService extends Component {
   }
 
   getCurrentSelfServiceStep() {
-    const {
-      admin_bypass_approval_enabled,
-      config,
-      currStep,
-      permissions,
-      role,
-      services,
-    } = this.state;
+    const { admin_bypass_approval_enabled, config, currStep, permissions, role, services } = this.state;
 
     let SelfServiceStep = null;
     switch (currStep) {

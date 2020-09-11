@@ -1,7 +1,7 @@
-const useFetch = (endpoint) => {
+const useFetch = endpoint => {
   const defaultHeader = {
     Accept: "application/json",
-    "Content-Type": "application/json",
+    "Content-Type": "application/json"
   };
   const customFetch = (
     url,
@@ -11,16 +11,16 @@ const useFetch = (endpoint) => {
   ) => {
     const options = {
       method,
-      headers,
+      headers
     };
     if (body) options.body = JSON.stringify(body);
     return fetch(url, options)
-      .then((response) => response.json())
-      .catch((err) => {
+      .then(response => response.json())
+      .catch(err => {
         throw new Error(err);
       });
   };
-  const get = (id) => {
+  const get = id => {
     const url = `${endpoint}${id ? `/${id}` : ""}`;
     return customFetch(url);
   };
@@ -44,7 +44,7 @@ const useFetch = (endpoint) => {
     get,
     post,
     put,
-    del,
+    del
   };
 };
 export default useFetch;

@@ -5,11 +5,11 @@ async function updateDynamicConfig(editor_value) {
     return false;
   }
 
-  let arr = { new_config: eval(editor_value).getValue() };
+  let arr = {'new_config': eval(editor_value).getValue()};
   let json = JSON.stringify(arr);
-  let dimmer = $(".ui.dimmer");
-  dimmer.addClass("active");
+  let dimmer = $('.ui.dimmer');
+  dimmer.addClass('active');
   let res = await sendRequestCommon(json);
-  dimmer.removeClass("active");
+  dimmer.removeClass('active');
   await handleResponse(res);
 }

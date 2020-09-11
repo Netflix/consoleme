@@ -1,47 +1,40 @@
-import { Field, reduxForm } from "redux-form";
-import React from "react";
-import { CustomSearchField } from "./SelfServiceFormComponents";
+import {Field, reduxForm} from "redux-form";
+import React from 'react';
+import {CustomSearchField} from './SelfServiceFormComponents';
+
 
 // Warn on Cross Account S3 Write
 // Fix Previous and Next buttons. Order and arrow
-const required = (value) => (value ? undefined : "Required");
+const required = value => value ? undefined : 'Required'
 
-const semanticCheckbox = ({ input, label }) => (
+const semanticCheckbox = ({input, label}) => (
   <div className="ui checkbox">
-    <input type="checkbox" readOnly="" tabIndex="0" {...input} />
-    <label style={{ width: "auto" }}>{label}</label>
+    <input type="checkbox" readOnly="" tabIndex="0" {...input}/>
+    <label style={{width: "auto"}}>{label}</label>
   </div>
 );
 
-const TextField = ({
-  input,
-  label,
-  type,
-  meta: { touched, error, warning },
-}) => (
+const TextField = ({input, label, type, meta: {touched, error, warning}}) => (
   <div>
     <label>{label}</label>
     <div>
-      <input {...input} placeholder={label} type={type} />
-      {touched &&
-        ((error && <strong style={{ color: "red" }}>{error}</strong>) ||
-          (warning && <strong style={{ color: "red" }}>{warning}</strong>))}
+      <input {...input} placeholder={label} type={type}/>
+      {touched && ((error && <strong style={{color: 'red'}}>{error}</strong>) || (warning &&
+        <strong style={{color: 'red'}}>{warning}</strong>))}
     </div>
   </div>
 );
 
-const S3Form = (props) => {
-  const { choices } = props;
-  choices.prefix = "/*";
+
+const S3Form = props => {
+  const {choices} = props;
+  choices.prefix = "/*"
   return (
     <div>
-      <div dangerouslySetInnerHTML={{ __html: custom_s3_guidance }}></div>
-      <br />
+      <div dangerouslySetInnerHTML={{__html: custom_s3_guidance}}></div>
+      <br/>
       <div className="field">
-        <label
-          style={{ width: "auto" }}
-          dangerouslySetInnerHTML={{ __html: custom_s3_bucket_name_header }}
-        ></label>
+        <label style={{width: "auto"}} dangerouslySetInnerHTML={{__html: custom_s3_bucket_name_header}}></label>
         <div>
           <Field
             name="bucket"
@@ -55,9 +48,7 @@ const S3Form = (props) => {
         </div>
       </div>
       <div className="field">
-        <label style={{ width: "auto" }}>
-          Prefix (Folder under S3 that you need access to).
-        </label>
+        <label style={{width: "auto"}}>Prefix (Folder under S3 that you need access to).</label>
         <Field
           name="prefix"
           component="input"
@@ -71,46 +62,19 @@ const S3Form = (props) => {
       {/*</div>*/}
       <div>
         <div>
-          <label>
-            <b>Desired Permissions</b>
-          </label>
-          <br />
+          <label><b>Desired Permissions</b></label><br/>
           <div>
             <div>
-              <Field
-                name="list"
-                id="list"
-                label="LIST Objects"
-                component={semanticCheckbox}
-                type="checkbox"
-              />
+              <Field name="list" id="list" label="LIST Objects" component={semanticCheckbox} type="checkbox"/>
             </div>
             <div>
-              <Field
-                name="get"
-                id="get"
-                label="GET Objects"
-                component={semanticCheckbox}
-                type="checkbox"
-              />
+              <Field name="get" id="get" label="GET Objects" component={semanticCheckbox} type="checkbox"/>
             </div>
             <div>
-              <Field
-                name="put"
-                id="put"
-                label="PUT Objects"
-                component={semanticCheckbox}
-                type="checkbox"
-              />
+              <Field name="put" id="put" label="PUT Objects" component={semanticCheckbox} type="checkbox"/>
             </div>
             <div>
-              <Field
-                name="delete"
-                id="delete"
-                label="DELETE Objects"
-                component={semanticCheckbox}
-                type="checkbox"
-              />
+              <Field name="delete" id="delete" label="DELETE Objects" component={semanticCheckbox} type="checkbox"/>
             </div>
           </div>
         </div>
@@ -119,9 +83,9 @@ const S3Form = (props) => {
   );
 };
 
-const SQSForm = (props) => {
-  const { choices } = props;
-  choices.permission = "";
+const SQSForm = props => {
+  const {choices} = props;
+  choices.permission = ""
   return (
     <div>
       <div className="field">
@@ -138,55 +102,22 @@ const SQSForm = (props) => {
         </div>
       </div>
       <div>
-        <label>
-          <b>Desired Permissions</b>
-        </label>
-        <br />
+        <label><b>Desired Permissions</b></label><br/>
         <div>
           <div>
-            <Field
-              name="get"
-              id="get"
-              label="Get Queue Attributes/URL"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="get" id="get" label="Get Queue Attributes/URL" component={semanticCheckbox} type="checkbox"/>
           </div>
           <div>
-            <Field
-              name="receive"
-              id="receive"
-              label="Receive Messages"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="receive" id="receive" label="Receive Messages" component={semanticCheckbox} type="checkbox"/>
           </div>
           <div>
-            <Field
-              name="send"
-              id="send"
-              label="Send Messages"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="send" id="send" label="Send Messages" component={semanticCheckbox} type="checkbox"/>
           </div>
           <div>
-            <Field
-              name="delete"
-              id="delete"
-              label="Delete Messages"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="delete" id="delete" label="Delete Messages" component={semanticCheckbox} type="checkbox"/>
           </div>
           <div>
-            <Field
-              name="set"
-              id="set"
-              label="Set Queue Attributes"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="set" id="set" label="Set Queue Attributes" component={semanticCheckbox} type="checkbox"/>
           </div>
         </div>
       </div>
@@ -194,9 +125,9 @@ const SQSForm = (props) => {
   );
 };
 
-const SNSForm = (props) => {
-  const { choices } = props;
-  choices.permission = "";
+const SNSForm = props => {
+  const {choices} = props;
+  choices.permission = ""
   return (
     <div>
       <div className="field">
@@ -213,46 +144,22 @@ const SNSForm = (props) => {
         </div>
       </div>
       <div>
-        <label>
-          <b>Desired Permissions</b>
-        </label>
-        <br />
+        <label><b>Desired Permissions</b></label><br/>
         <div>
           <div>
-            <Field
-              name="get"
-              id="get"
-              label="Get Topic/Endpoint Attributes"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="get" id="get" label="Get Topic/Endpoint Attributes" component={semanticCheckbox}
+                   type="checkbox"/>
           </div>
           <div>
-            <Field
-              name="publish"
-              id="publish"
-              label="Publish Messages"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="publish" id="publish" label="Publish Messages" component={semanticCheckbox} type="checkbox"/>
           </div>
           <div>
-            <Field
-              name="subscribe"
-              id="subscribe"
-              label="Subscribe to Topic"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="subscribe" id="subscribe" label="Subscribe to Topic" component={semanticCheckbox}
+                   type="checkbox"/>
           </div>
           <div>
-            <Field
-              name="unsubscribe"
-              id="unsubscribe"
-              label="Unsubscribe from Topic"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="unsubscribe" id="unsubscribe" label="Unsubscribe from Topic" component={semanticCheckbox}
+                   type="checkbox"/>
           </div>
         </div>
       </div>
@@ -260,34 +167,19 @@ const SNSForm = (props) => {
   );
 };
 
-const R53Form = (props) => {
-  const { choices } = props;
-  choices.permission = "";
+const R53Form = props => {
+  const {choices} = props;
+  choices.permission = ""
   return (
     <div>
       <div>
-        <label>
-          <b>Desired Permissions</b>
-        </label>
-        <br />
+        <label><b>Desired Permissions</b></label><br/>
         <div>
           <div>
-            <Field
-              name="list"
-              id="list"
-              label="List Records"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="list" id="list" label="List Records" component={semanticCheckbox} type="checkbox"/>
           </div>
           <div>
-            <Field
-              name="change"
-              id="change"
-              label="Change Records"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="change" id="change" label="Change Records" component={semanticCheckbox} type="checkbox"/>
           </div>
         </div>
       </div>
@@ -295,9 +187,9 @@ const R53Form = (props) => {
   );
 };
 
-const STSForm = (props) => {
-  const { choices } = props;
-  choices.permission = "";
+const STSForm = props => {
+  const {choices} = props;
+  choices.permission = ""
   return (
     <div>
       <div className="field">
@@ -317,25 +209,16 @@ const STSForm = (props) => {
   );
 };
 
-const EC2Form = (props) => {
-  const { choices } = props;
-  choices.permission = "";
+const EC2Form = props => {
+  const {choices} = props;
+  choices.permission = ""
   return (
     <div>
       <div>
-        <label>
-          <b>Desired Permissions</b>
-        </label>
-        <br />
+        <label><b>Desired Permissions</b></label><br/>
         <div>
           <div>
-            <Field
-              name="volmount"
-              id="volmount"
-              label="VolMount"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="volmount" id="volmount" label="VolMount" component={semanticCheckbox} type="checkbox"/>
           </div>
         </div>
       </div>
@@ -343,25 +226,17 @@ const EC2Form = (props) => {
   );
 };
 
-const RDSForm = (props) => {
-  const { choices } = props;
-  choices.permission = "";
+const RDSForm = props => {
+  const {choices} = props;
+  choices.permission = ""
   return (
     <div>
       <div>
-        <label>
-          <b>Desired Permissions</b>
-        </label>
-        <br />
+        <label><b>Desired Permissions</b></label><br/>
         <div>
           <div>
-            <Field
-              name="passrole"
-              id="passrole"
-              label="Passrole to rds-monitoring-role"
-              component={semanticCheckbox}
-              type="checkbox"
-            />
+            <Field name="passrole" id="passrole" label="Passrole to rds-monitoring-role" component={semanticCheckbox}
+                   type="checkbox"/>
           </div>
         </div>
       </div>
@@ -369,17 +244,15 @@ const RDSForm = (props) => {
   );
 };
 
-const SESForm = (props) => {
-  const { choices } = props;
-  choices.permission = "";
-  choices.fromaddress = ses_from_address;
+const SESForm = props => {
+  const {choices} = props;
+  choices.permission = ""
+  choices.fromaddress = ses_from_address
   return (
     <div>
       <div className="field">
-        <label style={{ width: "auto" }}>
-          Email Address to send from (Must end in "@
-          {ses_from_address.split("@")[1]}")
-        </label>
+        <label style={{width: "auto"}}>Email Address to send from (Must end in
+          "@{ses_from_address.split("@")[1]}")</label>
         <div>
           <Field
             name="fromaddress"
@@ -394,52 +267,45 @@ const SESForm = (props) => {
   );
 };
 
-const SelfServiceFormPage2 = (props) => {
-  const { choices, handleSubmit, previousPage } = props;
+const SelfServiceFormPage2 = props => {
+  const {choices, handleSubmit, previousPage} = props;
 
   if (choices.arn) {
-    arn = choices.arn;
-    account_id = choices.arn.split(":")[4];
+    arn = choices.arn
+    account_id = choices.arn.split(":")[4]
   }
 
   if (choices.choose === "CUSTOM") {
-    handleSubmit();
+    handleSubmit()
   }
   return (
     <div>
       <form onSubmit={handleSubmit} className="ui form">
-        {choices.choose === "R53" && <R53Form choices={choices} />}
-        {choices.choose === "S3" && <S3Form choices={choices} />}
-        {choices.choose === "SES" && <SESForm choices={choices} />}
-        {choices.choose === "SQS" && <SQSForm choices={choices} />}
-        {choices.choose === "SNS" && <SNSForm choices={choices} />}
-        {choices.choose === "STS" && <STSForm choices={choices} />}
-        {choices.choose === "EC2" && <EC2Form choices={choices} />}
-        {choices.choose === "RDS" && <RDSForm choices={choices} />}
+        {choices.choose === "R53" && <R53Form choices={choices}/>}
+        {choices.choose === "S3" && <S3Form choices={choices}/>}
+        {choices.choose === "SES" && <SESForm choices={choices}/>}
+        {choices.choose === "SQS" && <SQSForm choices={choices}/>}
+        {choices.choose === "SNS" && <SNSForm choices={choices}/>}
+        {choices.choose === "STS" && <STSForm choices={choices}/>}
+        {choices.choose === "EC2" && <EC2Form choices={choices}/>}
+        {choices.choose === "RDS" && <RDSForm choices={choices}/>}
         <div>
-          <button
-            type="button"
-            className="ui positive button previous"
-            onClick={previousPage}
-            style={{ margin: "10px" }}
-          >
+          <button type="button" className="ui positive button previous" onClick={previousPage}
+                  style={{margin: "10px"}}>
             Previous
           </button>
-          <button
-            type="submit"
-            className="ui positive button next"
-            style={{ margin: "10px" }}
-          >
+          <button type="submit" className="ui positive button next" style={{margin: "10px"}}>
             Next
           </button>
         </div>
       </form>
     </div>
-  );
+  )
+
 };
 
 export default reduxForm({
   form: "wizard", //                 <------ same form name
   destroyOnUnmount: false, //        <------ preserve form data
-  forceUnregisterOnUnmount: true, // <------ unregister fields on unmount
+  forceUnregisterOnUnmount: true // <------ unregister fields on unmount
 })(SelfServiceFormPage2);
