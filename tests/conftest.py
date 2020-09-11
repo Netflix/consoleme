@@ -13,8 +13,8 @@ from mockredis import mock_strict_redis_client
 from moto import (
     mock_dynamodb2,
     mock_iam,
-    mock_lambda,
     mock_s3,
+    mock_ses,
     mock_sns,
     mock_sqs,
     mock_sts,
@@ -231,8 +231,17 @@ def s3(aws_credentials):
 
 
 @pytest.fixture(autouse=True, scope="session")
+def ses(aws_credentials):
+    """Mocked SES Fixture."""
+    with mock_ses():
+        client = boto3.client("ses", region_name="us-east-1")
+        client.verify_email_address(EmailAddress="consoleme_test@example.com")
+        yield client
+
+
+@pytest.fixture(autouse=True, scope="session")
 def sqs(aws_credentials):
-    """Mocked S3 Fixture."""
+    """Mocked SQS Fixture."""
     with mock_sqs():
         yield boto3.client("sqs", region_name="us-east-1")
 
@@ -301,13 +310,6 @@ def dynamodb(aws_credentials):
 
 
 @pytest.fixture(autouse=True, scope="session")
-def aws_lambda(aws_credentials):
-    """Mocked AWS Lambda Fixture."""
-    with mock_lambda():
-        yield boto3.client("lambda", region_name="us-east-1")
-
-
-@pytest.fixture(autouse=True, scope="session")
 def retry():
     """Mock the retry library so that it doesn't retry."""
 
@@ -344,6 +346,33 @@ def iamrole_table(dynamodb):
     dynamodb.update_time_to_live(
         TableName="consoleme_iamroles_global",
         TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
+    )
+
+    yield dynamodb
+
+
+@pytest.fixture(autouse=True, scope="session")
+def policy_requests_table(dynamodb):
+    # Create the table:
+    dynamodb.create_table(
+        TableName="consoleme_policy_requests",
+        KeySchema=[{"AttributeName": "request_id", "KeyType": "HASH"}],  # Partition key
+        AttributeDefinitions=[
+            {"AttributeName": "request_id", "AttributeType": "S"},
+            {"AttributeName": "arn", "AttributeType": "S"},
+        ],
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "arn-request_id-index",
+                "KeySchema": [{"AttributeName": "arn", "KeyType": "HASH"}],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 123,
+                    "WriteCapacityUnits": 123,
+                },
+            }
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
     )
 
     yield dynamodb
@@ -614,12 +643,10 @@ def redis(session_mocker):
     session_mocker.patch("consoleme.lib.redis.redis.StrictRedis", FakeRedis)
     session_mocker.patch("consoleme.lib.redis.redis.Redis", FakeRedis)
     session_mocker.patch(
-        "consoleme.lib.redis.RedisHandler.redis_sync",
-        return_value=FakeRedis(),
+        "consoleme.lib.redis.RedisHandler.redis_sync", return_value=FakeRedis()
     )
     session_mocker.patch(
-        "consoleme.lib.redis.RedisHandler.redis",
-        return_value=FakeRedis(),
+        "consoleme.lib.redis.RedisHandler.redis", return_value=FakeRedis()
     )
     return True
 
@@ -668,19 +695,6 @@ def mock_async_http_client():
     yield p.start()
 
     p.stop()
-
-
-@pytest.fixture(scope="session")
-def user_role_lambda(aws_lambda):
-    aws_lambda.create_function(
-        FunctionName="UserRoleCreator",
-        Runtime="python3.7",
-        Role="arn:aws:iam::123456789012:role/UserRoleCreatorLambdaProfile",
-        Handler="handler",
-        Code={"ZipFile": "lolcode".encode()},
-    )
-
-    yield aws_lambda
 
 
 class MockAioHttpResponse:

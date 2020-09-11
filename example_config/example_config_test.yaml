@@ -62,10 +62,10 @@ aws:
 
 ses:
   consoleme:
-    sender: consoleme_test@fakedomain.com
+    sender: consoleme_test@example.com
     name: Consoleme
   accessui:
-    sender: access_ui_test@fakedomain.com
+    sender: access_ui_test@example.com
     name: Access UI
 
 user_role_creator:

@@ -5,7 +5,6 @@ import sys
 import urllib
 
 import boto3
-import pytest
 from mock import patch
 from mockredis import mock_strict_redis_client
 from tornado.testing import AsyncHTTPTestCase
@@ -39,7 +38,6 @@ class TestIndexHandler(AsyncHTTPTestCase):
         self.assertIn(b"signin.aws.amazon.com/oauth", response.body)
 
 
-@pytest.mark.usefixtures("retry", "user_role_lambda", "iam_sync_roles", "sts")
 class TestIndexPostHandler(AsyncHTTPTestCase):
     def __init__(self, *args, **kwargs):
         AsyncHTTPTestCase.__init__(self, *args, **kwargs)

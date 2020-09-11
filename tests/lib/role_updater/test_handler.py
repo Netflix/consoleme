@@ -1,10 +1,9 @@
 import json
 import os
+import unittest
 
 import boto3
-import tornado
 from asgiref.sync import async_to_sync
-from tornado.testing import AsyncTestCase
 
 from consoleme.lib.role_updater import handler
 
@@ -28,20 +27,28 @@ policy_document = json.dumps(
 )
 
 
-class TestHandler(AsyncTestCase):
-    @tornado.testing.gen_test
+class TestHandler(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        client = boto3.client("iam", region_name="us-east-1")
+        role_name = "role_name"
+        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
+
+    async def asyncTearDown(self):
+        role_name = "role_name"
+        from consoleme.lib.aws import delete_iam_role
+
+        await delete_iam_role("123456789012", role_name, "consoleme-unit-test")
+
     async def test_parse_account_id_from_arn(self):
         arn = "arn:aws:iam::123456789012:role/testrole"
         account_id = await handler.parse_account_id_from_arn(arn)
         self.assertEqual(account_id, "123456789012")
 
-    @tornado.testing.gen_test
     async def test_parse_role_name_from_arn(self):
         arn = "arn:aws:iam::123456789012:role/testrole"
         role_name = await handler.parse_role_name_from_arn(arn)
         self.assertEqual(role_name, "testrole")
 
-    @tornado.testing.gen_test
     async def test_parse_role_name_with_path_from_arn(self):
         arn = "arn:aws:iam::123456789012:role/path/testrole"
         role_name = await handler.parse_role_name_from_arn(arn)
@@ -50,7 +57,7 @@ class TestHandler(AsyncTestCase):
     def test_update_inline_policy_attach(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
+
         policy = {
             "action": "attach",
             "policy_name": "PolicyName",
@@ -61,7 +68,6 @@ class TestHandler(AsyncTestCase):
     def test_update_inline_policy_attach_then_detach(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
         attach_policy = {
             "action": "attach",
             "policy_name": "PolicyName",
@@ -78,7 +84,6 @@ class TestHandler(AsyncTestCase):
     def test_update_managed_policy_attach(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
         policy = {
             "action": "attach",
             "arn": "arn:aws:iam::aws:policy/AdministratorAccess",
@@ -88,7 +93,6 @@ class TestHandler(AsyncTestCase):
     def test_update_managed_policy_attach_then_detach(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
         attach_policy = {
             "action": "attach",
             "arn": "arn:aws:iam::aws:policy/AdministratorAccess",
@@ -103,7 +107,6 @@ class TestHandler(AsyncTestCase):
     def test_update_assume_role_policy_document(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
         policy = {
             "Version": "2012-10-17",
             "Statement": [
@@ -119,14 +122,12 @@ class TestHandler(AsyncTestCase):
     def test_add_tag(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
         tag = {"action": "add", "key": "testkey", "value": "testvalue"}
         async_to_sync(handler.update_tags)(client, role_name, tag)
 
     def test_remove_tag(self):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "role_name"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
         tag = {"action": "remove", "key": "testkey"}
         async_to_sync(handler.update_tags)(client, role_name, tag)
 
@@ -159,8 +160,6 @@ class TestHandler(AsyncTestCase):
                 "tags": [{"action": "add", "key": "Key", "value": "Value"}],
             }
         ]
-        client = boto3.client("iam", region_name="us-east-1")
-        client.create_role(RoleName="ConsoleMe", AssumeRolePolicyDocument="{}")
         async_to_sync(handler.update_role)(event)
 
     def test_handler_d(self):
@@ -192,6 +191,4 @@ class TestHandler(AsyncTestCase):
                 "tags": [{"action": "add", "key": "Key", "value": "Value"}],
             }
         ]
-        client = boto3.client("iam", region_name="us-east-1")
-        client.create_role(RoleName="ConsoleMe", AssumeRolePolicyDocument="{}")
         async_to_sync(handler.update_role)(event)

@@ -711,3 +711,8 @@ permission_templates:
               }
           ]
       }
+
+ses:
+  support_reference: "Please contact us at consoleme@example.com if you have any questions or concerns."
+  arn: "arn:aws:ses:us-east-1:123456789012:identity/example.com"
+  from_address_placeholder: fromaddress@example.com

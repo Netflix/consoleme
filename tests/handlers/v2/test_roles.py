@@ -1,4 +1,3 @@
-import pytest
 import ujson as json
 from mock import patch
 from tornado.testing import AsyncHTTPTestCase
@@ -115,7 +114,6 @@ class TestAccountRolesHandler(AsyncHTTPTestCase):
         self.assertDictEqual(json.loads(response.body), expected)
 
 
-@pytest.mark.usefixtures("retry", "user_role_lambda", "iam_sync_roles", "sts", "redis")
 class TestRoleDetailHandler(AsyncHTTPTestCase):
     def get_app(self):
         from consoleme.routes import make_app
@@ -259,7 +257,7 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
         if res.code == 500 and "Error occurred deleting role:":
             return
         self.assertEqual(res.code, 200)
-        self.assertDictEqual(json.loads(response.body), expected)
+        self.assertDictEqual(json.loads(res.body), expected)
 
 
 class TestRoleCloneHandler(AsyncHTTPTestCase):
