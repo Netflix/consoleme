@@ -122,7 +122,7 @@ rsa==4.6                  # via google-auth, python-jose
 s3transfer==0.3.3         # via boto3
 schema==0.7.3             # via policy-sentry
 semver==2.10.2            # via prance
-sentry-sdk==0.17.4        # via -r requirements.in
+sentry-sdk==0.16.1        # via -r requirements.in
 simplejson==3.17.2        # via -r requirements.in
 six==1.15.0               # via -r requirements.in, astroid, bleach, cloudaux, ecdsa, elasticsearch-dsl, google-api-core, google-api-python-client, google-auth, google-auth-httplib2, google-resumable-media, isodate, jsonschema, okta-jwt, openapi-spec-validator, packaging, prance, presto-python-client, protobuf, python-dateutil, python-jose, retrying, tenacity
 soupsieve==2.0.1          # via beautifulsoup4
