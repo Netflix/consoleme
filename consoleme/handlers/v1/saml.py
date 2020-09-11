@@ -47,12 +47,10 @@ class SamlHandler(BaseHandler):
                 self.set_cookie(
                     config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie
                 )
-                if "RelayState" in self.request.arguments and self_url != self.request.arguments[
-                    "RelayState"
-                ][
-                    0
-                ].decode(
-                    "utf-8"
+                if (
+                    "RelayState" in self.request.arguments
+                    and self_url
+                    != self.request.arguments["RelayState"][0].decode("utf-8")
                 ):
                     return self.redirect(
                         auth.redirect_to(

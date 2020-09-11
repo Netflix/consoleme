@@ -1,3 +1,5 @@
+import ujson as json
+
 from consoleme.config import config
 from consoleme.lib.account_indexers.aws_organizations import (
     retrieve_accounts_from_aws_organizations,
@@ -10,7 +12,6 @@ from consoleme.lib.cache import (
 )
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import CloudAccountModelArray
-import ujson as json
 
 log = config.get_logger(__name__)
 auth = get_plugin_by_name(config.get("plugins.auth"))()
@@ -50,7 +51,10 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
         s3_key = config.get("cache_cloud_accounts.s3.file")
     # Store full mapping of the model
     await store_json_results_in_redis_and_s3(
-        json.loads(account_mapping.json()), redis_key=redis_key, s3_bucket=s3_bucket, s3_key=s3_key
+        json.loads(account_mapping.json()),
+        redis_key=redis_key,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
     )
 
     return account_mapping
@@ -70,7 +74,7 @@ async def get_account_id_to_name_mapping(
             redis_key,
             s3_bucket=config.get("cache_cloud_accounts.s3.bucket"),
             s3_key=config.get("cache_cloud_accounts.s3.file"),
-            default={}
+            default={},
         )
 
     account_id_to_name = {}

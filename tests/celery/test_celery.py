@@ -5,8 +5,6 @@ import sys
 from datetime import datetime, timedelta
 from unittest import TestCase
 
-from mock import patch
-
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(APP_ROOT, ".."))
 
@@ -18,9 +16,10 @@ class TestCelerySync(TestCase):
         self.celery = celery
 
     def test_cache_roles_for_account(self):
-        from consoleme.lib.dynamo import IAMRoleDynamoHandler
         from consoleme.config.config import CONFIG
+        from consoleme.lib.dynamo import IAMRoleDynamoHandler
         from consoleme.lib.redis import RedisHandler
+
         red = RedisHandler().redis_sync()
 
         # Set the config value for the redis cache location
@@ -37,16 +36,14 @@ class TestCelerySync(TestCase):
         results = dynamo.role_table.scan(TableName="consoleme_iamroles_global")
 
         remaining_roles = [
-                              "arn:aws:iam::123456789012:role/ConsoleMe",
-                              "arn:aws:iam::123456789012:role/cm_someuser_N",
-                              "arn:aws:iam::123456789012:role/awsaccount_user",
-                              "arn:aws:iam::123456789012:role/TestInstanceProfile",
-                          ] + [f"arn:aws:iam::123456789012:role/RoleNumber{num}" for num in range(0, 10)]
+            "arn:aws:iam::123456789012:role/ConsoleMe",
+            "arn:aws:iam::123456789012:role/cm_someuser_N",
+            "arn:aws:iam::123456789012:role/awsaccount_user",
+            "arn:aws:iam::123456789012:role/TestInstanceProfile",
+        ] + [f"arn:aws:iam::123456789012:role/RoleNumber{num}" for num in range(0, 10)]
 
         self.assertEqual(results["Count"], len(remaining_roles))
-        self.assertEqual(
-            results["Count"], red.hlen("test_cache_roles_for_account")
-        )
+        self.assertEqual(results["Count"], red.hlen("test_cache_roles_for_account"))
 
         for i in results["Items"]:
             remaining_roles.remove(i["arn"])
@@ -74,8 +71,12 @@ class TestCelerySync(TestCase):
         res = self.celery.cache_roles_across_accounts()
         self.assertEqual(
             res,
-            {'function': 'consoleme.celery.celery_tasks.cache_roles_across_accounts',
-             'cache_key': 'test_cache_roles_for_account', 'num_roles': 0, 'num_accounts': 1}
+            {
+                "function": "consoleme.celery.celery_tasks.cache_roles_across_accounts",
+                "cache_key": "test_cache_roles_for_account",
+                "num_roles": 0,
+                "num_accounts": 1,
+            },
         )
 
         # Reset the config value:
@@ -88,6 +89,7 @@ class TestCelerySync(TestCase):
     def test_clear_old_redis_iam_cache(self):
         from consoleme.config.config import CONFIG
         from consoleme.lib.redis import RedisHandler
+
         red = RedisHandler().redis_sync()
 
         self.celery.REDIS_IAM_COUNT = 3

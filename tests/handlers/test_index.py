@@ -39,9 +39,7 @@ class TestIndexHandler(AsyncHTTPTestCase):
         self.assertIn(b"signin.aws.amazon.com/oauth", response.body)
 
 
-@pytest.mark.usefixtures(
-    "retry", "user_role_lambda", "iam_sync_roles", "sts"
-)
+@pytest.mark.usefixtures("retry", "user_role_lambda", "iam_sync_roles", "sts")
 class TestIndexPostHandler(AsyncHTTPTestCase):
     def __init__(self, *args, **kwargs):
         AsyncHTTPTestCase.__init__(self, *args, **kwargs)
@@ -76,7 +74,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
         }
 
         body = {
-            "role": f"arn:aws:iam::123456789012:role/rolename",
+            "role": "arn:aws:iam::123456789012:role/rolename",
             "region": "us-east-1",
             "_xsrf": "hay there!",
         }
@@ -96,7 +94,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
             "Should contain AWS login URI",
         )
 
-        body["role"] = f"arn:aws:iam::123456789012:role/userrolename"
+        body["role"] = "arn:aws:iam::123456789012:role/userrolename"
 
         result = self.fetch(
             "/role/",
@@ -140,7 +138,7 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
                 "accountId": {"S": "123456789012"},
             },
         )
-        body["role"] = f"arn:aws:iam::123456789012:role/cm_someuser_N"
+        body["role"] = "arn:aws:iam::123456789012:role/cm_someuser_N"
         result = self.fetch(
             "/role/",
             headers=headers,

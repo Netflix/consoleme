@@ -4,7 +4,6 @@ import os
 import boto3
 import tornado
 from asgiref.sync import async_to_sync
-from moto import mock_iam, mock_sts
 from tornado.testing import AsyncTestCase
 
 from consoleme.lib.role_updater import handler

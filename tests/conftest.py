@@ -6,13 +6,22 @@ import unittest
 from datetime import datetime, timedelta
 
 import boto3
-import redislite
 import pytest
-from consoleme.config import config
+import redislite
 from mock import MagicMock, Mock, patch
 from mockredis import mock_strict_redis_client
-from moto import mock_dynamodb2, mock_iam, mock_lambda, mock_sts, mock_s3, mock_sqs, mock_sns
+from moto import (
+    mock_dynamodb2,
+    mock_iam,
+    mock_lambda,
+    mock_s3,
+    mock_sns,
+    mock_sqs,
+    mock_sts,
+)
 from tornado.concurrent import Future
+
+from consoleme.config import config
 
 MOCK_ROLE = {
     "arn": "arn:aws:iam::123456789012:role/FakeRole",
@@ -36,9 +45,11 @@ MOCK_ROLE = {
                 {
                     "Sid": "1",
                     "Effect": "Allow",
-                    "Principal": {"AWS": "arn:aws:iam::123456789012:role/ConsoleMeInstanceProfile"},
+                    "Principal": {
+                        "AWS": "arn:aws:iam::123456789012:role/ConsoleMeInstanceProfile"
+                    },
                     "Action": "sts:AssumeRole",
-                }
+                },
             ],
         },
         "Tags": [],
@@ -117,7 +128,7 @@ class AioTestCase(unittest.TestCase):
 
 class MockBaseHandler:
     async def authorization_flow(
-            self, user=None, console_only=True, refresh_cache=False
+        self, user=None, console_only=True, refresh_cache=False
     ):
         self.user = "test@domain.com"
         self.ip = "1.2.3.4"
@@ -140,7 +151,7 @@ class MockBaseMtlsHandler:
 
 class MockAuth:
     def __init__(
-            self, restricted=False, compliance_restricted=False, get_groups_val=[]
+        self, restricted=False, compliance_restricted=False, get_groups_val=[]
     ):
         self.restricted = restricted
         self.compliance_restricted = compliance_restricted
@@ -236,24 +247,27 @@ def sns(aws_credentials):
 @pytest.fixture(autouse=True, scope="session")
 def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
     from asgiref.sync import async_to_sync
+
     from consoleme.lib.cache import store_json_results_in_redis_and_s3
+
     global all_roles
-    buckets = [
-        config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket")
-    ]
+    buckets = [config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket")]
     for bucket in buckets:
         s3.create_bucket(Bucket=bucket)
 
     if all_roles:
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_roles,
-            s3_bucket=config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket"),
-            s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file")
+            s3_bucket=config.get(
+                "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+            ),
+            s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
         )
         return
     from consoleme.celery.celery_tasks import cache_roles_for_account
     from consoleme.lib.account_indexers import get_account_id_to_name_mapping
     from consoleme.lib.redis import RedisHandler
+
     red = RedisHandler().redis_sync()
 
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()
@@ -264,8 +278,10 @@ def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
     all_roles = red.hgetall(cache_key)
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_roles,
-        s3_bucket=config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket"),
-        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file")
+        s3_bucket=config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+        ),
+        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
     )
 
 
@@ -422,16 +438,18 @@ def iam_sync_roles(iam):
                     "Principal": {
                         "AWS": "arn:aws:iam::123456789012:role/ConsoleMeInstanceProfile"
                     },
-                    "Action": "sts:AssumeRole"
+                    "Action": "sts:AssumeRole",
                 }
-            ]
+            ],
         }
     )
 
     # Create the role that CloudAux will assume:
     iam.create_role(RoleName="ConsoleMe", AssumeRolePolicyDocument=assume_role_policy)
     # Create a generic test instance profile
-    iam.create_role(RoleName="TestInstanceProfile", AssumeRolePolicyDocument=assume_role_policy)
+    iam.create_role(
+        RoleName="TestInstanceProfile", AssumeRolePolicyDocument=assume_role_policy
+    )
 
     # Create a managed policy:
     policy_one = iam.create_policy(
@@ -443,24 +461,32 @@ def iam_sync_roles(iam):
 
     # Create 50 IAM roles for syncing:
     for x in range(0, 10):
-        iam.create_role(RoleName=f"RoleNumber{x}", AssumeRolePolicyDocument=assume_role_policy)
+        iam.create_role(
+            RoleName=f"RoleNumber{x}", AssumeRolePolicyDocument=assume_role_policy
+        )
         iam.put_role_policy(
             RoleName=f"RoleNumber{x}",
             PolicyName="SomePolicy",
             PolicyDocument=statement_policy,
         )
         iam.tag_role(
-            RoleName=f"RoleNumber{x}", Tags=[
+            RoleName=f"RoleNumber{x}",
+            Tags=[
                 {"Key": "Number", "Value": f"{x}"},
                 {"Key": "authorized_groups", "Value": f"group{x},group{x}@example.com"},
-                {"Key": "authorized_groups_cli_only", "Value": f"group{x}-cli,group{x}-cli@example.com"}
-            ]
+                {
+                    "Key": "authorized_groups_cli_only",
+                    "Value": f"group{x}-cli,group{x}-cli@example.com",
+                },
+            ],
         )
         iam.attach_role_policy(RoleName=f"RoleNumber{x}", PolicyArn=policy_one)
         iam.attach_role_policy(RoleName=f"RoleNumber{x}", PolicyArn=policy_two)
 
     # Create the dynamic user role:
-    iam.create_role(RoleName="awsaccount_user", AssumeRolePolicyDocument=assume_role_policy)
+    iam.create_role(
+        RoleName="awsaccount_user", AssumeRolePolicyDocument=assume_role_policy
+    )
     iam.put_role_policy(
         RoleName="awsaccount_user",
         PolicyName="SomePolicy",
@@ -470,7 +496,9 @@ def iam_sync_roles(iam):
 
     # Create another dynamic user role
 
-    iam.create_role(RoleName="cm_someuser_N", AssumeRolePolicyDocument=assume_role_policy)
+    iam.create_role(
+        RoleName="cm_someuser_N", AssumeRolePolicyDocument=assume_role_policy
+    )
     iam.put_role_policy(
         RoleName="cm_someuser_N",
         PolicyName="SomePolicy",
@@ -572,9 +600,11 @@ def www_user():
 
 class FakeRedis(redislite.StrictRedis):
     def __init__(self, *args, **kwargs):
-        if kwargs.get('connection_pool'):
-            del kwargs['connection_pool']
-        super(FakeRedis, self).__init__(MOCK_REDIS_DB_PATH, *args, **kwargs, decode_responses=True)
+        if kwargs.get("connection_pool"):
+            del kwargs["connection_pool"]
+        super(FakeRedis, self).__init__(
+            MOCK_REDIS_DB_PATH, *args, **kwargs, decode_responses=True
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")

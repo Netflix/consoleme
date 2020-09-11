@@ -252,9 +252,9 @@ class RoleDetailHandler(BaseAPIV2Handler):
 
 class RoleDetailAppHandler(BaseMtlsHandler):
 
-    """ Handler for /api/v2/mtls/roles/{accountNumber}/{roleName}
+    """Handler for /api/v2/mtls/roles/{accountNumber}/{roleName}
 
-        Allows apps to delete a role
+    Allows apps to delete a role
     """
 
     allowed_methods = ["DELETE"]

@@ -409,7 +409,7 @@ class JSONBaseRequestHandler(BaseJSONHandler):
         except Exception as e:
             log_data["error"] = e
             log.error(log_data)
-            self.send_error(404, message=f"Unable to retrieve the specified group: ")
+            self.send_error(404, message="Unable to retrieve the specified group: ")
             return
 
         user_info = await auth.get_user_info(self.user, object=True)

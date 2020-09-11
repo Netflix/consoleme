@@ -36,7 +36,7 @@ class SelfServiceStep1 extends Component {
   fetchRoleDetail(value) {
     let {
       groups: { accountId, roleName },
-    } = ARN_REGEX.exec(value);;
+    } = ARN_REGEX.exec(value);
     roleName = roleName.split("/").splice(-1, 1)[0];
     fetch(`/api/v2/roles/${accountId}/${roleName}`).then((resp) => {
       resp.text().then((resp) => {

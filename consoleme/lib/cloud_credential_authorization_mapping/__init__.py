@@ -1,20 +1,31 @@
 import time
 from typing import Dict
 
-from consoleme.lib.cache import store_json_results_in_redis_and_s3, retrieve_json_data_from_redis_or_s3
-from consoleme.lib.cloud_credential_authorization_mapping.dynamic_config import \
-    DynamicConfigAuthorizationMappingGenerator
-from consoleme.lib.cloud_credential_authorization_mapping.internal_plugin import \
-    InternalPluginAuthorizationMappingGenerator
-from consoleme.lib.cloud_credential_authorization_mapping.models import user_or_group, RoleAuthorizations, \
-    RoleAuthorizationsDecoder
-from consoleme.lib.cloud_credential_authorization_mapping.role_tags import RoleTagAuthorizationMappingGenerator
-from consoleme.config import config
 from pydantic.json import pydantic_encoder
+
+from consoleme.config import config
+from consoleme.lib.cache import (
+    retrieve_json_data_from_redis_or_s3,
+    store_json_results_in_redis_and_s3,
+)
+from consoleme.lib.cloud_credential_authorization_mapping.dynamic_config import (
+    DynamicConfigAuthorizationMappingGenerator,
+)
+from consoleme.lib.cloud_credential_authorization_mapping.internal_plugin import (
+    InternalPluginAuthorizationMappingGenerator,
+)
+from consoleme.lib.cloud_credential_authorization_mapping.models import (
+    RoleAuthorizations,
+    RoleAuthorizationsDecoder,
+    user_or_group,
+)
+from consoleme.lib.cloud_credential_authorization_mapping.role_tags import (
+    RoleTagAuthorizationMappingGenerator,
+)
 from consoleme.lib.singleton import Singleton
 
-
 # TODO: Dynamic Configuration refresh story
+
 
 class CredentialAuthorizationMapping(metaclass=Singleton):
     def __init__(self) -> None:
@@ -23,14 +34,23 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
 
     async def retrieve_credential_authorization_mapping(self):
         if not self.authorization_mapping or int(time.time()) - self.last_update > 60:
-            redis_topic = config.get("generate_and_store_credential_authorization_mapping.redis_key",
-                                     "CREDENTIAL_AUTHORIZATION_MAPPING_V1")
-            s3_bucket = config.get("generate_and_store_credential_authorization_mapping.s3.bucket")
-            s3_key = config.get("generate_and_store_credential_authorization_mapping.s3.file")
+            redis_topic = config.get(
+                "generate_and_store_credential_authorization_mapping.redis_key",
+                "CREDENTIAL_AUTHORIZATION_MAPPING_V1",
+            )
+            s3_bucket = config.get(
+                "generate_and_store_credential_authorization_mapping.s3.bucket"
+            )
+            s3_key = config.get(
+                "generate_and_store_credential_authorization_mapping.s3.file"
+            )
 
             self.authorization_mapping = await retrieve_json_data_from_redis_or_s3(
-                redis_topic, s3_bucket=s3_bucket, s3_key=s3_key, json_object_hook=RoleAuthorizationsDecoder,
-                json_encoder=pydantic_encoder
+                redis_topic,
+                s3_bucket=s3_bucket,
+                s3_key=s3_key,
+                json_object_hook=RoleAuthorizationsDecoder,
+                json_encoder=pydantic_encoder,
             )
             self.last_update = int(time.time())
         return self.authorization_mapping
@@ -52,7 +72,9 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
         return sorted(authorized_roles)
 
 
-async def generate_and_store_credential_authorization_mapping() -> Dict[user_or_group, RoleAuthorizations]:
+async def generate_and_store_credential_authorization_mapping() -> Dict[
+    user_or_group, RoleAuthorizations
+]:
     authorization_mapping: Dict[user_or_group, RoleAuthorizations] = {}
 
     if config.get("cloud_credential_authorization_mapping.role_tags.enabled"):
@@ -60,23 +82,35 @@ async def generate_and_store_credential_authorization_mapping() -> Dict[user_or_
             authorization_mapping
         )
     if config.get("cloud_credential_authorization_mapping.dynamic_config.enabled"):
-        authorization_mapping = await DynamicConfigAuthorizationMappingGenerator(
-        ).generate_credential_authorization_mapping(authorization_mapping)
+        authorization_mapping = await DynamicConfigAuthorizationMappingGenerator().generate_credential_authorization_mapping(
+            authorization_mapping
+        )
     if config.get("cloud_credential_authorization_mapping.internal_plugin.enabled"):
-        authorization_mapping = await InternalPluginAuthorizationMappingGenerator(
-        ).generate_credential_authorization_mapping(authorization_mapping)
+        authorization_mapping = await InternalPluginAuthorizationMappingGenerator().generate_credential_authorization_mapping(
+            authorization_mapping
+        )
 
     # Store in S3 and Redis
-    redis_topic = config.get("generate_and_store_credential_authorization_mapping.redis_key",
-                             "CREDENTIAL_AUTHORIZATION_MAPPING_V1")
+    redis_topic = config.get(
+        "generate_and_store_credential_authorization_mapping.redis_key",
+        "CREDENTIAL_AUTHORIZATION_MAPPING_V1",
+    )
     s3_bucket = None
     s3_key = None
     if config.region == config.get("celery.active_region") or config.get(
-            "environment"
+        "environment"
     ) in ["dev", "test"]:
-        s3_bucket = config.get("generate_and_store_credential_authorization_mapping.s3.bucket")
-        s3_key = config.get("generate_and_store_credential_authorization_mapping.s3.file")
+        s3_bucket = config.get(
+            "generate_and_store_credential_authorization_mapping.s3.bucket"
+        )
+        s3_key = config.get(
+            "generate_and_store_credential_authorization_mapping.s3.file"
+        )
     await store_json_results_in_redis_and_s3(
-        authorization_mapping, redis_topic, s3_bucket=s3_bucket, s3_key=s3_key, json_encoder=pydantic_encoder
+        authorization_mapping,
+        redis_topic,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+        json_encoder=pydantic_encoder,
     )
     return authorization_mapping

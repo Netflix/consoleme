@@ -433,8 +433,8 @@ async def generate_change_model_array(
             )
 
         # Generate inline policy for the change, if applicable
-        inline_policy = await _generate_inline_iam_policy_statement_from_change_generator(
-            change
+        inline_policy = (
+            await _generate_inline_iam_policy_statement_from_change_generator(change)
         )
         if inline_policy and (
             not inline_policy.get("Action")

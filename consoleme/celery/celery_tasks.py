@@ -41,7 +41,6 @@ from cloudaux.aws.iam import (
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
-from consoleme.lib.cloud_credential_authorization_mapping import generate_and_store_credential_authorization_mapping
 from retrying import retry
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -57,6 +56,9 @@ from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
     store_json_results_in_redis_and_s3,
+)
+from consoleme.lib.cloud_credential_authorization_mapping import (
+    generate_and_store_credential_authorization_mapping,
 )
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
@@ -844,8 +846,10 @@ def cache_roles_across_accounts() -> Dict:
     # Store full list of roles in a single place
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_roles,
-        s3_bucket=config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket"),
-        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file")
+        s3_bucket=config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+        ),
+        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
     )
 
     stats.count(f"{function}.success")
@@ -1427,12 +1431,14 @@ def cache_cloud_account_mapping() -> Dict:
 def cache_credential_authorization_mapping() -> Dict:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
-    authorization_mapping = async_to_sync(generate_and_store_credential_authorization_mapping)()
+    authorization_mapping = async_to_sync(
+        generate_and_store_credential_authorization_mapping
+    )()
 
     log_data = {
         "function": function,
         "message": "Successfully cached cloud credential authorization mapping",
-        "num_group_authorizations": len(authorization_mapping)
+        "num_group_authorizations": len(authorization_mapping),
     }
 
     log.debug(log_data)
@@ -1542,7 +1548,7 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.cache_credential_authorization_mapping",
         "options": {"expires": 1000},
         "schedule": schedule_5_minutes,
-    }
+    },
 }
 
 

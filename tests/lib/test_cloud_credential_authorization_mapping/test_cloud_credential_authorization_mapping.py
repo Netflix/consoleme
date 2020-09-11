@@ -4,8 +4,11 @@ import unittest
 class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
-        from consoleme.celery.celery_tasks import cache_roles_for_account
-        from consoleme.celery.celery_tasks import cache_roles_across_accounts
+        from consoleme.celery.celery_tasks import (
+            cache_roles_across_accounts,
+            cache_roles_for_account,
+        )
+
         cache_roles_for_account("123456789012")
         cache_roles_across_accounts()
 
@@ -20,10 +23,8 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
 
     async def test_generate_and_store_credential_authorization_mapping(self):
         from consoleme.lib.cloud_credential_authorization_mapping import (
-            generate_and_store_credential_authorization_mapping,
-        )
-        from consoleme.lib.cloud_credential_authorization_mapping import (
             RoleAuthorizations,
+            generate_and_store_credential_authorization_mapping,
         )
 
         mapping = await generate_and_store_credential_authorization_mapping()
@@ -249,10 +250,8 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
 
     async def test_RoleTagAuthorizationMappingGenerator(self):
         from consoleme.lib.cloud_credential_authorization_mapping import (
-            RoleTagAuthorizationMappingGenerator,
-        )
-        from consoleme.lib.cloud_credential_authorization_mapping import (
             RoleAuthorizations,
+            RoleTagAuthorizationMappingGenerator,
         )
 
         authorization_mapping = await RoleTagAuthorizationMappingGenerator().generate_credential_authorization_mapping(
@@ -467,8 +466,6 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
     async def test_DynamicConfigAuthorizationMappingGenerator(self):
         from consoleme.lib.cloud_credential_authorization_mapping import (
             DynamicConfigAuthorizationMappingGenerator,
-        )
-        from consoleme.lib.cloud_credential_authorization_mapping import (
             RoleAuthorizations,
         )
 
@@ -499,8 +496,6 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
     async def test_InternalPluginAuthorizationMappingGenerator(self):
         from consoleme.lib.cloud_credential_authorization_mapping import (
             InternalPluginAuthorizationMappingGenerator,
-        )
-        from consoleme.lib.cloud_credential_authorization_mapping import (
             RoleAuthorizations,
         )
 
@@ -518,4 +513,3 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
         )
         for k, v in expected.items():
             self.assertEqual(authorization_mapping.get(k), v)
-

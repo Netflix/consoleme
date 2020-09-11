@@ -71,7 +71,6 @@ get_user_by_saml_settings:
       wantNameId: true
       wantNameIdEncrypted: false
 
-
 development: true
 
 url: http://localhost:8081
@@ -95,7 +94,7 @@ celery_jobs:
     sleep_time: 0
 
 logging:
-  format: '%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s'
+  format: "%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s"
   stdout_enabled: true
   level: debug
   elasticsearch:

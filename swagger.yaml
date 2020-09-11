@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   description: ConsoleMe API definition
-  version: '2.0.0'
+  version: "2.0.0"
   title: ConsoleMe v2 API
   contact:
     email: consoleme-owners@netflix.com
@@ -9,7 +9,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.txt
 servers:
-  - url: '{server}/api/v2'
+  - url: "{server}/api/v2"
     variables:
       server:
         default: https://consoleme.example.com
@@ -31,61 +31,61 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RequestCreationModel'
+              $ref: "#/components/schemas/RequestCreationModel"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExtendedRequestModel'
+                $ref: "#/components/schemas/ExtendedRequestModel"
   /requests:
     get:
       summary: get a list of requests
       tags:
         - requests
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RequestModel'
+                  $ref: "#/components/schemas/RequestModel"
   /requests/{request_id}:
     get:
       summary: get details about a request
       tags:
         - requests
       parameters:
-        - $ref: '#/components/parameters/RequestId'
+        - $ref: "#/components/parameters/RequestId"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExtendedRequestModel'
+                $ref: "#/components/schemas/ExtendedRequestModel"
     put:
       summary: update a request
       tags:
         - requests
       parameters:
-        - $ref: '#/components/parameters/RequestId'
+        - $ref: "#/components/parameters/RequestId"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExtendedRequestModel'
+              $ref: "#/components/schemas/ExtendedRequestModel"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExtendedRequestModel'
+                $ref: "#/components/schemas/ExtendedRequestModel"
   /generate_changes:
     post:
       summary: get templated changes
@@ -97,31 +97,31 @@ paths:
               type: array
               items:
                 anyOf:
-                  - $ref: '#/components/schemas/ChangeGeneratorModelArray'
+                  - $ref: "#/components/schemas/ChangeGeneratorModelArray"
                 discriminator:
                   propertyName: generator_type
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 oneOf:
-                  - $ref: '#/components/schemas/InlinePolicyChangeModel'
-                  - $ref: '#/components/schemas/ManagedPolicyChangeModel'
-                  - $ref: '#/components/schemas/ResourcePolicyChangeModel'
+                  - $ref: "#/components/schemas/InlinePolicyChangeModel"
+                  - $ref: "#/components/schemas/ManagedPolicyChangeModel"
+                  - $ref: "#/components/schemas/ResourcePolicyChangeModel"
                 discriminator:
                   propertyName: change_type
         default:
-          $ref: '#/components/responses/DefaultErrorResponse'
+          $ref: "#/components/responses/DefaultErrorResponse"
   /resources:
     get:
       summary: get resources
       parameters:
-        - $ref: '#/components/parameters/AccountIdQueryString'
-        - $ref: '#/components/parameters/ResourceTypeQueryString'
+        - $ref: "#/components/parameters/AccountIdQueryString"
+        - $ref: "#/components/parameters/ResourceTypeQueryString"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -133,16 +133,16 @@ paths:
     get:
       summary: typeahead for all known resource ARNs
       parameters:
-        - $ref: '#/components/parameters/TypeAheadQueryString'
-        - $ref: '#/components/parameters/AccountIdQueryString'
-        - $ref: '#/components/parameters/ResourceTypeQueryString'
+        - $ref: "#/components/parameters/TypeAheadQueryString"
+        - $ref: "#/components/parameters/AccountIdQueryString"
+        - $ref: "#/components/parameters/ResourceTypeQueryString"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArnArray'
+                $ref: "#/components/schemas/ArnArray"
   /clone/role:
     post:
       summary: clone a role
@@ -153,30 +153,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CloneRoleRequestModel'
+              $ref: "#/components/schemas/CloneRoleRequestModel"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateCloneRequestResponse'
+                $ref: "#/components/schemas/CreateCloneRequestResponse"
         default:
-          $ref: '#/components/responses/DefaultErrorResponse'
+          $ref: "#/components/responses/DefaultErrorResponse"
   /roles:
     get:
       summary: get a list of roles
       tags:
         - roles
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RoleModel'
+                  $ref: "#/components/schemas/RoleModel"
     post:
       summary: create a role
       tags:
@@ -187,16 +187,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RoleCreationRequestModel'
+              $ref: "#/components/schemas/RoleCreationRequestModel"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateCloneRequestResponse'
+                $ref: "#/components/schemas/CreateCloneRequestResponse"
         default:
-          $ref: '#/components/responses/DefaultErrorResponse'
+          $ref: "#/components/responses/DefaultErrorResponse"
 
   /roles/{account_id}:
     get:
@@ -204,95 +204,95 @@ paths:
       tags:
         - roles
       parameters:
-        - $ref: '#/components/parameters/AccountId'
+        - $ref: "#/components/parameters/AccountId"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RoleModel'
+                  $ref: "#/components/schemas/RoleModel"
     post:
       summary: create a role
       tags:
         - roles
         - privileged
       parameters:
-        - $ref: '#/components/parameters/AccountId'
+        - $ref: "#/components/parameters/AccountId"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExtendedRoleModel'
+              $ref: "#/components/schemas/ExtendedRoleModel"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExtendedRoleModel'
+                $ref: "#/components/schemas/ExtendedRoleModel"
   /roles/{account_id}/{role_name}:
     get:
       summary: get details about a role
       tags:
         - roles
       parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - $ref: '#/components/parameters/RoleName'
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExtendedRoleModel'
+                $ref: "#/components/schemas/ExtendedRoleModel"
     put:
       summary: update a role
       tags:
         - roles
         - privileged
       parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - $ref: '#/components/parameters/RoleName'
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExtendedRoleModel'
+              $ref: "#/components/schemas/ExtendedRoleModel"
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ExtendedRoleModel'
+                $ref: "#/components/schemas/ExtendedRoleModel"
     delete:
       summary: delete a role
       tags:
         - roles
         - privileged
       parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - $ref: '#/components/parameters/RoleName'
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
       responses:
-        '200':
+        "200":
           description: OK
         default:
-          $ref: '#/components/responses/DefaultErrorResponse'
+          $ref: "#/components/responses/DefaultErrorResponse"
   /user:
     get:
       summary: get details about current user
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserModel'
+                $ref: "#/components/schemas/UserModel"
   /mtls/roles/{account_id}/{role_name}:
     delete:
       summary: delete a role (mtls apps only)
@@ -300,13 +300,13 @@ paths:
         - roles
         - privileged
       parameters:
-        - $ref: '#/components/parameters/AccountId'
-        - $ref: '#/components/parameters/RoleName'
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
       responses:
-        '200':
+        "200":
           description: OK
         default:
-          $ref: '#/components/responses/DefaultErrorResponse'
+          $ref: "#/components/responses/DefaultErrorResponse"
 components:
   responses:
     DefaultErrorResponse:
@@ -314,7 +314,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ApiErrorModel'
+            $ref: "#/components/schemas/ApiErrorModel"
   parameters:
     AccountId:
       name: account_id
@@ -458,22 +458,22 @@ components:
           readOnly: true
     ExtendedRequestModel:
       allOf:
-        - $ref: '#/components/schemas/RequestModel'
+        - $ref: "#/components/schemas/RequestModel"
         - type: object
           required:
             - changes
             - requester_info
           properties:
             changes:
-              $ref: '#/components/schemas/ChangeModelArray'
+              $ref: "#/components/schemas/ChangeModelArray"
             requester_info:
-              $ref: '#/components/schemas/UserModel'
+              $ref: "#/components/schemas/UserModel"
             reviewer:
               type: string
             comments:
               type: array
               items:
-                $ref: '#/components/schemas/CommentModel'
+                $ref: "#/components/schemas/CommentModel"
     ChangeGeneratorModelArray:
       type: object
       required:
@@ -483,12 +483,12 @@ components:
           type: array
           items:
             anyOf:
-              - $ref: '#/components/schemas/S3ChangeGeneratorModel'
-              - $ref: '#/components/schemas/SQSChangeGeneratorModel'
-              - $ref: '#/components/schemas/SNSChangeGeneratorModel'
-              - $ref: '#/components/schemas/SESChangeGeneratorModel'
-              - $ref: '#/components/schemas/CrudChangeGeneratorModel'
-              - $ref: '#/components/schemas/GenericChangeGeneratorModel'
+              - $ref: "#/components/schemas/S3ChangeGeneratorModel"
+              - $ref: "#/components/schemas/SQSChangeGeneratorModel"
+              - $ref: "#/components/schemas/SNSChangeGeneratorModel"
+              - $ref: "#/components/schemas/SESChangeGeneratorModel"
+              - $ref: "#/components/schemas/CrudChangeGeneratorModel"
+              - $ref: "#/components/schemas/GenericChangeGeneratorModel"
             discriminator:
               propertyName: change_generator_model
     ChangeGeneratorModel:
@@ -523,16 +523,16 @@ components:
           discriminator:
             propertyName: generator_type
             mapping:
-              advanced: '#/components/schemas/AdvancedChangeGeneratorModel'
-              crud_lookup: '#/components/schemas/CrudChangeGeneratorModel'
-              ec2: '#/components/schemas/GenericChangeGeneratorModel'
-              generic: '#/components/schemas/GenericChangeGeneratorModel'
-              rds: '#/components/schemas/GenericChangeGeneratorModel'
-              route53: '#/components/schemas/GenericChangeGeneratorModel'
-              s3: '#/components/schemas/S3ChangeGeneratorModel'
-              ses: '#/components/schemas/SESChangeGeneratorModel'
-              sns: '#/components/schemas/SNSChangeGeneratorModel'
-              sqs: '#/components/schemas/SQSChangeGeneratorModel'
+              advanced: "#/components/schemas/AdvancedChangeGeneratorModel"
+              crud_lookup: "#/components/schemas/CrudChangeGeneratorModel"
+              ec2: "#/components/schemas/GenericChangeGeneratorModel"
+              generic: "#/components/schemas/GenericChangeGeneratorModel"
+              rds: "#/components/schemas/GenericChangeGeneratorModel"
+              route53: "#/components/schemas/GenericChangeGeneratorModel"
+              s3: "#/components/schemas/S3ChangeGeneratorModel"
+              ses: "#/components/schemas/SESChangeGeneratorModel"
+              sns: "#/components/schemas/SNSChangeGeneratorModel"
+              sqs: "#/components/schemas/SQSChangeGeneratorModel"
         resource_arn:
           description: |-
             The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
@@ -560,7 +560,7 @@ components:
           type: string
           description: The effect. By default, this is allow
           default: Allow
-          pattern: '^(Allow|Deny)$'
+          pattern: "^(Allow|Deny)$"
         condition:
           type: object
           description: Optional condition for the change
@@ -581,7 +581,7 @@ components:
 
     AdvancedChangeGeneratorModel:
       allOf:
-        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - action_groups
@@ -595,7 +595,7 @@ components:
 
     GenericChangeGeneratorModel:
       allOf:
-        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - action_groups
@@ -607,7 +607,7 @@ components:
     CrudChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
-        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - action_groups
@@ -627,7 +627,7 @@ components:
               type: string
     S3ChangeGeneratorModel: # These schemas could be defined in different files.
       allOf:
-        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - resource_arn
@@ -653,7 +653,7 @@ components:
                   - delete
     SQSChangeGeneratorModel:
       allOf:
-        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - action_groups
@@ -670,7 +670,7 @@ components:
                   - delete_messages
     SNSChangeGeneratorModel:
       allOf:
-        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - action_groups
@@ -687,7 +687,7 @@ components:
                   - unsubscribe
     SESChangeGeneratorModel:
       allOf:
-        - $ref: '#/components/schemas/ChangeGeneratorModel'
+        - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - from_address
@@ -722,14 +722,14 @@ components:
           discriminator:
             propertyName: change_type
             mapping:
-              inline_policy: '#/components/schemas/InlinePolicyChangeModel'
-              managed_policy: '#/components/schemas/ManagedPolicyChangeModel'
-              resource_policy: '#/components/schemas/ResourcePolicyChangeModel'
-              assume_role_policy: '#/components/schemas/AssumeRolePolicyChangeModel'
+              inline_policy: "#/components/schemas/InlinePolicyChangeModel"
+              managed_policy: "#/components/schemas/ManagedPolicyChangeModel"
+              resource_policy: "#/components/schemas/ResourcePolicyChangeModel"
+              assume_role_policy: "#/components/schemas/AssumeRolePolicyChangeModel"
         resources:
           type: array
           items:
-            $ref: '#/components/schemas/ResourceModel'
+            $ref: "#/components/schemas/ResourceModel"
         version:
           type: string
           default: 2.0
@@ -742,7 +742,7 @@ components:
           type: string
     InlinePolicyChangeModel:
       allOf:
-        - $ref: '#/components/schemas/ChangeModel'
+        - $ref: "#/components/schemas/ChangeModel"
         - type: object
           required:
             - policy_name
@@ -760,23 +760,23 @@ components:
                 - detach
               default: attach
             policy:
-              $ref: '#/components/schemas/PolicyModel'
+              $ref: "#/components/schemas/PolicyModel"
             old_policy:
-              $ref: '#/components/schemas/PolicyModel'
+              $ref: "#/components/schemas/PolicyModel"
     AssumeRolePolicyChangeModel:
       allOf:
-        - $ref: '#/components/schemas/ChangeModel'
+        - $ref: "#/components/schemas/ChangeModel"
         - type: object
           required:
             - policy
           properties:
             policy:
-              $ref: '#/components/schemas/PolicyModel'
+              $ref: "#/components/schemas/PolicyModel"
             old_policy:
-              $ref: '#/components/schemas/PolicyModel'
+              $ref: "#/components/schemas/PolicyModel"
     ResourcePolicyChangeModel:
       allOf:
-        - $ref: '#/components/schemas/ChangeModel'
+        - $ref: "#/components/schemas/ChangeModel"
         - type: object
           required:
             - arn
@@ -798,12 +798,12 @@ components:
               readOnly: true
               description: whether we currently support this type of resource policy change or not
             policy:
-              $ref: '#/components/schemas/PolicyModel'
+              $ref: "#/components/schemas/PolicyModel"
             old_policy:
-              $ref: '#/components/schemas/PolicyModel'
+              $ref: "#/components/schemas/PolicyModel"
     ManagedPolicyChangeModel:
       allOf:
-        - $ref: '#/components/schemas/ChangeModel'
+        - $ref: "#/components/schemas/ChangeModel"
         - type: object
           required:
             - arn
@@ -829,10 +829,10 @@ components:
           type: array
           items:
             anyOf:
-              - $ref: '#/components/schemas/InlinePolicyChangeModel'
-              - $ref: '#/components/schemas/ManagedPolicyChangeModel'
-              - $ref: '#/components/schemas/ResourcePolicyChangeModel'
-              - $ref: '#/components/schemas/AssumeRolePolicyChangeModel'
+              - $ref: "#/components/schemas/InlinePolicyChangeModel"
+              - $ref: "#/components/schemas/ManagedPolicyChangeModel"
+              - $ref: "#/components/schemas/ResourcePolicyChangeModel"
+              - $ref: "#/components/schemas/AssumeRolePolicyChangeModel"
             discriminator:
               propertyName: change_model
     ArnArray:
@@ -847,7 +847,7 @@ components:
           type: array
           items:
             anyOf:
-              - $ref: '#/components/schemas/CloudAccountModel'
+              - $ref: "#/components/schemas/CloudAccountModel"
     CloudAccountModel:
       type: object
       properties:
@@ -920,7 +920,7 @@ components:
         sid:
           type: string
           description: Statement identifier
-          pattern: '^([a-zA-Z0-9]+)*'
+          pattern: "^([a-zA-Z0-9]+)*"
     CommentModel:
       type: object
       required:
@@ -943,7 +943,7 @@ components:
         user_email:
           type: string
         user:
-          $ref: '#/components/schemas/UserModel'
+          $ref: "#/components/schemas/UserModel"
         text:
           type: string
     RoleModel:
@@ -959,7 +959,7 @@ components:
           type: string
           minLength: 12
           maxLength: 12
-          example: '123456789012'
+          example: "123456789012"
           readOnly: true
         account_name:
           type: string
@@ -986,7 +986,7 @@ components:
           type: array
           items:
             anyOf:
-              - $ref: '#/components/schemas/CloudTrailError'
+              - $ref: "#/components/schemas/CloudTrailError"
     CloudTrailDetailsModel:
       type: object
       properties:
@@ -994,7 +994,7 @@ components:
           type: string
           example: https://cloudtrail_logs/for/role_arn
         errors:
-          $ref: '#/components/schemas/CloudTrailErrorArray'
+          $ref: "#/components/schemas/CloudTrailErrorArray"
     S3Error:
       type: object
       properties:
@@ -1027,7 +1027,7 @@ components:
           type: array
           items:
             anyOf:
-              - $ref: '#/components/schemas/S3Error'
+              - $ref: "#/components/schemas/S3Error"
     S3DetailsModel:
       type: object
       properties:
@@ -1038,7 +1038,7 @@ components:
           type: string
           example: https://s3_error_query/for/role_or_bucket_arn
         errors:
-          $ref: '#/components/schemas/S3ErrorArray'
+          $ref: "#/components/schemas/S3ErrorArray"
     AppDetailsModel:
       type: object
       properties:
@@ -1061,10 +1061,10 @@ components:
           type: array
           items:
             anyOf:
-              - $ref: '#/components/schemas/AppDetailsModel'
+              - $ref: "#/components/schemas/AppDetailsModel"
     ExtendedRoleModel:
       allOf:
-        - $ref: '#/components/schemas/RoleModel'
+        - $ref: "#/components/schemas/RoleModel"
         - type: object
           required:
             - inline_policies
@@ -1079,11 +1079,11 @@ components:
             assume_role_policy_document:
               type: object # TODO: make assume_role_policy_document schema
             cloudtrail_details:
-              $ref: '#/components/schemas/CloudTrailDetailsModel'
+              $ref: "#/components/schemas/CloudTrailDetailsModel"
             s3_details:
-              $ref: '#/components/schemas/S3DetailsModel'
+              $ref: "#/components/schemas/S3DetailsModel"
             apps:
-              $ref: '#/components/schemas/AppDetailsArray'
+              $ref: "#/components/schemas/AppDetailsArray"
             managed_policies:
               type: array
               items:
@@ -1202,7 +1202,7 @@ components:
         - justification
       properties:
         changes:
-          $ref: '#/components/schemas/ChangeModelArray'
+          $ref: "#/components/schemas/ChangeModelArray"
         justification:
           type: string
         admin_auto_approve:
@@ -1243,7 +1243,7 @@ components:
             - move_back_to_pending
     CommentRequestModificationModel:
       allOf:
-        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - $ref: "#/components/schemas/RequestModificationBaseModel"
         - type: object
           required:
             - comment_text
@@ -1252,7 +1252,7 @@ components:
               type: string
     UpdateChangeModificationModel:
       allOf:
-        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - $ref: "#/components/schemas/RequestModificationBaseModel"
         - type: object
           required:
             - policy_document
@@ -1264,7 +1264,7 @@ components:
               type: string
     ApplyChangeModificationModel:
       allOf:
-        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - $ref: "#/components/schemas/RequestModificationBaseModel"
         - type: object
           required:
             - change_id
@@ -1275,13 +1275,13 @@ components:
               type: string
     CancelRequestModificationModel:
       allOf:
-        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - $ref: "#/components/schemas/RequestModificationBaseModel"
     MoveToPendingRequestModificationModel:
       allOf:
-        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - $ref: "#/components/schemas/RequestModificationBaseModel"
     ApproveRequestModificationModel:
       allOf:
-        - $ref: '#/components/schemas/RequestModificationBaseModel'
+        - $ref: "#/components/schemas/RequestModificationBaseModel"
         - type: object
           properties:
             policy_request_changes:
@@ -1304,17 +1304,17 @@ components:
         modification_model:
           type: object
           oneOf:
-            - $ref: '#/components/schemas/CommentRequestModificationModel'
-            - $ref: '#/components/schemas/UpdateChangeModificationModel'
-            - $ref: '#/components/schemas/ApplyChangeModificationModel'
-            - $ref: '#/components/schemas/ApproveRequestModificationModel'
-            - $ref: '#/components/schemas/MoveToPendingRequestModificationModel'
-            - $ref: '#/components/schemas/CancelRequestModificationModel'
+            - $ref: "#/components/schemas/CommentRequestModificationModel"
+            - $ref: "#/components/schemas/UpdateChangeModificationModel"
+            - $ref: "#/components/schemas/ApplyChangeModificationModel"
+            - $ref: "#/components/schemas/ApproveRequestModificationModel"
+            - $ref: "#/components/schemas/MoveToPendingRequestModificationModel"
+            - $ref: "#/components/schemas/CancelRequestModificationModel"
           discriminator:
             propertyName: command
             mapping:
-              add_comment: '#/components/schemas/CommentRequestModificationModel'
-              update_change: '#/components/schemas/UpdateChangeModificationModel'
+              add_comment: "#/components/schemas/CommentRequestModificationModel"
+              update_change: "#/components/schemas/UpdateChangeModificationModel"
     PolicyRequestModificationResponseModel:
       type: object
       properties:
@@ -1329,4 +1329,3 @@ components:
                 type: string
               message:
                 type: string
-

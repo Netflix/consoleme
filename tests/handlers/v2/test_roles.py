@@ -1,4 +1,3 @@
-
 import pytest
 import ujson as json
 from mock import patch
@@ -55,7 +54,7 @@ class TestRolesHandler(AsyncHTTPTestCase):
             "status": 400,
             "title": "Bad Request",
             "message": "Error validating input: 1 validation error for RoleCreationRequestModel\nrole_name\n"
-                       "  field required (type=value_error.missing)",
+            "  field required (type=value_error.missing)",
         }
         response = self.fetch(
             "/api/v2/roles", method="POST", body=json.dumps(input_body)
@@ -116,9 +115,7 @@ class TestAccountRolesHandler(AsyncHTTPTestCase):
         self.assertDictEqual(json.loads(response.body), expected)
 
 
-@pytest.mark.usefixtures(
-    "retry", "user_role_lambda", "iam_sync_roles", "sts", "redis"
-)
+@pytest.mark.usefixtures("retry", "user_role_lambda", "iam_sync_roles", "sts", "redis")
 class TestRoleDetailHandler(AsyncHTTPTestCase):
     def get_app(self):
         from consoleme.routes import make_app
@@ -161,7 +158,7 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
             "status": 500,
             "title": "Internal Server Error",
             "message": "Error occurred deleting role: An error occurred (NoSuchEntity) when calling the GetRole "
-                       "operation: Role fake_account_admin not found",
+            "operation: Role fake_account_admin not found",
         }
         mock_can_delete_roles.return_value = create_future(True)
         response = self.fetch(
@@ -177,6 +174,7 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
     @patch("consoleme.handlers.v2.roles.can_delete_roles")
     def test_delete_authorized_user_valid_role(self, mock_can_delete_roles):
         import boto3
+
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "fake_account_admin"
         account_id = "123456789012"
@@ -190,11 +188,9 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
 
         mock_can_delete_roles.return_value = create_future(True)
 
-        res = self.fetch(
-            f"/api/v2/roles/{account_id}/{role_name}", method="DELETE"
-        )
+        res = self.fetch(f"/api/v2/roles/{account_id}/{role_name}", method="DELETE")
         self.assertEqual(res.code, 200)
-
+        self.assertEqual(json.loads(res.body), expected)
 
 
 class TestRoleDetailAppHandler(AsyncHTTPTestCase):
@@ -226,6 +222,7 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
     @patch("consoleme.handlers.v2.roles.can_delete_roles_app")
     def test_delete_role_by_app(self, mock_can_delete_roles):
         import boto3
+
         expected = {
             "status": 403,
             "title": "Forbidden",
@@ -242,14 +239,14 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "fake_account_admin2"
         account_id = "123456789012"
-        role = client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
+        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
 
-        # expected = {
-        #     "status": "success",
-        #     "message": "Successfully deleted role from account",
-        #     "role": role_name,
-        #     "account": account_id,
-        # }
+        expected = {
+            "status": "success",
+            "message": "Successfully deleted role from account",
+            "role": role_name,
+            "account": account_id,
+        }
 
         # TODO: Fix this test
         # There appears to be an issue with moto and IAM thread safety with the global IAM mock. If running this test
@@ -292,6 +289,7 @@ class TestRoleCloneHandler(AsyncHTTPTestCase):
     @patch("consoleme.handlers.v2.roles.can_create_roles")
     def test_clone_authorized_user(self, mock_can_create_roles):
         import boto3
+
         mock_can_create_roles.return_value = create_future(True)
         input_body = {
             "dest_account_id": "012345678901",
@@ -309,7 +307,7 @@ class TestRoleCloneHandler(AsyncHTTPTestCase):
             "status": 400,
             "title": "Bad Request",
             "message": "Error validating input: 1 validation error for CloneRoleRequestModel\nrole_name\n  "
-                       "field required (type=value_error.missing)",
+            "field required (type=value_error.missing)",
         }
         response = self.fetch(
             "/api/v2/clone/role", method="POST", body=json.dumps(input_body)

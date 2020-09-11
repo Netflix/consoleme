@@ -1,2 +1,374 @@
-#header>*,#header>.content>*{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}#header>.content>nav{-webkit-box-align:stretch;-ms-flex-align:stretch;align-items:stretch}*{-webkit-box-sizing:border-box;box-sizing:border-box}body,html{height:100%}body{display:-webkit-box;display:-ms-flexbox;display:flex}nav.sidebar{min-height:100vh;min-height:100%;overflow-y:auto}nav.sidebar,nav.sidebar ul,nav.sidebar ul li{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}nav.sidebar ul,nav.sidebar ul li{margin:0}nav ul li{display:inline-block}nav ul{padding-left:0}#primary{width:100%}#header,#header nav li a,#header ul,#header ul li{display:-webkit-box;display:-ms-flexbox;display:flex}#header nav li a,#header ul,#header ul li{-webkit-box-align:center;-ms-flex-align:center;align-items:center}#header nav ul,#header nav ul li{-webkit-box-align:stretch;-ms-flex-align:stretch;align-items:stretch}#header nav{width:auto}#header{position:fixed;z-index:10;width:100%}nav.sidebar,nav.sidebar>*{-ms-flex-negative:0;flex-shrink:0}html{font-size:14px}body{margin:0;background:#f3f3f3;font-family:Netflix Sans,Circular EP,-apple-system,Helvetica Neue,Lucida Grande,sans-serif}h1:first-child,h2:first-child,h3:first-child,h4:first-child,h5:first-child{margin-top:0}i.fa,i.fab{padding-right:.3em}.ui.header,.ui.menu,h1,h2,h3,h4{font-family:Netflix Sans,Circular EP,-apple-system,Helvetica Neue,Lucida Grande,sans-serif}.ui.segment.square{border-radius:0}#header{background:#fff;-webkit-box-shadow:1px 0 2px rgba(0,0,0,.2);box-shadow:1px 0 2px rgba(0,0,0,.2)}#header .content{padding:0 20px;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}#header i.icon{color:#979797}#header img.avatar{margin-left:.5rem;width:3rem;height:3rem;border-radius:3rem}#header nav li a{text-decoration:none}main{padding:20px}#primary{margin-top:70px;display:-webkit-box;display:-ms-flexbox;display:flex}#header,nav .brand{height:70px;-webkit-box-sizing:border-box;box-sizing:border-box}nav .brand{width:240px}nav.sidebar{width:240px;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;background-color:#262626;font-size:14px}nav.sidebar h1,nav.sidebar h2,nav.sidebar h3,nav.sidebar h4,nav.sidebar h5{color:#737373;text-align:center;font-weight:400;margin:1.5em 20px .3em}nav.sidebar h2{text-transform:uppercase;font-size:16px}nav.sidebar h3{font-size:14px}nav.sidebar li{background:#2e2e2e}nav.sidebar li:last-child{margin-bottom:.5em}nav.sidebar li a{color:#8c8c8c;text-decoration:none;padding:15px 20px}nav.sidebar li.active,nav.sidebar li:hover{background:#404040}nav.sidebar li.active a,nav.sidebar li:hover a{color:#fff}nav.sidebar footer{color:#595959;padding:1em;-ms-flex-item-align:end;align-self:end;width:100%;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;font-size:.9em}.brand,nav.sidebar footer{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.brand{width:240px;-ms-flex-negative:0;flex-shrink:0;padding:0;font-size:18px;letter-spacing:1px}.brand,.brand:hover,.brand a{padding:0;color:#fff!important;background:#e50914;text-decoration:none;text-transform:uppercase;border:none!important}#header nav{height:100%}#header nav ul{margin:0}#header nav ul li{padding-right:5px}#header nav ul li.active a,#header nav ul li.active a:hover{border-bottom:2px solid #c2474e;color:#333}#header nav ul li a{border-bottom:2px solid transparent;border-top:2px solid transparent;color:#999;font-size:1.4rem;padding:1rem 20px}#header nav ul li a:hover{border-bottom:2px solid #ddd;color:#666}nav footer a.security-logo{background:url(assets/netflix-security-dark-bg-tight.5f1eba5edb.svg) no-repeat 50%;width:60%;height:80px;display:block;opacity:.3;-webkit-transition:opacity 2s;transition:opacity 2s}nav footer a.security-logo:hover{opacity:1}main{overflow:auto;-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}#header nav .label{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;margin-left:.5em}
-@font-face{font-family:Netflix Sans;font-style:normal;font-weight:100;src:url(assets/netflix-sans-100.f0743203aa.eot);src:local("Netflix Sans Thin"),local("NetflixSans-Thin"),url(assets/netflix-sans-100.f0743203aa.eot?#iefix) format("embedded-opentype"),url(assets/netflix-sans-100.6315a957d8.woff2) format("woff2"),url(assets/netflix-sans-100.cff36250e6.woff) format("woff"),url(assets/netflix-sans-100.b08dc7bd3a.ttf) format("truetype")}@font-face{font-family:Netflix Sans;font-style:normal;font-weight:300;src:url(assets/netflix-sans-300.e43573d12b.eot);src:local("Netflix Sans Light"),local("NetflixSans-Light"),url(assets/netflix-sans-300.e43573d12b.eot?#iefix) format("embedded-opentype"),url(assets/netflix-sans-300.c37750ff3c.woff2) format("woff2"),url(assets/netflix-sans-300.615a2bd7da.woff) format("woff"),url(assets/netflix-sans-300.abb725670a.ttf) format("truetype")}@font-face{font-family:Netflix Sans;font-style:normal;font-weight:400;src:url(assets/netflix-sans-regular.1baacabf13.eot);src:local("Netflix Sans Regular"),local("NetflixSans-Regular"),url(assets/netflix-sans-regular.1baacabf13.eot?#iefix) format("embedded-opentype"),url(assets/netflix-sans-regular.7c450bac39.woff2) format("woff2"),url(assets/netflix-sans-regular.8ebcc04f1b.woff) format("woff"),url(assets/netflix-sans-regular.8b37ea2a1b.ttf) format("truetype")}@font-face{font-family:Netflix Sans;font-style:normal;font-weight:600;src:url(assets/netflix-sans-600.90adba7d96.eot);src:local("Netflix Sans SemiBold"),local("NetflixSans-SemiBold"),url(assets/netflix-sans-600.90adba7d96.eot?#iefix) format("embedded-opentype"),url(assets/netflix-sans-600.a38730a242.woff2) format("woff2"),url(assets/netflix-sans-600.a32964e043.woff) format("woff"),url(assets/netflix-sans-600.e4e1cba992.ttf) format("truetype")}@font-face{font-family:Netflix Sans;font-style:normal;font-weight:700;src:url(assets/netflix-sans-700.f077243d6c.eot);src:local("Netflix Sans Bold"),local("NetflixSans-SemiBold"),url(assets/netflix-sans-700.f077243d6c.eot?#iefix) format("embedded-opentype"),url(assets/netflix-sans-700.29742ddf4e.woff2) format("woff2"),url(assets/netflix-sans-700.a0f2b96215.woff) format("woff"),url(assets/netflix-sans-700.14bb5e632e.ttf) format("truetype")}@font-face{font-family:Netflix Sans;font-style:normal;font-weight:800;src:url(assets/netflix-sans-800.c0015118d1.eot);src:local("Netflix Sans Black"),local("NetflixSans-Black"),url(assets/netflix-sans-800.c0015118d1.eot?#iefix) format("embedded-opentype"),url(assets/netflix-sans-800.536cac0d47.woff2) format("woff2"),url(assets/netflix-sans-800.06fee7aa83.woff) format("woff"),url(assets/netflix-sans-800.44111132c3.ttf) format("truetype")}
+#header > *,
+#header > .content > * {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+}
+#header > .content > nav {
+  -webkit-box-align: stretch;
+  -ms-flex-align: stretch;
+  align-items: stretch;
+}
+* {
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+body,
+html {
+  height: 100%;
+}
+body {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+nav.sidebar {
+  min-height: 100vh;
+  min-height: 100%;
+  overflow-y: auto;
+}
+nav.sidebar,
+nav.sidebar ul,
+nav.sidebar ul li {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+}
+nav.sidebar ul,
+nav.sidebar ul li {
+  margin: 0;
+}
+nav ul li {
+  display: inline-block;
+}
+nav ul {
+  padding-left: 0;
+}
+#primary {
+  width: 100%;
+}
+#header,
+#header nav li a,
+#header ul,
+#header ul li {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+#header nav li a,
+#header ul,
+#header ul li {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+}
+#header nav ul,
+#header nav ul li {
+  -webkit-box-align: stretch;
+  -ms-flex-align: stretch;
+  align-items: stretch;
+}
+#header nav {
+  width: auto;
+}
+#header {
+  position: fixed;
+  z-index: 10;
+  width: 100%;
+}
+nav.sidebar,
+nav.sidebar > * {
+  -ms-flex-negative: 0;
+  flex-shrink: 0;
+}
+html {
+  font-size: 14px;
+}
+body {
+  margin: 0;
+  background: #f3f3f3;
+  font-family: Netflix Sans, Circular EP, -apple-system, Helvetica Neue,
+    Lucida Grande, sans-serif;
+}
+h1:first-child,
+h2:first-child,
+h3:first-child,
+h4:first-child,
+h5:first-child {
+  margin-top: 0;
+}
+i.fa,
+i.fab {
+  padding-right: 0.3em;
+}
+.ui.header,
+.ui.menu,
+h1,
+h2,
+h3,
+h4 {
+  font-family: Netflix Sans, Circular EP, -apple-system, Helvetica Neue,
+    Lucida Grande, sans-serif;
+}
+.ui.segment.square {
+  border-radius: 0;
+}
+#header {
+  background: #fff;
+  -webkit-box-shadow: 1px 0 2px rgba(0, 0, 0, 0.2);
+  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.2);
+}
+#header .content {
+  padding: 0 20px;
+  -webkit-box-pack: justify;
+  -ms-flex-pack: justify;
+  justify-content: space-between;
+  -webkit-box-flex: 1;
+  -ms-flex-positive: 1;
+  flex-grow: 1;
+}
+#header i.icon {
+  color: #979797;
+}
+#header img.avatar {
+  margin-left: 0.5rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 3rem;
+}
+#header nav li a {
+  text-decoration: none;
+}
+main {
+  padding: 20px;
+}
+#primary {
+  margin-top: 70px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+}
+#header,
+nav .brand {
+  height: 70px;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+nav .brand {
+  width: 240px;
+}
+nav.sidebar {
+  width: 240px;
+  -webkit-box-pack: justify;
+  -ms-flex-pack: justify;
+  justify-content: space-between;
+  background-color: #262626;
+  font-size: 14px;
+}
+nav.sidebar h1,
+nav.sidebar h2,
+nav.sidebar h3,
+nav.sidebar h4,
+nav.sidebar h5 {
+  color: #737373;
+  text-align: center;
+  font-weight: 400;
+  margin: 1.5em 20px 0.3em;
+}
+nav.sidebar h2 {
+  text-transform: uppercase;
+  font-size: 16px;
+}
+nav.sidebar h3 {
+  font-size: 14px;
+}
+nav.sidebar li {
+  background: #2e2e2e;
+}
+nav.sidebar li:last-child {
+  margin-bottom: 0.5em;
+}
+nav.sidebar li a {
+  color: #8c8c8c;
+  text-decoration: none;
+  padding: 15px 20px;
+}
+nav.sidebar li.active,
+nav.sidebar li:hover {
+  background: #404040;
+}
+nav.sidebar li.active a,
+nav.sidebar li:hover a {
+  color: #fff;
+}
+nav.sidebar footer {
+  color: #595959;
+  padding: 1em;
+  -ms-flex-item-align: end;
+  align-self: end;
+  width: 100%;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  font-size: 0.9em;
+}
+.brand,
+nav.sidebar footer {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+}
+.brand {
+  width: 240px;
+  -ms-flex-negative: 0;
+  flex-shrink: 0;
+  padding: 0;
+  font-size: 18px;
+  letter-spacing: 1px;
+}
+.brand,
+.brand:hover,
+.brand a {
+  padding: 0;
+  color: #fff !important;
+  background: #e50914;
+  text-decoration: none;
+  text-transform: uppercase;
+  border: none !important;
+}
+#header nav {
+  height: 100%;
+}
+#header nav ul {
+  margin: 0;
+}
+#header nav ul li {
+  padding-right: 5px;
+}
+#header nav ul li.active a,
+#header nav ul li.active a:hover {
+  border-bottom: 2px solid #c2474e;
+  color: #333;
+}
+#header nav ul li a {
+  border-bottom: 2px solid transparent;
+  border-top: 2px solid transparent;
+  color: #999;
+  font-size: 1.4rem;
+  padding: 1rem 20px;
+}
+#header nav ul li a:hover {
+  border-bottom: 2px solid #ddd;
+  color: #666;
+}
+nav footer a.security-logo {
+  background: url(assets/netflix-security-dark-bg-tight.5f1eba5edb.svg)
+    no-repeat 50%;
+  width: 60%;
+  height: 80px;
+  display: block;
+  opacity: 0.3;
+  -webkit-transition: opacity 2s;
+  transition: opacity 2s;
+}
+nav footer a.security-logo:hover {
+  opacity: 1;
+}
+main {
+  overflow: auto;
+  -webkit-box-flex: 1;
+  -ms-flex-positive: 1;
+  flex-grow: 1;
+}
+#header nav .label {
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  margin-left: 0.5em;
+}
+@font-face {
+  font-family: Netflix Sans;
+  font-style: normal;
+  font-weight: 100;
+  src: url(assets/netflix-sans-100.f0743203aa.eot);
+  src: local("Netflix Sans Thin"), local("NetflixSans-Thin"),
+    url(assets/netflix-sans-100.f0743203aa.eot?#iefix)
+      format("embedded-opentype"),
+    url(assets/netflix-sans-100.6315a957d8.woff2) format("woff2"),
+    url(assets/netflix-sans-100.cff36250e6.woff) format("woff"),
+    url(assets/netflix-sans-100.b08dc7bd3a.ttf) format("truetype");
+}
+@font-face {
+  font-family: Netflix Sans;
+  font-style: normal;
+  font-weight: 300;
+  src: url(assets/netflix-sans-300.e43573d12b.eot);
+  src: local("Netflix Sans Light"), local("NetflixSans-Light"),
+    url(assets/netflix-sans-300.e43573d12b.eot?#iefix)
+      format("embedded-opentype"),
+    url(assets/netflix-sans-300.c37750ff3c.woff2) format("woff2"),
+    url(assets/netflix-sans-300.615a2bd7da.woff) format("woff"),
+    url(assets/netflix-sans-300.abb725670a.ttf) format("truetype");
+}
+@font-face {
+  font-family: Netflix Sans;
+  font-style: normal;
+  font-weight: 400;
+  src: url(assets/netflix-sans-regular.1baacabf13.eot);
+  src: local("Netflix Sans Regular"), local("NetflixSans-Regular"),
+    url(assets/netflix-sans-regular.1baacabf13.eot?#iefix)
+      format("embedded-opentype"),
+    url(assets/netflix-sans-regular.7c450bac39.woff2) format("woff2"),
+    url(assets/netflix-sans-regular.8ebcc04f1b.woff) format("woff"),
+    url(assets/netflix-sans-regular.8b37ea2a1b.ttf) format("truetype");
+}
+@font-face {
+  font-family: Netflix Sans;
+  font-style: normal;
+  font-weight: 600;
+  src: url(assets/netflix-sans-600.90adba7d96.eot);
+  src: local("Netflix Sans SemiBold"), local("NetflixSans-SemiBold"),
+    url(assets/netflix-sans-600.90adba7d96.eot?#iefix)
+      format("embedded-opentype"),
+    url(assets/netflix-sans-600.a38730a242.woff2) format("woff2"),
+    url(assets/netflix-sans-600.a32964e043.woff) format("woff"),
+    url(assets/netflix-sans-600.e4e1cba992.ttf) format("truetype");
+}
+@font-face {
+  font-family: Netflix Sans;
+  font-style: normal;
+  font-weight: 700;
+  src: url(assets/netflix-sans-700.f077243d6c.eot);
+  src: local("Netflix Sans Bold"), local("NetflixSans-SemiBold"),
+    url(assets/netflix-sans-700.f077243d6c.eot?#iefix)
+      format("embedded-opentype"),
+    url(assets/netflix-sans-700.29742ddf4e.woff2) format("woff2"),
+    url(assets/netflix-sans-700.a0f2b96215.woff) format("woff"),
+    url(assets/netflix-sans-700.14bb5e632e.ttf) format("truetype");
+}
+@font-face {
+  font-family: Netflix Sans;
+  font-style: normal;
+  font-weight: 800;
+  src: url(assets/netflix-sans-800.c0015118d1.eot);
+  src: local("Netflix Sans Black"), local("NetflixSans-Black"),
+    url(assets/netflix-sans-800.c0015118d1.eot?#iefix)
+      format("embedded-opentype"),
+    url(assets/netflix-sans-800.536cac0d47.woff2) format("woff2"),
+    url(assets/netflix-sans-800.06fee7aa83.woff) format("woff"),
+    url(assets/netflix-sans-800.44111132c3.ttf) format("truetype");
+}
