@@ -37,9 +37,8 @@ be interested in implementing. These include:
 
 ## Quick Start
 
-Docker-Compose is the quickest way to get ConsoleMe up and running locally for testing purposes. The Dockerfile is a
-great point of reference for the installation process. If you are going to deploy ConsoleMe in a production environment,
-we highly recommend deploying it to an isolated, locked-down AWS account.
+Docker-Compose is the quickest way to get ConsoleMe up and running locally for testing purposes. For development, we highly recommend setting up ConsoleMe locally with the instructions below. The Dockerfile is a great point of reference for the installation process. If you are going to deploy ConsoleMe in a production environment,
+we recommend deploying it to an isolated, locked-down AWS account.
 
 `docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up`
 
@@ -52,13 +51,11 @@ of improvement.
 
 ```bash
 # Install Python
-brew install python@3.8 yarn
+brew install python@3.8 yarn pkgconfig libxmlsec1
 
 # XCode Command-Line Tools
 xcode-select --install
 
-# Additional dependencies
-brew install pkgconfig libxmlsec1
 ```
 
 ### Linux
@@ -94,6 +91,9 @@ python3 -m venv env
 
 # Activate virtualenv
 . env/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt -r requirements-test.txt -e .
 
 # Run the `make install` script, which will create the appropriate DynamoDB tables locally and probably make a futile
 # effort to cache data in Redis. Caching will only work after you've configured ConsoleMe for your environment.
