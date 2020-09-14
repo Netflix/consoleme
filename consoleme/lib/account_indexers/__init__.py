@@ -50,6 +50,9 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
         s3_bucket = config.get("cache_cloud_accounts.s3.bucket")
         s3_key = config.get("cache_cloud_accounts.s3.file")
     # Store full mapping of the model
+    # We want to pass a dict to store_json_results_in_redis_and_s3, but the problem is account_mapping.dict()
+    # includes pydantic objects that cannot be dumped to json without passing a special JSON encoder for the
+    # Pydantic type, hence the usage of json.loads(account_mapping.json())
     await store_json_results_in_redis_and_s3(
         json.loads(account_mapping.json()),
         redis_key=redis_key,
