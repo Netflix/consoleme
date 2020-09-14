@@ -3,7 +3,7 @@ env:
   es6: true
   node: true
 extends:
-  - 'plugin:react/recommended'
+  - "plugin:react/recommended"
   - airbnb
   - prettier
   - prettier/react

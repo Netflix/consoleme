@@ -50,7 +50,7 @@ aws = get_plugin_by_name(config.get("plugins.aws"))()
 class RequestHandler(BaseAPIV2Handler):
     """Handler for /api/v2/request
 
-        Allows for creation of a request.
+    Allows for creation of a request.
     """
 
     allowed_methods = ["POST"]
@@ -194,8 +194,10 @@ class RequestHandler(BaseAPIV2Handler):
                     return
             else:
                 # If admin auto approve is false, check for auto-approve probe eligibility
-                is_eligible_for_auto_approve_probe = await is_request_eligible_for_auto_approval(
-                    extended_request, self.user
+                is_eligible_for_auto_approve_probe = (
+                    await is_request_eligible_for_auto_approval(
+                        extended_request, self.user
+                    )
                 )
                 # If we have only made requests that are eligible for auto-approval probe, check against them
                 if is_eligible_for_auto_approve_probe:
@@ -419,8 +421,8 @@ class RequestDetailHandler(BaseAPIV2Handler):
             self.write_error(404, message="Error getting request:" + str(e))
             return
         extended_request = await populate_old_policies(extended_request, self.user)
-        populate_cross_account_resource_policies_result = await populate_cross_account_resource_policies(
-            extended_request, self.user
+        populate_cross_account_resource_policies_result = (
+            await populate_cross_account_resource_policies(extended_request, self.user)
         )
 
         if populate_cross_account_resource_policies_result["changed"]:

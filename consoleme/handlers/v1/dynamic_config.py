@@ -20,14 +20,14 @@ aws = get_plugin_by_name(config.get("plugins.aws"))()
 class DynamicConfigHandler(BaseHandler):
     async def get(self) -> None:
         """
-            Get the dynamic configuration endpoint.
-            ---
-            description: Presents a YAML-configured editor to allow viewing and modification of dynamic config
-            responses:
-                200:
-                    description: View of dynamic configuration
-                403:
-                    description: Unauthorized to access this page
+        Get the dynamic configuration endpoint.
+        ---
+        description: Presents a YAML-configured editor to allow viewing and modification of dynamic config
+        responses:
+            200:
+                description: View of dynamic configuration
+            403:
+                description: Unauthorized to access this page
         """
 
         if not self.user:
@@ -52,14 +52,14 @@ class DynamicConfigHandler(BaseHandler):
 
     async def post(self):
         """
-            Post an update to the dynamic configuration endpoint.
-            ---
-            description: Update dynamic configuration
-            responses:
-                200:
-                    description: Update successful.
-                403:
-                    description: Unauthorized to access this page
+        Post an update to the dynamic configuration endpoint.
+        ---
+        description: Update dynamic configuration
+        responses:
+            200:
+                description: Update successful.
+            403:
+                description: Unauthorized to access this page
         """
 
         if not self.user:

@@ -8,8 +8,6 @@ repos:
       - id: check-yaml
       - id: flake8
         args: ["--exclude", "consoleme/models.py"]
-      - id: pretty-format-json
-        args: ["--autofix"]
 
   - repo: https://github.com/asottile/seed-isort-config
     rev: v1.9.3

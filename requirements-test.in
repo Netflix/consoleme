@@ -3,7 +3,6 @@ asynctest
 bandit
 black
 coverage
-fakeredis
 flake8
 flake8-docstrings
 flake8-import-order
@@ -21,6 +20,7 @@ pytest-mock
 pytest-timeout
 pytest-tornado
 pytest-xdist
+redislite
 readme_renderer
 selenium
 tornado

@@ -2,7 +2,6 @@ import asyncio
 from datetime import datetime, timedelta
 from unittest import TestCase
 
-import pytest
 import pytz
 import ujson as json
 from mock import patch
@@ -18,7 +17,6 @@ ROLE = {
 }
 
 
-@pytest.mark.usefixtures("iam", "iam_sync_roles")
 class TestAwsLib(TestCase):
     def test_is_role_instance_profile(self):
         from consoleme.lib.aws import is_role_instance_profile

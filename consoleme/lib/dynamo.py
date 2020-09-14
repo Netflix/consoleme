@@ -52,7 +52,9 @@ class BaseDynamoHandler:
     """Base class for interacting with DynamoDB."""
 
     def _get_dynamo_table(self, table_name):
-        function: str = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
         try:
             # call sts_conn with my client and pass in forced_client
             if config.get("dynamodb_server"):
@@ -254,9 +256,9 @@ class UserDynamoHandler(BaseDynamoHandler):
     async def get_all_api_health_alerts(self) -> list:
         """Return all requests. If a status is specified, only requests with the specified status will be returned.
 
-                :param status:
-                :return:
-                """
+        :param status:
+        :return:
+        """
         response: dict = self.api_health_roles_table.scan()
         items = response.get("Items", [])
         while "LastEvaluatedKey" in response:
@@ -275,9 +277,11 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     async def write_api_health_alert_info(self, request, user_email: str):
         """
-            Writes a health alert role to the appropriate DynamoDB table
+        Writes a health alert role to the appropriate DynamoDB table
         """
-        function: str = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
         # enrich request
         request["app_create_time"]: int = int(time.time())
         request["updated_by"]: str = user_email
@@ -302,9 +306,11 @@ class UserDynamoHandler(BaseDynamoHandler):
         self, request: dict, user_email=None, update_by=None, last_updated=None
     ):
         """
-            Update api_health_alert_info by roleName
+        Update api_health_alert_info by roleName
         """
-        function: str = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
 
         # enrich request
         if update_by:
@@ -332,9 +338,11 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     async def delete_api_health_alert_info(self, app: str) -> None:
         """
-            Delete api_health_alert_info by roleName
+        Delete api_health_alert_info by roleName
         """
-        function: str = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
 
         try:
             await sync_to_async(self.api_health_roles_table.delete_item)(
@@ -365,10 +373,10 @@ class UserDynamoHandler(BaseDynamoHandler):
         dry_run: bool = False,
     ):
         """
-            Writes a policy request to the appropriate DynamoDB table
-            dry_run will create the request format, but won't actually write it
-            Sample run:
-            write_policy_request(policy_changes)
+        Writes a policy request to the appropriate DynamoDB table
+        dry_run will create the request format, but won't actually write it
+        Sample run:
+        write_policy_request(policy_changes)
         """
 
         request_time = request_time or int(time.time())
@@ -412,9 +420,9 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     async def write_policy_request_v2(self, extended_request: ExtendedRequestModel):
         """
-                    Writes a policy request v2 to the appropriate DynamoDB table
-                    Sample run:
-                    write_policy_request_v2(request)
+        Writes a policy request v2 to the appropriate DynamoDB table
+        Sample run:
+        write_policy_request_v2(request)
         """
         new_request = {
             "request_id": extended_request.id,
@@ -452,9 +460,9 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     async def update_policy_request(self, updated_request):
         """
-            Update a policy request by request ID
-            Sample run:
-            update_policy_request(policy_changes)
+        Update a policy request by request ID
+        Sample run:
+        update_policy_request(policy_changes)
         """
         updated_request["last_updated"] = int(time.time())
         try:
@@ -576,7 +584,9 @@ class UserDynamoHandler(BaseDynamoHandler):
     def get_or_create_user(
         self, user_email: str
     ) -> Dict[str, Union[Decimal, List[str], Binary, str]]:
-        function: str = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
         log_data = {"function": function, "user_email": user_email}
 
         log.debug(log_data)

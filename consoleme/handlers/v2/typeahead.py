@@ -14,9 +14,9 @@ red = async_to_sync(RedisHandler().redis)()
 class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
     async def get(self):
         try:
-            type_ahead: Optional[str] = self.request.arguments.get("typeahead")[
-                0
-            ].decode("utf-8").lower()
+            type_ahead: Optional[str] = (
+                self.request.arguments.get("typeahead")[0].decode("utf-8").lower()
+            )
         except TypeError:
             type_ahead = None
 

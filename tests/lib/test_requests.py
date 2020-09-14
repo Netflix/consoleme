@@ -28,8 +28,8 @@ class TestRequestsLibrary(AsyncTestCase):
             {"username": "clair"},
         ]
         mock_secondary_approver = [{"name": "group1"}]
-        mock_user_dynamo_handler.return_value.get_all_requests.return_value = create_future(
-            mock_requests
+        mock_user_dynamo_handler.return_value.get_all_requests.return_value = (
+            create_future(mock_requests)
         )
 
         mock_sa = Future()
@@ -58,8 +58,8 @@ class TestRequestsLibrary(AsyncTestCase):
             {"username": "clair", "status": "approved"},
         ]
         mock_secondary_approver = {"group1": ["group1"]}
-        mock_user_dynamo_handler.return_value.get_all_requests.return_value = create_future(
-            mock_requests
+        mock_user_dynamo_handler.return_value.get_all_requests.return_value = (
+            create_future(mock_requests)
         )
 
         mock_auth.get_secondary_approvers.return_value = create_future(

@@ -120,6 +120,10 @@ class GroupMapping:
             return []
         return role_blob.get("roles")
 
+    async def generate_credential_authorization_mapping(self, authorization_mapping):
+        # Override this with company-specific logic
+        return authorization_mapping
+
     async def get_eligible_roles_from_group_prefix(self, groups) -> list:
         """Get eligible roles for user from group header prefix."""
         return []
