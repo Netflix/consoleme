@@ -7,14 +7,30 @@ auth_cookie_name: consoleme_auth
 application_admin: consoleme_admins@example.com
 application_name: consoleme
 
-# We support account aliases, which is why the mapping of account names below is a list
-account_ids_to_name:
-  "123456789012":
-    - default_account
+# ConsoleMe needs to know about your AWS accounts. ConsoleMe can retrieve a list of your accounts from the following
+# sources:
+# 1) Config (See the account_ids_to_name key below)
+# 2) AWS Organizations (See the cache_accounts_from_aws_organizations key below)
+# 3) Swag ( https://github.com/Netflix-Skunkworks/swag-api) (See the retrieve_accounts_from_swag key below)
+
+#account_ids_to_name:
+#  "123456789012":
+#    - default_account
 #  "123456789013":
 #    - prod
 #  "123456789014":
 #    - test
+
+#cache_accounts_from_aws_organizations:
+#  # This is the account ID of your AWS organizations master
+#  organizations_master_account_id: "123456789012"
+#  # This is the name of the role that consoleme will attempt to assume on your Organizations master account to retrieve
+#  # account information. Ensure that ConsoleMe can assume this role, and that this role has the permission:
+#  # organizations:listaccounts
+#  organizations_master_role_to_assume: "ConsoleMe"
+
+#retrieve_accounts_from_swag:
+#  base_url: 'https://your_swag_url/'
 
 auth:
   get_groups_by_header: true

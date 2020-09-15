@@ -7,6 +7,10 @@ environment: test
 
 url: http://127.0.0.1:8081
 
+account_ids_to_name:
+  "123456789012":
+    - default_account
+
 celery:
   test_account_ids:
     - "123456789012"
