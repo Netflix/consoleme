@@ -60,6 +60,30 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     def test_post_creds(self):
+        from consoleme.lib.redis import RedisHandler
+
+        red = RedisHandler.redis_sync()
+        redis_topic = config.get(
+            "generate_and_store_credential_authorization_mapping.redis_key",
+            "CREDENTIAL_AUTHORIZATION_MAPPING_V1",
+        )
+        red.set(
+            redis_topic,
+            json.dumps(
+                {
+                    "group1@example.com": {
+                        "authorized_roles": ["arn:aws:iam::123456789012:role/rolename"],
+                        "authorized_roles_cli_only": [],
+                    },
+                    "someuser@example.com": {
+                        "authorized_roles": [
+                            "arn:aws:iam::123456789012:role/userrolename"
+                        ],
+                        "authorized_roles_cli_only": [],
+                    },
+                },
+            ),
+        )
         mock_moto = patch(
             "moto.awslambda.models.LambdaFunction.invoke",
             lambda *args, **kwargs: json.dumps(self.mock_moto_lambda),
@@ -145,3 +169,4 @@ class TestIndexPostHandler(AsyncHTTPTestCase):
             follow_redirects=False,
         )
         self.assertEqual(result.code, 403)
+        red.delete(redis_topic)
