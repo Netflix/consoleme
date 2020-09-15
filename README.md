@@ -96,7 +96,7 @@ python3 -m venv env
 . env/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt -r requirements-test.txt -e .
+pip install -r requirements.txt -r requirements-test.txt -e default_plugins -e .
 
 # Install frontend dependencies and build the frontend
 yarn
