@@ -7,6 +7,9 @@ from redis.exceptions import ConnectionError
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.cloud_credential_authorization_mapping import (
+    CredentialAuthorizationMapping,
+)
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -14,7 +17,7 @@ from consoleme.lib.redis import RedisHandler
 log = config.get_logger("consoleme")
 aws = get_plugin_by_name(config.get("plugins.aws"))()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
-
+credential_authz_mapping = CredentialAuthorizationMapping()
 
 # TODO: Docstrings should provide examples of the data that needs to be returned
 
@@ -30,13 +33,15 @@ class GroupMapping:
     ) -> list:
         """Get eligible roles for user."""
         roles: list = []
+        # Legacy cruft, we should rename the parameter here.
+        include_cli: bool = not console_only
 
-        if config.get("get_eligible_roles.from_config"):
-            roles.extend(
-                await self.get_eligible_roles_from_config(
-                    username, groups, console_only
-                )
+        roles.extend(
+            await credential_authz_mapping.determine_users_authorized_roles(
+                username, groups, include_cli
             )
+        )
+
         return list(set(roles))
 
     @staticmethod
