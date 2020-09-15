@@ -45,13 +45,12 @@ bootstrap:
 .PHONY: dynamo
 dynamo:
 	@echo "--> Configuring Dynamo (Make sure local dynamo is enabled on port 8000)"
-	. env/bin/activate || source activate consoleme;\
 	python scripts/initialize_dynamodb_oss.py
 
 .PHONY: redis
 redis:
 	@echo "--> Configuring Redis"
-	. env/bin/activate || source activate consoleme;\
+	@echo "--> Configuring Redis"
 	python scripts/initialize_redis_oss.py
 
 .PHONY: test
@@ -64,7 +63,6 @@ bandit: clean
 
 .PHONY: testhtml
 testhtml: clean
-	. env/bin/activate || source activate consoleme;\
 	CONSOLEME_CONFIG_ENTRYPOINT=default_config $(pytest) $(html_report) && open htmlcov/index.html
 
 .PHONY: clean
@@ -81,7 +79,6 @@ clean:
 
 .PHONY: lint
 lint:
-	. env/bin/activate || source activate consoleme;\
 	$(flake8) $(project) setup.py test
 
 .PHONY: test-lint
@@ -164,7 +161,6 @@ endif
 
 .PHONY: default_plugins
 default_plugins:
-	. env/bin/activate || source activate consoleme;\
 	pip install -e default_plugins
 
 

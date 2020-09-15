@@ -1,6 +1,8 @@
+import sys
 import time
 from typing import Dict
 
+import sentry_sdk
 from pydantic.json import pydantic_encoder
 
 from consoleme.config import config
@@ -24,6 +26,8 @@ from consoleme.lib.cloud_credential_authorization_mapping.role_tags import (
 )
 from consoleme.lib.singleton import Singleton
 
+log = config.get_logger("consoleme")
+
 
 class CredentialAuthorizationMapping(metaclass=Singleton):
     def __init__(self) -> None:
@@ -42,15 +46,25 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
             s3_key = config.get(
                 "generate_and_store_credential_authorization_mapping.s3.file"
             )
-
-            self.authorization_mapping = await retrieve_json_data_from_redis_or_s3(
-                redis_topic,
-                s3_bucket=s3_bucket,
-                s3_key=s3_key,
-                json_object_hook=RoleAuthorizationsDecoder,
-                json_encoder=pydantic_encoder,
-            )
-            self.last_update = int(time.time())
+            try:
+                self.authorization_mapping = await retrieve_json_data_from_redis_or_s3(
+                    redis_topic,
+                    s3_bucket=s3_bucket,
+                    s3_key=s3_key,
+                    json_object_hook=RoleAuthorizationsDecoder,
+                    json_encoder=pydantic_encoder,
+                )
+                self.last_update = int(time.time())
+            except Exception as e:
+                sentry_sdk.capture_exception()
+                log.error(
+                    {
+                        "function": f"{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+                        "error": f"Error loading cloud credential mapping. Returning empty mapping: {e}",
+                    },
+                    exc_info=True,
+                )
+                return {}
         return self.authorization_mapping
 
     async def determine_users_authorized_roles(self, user, groups, include_cli=False):
