@@ -38,8 +38,8 @@ be interested in implementing. These include:
 ## Quick Start
 
 Docker-Compose is the quickest way to get ConsoleMe up and running locally for testing purposes.
-For development, we highly recommend setting up ConsoleMe locally with the instructions below this Quick Start. 
-The Dockerfile is a great point of reference for the installation process. 
+For development, we highly recommend setting up ConsoleMe locally with the instructions below this Quick Start.
+The Dockerfile is a great point of reference for the installation process.
 If you are going to deploy ConsoleMe in a production environment,
 we recommend deploying it to an isolated, locked-down AWS account.
 
@@ -84,6 +84,14 @@ A local set of Redis and DynamoDB (local) instances need to be set up. These are
 docker-compose -f docker-compose-dependencies.yaml up
 ```
 
+#### Get access to administrative credentials on your account
+
+For an initial setup, we advise making an IAM user with sufficient privileges to allow ConsoleMe to sync your IAM roles,
+S3 buckets, SQS queues, SNS topics, and AWS Config data. Sections below outline the required permissions. See
+[this page](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) for configuring your user
+credentials. Note: After you have ConsoleMe set up, you should no longer need IAM user credentials. Please set a
+reminder to delete these when you're done with them.
+
 #### Make a virtual environment and run the installation script
 
 In repo root run `make install`. You may also want to install the default plugins if you have not developed internal plugins: `pip install -e default_plugins`
@@ -95,16 +103,14 @@ python3 -m venv env
 # Activate virtualenv
 . env/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt -r requirements-test.txt -e default_plugins -e .
-
-# Install frontend dependencies and build the frontend
-yarn
-node_modules/webpack/bin/webpack.js --progress
-
-# Run the `make install` script, which will create the appropriate DynamoDB tables locally and probably make a futile
-# effort to cache data in Redis. Caching will only work after you've configured ConsoleMe for your environment.
 make install
+# The `make install` step runs the following commands, and attempts to create local dynamo tables:
+#
+# pip install -r requirements.txt -r requirements-test.txt -e default_plugins -e .
+# yarn
+# node_modules/webpack/bin/webpack.js --progress
+# python scripts/initialize_dynamodb_oss.py
+# python scripts/initialize_redis_oss.py
 ```
 
 > You will need to have AWS credentials for the installation to work (they need to be valid credentials for any
@@ -114,7 +120,7 @@ make install
 
 ```bash
 # Run ConsoleMe
-CONFIG_LOCATION=example_config/example_config_development.yaml python consoleme/__main__.py
+python consoleme/__main__.py
 ```
 
 > ConsoleMe requires Python 3.7+. If your virtualenv was installed under Python2.x

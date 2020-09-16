@@ -43,7 +43,10 @@ def query(
     else:  # Don't use Config aggregator and instead query all the regions on an account
         session = boto3.Session()
         available_regions = session.get_available_regions("config")
-        excluded_regions = config.get("api_protect.exclude_regions", [])
+        excluded_regions = config.get(
+            "api_protect.exclude_regions",
+            ["af-south-1", "ap-east-1", "eu-south-1", "me-south-1"],
+        )
         regions = [x for x in available_regions if x not in excluded_regions]
         for region in regions:
             config_client = boto3_cached_conn(

@@ -968,7 +968,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         client = boto3_cached_conn(
             "sqs",
             account_number=account_id,
-            assume_role=config.get("policies.role_name", "ConsoleMe"),
+            assume_role=config.get("policies.role_name"),
             region=region,
             read_only=True,
         )

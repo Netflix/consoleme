@@ -21,6 +21,8 @@ from moto import (
 )
 from tornado.concurrent import Future
 
+# This must be set before loading ConsoleMe's configuration
+os.environ["CONFIG_LOCATION"] = "example_config/example_config_test.yaml"  # noqa: E402
 from consoleme.config import config
 
 MOCK_ROLE = {
