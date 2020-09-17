@@ -206,8 +206,10 @@ class Auth:
             for k, v in header.items():
                 if headers.get(k) != v:
                     stats.count("auth.validate_certificate.error")
-                    error = "Header {} is supposed to equal {}, but it equals {}.".format(
-                        k, v, headers.get(k)
+                    error = (
+                        "Header {} is supposed to equal {}, but it equals {}.".format(
+                            k, v, headers.get(k)
+                        )
                     )
                     log_data = {
                         "function": "auth.validate_certificate",

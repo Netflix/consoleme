@@ -11,9 +11,7 @@
           "virtualization-type": "hvm"
         },
         "most_recent": true,
-        "owners": [
-          "099720109477"
-        ]
+        "owners": ["099720109477"]
       },
       "ssh_username": "ubuntu",
       "type": "amazon-ebs"
@@ -21,9 +19,7 @@
   ],
   "provisioners": [
     {
-      "inline": [
-        "sleep 30"
-      ],
+      "inline": ["sleep 30"],
       "type": "shell"
     },
     {
@@ -69,9 +65,7 @@
       "type": "shell"
     },
     {
-      "inline": [
-        "sudo systemctl enable consoleme"
-      ],
+      "inline": ["sudo systemctl enable consoleme"],
       "type": "shell"
     }
   ],

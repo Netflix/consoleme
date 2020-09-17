@@ -113,10 +113,11 @@ async def get_role_template(arn: str):
 
 
 async def get_role_details(
-    account_id: str, role_name: str, extended: bool = False
+    account_id: str, role_name: str, extended: bool = False, force_refresh: bool = False
 ) -> Optional[Union[ExtendedRoleModel, RoleModel]]:
+
     arn = f"arn:aws:iam::{account_id}:role/{role_name}"
-    role = await aws.fetch_iam_role(account_id, arn)
+    role = await aws.fetch_iam_role(account_id, arn, force_refresh=force_refresh)
     # requested role doesn't exist
     if not role:
         return None

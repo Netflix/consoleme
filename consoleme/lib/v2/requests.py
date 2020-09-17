@@ -726,7 +726,9 @@ async def populate_old_policies(
         return extended_request
 
     role_name = arn_parsed["resource_path"].split("/")[-1]
-    role = await get_role_details(role_account_id, role_name=role_name, extended=True)
+    role = await get_role_details(
+        role_account_id, role_name=role_name, extended=True, force_refresh=True
+    )
 
     for change in extended_request.changes.changes:
         if change.status == Status.applied:

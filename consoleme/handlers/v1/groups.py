@@ -257,8 +257,8 @@ class GroupHandler(BaseHandler):
                     modifications[boolean] = False
 
         # Configure string values for certain attributes if they are sent in the POST request
-        for l in list_attributes:
-            var = l.get("name")
+        for attr in list_attributes:
+            var = attr.get("name")
             if data.get(var) is not None:
                 modifications[var] = data[var]
 

@@ -16,9 +16,9 @@ log = config.get_logger()
 
 class PolicyReviewV2Handler(BaseHandler):
     """
-        Handler for /policies/request_v2/{request_id}
+    Handler for /policies/request_v2/{request_id}
 
-        GET - Get requests v2 page # TODO: add better description
+    GET - Get requests v2 page # TODO: add better description
 
     """
 

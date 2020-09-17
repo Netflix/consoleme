@@ -19,7 +19,6 @@ redis:
     us-west-2: consoleme-redis
   db: 0
   port: 6379
-
 # You may optionally use the docker-compose-zipkin.yaml file to run Zipkin. You can enable distributed tracing
 # with the following configuration:
 # tracing:

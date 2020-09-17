@@ -1,7 +1,10 @@
+import ujson as json
+
 from consoleme.config import config
 from consoleme.lib.account_indexers.aws_organizations import (
     retrieve_accounts_from_aws_organizations,
 )
+from consoleme.lib.account_indexers.current_account import retrieve_current_account
 from consoleme.lib.account_indexers.local_config import retrieve_accounts_from_config
 from consoleme.lib.account_indexers.swag import retrieve_accounts_from_swag
 from consoleme.lib.cache import (
@@ -31,6 +34,9 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
     elif config.get("cache_cloud_accounts.from_config", True):
         account_mapping = await retrieve_accounts_from_config()
 
+    if not account_mapping or not account_mapping.accounts:
+        account_mapping = await retrieve_current_account()
+
     account_id_to_name = {}
 
     for account in account_mapping.accounts:
@@ -48,8 +54,14 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
         s3_bucket = config.get("cache_cloud_accounts.s3.bucket")
         s3_key = config.get("cache_cloud_accounts.s3.file")
     # Store full mapping of the model
+    # We want to pass a dict to store_json_results_in_redis_and_s3, but the problem is account_mapping.dict()
+    # includes pydantic objects that cannot be dumped to json without passing a special JSON encoder for the
+    # Pydantic type, hence the usage of json.loads(account_mapping.json())
     await store_json_results_in_redis_and_s3(
-        account_mapping.json(), redis_key=redis_key, s3_bucket=s3_bucket, s3_key=s3_key
+        json.loads(account_mapping.json()),
+        redis_key=redis_key,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
     )
 
     return account_mapping
@@ -65,7 +77,12 @@ async def get_account_id_to_name_mapping(
     if force_sync or not accounts or not accounts.get("accounts"):
         # Force a re-sync and then retry
         await cache_cloud_accounts()
-        accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default={})
+        accounts = await retrieve_json_data_from_redis_or_s3(
+            redis_key,
+            s3_bucket=config.get("cache_cloud_accounts.s3.bucket"),
+            s3_key=config.get("cache_cloud_accounts.s3.file"),
+            default={},
+        )
 
     account_id_to_name = {}
     for account in accounts.get("accounts", []):

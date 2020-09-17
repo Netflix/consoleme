@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 # Never use this in a production environment.
 services:
   consoleme-redis:

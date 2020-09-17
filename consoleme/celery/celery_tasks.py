@@ -57,6 +57,9 @@ from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
     store_json_results_in_redis_and_s3,
 )
+from consoleme.lib.cloud_credential_authorization_mapping import (
+    generate_and_store_credential_authorization_mapping,
+)
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
@@ -752,8 +755,8 @@ def cache_roles_for_account(account_id: str) -> bool:
 
     # Only query IAM and put data in Dynamo if we're in the active region
     if config.region == config.get("celery.active_region") or config.get(
-        "unit_testing.override_true"
-    ):
+        "environment"
+    ) in ["dev", "test"]:
         # Get the roles:
         iam_roles = get_account_authorization_details(
             account_number=account_id,
@@ -808,13 +811,13 @@ def cache_roles_across_accounts() -> Dict:
     log_data = {"function": function, "cache_key": cache_key}
     num_accounts = 0
     if config.region == config.get("celery.active_region") or config.get(
-        "unit_testing.override_true"
-    ):
+        "environment"
+    ) in ["dev", "test"]:
         # First, get list of accounts
         accounts_d = async_to_sync(get_account_id_to_name_mapping)()
         # Second, call tasks to enumerate all the roles across all accounts
         for account_id in accounts_d.keys():
-            if config.get("environment") == "prod":
+            if config.get("environment") in ["prod", "dev"]:
                 cache_roles_for_account.delay(account_id)
                 num_accounts += 1
             else:
@@ -837,6 +840,17 @@ def cache_roles_across_accounts() -> Dict:
             roles_to_delete_from_cache.append(arn)
     if roles_to_delete_from_cache:
         red.hdel(cache_key, *roles_to_delete_from_cache)
+        for arn in roles_to_delete_from_cache:
+            all_roles.pop(arn, None)
+    log_data["num_roles"] = len(all_roles)
+    # Store full list of roles in a single place
+    async_to_sync(store_json_results_in_redis_and_s3)(
+        all_roles,
+        s3_bucket=config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+        ),
+        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+    )
 
     stats.count(f"{function}.success")
     log_data["num_accounts"] = num_accounts
@@ -954,7 +968,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         client = boto3_cached_conn(
             "sqs",
             account_number=account_id,
-            assume_role=config.get("policies.role_name", "ConsoleMe"),
+            assume_role=config.get("policies.role_name"),
             region=region,
             read_only=True,
         )
@@ -1406,9 +1420,28 @@ def cache_cloud_account_mapping() -> Dict:
     log_data = {
         "function": function,
         "num_accounts": len(account_mapping.accounts),
-        "message": "Successfully cached accounts from AWS Organizations",
+        "message": "Successfully cached cloud account mapping",
     }
 
+    log.debug(log_data)
+    return log_data
+
+
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
+def cache_credential_authorization_mapping() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+
+    authorization_mapping = async_to_sync(
+        generate_and_store_credential_authorization_mapping
+    )()
+
+    log_data = {
+        "function": function,
+        "message": "Successfully cached cloud credential authorization mapping",
+        "num_group_authorizations": len(authorization_mapping),
+    }
+
+    log.debug(log_data)
     return log_data
 
 
@@ -1428,6 +1461,7 @@ if config.get("development", False):
     schedule_45_minute = dev_schedule
     schedule_1_hour = dev_schedule
     schedule_6_hours = dev_schedule
+    schedule_5_minutes = dev_schedule
 
 schedule = {
     "alert_on_group_changes": {
@@ -1509,6 +1543,11 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.cache_cloud_account_mapping",
         "options": {"expires": 1000},
         "schedule": schedule_1_hour,
+    },
+    "cache_credential_authorization_mapping": {
+        "task": "consoleme.celery.celery_tasks.cache_credential_authorization_mapping",
+        "options": {"expires": 1000},
+        "schedule": schedule_5_minutes,
     },
 }
 

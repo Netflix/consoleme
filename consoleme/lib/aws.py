@@ -327,9 +327,9 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
 async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     """Fetch S3 Bucket and applicable policies
 
-        :param account_id:
-        :param bucket_name:
-        :return:
+    :param account_id:
+    :param bucket_name:
+    :return:
     """
 
     log_data: Dict = {

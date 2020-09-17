@@ -1326,6 +1326,7 @@ components:
             - $ref: "#/components/schemas/ApproveRequestModificationModel"
             - $ref: "#/components/schemas/MoveToPendingRequestModificationModel"
             - $ref: "#/components/schemas/ChangeRequestStatusodificationModel"
+            - $ref: "#/components/schemas/CancelRequestModificationModel"
           discriminator:
             propertyName: command
             mapping:

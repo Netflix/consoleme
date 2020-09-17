@@ -21,8 +21,8 @@ def str2bool(v: Optional[Union[bool, str]]) -> bool:
 
 
 # Yield successive n-sized
-# chunks from list l.
-def divide_chunks(l, n):
+# chunks from list list_.
+def divide_chunks(list_, n):
     """
     Yields successive n=zied chunks from list l by looping
     until length l.
@@ -31,8 +31,8 @@ def divide_chunks(l, n):
     ['a', 'b', 'c']
     ['d', 'e']
     """
-    for i in range(0, len(l), n):
-        yield l[i : i + n]
+    for i in range(0, len(list_), n):
+        yield list_[i : i + n]
 
 
 def generate_html(d: List[Dict[str, Union[str, bool]]]) -> str:

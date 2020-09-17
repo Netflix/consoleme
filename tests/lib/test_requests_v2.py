@@ -1,13 +1,11 @@
 import time
+import unittest
 
 import boto3
 import pytest
-import tornado
 import ujson as json
 from mock import patch
-from moto import mock_iam, mock_s3, mock_sns, mock_sqs
 from pydantic import ValidationError
-from tornado.testing import AsyncTestCase
 
 from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
@@ -34,6 +32,28 @@ from consoleme.models import (
     UserModel,
 )
 from tests.conftest import AWSHelper, create_future
+
+existing_policy_name = "test_inline_policy_change5"
+existing_policy_document = {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "s3:ListBucket",
+                "s3:ListBucketVersions",
+                "s3:GetObject",
+                "s3:GetObjectTagging",
+                "s3:GetObjectVersion",
+                "s3:GetObjectVersionTagging",
+                "s3:GetObjectAcl",
+                "s3:GetObjectVersionAcl",
+            ],
+            "Effect": "Allow",
+            "Resource": ["arn:aws:s3:::test_bucket", "arn:aws:s3:::test_bucket/abc/*"],
+            "Sid": "sid_test",
+        }
+    ],
+}
 
 
 async def get_extended_request_helper():
@@ -71,8 +91,19 @@ async def get_extended_request_helper():
     return extended_request
 
 
-class TestRequestsLibV2(AsyncTestCase):
-    @tornado.testing.gen_test
+class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.maxDiff = None
+        client = boto3.client("iam", region_name="us-east-1")
+        role_name = "test"
+        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
+
+    async def asyncTearDown(self):
+        role_name = "test"
+        from consoleme.lib.aws import delete_iam_role
+
+        await delete_iam_role("123456789012", role_name, "consoleme-unit-test")
+
     async def test_validate_inline_policy_change(self):
         from consoleme.lib.v2.requests import validate_inline_policy_change
 
@@ -220,7 +251,6 @@ class TestRequestsLibV2(AsyncTestCase):
             inline_policy_change_model, "user@example.com", role
         )
 
-    @tornado.testing.gen_test
     async def test_validate_managed_policy_change(self):
         from consoleme.lib.v2.requests import validate_managed_policy_change
 
@@ -296,7 +326,6 @@ class TestRequestsLibV2(AsyncTestCase):
             managed_policy_change_model, "user@example.com", role
         )
 
-    @tornado.testing.gen_test
     async def test_validate_assume_role_policy_change(self):
         from consoleme.lib.v2.requests import validate_assume_role_policy_change
 
@@ -368,9 +397,8 @@ class TestRequestsLibV2(AsyncTestCase):
         )
 
     @patch(
-        "consoleme.lib.v2.requests.get_resource_account", AWSHelper.random_account_id,
+        "consoleme.lib.v2.requests.get_resource_account", AWSHelper.random_account_id
     )
-    @tornado.testing.gen_test
     async def test_generate_resource_policies(self):
         from consoleme.lib.v2.requests import generate_resource_policies
 
@@ -494,8 +522,6 @@ class TestRequestsLibV2(AsyncTestCase):
         self.assertTrue(seen_resource_one)
         self.assertTrue(seen_resource_two)
 
-    @mock_iam
-    @tornado.testing.gen_test
     async def test_apply_changes_to_role_inline_policy(self):
         from consoleme.lib.v2.requests import apply_changes_to_role
 
@@ -563,7 +589,6 @@ class TestRequestsLibV2(AsyncTestCase):
 
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "test"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
 
         # Detaching inline policy that isn't attached -> error
         await apply_changes_to_role(
@@ -647,8 +672,6 @@ class TestRequestsLibV2(AsyncTestCase):
             )
             self.assertIn("not attached to role", str(e))
 
-    @mock_iam
-    @tornado.testing.gen_test
     async def test_apply_changes_to_role_managed_policy(self):
         from consoleme.lib.v2.requests import apply_changes_to_role
 
@@ -687,7 +710,6 @@ class TestRequestsLibV2(AsyncTestCase):
 
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "test"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
 
         # Detaching a managed policy that's not attached
         await apply_changes_to_role(
@@ -735,7 +757,7 @@ class TestRequestsLibV2(AsyncTestCase):
         )
         self.assertEqual(0, response.errors)
         # Make sure it attached
-        role_attached_policies = client.list_attached_role_policies(RoleName=role_name,)
+        role_attached_policies = client.list_attached_role_policies(RoleName=role_name)
         self.assertEqual(len(role_attached_policies.get("AttachedPolicies")), 1)
         self.assertEqual(
             role_attached_policies.get("AttachedPolicies")[0].get("PolicyArn"),
@@ -754,11 +776,9 @@ class TestRequestsLibV2(AsyncTestCase):
         )
         self.assertEqual(0, response.errors)
         # Make sure it detached
-        role_attached_policies = client.list_attached_role_policies(RoleName=role_name,)
+        role_attached_policies = client.list_attached_role_policies(RoleName=role_name)
         self.assertEqual(len(role_attached_policies.get("AttachedPolicies")), 0)
 
-    @mock_iam
-    @tornado.testing.gen_test
     async def test_apply_changes_to_role_assume_role_policy(self):
         from consoleme.lib.v2.requests import apply_changes_to_role
 
@@ -813,7 +833,6 @@ class TestRequestsLibV2(AsyncTestCase):
 
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "test"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
 
         # Attach the assume role policy document -> no errors
         await apply_changes_to_role(
@@ -827,7 +846,6 @@ class TestRequestsLibV2(AsyncTestCase):
             assume_role_policy_change_model.policy.policy_document,
         )
 
-    @tornado.testing.gen_test
     async def test_apply_changes_to_role_unsupported_change(self):
         from consoleme.lib.v2.requests import apply_changes_to_role
 
@@ -883,8 +901,6 @@ class TestRequestsLibV2(AsyncTestCase):
         self.assertIn("Error occurred", dict(response.action_results[0]).get("message"))
         self.assertIn("not supported", dict(response.action_results[0]).get("message"))
 
-    @mock_iam
-    @tornado.testing.gen_test
     async def test_apply_specific_change_to_role(self):
         from consoleme.lib.v2.requests import apply_changes_to_role
 
@@ -940,8 +956,24 @@ class TestRequestsLibV2(AsyncTestCase):
 
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "test"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
-
+        client.update_assume_role_policy(
+            RoleName=role_name,
+            PolicyDocument=json.dumps(
+                {
+                    "Statement": [
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": "arn:aws:iam::123456789012:role/myProfile"
+                            },
+                            "Sid": "AllowMeToAssumePlease",
+                        }
+                    ],
+                    "Version": "2012-10-17",
+                }
+            ),
+        )
         # Specify ID different from change -> No changes should happen
         await apply_changes_to_role(
             extended_request, response, extended_request.requester_email, "1234"
@@ -951,7 +983,20 @@ class TestRequestsLibV2(AsyncTestCase):
         # Make sure the change didn't occur
         role_details = client.get_role(RoleName=role_name)
         self.assertDictEqual(
-            role_details.get("Role").get("AssumeRolePolicyDocument"), {},
+            role_details.get("Role").get("AssumeRolePolicyDocument"),
+            {
+                "Statement": [
+                    {
+                        "Action": "sts:AssumeRole",
+                        "Effect": "Allow",
+                        "Principal": {
+                            "AWS": "arn:aws:iam::123456789012:role/myProfile"
+                        },
+                        "Sid": "AllowMeToAssumePlease",
+                    }
+                ],
+                "Version": "2012-10-17",
+            },
         )
 
         # Specify ID same as change -> Change should happen
@@ -970,34 +1015,15 @@ class TestRequestsLibV2(AsyncTestCase):
             assume_role_policy_change_model.policy.policy_document,
         )
 
-    @patch("consoleme.lib.v2.requests.get_role_details")
-    @tornado.testing.gen_test
-    async def test_populate_old_policies(self, mock_get_role_details):
+    async def test_populate_old_policies(self):
         from consoleme.lib.v2.requests import populate_old_policies
 
-        old_policy_doc = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Action": [
-                        "s3:ListBucket",
-                        "s3:ListBucketVersions",
-                        "s3:GetObject",
-                        "s3:GetObjectTagging",
-                        "s3:GetObjectVersion",
-                        "s3:GetObjectVersionTagging",
-                        "s3:GetObjectAcl",
-                        "s3:GetObjectVersionAcl",
-                    ],
-                    "Effect": "Allow",
-                    "Resource": [
-                        "arn:aws:s3:::test_bucket",
-                        "arn:aws:s3:::test_bucket/abc/*",
-                    ],
-                    "Sid": "sid_test",
-                }
-            ],
-        }
+        client = boto3.client("iam", region_name="us-east-1")
+        client.put_role_policy(
+            RoleName="test",
+            PolicyName=existing_policy_name,
+            PolicyDocument=json.dumps(existing_policy_document),
+        )
 
         inline_policy_change = {
             "principal_arn": "arn:aws:iam::123456789012:role/test",
@@ -1005,7 +1031,7 @@ class TestRequestsLibV2(AsyncTestCase):
             "resources": [],
             "version": 2.0,
             "status": "applied",
-            "policy_name": "test_inline_policy_change",
+            "policy_name": existing_policy_name,
             "new": False,
             "action": "attach",
             "policy": {
@@ -1032,22 +1058,21 @@ class TestRequestsLibV2(AsyncTestCase):
             comments=[],
         )
 
-        role = ExtendedRoleModel(
-            name="role_name",
-            account_id="123456789012",
-            account_name="friendly_name",
-            arn="arn:aws:iam::123456789012:role/role_name",
-            inline_policies=[
-                {
-                    "PolicyName": inline_policy_change_model.policy_name,
-                    "PolicyDocument": old_policy_doc,
-                }
-            ],
-            assume_role_policy_document={},
-            managed_policies=[],
-            tags=[],
-        )
-        mock_get_role_details.return_value = create_future(role)
+        # role = ExtendedRoleModel(
+        #     name="role_name",
+        #     account_id="123456789012",
+        #     account_name="friendly_name",
+        #     arn="arn:aws:iam::123456789012:role/role_name",
+        #     inline_policies=[
+        #         {
+        #             "PolicyName": inline_policy_change_model.policy_name,
+        #             "PolicyDocument": existing_policy_document,
+        #         }
+        #     ],
+        #     assume_role_policy_document={},
+        #     managed_policies=[],
+        #     tags=[],
+        # )
 
         # assert before calling this function that old policy is None
         self.assertEqual(None, extended_request.changes.changes[0].old_policy)
@@ -1070,11 +1095,10 @@ class TestRequestsLibV2(AsyncTestCase):
 
         # assert after calling the function that the old policies populated properly
         self.assertDictEqual(
-            old_policy_doc,
+            existing_policy_document,
             extended_request.changes.changes[0].old_policy.policy_document,
         )
 
-    @tornado.testing.gen_test
     async def test_apply_resource_policy_change_unsupported(self):
         from consoleme.lib.v2.requests import apply_resource_policy_change
 
@@ -1117,7 +1141,7 @@ class TestRequestsLibV2(AsyncTestCase):
             comments=[],
         )
 
-        response = PolicyRequestModificationResponseModel(errors=0, action_results=[],)
+        response = PolicyRequestModificationResponseModel(errors=0, action_results=[])
 
         # Not supported change -> Error
         response = await apply_resource_policy_change(
@@ -1133,8 +1157,6 @@ class TestRequestsLibV2(AsyncTestCase):
         )
         self.assertIn("not supported", dict(response.action_results[0]).get("message"))
 
-    @mock_s3
-    @tornado.testing.gen_test
     async def test_apply_resource_policy_change_s3(self):
         from consoleme.lib.v2.requests import apply_resource_policy_change
 
@@ -1197,7 +1219,7 @@ class TestRequestsLibV2(AsyncTestCase):
             comments=[],
         )
 
-        response = PolicyRequestModificationResponseModel(errors=0, action_results=[],)
+        response = PolicyRequestModificationResponseModel(errors=0, action_results=[])
 
         # Bucket doesn't exist -> applying policy -> error
         response = await apply_resource_policy_change(
@@ -1231,8 +1253,6 @@ class TestRequestsLibV2(AsyncTestCase):
             resource_policy_change_model.policy.policy_document,
         )
 
-    @mock_sqs
-    @tornado.testing.gen_test
     async def test_apply_resource_policy_change_sqs(self):
         from consoleme.lib.v2.requests import apply_resource_policy_change
 
@@ -1286,7 +1306,7 @@ class TestRequestsLibV2(AsyncTestCase):
             comments=[],
         )
 
-        response = PolicyRequestModificationResponseModel(errors=0, action_results=[],)
+        response = PolicyRequestModificationResponseModel(errors=0, action_results=[])
 
         # SQS doesn't exist -> applying SQS policy -> error
         response = await apply_resource_policy_change(
@@ -1325,8 +1345,6 @@ class TestRequestsLibV2(AsyncTestCase):
             resource_policy_change_model.policy.policy_document,
         )
 
-    @mock_sns
-    @tornado.testing.gen_test
     async def test_apply_resource_policy_change_sns(self):
         from consoleme.lib.v2.requests import apply_resource_policy_change
 
@@ -1380,7 +1398,7 @@ class TestRequestsLibV2(AsyncTestCase):
             comments=[],
         )
 
-        response = PolicyRequestModificationResponseModel(errors=0, action_results=[],)
+        response = PolicyRequestModificationResponseModel(errors=0, action_results=[])
 
         # SNS doesn't exist -> applying SNS policy -> error
         response = await apply_resource_policy_change(
@@ -1418,7 +1436,6 @@ class TestRequestsLibV2(AsyncTestCase):
 
     @patch("consoleme.lib.v2.requests.send_communications_new_comment")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
-    @tornado.testing.gen_test
     async def test_parse_and_apply_policy_request_modification_add_comment(
         self, mock_dynamo_write, mock_send_comment
     ):
@@ -1465,7 +1482,6 @@ class TestRequestsLibV2(AsyncTestCase):
         self.assertEqual(comment.text, "Sample comment")
 
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
-    @tornado.testing.gen_test
     async def test_parse_and_apply_policy_request_modification_update_change(
         self, mock_dynamo_write
     ):
@@ -1537,12 +1553,10 @@ class TestRequestsLibV2(AsyncTestCase):
             updated_policy_doc,
         )
 
-    @mock_iam
     @patch("consoleme.lib.v2.requests.aws.fetch_iam_role")
     @patch("consoleme.lib.v2.requests.populate_old_policies")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
     @patch("consoleme.lib.v2.requests.can_manage_policy_requests")
-    @tornado.testing.gen_test
     async def test_parse_and_apply_policy_request_modification_apply_change(
         self,
         mock_can_manage_policy_requests,
@@ -1586,7 +1600,6 @@ class TestRequestsLibV2(AsyncTestCase):
         mock_can_manage_policy_requests.return_value = create_future(False)
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "test"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
 
         # Trying to apply while not being authorized
         with pytest.raises(Unauthorized) as e:
@@ -1605,7 +1618,7 @@ class TestRequestsLibV2(AsyncTestCase):
             await parse_and_apply_policy_request_modification(
                 extended_request,
                 policy_request_model,
-                "user@example.com",
+                "consoleme_admins@example.com",
                 [],
                 last_updated,
             )
@@ -1616,7 +1629,11 @@ class TestRequestsLibV2(AsyncTestCase):
             0
         ].id
         response = await parse_and_apply_policy_request_modification(
-            extended_request, policy_request_model, "user@example.com", [], last_updated
+            extended_request,
+            policy_request_model,
+            "consoleme_admins@example.com",
+            [],
+            last_updated,
         )
         self.assertEqual(0, response.errors)
         # Make sure change got updated in the request
@@ -1641,7 +1658,6 @@ class TestRequestsLibV2(AsyncTestCase):
 
     @patch("consoleme.lib.v2.requests.send_communications_policy_change_request_v2")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
-    @tornado.testing.gen_test
     async def test_parse_and_apply_policy_request_modification_cancel_request(
         self, mock_dynamo_write, mock_send_email
     ):
@@ -1705,15 +1721,9 @@ class TestRequestsLibV2(AsyncTestCase):
 
     @patch("consoleme.lib.v2.requests.send_communications_policy_change_request_v2")
     @patch("consoleme.lib.v2.requests.can_move_back_to_pending_v2")
-    @patch("consoleme.lib.v2.requests.can_manage_policy_requests")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
-    @tornado.testing.gen_test
     async def test_parse_and_apply_policy_request_modification_reject_and_move_back_to_pending_request(
-        self,
-        mock_dynamo_write,
-        mock_can_manage_policy_requests,
-        mock_move_back_to_pending,
-        mock_send_email,
+        self, mock_dynamo_write, mock_move_back_to_pending, mock_send_email
     ):
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
@@ -1725,9 +1735,8 @@ class TestRequestsLibV2(AsyncTestCase):
         policy_request_model = PolicyRequestModificationRequestModel.parse_obj(
             input_body
         )
-        last_updated = extended_request.timestamp
+        last_updated = int(extended_request.timestamp.timestamp())
         mock_dynamo_write.return_value = create_future(None)
-        mock_can_manage_policy_requests.return_value = create_future(False)
         mock_send_email.return_value = create_future(None)
         # Trying to reject while not being authorized
         with pytest.raises(Unauthorized) as e:
@@ -1739,14 +1748,13 @@ class TestRequestsLibV2(AsyncTestCase):
                 last_updated,
             )
             self.assertIn("Unauthorized", str(e))
-        mock_can_manage_policy_requests.return_value = create_future(True)
         extended_request.changes.changes[0].status = Status.applied
         # Trying to reject while atleast one change is applied
         with pytest.raises(InvalidRequestParameter) as e:
             await parse_and_apply_policy_request_modification(
                 extended_request,
                 policy_request_model,
-                "user@example.com",
+                "consoleme_admins@example.com",
                 [],
                 last_updated,
             )
@@ -1759,7 +1767,7 @@ class TestRequestsLibV2(AsyncTestCase):
             await parse_and_apply_policy_request_modification(
                 extended_request,
                 policy_request_model,
-                "user@example.com",
+                "consoleme_admins@example.com",
                 [],
                 last_updated,
             )
@@ -1768,7 +1776,11 @@ class TestRequestsLibV2(AsyncTestCase):
         # Rejecting valid request
         extended_request.request_status = RequestStatus.pending
         response = await parse_and_apply_policy_request_modification(
-            extended_request, policy_request_model, "user@example.com", [], last_updated
+            extended_request,
+            policy_request_model,
+            "consoleme_admins@example.com",
+            [],
+            last_updated,
         )
         self.assertEqual(0, response.errors)
         # Make sure request got rejected
@@ -1792,7 +1804,7 @@ class TestRequestsLibV2(AsyncTestCase):
         response = await parse_and_apply_policy_request_modification(
             extended_request,
             policy_request_model,
-            "user2@example.com",
+            "consoleme_admins@example.com",
             [],
             last_updated,
         )
@@ -1800,13 +1812,11 @@ class TestRequestsLibV2(AsyncTestCase):
         # Make sure request got moved back
         self.assertEqual(RequestStatus.pending, extended_request.request_status)
 
-    @mock_iam
     @patch("consoleme.lib.v2.requests.send_communications_policy_change_request_v2")
     @patch("consoleme.lib.v2.requests.aws.fetch_iam_role")
     @patch("consoleme.lib.v2.requests.populate_old_policies")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
     @patch("consoleme.lib.v2.requests.can_manage_policy_requests")
-    @tornado.testing.gen_test
     async def test_parse_and_apply_policy_request_modification_approve_request(
         self,
         mock_can_manage_policy_requests,
@@ -1881,7 +1891,6 @@ class TestRequestsLibV2(AsyncTestCase):
         mock_send_email.return_value = create_future(None)
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "test"
-        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
 
         # Trying to approve while not being authorized
         with pytest.raises(Unauthorized) as e:
@@ -1898,7 +1907,11 @@ class TestRequestsLibV2(AsyncTestCase):
 
         # Authorized person approving request
         response = await parse_and_apply_policy_request_modification(
-            extended_request, policy_request_model, "user@example.com", [], last_updated
+            extended_request,
+            policy_request_model,
+            "consoleme_admins@example.com",
+            [],
+            last_updated,
         )
         # 1 error for the resource policy change, which shouldn't be applied
         self.assertEqual(1, response.errors)

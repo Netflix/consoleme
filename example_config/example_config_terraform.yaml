@@ -12,7 +12,7 @@ environment: prod
 
 logging:
   stdout_enabled: true
-  format: '%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s'
+  format: "%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s"
   level: debug
   file: /logs/consoleme/consoleme_tornado.log
 

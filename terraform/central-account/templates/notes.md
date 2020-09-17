@@ -25,7 +25,6 @@ stopasgroup=true
 
 `/apps/consoleme/bin/start_consoleme.sh` for us just initializes environmental variables that consoleme needs, netflix specifix ones
 
-
 you'll want similar systemd/supervisor configurations for Celery scheduler and worker (commands incoming)
 
 ```bash
@@ -37,21 +36,25 @@ you'll want similar systemd/supervisor configurations for Celery scheduler and w
 (Only bring up one scheduler. You can bring up N workers and enable autoscaling if desired)
 
 Tail Celery systemd logs:
+
 ```bash
 journalctl -u celery -f
 ```
 
 Tail ConsoleMe systemd logs:
+
 ```bash
 journalctl -u consoleme -f
 ```
 
 Debugging CloudInit:
+
 ```bash
 vi /var/lib/cloud/instances/i-xxxxxxxx/scripts/part-001
 ```
 
 To re-run the script you’ll need to clear the semaphores for the instance and kick it off the user scripts again with:
+
 ```bash
 sudo rm -Rf /var/lib/cloud/instances/i-xxxxxxxx/sem
 sudo /usr/bin/cloud-init single -n cc_scripts_user
