@@ -1,6 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Consoleme OSS - Local Celery Beat and Worker" type="PythonConfigurationType" factoryName="Python">
-    <module name="consoleme-deploy" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -8,11 +7,12 @@
       <env name="PYTHONASYNCIODEBUG" value="1" />
       <env name="CONSOLEME_CONFIG_ENTRYPOINT" value="default_config" />
     </envs>
-    <option name="SDK_HOME" value="" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/consoleme" />
-    <option name="IS_MODULE_SDK" value="true" />
+    <option name="SDK_HOME" value="$PROJECT_DIR$/env/bin/python" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/" />
+    <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <module name="" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <EXTENSION ID="net.ashald.envfile">
       <option name="IS_ENABLED" value="false" />

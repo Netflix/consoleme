@@ -34,6 +34,8 @@ env_install: env/bin/activate
 .PHONY: install
 install: clean
 	make env_install
+	yarn
+	node_modules/webpack/bin/webpack.js --progress
 	make bootstrap
 
 .PHONY: bootstrap
@@ -49,7 +51,6 @@ dynamo:
 
 .PHONY: redis
 redis:
-	@echo "--> Configuring Redis"
 	@echo "--> Configuring Redis"
 	python scripts/initialize_redis_oss.py
 

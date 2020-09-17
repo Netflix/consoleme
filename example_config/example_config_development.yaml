@@ -1,6 +1,9 @@
 extends:
   - example_config_header_auth.yaml
 
+environment: dev
+development: true
+
 # A development configuration can specify a specific user to impersonate locally.
 _development_user_override: consoleme_admin@example.com
 

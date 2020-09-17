@@ -4,6 +4,7 @@ from consoleme.config import config
 from consoleme.lib.account_indexers.aws_organizations import (
     retrieve_accounts_from_aws_organizations,
 )
+from consoleme.lib.account_indexers.current_account import retrieve_current_account
 from consoleme.lib.account_indexers.local_config import retrieve_accounts_from_config
 from consoleme.lib.account_indexers.swag import retrieve_accounts_from_swag
 from consoleme.lib.cache import (
@@ -32,6 +33,9 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
         account_mapping = await retrieve_accounts_from_swag()
     elif config.get("cache_cloud_accounts.from_config", True):
         account_mapping = await retrieve_accounts_from_config()
+
+    if not account_mapping or not account_mapping.accounts:
+        account_mapping = await retrieve_current_account()
 
     account_id_to_name = {}
 
