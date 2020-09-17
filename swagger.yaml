@@ -757,6 +757,10 @@ components:
                 - attach
                 - detach
               default: attach
+            change_type:
+              type: string
+              enum:
+                - inline_policy
             policy:
               $ref: "#/components/schemas/PolicyModel"
             old_policy:
@@ -813,6 +817,10 @@ components:
               pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
             policy_name:
               type: string
+            change_type:
+              type: string
+              enum:
+                - managed_policy
             action:
               type: string
               enum:

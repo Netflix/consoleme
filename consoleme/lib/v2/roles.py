@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Union
+from typing import Optional, Union
 
 import ujson as json
 from asgiref.sync import async_to_sync, sync_to_async
@@ -56,7 +56,7 @@ async def get_cloudtrail_details_for_role(arn: str):
     )
 
 
-async def get_s3_details_for_role(account_id: str, role_name: str):
+async def get_s3_details_for_role(account_id: str, role_name: str) -> S3DetailsModel:
     """
     Retrieves s3 details associated with role, if it exists
     :param arn:
@@ -114,7 +114,7 @@ async def get_role_template(arn: str):
 
 async def get_role_details(
     account_id: str, role_name: str, extended: bool = False
-) -> Union[ExtendedRoleModel, RoleModel]:
+) -> Optional[Union[ExtendedRoleModel, RoleModel]]:
     arn = f"arn:aws:iam::{account_id}:role/{role_name}"
     role = await aws.fetch_iam_role(account_id, arn)
     # requested role doesn't exist

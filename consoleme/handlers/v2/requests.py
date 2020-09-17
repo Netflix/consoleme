@@ -149,6 +149,7 @@ class RequestHandler(BaseAPIV2Handler):
         log.debug(log_data)
         try:
             # Validate the model
+            # TODO: add change_type enum to all of the changemodel types (assume role and resource policy remaining I believe)
             changes = RequestCreationModel.parse_raw(self.request.body)
             extended_request = await generate_request_from_change_model_array(
                 changes, self.user
