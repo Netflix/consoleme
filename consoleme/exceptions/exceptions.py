@@ -359,3 +359,11 @@ class ExpiredData(BaseException):
     def __init__(self, msg=""):
         stats.count("ExpiredData")
         super().__init__(msg)
+
+
+class UnsupportedChangeType(BaseException):
+    """Unsupported Change Type"""
+
+    def __init__(self, msg=""):
+        stats.count("UnsupportedChangeType")
+        super().__init__(msg)

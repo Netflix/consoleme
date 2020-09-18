@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Union
 
 import ujson as json
-from asgiref.sync import async_to_sync, sync_to_async
+from asgiref.sync import sync_to_async
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
@@ -27,7 +27,6 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
 internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
 red = RedisHandler().redis_sync()
-account_ids_to_name = async_to_sync(get_account_id_to_name_mapping)()
 
 
 async def get_cloudtrail_details_for_role(arn: str):
@@ -115,7 +114,7 @@ async def get_role_template(arn: str):
 async def get_role_details(
     account_id: str, role_name: str, extended: bool = False, force_refresh: bool = False
 ) -> Optional[Union[ExtendedRoleModel, RoleModel]]:
-
+    account_ids_to_name = await get_account_id_to_name_mapping()
     arn = f"arn:aws:iam::{account_id}:role/{role_name}"
     role = await aws.fetch_iam_role(account_id, arn, force_refresh=force_refresh)
     # requested role doesn't exist

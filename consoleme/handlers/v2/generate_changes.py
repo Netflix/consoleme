@@ -102,7 +102,7 @@ class GenerateChangesHandler(BaseAPIV2Handler):
             stats.count(f"{log_data['function']}.exception", tags={"user": self.user})
             sentry_sdk.capture_exception(tags={"user": self.user})
             self.write_error(500, message="Error generating changes: " + str(e))
-            return
+            raise  # TODO REVERT
 
         log_data["message"] = "Successfully generated changes requested"
         log.info(log_data)

@@ -18,7 +18,6 @@ from consoleme.models import (
     ChangeGeneratorModel,
     ChangeGeneratorModelArray,
     ChangeModelArray,
-    ChangeType,
     GeneratorType,
     InlinePolicyChangeModel,
     PolicyModel,
@@ -117,7 +116,7 @@ async def _generate_inline_policy_change_model(
     policy_name = await generate_policy_name(policy_name, user)
     policy_document = await _generate_inline_policy_model_from_statements(statements)
     change_details = {
-        "change_type": ChangeType.inline_policy,
+        "change_type": "inline_policy",
         "principal_arn": principal_arn,
         "resources": resources,
         "policy_name": policy_name,
@@ -198,7 +197,7 @@ async def _generate_s3_inline_policy_statement_from_mapping(
     resource_arns.append(f"{generator.resource_arn}{generator.bucket_prefix}")
 
     for action in generator.action_groups:
-        action_group_actions.append(action.value)
+        action_group_actions.append(action)
     actions = await _get_actions_from_groups(action_group_actions, permissions_map)
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
@@ -246,7 +245,7 @@ async def _generate_inline_policy_statement_from_mapping(
         if isinstance(action, str):
             action_group_actions.append(action)
         else:
-            action_group_actions.append(action.value)
+            action_group_actions.append(action)
     actions = await _get_actions_from_groups(action_group_actions, permissions_map)
     condition: Optional[Dict] = await _generate_condition_with_substitutions(generator)
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
@@ -272,10 +271,10 @@ async def _generate_inline_policy_statement_from_policy_sentry(
     access_level_actions: List[str] = []
     for access in generator.action_groups:
         for pm in permissions_map:
-            if pm["name"] == access.value:
+            if pm["name"] == access:
                 access_level_actions += pm.get("permissions")
     actions = await _get_policy_sentry_access_level_actions(
-        generator.service_name, access_level_actions
+        generator.service, access_level_actions
     )
     return await _generate_policy_statement(
         actions, [generator.resource_arn], generator.effect, generator.condition

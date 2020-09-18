@@ -266,13 +266,11 @@ export function sendProposedPolicy(command) {
     },
     async () => {
       const request = {
-        modification_model: {
-          command,
-          change_id: change.id,
-        },
+        command,
+        change_id: change.id,
       };
       if (newStatement) {
-        request.modification_model.policy_document = JSON.parse(newStatement);
+        request.policy_document = JSON.parse(newStatement);
       }
       await sendRequestCommon(
         request,
