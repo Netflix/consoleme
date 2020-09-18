@@ -73,9 +73,8 @@ async def store_json_results_in_redis_and_s3(
             raise UnsupportedRedisDataType("Unsupported redis_data_type passed")
         red.hset(last_updated_redis_key, redis_key, last_updated)
 
-    data_for_s3 = {"last_updated": last_updated, "data": data}
-
     if s3_bucket and s3_key:
+        data_for_s3 = {"last_updated": last_updated, "data": data}
         put_object(
             Bucket=s3_bucket,
             Key=s3_key,
