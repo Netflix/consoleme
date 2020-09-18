@@ -769,10 +769,11 @@ def cache_roles_for_account(account_id: str) -> bool:
         for response in response_iterator:
             if not all_iam_resources:
                 all_iam_resources = response
-            all_iam_resources["UserDetailList"].extend(response["UserDetailList"])
-            all_iam_resources["GroupDetailList"].extend(response["GroupDetailList"])
-            all_iam_resources["RoleDetailList"].extend(response["RoleDetailList"])
-            all_iam_resources["Policies"].extend(response["Policies"])
+            else:
+                all_iam_resources["UserDetailList"].extend(response["UserDetailList"])
+                all_iam_resources["GroupDetailList"].extend(response["GroupDetailList"])
+                all_iam_resources["RoleDetailList"].extend(response["RoleDetailList"])
+                all_iam_resources["Policies"].extend(response["Policies"])
             for k in response.keys():
                 if k not in [
                     "UserDetailList",
