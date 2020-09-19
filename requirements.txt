@@ -8,6 +8,7 @@ aiohttp==3.6.2            # via aiozipkin
 aiozipkin==0.7.0          # via -r requirements.in
 amqp==2.6.1               # via kombu
 appdirs==1.4.4            # via black
+appnope==0.1.0            # via ipython
 argcomplete==1.11.1       # via datamodel-code-generator
 asgiref==3.2.10           # via -r requirements.in
 astroid==2.4.2            # via pylint
@@ -44,6 +45,8 @@ elasticsearch==7.9.1      # via -r requirements.in, elasticsearch-dsl
 email-validator==1.1.1    # via pydantic
 flagpole==1.1.1           # via cloudaux
 genson==1.2.1             # via datamodel-code-generator
+gitdb==4.0.5              # via gitpython
+gitpython==3.1.8          # via -r requirements.in
 google-api-core==1.22.2   # via google-api-python-client, google-cloud-core
 google-api-python-client==1.11.0  # via -r requirements.in
 google-auth-httplib2==0.0.4  # via -r requirements.in, google-api-python-client
@@ -127,6 +130,7 @@ semver==2.10.2            # via prance
 sentry-sdk==0.16.1        # via -r requirements.in
 simplejson==3.17.2        # via -r requirements.in
 six==1.15.0               # via -r requirements.in, astroid, bleach, cloudaux, ecdsa, elasticsearch-dsl, google-api-core, google-api-python-client, google-auth, google-auth-httplib2, google-resumable-media, isodate, jsonschema, okta-jwt, openapi-spec-validator, packaging, prance, presto-python-client, protobuf, python-dateutil, python-jose, retrying, tenacity
+smmap==3.0.4              # via gitdb
 soupsieve==2.0.1          # via beautifulsoup4
 tenacity==6.2.0           # via -r requirements.in
 toml==0.10.1              # via black, datamodel-code-generator, pylint
