@@ -18,10 +18,18 @@ class ConsoleMeHeader extends Component {
             return (
                 <Dropdown text='Group Access' pointing className='link item'>
                     <Dropdown.Menu>
-                        <Dropdown.Item>Request Access</Dropdown.Item>
-                        <Dropdown.Item>Groups</Dropdown.Item>
-                        <Dropdown.Item>Users</Dropdown.Item>
-                        <Dropdown.Item>Pending</Dropdown.Item>
+                        <Dropdown.Item>
+                            Request Access
+                        </Dropdown.Item>
+                        <Dropdown.Item>
+                            Groups
+                        </Dropdown.Item>
+                        <Dropdown.Item>
+                            Users
+                        </Dropdown.Item>
+                        <Dropdown.Item>
+                            Pending
+                        </Dropdown.Item>
                     </Dropdown.Menu>
                 </Dropdown>
             );
@@ -31,14 +39,30 @@ class ConsoleMeHeader extends Component {
 
     generatePoliciesDropDown() {
         if (this.props.userSession.pages.policies.enabled === true) {
-            // TODO: UIREFACTOR: Remove V2 references when this new UI is done
             return (
-                <Dropdown text='Roles and Policies' pointing className='link item'>
+                <Dropdown
+                    text="Roles and Policies"
+                    pointing className="link item"
+                >
                     <Dropdown.Menu>
-                        <Dropdown.Item as={NavLink} to="/catalog">Catalog</Dropdown.Item>
-                        <Dropdown.Item as={NavLink} to="/ui/policies">Policies</Dropdown.Item>
-                        <Dropdown.Item as={NavLink} to="/ui/selfservice">Self Service Permissions</Dropdown.Item>
-                        <Dropdown.Item as={NavLink} to="/ui/apihealth">API Health</Dropdown.Item>
+                        <Dropdown.Item
+                            as={NavLink}
+                            to="/catalog"
+                        >
+                            Catalog
+                        </Dropdown.Item>
+                        <Dropdown.Item>
+                            Policies
+                        </Dropdown.Item>
+                        <Dropdown.Item
+                            as={NavLink}
+                            to="/selfservice"
+                        >
+                            Self Service Permissions
+                        </Dropdown.Item>
+                        <Dropdown.Item>
+                            API Health
+                        </Dropdown.Item>
                     </Dropdown.Menu>
                 </Dropdown>
             );
@@ -49,10 +73,18 @@ class ConsoleMeHeader extends Component {
     generateAdvancedDropDown() {
         if (this.props.userSession.pages.config.enabled === true) {
             return (
-                <Dropdown text='Advanced' pointing className='link item'>
+                <Dropdown
+                    text="Advanced"
+                    pointing
+                    className="link item"
+                >
                     <Dropdown.Menu>
-                        <Dropdown.Item>Audit</Dropdown.Item>
-                        <Dropdown.Item>Config</Dropdown.Item>
+                        <Dropdown.Item>
+                            Audit
+                        </Dropdown.Item>
+                        <Dropdown.Item>
+                            Config
+                        </Dropdown.Item>
                     </Dropdown.Menu>
                 </Dropdown>
             );
@@ -63,10 +95,12 @@ class ConsoleMeHeader extends Component {
     getAvatarImage() {
         if (this.props.userSession.employee_photo_url) {
             return (
-                <div>
-                    <Image src={this.props.userSession.employee_photo_url} avatar />
-                    <span>{this.props.userSession.user}</span>
-                </div>
+                <Image
+                    alt={this.props.userSession.user}
+                    avatar
+                    src={this.props.userSession.employee_photo_url}
+                    title={this.props.userSession.user}
+                />
             );
         }
         return null;
@@ -76,22 +110,50 @@ class ConsoleMeHeader extends Component {
         if (!this.props.userSession) {
             return null;
         }
-
         return (
-            <Menu pointing secondary>
+            <Menu
+                color="red"
+                fixed="top"
+                inverted
+                style={{
+                    height: "72px",
+                    marginBottom: "0"
+                }}
+            >
                 <Menu.Item
-                    name={"AWS Console Roles"}
-                    active={true}
-                    as={NavLink}
-                    to="/"
+                    as="a"
+                    header
+                    name="header"
+                    style={{
+                        fontSize: "20px",
+                        textTransform: "uppercase",
+                        width: "240px",
+                    }}
+                    href="/"
                 >
-                    AWS Console Roles
+                    <Image
+                        size='mini'
+                        src='/images/logo192.png'
+                        style={{ marginRight: '1.5em' }}
+                    />
+                    ConsoleMe
                 </Menu.Item>
-                {this.generateGroupsDropDown()}
-                {this.generatePoliciesDropDown()}
-                {this.generateAdvancedDropDown()}
-                <Menu.Menu position='right'>
-                    <Menu.Item name='logout'>
+                <Menu.Menu position="left">
+                    <Menu.Item
+                        active={false}
+                        exact
+                        as={NavLink}
+                        name={"roles"}
+                        to="/"
+                    >
+                        AWS Console Roles
+                    </Menu.Item>
+                    {this.generateGroupsDropDown()}
+                    {this.generatePoliciesDropDown()}
+                    {this.generateAdvancedDropDown()}
+                </Menu.Menu>
+                <Menu.Menu position="right">
+                    <Menu.Item>
                         {this.getAvatarImage()}
                     </Menu.Item>
                 </Menu.Menu>

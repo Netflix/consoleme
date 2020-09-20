@@ -1,12 +1,11 @@
 import React, {Component} from 'react';
 import PropTypes from 'prop-types';
 import {
+    Label,
     Icon,
     Image,
-    Sidebar,
+    Menu,
 } from 'semantic-ui-react';
-
-import './Sidebar.css';
 
 const LOGO_URL = '/static/screenplay/assets/netflix-security-dark-bg-tight.5f1eba5edb.svg';
 
@@ -52,99 +51,114 @@ class ConsoleMeSidebar extends Component {
         return null;
     }
 
-    getDocumentation() {
-        if (this.state.config.documentation_url) {
-            return (
-                <li>
-                    <a
-                        href={this.state.config.documentation_url}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                    >
-                        <Icon name={"book"}/>
-                        Documentation
-                    </a>
-                </li>
-            );
-        }
-        return null;
-    }
-
-    getSupportContact() {
-        if (this.state.config.support_contact) {
-            return (
-                <li>
-                    <a
-                        href={"mailto:" + this.state.config.support_contact}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                    >
-                        <Icon name={"envelope"}/>
-                        Email us
-                    </a>
-                </li>
-            );
-        }
-        return null;
-    }
-
-    getChatLink() {
-        if (this.state.config.support_slack) {
-            return (
-                <li>
-                    <a
-                        href={this.state.config.support_slack}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                    >
-                        <Icon name={"slack"}/>
-                        Find us on Slack
-                    </a>
-                </li>
-            );
-        }
-        return null;
-    }
-
     render() {
+        const {
+            consoleme_logo,
+            documentation_url,
+            support_contact,
+            support_slack
+        } = this.state.config;
+
         return (
-            <Sidebar
-                animation={'overlay'}
-                direction={'left'}
-                visible={true}
+            <Menu
+                color="black"
+                fixed="left"
+                inverted
+                vertical
+                style={{
+                    paddingTop: "10px",
+                    width: "240px",
+                    marginTop: "72px"
+                }}
             >
-                <div className="brand">
-                    <a href="/">Consoleme</a>
-                </div>
-                <div className="roleHistory">
-                    <h3>Recent roles</h3>
-                    <ul>
+                <Menu.Item>
+                    <Label>
+                        {this.props.recentRoles.length}
+                    </Label>
+                    <Menu.Header>
+                        Recent Roles
+                    </Menu.Header>
+                    <Menu.Menu>
                         {
                             this.props.recentRoles.map((role) => {
                                 return (
-                                    <li key={role}>
-                                        <div>
-                                            <label>
-                                                {role}
-                                            </label>
-                                        </div>
-                                    </li>
+                                    <Menu.Item
+                                        as="a"
+                                        name={role}
+                                        key={role}
+                                    >
+                                        {role}
+                                    </Menu.Item>
                                 )
                             })
                         }
-                    </ul>
-                </div>
-                <div className="help">
-                    <h3>Help</h3>
-                    <ul>
-                        {this.getDocumentation()}
-                        {this.getSupportContact()}
-                        {this.getChatLink()}
-                    </ul>
-                </div>
-                <br />
-                {this.getConsoleMeLogo()}
-            </Sidebar>
+                    </Menu.Menu>
+                </Menu.Item>
+                <Menu.Item>
+                    <Menu.Header>Help</Menu.Header>
+                    <Menu.Menu>
+                        <Menu.Item
+                            as="a"
+                            name='documentation'
+                            href={documentation_url || ""}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                        >
+                            <Icon name="file" />
+                            Documenation
+                        </Menu.Item>
+                        <Menu.Item
+                            as="a"
+                            name='email'
+                            href={
+                                support_contact
+                                    ? "mailto:" + support_contact
+                                    : "/"
+                            }
+                            rel="noopener noreferrer"
+                            target="_blank"
+                        >
+                            <Icon name="send" />
+                            Email us
+                        </Menu.Item>
+                        <Menu.Item
+                            as="a"
+                            name='slack'
+                            href={support_slack || "/"}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                        >
+                            <Icon name="slack" />
+                            Find us on Slack
+                        </Menu.Item>
+                    </Menu.Menu>
+                </Menu.Item>
+                <Menu.Menu
+                    style={{
+                        position: 'absolute',
+                        bottom: '70px',
+                        left: '0'
+                    }}
+                >
+                    <Menu.Item>
+                        <Image
+                            size="medium"
+                            src='/images/logos/quarantine/1.png'
+                        />
+                        <br />
+                        <a
+                            href="http://go/infrasec"
+                            rel="noopener noreferrer"
+                            target="_blank"
+                        >
+                            <Image
+                                size="medium"
+                                src='/images/netflix-security-dark-bg-tight.svg'
+                            />
+                        </a>
+                    </Menu.Item>
+                </Menu.Menu>
+            </Menu>
         )
     }
 }
