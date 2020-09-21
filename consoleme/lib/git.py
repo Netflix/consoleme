@@ -1,7 +1,6 @@
 import os
 import shutil
 import tempfile
-from datetime import datetime, timedelta
 from pathlib import Path
 
 import git
@@ -34,15 +33,10 @@ def store_iam_resources_in_git(
         "RoleDetailList": {"category": "iam_roles", "resource_name_key": "RoleName"},
         "Policies": {"category": "iam_policies", "resource_name_key": "PolicyName"},
     }
-    ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
-    current_time: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
 
     for key, settings in expected_entries.items():
         category = settings["category"]
         for resource in iam_resources[key]:
-            # set a TTL to key on for deletion
-            resource["ttl"] = ttl
-            resource["last_updated"] = current_time
             resource_name = resource[settings["resource_name_key"]]
             arn = resource["Arn"]
             yaml = YAML()
