@@ -1134,7 +1134,7 @@ async def parse_and_apply_policy_request_modification(
         )
         if not can_update_cancel:
             raise Unauthorized(
-                "You are unauthorized to update or cancel changes in this request"
+                "You are not authorized to update or cancel changes in this request"
             )
 
     if request_changes.command in [
@@ -1144,7 +1144,7 @@ async def parse_and_apply_policy_request_modification(
     ]:
         can_manage_policy_request = await can_manage_policy_requests(user, user_groups)
         if not can_manage_policy_request:
-            raise Unauthorized("You are unauthorized to manage this request")
+            raise Unauthorized("You are not authorized to manage this request")
 
     if request_changes.command == Command.move_back_to_pending:
         can_move_back_to_pending = await can_move_back_to_pending_v2(
