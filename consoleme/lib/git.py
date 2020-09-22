@@ -50,6 +50,10 @@ def store_iam_resources_in_git(
     git_url=config.get("cache_iam_resources_for_account.store_in_git.repo"),
     git_message="[Automated] Update IAM Cache",
 ):
+    """
+    Experimental function to force-push discovered IAM resources into a Git repository's master branch.
+    Use at your own risk.
+    """
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()
     tempdir = tempfile.mkdtemp()
     try:
@@ -105,6 +109,7 @@ def store_iam_resources_in_git(
         if repo.index.diff("HEAD"):
             repo.index.commit(git_message)
             origin = repo.remote("origin")
+            origin.pull()
             origin.push("master", force=True)
     except Exception:  # noqa
         sentry_sdk.capture_exception()
