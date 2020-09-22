@@ -61,6 +61,7 @@ from consoleme.lib.cloud_credential_authorization_mapping import (
     generate_and_store_credential_authorization_mapping,
 )
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
+from consoleme.lib.git import store_iam_resources_in_git
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler
@@ -752,18 +753,50 @@ def cache_roles_for_account(account_id: str) -> bool:
     # Get the DynamoDB handler:
     dynamo = IAMRoleDynamoHandler()
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
-
     # Only query IAM and put data in Dynamo if we're in the active region
     if config.region == config.get("celery.active_region") or config.get(
         "environment"
     ) in ["dev", "test"]:
-        # Get the roles:
-        iam_roles = get_account_authorization_details(
+        client = boto3_cached_conn(
+            "iam",
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
-            filter="Role",
         )
+        paginator = client.get_paginator("get_account_authorization_details")
+        response_iterator = paginator.paginate()
+        all_iam_resources = {}
+        for response in response_iterator:
+            if not all_iam_resources:
+                all_iam_resources = response
+            else:
+                all_iam_resources["UserDetailList"].extend(response["UserDetailList"])
+                all_iam_resources["GroupDetailList"].extend(response["GroupDetailList"])
+                all_iam_resources["RoleDetailList"].extend(response["RoleDetailList"])
+                all_iam_resources["Policies"].extend(response["Policies"])
+            for k in response.keys():
+                if k not in [
+                    "UserDetailList",
+                    "GroupDetailList",
+                    "RoleDetailList",
+                    "Policies",
+                    "ResponseMetadata",
+                    "Marker",
+                    "IsTruncated",
+                ]:
+                    # Fail hard if we find something unexpected
+                    raise RuntimeError("Unexpected key {0} in response".format(k))
+
+        # Store entire response in S3
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            all_iam_resources,
+            s3_bucket=config.get("cache_iam_resources_for_account.s3.bucket"),
+            s3_key=config.get("cache_iam_resources_for_account.s3.file", "").format(
+                account_id=account_id
+            ),
+        )
+
+        iam_roles = all_iam_resources["RoleDetailList"]
 
         async_to_sync(store_json_results_in_redis_and_s3)(
             iam_roles,
@@ -797,6 +830,10 @@ def cache_roles_for_account(account_id: str) -> bool:
 
             # Run internal function on role. This can be used to inspect roles, add managed policies, or other actions
             aws().handle_detected_role(role)
+
+        # Maybe store all resources in git
+        if config.get("cache_iam_resources_for_account.store_in_git.enabled"):
+            store_iam_resources_in_git(all_iam_resources, account_id)
 
     stats.count("cache_roles_for_account.success", tags={"account_id": account_id})
     return True
@@ -1550,7 +1587,6 @@ schedule = {
         "schedule": schedule_5_minutes,
     },
 }
-
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}

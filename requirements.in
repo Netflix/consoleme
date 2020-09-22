@@ -11,6 +11,7 @@ defusedxml
 ed25519
 elasticsearch
 elasticsearch_dsl
+gitpython
 google-api-python-client
 google-auth-httplib2
 google-cloud-storage
@@ -42,6 +43,7 @@ redis
 requests
 retry
 retrying
+ruamel.yaml
 sentry-sdk==0.16.1 # Internal plugin depends on a library which depends on this version of sentry_sdk
 simplejson
 six
