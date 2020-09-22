@@ -266,8 +266,10 @@ export function sendProposedPolicy(command) {
     },
     async () => {
       const request = {
-        command,
-        change_id: change.id,
+        modification_model: {
+          command,
+          change_id: change.id,
+        },
       };
       if (newStatement) {
         request.policy_document = JSON.parse(newStatement);
