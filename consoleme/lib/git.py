@@ -5,7 +5,9 @@ from pathlib import Path
 
 import git
 import sentry_sdk
+import yaml as builtin_yaml
 from asgiref.sync import async_to_sync
+from deepdiff import DeepDiff
 from ruamel.yaml import YAML
 
 from consoleme.config import config
@@ -87,13 +89,22 @@ def store_iam_resources_in_git(
                 )
                 os.makedirs(Path(path_in_repo).parent.absolute(), exist_ok=True)
 
-                with open(path_in_repo, "w") as f:
-                    yaml.dump(sort_dict(resource), f)
+                should_write = True
+                to_write = sort_dict(resource)
+                if os.path.exists(path_in_repo):
+                    with open(path_in_repo, "r") as f:
+                        # Unfortunately at the time of writing, ruamel.yaml loads this into ordered dictionaries.
+                        # We want this to be the same type as `to_write`, so we use the builtin yaml library to load it
+                        existing = builtin_yaml.safe_load(f)
+                    if not DeepDiff(to_write, existing, ignore_order=True):
+                        should_write = False
+                if should_write:
+                    with open(path_in_repo, "w") as f:
+                        yaml.dump(to_write, f)
         repo.git.add("*")
         if repo.index.diff("HEAD"):
             repo.index.commit(git_message)
             origin = repo.remote("origin")
-            origin.pull()
             origin.push("master", force=True)
     except Exception:  # noqa
         sentry_sdk.capture_exception()
