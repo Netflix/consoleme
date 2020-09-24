@@ -1,3 +1,4 @@
+import asyncio
 import sys
 import time
 import uuid
@@ -493,10 +494,13 @@ class RequestDetailHandler(BaseAPIV2Handler):
             sentry_sdk.capture_exception(tags={"user": self.user})
             self.write_error(404, message="Error getting request:" + str(e))
             return
-        extended_request = await populate_old_policies(extended_request, self.user)
-        populate_cross_account_resource_policies_result = (
-            await populate_cross_account_resource_policies(extended_request, self.user)
+        # Run these tasks concurrently.
+        concurrent_results = await asyncio.gather(
+            populate_old_policies(extended_request, self.user),
+            populate_cross_account_resource_policies(extended_request, self.user),
         )
+        extended_request = concurrent_results[0]
+        populate_cross_account_resource_policies_result = concurrent_results[1]
 
         if populate_cross_account_resource_policies_result["changed"]:
             extended_request = populate_cross_account_resource_policies_result[

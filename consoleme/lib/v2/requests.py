@@ -886,15 +886,15 @@ async def populate_cross_account_resource_policies(
     }
     log.debug(log_data)
 
-    parallel_tasks = []
+    concurrent_tasks = []
     for change in extended_request.changes.changes:
-        parallel_tasks.append(
+        concurrent_tasks.append(
             populate_cross_account_resource_policy_for_change(
                 change, extended_request, log_data
             )
         )
-    parallel_tasks_results = await asyncio.gather(*parallel_tasks)
-    resource_policies_changed = True if any(parallel_tasks_results) else False
+    concurrent_tasks_results = await asyncio.gather(*concurrent_tasks)
+    resource_policies_changed = True if any(concurrent_tasks_results) else False
 
     log_data["message"] = "Done populating cross account resource policies"
     log_data["request"] = extended_request.dict()
