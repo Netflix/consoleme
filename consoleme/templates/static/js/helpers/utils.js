@@ -272,7 +272,7 @@ export function sendProposedPolicy(command) {
         },
       };
       if (newStatement) {
-        request.policy_document = JSON.parse(newStatement);
+        request.modification_model.policy_document = JSON.parse(newStatement);
       }
       await sendRequestCommon(
         request,

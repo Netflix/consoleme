@@ -30,7 +30,7 @@ from consoleme.models import (
     Status,
     UserModel,
 )
-from tests.conftest import AWSHelper, create_future
+from tests.conftest import create_future
 
 existing_policy_name = "test_inline_policy_change5"
 existing_policy_document = {
@@ -395,11 +395,19 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             assume_role_policy_change_model, "user@example.com", role
         )
 
-    @patch(
-        "consoleme.lib.v2.requests.get_resource_account", AWSHelper.random_account_id
-    )
     async def test_generate_resource_policies(self):
+        from consoleme.lib.redis import RedisHandler
         from consoleme.lib.v2.requests import generate_resource_policies
+
+        # Redis is globally mocked. Let's store and retrieve a fake value
+        red = RedisHandler().redis_sync()
+        red.hmset(
+            "AWSCONFIG_RESOURCE_CACHE",
+            {
+                "arn:aws:s3:::test_bucket": json.dumps({"accountId": "123456789013"}),
+                "arn:aws:s3:::test_bucket_2": json.dumps({"accountId": "123456789013"}),
+            },
+        )
 
         inline_policy_change = {
             "principal_arn": "arn:aws:iam::123456789012:role/test",
@@ -499,7 +507,14 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             len(extended_request.changes.changes), len_before_call + number_of_resources
         )
-        self.assertIn(inline_policy_change_model, extended_request.changes.changes)
+        self.assertEqual(
+            inline_policy_change_model.policy,
+            extended_request.changes.changes[0].policy,
+        )
+        self.assertEqual(
+            len(inline_policy_change_model.resources),
+            len(extended_request.changes.changes[0].resources),
+        )
         self.assertIn(managed_policy_change_model, extended_request.changes.changes)
 
         seen_resource_one = False
@@ -520,6 +535,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         self.assertTrue(seen_resource_one)
         self.assertTrue(seen_resource_two)
+        red.delete("AWSCONFIG_RESOURCE_CACHE")
 
     async def test_apply_changes_to_role_inline_policy(self):
         from consoleme.lib.v2.requests import apply_changes_to_role
@@ -1832,9 +1848,34 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_fetch_iam_role,
         mock_send_email,
     ):
+        from asgiref.sync import sync_to_async
+        from cloudaux.aws.sts import boto3_cached_conn
+
+        from consoleme.lib.redis import RedisHandler
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
         )
+
+        # Redis is globally mocked. Let's store and retrieve a fake value
+        red = RedisHandler().redis_sync()
+        red.hmset(
+            "AWSCONFIG_RESOURCE_CACHE",
+            {
+                "arn:aws:s3:::test_bucket": json.dumps({"accountId": "123456789013"}),
+                "arn:aws:s3:::test_bucket_2": json.dumps({"accountId": "123456789013"}),
+            },
+        )
+
+        s3_client = await sync_to_async(boto3_cached_conn)(
+            "s3",
+            service_type="client",
+            future_expiration_minutes=15,
+            account_number="123456789013",
+            region="us-east-1",
+            session_name="ConsoleMe_UnitTest",
+            arn_partition="aws",
+        )
+        s3_client.create_bucket(Bucket="test_bucket")
 
         extended_request = await get_extended_request_helper()
         resource_policy_change = {
@@ -1987,8 +2028,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             last_updated,
         )
 
-        self.assertEqual(response.action_results[0].status, "error")
+        self.assertEqual(response.action_results[0].status, "success")
         self.assertEqual(
             response.action_results[0].message,
-            "Cannot apply change to arn:aws:s3:::test_bucket as cannot determine resource account",
+            "Successfully updated resource policy for arn:aws:s3:::test_bucket",
         )
+        red.delete("AWSCONFIG_RESOURCE_CACHE")
+        s3_client.delete_bucket(Bucket="test_bucket")

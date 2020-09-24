@@ -63,40 +63,116 @@ class RequestHandler(BaseAPIV2Handler):
         Request example JSON: (Request Schema is RequestCreationModel in models.py)
 
         {
-            "justification" : "Justification for making the request"
-            "changes" : [
-                    {
-                        "principal_arn": "arn:aws:iam::123456789012:role/aRole",
-                        "change_type": "inline_policy",
-                        "resources": [
-                            {
-                                "arn": "arn:aws:s3:::test",
-                                "name": "test",
-                                "account_id": "123456789012",
-                                "region": "global",
-                                "account_name": "",
-                                "policy_sha256": null,
-                                "policy": null,
-                                "owner": null,
-                                "approvers": null,
-                                "resource_type": "s3",
-                                "last_updated": null
-                            }
+          "changes": {
+            "changes": [
+              {
+                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "change_type": "inline_policy",
+                "action": "attach",
+                "policy": {
+                  "policy_document": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Action": [
+                          "s3:ListMultipartUploadParts*",
+                          "s3:ListBucket"
                         ],
-                        "status": "not_applied",
-                        "version": 2.0,
-                        "policy_name": "cm_user_1592499820_gmli",
-                        "new": true,
-                        "policy": {
-                            "version": "2012-10-17",
-                            "statements": null,
-                            "policy_document": "{\"Version\":\"2012-10-17\",\"Statement\":[[{\"Action\"...",
-                            "policy_sha256": "cb300def8dd1deaf4db2bfeef4bc6fc740be18e8ccae74c399affe781f82ba6e"
+                        "Effect": "Allow",
+                        "Resource": [
+                          "arn:aws:s3:::curtis-nflx-test/*",
+                          "arn:aws:s3:::curtis-nflx-test"
+                        ],
+                        "Sid": "cmccastrapel159494014dsd1shak"
+                      },
+                      {
+                        "Action": [
+                          "ec2:describevolumes",
+                          "ec2:detachvolume",
+                          "ec2:describelicenses",
+                          "ec2:AssignIpv6Addresses",
+                          "ec2:reportinstancestatus"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": [
+                          "*"
+                        ],
+                        "Sid": "cmccastrapel1594940141hlvvv"
+                      },
+                      {
+                        "Action": [
+                          "sts:AssumeRole"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": [
+                          "arn:aws:iam::123456789012:role/curtisTestInstanceProfile"
+                        ],
+                        "Sid": "cmccastrapel1596483596easdits"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "change_type": "assume_role_policy",
+                "policy": {
+                  "policy_document": {
+                    "Statement": [
+                      {
+                        "Action": "sts:AssumeRole",
+                        "Effect": "Allow",
+                        "Principal": {
+                          "AWS": "arn:aws:iam::123456789012:role/consolemeInstanceProfile"
                         },
-                        "old_policy": null
-                    }
-            ],
-            "admin_auto_approve" : "false"
+                        "Sid": "AllowConsoleMeProdAssumeRolses"
+                      }
+                    ],
+                    "Version": "2012-10-17"
+                  }
+                }
+              },
+              {
+                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "change_type": "managed_policy",
+                "policy_name": "ApiProtect",
+                "action": "attach",
+                "arn": "arn:aws:iam::123456789012:policy/ApiProtect"
+              },
+              {
+                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "change_type": "managed_policy",
+                "policy_name": "TagProtect",
+                "action": "detach",
+                "arn": "arn:aws:iam::123456789012:policy/TagProtect"
+              },
+              {
+                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "change_type": "inline_policy",
+                "policy_name": "random_policy254",
+                "action": "attach",
+                "policy": {
+                  "policy_document": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Action": [
+                          "ec2:AssignIpv6Addresses"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": [
+                          "*"
+                        ],
+                        "Sid": "cmccastrapel1594940141shakabcd"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          },
+          "justification": "testing this out.",
+          "admin_auto_approve": false
         }
 
         Response example JSON: (Response Schema is RequestCreationResponse in models.py)
@@ -126,14 +202,6 @@ class RequestHandler(BaseAPIV2Handler):
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
-        # TODO: remove this check once v2 requests page is ready
-        can_manage_policy_request = await can_manage_policy_requests(
-            self.user, self.groups
-        )
-        if not can_manage_policy_request:
-            self.write_error(403, message="This page is not yet available to all users")
-            return
-
         tags = {"user": self.user}
         stats.count("RequestHandler.post", tags=tags)
         log_data = {
@@ -149,7 +217,6 @@ class RequestHandler(BaseAPIV2Handler):
         log.debug(log_data)
         try:
             # Validate the model
-            # TODO: add change_type enum to all of the changemodel types (assume role and resource policy remaining I believe)
             changes = RequestCreationModel.parse_raw(self.request.body)
             extended_request = await generate_request_from_change_model_array(
                 changes, self.user
@@ -159,6 +226,9 @@ class RequestHandler(BaseAPIV2Handler):
             admin_approved = False
             approval_probe_approved = False
 
+            # TODO: Provide a note to the requester that admin_auto_approve will apply the requested policies only.
+            # It will not automatically apply generated policies. The administrative user will need to visit the policy
+            # Request page to do this manually.
             if changes.admin_auto_approve:
                 # make sure user is allowed to use admin_auto_approve
                 can_manage_policy_request = await can_manage_policy_requests(
@@ -224,6 +294,7 @@ class RequestHandler(BaseAPIV2Handler):
                                 text=f"Policy {approving_probe['policy']} auto-approved by probe: {approving_probe['name']}",
                             )
                             extended_request.comments.append(approving_probe_comment)
+                        extended_request.reviewer = f"Auto-Approve Probe: {','.join(should_auto_approve_request['approving_probes'])}"
                         log_data["probe_auto_approved"] = True
                         log_data["request"] = extended_request.dict()
                         log.debug(log_data)
@@ -258,7 +329,7 @@ class RequestHandler(BaseAPIV2Handler):
             action_results=[],
         )
 
-        # If approved is true, could be auto-approval probe or admin auto-approve, apply the changes
+        # If approved is true due to an auto-approval probe or admin auto-approval, apply the changes
         if extended_request.request_status == RequestStatus.approved:
             await apply_changes_to_role(extended_request, response, self.user)
             # Update in dynamo

@@ -2,13 +2,19 @@ import sys
 import time
 import uuid
 from hashlib import sha256
-from typing import Dict, Union
+from typing import Dict, List, Union
 
 import sentry_sdk
 import ujson as json
 from asgiref.sync import sync_to_async
 from cloudaux.aws.sts import boto3_cached_conn
-from policy_sentry.util.arns import parse_arn
+from policy_sentry.util.actions import get_service_from_action
+from policy_sentry.util.arns import (
+    get_region_from_arn,
+    get_resource_from_arn,
+    get_service_from_arn,
+    parse_arn,
+)
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -17,6 +23,7 @@ from consoleme.exceptions.exceptions import (
     Unauthorized,
     UnsupportedChangeType,
 )
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.aws import (
     generate_updated_resource_policy,
     get_resource_account,
@@ -42,6 +49,7 @@ from consoleme.models import (
     ApplyChangeModificationModel,
     AssumeRolePolicyChangeModel,
     CancelChangeModificationModel,
+    ChangeModel,
     ChangeModelArray,
     Command,
     CommentModel,
@@ -229,7 +237,7 @@ async def generate_request_from_change_model_array(
         cross_account=False,
         arn_url=arn_url,
     )
-    await generate_resource_policies(extended_request, user)
+    extended_request = await generate_resource_policies(extended_request, user)
     return extended_request
 
 
@@ -237,7 +245,8 @@ async def is_request_eligible_for_auto_approval(
     extended_request: ExtendedRequestModel, user: str
 ) -> bool:
     """
-    Checks whether a request is eligible for auto-approval probes or not
+    Checks whether a request is eligible for auto-approval probes or not. Currently, only requests with inline_policies
+    are eligible for auto-approval probes.
 
     :param extended_request: ExtendedRequestModel
     :param user: username
@@ -314,14 +323,19 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
     )
 
     auto_generated_resource_policy_changes = []
-
     # Create resource policy stubs for current resources that are used
     for policy_change in extended_request.changes.changes:
         if policy_change.change_type == "inline_policy":
+            policy_change.resources = await get_resources_from_policy_change(
+                policy_change
+            )
             for resource in policy_change.resources:
                 resource_account_id = await get_resource_account(resource.arn)
-                if resource_account_id != role_account_id:
-                    # Cross account request
+                if (
+                    resource_account_id != role_account_id
+                    and resource.resource_type != "iam"
+                ):
+                    # Cross account
                     auto_generated_resource_policy_changes.append(
                         ResourcePolicyChangeModel(
                             arn=resource.arn,
@@ -345,6 +359,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
     log_data["message"] = "Finished generating resource policies"
     log_data["request"] = extended_request.dict()
     log.debug(log_data)
+    return extended_request
 
 
 async def validate_inline_policy_change(
@@ -777,7 +792,7 @@ async def populate_cross_account_resource_policies(
     :param user: username
     :return: Dict:
         changed: whether the resource policies have changed or not
-        extended_request: modifed extended_request
+        extended_request: modified extended_request
     """
 
     log_data: dict = {
@@ -790,7 +805,7 @@ async def populate_cross_account_resource_policies(
     log.debug(log_data)
 
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application", []
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
     default_policy = {"Version": "2012-10-17", "Statement": []}
     resource_policies_changed = False
@@ -811,6 +826,7 @@ async def populate_cross_account_resource_policies(
                 change.supported = True
             else:
                 change.supported = False
+
             # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
             # force the change to be not supported and default policy
             if not resource_account:
@@ -1421,3 +1437,74 @@ async def parse_and_apply_policy_request_modification(
     log_data["error"] = None
     log.debug(log_data)
     return response
+
+
+async def get_resources_from_policy_change(change: ChangeModel):
+    """Returns a dict of resources affected by a list of policy changes along with
+    the actions and other data points that are relevant to them.
+
+    Returned dict format:
+    {
+        "resource_name": {
+            "actions": ["service1:action1", "service2:action2"],
+            "arns": ["arn:aws:service1:::resource_name", "arn:aws:service1:::resource_name/*"],
+            "account": "1234567890",
+            "type": "service1",
+            "region": "",
+        }
+    }
+    """
+
+    accounts_d: dict = await get_account_id_to_name_mapping()
+    resource_actions: List = []
+    if change.change_type not in ["inline_policy"]:
+        return []
+    policy_document = change.policy.policy_document
+    for statement in policy_document.get("Statement", []):
+        resources = statement.get("Resource", [])
+        resources = resources if isinstance(resources, list) else [resources]
+        for resource in resources:
+            # We can't yet generate multiple cross-account resource policies
+            # based on a partial wildcard in a resource name
+            if "*" in resource:
+                continue
+            resource_name = get_resource_from_arn(resource)
+            resource_action = {
+                "arn": resource,
+                "name": resource_name,
+                "account_id": await get_resource_account(resource),
+                "region": get_region_from_arn(resource),
+                "resource_type": get_service_from_arn(resource),
+            }
+
+            resource_action["account_name"] = accounts_d.get(
+                resource_action["account_id"]
+            )
+            resource_action["actions"] = get_actions_for_resource(resource, statement)
+            resource_actions.append(ResourceModel.parse_obj(resource_action))
+    return resource_actions
+
+
+def get_actions_for_resource(resource_arn: str, statement: Dict) -> List[str]:
+    """For the given resource and policy statement, return the actions that are
+    for that resource's service.
+    """
+    results: List[str] = []
+    # Get service from resource
+    resource_service = get_service_from_arn(resource_arn)
+    # Get relevant actions from policy doc
+    actions = statement.get("Action", [])
+    actions = actions if isinstance(actions, list) else [actions]
+    for action in actions:
+        if action == "*":
+            results.append(action)
+        else:
+            if (
+                get_service_from_action(action) == resource_service
+                or action.lower() == "sts:assumerole"
+                and resource_service == "iam"
+            ):
+                if action not in results:
+                    results.append(action)
+
+    return results

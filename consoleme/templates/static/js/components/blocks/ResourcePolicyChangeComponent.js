@@ -47,6 +47,7 @@ class ResourcePolicyChangeComponent extends Component {
     this.onLintError = this.onLintError.bind(this);
     this.onValueChange = this.onValueChange.bind(this);
     this.onSubmitChange = this.onSubmitChange.bind(this);
+    this.onCancelChange = this.onCancelChange.bind(this);
     this.sendProposedPolicy = sendProposedPolicy.bind(this);
     this.updatePolicyDocument = props.updatePolicyDocument;
     this.reloadDataFromBackend = props.reloadDataFromBackend;
@@ -114,6 +115,10 @@ class ResourcePolicyChangeComponent extends Component {
     this.sendProposedPolicy("apply_change");
   }
 
+  onCancelChange() {
+    this.sendProposedPolicy("cancel_change");
+  }
+
   render() {
     const {
       oldStatement,
@@ -165,7 +170,7 @@ class ResourcePolicyChangeComponent extends Component {
             negative
             fluid
             disabled={isError}
-            onClick={this.cancelChange}
+            onClick={this.onCancelChange}
           />
         </Grid.Column>
       ) : null;
