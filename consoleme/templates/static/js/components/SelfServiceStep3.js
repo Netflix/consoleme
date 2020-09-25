@@ -227,22 +227,22 @@ class SelfServiceStep3 extends Component {
       }));
     }
 
-    const { account_id, arn } = role;
-    const policyName = generate_id();
-    const policyType = "InlinePolicy";
-    const request = {
-      arn,
-      account_id,
+    const { arn } = role;
+    const requestV2 = {
       justification,
       admin_auto_approve,
-      data_list: [
-        {
-          type: policyType,
-          name: policyName,
-          value: custom_statement,
-          is_new: true,
-        },
-      ],
+      changes: {
+        changes: [
+          {
+            principal_arn: arn,
+            change_type: "inline_policy",
+            action: "attach",
+            policy: {
+              policy_document: JSON.parse(custom_statement),
+            },
+          },
+        ],
+      },
     };
 
     this.setState(
@@ -250,15 +250,12 @@ class SelfServiceStep3 extends Component {
         isLoading: true,
       },
       async () => {
-        const response = await sendRequestCommon(
-          request,
-          "/policies/submit_for_review"
-        );
+        const response = await sendRequestCommon(requestV2, "/api/v2/request");
 
         const messages = [];
         if (response) {
-          const { request_id, status } = response;
-          if (status === "success") {
+          const { request_created, request_id } = response;
+          if (request_created === true) {
             return this.setState({
               isLoading: false,
               isSuccess: true,
@@ -266,9 +263,12 @@ class SelfServiceStep3 extends Component {
               requestId: request_id,
             });
           }
-          messages.push("Failed to create a request");
+          messages.push(
+            "Server reported an error with the request: " +
+              JSON.stringify(response)
+          );
         } else {
-          messages.push("Failed to submit a request");
+          messages.push("Failed to submit request");
         }
         this.setState({
           isLoading: false,

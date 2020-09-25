@@ -710,6 +710,10 @@ class PolicyReviewHandler(BaseHandler):
             raise Exception("Duplicate requests found")
         request = requests[0]
 
+        if request and request.get("version") == "2":
+            request_id = request["request_id"]
+            self.redirect(f"/policies/request_v2/{request_id}")
+
         arn: str = request.get("arn", "")
         role_name: str = arn.split("/")[1]
         account_id: str = arn.split(":")[4]
