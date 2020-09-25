@@ -494,8 +494,6 @@ components:
               - $ref: "#/components/schemas/SESChangeGeneratorModel"
               - $ref: "#/components/schemas/CrudChangeGeneratorModel"
               - $ref: "#/components/schemas/GenericChangeGeneratorModel"
-            discriminator:
-              propertyName: change_generator_model
     ChangeGeneratorModel:
       type: object
       required:
@@ -590,7 +588,11 @@ components:
         - type: object
           required:
             - action_groups
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "advanced"
             iam_action:
               type: string
               example: kinesis:AddTagsToStream
@@ -617,17 +619,21 @@ components:
           required:
             - action_groups
             - service_name
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "crud_lookup"
             action_groups:
               type: array
               items:
                 type: string
-                enum:
-                  - read
-                  - write
-                  - list
-                  - tagging
-                  - permissions-management
+            #                enum:
+            #                  - read
+            #                  - write
+            #                  - list
+            #                  - tagging
+            #                  - permissions-management
             service_name:
               type: string
     S3ChangeGeneratorModel: # These schemas could be defined in different files.
@@ -638,7 +644,11 @@ components:
             - resource_arn
             - action_groups
             - bucket_prefix
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "s3"
             resource_arn:
               description: |-
                 The ARN of the S3 resource being accessed.
@@ -651,52 +661,64 @@ components:
               type: array
               items:
                 type: string
-                enum:
-                  - list
-                  - get
-                  - put
-                  - delete
+    #                enum:
+    #                  - list
+    #                  - get
+    #                  - put
+    #                  - delete
     SQSChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - action_groups
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "sqs"
             action_groups:
               type: array
               items:
                 type: string
-                enum:
-                  - get_queue_attributes
-                  - set_queue_attributes
-                  - receive_messages
-                  - send_messages
-                  - delete_messages
+    #                enum:
+    #                  - get_queue_attributes
+    #                  - set_queue_attributes
+    #                  - receive_messages
+    #                  - send_messages
+    #                  - delete_messages
     SNSChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - action_groups
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "sns"
             action_groups:
               type: array
               items:
                 type: string
-                enum:
-                  - get_topic_attributes
-                  - set_topic_attributes
-                  - publish
-                  - subscribe
-                  - unsubscribe
+    #                enum:
+    #                  - get_topic_attributes
+    #                  - set_topic_attributes
+    #                  - publish
+    #                  - subscribe
+    #                  - unsubscribe
     SESChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - from_address
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "ses"
             from_address:
               type: string
               default: from_address@example.com
@@ -704,8 +726,8 @@ components:
               type: array
               items:
                 type: string
-                enum:
-                  - send_email
+    #                enum:
+    #                  - send_email
     ChangeModel:
       type: object
       required:

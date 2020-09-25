@@ -18,7 +18,6 @@ from consoleme.models import (
     ChangeGeneratorModel,
     ChangeGeneratorModelArray,
     ChangeModelArray,
-    GeneratorType,
     InlinePolicyChangeModel,
     PolicyModel,
     ResourceModel,
@@ -289,9 +288,9 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
     :param change: ChangeGeneratorModel
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
-    if change.generator_type == GeneratorType.s3:
+    if change.generator_type == "s3":
         return await _generate_s3_inline_policy_statement_from_mapping(change)
-    if change.generator_type == GeneratorType.crud_lookup:
+    if change.generator_type == "crud_lookup":
         return await _generate_inline_policy_statement_from_policy_sentry(change)
     return await _generate_inline_policy_statement_from_mapping(change)
     # TODO: Custom policy handler where we handle explicit permission additions
