@@ -397,6 +397,11 @@ components:
           readOnly: true
         policy:
           type: string
+        # "actions" is used in the self-service request flow to store the IAM actions requested on a particular resource
+        actions:
+          type: array
+          items:
+            type: string
         owner:
           description: email address of team or individual who owns this resource
           type: string
@@ -489,8 +494,6 @@ components:
               - $ref: "#/components/schemas/SESChangeGeneratorModel"
               - $ref: "#/components/schemas/CrudChangeGeneratorModel"
               - $ref: "#/components/schemas/GenericChangeGeneratorModel"
-            discriminator:
-              propertyName: change_generator_model
     ChangeGeneratorModel:
       type: object
       required:
@@ -585,7 +588,11 @@ components:
         - type: object
           required:
             - action_groups
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "advanced"
             iam_action:
               type: string
               example: kinesis:AddTagsToStream
@@ -612,17 +619,21 @@ components:
           required:
             - action_groups
             - service_name
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "crud_lookup"
             action_groups:
               type: array
               items:
                 type: string
-                enum:
-                  - read
-                  - write
-                  - list
-                  - tagging
-                  - permissions-management
+            #                enum:
+            #                  - read
+            #                  - write
+            #                  - list
+            #                  - tagging
+            #                  - permissions-management
             service_name:
               type: string
     S3ChangeGeneratorModel: # These schemas could be defined in different files.
@@ -633,7 +644,11 @@ components:
             - resource_arn
             - action_groups
             - bucket_prefix
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "s3"
             resource_arn:
               description: |-
                 The ARN of the S3 resource being accessed.
@@ -646,52 +661,64 @@ components:
               type: array
               items:
                 type: string
-                enum:
-                  - list
-                  - get
-                  - put
-                  - delete
+    #                enum:
+    #                  - list
+    #                  - get
+    #                  - put
+    #                  - delete
     SQSChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - action_groups
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "sqs"
             action_groups:
               type: array
               items:
                 type: string
-                enum:
-                  - get_queue_attributes
-                  - set_queue_attributes
-                  - receive_messages
-                  - send_messages
-                  - delete_messages
+    #                enum:
+    #                  - get_queue_attributes
+    #                  - set_queue_attributes
+    #                  - receive_messages
+    #                  - send_messages
+    #                  - delete_messages
     SNSChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - action_groups
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "sns"
             action_groups:
               type: array
               items:
                 type: string
-                enum:
-                  - get_topic_attributes
-                  - set_topic_attributes
-                  - publish
-                  - subscribe
-                  - unsubscribe
+    #                enum:
+    #                  - get_topic_attributes
+    #                  - set_topic_attributes
+    #                  - publish
+    #                  - subscribe
+    #                  - unsubscribe
     SESChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
         - type: object
           required:
             - from_address
+            - generator_type
           properties:
+            generator_type:
+              type: string
+              pattern: "ses"
             from_address:
               type: string
               default: from_address@example.com
@@ -699,35 +726,22 @@ components:
               type: array
               items:
                 type: string
-                enum:
-                  - send_email
+    #                enum:
+    #                  - send_email
     ChangeModel:
       type: object
       required:
         - principal_arn
         - change_type
-        - resources
-        - status
       properties:
         principal_arn:
           type: string
           pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         change_type:
           type: string
-          enum:
-            - inline_policy
-            - managed_policy
-            - resource_policy
-            - assume_role_policy
-          discriminator:
-            propertyName: change_type
-            mapping:
-              inline_policy: "#/components/schemas/InlinePolicyChangeModel"
-              managed_policy: "#/components/schemas/ManagedPolicyChangeModel"
-              resource_policy: "#/components/schemas/ResourcePolicyChangeModel"
-              assume_role_policy: "#/components/schemas/AssumeRolePolicyChangeModel"
         resources:
           type: array
+          default: []
           items:
             $ref: "#/components/schemas/ResourceModel"
         version:
@@ -735,23 +749,22 @@ components:
           default: 2.0
         status:
           type: string
+          default: not_applied
           enum:
             - applied
             - not_applied
+            - cancelled
         id:
           type: string
     InlinePolicyChangeModel:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
         - type: object
-          required:
-            - policy_name
-            - new
-            - policy
           properties:
             policy_name:
               type: string
             new:
+              default: true
               type: boolean
             action:
               type: string
@@ -759,6 +772,9 @@ components:
                 - attach
                 - detach
               default: attach
+            change_type:
+              type: string
+              pattern: "inline_policy"
             policy:
               $ref: "#/components/schemas/PolicyModel"
             old_policy:
@@ -767,13 +783,23 @@ components:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
         - type: object
-          required:
-            - policy
           properties:
+            change_type:
+              type: string
+              pattern: "assume_role_policy"
             policy:
               $ref: "#/components/schemas/PolicyModel"
             old_policy:
               $ref: "#/components/schemas/PolicyModel"
+            source_change_id:
+              type: string
+              readOnly: true
+              description: the change model ID of the source change, that this change was generated from
+            autogenerated:
+              type: boolean
+              readOnly: true
+              default: false
+
     ResourcePolicyChangeModel:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
@@ -782,6 +808,9 @@ components:
             - arn
             - policy
           properties:
+            change_type:
+              type: string
+              pattern: "resource_policy"
             arn:
               type: string
               pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
@@ -815,6 +844,9 @@ components:
               pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
             policy_name:
               type: string
+            change_type:
+              type: string
+              pattern: "managed_policy"
             action:
               type: string
               enum:
@@ -833,8 +865,6 @@ components:
               - $ref: "#/components/schemas/ManagedPolicyChangeModel"
               - $ref: "#/components/schemas/ResourcePolicyChangeModel"
               - $ref: "#/components/schemas/AssumeRolePolicyChangeModel"
-            discriminator:
-              propertyName: change_model
     ArnArray:
       type: array
       items:
@@ -885,8 +915,6 @@ components:
           type: string
     PolicyModel:
       type: object
-      required:
-        - policy_sha256
       properties:
         version:
           type: string
@@ -1240,6 +1268,7 @@ components:
             - cancel_request
             - apply_change
             - update_change
+            - cancel_change
             - move_back_to_pending
     CommentRequestModificationModel:
       allOf:
@@ -1273,7 +1302,18 @@ components:
               type: object
             change_id:
               type: string
-    CancelRequestModificationModel:
+    CancelChangeModificationModel:
+      allOf:
+        - $ref: "#/components/schemas/RequestModificationBaseModel"
+        - type: object
+          required:
+            - change_id
+          properties:
+            policy_document:
+              type: object
+            change_id:
+              type: string
+    ChangeRequestStatusModificationModel:
       allOf:
         - $ref: "#/components/schemas/RequestModificationBaseModel"
     MoveToPendingRequestModificationModel:
@@ -1309,7 +1349,7 @@ components:
             - $ref: "#/components/schemas/ApplyChangeModificationModel"
             - $ref: "#/components/schemas/ApproveRequestModificationModel"
             - $ref: "#/components/schemas/MoveToPendingRequestModificationModel"
-            - $ref: "#/components/schemas/CancelRequestModificationModel"
+            - $ref: "#/components/schemas/ChangeRequestStatusModificationModel"
           discriminator:
             propertyName: command
             mapping:
@@ -1329,3 +1369,6 @@ components:
                 type: string
               message:
                 type: string
+              visible:
+                type: boolean
+                default: true

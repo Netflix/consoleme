@@ -74,7 +74,7 @@ async def get_account_id_to_name_mapping(
         "cache_cloud_accounts.redis.key.all_accounts_key", "ALL_AWS_ACCOUNTS"
     )
     accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default={})
-    if force_sync or not accounts:
+    if force_sync or not accounts or not accounts.get("accounts"):
         # Force a re-sync and then retry
         await cache_cloud_accounts()
         accounts = await retrieve_json_data_from_redis_or_s3(

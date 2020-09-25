@@ -80,7 +80,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                     "generator_type": "crud_lookup",
                     "resource_arn": "*",
                     "effect": "Allow",
-                    "service_name": "ssm",
+                    "service": "ssm",
                     "action_groups": ["list", "read"],
                 },
             ]
@@ -94,6 +94,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(
             result["changes"][0]["principal_arn"],
             input_body["changes"][0]["principal_arn"],
+        )
+        self.assertEqual(
+            len(result["changes"]),
+            1,
         )
 
     @patch(
@@ -127,7 +131,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                     "generator_type": "crud_lookup",
                     "resource_arn": "*",
                     "effect": "Allow",
-                    "service_name": "ssm",
+                    "service": "ssm",
                     "action_groups": ["list", "read"],
                 },
             ]

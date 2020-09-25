@@ -172,12 +172,20 @@ async def get_resource_account(arn: str) -> str:
     In most cases, this will pull the ID directly from the ARN.
     If we are unsuccessful in pulling the account from ARN, we try to grab it from our resources cache
     """
-
+    red = await RedisHandler().redis()
     resource_account: str = get_account_from_arn(arn)
     if resource_account:
         return resource_account
 
     resources_from_aws_config_redis_key: str = config.get("aws_config_cache.redis_key")
+
+    if not red.exists(resources_from_aws_config_redis_key):
+        # This will force a refresh of our redis cache if the data exists in S3
+        await retrieve_json_data_from_redis_or_s3(
+            redis_key=config.get("aws_config_cache.redis_key"),
+            s3_bucket=config.get("aws_config_cache_combined.s3.bucket"),
+            s3_key=config.get("aws_config_cache_combined.s3.file"),
+        )
     resource_info = await redis_hget(resources_from_aws_config_redis_key, arn)
     if resource_info:
         return json.loads(resource_info).get("accountId", "")
@@ -267,8 +275,21 @@ async def fetch_resource_details(
         return await fetch_sqs_queue(account_id, region, resource_name)
     elif resource_type == "sns":
         return await fetch_sns_topic(account_id, region, resource_name)
+
     else:
         return {}
+
+
+async def fetch_assume_role_policy(role_arn: str) -> Optional[Dict]:
+    account_id = role_arn.split(":")[4]
+    role_name = role_arn.split("/")[-1]
+    try:
+        role = await fetch_role_details(account_id, role_name)
+    except ClientError:
+        # Role is most likely on an account that we do not have access to
+        sentry_sdk.capture_exception()
+        return None
+    return role.assume_role_policy_document
 
 
 async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> dict:

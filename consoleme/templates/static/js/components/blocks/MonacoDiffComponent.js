@@ -76,6 +76,11 @@ class MonacoDiffComponent extends React.Component {
       renderSideBySide: true,
       enableSplitViewResizing: false,
       quickSuggestions: true,
+      scrollbar: {
+        alwaysConsumeMouseWheel: false,
+      },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
       readOnly,
     };
     return (
@@ -85,10 +90,12 @@ class MonacoDiffComponent extends React.Component {
         height="500"
         original={oldValue}
         value={newValue}
+        N
         editorDidMount={this.editorDidMount}
         options={options}
         onChange={this.onChange}
         theme="vs-dark"
+        alwaysConsumeMouseWheel={false}
       />
     );
   }
