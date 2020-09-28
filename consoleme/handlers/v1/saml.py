@@ -21,7 +21,12 @@ class SamlHandler(BaseHandler):
         auth = await self.init_saml_auth(req)
 
         if "sso" in endpoint:
-            return self.redirect(auth.login())
+            return self.write(
+                {
+                    "type": "redirect",
+                    "redirect_url": auth.login(),
+                }
+            )
         elif "acs" in endpoint:
             auth.process_response()
             errors = auth.get_errors()
@@ -52,8 +57,11 @@ class SamlHandler(BaseHandler):
                     and self_url
                     != self.request.arguments["RelayState"][0].decode("utf-8")
                 ):
-                    return self.redirect(
-                        auth.redirect_to(
-                            self.request.arguments["RelayState"][0].decode("utf-8")
-                        )
+                    return self.write(
+                        {
+                            "type": "redirect",
+                            "redirect_url": auth.redirect_to(
+                                self.request.arguments["RelayState"][0].decode("utf-8")
+                            ),
+                        }
                     )

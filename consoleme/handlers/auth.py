@@ -12,7 +12,7 @@ class AuthHandler(BaseHandler):
             raise
 
     async def get(self):
-        self.write("")
+        self.write({})
 
     async def post(self):
-        self.write("")
+        self.write({})

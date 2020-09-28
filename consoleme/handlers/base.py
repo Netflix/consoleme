@@ -291,6 +291,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 res = await authenticate_user_by_oauth2(self)
                 if not res:
                     # Or should we finish?
+                    self.finish()
                     raise Exception("Unable to authenticate the user by oAuth2")
                 if res and isinstance(res, dict):
                     self.user = res.get("user")
