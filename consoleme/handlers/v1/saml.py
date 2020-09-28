@@ -5,6 +5,7 @@ from consoleme.handlers.base import BaseHandler
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.jwt import generate_jwt_token
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.saml import init_saml_auth, prepare_tornado_request_for_saml
 
 if config.get("auth.get_user_by_saml"):
     from onelogin.saml2.utils import OneLogin_Saml2_Utils
@@ -16,17 +17,15 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 
 
 class SamlHandler(BaseHandler):
+    def check_xsrf_cookie(self):
+        pass
+
     async def post(self, endpoint):
-        req = await self.prepare_tornado_request_for_saml()
-        auth = await self.init_saml_auth(req)
+        req = await prepare_tornado_request_for_saml(self.request)
+        auth = await init_saml_auth(req)
 
         if "sso" in endpoint:
-            return self.write(
-                {
-                    "type": "redirect",
-                    "redirect_url": auth.login(),
-                }
-            )
+            return self.redirect(auth.login())
         elif "acs" in endpoint:
             auth.process_response()
             errors = auth.get_errors()
@@ -57,11 +56,8 @@ class SamlHandler(BaseHandler):
                     and self_url
                     != self.request.arguments["RelayState"][0].decode("utf-8")
                 ):
-                    return self.write(
-                        {
-                            "type": "redirect",
-                            "redirect_url": auth.redirect_to(
-                                self.request.arguments["RelayState"][0].decode("utf-8")
-                            ),
-                        }
+                    return self.redirect(
+                        auth.redirect_to(
+                            self.request.arguments["RelayState"][0].decode("utf-8")
+                        )
                     )

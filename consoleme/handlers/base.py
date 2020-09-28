@@ -1,6 +1,5 @@
 """Handle the base."""
 import asyncio
-import copy
 import time
 import traceback
 import uuid
@@ -11,12 +10,9 @@ import tornado.httpclient
 import tornado.httputil
 import tornado.web
 import ujson as json
-from asgiref.sync import sync_to_async
-from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
 from tornado import httputil
 
 from consoleme.config import config
-from consoleme.config.config import dict_merge
 from consoleme.exceptions.exceptions import (
     InvalidCertificateException,
     MissingCertificateException,
@@ -34,9 +30,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.saml import authenticate_user_by_saml
 from consoleme.lib.tracing import ConsoleMeTracer
-
-if config.get("auth.get_user_by_saml"):
-    from onelogin.saml2.auth import OneLogin_Saml2_Auth
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -284,6 +277,8 @@ class BaseHandler(tornado.web.RequestHandler):
             if config.get("auth.get_user_by_saml"):
                 res = await authenticate_user_by_saml(self)
                 if not res:
+                    if self.request.uri != "/saml/acs":
+                        raise Exception("Unable to authenticate the user by SAML")
                     return
 
         if not self.user:
@@ -423,41 +418,6 @@ class BaseHandler(tornado.web.RequestHandler):
             )
         if self.tracer:
             await self.tracer.set_additional_tags({"USER": self.user})
-
-    async def prepare_tornado_request_for_saml(self):
-        dataDict = {}
-
-        for key in self.request.arguments:
-            dataDict[key] = self.request.arguments[key][0].decode("utf-8")
-
-        result = {
-            "https": "on" if self.request == "https" else "off",
-            "http_host": tornado.httputil.split_host_and_port(self.request.host)[0],
-            "script_name": self.request.path,
-            "server_port": tornado.httputil.split_host_and_port(self.request.host)[1],
-            "get_data": dataDict,
-            "post_data": dataDict,
-            "query_string": self.request.query,
-        }
-        return result
-
-    @staticmethod
-    async def init_saml_auth(req):
-        saml_config = copy.deepcopy(
-            config.get("get_user_by_saml_settings.saml_settings", {})
-        )
-        idp_metadata_url = config.get("get_user_by_saml_settings.idp_metadata_url")
-        if idp_metadata_url:
-            idp_metadata = OneLogin_Saml2_IdPMetadataParser.parse_remote(
-                idp_metadata_url
-            )
-            saml_config = dict_merge(saml_config, idp_metadata)
-        auth = await sync_to_async(OneLogin_Saml2_Auth)(
-            req,
-            saml_config,
-            custom_base_path=config.get("get_user_by_saml_settings.saml_path"),
-        )
-        return auth
 
 
 class BaseAPIV1Handler(BaseHandler):
