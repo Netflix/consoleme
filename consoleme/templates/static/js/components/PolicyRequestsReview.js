@@ -4,6 +4,7 @@ import React, { Component } from "react";
 import {
   Button,
   Dimmer,
+  Divider,
   Grid,
   Header,
   Icon,
@@ -18,6 +19,7 @@ import InlinePolicyChangeComponent from "./blocks/InlinePolicyChangeComponent";
 import ManagedPolicyChangeComponent from "./blocks/ManagedPolicyChangeComponent";
 import AssumeRolePolicyChangeComponent from "./blocks/AssumeRolePolicyChangeComponent";
 import ResourcePolicyChangeComponent from "./blocks/ResourcePolicyChangeComponent";
+import { sendProposedPolicy, updateRequestStatus } from "../helpers/utils";
 
 class PolicyRequestReview extends Component {
   constructor(props) {
@@ -31,10 +33,27 @@ class PolicyRequestReview extends Component {
       isSubmitting: false,
       lastUpdated: null,
       requestConfig: {},
+      policyDocuments: {},
     };
+    this.reloadDataFromBackend = this.reloadDataFromBackend.bind(this);
+    this.updatePolicyDocument = this.updatePolicyDocument.bind(this);
+    this.updateRequestStatus = updateRequestStatus.bind(this);
+    this.sendProposedPolicy = sendProposedPolicy.bind(this);
   }
 
   componentDidMount() {
+    this.reloadDataFromBackend();
+  }
+
+  updatePolicyDocument(changeID, policyDocument) {
+    const { policyDocuments } = this.state;
+    policyDocuments[changeID] = policyDocument;
+    this.setState({
+      policyDocuments,
+    });
+  }
+
+  reloadDataFromBackend() {
     const { requestID } = this.state;
     this.setState(
       {
@@ -72,6 +91,7 @@ class PolicyRequestReview extends Component {
       isSubmitting,
       requestConfig,
       loading,
+      requestID,
     } = this.state;
 
     // Checks whether extendedInfo is available for the requester or not, if it is, saves it as a variable
@@ -121,6 +141,23 @@ class PolicyRequestReview extends Component {
           </Message.List>
         </Message>
       ) : null;
+
+    const descriptionContent = (
+      <Grid.Column>
+        <Message info>
+          <Message.Header>Reviewer Instructions</Message.Header>
+          <p>
+            Please review each change in this request carefully. Reviewers can
+            selectively apply, modify, cancel individual changes, or reject the
+            entire request. Requesters can modify, cancel individual changes, or
+            cancel their entire request. This page does not provide a button for
+            reviewers to approve all changes in a request because each
+            individual change should be carefully reviewed.
+          </p>
+        </Message>
+      </Grid.Column>
+    );
+
     const requestDetails = extendedRequest ? (
       <Table celled definition striped>
         <Table.Body>
@@ -225,7 +262,11 @@ class PolicyRequestReview extends Component {
     ) : null;
 
     const commentsContent = extendedRequest.comments ? (
-      <CommentsFeedBlockComponent comments={extendedRequest.comments} />
+      <CommentsFeedBlockComponent
+        comments={extendedRequest.comments}
+        reloadDataFromBackend={this.reloadDataFromBackend}
+        requestID={requestID}
+      />
     ) : null;
 
     const requestReadOnly =
@@ -244,6 +285,9 @@ class PolicyRequestReview extends Component {
                   change={change}
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}
+                  updatePolicyDocument={this.updatePolicyDocument}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
                 />
               );
             }
@@ -253,6 +297,8 @@ class PolicyRequestReview extends Component {
                   change={change}
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
                 />
               );
             }
@@ -262,6 +308,9 @@ class PolicyRequestReview extends Component {
                   change={change}
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}
+                  updatePolicyDocument={this.updatePolicyDocument}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
                 />
               );
             }
@@ -271,6 +320,9 @@ class PolicyRequestReview extends Component {
                   change={change}
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}
+                  updatePolicyDocument={this.updatePolicyDocument}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
                 />
               );
             }
@@ -279,32 +331,46 @@ class PolicyRequestReview extends Component {
         </>
       ) : null;
 
-    const approveRequestButton = requestConfig.can_approve_reject ? (
+    const completeRequestButton = requestConfig.can_approve_reject ? (
       <Grid.Column>
-        <Button content="Approve and Commit Changes" positive fluid />
+        <Button
+          content="Mark Request as Approved"
+          positive
+          fluid
+          onClick={this.updateRequestStatus.bind(this, "approve_request")}
+        />
       </Grid.Column>
     ) : null;
 
     const rejectRequestButton = requestConfig.can_approve_reject ? (
       <Grid.Column>
-        <Button content="Reject Request" negative fluid />
+        <Button
+          content="Reject Request"
+          negative
+          fluid
+          onClick={this.updateRequestStatus.bind(this, "reject_request")}
+        />
       </Grid.Column>
     ) : null;
 
     const cancelRequestButton = requestConfig.can_update_cancel ? (
       <Grid.Column>
-        <Button content="Cancel Request" negative fluid />
+        <Button
+          content="Cancel Request"
+          negative
+          fluid
+          onClick={this.updateRequestStatus.bind(this, "cancel_request")}
+        />
       </Grid.Column>
     ) : null;
 
     // If none of the buttons are visible to user, then user can only view this request
-    const userCanViewOnly =
-      !approveRequestButton && !rejectRequestButton && !cancelRequestButton;
+    const userCanViewOnly = !rejectRequestButton && !cancelRequestButton;
     // If user can only view the request, but not modify, don't show any requestButtons
     const requestButtons = userCanViewOnly ? null : (
       <Grid container>
         <Grid.Row columns="equal">
-          {approveRequestButton}
+          {/* {completeRequestButton} */}
           {rejectRequestButton}
           {cancelRequestButton}
         </Grid.Row>
@@ -320,7 +386,7 @@ class PolicyRequestReview extends Component {
             This request can no longer be modified
           </Message.Header>
           <p>
-            This request can no longer be modified as the status is
+            This request can no longer be modified as the status is{" "}
             {extendedRequest.request_status}
           </p>
         </Message>
@@ -330,6 +396,7 @@ class PolicyRequestReview extends Component {
       messagesToShow === null ? (
         <Segment>
           {requestDetails}
+          {descriptionContent}
           {changesContent}
           {commentsContent}
           {requestButtonsContent}
