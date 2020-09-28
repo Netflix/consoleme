@@ -250,3 +250,8 @@ async def iterate_and_format_dict(d: Dict, replacements: Dict):
             except KeyError:
                 pass
     return d
+
+
+class Struct:
+    def __init__(self, **entries):
+        self.__dict__.update(entries)

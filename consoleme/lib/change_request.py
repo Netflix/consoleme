@@ -18,8 +18,6 @@ from consoleme.models import (
     ChangeGeneratorModel,
     ChangeGeneratorModelArray,
     ChangeModelArray,
-    ChangeType,
-    GeneratorType,
     InlinePolicyChangeModel,
     PolicyModel,
     ResourceModel,
@@ -63,7 +61,7 @@ async def _generate_policy_sid(user: str) -> str:
     return f"cm{user_stripped}{int(time.time())}{random_string}"
 
 
-async def _generate_policy_name(policy_name: str, user: str) -> str:
+async def generate_policy_name(policy_name: str, user: str) -> str:
     """
     Generate a unique policy name identifying the user and time of the change request.
 
@@ -114,10 +112,10 @@ async def _generate_inline_policy_change_model(
     :param policy_name: Optional policy name. If not provided, one will be generated
     :return: InlinePolicyChangeModel
     """
-    policy_name = await _generate_policy_name(policy_name, user)
+    policy_name = await generate_policy_name(policy_name, user)
     policy_document = await _generate_inline_policy_model_from_statements(statements)
     change_details = {
-        "change_type": ChangeType.inline_policy,
+        "change_type": "inline_policy",
         "principal_arn": principal_arn,
         "resources": resources,
         "policy_name": policy_name,
@@ -198,7 +196,7 @@ async def _generate_s3_inline_policy_statement_from_mapping(
     resource_arns.append(f"{generator.resource_arn}{generator.bucket_prefix}")
 
     for action in generator.action_groups:
-        action_group_actions.append(action.value)
+        action_group_actions.append(action)
     actions = await _get_actions_from_groups(action_group_actions, permissions_map)
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
@@ -246,7 +244,7 @@ async def _generate_inline_policy_statement_from_mapping(
         if isinstance(action, str):
             action_group_actions.append(action)
         else:
-            action_group_actions.append(action.value)
+            action_group_actions.append(action)
     actions = await _get_actions_from_groups(action_group_actions, permissions_map)
     condition: Optional[Dict] = await _generate_condition_with_substitutions(generator)
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
@@ -272,10 +270,10 @@ async def _generate_inline_policy_statement_from_policy_sentry(
     access_level_actions: List[str] = []
     for access in generator.action_groups:
         for pm in permissions_map:
-            if pm["name"] == access.value:
+            if pm["name"] == access:
                 access_level_actions += pm.get("permissions")
     actions = await _get_policy_sentry_access_level_actions(
-        generator.service_name, access_level_actions
+        generator.service, access_level_actions
     )
     return await _generate_policy_statement(
         actions, [generator.resource_arn], generator.effect, generator.condition
@@ -290,9 +288,9 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
     :param change: ChangeGeneratorModel
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
-    if change.generator_type == GeneratorType.s3:
+    if change.generator_type == "s3":
         return await _generate_s3_inline_policy_statement_from_mapping(change)
-    if change.generator_type == GeneratorType.crud_lookup:
+    if change.generator_type == "crud_lookup":
         return await _generate_inline_policy_statement_from_policy_sentry(change)
     return await _generate_inline_policy_statement_from_mapping(change)
     # TODO: Custom policy handler where we handle explicit permission additions

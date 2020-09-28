@@ -656,6 +656,10 @@ async def should_auto_approve_policy(events, user, user_groups):
 async def should_auto_approve_policy_v2(
     extended_request: ExtendedRequestModel, user, user_groups
 ):
+    """
+    This uses your fancy internal logic to determine if a request should be auto-approved or not. The default plugin
+    set included in ConsoleMe OSS will return False.
+    """
     aws = get_plugin_by_name(config.get("plugins.aws"))()
     return await aws.should_auto_approve_policy_v2(extended_request, user, user_groups)
 

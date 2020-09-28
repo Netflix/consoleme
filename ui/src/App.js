@@ -18,7 +18,7 @@ class App extends Component {
     this.state = {
       isLoading: true,
       userSession: null,
-      recentRoles: ["awsprod_admin", "awstest_admin", "bunker_prod_admin"],
+      recentRoles: ["example_role_1", "example_role_2", "example_role_3"],
     };
   }
 

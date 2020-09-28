@@ -32,7 +32,7 @@ click-log==0.3.2          # via policy-sentry
 click==7.1.2              # via black, click-log, policy-sentry, presto-python-client
 cloudaux==1.8.4           # via -r requirements.in
 contextlib2==0.6.0.post1  # via schema
-datamodel-code-generator==0.5.15  # via -r requirements.in
+datamodel-code-generator==0.5.35  # via -r requirements.in
 decorator==4.4.2          # via ipython, retry
 deepdiff[murmur]==5.0.2   # via -r requirements.in
 defusedxml==0.6.0         # via -r requirements.in, cloudaux, python3-saml
