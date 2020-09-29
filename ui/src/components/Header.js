@@ -14,7 +14,7 @@ class ConsoleMeHeader extends Component {
     }
 
     generateGroupsDropDown() {
-        if (this.props.userSession.pages.groups.enabled === true) {
+        if (this.props.userSession.pages && this.props.userSession.pages.groups.enabled === true) {
             return (
                 <Dropdown text='Group Access' pointing className='link item'>
                     <Dropdown.Menu>
@@ -38,7 +38,7 @@ class ConsoleMeHeader extends Component {
     }
 
     generatePoliciesDropDown() {
-        if (this.props.userSession.pages.policies.enabled === true) {
+        if (this.props.userSession.pages && this.props.userSession.pages.policies.enabled === true) {
             return (
                 <Dropdown
                     text="Roles and Policies"
@@ -71,7 +71,7 @@ class ConsoleMeHeader extends Component {
     }
 
     generateAdvancedDropDown() {
-        if (this.props.userSession.pages.config.enabled === true) {
+        if (this.props.userSession.pages && this.props.userSession.pages.config.enabled === true) {
             return (
                 <Dropdown
                     text="Advanced"
@@ -133,7 +133,7 @@ class ConsoleMeHeader extends Component {
                 >
                     <Image
                         size='mini'
-                        src='/images/logo192.png'
+                        src='/static2/images/logo192.png'
                         style={{ marginRight: '1.5em' }}
                     />
                     ConsoleMe

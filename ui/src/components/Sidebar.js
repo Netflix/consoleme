@@ -143,7 +143,7 @@ class ConsoleMeSidebar extends Component {
                     <Menu.Item>
                         <Image
                             size="medium"
-                            src='/images/logos/quarantine/1.png'
+                            src='/static2/images/logos/quarantine/1.png'
                         />
                         <br />
                         <a
@@ -153,7 +153,7 @@ class ConsoleMeSidebar extends Component {
                         >
                             <Image
                                 size="medium"
-                                src='/images/netflix-security-dark-bg-tight.svg'
+                                src='/static2/images/netflix-security-dark-bg-tight.svg'
                             />
                         </a>
                     </Menu.Item>

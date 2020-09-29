@@ -49,7 +49,7 @@ from consoleme.handlers.v2.create_role import CreateRoleViewHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
-from consoleme.handlers.v2.index import EligibleRoleTableConfigHandler, IndexHandler
+from consoleme.handlers.v2.index import EligibleRoleTableConfigHandler, IndexHandler, FrontendHandler
 from consoleme.handlers.v2.policies import (
     PoliciesHandler,
     PoliciesTableConfigHandler,
@@ -97,8 +97,15 @@ def make_app(jwt_validator=None):
 
     oss_routes = [
         (
-            r"/ui/(.*)",
+            r"/static2/(.*)",
             NoCacheStaticFileHandler,
+            dict(
+                path=os.path.join(path, "dist"),
+            ),
+        ),
+        (
+            r"/ui/(.*)",
+            FrontendHandler,
             dict(
                 path=os.path.join(path, "dist"),
                 default_filename="index.html",
