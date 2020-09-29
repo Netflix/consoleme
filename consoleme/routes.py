@@ -96,6 +96,14 @@ def make_app(jwt_validator=None):
     path = pkg_resources.resource_filename("consoleme", "templates")
 
     oss_routes = [
+        (
+            r"/ui/(.*)",
+            NoCacheStaticFileHandler,
+            dict(
+                path=os.path.join(path, "dist"),
+                default_filename="index.html",
+            ),
+        ),
         (r"/", IndexHandler),
         (r"/auth", AuthHandler),
         (r"/role/?", AutoLoginHandler),
