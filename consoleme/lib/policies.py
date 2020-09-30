@@ -11,15 +11,15 @@ from botocore.exceptions import ClientError
 from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
 from policy_sentry.util.actions import get_service_from_action
-from policy_sentry.util.arns import (
-    get_region_from_arn,
-    get_resource_from_arn,
-    get_service_from_arn,
-)
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter
-from consoleme.lib.aws import get_resource_account
+from consoleme.lib.aws import (
+    get_region_from_arn,
+    get_resource_account,
+    get_resource_from_arn,
+    get_service_from_arn,
+)
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.handler import update_role
 from consoleme.lib.ses import (

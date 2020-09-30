@@ -119,16 +119,14 @@ async def cache_all_policy_requests(
     user="consoleme", redis_key=None, s3_bucket=None, s3_key=None
 ):
     requests = await get_all_policy_requests(user)
-    # TODO: cache all once v2 requests are ready, for now only v1 requests
-    requests_v1 = []
+    requests_to_cache = []
     for request in requests:
-        if "version" not in request:
-            requests_v1.append(request)
+        requests_to_cache.append(request)
 
     await store_json_results_in_redis_and_s3(
-        requests_v1, redis_key, s3_bucket=s3_bucket, s3_key=s3_key
+        requests_to_cache, redis_key, s3_bucket=s3_bucket, s3_key=s3_key
     )
-    return requests_v1
+    return requests_to_cache
 
 
 async def get_all_pending_requests(user, groups):

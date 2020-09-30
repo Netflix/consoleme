@@ -10,12 +10,7 @@ import ujson as json
 from asgiref.sync import sync_to_async
 from cloudaux.aws.sts import boto3_cached_conn
 from policy_sentry.util.actions import get_service_from_action
-from policy_sentry.util.arns import (
-    get_region_from_arn,
-    get_resource_from_arn,
-    get_service_from_arn,
-    parse_arn,
-)
+from policy_sentry.util.arns import parse_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -27,8 +22,11 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.aws import (
     generate_updated_resource_policy,
+    get_region_from_arn,
     get_resource_account,
+    get_resource_from_arn,
     get_resource_policy,
+    get_service_from_arn,
 )
 from consoleme.lib.change_request import generate_policy_name
 from consoleme.lib.dynamo import UserDynamoHandler

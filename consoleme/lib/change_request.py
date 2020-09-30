@@ -18,6 +18,7 @@ from consoleme.models import (
     ChangeGeneratorModel,
     ChangeGeneratorModelArray,
     ChangeModelArray,
+    CrudChangeGeneratorModel,
     InlinePolicyChangeModel,
     PolicyModel,
     ResourceModel,
@@ -251,7 +252,7 @@ async def _generate_inline_policy_statement_from_mapping(
 
 
 async def _generate_inline_policy_statement_from_policy_sentry(
-    generator: ChangeGeneratorModel,
+    generator: CrudChangeGeneratorModel,
 ) -> Dict:
     """
     Generates an inline policy statement given a ChangeGeneratorModel from a action mapping provided by policy
@@ -273,7 +274,7 @@ async def _generate_inline_policy_statement_from_policy_sentry(
             if pm["name"] == access:
                 access_level_actions += pm.get("permissions")
     actions = await _get_policy_sentry_access_level_actions(
-        generator.service, access_level_actions
+        generator.service_name, access_level_actions
     )
     return await _generate_policy_statement(
         actions, [generator.resource_arn], generator.effect, generator.condition
