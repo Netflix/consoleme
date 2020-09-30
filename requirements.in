@@ -5,7 +5,7 @@ boto3
 cchardet
 celery[redis]
 cloudaux
-datamodel-code-generator==0.5.15 # Pinned due to bug in generating consoleme/models.py in later versions.
+datamodel-code-generator
 deepdiff[murmur]
 defusedxml
 ed25519
@@ -30,7 +30,7 @@ lxml
 okta_jwt
 pandas<1 #  Internal plugin depends on Pandas < 1
 pkgconfig
-policy-sentry==0.8.2 # New version removes get_region_from_arn, which we use.
+policy-sentry
 policyuniverse
 presto-python-client
 pycurl # For AsyncHTTPClient

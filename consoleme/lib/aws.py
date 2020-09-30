@@ -16,7 +16,7 @@ from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
-from policy_sentry.util.arns import get_account_from_arn
+from policy_sentry.util.arns import get_account_from_arn, parse_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -989,3 +989,28 @@ def is_role_instance_profile(role: Dict) -> bool:
     :return:
     """
     return role.get("RoleName").endswith("InstanceProfile")
+
+
+def get_region_from_arn(arn):
+    """Given an ARN, return the region in the ARN, if it is available. In certain cases like S3 it is not"""
+    result = parse_arn(arn)
+    # Support S3 buckets with no values under region
+    if result["region"] is None:
+        result = ""
+    else:
+        result = result["region"]
+    return result
+
+
+def get_resource_from_arn(arn):
+    """Given an ARN, parse it according to ARN namespacing and return the resource. See
+    http://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html for more details on ARN namespacing.
+    """
+    result = parse_arn(arn)
+    return result["resource"]
+
+
+def get_service_from_arn(arn):
+    """Given an ARN string, return the service """
+    result = parse_arn(arn)
+    return result["service"]
