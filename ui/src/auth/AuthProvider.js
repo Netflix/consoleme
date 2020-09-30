@@ -16,11 +16,13 @@ const AuthProvider = (props) => {
             } else {
                 const userResponse = await fetch("/api/v1/profile");
                 const userInfo = await userResponse.json();
-                setAuthState({
-                    ...authState,
-                    isAuthenticated: true,
-                    userInfo,
-                });
+                if (userInfo) {
+                    setAuthState({
+                        ...authState,
+                        isAuthenticated: true,
+                        userInfo,
+                    });
+                }
             }
         }
     };

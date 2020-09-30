@@ -135,7 +135,7 @@ const ConsoleMeHeader = () => {
                     textTransform: "uppercase",
                     width: "240px",
                 }}
-                href="/"
+                href="/ui/"
             >
                 <Image
                     size='mini'

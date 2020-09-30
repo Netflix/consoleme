@@ -25,7 +25,10 @@ const ConsoleMeSidebar = ( props ) => {
         const fetchSiteConfig = async () => {
             const configResponse = await fetch("/api/v1/siteconfig");
             const config = await configResponse.json();
-            setSiteConfig(config);
+            setSiteConfig({
+                ...siteConfig,
+                ...config
+            });
         };
 
         if (authState.isAuthenticated) {
