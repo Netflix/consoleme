@@ -1,5 +1,4 @@
-import React, {Component} from 'react';
-import PropTypes from 'prop-types';
+import React, { useEffect } from 'react';
 import {
     Dropdown,
     Menu,
@@ -7,16 +6,25 @@ import {
 } from 'semantic-ui-react';
 import {NavLink} from 'react-router-dom'
 
+import { useAuth } from "../auth/AuthContext";
 
-class ConsoleMeHeader extends Component {
-    static defaultProps = {
-        userSession: {},
+
+const ConsoleMeHeader = () => {
+    const { authState } = useAuth();
+    const { userInfo } = authState;
+
+    if (!authState.isAuthenticated || !userInfo) {
+        return null;
     }
 
-    generateGroupsDropDown() {
-        if (this.props.userSession.pages && this.props.userSession.pages.groups.enabled === true) {
+    const generateGroupsDropDown = () => {
+        if (userInfo.pages.groups.enabled === true) {
             return (
-                <Dropdown text='Group Access' pointing className='link item'>
+                <Dropdown
+                    text='Group Access'
+                    pointing
+                    className='link item'
+                >
                     <Dropdown.Menu>
                         <Dropdown.Item>
                             Request Access
@@ -37,17 +45,18 @@ class ConsoleMeHeader extends Component {
         return null;
     }
 
-    generatePoliciesDropDown() {
-        if (this.props.userSession.pages && this.props.userSession.pages.policies.enabled === true) {
+    const generatePoliciesDropDown = () => {
+        if (userInfo.pages.policies.enabled === true) {
             return (
                 <Dropdown
                     text="Roles and Policies"
-                    pointing className="link item"
+                    pointing
+                    className="link item"
                 >
                     <Dropdown.Menu>
                         <Dropdown.Item
                             as={NavLink}
-                            to="/catalog"
+                            to="/ui/catalog"
                         >
                             Catalog
                         </Dropdown.Item>
@@ -56,7 +65,7 @@ class ConsoleMeHeader extends Component {
                         </Dropdown.Item>
                         <Dropdown.Item
                             as={NavLink}
-                            to="/selfservice"
+                            to="/ui/selfservice"
                         >
                             Self Service Permissions
                         </Dropdown.Item>
@@ -70,8 +79,8 @@ class ConsoleMeHeader extends Component {
         return null;
     }
 
-    generateAdvancedDropDown() {
-        if (this.props.userSession.pages && this.props.userSession.pages.config.enabled === true) {
+    const generateAdvancedDropDown = () => {
+        if (userInfo.pages.config.enabled === true) {
             return (
                 <Dropdown
                     text="Advanced"
@@ -92,78 +101,70 @@ class ConsoleMeHeader extends Component {
         return null;
     }
 
-    getAvatarImage() {
-        if (this.props.userSession.employee_photo_url) {
+    const getAvatarImage = () => {
+        if (userInfo.employee_photo_url) {
             return (
                 <Image
-                    alt={this.props.userSession.user}
+                    alt={userInfo.user}
                     avatar
-                    src={this.props.userSession.employee_photo_url}
-                    title={this.props.userSession.user}
+                    src={userInfo.employee_photo_url}
+                    title={userInfo.user}
                 />
             );
         }
         return null;
-    }
+    };
 
-    render() {
-        if (!this.props.userSession) {
-            return null;
-        }
-        return (
-            <Menu
-                color="red"
-                fixed="top"
-                inverted
+
+    return (
+        <Menu
+            color="red"
+            fixed="top"
+            inverted
+            style={{
+                height: "72px",
+                marginBottom: "0"
+            }}
+        >
+            <Menu.Item
+                as="a"
+                header
+                name="header"
                 style={{
-                    height: "72px",
-                    marginBottom: "0"
+                    fontSize: "20px",
+                    textTransform: "uppercase",
+                    width: "240px",
                 }}
+                href="/"
             >
+                <Image
+                    size='mini'
+                    src='/static2/images/logo192.png'
+                    style={{ marginRight: '1.5em' }}
+                />
+                ConsoleMe
+            </Menu.Item>
+            <Menu.Menu position="left">
                 <Menu.Item
-                    as="a"
-                    header
-                    name="header"
-                    style={{
-                        fontSize: "20px",
-                        textTransform: "uppercase",
-                        width: "240px",
-                    }}
-                    href="/"
+                    active={false}
+                    exact
+                    as={NavLink}
+                    name={"roles"}
+                    to="/ui/"
                 >
-                    <Image
-                        size='mini'
-                        src='/static2/images/logo192.png'
-                        style={{ marginRight: '1.5em' }}
-                    />
-                    ConsoleMe
+                    AWS Console Roles
                 </Menu.Item>
-                <Menu.Menu position="left">
-                    <Menu.Item
-                        active={false}
-                        exact
-                        as={NavLink}
-                        name={"roles"}
-                        to="/"
-                    >
-                        AWS Console Roles
-                    </Menu.Item>
-                    {this.generateGroupsDropDown()}
-                    {this.generatePoliciesDropDown()}
-                    {this.generateAdvancedDropDown()}
-                </Menu.Menu>
-                <Menu.Menu position="right">
-                    <Menu.Item>
-                        {this.getAvatarImage()}
-                    </Menu.Item>
-                </Menu.Menu>
-            </Menu>
-        );
-    }
-}
-
-ConsoleMeHeader.propType = {
-    userSession: PropTypes.object,
+                {generateGroupsDropDown()}
+                {generatePoliciesDropDown()}
+                {generateAdvancedDropDown()}
+            </Menu.Menu>
+            <Menu.Menu position="right">
+                <Menu.Item>
+                    {getAvatarImage()}
+                </Menu.Item>
+            </Menu.Menu>
+        </Menu>
+    );
 };
 
 export default ConsoleMeHeader;

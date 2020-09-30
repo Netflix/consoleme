@@ -3,23 +3,32 @@ import AuthContext from './AuthContext';
 
 
 const AuthProvider = (props) => {
-    const initialAuthState = {
+    const initialState = {
         isAuthenticated: false,
-        userSession: {},
+        userInfo: {},
         login: async () => {
-            const response = await fetch("/api/v1/profile");
-            const userSession = await response.json();
-            // setAuthState({
-            //     ...authState,
-            //     userSession,
-            //     isAuthenticated: true,
-            // });
+            const authResponse = await fetch(
+                "/auth?force_redirect=false&redirect_url=" + window.location.href
+            );
+            const auth = await authResponse.json();
+            if (auth.type === "redirect") {
+                window.location.href = auth.redirect_url;
+            } else {
+                const userResponse = await fetch("/api/v1/profile");
+                const userInfo = await userResponse.json();
+                setAuthState({
+                    ...authState,
+                    isAuthenticated: true,
+                    userInfo,
+                });
+            }
         }
     };
 
-    const [authState, setAuthState] = useState(initialAuthState);
+    const [authState, setAuthState] = useState(initialState);
 
     useEffect( () => {
+        console.log("AUTH STATE: ", authState);
         // if auth state changed trigger something here
         // if not authenticated redirect to login?
     }, [authState]);
