@@ -167,6 +167,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
         try:
             role_details = await get_role_details(account_id, role_name, extended=True)
         except Exception as e:
+            sentry_sdk.capture_exception()
             log.error({**log_data, "error": e}, exc_info=True)
             role_details = None
             error = e
