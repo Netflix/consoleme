@@ -7,8 +7,6 @@ ddb = boto3.client(
     "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name="us-east-1"
 )
 
-response = ddb.list_tables()
-
 try:
     ddb.create_table(
         TableName="consoleme_users_global",
@@ -152,4 +150,24 @@ except ClientError as e:
     print(
         f"Unable to create table consoleme_resource_cache  . Most likely it already exists and you can ignore this "
         f"message. Error: {e}"
+    )
+
+try:
+    ddb.create_table(
+        TableName="consoleme_cloudtrail",
+        KeySchema=[
+            {"AttributeName": "arn", "KeyType": "HASH"},  # Partition key
+            {"AttributeName": "request_id", "KeyType": "RANGE"},  # Sort key
+        ],
+        AttributeDefinitions=[
+            {"AttributeName": "arn", "AttributeType": "S"},
+            {"AttributeName": "request_id", "AttributeType": "S"},
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+    )
+except ClientError as e:
+    print(
+        "Unable to create table consoleme_chatbot. Most likely it already exists and you can ignore this message. Error: {}".format(
+            e
+        )
     )

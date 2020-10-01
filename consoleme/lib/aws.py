@@ -185,6 +185,7 @@ async def get_resource_account(arn: str) -> str:
             redis_key=config.get("aws_config_cache.redis_key"),
             s3_bucket=config.get("aws_config_cache_combined.s3.bucket"),
             s3_key=config.get("aws_config_cache_combined.s3.file"),
+            redis_data_type="hash",
         )
     resource_info = await redis_hget(resources_from_aws_config_redis_key, arn)
     if resource_info:
