@@ -3,7 +3,6 @@ import shutil
 import tempfile
 from pathlib import Path
 
-import git
 import sentry_sdk
 import yaml as builtin_yaml
 from asgiref.sync import async_to_sync
@@ -14,7 +13,9 @@ from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 
 
-def clone_repo(git_url: str, tempdir) -> git.Repo:
+def clone_repo(git_url: str, tempdir):
+    import git
+
     """Clone the honeybee-templates repo to an ephemeral directory and return the git.Repo reference."""
     git.Git(tempdir).clone(git_url)
     return git.Repo(os.path.join(tempdir, git_url.split("/")[-1].replace(".git", "")))

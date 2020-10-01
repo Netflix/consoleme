@@ -161,12 +161,21 @@ class RoleDetailHandler(BaseAPIV2Handler):
             tags={"user": self.user, "account_id": account_id, "role_name": role_name},
         )
         log.debug(log_data)
-        role_details = await get_role_details(account_id, role_name, extended=True)
+
+        error = ""
+
+        try:
+            role_details = await get_role_details(account_id, role_name, extended=True)
+        except Exception as e:
+            sentry_sdk.capture_exception()
+            log.error({**log_data, "error": e}, exc_info=True)
+            role_details = None
+            error = e
 
         if not role_details:
             self.send_error(
                 404,
-                message=f"Unable to retrieve the specified role: {account_id}/{role_name}",
+                message=f"Unable to retrieve the specified role: {account_id}/{role_name}. {error}",
             )
             return
 

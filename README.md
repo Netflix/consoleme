@@ -43,7 +43,21 @@ The Dockerfile is a great point of reference for the installation process.
 If you are going to deploy ConsoleMe in a production environment,
 we recommend deploying it to an isolated, locked-down AWS account.
 
+BEFORE RUNNING THE COMMAND BELOW: We highly recommend that you put valid AWS credentials for your account in your
+~/.aws/credentials file. The role you use should have the permissions outlined under
+`ConsoleMeInstanceProfile configuration` below. These credentials will be shared with the container, and when you run
+the `make redis` command using docker exec, it will attempt to populate your redis cache with live resources from your
+account.
+
 `docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up`
+
+When the container is running, you can run the following command to populate your resource cache for your
+current AWS credentials:
+
+`docker exec -w "/apps/consoleme" -it consoleme_consoleme_1 /usr/bin/make redis`
+
+After this is done, visit `http://localhost:8081`. With the local configuration, you are operating as an administrator
+with no authentication.
 
 ## Build and Run Instructions
 
@@ -210,6 +224,46 @@ service role ARN.
       },
       "Effect": "Allow",
       "Resource": "arn:aws:ses:*:123456789:identity/your_identity.example.com"
+    },
+    {
+      "Statement": [
+        {
+          "Action": [
+            "autoscaling:Describe*",
+            "cloudwatch:Get*",
+            "cloudwatch:List*",
+            "config:BatchGet*",
+            "config:List*",
+            "config:Select*",
+            "ec2:DescribeSubnets",
+            "ec2:describevpcendpoints",
+            "ec2:DescribeVpcs",
+            "iam:*",
+            "s3:GetBucketPolicy",
+            "s3:GetBucketTagging",
+            "s3:ListAllMyBuckets",
+            "s3:ListBucket",
+            "s3:PutBucketPolicy",
+            "s3:PutBucketTagging",
+            "sns:GetTopicAttributes",
+            "sns:ListTagsForResource",
+            "sns:ListTopics",
+            "sns:SetTopicAttributes",
+            "sns:TagResource",
+            "sns:UnTagResource",
+            "sqs:GetQueueAttributes",
+            "sqs:GetQueueUrl",
+            "sqs:ListQueues",
+            "sqs:ListQueueTags",
+            "sqs:SetQueueAttributes",
+            "sqs:TagQueue",
+            "sqs:UntagQueue"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+        }
+      ],
+      "Version": "2012-10-17"
     }
   ],
   "Version": "2012-10-17"

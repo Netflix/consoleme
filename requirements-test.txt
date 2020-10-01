@@ -23,7 +23,7 @@ cfn-lint==0.35.1          # via moto
 chardet==3.0.4            # via -c requirements.txt, requests
 click==7.1.2              # via -c requirements.txt, black
 coverage==5.2.1           # via -r requirements-test.in, pytest-cov
-cryptography==3.1         # via moto, python-jose, sshpubkeys
+cryptography==3.1.1       # via moto, python-jose, sshpubkeys
 decorator==4.4.2          # via -c requirements.txt, networkx
 distlib==0.3.1            # via virtualenv
 docker==4.3.1             # via moto
@@ -35,8 +35,8 @@ flake8-docstrings==1.5.0  # via -r requirements-test.in
 flake8-import-order==0.18.1  # via -r requirements-test.in
 flake8==3.8.3             # via -r requirements-test.in, flake8-docstrings
 future==0.18.2            # via aws-xray-sdk
-gitdb==4.0.5              # via gitpython
-gitpython==3.1.8          # via bandit
+gitdb==4.0.5              # via -c requirements.txt, gitpython
+gitpython==3.1.8          # via -c requirements.txt, bandit
 identify==1.5.0           # via pre-commit
 idna==2.8                 # via -c requirements.txt, moto, requests
 importlib-metadata==1.7.0  # via jsonpickle
@@ -99,7 +99,7 @@ rsa==4.6                  # via -c requirements.txt, python-jose
 s3transfer==0.3.3         # via -c requirements.txt, boto3
 selenium==3.141.0         # via -r requirements-test.in
 six==1.15.0               # via -c requirements.txt, aws-sam-translator, bandit, bleach, cfn-lint, cryptography, docker, ecdsa, jsonschema, junit-xml, mock, moto, packaging, python-dateutil, python-jose, readme-renderer, responses, tox, virtualenv, websocket-client
-smmap==3.0.4              # via gitdb
+smmap==3.0.4              # via -c requirements.txt, gitdb
 snowballstemmer==2.0.0    # via pydocstyle
 sshpubkeys==3.1.0         # via moto
 stevedore==3.2.2          # via bandit

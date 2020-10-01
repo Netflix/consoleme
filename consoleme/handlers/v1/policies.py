@@ -713,6 +713,7 @@ class PolicyReviewHandler(BaseHandler):
         if request and request.get("version") == "2":
             request_id = request["request_id"]
             self.redirect(f"/policies/request_v2/{request_id}")
+            return
 
         arn: str = request.get("arn", "")
         role_name: str = arn.split("/")[1]
@@ -738,6 +739,11 @@ class PolicyReviewHandler(BaseHandler):
                 account_id, arn, request
             )
         except Exception as e:
+            log.error(
+                {**log_data, "error": "Exception while formatting changes"},
+                exc_info=True,
+            )
+            sentry_sdk.capture_exception()
             await write_json_error(e, obj=self)
             await self.finish()
             return
