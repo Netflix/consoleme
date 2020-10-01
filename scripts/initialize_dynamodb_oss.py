@@ -7,8 +7,6 @@ ddb = boto3.client(
     "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name="us-east-1"
 )
 
-response = ddb.list_tables()
-
 try:
     ddb.create_table(
         TableName="consoleme_users_global",
