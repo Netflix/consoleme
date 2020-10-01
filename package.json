@@ -2,7 +2,7 @@
   "author": "",
   "dependencies": {
     "@yarn-tool/ncu": "^1.0.55",
-    "ace-builds": "^1.4.12",
+    "ace-builds": "^1.4.11",
     "babel-preset-react": "^6.24.1",
     "css-loader": "^4.3.0",
     "es6-promise": "^4.2.8",
@@ -66,7 +66,7 @@
     "faker": "^5.1.0",
     "lodash": "^4.17.20",
     "prettier": "^2.1.2",
-    "react-ace": "^9",
+    "react-ace": "<8",
     "react-checkbox-group": "^5.0.2",
     "react-form-checkbox": "^0.2.0",
     "react-redux": "^7.2.1",
