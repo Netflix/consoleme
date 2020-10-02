@@ -284,6 +284,7 @@ class RequestHandler(BaseAPIV2Handler):
                             f"{log_data['function']}.probe_auto_approved",
                             tags={"user": self.user},
                         )
+                        approving_probes = []
                         for approving_probe in should_auto_approve_request[
                             "approving_probes"
                         ]:
@@ -295,7 +296,10 @@ class RequestHandler(BaseAPIV2Handler):
                                 text=f"Policy {approving_probe['policy']} auto-approved by probe: {approving_probe['name']}",
                             )
                             extended_request.comments.append(approving_probe_comment)
-                        extended_request.reviewer = f"Auto-Approve Probe: {','.join(should_auto_approve_request['approving_probes'])}"
+                            approving_probes.append(approving_probe["name"])
+                        extended_request.reviewer = (
+                            f"Auto-Approve Probe: {','.join(approving_probes)}"
+                        )
                         log_data["probe_auto_approved"] = True
                         log_data["request"] = extended_request.dict()
                         log.debug(log_data)
