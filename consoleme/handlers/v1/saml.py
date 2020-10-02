@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+
+import pytz
 from asgiref.sync import sync_to_async
 
 from consoleme.config import config
@@ -47,10 +50,24 @@ class SamlHandler(BaseHandler):
                 )
 
                 self_url = await sync_to_async(OneLogin_Saml2_Utils.get_self_url)(req)
-                encoded_cookie = await generate_jwt_token(email, groups)
-                self.set_cookie(
-                    config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie
-                )
+                if config.get("auth.set_auth_cookie"):
+                    expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
+                        minutes=config.get("jwt.expiration_minutes", 1)
+                    )  # TODO: Make longer
+                    encoded_cookie = await generate_jwt_token(
+                        email, groups, exp=expiration
+                    )
+                    self.set_cookie(
+                        config.get("auth_cookie_name", "consoleme_auth"),
+                        encoded_cookie,
+                        expires=expiration,
+                        secure=config.get(
+                            "auth.cookie.secure",
+                            True if "https://" in config.get("url") else False,
+                        ),
+                        httponly=config.get("auth.cookie.httponly", True),
+                        samesite=config.get("auth.cookie.samesite", True),
+                    )
                 if (
                     "RelayState" in self.request.arguments
                     and self_url

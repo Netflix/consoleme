@@ -1,7 +1,9 @@
 import base64
 import sys
+from datetime import datetime, timedelta
 
 import jwt
+import pytz
 import tornado.httpclient
 import ujson as json
 from jwt.algorithms import RSAAlgorithm
@@ -192,9 +194,20 @@ async def authenticate_user_by_oauth2(request):
         )
 
         if config.get("auth.set_auth_cookie"):
-            encoded_cookie = await generate_jwt_token(email, groups)
+            expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
+                minutes=config.get("jwt.expiration_minutes", 1)
+            )  # TODO: Make longer
+            encoded_cookie = await generate_jwt_token(email, groups, exp=expiration)
             request.set_cookie(
-                config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie
+                config.get("auth_cookie_name", "consoleme_auth"),
+                encoded_cookie,
+                expires=expiration,
+                secure=config.get(
+                    "auth.cookie.secure",
+                    True if "https://" in config.get("url") else False,
+                ),
+                httponly=config.get("auth.cookie.httponly", True),
+                samesite=config.get("auth.cookie.samesite", True),
             )
 
         if force_redirect:

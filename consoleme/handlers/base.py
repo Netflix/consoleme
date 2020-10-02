@@ -3,8 +3,10 @@ import asyncio
 import time
 import traceback
 import uuid
+from datetime import datetime, timedelta
 from typing import Any, Union
 
+import pytz
 import redis
 import tornado.httpclient
 import tornado.httputil
@@ -240,6 +242,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self.user = user
         self.groups = None
         self.user_role_name = None
+        self.auth_cookie_expiration = 0
 
         log_data = {
             "function": "Basehandler.authorization_flow",
@@ -262,6 +265,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 if res and isinstance(res, dict):
                     self.user = res.get("user")
                     self.groups = res.get("groups")
+                    self.auth_cookie_expiration = res.get("exp")
 
         if not self.user:
             # Check for development mode and a configuration override that specify the user and their groups.
@@ -412,9 +416,23 @@ class BaseHandler(tornado.web.RequestHandler):
             and config.get("auth_cookie_name", "consoleme_auth")
             and not self.get_cookie(config.get("auth_cookie_name", "consoleme_auth"))
         ):
-            encoded_cookie = await generate_jwt_token(self.user, self.groups)
+            expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
+                minutes=config.get("jwt.expiration_minutes", 1)
+            )  # TODO: Make longer
+
+            encoded_cookie = await generate_jwt_token(
+                self.user, self.groups, exp=expiration
+            )
             self.set_cookie(
-                config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie
+                config.get("auth_cookie_name", "consoleme_auth"),
+                encoded_cookie,
+                expires=expiration,
+                secure=config.get(
+                    "auth.cookie.secure",
+                    True if "https://" in config.get("url") else False,
+                ),
+                httponly=config.get("auth.cookie.httponly", True),
+                samesite=config.get("auth.cookie.samesite", True),
             )
         if self.tracer:
             await self.tracer.set_additional_tags({"USER": self.user})
@@ -464,6 +482,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
         self.spans = {}
         self.responses = []
         self.request_uuid = str(uuid.uuid4())
+        self.auth_cookie_expiration = 0
         stats.timer("base_handler.incoming_request")
         if config.get("auth.require_mtls", True):
             try:
@@ -517,6 +536,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
                     self.groups = res.get("groups")
                     self.requester = {"type": "user", "email": self.user}
                     self.current_cert_age = int(time.time()) - res.get("iat")
+                    self.auth_cookie_expiration = res.get("exp")
             else:
                 raise MissingConfigurationValue(
                     "Auth cookie name is not defined in configuration."
