@@ -188,7 +188,7 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
         challenge = json.loads(challenge_j)
         if challenge.get("status") == "success":
             jwt_expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
-                minutes=config.get("jwt.expiration_minutes", 1)
+                minutes=config.get("jwt.expiration_minutes", 60)
             )
             encoded_jwt = await generate_jwt_token(
                 challenge.get("user"), challenge.get("groups"), exp=jwt_expiration

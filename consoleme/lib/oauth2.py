@@ -195,8 +195,8 @@ async def authenticate_user_by_oauth2(request):
 
         if config.get("auth.set_auth_cookie"):
             expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
-                minutes=config.get("jwt.expiration_minutes", 1)
-            )  # TODO: Make longer
+                minutes=config.get("jwt.expiration_minutes", 60)
+            )
             encoded_cookie = await generate_jwt_token(email, groups, exp=expiration)
             request.set_cookie(
                 config.get("auth_cookie_name", "consoleme_auth"),

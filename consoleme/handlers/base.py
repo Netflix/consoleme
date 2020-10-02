@@ -417,8 +417,8 @@ class BaseHandler(tornado.web.RequestHandler):
             and not self.get_cookie(config.get("auth_cookie_name", "consoleme_auth"))
         ):
             expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
-                minutes=config.get("jwt.expiration_minutes", 1)
-            )  # TODO: Make longer
+                minutes=config.get("jwt.expiration_minutes", 60)
+            )
 
             encoded_cookie = await generate_jwt_token(
                 self.user, self.groups, exp=expiration
