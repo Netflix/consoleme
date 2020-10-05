@@ -12,6 +12,8 @@ module.exports = {
       "./consoleme/templates/static/js/components/CreateCloneFeature.js",
     consoleMeDataTable:
       "./consoleme/templates/static/js/components/ConsoleMeDataTable.js",
+    dynamicConfig:
+      "./consoleme/templates/static/js/components/DynamicConfig.js",
     policyRequestsReview:
       "./consoleme/templates/static/js/components/PolicyRequestsReview.js",
   },
