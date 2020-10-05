@@ -7,6 +7,7 @@ import ProtectedRoute from "./auth/ProtectedRoute";
 import ConsoleMeCatalog from "./components/Catalog";
 import ConsoleMeDataTable from "./components/ConsoleMeDataTable";
 import ConsoleMeSelfService from "./components/SelfService";
+import ConsoleMeDynamicConfig from "./components/DynamicConfig";
 // import ConsoleMeLogin from "./components/Login";
 
 const LOCAL_KEY = "consoleMeLocalStorage";
@@ -48,6 +49,11 @@ function App() {
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/requests_table_config"}
             queryString={""}
+          />
+          <ProtectedRoute
+            exact
+            path="/ui/config"
+            component={ConsoleMeDynamicConfig}
           />
           <ProtectedRoute
             exact
