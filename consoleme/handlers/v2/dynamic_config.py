@@ -1,5 +1,6 @@
 import json
 import sys
+from hashlib import sha256
 
 import tornado.escape
 import tornado.web
@@ -17,7 +18,7 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
 
 
-class DynamicConfigHandler(BaseHandler):
+class DynamicConfigApiHandler(BaseHandler):
     async def get(self) -> None:
         """
         Get the dynamic configuration endpoint.
@@ -40,14 +41,11 @@ class DynamicConfigHandler(BaseHandler):
 
         dynamic_config = await ddb.get_dynamic_config_yaml()
 
-        await self.render(
-            "dynamic_config_v2.html",
-            page_title="ConsoleMe - Dynamic Config Editor",
-            current_page="config",
-            user=self.user,
-            user_groups=self.groups,
-            config=config,
-            dyanmic_config=dynamic_config,
+        self.write(
+            {
+                "dynamicConfig": dynamic_config.decode("utf-8"),
+                "sha256": sha256(dynamic_config).hexdigest(),
+            }
         )
 
     async def post(self):
@@ -68,15 +66,30 @@ class DynamicConfigHandler(BaseHandler):
             raise tornado.web.HTTPError(
                 403, "Only the owner is authorized to view this page."
             )
+        existing_dynamic_config = await ddb.get_dynamic_config_yaml()
+        existing_dynamic_config_sha256 = sha256(existing_dynamic_config).hexdigest()
         result = {"status": "success"}
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "user": self.user,
+            "existing_dynamic_config_sha256": existing_dynamic_config_sha256,
         }
         log.debug(log_data)
 
         data = tornado.escape.json_decode(self.request.body)
         try:
+            existing_sha256 = data["existing_sha256"]
+            new_sha256 = sha256(data["new_config"].encode("utf-8")).hexdigest()
+            if existing_sha256 == new_sha256:
+                raise Exception(
+                    "You didn't change the dynamic configuration. Try again!"
+                )
+            if not existing_dynamic_config_sha256 == existing_sha256:
+                raise Exception(
+                    "Dynamic configuration was updated by another user before your changes were processed. "
+                    "Please refresh your page and try again."
+                )
+
             await ddb.update_dynamic_config(data["new_config"], self.user)
         except Exception as e:
             result["status"] = "error"
@@ -85,7 +98,8 @@ class DynamicConfigHandler(BaseHandler):
             await self.finish()
             return
 
-        result["new_config"] = data["new_config"]
+        result["newConfig"] = data["new_config"]
+        result["newsha56"] = new_sha256
         self.write(result)
         await self.finish()
         return
