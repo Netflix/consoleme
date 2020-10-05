@@ -8,6 +8,7 @@ import {
 } from 'semantic-ui-react';
 
 import { useAuth } from "../auth/AuthContext";
+import { useApi } from "../auth/useApi";
 
 const LOGO_URL = '/static/screenplay/assets/netflix-security-dark-bg-tight.5f1eba5edb.svg';
 
@@ -21,22 +22,13 @@ const ConsoleMeSidebar = ( props ) => {
         support_slack: null,
     });
 
+    const { loading, data, error } = useApi("/api/v1/siteconfig", { method: "get" });
+
     useEffect(() => {
-        const fetchSiteConfig = async () => {
-            const configResponse = await fetch("/api/v1/siteconfig");
-            const config = await configResponse.json();
-            setSiteConfig({
-                ...siteConfig,
-                ...config
-            });
-        };
+        // Do something when recent roles from props is updated
+    }, [props]);
 
-        if (authState.isAuthenticated) {
-            fetchSiteConfig();
-        }
-    }, []);
-
-    if (!siteConfig) {
+    if (loading || !data) {
         return null;
     }
 
@@ -45,7 +37,7 @@ const ConsoleMeSidebar = ( props ) => {
         documentation_url,
         support_contact,
         support_slack
-    } = siteConfig;
+    } = data;
 
     return (
         <Menu
