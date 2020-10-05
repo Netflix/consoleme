@@ -18,6 +18,7 @@ function DynamicConfig() {
   const [statusMessage, setStatusMessage] = useState(null);
 
   useEffect(() => {
+    // TODO: Replace with new useApi when SPA work is complete
     async function fetchDynamicConfig() {
       const res = await fetch("/api/v2/dynamic_config");
       const resJson = await res.json();
@@ -27,12 +28,13 @@ function DynamicConfig() {
     fetchDynamicConfig();
   }, []);
 
+  // TODO: Replace with new useApi when SPA work is complete
   const updateConfig = async () => {
     const res = await sendRequestCommon(
       { new_config: config, existing_sha256: configSha256 },
       "/api/v2/dynamic_config"
     );
-    console.log(res);
+
     if (res.status === "success") {
       setStatusMessage(
         <Message positive>
