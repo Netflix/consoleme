@@ -8,6 +8,7 @@ import {
   Grid,
   Segment,
   Message,
+  Divider,
 } from "semantic-ui-react";
 import { sendRequestCommon } from "../helpers/utils";
 
@@ -56,10 +57,11 @@ function DynamicConfig() {
 
   const header = (
     <div>
-      <Header as="h2" icon textAlign="center">
-        <Icon name="book" circular />
+      <Header as="h1">
+        <Icon name="book" />
         Update Dynamic Configuration
       </Header>
+      <Divider />
     </div>
   );
 
