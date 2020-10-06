@@ -62,11 +62,7 @@ async def authenticate_user_by_saml(request):
     log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
     saml_req = await prepare_tornado_request_for_saml(request.request)
     saml_auth = await init_saml_auth(saml_req)
-    force_redirect = request.request.arguments.get("force_redirect", [True])[0]
-    if force_redirect and isinstance(force_redirect, bytes):
-        force_redirect = force_redirect.decode("utf-8")
-    if force_redirect in ["false", "False"]:
-        force_redirect = False
+    force_redirect = config.get("auth.force_redirect_to_identity_provider", True)
     try:
         await sync_to_async(saml_auth.process_response)()
     except OneLogin_Saml2_Error as e:
@@ -75,10 +71,13 @@ async def authenticate_user_by_saml(request):
         if force_redirect:
             return request.redirect(saml_auth.login())
         else:
+            request.set_status(403)
             request.write(
                 {
                     "type": "redirect",
                     "redirect_url": saml_auth.login(),
+                    "reason": "unauthenticated",
+                    "message": "User is not authenticated. Redirect to authenticate",
                 }
             )
             request.finish()
@@ -96,10 +95,14 @@ async def authenticate_user_by_saml(request):
         if force_redirect:
             return request.redirect(saml_auth.login())
         else:
+            request.set_status(403)
             request.write(
                 {
                     "type": "redirect",
                     "redirect_url": saml_auth.login(),
+                    "reason": "unauthenticated",
+                    "message": "User is not authenticated. Redirect to authenticate",
                 }
             )
+            request.finish()
             return

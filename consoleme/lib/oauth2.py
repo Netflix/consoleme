@@ -78,11 +78,7 @@ async def authenticate_user_by_oauth2(request):
         # If we're behind a load balancer that terminates tls for us, request.request.protocol will be "http://" and our
         # oidc redirect will be invalid
         protocol = "https"
-    force_redirect = request.request.arguments.get("force_redirect", [True])[0]
-    if force_redirect and isinstance(force_redirect, bytes):
-        force_redirect = force_redirect.decode("utf-8")
-    if force_redirect in ["false", "False"]:
-        force_redirect = False
+    force_redirect = config.get("auth.force_redirect_to_identity_provider", True)
 
     # The endpoint where we want our OAuth2 provider to redirect us back to perform auth
     oauth2_redirect_uri = f"{protocol}://{request.request.host}/auth"
@@ -112,12 +108,15 @@ async def authenticate_user_by_oauth2(request):
                 httputil.url_concat(oidc_config["authorization_endpoint"], args)
             )
         else:
+            request.set_status(403)
             request.write(
                 {
                     "type": "redirect",
                     "redirect_url": httputil.url_concat(
                         oidc_config["authorization_endpoint"], args
                     ),
+                    "reason": "unauthenticated",
+                    "message": "User is not authenticated. Redirect to authenticate",
                 }
             )
         return
@@ -210,16 +209,8 @@ async def authenticate_user_by_oauth2(request):
                 samesite=config.get("auth.cookie.samesite", True),
             )
 
-        if force_redirect:
-            request.redirect(after_redirect_uri)
-        else:
-            request.write(
-                {
-                    "type": "redirect",
-                    "redirect_url": after_redirect_uri,
-                }
-            )
-        return
+        request.redirect(after_redirect_uri)
+
     except Exception as e:
         log_data["error"] = e
         log.error(log_data, exc_info=True)

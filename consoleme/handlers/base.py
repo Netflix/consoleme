@@ -230,6 +230,7 @@ class BaseHandler(tornado.web.RequestHandler):
         refresh_cache = (
             self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
         )
+
         if not refresh_cache and config.get(
             "dynamic_config.role_cache.always_refresh_roles_cache", False
         ):
@@ -260,6 +261,8 @@ class BaseHandler(tornado.web.RequestHandler):
             auth_cookie = self.get_cookie(
                 config.get("auth_cookie_name", "consoleme_auth")
             )
+
+            # Validate auth cookie and use it to retrieve group information
             if auth_cookie:
                 res = await validate_and_return_jwt_token(auth_cookie)
                 if res and isinstance(res, dict):
@@ -281,7 +284,10 @@ class BaseHandler(tornado.web.RequestHandler):
             if config.get("auth.get_user_by_saml"):
                 res = await authenticate_user_by_saml(self)
                 if not res:
-                    if self.request.uri != "/saml/acs":
+                    if (
+                        self.request.uri != "/saml/acs"
+                        and not self.request.uri.startswith("/auth?")
+                    ):
                         raise Exception("Unable to authenticate the user by SAML")
                     return
 
@@ -521,6 +527,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
                 auth_cookie = self.get_cookie(
                     config.get("auth_cookie_name", "consoleme_auth")
                 )
+
                 if auth_cookie:
                     res = await validate_and_return_jwt_token(auth_cookie)
                     if not res:
