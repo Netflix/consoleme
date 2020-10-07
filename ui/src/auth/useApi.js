@@ -18,7 +18,7 @@ export const useApi = (url, options = {}) => {
 
       try {
         const xsrf = Cookies.get("_xsrf");
-        const { body, headers, method = "post", ...fetchOptions } = options;
+        const { body, headers, method = "get", ...fetchOptions } = options;
         const res = await fetch(url, {
           body,
           ...fetchOptions,

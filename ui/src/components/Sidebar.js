@@ -6,22 +6,13 @@ import {
     Image,
     Menu,
 } from 'semantic-ui-react';
-
-import { useAuth } from "../auth/AuthContext";
 import { useApi } from "../auth/useApi";
+
 
 const LOGO_URL = '/static/screenplay/assets/netflix-security-dark-bg-tight.5f1eba5edb.svg';
 
-
 const ConsoleMeSidebar = ( props ) => {
-    const [siteConfig, setSiteConfig] = useState({
-        consoleme_logo: null,
-        documentation_url: null,
-        support_contact: null,
-        support_slack: null,
-    });
-
-    const { loading, data, error } = useApi("/api/v1/siteconfig", { method: "get" });
+    const { loading, data, error } = useApi("/api/v1/siteconfig");
 
     if (loading || !data) {
         return null;

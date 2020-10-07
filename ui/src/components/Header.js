@@ -5,9 +5,9 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 const ConsoleMeHeader = () => {
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
 
-  if (!isAuthenticated || !user) {
+  if (!user) {
     return null;
   }
 
