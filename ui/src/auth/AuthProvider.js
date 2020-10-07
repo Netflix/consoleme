@@ -1,66 +1,89 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useReducer, useState } from "react";
 import AuthContext from "./AuthContext";
+import { initialAuthState } from "./AuthState";
 
-const AuthProvider = (props) => {
-  const initialState = useMemo(
-    () => {
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'LOGIN': {
+      const { user, auth } = action;
       return {
-        authCookieExpiration: null,
-        currentServerTime: null,
-        isAuthenticated: false,
-        userInfo: null,
-        login: async () => {
-          const authResponse = await fetch(
-            "/auth?redirect_url=" + window.location.href
-          );
-          const auth = await authResponse.json();
-          if (auth.type === "redirect") {
-            window.location.href = auth.redirect_url;
-          } else {
-            const userResponse = await fetch("/api/v1/profile");
-            const userInfo = await userResponse.json();
-            // Get local epoch time, compare to server time
-            const localNow = new Date();
-            const localTime = Math.round(localNow.getTime() / 1000);
-            const timeDrift = Math.abs(localTime - auth.currentServerTime);
-            // TODO: Should we raise an error if the drift is too much?
-            if (timeDrift > 500) {
-              console.log(
-                "Time drift detected between your clock and the servers. ",
-                "Please correct your lock: " + timeDrift + " seconds."
-              );
-            }
-
-            if (userInfo) {
-              setAuthState({
-                ...authState,
-                userInfo,
-                isAuthenticated: true,
-                authCookieExpiration: auth.authCookieExpiration,
-                currentServerTime: auth.currentServerTime,
-              });
-            }
-          }
-        },
+        ...state,
+        auth,
+        user,
       };
-    },
-    [] // eslint-disable-line
-  );
+    }
+    case 'LOGOUT': {
+      return {
+        ...state,
+        auth: null,
+        user: null,
+      };
+    }
+    default: {
+      return state;
+    }
+  }
+};
 
-  const [authState, setAuthState] = useState(initialState);
+const AuthProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(reducer, initialAuthState);
 
-  useEffect(() => {
-    console.log("AUTH STATE: ", authState);
+  const login = async () => {
+    // First check whether user is currently authenticated by using the backend auth endpoint.
+    const auth = await fetch("/auth?redirect_url=" + window.location.href).then(res => res.json());
+    // redirect to IDP for authentication.
+    if (auth.type === "redirect") {
+      window.location.href = auth.redirect_url;
+    }
+    // User is now authenticated so retrieve user profile.
+    const user = await fetch("/api/v1/profile").then(res => res.json());
+    dispatch({
+      type: "LOGIN",
+      auth,
+      user,
+    });
+  };
 
-    // if auth state changed trigger something here
-    // if not authenticated redirect to login?
-  }, [authState]);
+  const logout = () => {
+    dispatch({
+      type: "LOGOUT",
+    });
+  };
+
+  // check the current JWT (exist in the cookie) expiration time that given by the backend.
+  const isAuthenticated = () => {
+    const { auth, user } = state;
+    if (user && auth) {
+      const { authCookieExpiration, currentServerTime } = auth;
+      const localTime = Math.round((new Date()).getTime() / 1000);
+      const timeDrift = Math.abs(localTime - currentServerTime);
+      // TODO, check time drift and raise error
+      if (timeDrift > 500) {
+        console.log(
+            "Time drift detected between your clock and the servers. ",
+            "Please correct your lock: " + timeDrift + " seconds."
+        );
+        return false;
+      }
+      // check JWT expiration
+      return authCookieExpiration + 30 >= localTime;
+    }
+    return false;
+  };
 
   return (
-    <AuthContext.Provider value={{ authState }}>
-      {props.children}
+    <AuthContext.Provider
+      value={{
+        ...state,
+        isAuthenticated,
+        login,
+        logout
+      }}
+    >
+      {children}
     </AuthContext.Provider>
   );
-};
+}
 
 export default AuthProvider;

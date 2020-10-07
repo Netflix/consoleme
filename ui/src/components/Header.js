@@ -5,15 +5,14 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 const ConsoleMeHeader = () => {
-  const { authState } = useAuth();
-  const { userInfo } = authState;
+  const { isAuthenticated, user } = useAuth();
 
-  if (!authState.isAuthenticated || !userInfo) {
+  if (!isAuthenticated || !user) {
     return null;
   }
 
   const generatePoliciesDropDown = () => {
-    if (userInfo.pages.policies.enabled === true) {
+    if (user.pages.policies.enabled === true) {
       return (
         <Dropdown text="Roles and Policies" pointing className="link item">
           <Dropdown.Menu>
@@ -37,7 +36,7 @@ const ConsoleMeHeader = () => {
   };
 
   const generateAdvancedDropDown = () => {
-    if (userInfo.pages.config.enabled === true) {
+    if (user.pages.config.enabled === true) {
       return (
         <Dropdown text="Advanced" pointing className="link item">
           <Dropdown.Menu>
@@ -52,13 +51,13 @@ const ConsoleMeHeader = () => {
   };
 
   const getAvatarImage = () => {
-    if (userInfo.employee_photo_url) {
+    if (user.employee_photo_url) {
       return (
         <Image
-          alt={userInfo.user}
+          alt={user.user}
           avatar
-          src={userInfo.employee_photo_url}
-          title={userInfo.user}
+          src={user.employee_photo_url}
+          title={user.user}
         />
       );
     }

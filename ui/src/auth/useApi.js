@@ -1,23 +1,19 @@
 import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
-import { useAuth, checkJwtExpiration } from "./AuthContext";
+import { useAuth } from "./AuthContext";
 
 export const useApi = (url, options = {}) => {
-  const { authState } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const [state, setState] = useState({
     error: null,
     loading: true,
     data: null,
   });
 
-  const handleLogin = async () => {
-    await authState.login();
-  };
-
   useEffect(() => {
     (async () => {
-      if (!checkJwtExpiration(authState) || !authState.isAuthenticated) {
-        handleLogin();
+      if (!isAuthenticated()) {
+        await login();
       }
 
       try {
@@ -35,7 +31,7 @@ export const useApi = (url, options = {}) => {
         });
         const resJson = await res.json();
         if (res.status === 403 && res.reason === "unauthenticated") {
-          await handleLogin();
+          await login();
         }
         setState({
           ...state,

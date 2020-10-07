@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useAuth, checkJwtExpiration } from "./AuthContext";
+import { useAuth } from "./AuthContext";
 import { Route, useRouteMatch } from "react-router-dom";
 import { Dimmer, Loader, Segment } from "semantic-ui-react";
 
@@ -7,24 +7,19 @@ import ConsoleMeHeader from "../components/Header";
 import ConsoleMeSidebar from "../components/Sidebar";
 
 const ProtectedRoute = (props) => {
-  const { authState } = useAuth();
-
+  const { isAuthenticated, login } = useAuth();
   const match = useRouteMatch(props);
-
-  const handleLogin = async () => {
-    await authState.login();
-  };
 
   useEffect(() => {
     if (!match) {
       return;
     }
-    if (!checkJwtExpiration(authState) || !authState.isAuthenticated) {
-      handleLogin();
+    if (!isAuthenticated()) {
+      login();
     }
-  }, [authState.isAuthenticated, match]); // eslint-disable-line
+  }, [match]); // eslint-disable-line
 
-  if (!authState.isAuthenticated) {
+  if (!isAuthenticated()) {
     return (
       <Dimmer active inverted>
         <Loader size="large">Loading</Loader>
@@ -34,7 +29,7 @@ const ProtectedRoute = (props) => {
 
   const { component: Component, ...rest } = props;
   return (
-    <React.Fragment>
+    <>
       <ConsoleMeHeader />
       <ConsoleMeSidebar
         recentRoles={["example_role_1", "example_role_2", "example_role_3"]}
@@ -53,7 +48,7 @@ const ProtectedRoute = (props) => {
           }}
         />
       </Segment>
-    </React.Fragment>
+    </>
   );
 };
 

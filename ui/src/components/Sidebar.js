@@ -14,7 +14,6 @@ const LOGO_URL = '/static/screenplay/assets/netflix-security-dark-bg-tight.5f1eb
 
 
 const ConsoleMeSidebar = ( props ) => {
-    const { authState } = useAuth();
     const [siteConfig, setSiteConfig] = useState({
         consoleme_logo: null,
         documentation_url: null,
@@ -23,10 +22,6 @@ const ConsoleMeSidebar = ( props ) => {
     });
 
     const { loading, data, error } = useApi("/api/v1/siteconfig", { method: "get" });
-
-    useEffect(() => {
-        // Do something when recent roles from props is updated
-    }, [props]);
 
     if (loading || !data) {
         return null;
