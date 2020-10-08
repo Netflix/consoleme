@@ -10,7 +10,6 @@ import {
   Message,
   Divider,
 } from "semantic-ui-react";
-import { useApi } from "../auth/useApi";
 import { sendRequestCommon } from "../helpers/utils";
 
 function ConsoleMeDynamicConfig() {
@@ -18,25 +17,19 @@ function ConsoleMeDynamicConfig() {
   const [configSha256, setConfigSha256] = useState("");
   const [statusMessage, setStatusMessage] = useState(null);
 
-  const { loading, data, error } = useApi("/api/v2/dynamic_config")
-
   useEffect(() => {
     // TODO: Replace with new useApi when SPA work is complete
     async function fetchDynamicConfig() {
-      // const res = await fetch("/api/v2/dynamic_config");
-      // const resJson = await res.json();
-      if (data) {
-        const {sha256, dynamicConfig} = data;
-        setConfigSha256(sha256);
-        setConfig(dynamicConfig);
-      }
+      const resJson = await sendRequestCommon(
+        null,
+        "/api/v2/dynamic_config",
+        "get"
+      );
+      setConfigSha256(resJson.sha256);
+      setConfig(resJson.dynamicConfig);
     }
     fetchDynamicConfig();
-  }, [data]);
-
-  if (loading || !data) {
-    return null;
-  }
+  }, []);
 
   // TODO: Replace with new useApi when SPA work is complete
   const updateConfig = async () => {

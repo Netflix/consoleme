@@ -67,7 +67,7 @@ class ConsoleMeDataTable extends Component {
 
     this.generateRows = this.generateRows.bind(this);
     this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(
-        this
+      this
     );
     this.handleCellClick = this.handleCellClick.bind(this);
     this.renderRedirect = this.renderRedirect.bind(this);
@@ -79,43 +79,46 @@ class ConsoleMeDataTable extends Component {
     const { configEndpoint } = this.state;
     this.timer = null;
     this.setState(
-        {
-          isLoading: true,
-        },
-        async () => {
-          const request = await fetch(configEndpoint);
-          const tableConfig = await request.json();
+      {
+        isLoading: true,
+      },
+      async () => {
+        const tableConfig = await sendRequestCommon(
+          null,
+          configEndpoint,
+          "get"
+        );
 
-          let data = [];
-          if (tableConfig.dataEndpoint) {
-            data = await sendRequestCommon(
-                {
-                  limit: tableConfig.totalRows,
-                },
-                tableConfig.dataEndpoint
-            );
-          }
-
-          // TODO, Support filtering based on query parameters
-          this.setState(
-              {
-                data,
-                filteredData: data,
-                isLoading: false,
-                tableConfig,
-              },
-              async () => {
-                await this.generateFilterFromQueryString();
-              }
+        let data = [];
+        if (tableConfig.dataEndpoint) {
+          data = await sendRequestCommon(
+            {
+              limit: tableConfig.totalRows,
+            },
+            tableConfig.dataEndpoint
           );
         }
+
+        // TODO, Support filtering based on query parameters
+        this.setState(
+          {
+            data,
+            filteredData: data,
+            isLoading: false,
+            tableConfig,
+          },
+          async () => {
+            await this.generateFilterFromQueryString();
+          }
+        );
+      }
     );
   }
 
   calculateColumnSize() {
     const { tableConfig } = this.state;
     return (
-        (tableConfig.columns || []).length + (tableConfig.expandableRows ? 1 : 0)
+      (tableConfig.columns || []).length + (tableConfig.expandableRows ? 1 : 0)
     );
   }
 
@@ -148,8 +151,8 @@ class ConsoleMeDataTable extends Component {
     } else {
       // expand the row if a row is clicked.
       const filteredDataPaginated = filteredData.slice(
-          (activePage - 1) * tableConfig.rowsPerPage,
-          activePage * tableConfig.rowsPerPage - 1
+        (activePage - 1) * tableConfig.rowsPerPage,
+        activePage * tableConfig.rowsPerPage - 1
       );
 
       // get an offset if there is any expanded row and trying to expand row underneath
@@ -208,119 +211,119 @@ class ConsoleMeDataTable extends Component {
       switch (item.type) {
         case "dropdown": {
           columnCell = (
-              <Dropdown
-                  name={item.key}
-                  style={item.style}
-                  clearable
-                  placeholder={item.placeholder}
-                  search
-                  selection
-                  compact
-                  options={options}
-                  onChange={this.filterColumn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  value={filters[item.key] != null ? filters[item.key] : ""}
-              />
+            <Dropdown
+              name={item.key}
+              style={item.style}
+              clearable
+              placeholder={item.placeholder}
+              search
+              selection
+              compact
+              options={options}
+              onChange={this.filterColumn}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              value={filters[item.key] != null ? filters[item.key] : ""}
+            />
           );
           break;
         }
         case "input": {
           columnCell = (
-              <Input
-                  name={item.key}
-                  autoComplete="off"
-                  style={item.style}
-                  placeholder={item.placeholder}
-                  onChange={this.filterColumn}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  value={filters[item.key] != null ? filters[item.key] : ""}
-              />
+            <Input
+              name={item.key}
+              autoComplete="off"
+              style={item.style}
+              placeholder={item.placeholder}
+              onChange={this.filterColumn}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              value={filters[item.key] != null ? filters[item.key] : ""}
+            />
           );
           break;
         }
         case "daterange": {
           columnCell = (
-              <SemanticDatepicker
-                  name={item.key}
-                  style={item.style}
-                  onChange={this.filterDateRangeTime}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  type="range"
-                  compact
-              />
+            <SemanticDatepicker
+              name={item.key}
+              style={item.style}
+              onChange={this.filterDateRangeTime}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              type="range"
+              compact
+            />
           );
           break;
         }
         case "button": {
           columnCell = (
-              <Header
-                  as="h4"
-                  style={item.style}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-              >
-                {item.placeholder}
-              </Header>
+            <Header
+              as="h4"
+              style={item.style}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              {item.placeholder}
+            </Header>
           );
           break;
         }
         case "icon": {
           columnCell = (
-              <Header
-                  as="h4"
-                  style={item.style}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-              >
-                {item.placeholder}
-              </Header>
+            <Header
+              as="h4"
+              style={item.style}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              {item.placeholder}
+            </Header>
           );
           break;
         }
         default: {
           columnCell = (
-              <Label
-                  style={item.style}
-                  color={item.color}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                  }}
-                  basic
-              >
-                {item.placeholder}
-              </Label>
+            <Label
+              style={item.style}
+              color={item.color}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              basic
+            >
+              {item.placeholder}
+            </Label>
           );
           break;
         }
       }
 
       columns.push(
-          <Table.HeaderCell
-              style={item.style}
-              width={item.width}
-              onClick={() => this.handleSort(key)}
-              sorted={!["button"].includes(item.type) ? direction : null}
-              textAlign={item.type === "button" ? "center" : null}
-          >
-            {columnCell}
-          </Table.HeaderCell>
+        <Table.HeaderCell
+          style={item.style}
+          width={item.width}
+          onClick={() => this.handleSort(key)}
+          sorted={!["button"].includes(item.type) ? direction : null}
+          textAlign={item.type === "button" ? "center" : null}
+        >
+          {columnCell}
+        </Table.HeaderCell>
       );
     });
     return (
-        <Table.Header>
-          <Table.Row>
-            {tableConfig.expandableRows && <Table.HeaderCell />}
-            {columns}
-          </Table.Row>
-        </Table.Header>
+      <Table.Header>
+        <Table.Row>
+          {tableConfig.expandableRows && <Table.HeaderCell />}
+          {columns}
+        </Table.Row>
+      </Table.Header>
     );
   }
 
@@ -333,8 +336,8 @@ class ConsoleMeDataTable extends Component {
     if (parsedQueryString) {
       tableConfig.columns.forEach((column) => {
         if (
-            parsedQueryString[column.key] != null &&
-            parsedQueryString[column.key]
+          parsedQueryString[column.key] != null &&
+          parsedQueryString[column.key]
         ) {
           filters[column.key] = parsedQueryString[column.key];
         }
@@ -445,8 +448,8 @@ class ConsoleMeDataTable extends Component {
   generateRows() {
     const { expandedRow, filteredData, tableConfig, activePage } = this.state;
     const filteredDataPaginated = filteredData.slice(
-        (activePage - 1) * tableConfig.rowsPerPage,
-        activePage * tableConfig.rowsPerPage - 1
+      (activePage - 1) * tableConfig.rowsPerPage,
+      activePage * tableConfig.rowsPerPage - 1
     );
 
     if (expandedRow) {
@@ -458,18 +461,18 @@ class ConsoleMeDataTable extends Component {
       // if a row is clicked then show its associated detail row.
       if (expandedRow && expandedRow.index === idx) {
         return (
-            <Table.Row>
-              <Table.Cell collapsing colSpan={this.calculateColumnSize()}>
-                <ReactJson
-                    displayDataTypes={false}
-                    displayObjectSize={false}
-                    collapseStringsAfterLength={70}
-                    indentWidth={2}
-                    name={false}
-                    src={expandedRow.data}
-                />
-              </Table.Cell>
-            </Table.Row>
+          <Table.Row>
+            <Table.Cell collapsing colSpan={this.calculateColumnSize()}>
+              <ReactJson
+                displayDataTypes={false}
+                displayObjectSize={false}
+                collapseStringsAfterLength={70}
+                indentWidth={2}
+                name={false}
+                src={expandedRow.data}
+              />
+            </Table.Cell>
+          </Table.Row>
         );
       }
 
@@ -479,82 +482,82 @@ class ConsoleMeDataTable extends Component {
       tableConfig.columns.forEach((column) => {
         if (column.type === "daterange") {
           cells.push(
-              <Table.Cell collapsing style={column.style}>
-                <ReactMarkdown
-                    linkTarget="_blank"
-                    source={"" || new Date(entry[column.key] * 1000).toUTCString()}
-                />
-              </Table.Cell>
+            <Table.Cell collapsing style={column.style}>
+              <ReactMarkdown
+                linkTarget="_blank"
+                source={"" || new Date(entry[column.key] * 1000).toUTCString()}
+              />
+            </Table.Cell>
           );
         } else if (column.type === "button") {
           cells.push(
-              <Table.Cell collapsing style={column.style}>
-                <Button
-                    content={entry[column.content] || column.content}
-                    fluid
-                    labelPosition="right"
-                    icon={column.icon}
-                    onClick={(e) => {
-                      this.handleCellClick(e, column, entry);
-                    }}
-                    primary
-                    size="mini"
-                />
-              </Table.Cell>
+            <Table.Cell collapsing style={column.style}>
+              <Button
+                content={entry[column.content] || column.content}
+                fluid
+                labelPosition="right"
+                icon={column.icon}
+                onClick={(e) => {
+                  this.handleCellClick(e, column, entry);
+                }}
+                primary
+                size="mini"
+              />
+            </Table.Cell>
           );
         } else if (column.type === "icon") {
           cells.push(
-              <Table.Cell collapsing style={column.style}>
-                <Icon
-                    onClick={(e) => {
-                      this.handleCellClick(e, column, entry);
-                    }}
-                    link
-                    name={column.icon}
-                />
-              </Table.Cell>
+            <Table.Cell collapsing style={column.style}>
+              <Icon
+                onClick={(e) => {
+                  this.handleCellClick(e, column, entry);
+                }}
+                link
+                name={column.icon}
+              />
+            </Table.Cell>
           );
         } else if (column.useLabel) {
           cells.push(
-              <Table.Cell collapsing style={column.style}>
-                <Label>
-                  {"" ||
+            <Table.Cell collapsing style={column.style}>
+              <Label>
+                {"" ||
                   (entry[column.key] != null && entry[column.key].toString())}
-                </Label>
-              </Table.Cell>
+              </Label>
+            </Table.Cell>
           );
         } else {
           cells.push(
-              <Table.Cell collapsing style={column.style}>
-                <ReactMarkdown
-                    linkTarget="_blank"
-                    source={
-                      "" ||
-                      (entry[column.key] != null && entry[column.key].toString())
-                    }
-                />
-              </Table.Cell>
+            <Table.Cell collapsing style={column.style}>
+              <ReactMarkdown
+                linkTarget="_blank"
+                source={
+                  "" ||
+                  (entry[column.key] != null && entry[column.key].toString())
+                }
+              />
+            </Table.Cell>
           );
         }
       });
 
       return (
-          <Table.Row>
-            {tableConfig.expandableRows && (
-                <Table.Cell collapsing>
-                  <Icon
-                      link
-                      name={
-                        expandedRow && expandedRow.index - 1 === idx
-                            ? "caret down"
-                            : "caret right"
-                      }
-                      onClick={() => this.handleRowExpansion(idx)}
-                  />
-                </Table.Cell>
-            )}
-            {cells}
-          </Table.Row>
+        <Table.Row>
+          {tableConfig.expandableRows && (
+            <Table.Cell collapsing>
+              <Icon
+                link
+                name={
+                  expandedRow && expandedRow.index - 1 === idx
+                    ? "caret down"
+                    : "caret right"
+                }
+                onClick={() => this.handleRowExpansion(idx)}
+              />
+            </Table.Cell>
+          )}
+          {cells}
+        </Table.Row>
       );
     });
   }
@@ -576,71 +579,62 @@ class ConsoleMeDataTable extends Component {
       tableConfig,
     } = this.state;
     const totalPages = parseInt(
-        filteredData.length / tableConfig.rowsPerPage,
-        10
+      filteredData.length / tableConfig.rowsPerPage,
+      10
     );
     const columns = this.generateColumns();
 
     if (isLoading) {
       return (
-          <Segment basic>
-            <Dimmer active inverted size="large">
-              <Loader inverted content="Loading" />
-            </Dimmer>
-          </Segment>
+        <Segment basic>
+          <Dimmer active inverted size="large">
+            <Loader inverted content="Loading" />
+          </Dimmer>
+        </Segment>
       );
     }
 
     // TODO (heewonk), revisit following redirection logic when moving to SPA again
     if (redirect) {
       return (
-          <BrowserRouter forceRefresh>{this.renderRedirect()}</BrowserRouter>
+        <BrowserRouter forceRefresh>{this.renderRedirect()}</BrowserRouter>
       );
     }
 
     return (
-        <Segment basic>
-          <Header as="h2">
-            {tableConfig.tableName}
-          </Header>
-          <ReactMarkdown
-              linkTarget="_blank"
-              source={tableConfig.tableDescription}
-              escapeHtml={false}
-          />
-          <Table
-              collapsing
-              sortable
-              celled
-              compact
-              selectable
-              striped
-          >
-            {columns}
-            <Table.Body>{this.generateRows()}</Table.Body>
-            <Table.Footer>
-              <Table.Row>
-                <Table.HeaderCell collapsing colSpan={this.calculateColumnSize()}>
-                  {totalPages > 0 ? (
-                      <Pagination
-                          floated="right"
-                          defaultActivePage={activePage}
-                          totalPages={totalPages}
-                          onPageChange={(event, data) => {
-                            this.setState({
-                              activePage: data.activePage,
-                              expandedRow: null,
-                            });
-                          }}
-                      />
-                  ) : (
-                      ""
-                  )}
-                </Table.HeaderCell>
-              </Table.Row>
-            </Table.Footer>
-          </Table>
-        </Segment>
+      <Segment basic>
+        <Header as="h2">{tableConfig.tableName}</Header>
+        <ReactMarkdown
+          linkTarget="_blank"
+          source={tableConfig.tableDescription}
+          escapeHtml={false}
+        />
+        <Table collapsing sortable celled compact selectable striped>
+          {columns}
+          <Table.Body>{this.generateRows()}</Table.Body>
+          <Table.Footer>
+            <Table.Row>
+              <Table.HeaderCell collapsing colSpan={this.calculateColumnSize()}>
+                {totalPages > 0 ? (
+                  <Pagination
+                    floated="right"
+                    defaultActivePage={activePage}
+                    totalPages={totalPages}
+                    onPageChange={(event, data) => {
+                      this.setState({
+                        activePage: data.activePage,
+                        expandedRow: null,
+                      });
+                    }}
+                  />
+                ) : (
+                  ""
+                )}
+              </Table.HeaderCell>
+            </Table.Row>
+          </Table.Footer>
+        </Table>
+      </Segment>
     );
   }
 }
@@ -656,11 +650,11 @@ ConsoleMeDataTable.defaultProps = {
 
 export function renderDataTable(configEndpoint, queryString = "") {
   ReactDOM.render(
-      <ConsoleMeDataTable
-          configEndpoint={configEndpoint}
-          queryString={queryString}
-      />,
-      document.getElementById("datatable")
+    <ConsoleMeDataTable
+      configEndpoint={configEndpoint}
+      queryString={queryString}
+    />,
+    document.getElementById("datatable")
   );
 }
 

@@ -1,6 +1,7 @@
 import _ from "lodash";
 import React, { Component } from "react";
 import { Form, Search } from "semantic-ui-react";
+import { sendRequestCommon } from "../../helpers/utils";
 
 class TypeaheadBlockComponent extends Component {
   state = {
@@ -50,12 +51,10 @@ class TypeaheadBlockComponent extends Component {
       const isMatch = (result) => re.test(result.title);
 
       const TYPEAHEAD_API = typeahead.replace("{query}", value);
-      fetch(TYPEAHEAD_API).then((resp) => {
-        resp.json().then((source) => {
-          this.setState({
-            isLoading: false,
-            results: _.filter(source, isMatch),
-          });
+      sendRequestCommon(null, TYPEAHEAD_API, "get").then((source) => {
+        this.setState({
+          isLoading: false,
+          results: _.filter(source, isMatch),
         });
       });
     }, 300);

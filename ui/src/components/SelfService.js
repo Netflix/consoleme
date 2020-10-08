@@ -7,6 +7,7 @@ import SelfServiceStep1 from "./SelfServiceStep1";
 import SelfServiceStep2 from "./SelfServiceStep2";
 import SelfServiceStep3 from "./SelfServiceStep3";
 import { SelfServiceStepEnum } from "./SelfServiceEnums";
+import { sendRequestCommon } from "../helpers/utils";
 
 const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):role\/(.+\/)?(?<roleName>(.+))/;
 
@@ -21,71 +22,71 @@ class SelfService extends Component {
     admin_bypass_approval_enabled: false,
   };
 
-  componentDidMount() {
-    fetch("/api/v2/self_service_config").then((resp) => {
-      resp.text().then((resp) => {
-        const config = JSON.parse(resp);
-        const { services } = this.state;
-        Object.keys(config.permissions_map).forEach((name) => {
-          const service = config.permissions_map[name];
-          services.push({
-            actions: service.action_map,
-            key: name,
-            text: service.text,
-            value: name,
-          });
-        });
-
-        // If Self Service page is redirected with account and role information
-        // TODO(heewonk), revisit following redirection once move to SPA
-        const paramSearch = qs.parse(window.location.search, {
-          ignoreQueryPrefix: true,
-        });
-
-        if (arnRegex.test(paramSearch.arn)) {
-          const match = arnRegex.exec(paramSearch.arn);
-          const { accountId, roleName } = match.groups;
-
-          this.setState({
-            admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
-            config,
-            currStep: SelfServiceStepEnum.STEP2,
-            // TODO(heewonk), define the role type
-            role: {
-              account_id: accountId,
-              account_name: "",
-              apps: {
-                app_details: [],
-              },
-              arn: `arn:aws:iam::${accountId}:role/${roleName}`,
-              name: roleName,
-              owner: "",
-              tags: [],
-              templated: false,
-              cloudtrail_details: {
-                error_url: "",
-                errors: {
-                  cloudtrail_errors: [],
-                },
-              },
-              s3_details: {
-                error_url: "",
-                errors: {
-                  s3_errors: [],
-                },
-              },
-            },
-            services,
-          });
-        } else {
-          this.setState({
-            config,
-            services,
-            admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
-          });
-        }
+  async componentDidMount() {
+    const config = await sendRequestCommon(
+      null,
+      "/api/v2/self_service_config",
+      "get"
+    );
+    const { services } = this.state;
+    Object.keys(config.permissions_map).forEach((name) => {
+      const service = config.permissions_map[name];
+      services.push({
+        actions: service.action_map,
+        key: name,
+        text: service.text,
+        value: name,
       });
     });
+
+    // If Self Service page is redirected with account and role information
+    // TODO(heewonk), revisit following redirection once move to SPA
+    const paramSearch = qs.parse(window.location.search, {
+      ignoreQueryPrefix: true,
+    });
+
+    if (arnRegex.test(paramSearch.arn)) {
+      const match = arnRegex.exec(paramSearch.arn);
+      const { accountId, roleName } = match.groups;
+
+      this.setState({
+        admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+        config,
+        currStep: SelfServiceStepEnum.STEP2,
+        // TODO(heewonk), define the role type
+        role: {
+          account_id: accountId,
+          account_name: "",
+          apps: {
+            app_details: [],
+          },
+          arn: `arn:aws:iam::${accountId}:role/${roleName}`,
+          name: roleName,
+          owner: "",
+          tags: [],
+          templated: false,
+          cloudtrail_details: {
+            error_url: "",
+            errors: {
+              cloudtrail_errors: [],
+            },
+          },
+          s3_details: {
+            error_url: "",
+            errors: {
+              s3_errors: [],
+            },
+          },
+        },
+        services,
+      });
+    } else {
+      this.setState({
+        config,
+        services,
+        admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+      });
+    }
   }
 
   handleStepClick(dir) {
@@ -140,7 +141,14 @@ class SelfService extends Component {
   }
 
   getCurrentSelfServiceStep() {
-    const { admin_bypass_approval_enabled, config, currStep, permissions, role, services } = this.state;
+    const {
+      admin_bypass_approval_enabled,
+      config,
+      currStep,
+      permissions,
+      role,
+      services,
+    } = this.state;
 
     let SelfServiceStep = null;
     switch (currStep) {

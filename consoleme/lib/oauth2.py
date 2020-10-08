@@ -119,6 +119,7 @@ async def authenticate_user_by_oauth2(request):
                     "message": "User is not authenticated. Redirect to authenticate",
                 }
             )
+        request.finish()
         return
     try:
         # exchange the authorization code with the access token
@@ -210,6 +211,7 @@ async def authenticate_user_by_oauth2(request):
             )
 
         request.redirect(after_redirect_uri)
+        request.finish()
 
     except Exception as e:
         log_data["error"] = e

@@ -8,6 +8,7 @@ import ConsoleMeCatalog from "./components/Catalog";
 import ConsoleMeDataTable from "./components/ConsoleMeDataTable";
 import ConsoleMeSelfService from "./components/SelfService";
 import ConsoleMeDynamicConfig from "./components/DynamicConfig";
+import PolicyRequestReview from "./components/PolicyRequestsReview";
 // import ConsoleMeLogin from "./components/Login";
 
 const LOCAL_KEY = "consoleMeLocalStorage";
@@ -42,6 +43,11 @@ function App() {
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/policies_table_config"}
             queryString={""}
+          />
+          <ProtectedRoute
+            exact
+            path="/policies/request/:requestID"
+            component={PolicyRequestReview}
           />
           <ProtectedRoute
             exact

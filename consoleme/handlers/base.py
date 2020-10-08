@@ -21,6 +21,7 @@ from consoleme.exceptions.exceptions import (
     MissingConfigurationValue,
     NoGroupsException,
     NoUserException,
+    SilentException,
     WebAuthNError,
 )
 from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
@@ -110,6 +111,12 @@ class BaseJSONHandler(tornado.web.RequestHandler):
 
 class BaseHandler(tornado.web.RequestHandler):
     """Default BaseHandler."""
+
+    def log_exception(self, *args, **kwargs):
+        if args[0].__name__ == "SilentException":
+            pass
+        else:
+            super(BaseHandler, self).log_exception(*args, **kwargs)
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
@@ -288,16 +295,20 @@ class BaseHandler(tornado.web.RequestHandler):
                         self.request.uri != "/saml/acs"
                         and not self.request.uri.startswith("/auth?")
                     ):
-                        raise Exception("Unable to authenticate the user by SAML")
+                        raise SilentException(
+                            "Unable to authenticate the user by SAML. "
+                            "Redirecting to authentication endpoint"
+                        )
                     return
 
         if not self.user:
             if config.get("auth.get_user_by_oidc"):
                 res = await authenticate_user_by_oauth2(self)
                 if not res:
-                    # Or should we finish?
-                    self.finish()
-                    raise Exception("Unable to authenticate the user by oAuth2")
+                    raise SilentException(
+                        "Unable to authenticate the user by OIDC/OAuth2. "
+                        "Redirecting to authentication endpoint"
+                    )
                 if res and isinstance(res, dict):
                     self.user = res.get("user")
                     self.groups = res.get("groups")

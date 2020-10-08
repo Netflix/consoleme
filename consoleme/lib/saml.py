@@ -43,7 +43,6 @@ async def prepare_tornado_request_for_saml(request):
     redirect_port = tornado.httputil.split_host_and_port(request.host)[1]
     if redirect_uri:
         parsed_redirect_uri = furl(redirect_uri)
-        print(parsed_redirect_uri)
         redirect_path = parsed_redirect_uri.pathstr
         redirect_port = parsed_redirect_uri.port
     result = {
