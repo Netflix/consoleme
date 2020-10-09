@@ -5,10 +5,7 @@ import {
   getMonacoCompletions,
   getMonacoTriggerCharacters,
 } from "../../helpers/utils";
-
-// TODO: heewonk - Not sure how to get global monaco here
 import * as monaco from "monaco-editor";
-// import * as monaco from 'monaco-editor/esm/vs/editor/editor.api'
 
 class MonacoDiffComponent extends React.Component {
   constructor(props) {

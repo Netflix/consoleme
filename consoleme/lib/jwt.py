@@ -1,4 +1,3 @@
-import time
 from datetime import datetime, timedelta
 
 import jwt
@@ -34,9 +33,7 @@ async def generate_jwt_token(
 
 async def validate_and_return_jwt_token(auth_cookie):
     jwt_secret = config.get("jwt_secret")
-    jwt_force_expiration_if_expiration_in_less_than_seconds = config.get(
-        "jwt.jwt_force_expiration_if_expiration_in_less_than_seconds", 30
-    )
+
     if not jwt_secret:
         raise Exception(f"{config.get('jwt_secret')} configuration value is not set.")
     try:
@@ -44,15 +41,6 @@ async def validate_and_return_jwt_token(auth_cookie):
         email = decoded_jwt.get(config.get("jwt.attributes.email", "email"))
         groups = decoded_jwt.get(config.get("jwt.attributes.groups", "groups"), [])
         exp = decoded_jwt.get("exp")
-        # Force the user to reauth if their jwt is near expiration
-        if jwt_force_expiration_if_expiration_in_less_than_seconds and isinstance(
-            jwt_force_expiration_if_expiration_in_less_than_seconds, int
-        ):
-            current_time = time.time()
-            if (
-                exp + jwt_force_expiration_if_expiration_in_less_than_seconds
-            ) < current_time:
-                return False
 
         return {
             "user": email,

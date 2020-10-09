@@ -24,9 +24,9 @@
     "semantic-ui-react": "^1.2.1"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
+    "start": "react-app-rewired start",
+    "build": "react-app-rewired build",
+    "test": "react-app-rewired test --env=jsdom",
     "eject": "react-scripts eject",
     "copy:dev": "cp -a build/ ../consoleme/templates/dist",
     "clean:dev": "rm -rf build && rm -rf ../consoleme/templates/dist",
