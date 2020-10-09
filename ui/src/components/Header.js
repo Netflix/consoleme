@@ -16,9 +16,9 @@ const ConsoleMeHeader = () => {
       return (
         <Dropdown text="Roles and Policies" pointing className="link item">
           <Dropdown.Menu>
-            <Dropdown.Item as={NavLink} to="/ui/catalog">
-              Service Catalog
-            </Dropdown.Item>
+            {/*<Dropdown.Item as={NavLink} to="/ui/catalog">*/}
+            {/*  Service Catalog*/}
+            {/*</Dropdown.Item>*/}
             <Dropdown.Item as={NavLink} to="/ui/policies">
               Policies
             </Dropdown.Item>

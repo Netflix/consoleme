@@ -61,11 +61,11 @@ function App() {
             path="/ui/config"
             component={ConsoleMeDynamicConfig}
           />
-          <ProtectedRoute
-            exact
-            path="/ui/catalog"
-            component={ConsoleMeCatalog}
-          />
+          {/*<ProtectedRoute*/}
+          {/*  exact*/}
+          {/*  path="/ui/catalog"*/}
+          {/*  component={ConsoleMeCatalog}*/}
+          {/*/>*/}
           <Route component={NoMatch} />
         </Switch>
       </AuthProvider>

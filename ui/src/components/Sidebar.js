@@ -91,16 +91,10 @@ const ConsoleMeSidebar = (props) => {
         <Menu.Item>
           <Image size="medium" src="/static2/images/logos/quarantine/1.png" />
           <br />
-          <a
-            href="http://go/infrasec"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Image
-              size="medium"
-              src="/static2/images/netflix-security-dark-bg-tight.svg"
-            />
-          </a>
+          <Image
+            size="medium"
+            src="/static2/images/netflix-security-dark-bg-tight.svg"
+          />
         </Menu.Item>
       </Menu.Menu>
     </Menu>
