@@ -49,7 +49,7 @@ class RoleTagAuthorizationMappingGenerator(CredentialAuthzMappingGenerator):
                     "cloud_credential_authorization_mapping.role_tags.authorized_groups_tags",
                     [],
                 ):
-                    splitted_groups = tag["Value"].split(",")
+                    splitted_groups = tag["Value"].split(":")
                     for group in splitted_groups:
                         if not authorization_mapping.get(group):
                             authorization_mapping[group] = RoleAuthorizations.parse_obj(
@@ -63,7 +63,7 @@ class RoleTagAuthorizationMappingGenerator(CredentialAuthzMappingGenerator):
                     "cloud_credential_authorization_mapping.role_tags.authorized_groups_cli_only_tags",
                     [],
                 ):
-                    splitted_groups = tag["Value"].split(",")
+                    splitted_groups = tag["Value"].split(":")
                     for group in splitted_groups:
                         if not authorization_mapping.get(group):
                             authorization_mapping[group] = RoleAuthorizations.parse_obj(

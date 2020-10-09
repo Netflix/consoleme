@@ -43,6 +43,19 @@ _development_groups_override:
   - configeditors@example.com
   - consoleme_admins@example.com
 
+cloud_credential_authorization_mapping:
+  role_tags:
+    enabled: true
+    required_trust_policy_entity: arn:aws:iam::${current_account_id}:role/consolemeInstanceProfile
+    authorized_groups_tags:
+      - consoleme-authorized
+    authorized_groups_cli_only_tags:
+      - consoleme-authorized-cli-only
+  dynamic_config:
+    enabled: true
+  internal_plugin:
+    enabled: false
+
 # You'll probably want to override FUNCTION to generate this data with your own business logic.
 application_settings:
   application_1:
