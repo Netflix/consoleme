@@ -22,8 +22,8 @@ from moto import (
 from tornado.concurrent import Future
 
 # This must be set before loading ConsoleMe's configuration
-os.environ["CONFIG_LOCATION"] = "example_config/example_config_test.yaml"  # noqa: E402
-from consoleme.config import config
+os.environ["CONFIG_LOCATION"] = "example_config/example_config_test.yaml"
+from consoleme.config import config  # noqa: E402
 
 MOCK_ROLE = {
     "arn": "arn:aws:iam::123456789012:role/FakeRole",
@@ -504,10 +504,10 @@ def iam_sync_roles(iam):
             RoleName=f"RoleNumber{x}",
             Tags=[
                 {"Key": "Number", "Value": f"{x}"},
-                {"Key": "authorized_groups", "Value": f"group{x},group{x}@example.com"},
+                {"Key": "authorized_groups", "Value": f"group{x}:group{x}@example.com"},
                 {
                     "Key": "authorized_groups_cli_only",
-                    "Value": f"group{x}-cli,group{x}-cli@example.com",
+                    "Value": f"group{x}-cli:group{x}-cli@example.com",
                 },
             ],
         )
