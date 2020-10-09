@@ -1,6 +1,6 @@
 provider "aws" {
   region  = var.region
-  version = "~> 2.53"
+  version = ">= 3"
 }
 
 provider "template" {
@@ -8,5 +8,5 @@ provider "template" {
 }
 
 terraform {
-  required_version = "~> 0.12.28"
+  required_version = ">= 0.13.0"
 }

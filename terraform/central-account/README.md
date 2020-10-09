@@ -10,7 +10,7 @@ make consoleme.tar.gz
 
 Note that if you modify this consoleme.tar.gz file and then run Terraform again, it will update the Terraform infrastructure to include your changes.
 
-- Download and install Terraform 0.12.28. I highly recommend [tfenv](https://github.com/tfutils/tfenv)
+- Download and install Terraform 0.13.4. I highly recommend [tfenv](https://github.com/tfutils/tfenv)
 
 - Create your `terraform.tfvars` file and insert the content shown below.
 
