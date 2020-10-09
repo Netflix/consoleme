@@ -1,28 +1,27 @@
 """Handle the base."""
 import asyncio
-import copy
 import time
 import traceback
 import uuid
+from datetime import datetime, timedelta
 from typing import Any, Union
 
+import pytz
 import redis
 import tornado.httpclient
 import tornado.httputil
 import tornado.web
 import ujson as json
-from asgiref.sync import sync_to_async
-from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
 from tornado import httputil
 
 from consoleme.config import config
-from consoleme.config.config import dict_merge
 from consoleme.exceptions.exceptions import (
     InvalidCertificateException,
     MissingCertificateException,
     MissingConfigurationValue,
     NoGroupsException,
     NoUserException,
+    SilentException,
     WebAuthNError,
 )
 from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
@@ -34,9 +33,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.saml import authenticate_user_by_saml
 from consoleme.lib.tracing import ConsoleMeTracer
-
-if config.get("auth.get_user_by_saml"):
-    from onelogin.saml2.auth import OneLogin_Saml2_Auth
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -115,6 +111,12 @@ class BaseJSONHandler(tornado.web.RequestHandler):
 
 class BaseHandler(tornado.web.RequestHandler):
     """Default BaseHandler."""
+
+    def log_exception(self, *args, **kwargs):
+        if args[0].__name__ == "SilentException":
+            pass
+        else:
+            super(BaseHandler, self).log_exception(*args, **kwargs)
 
     def write_error(self, status_code: int, **kwargs: Any) -> None:
         if self.settings.get("serve_traceback") and "exc_info" in kwargs:
@@ -235,6 +237,7 @@ class BaseHandler(tornado.web.RequestHandler):
         refresh_cache = (
             self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
         )
+
         if not refresh_cache and config.get(
             "dynamic_config.role_cache.always_refresh_roles_cache", False
         ):
@@ -247,6 +250,7 @@ class BaseHandler(tornado.web.RequestHandler):
         self.user = user
         self.groups = None
         self.user_role_name = None
+        self.auth_cookie_expiration = 0
 
         log_data = {
             "function": "Basehandler.authorization_flow",
@@ -264,11 +268,14 @@ class BaseHandler(tornado.web.RequestHandler):
             auth_cookie = self.get_cookie(
                 config.get("auth_cookie_name", "consoleme_auth")
             )
+
+            # Validate auth cookie and use it to retrieve group information
             if auth_cookie:
                 res = await validate_and_return_jwt_token(auth_cookie)
                 if res and isinstance(res, dict):
                     self.user = res.get("user")
                     self.groups = res.get("groups")
+                    self.auth_cookie_expiration = res.get("exp")
 
         if not self.user:
             # Check for development mode and a configuration override that specify the user and their groups.
@@ -284,14 +291,24 @@ class BaseHandler(tornado.web.RequestHandler):
             if config.get("auth.get_user_by_saml"):
                 res = await authenticate_user_by_saml(self)
                 if not res:
+                    if (
+                        self.request.uri != "/saml/acs"
+                        and not self.request.uri.startswith("/auth?")
+                    ):
+                        raise SilentException(
+                            "Unable to authenticate the user by SAML. "
+                            "Redirecting to authentication endpoint"
+                        )
                     return
 
         if not self.user:
             if config.get("auth.get_user_by_oidc"):
                 res = await authenticate_user_by_oauth2(self)
                 if not res:
-                    # Or should we finish?
-                    raise Exception("Unable to authenticate the user by oAuth2")
+                    raise SilentException(
+                        "Unable to authenticate the user by OIDC/OAuth2. "
+                        "Redirecting to authentication endpoint"
+                    )
                 if res and isinstance(res, dict):
                     self.user = res.get("user")
                     self.groups = res.get("groups")
@@ -416,47 +433,26 @@ class BaseHandler(tornado.web.RequestHandler):
             and config.get("auth_cookie_name", "consoleme_auth")
             and not self.get_cookie(config.get("auth_cookie_name", "consoleme_auth"))
         ):
-            encoded_cookie = await generate_jwt_token(self.user, self.groups)
+            expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
+                minutes=config.get("jwt.expiration_minutes", 60)
+            )
+
+            encoded_cookie = await generate_jwt_token(
+                self.user, self.groups, exp=expiration
+            )
             self.set_cookie(
-                config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie
+                config.get("auth_cookie_name", "consoleme_auth"),
+                encoded_cookie,
+                expires=expiration,
+                secure=config.get(
+                    "auth.cookie.secure",
+                    True if "https://" in config.get("url") else False,
+                ),
+                httponly=config.get("auth.cookie.httponly", True),
+                samesite=config.get("auth.cookie.samesite", True),
             )
         if self.tracer:
             await self.tracer.set_additional_tags({"USER": self.user})
-
-    async def prepare_tornado_request_for_saml(self):
-        dataDict = {}
-
-        for key in self.request.arguments:
-            dataDict[key] = self.request.arguments[key][0].decode("utf-8")
-
-        result = {
-            "https": "on" if self.request == "https" else "off",
-            "http_host": tornado.httputil.split_host_and_port(self.request.host)[0],
-            "script_name": self.request.path,
-            "server_port": tornado.httputil.split_host_and_port(self.request.host)[1],
-            "get_data": dataDict,
-            "post_data": dataDict,
-            "query_string": self.request.query,
-        }
-        return result
-
-    @staticmethod
-    async def init_saml_auth(req):
-        saml_config = copy.deepcopy(
-            config.get("get_user_by_saml_settings.saml_settings", {})
-        )
-        idp_metadata_url = config.get("get_user_by_saml_settings.idp_metadata_url")
-        if idp_metadata_url:
-            idp_metadata = OneLogin_Saml2_IdPMetadataParser.parse_remote(
-                idp_metadata_url
-            )
-            saml_config = dict_merge(saml_config, idp_metadata)
-        auth = await sync_to_async(OneLogin_Saml2_Auth)(
-            req,
-            saml_config,
-            custom_base_path=config.get("get_user_by_saml_settings.saml_path"),
-        )
-        return auth
 
 
 class BaseAPIV1Handler(BaseHandler):
@@ -503,6 +499,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
         self.spans = {}
         self.responses = []
         self.request_uuid = str(uuid.uuid4())
+        self.auth_cookie_expiration = 0
         stats.timer("base_handler.incoming_request")
         if config.get("auth.require_mtls", True):
             try:
@@ -541,6 +538,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
                 auth_cookie = self.get_cookie(
                     config.get("auth_cookie_name", "consoleme_auth")
                 )
+
                 if auth_cookie:
                     res = await validate_and_return_jwt_token(auth_cookie)
                     if not res:
@@ -556,6 +554,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
                     self.groups = res.get("groups")
                     self.requester = {"type": "user", "email": self.user}
                     self.current_cert_age = int(time.time()) - res.get("iat")
+                    self.auth_cookie_expiration = res.get("exp")
             else:
                 raise MissingConfigurationValue(
                     "Auth cookie name is not defined in configuration."

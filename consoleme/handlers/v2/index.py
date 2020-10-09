@@ -1,6 +1,7 @@
 from operator import itemgetter
 
 import ujson as json
+import tornado.web
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
@@ -171,3 +172,16 @@ class IndexHandler(BaseHandler):
         self.set_header("Content-Type", "application/json")
         self.write(json.dumps(roles, escape_forward_slashes=False))
         await self.finish()
+
+
+class FrontendHandler(tornado.web.StaticFileHandler):
+    def validate_absolute_path(self, root, absolute_path):
+        try:
+            return super().validate_absolute_path(root, absolute_path)
+        except tornado.web.HTTPError as exc:
+            if exc.status_code == 404 and \
+                    self.default_filename is not None:
+                absolute_path = self.get_absolute_path(
+                    self.root, self.default_filename)
+                return super().validate_absolute_path(root, absolute_path)
+            raise exc

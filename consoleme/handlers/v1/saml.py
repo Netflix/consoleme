@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+
+import pytz
 from asgiref.sync import sync_to_async
 
 from consoleme.config import config
@@ -5,6 +8,7 @@ from consoleme.handlers.base import BaseHandler
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.jwt import generate_jwt_token
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.saml import init_saml_auth, prepare_tornado_request_for_saml
 
 if config.get("auth.get_user_by_saml"):
     from onelogin.saml2.utils import OneLogin_Saml2_Utils
@@ -16,9 +20,12 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 
 
 class SamlHandler(BaseHandler):
+    def check_xsrf_cookie(self):
+        pass
+
     async def post(self, endpoint):
-        req = await self.prepare_tornado_request_for_saml()
-        auth = await self.init_saml_auth(req)
+        req = await prepare_tornado_request_for_saml(self.request)
+        auth = await init_saml_auth(req)
 
         if "sso" in endpoint:
             return self.redirect(auth.login())
@@ -43,10 +50,24 @@ class SamlHandler(BaseHandler):
                 )
 
                 self_url = await sync_to_async(OneLogin_Saml2_Utils.get_self_url)(req)
-                encoded_cookie = await generate_jwt_token(email, groups)
-                self.set_cookie(
-                    config.get("auth_cookie_name", "consoleme_auth"), encoded_cookie
-                )
+                if config.get("auth.set_auth_cookie"):
+                    expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
+                        minutes=config.get("jwt.expiration_minutes", 60)
+                    )
+                    encoded_cookie = await generate_jwt_token(
+                        email, groups, exp=expiration
+                    )
+                    self.set_cookie(
+                        config.get("auth_cookie_name", "consoleme_auth"),
+                        encoded_cookie,
+                        expires=expiration,
+                        secure=config.get(
+                            "auth.cookie.secure",
+                            True if "https://" in config.get("url") else False,
+                        ),
+                        httponly=config.get("auth.cookie.httponly", True),
+                        samesite=config.get("auth.cookie.samesite", True),
+                    )
                 if (
                     "RelayState" in self.request.arguments
                     and self_url

@@ -33,13 +33,21 @@ async def generate_jwt_token(
 
 async def validate_and_return_jwt_token(auth_cookie):
     jwt_secret = config.get("jwt_secret")
+
     if not jwt_secret:
         raise Exception(f"{config.get('jwt_secret')} configuration value is not set.")
     try:
         decoded_jwt = jwt.decode(auth_cookie, jwt_secret, algorithm="HS256")
         email = decoded_jwt.get(config.get("jwt.attributes.email", "email"))
         groups = decoded_jwt.get(config.get("jwt.attributes.groups", "groups"), [])
-        return {"user": email, "groups": groups, "iat": decoded_jwt.get("iat")}
+        exp = decoded_jwt.get("exp")
+
+        return {
+            "user": email,
+            "groups": groups,
+            "iat": decoded_jwt.get("iat"),
+            "exp": exp,
+        }
     except jwt.ExpiredSignatureError:
         # Force user to reauth.
         return False
