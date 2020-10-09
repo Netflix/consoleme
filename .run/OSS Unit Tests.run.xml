@@ -1,6 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="OSS Unit Tests" type="tests" factoryName="py.test">
-    <module name="consoleme-deploy" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -8,10 +7,11 @@
       <env name="ASYNC_TEST_TIMEOUT" value="60000" />
     </envs>
     <option name="SDK_HOME" value="$PROJECT_DIR$/env/bin/python" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/consoleme" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
+    <module name="" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
     <EXTENSION ID="net.ashald.envfile">
       <option name="IS_ENABLED" value="false" />
@@ -25,8 +25,8 @@
     </EXTENSION>
     <option name="_new_keywords" value="&quot;&quot;" />
     <option name="_new_parameters" value="&quot;&quot;" />
-    <option name="_new_additionalArguments" value="&quot;-k test_parse_and_apply_policy_request_modification_approve_request&quot;" />
-    <option name="_new_target" value="&quot;$PROJECT_DIR$/consoleme/tests&quot;" />
+    <option name="_new_additionalArguments" value="&quot;-k test_retrieve_credential_authorization_mapping&quot;" />
+    <option name="_new_target" value="&quot;$PROJECT_DIR$/tests&quot;" />
     <option name="_new_targetType" value="&quot;PATH&quot;" />
     <method v="2" />
   </configuration>
