@@ -5,14 +5,7 @@ import {
   getMonacoCompletions,
   getMonacoTriggerCharacters,
 } from "../../helpers/utils";
-
-monaco.languages.registerCompletionItemProvider("json", {
-  triggerCharacters: [],
-  async provideCompletionItems(model, position) {
-    const response = await getMonacoCompletions(model, position);
-    return response;
-  },
-});
+import * as monaco from "monaco-editor";
 
 class MonacoDiffComponent extends React.Component {
   constructor(props) {
@@ -46,6 +39,15 @@ class MonacoDiffComponent extends React.Component {
     this.onValueChange(newValue);
   }
 
+  editorWillMount(monaco) {
+    monaco.languages.registerCompletionItemProvider("json", {
+      triggerCharacters: [],
+      async provideCompletionItems(model, position) {
+        const response = await getMonacoCompletions(model, position, monaco);
+        return response;
+      },
+    });
+  }
   editorDidMount(editor) {
     editor.modifiedEditor.onDidChangeModelDecorations(() => {
       const { modifiedEditor } = this.state;
@@ -76,6 +78,11 @@ class MonacoDiffComponent extends React.Component {
       renderSideBySide: true,
       enableSplitViewResizing: false,
       quickSuggestions: true,
+      scrollbar: {
+        alwaysConsumeMouseWheel: false,
+      },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
       readOnly,
     };
     return (
@@ -85,10 +92,12 @@ class MonacoDiffComponent extends React.Component {
         height="500"
         original={oldValue}
         value={newValue}
+        editorWillMount={this.editorWillMount}
         editorDidMount={this.editorDidMount}
         options={options}
         onChange={this.onChange}
         theme="vs-dark"
+        alwaysConsumeMouseWheel={false}
       />
     );
   }

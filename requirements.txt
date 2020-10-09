@@ -43,6 +43,7 @@ elasticsearch-dsl==7.2.1  # via -r requirements.in
 elasticsearch==7.9.1      # via -r requirements.in, elasticsearch-dsl
 email-validator==1.1.1    # via pydantic
 flagpole==1.1.1           # via cloudaux
+furl==2.1.0
 genson==1.2.1             # via datamodel-code-generator
 gitdb==4.0.5              # via gitpython
 gitpython==3.1.8          # via -r requirements.in
