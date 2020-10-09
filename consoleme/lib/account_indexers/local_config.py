@@ -4,7 +4,9 @@ from consoleme.models import CloudAccountModel, CloudAccountModelArray
 
 async def retrieve_accounts_from_config() -> CloudAccountModelArray:
     cloud_accounts = []
-    for account_id, names in config.get("account_ids_to_name", {}).items():
+    accounts_in_configuration = config.get("dynamic_config.account_ids_to_name", {})
+    accounts_in_configuration.update(config.get("account_ids_to_name", {}))
+    for account_id, names in accounts_in_configuration.items():
         account_name = names
         # Legacy support for a list of account names (with aliases)
         if account_name and isinstance(account_name, list):

@@ -32,7 +32,7 @@ class UserProfileHandler(BaseAPIV1Handler):
                     "enabled": config.get("headers.policies.enabled", True)
                     and not is_contractor
                 },
-                "self_service": {"enabled": config.get("enable_self_service")},
+                "self_service": {"enabled": config.get("enable_self_service", True)},
                 "api_health": {
                     "enabled": is_in_group(
                         self.user,

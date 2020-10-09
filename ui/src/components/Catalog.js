@@ -1,30 +1,14 @@
 import _ from 'lodash';
-import React, {Component} from 'react';
+import React, { useState } from 'react';
 import {
-    Button,
-    Checkbox,
-    Divider,
-    Dropdown,
-    Feed,
-    Form,
-    FormDropdown,
-    Grid,
     Icon,
-    Image,
-    Input,
     Item,
     Label,
-    List,
     Header,
-    Message,
     Menu,
     Search,
     Segment,
-    Select,
-    Step,
-    TextArea,
 } from 'semantic-ui-react';
-
 
 const initialState = {
     activeItem: 'all',
@@ -33,11 +17,10 @@ const initialState = {
     value: ''
 };
 
-
 const CatalogItems = () => (
     <Item.Group divided relaxed>
         <Item>
-            <Item.Image as="a" href="/selfservice" size='tiny' src='/images/logos/nosunglasses/1.png' />
+            <Item.Image as="a" href="/ui/selfservice" size='tiny' src='/static_ui/images/logos/nosunglasses/1.png' />
             <Item.Content>
                 <Item.Header as='a'>Self-Service IAM Wizard</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -65,7 +48,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image as='a' hfre="https://go/honeybee" size='tiny' src='/images/logos/infrasec/Honeybee.png' />
+            <Item.Image as='a' hfre="https://go/honeybee" size='tiny' src='/static_ui/images/logos/infrasec/Honeybee.png' />
             <Item.Content>
                 <Item.Header as='a'>HoneyBee</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -97,7 +80,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/images/logos/sunglasses/1.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/sunglasses/1.png' />
             <Item.Content>
                 <Item.Header as='a'>API Protect</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -133,7 +116,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/images/logos/sunglasses/3.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/sunglasses/3.png' />
             <Item.Content>
                 <Item.Header as='a'>Role Protect</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -165,7 +148,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
             <Item.Content>
                 <Item.Header as='a'>SWAG</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -189,7 +172,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
             <Item.Content>
                 <Item.Header as='a'>Otterbot</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -213,7 +196,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
             <Item.Content>
                 <Item.Header as='a'>Lazy Falcon</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -237,7 +220,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
             <Item.Content>
                 <Item.Header as='a'>Security Monkey</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -263,70 +246,69 @@ const CatalogItems = () => (
     </Item.Group>
 );
 
-class Catalog extends Component {
-    state = initialState;
+function Catalog() {
+    const [activeItem, setActiveItem] = useState('all');
+    const [isLoading, setLoading] = useState(false);
+    const [value, setValue] = useState('');
+    const [results, setResults] = useState([]);
 
-    handleItemClick = (e, { name }) => this.setState({ activeItem: name });
-
-    handleResultSelect = (e, { result }) => this.setState({ value: result.title });
-
-    handleSearchChange = (e, { value }) => {
-        this.setState({ isLoading: false, value })
+    const handleActiveItem = (e, { name }) => setActiveItem(name);
+    const handleResultSelect = (e, { result }) => setResults(result.title);
+    const handleSearchChange = (e, { value }) => {
+        setLoading(false);
+        setResults(value);
     };
 
-    render() {
-        const { activeItem, isLoading, value, results } = this.state;
-        return (
-            <Segment.Group>
-                <Segment clearing basic>
-                    <Header as="h2" floated="left" textAlign="left">
-                        Service Catalog
-                        <Header.Subheader>
-                            Please search and select self services
-                        </Header.Subheader>
-                    </Header>
-                    <Header floated="right">
-                        <Search
-                            fluid
-                            category
-                            loading={isLoading}
-                            onResultSelect={this.handleResultSelect}
-                            onSearchChange={_.debounce(this.handleSearchChange, 500, {
-                                leading: true,
-                            })}
-                            results={results}
-                            value={value}
-                        />
-                    </Header>
-                </Segment>
-                <Segment basic>
-                    <Menu pointing secondary>
-                        <Menu.Item
-                            name='all'
-                            active={activeItem === 'all'}
-                            onClick={this.handleItemClick}
-                        />
-                        <Menu.Item
-                            name='account'
-                            active={activeItem === 'account'}
-                            onClick={this.handleItemClick}
-                        />
-                        <Menu.Item
-                            name='IAM'
-                            active={activeItem === 'IAM'}
-                            onClick={this.handleItemClick}
-                        />
-                        <Menu.Item
-                            name='misc'
-                            active={activeItem === 'misc'}
-                            onClick={this.handleItemClick}
-                        />
-                    </Menu>
-                    <CatalogItems />
-                </Segment>
-            </Segment.Group>
-        );
-    }
+    return (
+        <Segment.Group>
+            <Segment clearing basic>
+                <Header as="h2" floated="left" textAlign="left">
+                    Service Catalog
+                    <Header.Subheader>
+                        Please search and select self services
+                    </Header.Subheader>
+                </Header>
+                <Header floated="right">
+                    <Search
+                        fluid
+                        category
+                        loading={isLoading}
+                        onResultSelect={handleResultSelect}
+                        onSearchChange={_.debounce(handleSearchChange, 500, {
+                            leading: true,
+                        })}
+                        results={results}
+                        value={value}
+                    />
+                </Header>
+            </Segment>
+            <Segment basic>
+                <Menu pointing secondary>
+                    <Menu.Item
+                        name='all'
+                        active={activeItem === 'all'}
+                        onClick={handleActiveItem}
+                    />
+                    <Menu.Item
+                        name='account'
+                        active={activeItem === 'account'}
+                        onClick={handleActiveItem}
+                    />
+                    <Menu.Item
+                        name='IAM'
+                        active={activeItem === 'IAM'}
+                        onClick={handleActiveItem}
+                    />
+                    <Menu.Item
+                        name='misc'
+                        active={activeItem === 'misc'}
+                        onClick={handleActiveItem}
+                    />
+                </Menu>
+                <CatalogItems />
+            </Segment>
+        </Segment.Group>
+    );
 }
 
 export default Catalog;
