@@ -98,7 +98,7 @@ def make_app(jwt_validator=None):
 
     oss_routes = [
         (
-            r"/static2/(.*)",
+            r"/static_ui/(.*)",
             NoCacheStaticFileHandler,
             dict(
                 path=os.path.join(path, "dist"),

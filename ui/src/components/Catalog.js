@@ -20,7 +20,7 @@ const initialState = {
 const CatalogItems = () => (
     <Item.Group divided relaxed>
         <Item>
-            <Item.Image as="a" href="/ui/selfservice" size='tiny' src='/static2/images/logos/nosunglasses/1.png' />
+            <Item.Image as="a" href="/ui/selfservice" size='tiny' src='/static_ui/images/logos/nosunglasses/1.png' />
             <Item.Content>
                 <Item.Header as='a'>Self-Service IAM Wizard</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -48,7 +48,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image as='a' hfre="https://go/honeybee" size='tiny' src='/static2/images/logos/infrasec/Honeybee.png' />
+            <Item.Image as='a' hfre="https://go/honeybee" size='tiny' src='/static_ui/images/logos/infrasec/Honeybee.png' />
             <Item.Content>
                 <Item.Header as='a'>HoneyBee</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -80,7 +80,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/static2/images/logos/sunglasses/1.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/sunglasses/1.png' />
             <Item.Content>
                 <Item.Header as='a'>API Protect</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -116,7 +116,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/static2/images/logos/sunglasses/3.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/sunglasses/3.png' />
             <Item.Content>
                 <Item.Header as='a'>Role Protect</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -148,7 +148,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/static2/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
             <Item.Content>
                 <Item.Header as='a'>SWAG</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -172,7 +172,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/static2/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
             <Item.Content>
                 <Item.Header as='a'>Otterbot</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -196,7 +196,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/static2/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
             <Item.Content>
                 <Item.Header as='a'>Lazy Falcon</Item.Header>
                 <Item.Meta>Description</Item.Meta>
@@ -220,7 +220,7 @@ const CatalogItems = () => (
             </Item.Content>
         </Item>
         <Item>
-            <Item.Image size='tiny' src='/static2/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
+            <Item.Image size='tiny' src='/static_ui/images/logos/infrasec/MikeCloudNoGradientWithFace.png' />
             <Item.Content>
                 <Item.Header as='a'>Security Monkey</Item.Header>
                 <Item.Meta>Description</Item.Meta>
