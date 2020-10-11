@@ -50,7 +50,11 @@ from consoleme.handlers.v2.dynamic_config import DynamicConfigApiHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
-from consoleme.handlers.v2.index import EligibleRoleTableConfigHandler, IndexHandler, FrontendHandler
+from consoleme.handlers.v2.index import (
+    EligibleRoleTableConfigHandler,
+    FrontendHandler,
+    IndexHandler,
+)
 from consoleme.handlers.v2.policies import (
     PoliciesHandler,
     PoliciesTableConfigHandler,
@@ -63,6 +67,7 @@ from consoleme.handlers.v2.requests import (
     RequestsTableConfigHandler,
     RequestsWebHandler,
 )
+from consoleme.handlers.v2.resources import ResourceDetailHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
@@ -151,6 +156,10 @@ def make_app(jwt_validator=None):
         (r"/api/v2/roles/?", RolesHandler),
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
+        (
+            r"/api/v2/resources/(\d{12})/(s3|sqs|sns)(?:/([a-z\-1-9]+))?/(.*)",
+            ResourceDetailHandler,
+        ),
         (r"/api/v2/mtls/roles/(\d{12})/(.*)", RoleDetailAppHandler),
         (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
