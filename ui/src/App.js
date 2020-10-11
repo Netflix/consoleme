@@ -4,11 +4,14 @@ import { BrowserRouter, Redirect, Route, Switch } from "react-router-dom";
 import AuthProvider from "./auth/AuthProvider";
 import ProtectedRoute from "./auth/ProtectedRoute";
 
-import ConsoleMeCatalog from "./components/Catalog";
+
 import ConsoleMeDataTable from "./components/ConsoleMeDataTable";
 import ConsoleMeSelfService from "./components/SelfService";
 import ConsoleMeDynamicConfig from "./components/DynamicConfig";
 import PolicyRequestReview from "./components/PolicyRequestsReview";
+import PolicyEditor from "./components/PolicyEditor";
+
+// import ConsoleMeCatalog from "./components/Catalog";
 // import ConsoleMeLogin from "./components/Login";
 
 const LOCAL_KEY = "consoleMeLocalStorage";
@@ -46,7 +49,7 @@ function App() {
           />
           <ProtectedRoute
             exact
-            path="/policies/request/:requestID"
+            path="/ui/policies/request/:requestID"
             component={PolicyRequestReview}
           />
           <ProtectedRoute
@@ -55,6 +58,10 @@ function App() {
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/requests_table_config"}
             queryString={""}
+          />
+          <ProtectedRoute
+            path="/ui/policies/edit/:accountID/:service/:resource"
+            component={PolicyEditor}
           />
           <ProtectedRoute
             exact
