@@ -60,7 +60,7 @@ function App() {
             queryString={""}
           />
           <ProtectedRoute
-            path="/ui/policies/edit/:accountID/:service/:resource"
+            path="/ui/policies/edit/:accountID/:serviceType/:resourceName"
             component={PolicyEditor}
           />
           <ProtectedRoute

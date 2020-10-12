@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Accordion,
     Button,
@@ -13,6 +13,7 @@ import {
     Table,
 } from 'semantic-ui-react';
 import { useParams } from "react-router-dom";
+import { sendRequestCommon } from "../helpers/utils";
 
 import IAMRolePolicy from "./IAMRolePolicy";
 import ResourcePolicy from "./ResourcePolicy";
@@ -31,21 +32,35 @@ const getPolicyEditorByService = (service) => {
 };
 
 const PolicyEditor = () => {
-    const { accountID, service, resource } = useParams();
-    const EditPolicy = getPolicyEditorByService(service);
+    const [resource, setResource] = useState({});
+    const { accountID, serviceType, resourceName } = useParams();
+    const EditPolicy = getPolicyEditorByService(serviceType);
 
+    useEffect(() => {
+        (async () => {
+            // TODO, query different endpoint based on serviceType
+            const data = await sendRequestCommon(
+                null,
+                `/api/v2/roles/${accountID}/${resourceName}`,
+                "get"
+            );
+            setResource(data);
+        })();
+    }, []);
+
+    // TODO, loading until resource data is retrieved
     return (
         <Segment>
             <>
                 <Header as='h1' floated='left'>
-                    Edit Policy for arn:aws:iam::609753154238:role/CurtisTestRole
+                    Edit Policy for {`${resource.arn || ''}`}
                 </Header>
                 <Button negative floated="right">
                     Delete
                 </Button>
             </>
-            <ResourceDetail />
-            <EditPolicy />
+            <ResourceDetail resource={resource} />
+            <EditPolicy resource={resource} />
         </Segment>
     );
 }
