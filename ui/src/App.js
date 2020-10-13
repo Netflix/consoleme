@@ -9,7 +9,7 @@ import ConsoleMeDataTable from "./components/ConsoleMeDataTable";
 import ConsoleMeSelfService from "./components/SelfService";
 import ConsoleMeDynamicConfig from "./components/DynamicConfig";
 import PolicyRequestReview from "./components/PolicyRequestsReview";
-import PolicyEditor from "./components/PolicyEditor";
+import PolicyEditor from "./components/policy/PolicyEditor";
 
 // import ConsoleMeCatalog from "./components/Catalog";
 // import ConsoleMeLogin from "./components/Login";
@@ -58,6 +58,10 @@ function App() {
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/requests_table_config"}
             queryString={""}
+          />
+          <ProtectedRoute
+            path="/ui/policies/edit/:accountID/:serviceType/:region/:resourceName"
+            component={PolicyEditor}
           />
           <ProtectedRoute
             path="/ui/policies/edit/:accountID/:serviceType/:resourceName"

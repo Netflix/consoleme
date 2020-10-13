@@ -1,20 +1,8 @@
 import React, { useState } from 'react';
-import {
-    Accordion,
-    Button,
-    Icon,
-    Item,
-    Label,
-    Header,
-    Menu,
-    Search,
-    Segment,
-    Tab,
-    Table,
-} from 'semantic-ui-react';
+import { Table } from 'semantic-ui-react';
 
 
-const ResourceDetail = ({ resource }) => {
+const ResourceDetail = ({ serviceType = "", resource = {} }) => {
     const {
         account_id,
         account_name,
@@ -47,7 +35,7 @@ const ResourceDetail = ({ resource }) => {
                     <Table.Cell>
                         Resource type
                     </Table.Cell>
-                    <Table.Cell>AWS::IAM::Role</Table.Cell>
+                    <Table.Cell>{serviceType.toUpperCase()}</Table.Cell>
                 </Table.Row>
                 <Table.Row>
                     <Table.Cell>
