@@ -109,7 +109,7 @@ async def generate_request_from_change_model_array(
     extended_request_uuid = str(uuid.uuid4())
     incremental_change_id = 0
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application", []
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
 
     for change in change_models.changes:
