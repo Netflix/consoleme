@@ -372,7 +372,7 @@ Assume Role Policy Document:
 You should have the ConsoleMe web service up and running, and you should have some roles that ConsoleMe can use or
 assume. Now comes the fun part: Configuring ConsoleMe.
 
-At Netflix, we use our production ConsoleMe sergice to get credentials for ConsoleMe locally
+At Netflix, we use our production ConsoleMe service to get credentials for ConsoleMe locally
 (hence why ConsoleMeInstanceProfile needs to be able to assume itself). For a first-time setup, you may not have this
 luxury. If you're using an IAM user, let it assume into the consolemeinstanceprofile service role that you created in
 the previous step (If you take this route, we recommend removing those permissions as soon as you deploy consoleme and
