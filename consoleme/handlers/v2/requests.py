@@ -331,6 +331,7 @@ class RequestHandler(BaseAPIV2Handler):
             errors=0,
             request_created=True,
             request_id=extended_request.id,
+            request_url=f"/policies/request/{extended_request.id}",
             action_results=[],
         )
 

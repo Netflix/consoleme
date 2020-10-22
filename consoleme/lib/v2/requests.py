@@ -1478,6 +1478,10 @@ async def get_resources_from_policy_change(change: ChangeModel):
             # based on a partial wildcard in a resource name
             if "*" in resource:
                 continue
+            if not resource:
+                raise Exception(
+                    "One or more resources must be specified in the policy."
+                )
             resource_name = get_resource_from_arn(resource)
             resource_action = {
                 "arn": resource,

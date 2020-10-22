@@ -1245,6 +1245,8 @@ components:
           type: boolean
         request_id:
           type: string
+        request_url:
+          type: string
         action_results:
           type: array
           items:
