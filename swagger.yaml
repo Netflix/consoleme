@@ -799,7 +799,6 @@ components:
               type: boolean
               readOnly: true
               default: false
-
     ResourcePolicyChangeModel:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
@@ -836,14 +835,11 @@ components:
         - type: object
           required:
             - arn
-            - policy_name
             - action
           properties:
             arn:
               type: string
               pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
-            policy_name:
-              type: string
             change_type:
               type: string
               pattern: "managed_policy"

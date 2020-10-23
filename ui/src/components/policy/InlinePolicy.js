@@ -19,6 +19,20 @@ import { templateOptions } from "./policyTemplates";
 import { sendRequestCommon } from "../../helpers/utils";
 import ReactMarkdown from "react-markdown";
 
+import {
+  getMonacoCompletions,
+  getMonacoTriggerCharacters,
+} from "../../helpers/utils";
+import * as monaco from "monaco-editor";
+
+monaco.languages.registerCompletionItemProvider("json", {
+  triggerCharacters: getMonacoTriggerCharacters(),
+  async provideCompletionItems(model, position) {
+    const response = await getMonacoCompletions(model, position, monaco);
+    return response;
+  },
+});
+
 const editorOptions = {
   selectOnLineNumbers: true,
   quickSuggestions: true,
@@ -29,7 +43,7 @@ const editorOptions = {
   automaticLayout: true,
 };
 
-const InlinePolicy = ({ arn = "", policies = [] }) => {
+const InlinePolicy = ({ arn = "", policies = [], setIsLoaderActive }) => {
   const [activeIndex, setActiveIndex] = useState([]);
   const [panels, setPanels] = useState([]);
   const [newPolicy, setNewPolicy] = useState(
@@ -138,6 +152,25 @@ const InlinePolicy = ({ arn = "", policies = [] }) => {
     console.log(e);
   };
 
+  const editorDidMount = (editor) => {
+    editor.onDidChangeModelDecorations(() => {
+      const model = editor.getModel();
+      if (model === null || model.getModeId() !== "json") {
+        return;
+      }
+
+      const owner = model.getModeId();
+      const uri = model.uri;
+      const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
+      this.onLintError(
+        markers.map(
+          (marker) =>
+            `Lint error on line ${marker.startLineNumber} columns ${marker.startColumn}-${marker.endColumn}: ${marker.message}`
+        )
+      );
+    });
+  };
+
   const handleSubmitRequestToBackend = useCallback(
     async (e) => {
       if (!justification) {
@@ -194,7 +227,8 @@ const InlinePolicy = ({ arn = "", policies = [] }) => {
           return;
         }
         setMessage(
-          "Server reported an error with the request: " + response.toString()
+          "Server reported an error with the request: " +
+            JSON.stringify(response)
         );
         setIsSuccess(false);
         setOpenResultMessage(true);
@@ -207,6 +241,11 @@ const InlinePolicy = ({ arn = "", policies = [] }) => {
     },
     [adminAutoApprove, arn, justification, newPolicy, newPolicyName]
   );
+
+  // side effect for setting the loader
+  // useEffect( () => {
+  //   setIsLoaderActive(loading)
+  // }, [loading, setIsLoaderActive])
 
   // side effect for rendering policies as Accordion
   useEffect(() => {
@@ -238,6 +277,7 @@ const InlinePolicy = ({ arn = "", policies = [] }) => {
                   value={JSON.stringify(policy.PolicyDocument, null, "\t")}
                   onChange={onEditChange}
                   options={editorOptions}
+                  editorDidMount={editorDidMount}
                   textAlign="center"
                 />
               </Segment>
@@ -321,6 +361,7 @@ const InlinePolicy = ({ arn = "", policies = [] }) => {
                 value={JSON.stringify(newPolicy, null, "\t")}
                 onChange={onEditChange}
                 options={editorOptions}
+                editorDidMount={editorDidMount}
                 textAlign="center"
               />
             </Segment>

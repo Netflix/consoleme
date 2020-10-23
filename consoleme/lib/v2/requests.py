@@ -442,7 +442,8 @@ async def validate_managed_policy_change(
         "message": "Validating managed policy change",
     }
     log.info(log_data)
-    if await invalid_characters_in_policy(change.policy_name):
+    policy_name = change.arn.split("/")[-1]
+    if await invalid_characters_in_policy(policy_name):
         log_data["message"] = "Invalid characters were detected in the policy name."
         log.error(log_data)
         raise InvalidRequestParameter(log_data["message"])

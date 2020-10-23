@@ -56,6 +56,7 @@ from consoleme.handlers.v2.index import (
     IndexHandler,
 )
 from consoleme.handlers.v2.policies import (
+    ManagedPoliciesHandler,
     PoliciesHandler,
     PoliciesTableConfigHandler,
     PolicyReviewV2Handler,
@@ -146,6 +147,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/dynamic_config", DynamicConfigApiHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
+        (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
         (r"/api/v2/policies", PoliciesHandler),
         (r"/api/v2/policies_table_config", PoliciesTableConfigHandler),
         (r"/api/v2/role_table_config", EligibleRoleTableConfigHandler),
