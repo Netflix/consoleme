@@ -1,2 +1,0 @@
-# Required IAM Permissions
-
