@@ -779,6 +779,26 @@ components:
               $ref: "#/components/schemas/PolicyModel"
             old_policy:
               $ref: "#/components/schemas/PolicyModel"
+    ResourceTagChangeModel:
+      allOf:
+        - $ref: "#/components/schemas/ChangeModel"
+        - type: object
+          required:
+            - key
+            - action
+          properties:
+            key:
+              type: string
+            value:
+              type: string
+            change_type:
+              type: string
+              pattern: "resource_tag"
+            tag_action:
+              type: string
+              enum:
+                - update
+                - delete
     AssumeRolePolicyChangeModel:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
@@ -861,6 +881,7 @@ components:
               - $ref: "#/components/schemas/ManagedPolicyChangeModel"
               - $ref: "#/components/schemas/ResourcePolicyChangeModel"
               - $ref: "#/components/schemas/AssumeRolePolicyChangeModel"
+              - $ref: "#/components/schemas/ResourceTagChangeModel"
     ArnArray:
       type: array
       items:

@@ -166,10 +166,17 @@ export async function getMonacoCompletions(model, position, monaco) {
     }
   }
   const lastLine = model.getLineContent(position.lineNumber);
-  const prefix = lastLine.trim().replace(/"/g, "");
+  const prefix = lastLine
+    .trim()
+    .replace(/"/g, "")
+    .replace(/Action:/g, "")
+    .replace(/Resource:/g, "")
+    .replace(/,/g, "")
+    .replace(" ", "")
+    .replace(/\[/, "")
+    .replace(/]/, "");
   // prefixRange is the range of the prefix that will be replaced if someone selects the suggestion
   const prefixRange = model.findPreviousMatch(prefix, position);
-  const limit = 500;
   const defaultWordList = [];
   if (action === true) {
     const wordList = await sendRequestCommon(
@@ -177,6 +184,9 @@ export async function getMonacoCompletions(model, position, monaco) {
       "/api/v1/policyuniverse/autocomplete?prefix=" + prefix,
       "get"
     );
+    if (!prefixRange) {
+      return { suggestions: defaultWordList };
+    }
     const suggestedWordList = wordList.map((ea) => ({
       label: ea.permission,
       insertText: ea.permission,

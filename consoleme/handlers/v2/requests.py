@@ -317,7 +317,7 @@ class RequestHandler(BaseAPIV2Handler):
                 f"{log_data['function']}.validation_exception", tags={"user": self.user}
             )
             self.write_error(400, message="Error validating input: " + str(e))
-            return
+            raise  # TODO REVERT
         except Exception as e:
             log_data["message"] = "Unknown Exception occurred while parsing request"
             log.error(log_data, exc_info=True)
@@ -341,6 +341,7 @@ class RequestHandler(BaseAPIV2Handler):
             # Update in dynamo
             await dynamo.write_policy_request_v2(extended_request)
             account_id = await get_resource_account(extended_request.arn)
+            # Force a refresh of the role in Redis/DDB
             await aws.fetch_iam_role(
                 account_id, extended_request.arn, force_refresh=True
             )
@@ -494,7 +495,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
         except InvalidRequestParameter as e:
             sentry_sdk.capture_exception(tags={"user": self.user})
             self.write_error(400, message="Error validating input: " + str(e))
-            return
+            raise  # TODO REVERT
         except NoMatchingRequest as e:
             sentry_sdk.capture_exception(tags={"user": self.user})
             self.write_error(404, message="Error getting request:" + str(e))
@@ -585,7 +586,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
                 f"{log_data['function']}.validation_exception", tags={"user": self.user}
             )
             self.write_error(400, message="Error validating input: " + str(e))
-            return
+            raise  # TODO REVERT
         except Unauthorized as e:
             log_data["message"] = "Unauthorized"
             log.error(log_data, exc_info=True)

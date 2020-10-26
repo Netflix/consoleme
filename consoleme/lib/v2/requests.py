@@ -3,7 +3,7 @@ import sys
 import time
 import uuid
 from hashlib import sha256
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import sentry_sdk
 import ujson as json
@@ -65,6 +65,7 @@ from consoleme.models import (
     RequestStatus,
     ResourceModel,
     ResourcePolicyChangeModel,
+    ResourceTagChangeModel,
     Status,
     UpdateChangeModificationModel,
     UserModel,
@@ -105,6 +106,8 @@ async def generate_request_from_change_model_array(
     managed_policy_changes = []
     resource_policy_changes = []
     assume_role_policy_changes = []
+    resource_tag_changes = []
+    role = None
 
     extended_request_uuid = str(uuid.uuid4())
     incremental_change_id = 0
@@ -151,6 +154,10 @@ async def generate_request_from_change_model_array(
             assume_role_policy_changes.append(
                 AssumeRolePolicyChangeModel.parse_obj(change.__dict__)
             )
+        elif change.change_type == "resource_tag":
+            resource_tag_changes.append(
+                ResourceTagChangeModel.parse_obj(change.__dict__)
+            )
         else:
             raise UnsupportedChangeType(
                 f"Invalid `change_type` for change: {change.__dict__}"
@@ -187,7 +194,7 @@ async def generate_request_from_change_model_array(
         or len(managed_policy_changes) > 0
         or len(assume_role_policy_changes) > 0
     ):
-        # for inline policies and managed policies, principal arn must be a role
+        # for inline/managed/assume role policies, principal arn must be a role
         if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
             log_data[
                 "message"
@@ -207,6 +214,8 @@ async def generate_request_from_change_model_array(
             await validate_assume_role_policy_change(
                 assume_role_policy_change, user, role
             )
+        for resource_tag_change in resource_tag_changes:
+            await validate_resource_tag_change(resource_tag_change, user, role)
 
     # TODO: validate resource policy logic when we are ready to apply that
 
@@ -216,6 +225,7 @@ async def generate_request_from_change_model_array(
         + managed_policy_changes
         + resource_policy_changes
         + assume_role_policy_changes
+        + resource_tag_changes
     )
     extended_request = ExtendedRequestModel(
         id=extended_request_uuid,
@@ -236,6 +246,7 @@ async def generate_request_from_change_model_array(
         cross_account=False,
         arn_url=arn_url,
     )
+    extended_request = await populate_old_policies(extended_request, user, role)
     extended_request = await generate_resource_policies(extended_request, user)
     return extended_request
 
@@ -372,7 +383,7 @@ async def validate_inline_policy_change(
         "request": change.dict(),
         "message": "Validating inline policy change",
     }
-    log.info(log_data)
+    log.debug(log_data)
     if (
         await invalid_characters_in_policy(change.policy.policy_document)
         or await invalid_characters_in_policy(change.policy_name)
@@ -402,6 +413,7 @@ async def validate_inline_policy_change(
         if (
             not change.new
             and change.policy.policy_document == existing_policy.get("PolicyDocument")
+            and change.policy_name == existing_policy.get("PolicyName")
             and change.action == Action.attach
         ):
             log_data[
@@ -475,6 +487,22 @@ async def validate_managed_policy_change(
     # TODO: check policy name is same what ARN claims
 
 
+async def validate_resource_tag_change(
+    change: ResourceTagChangeModel, user: str, role: ExtendedRoleModel
+):
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "arn": change.principal_arn,
+        "request": change.dict(),
+        "role": role,
+        "message": "Validating resource tag change",
+    }
+    log.debug(log_data)
+    # TODO: Add validation here
+    return
+
+
 async def validate_assume_role_policy_change(
     change: AssumeRolePolicyChangeModel, user: str, role: ExtendedRoleModel
 ):
@@ -485,7 +513,7 @@ async def validate_assume_role_policy_change(
         "request": change.dict(),
         "message": "Validating assume role policy change",
     }
-    log.info(log_data)
+    log.debug(log_data)
     if await invalid_characters_in_policy(
         change.policy.policy_document
     ) or await invalid_characters_in_policy(change.policy.version):
@@ -700,6 +728,58 @@ async def apply_changes_to_role(
                         + str(e),
                     )
                 )
+        elif change.change_type == "resource_tag":
+            if change.action == "update":
+                try:
+                    await sync_to_async(iam_client.tag_role)(
+                        RoleName=role_name,
+                        Tags=[{"Key": change.key, "Value": change.value}],
+                    )
+                    response.action_results.append(
+                        ActionResult(
+                            status="success",
+                            message=f"Successfully created or updated tag for role: {role_name}",
+                        )
+                    )
+                    change.status = Status.applied
+                except Exception as e:
+                    log_data["message"] = "Exception occurred creating or updating tag"
+                    log_data["error"] = str(e)
+                    log.error(log_data, exc_info=True)
+                    sentry_sdk.capture_exception()
+                    response.errors += 1
+                    response.action_results.append(
+                        ActionResult(
+                            status="error",
+                            message=f"Error occurred updating tag for role: {role_name}: "
+                            + str(e),
+                        )
+                    )
+            if change.action == "delete":
+                try:
+                    await sync_to_async(iam_client.untag_role)(
+                        RoleName=role_name, TagKeys=[change.key]
+                    )
+                    response.action_results.append(
+                        ActionResult(
+                            status="success",
+                            message=f"Successfully deleted tag for role: {role_name}",
+                        )
+                    )
+                    change.status = Status.applied
+                except Exception as e:
+                    log_data["message"] = "Exception occurred deleting tag"
+                    log_data["error"] = str(e)
+                    log.error(log_data, exc_info=True)
+                    sentry_sdk.capture_exception()
+                    response.errors += 1
+                    response.action_results.append(
+                        ActionResult(
+                            status="error",
+                            message=f"Error occurred deleting tag for role: {role_name}: "
+                            + str(e),
+                        )
+                    )
         else:
             # unsupported type for auto-application
             response.action_results.append(
@@ -720,7 +800,9 @@ async def apply_changes_to_role(
 
 
 async def populate_old_policies(
-    extended_request: ExtendedRequestModel, user: str
+    extended_request: ExtendedRequestModel,
+    user: str,
+    role: Optional[ExtendedRoleModel] = None,
 ) -> ExtendedRequestModel:
     """
     Populates the old policies for each inline policy.
@@ -751,9 +833,10 @@ async def populate_old_policies(
         return extended_request
 
     role_name = arn_parsed["resource_path"].split("/")[-1]
-    role = await get_role_details(
-        role_account_id, role_name=role_name, extended=True, force_refresh=True
-    )
+    if not role:
+        role = await get_role_details(
+            role_account_id, role_name=role_name, extended=True, force_refresh=True
+        )
 
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
