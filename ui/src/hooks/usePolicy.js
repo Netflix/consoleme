@@ -26,7 +26,7 @@ export const useInlinePolicy = ({ arn, policies = [] }) => {
             change_type: "inline_policy",
             new: newPolicy.new,
             policy_name: newPolicy.PolicyName,
-            action: "attach",
+            action: newPolicy.action || "attach",
             policy: {
               policy_document: newPolicy.PolicyDocument,
             },
@@ -70,6 +70,7 @@ export const useInlinePolicy = ({ arn, policies = [] }) => {
     justification,
     newPolicy.PolicyDocument,
     newPolicy.PolicyName,
+    newPolicy.action,
     newPolicy.new,
   ]);
 
@@ -80,6 +81,7 @@ export const useInlinePolicy = ({ arn, policies = [] }) => {
     currentPolicies,
     setPolicies,
     updatePolicy: (policy) => dispatch({ type: "UPDATE_POLICY", policy }),
+    deletePolicy: (policy) => dispatch({ type: "DELETE_POLICY", policy }),
     addPolicy: (newPolicy) => dispatch({ type: "ADD_POLICY", newPolicy }),
     removePolicy: (removePolicy) =>
       dispatch({ type: "REMOVE_POLICY", removePolicy }),

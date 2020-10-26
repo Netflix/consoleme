@@ -63,6 +63,7 @@ export const PolicyMonacoEditor = (props) => {
     policy,
     setAdminAutoApprove,
     updatePolicy,
+    deletePolicy,
     setOpenJustification,
   } = props;
   const [policyDocument, setPolicyDocument] = useState(
@@ -92,7 +93,12 @@ export const PolicyMonacoEditor = (props) => {
   };
 
   const handleDelete = (e) => {
-    console.log(e);
+    deletePolicy({
+      ...policy,
+      PolicyDocument: JSON.parse(policyDocument),
+    });
+    setAdminAutoApprove(true);
+    setOpenJustification(true);
   };
 
   return (

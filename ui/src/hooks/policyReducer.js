@@ -10,9 +10,9 @@ export const initialState = {
 };
 
 export const reducer = (state, action) => {
+  const { policy } = action;
   switch (action.type) {
     case "UPDATE_POLICY":
-      const { policy } = action;
       const newPolicies = state.currentPolicies.map((p) => {
         return p.PolicyName === policy.PolicyName ? policy : p;
       });
@@ -41,6 +41,16 @@ export const reducer = (state, action) => {
             (p) => p.PolicyName !== state.newPolicy.PolicyName
           ),
         ],
+      };
+    case "DELETE_POLICY":
+      policy.action = "detach";
+      policy.new = false;
+      policy.PolicyDocument = {
+        deleted: true,
+      };
+      return {
+        ...state,
+        newPolicy: policy,
       };
     case "UPDATE_INLINE_POLICIES":
       const { policies = [] } = action;
