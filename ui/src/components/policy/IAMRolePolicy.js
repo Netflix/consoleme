@@ -6,7 +6,7 @@ import InlinePolicy from "./InlinePolicy";
 import Issues from "./Issues";
 import Tags from "./Tags";
 
-const IAMRolePolicy = ({ resource, setIsLoaderActive }) => {
+const IAMRolePolicy = ({ resource }) => {
   const {
     arn = "",
     assume_role_policy_document = {},
@@ -34,7 +34,6 @@ const IAMRolePolicy = ({ resource, setIsLoaderActive }) => {
             <InlinePolicy
               arn={arn}
               policies={inline_policies}
-              setIsLoaderActive={setIsLoaderActive}
             />
           </Tab.Pane>
         );
@@ -48,7 +47,6 @@ const IAMRolePolicy = ({ resource, setIsLoaderActive }) => {
             <AssumeRolePolicy
               policies={assume_role_policy_document}
               arn={arn}
-              setIsLoaderActive={setIsLoaderActive}
             />
           </Tab.Pane>
         );
@@ -69,7 +67,7 @@ const IAMRolePolicy = ({ resource, setIsLoaderActive }) => {
       render: () => {
         return (
           <Tab.Pane>
-            <Tags tags={tags} setIsLoaderActive={setIsLoaderActive} />
+            <Tags tags={tags} />
           </Tab.Pane>
         );
       },

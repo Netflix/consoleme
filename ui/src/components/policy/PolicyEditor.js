@@ -9,38 +9,23 @@ import {
 } from "semantic-ui-react";
 import { useParams } from "react-router-dom";
 import { sendRequestCommon } from "../../helpers/utils";
-
 import IAMRolePolicy from "./IAMRolePolicy";
 import ResourcePolicy from "./ResourcePolicy";
 import ResourceDetail from "./ResourceDetail";
-
-const getPolicyEditorByService = (service) => {
-  switch (service) {
-    case "iamrole": {
-      return IAMRolePolicy;
-    }
-    default: {
-      return ResourcePolicy;
-    }
-  }
-};
+import { DeleteResourceModel } from "./PolicyModals";
 
 const PolicyEditor = () => {
   const { accountID, serviceType, region, resourceName } = useParams();
-
   const [resource, setResource] = useState({});
   const [isLoaderActive, setIsLoaderActive] = useState(true);
-  const [open, setOpen] = useState(false);
-
-  const EditPolicy = getPolicyEditorByService(serviceType);
+  const [toggleDelete, setToggleDelete] = useState(false);
 
   const onDeleteClick = () => {
-    setOpen(true);
+    setToggleDelete(true);
   };
 
   useEffect(() => {
     (async () => {
-      // TODO, query different endpoint based on serviceType
       const location = ((accountID, serviceType, region, resourceName) => {
         switch (serviceType) {
           case "iamrole": {
@@ -56,7 +41,7 @@ const PolicyEditor = () => {
             return `/api/v2/resources/${accountID}/sns/${region}/${resourceName}`;
           }
           default: {
-            throw "No such service exist";
+            throw new Error("No such service exist");
           }
         }
       })(accountID, serviceType, region, resourceName);
@@ -66,41 +51,44 @@ const PolicyEditor = () => {
     })();
   }, [accountID, region, resourceName, serviceType]);
 
+  const EditPolicy = serviceType === "iamrole" ? IAMRolePolicy :  ResourcePolicy;
+
   return (
-    <Dimmer.Dimmable as={Segment} dimmed={isLoaderActive}>
+    <Dimmer.Dimmable
+        as={Segment}
+        dimmed={isLoaderActive}
+    >
       <>
-        <Header as="h1" floated="left">
+        <Header
+            as="h1"
+            floated="left"
+        >
           Edit Policy for {`${resource.arn || ""}`}
         </Header>
-        <Button negative floated="right" onClick={onDeleteClick}>
+        <Button
+            negative
+            floated="right"
+            onClick={onDeleteClick}
+        >
           Delete
         </Button>
       </>
-      <ResourceDetail serviceType={serviceType} resource={resource} />
-      <EditPolicy resource={resource} setIsLoaderActive={setIsLoaderActive} />
-      <Modal
-        onClose={() => setOpen(false)}
-        onOpen={() => setOpen(true)}
-        open={open}
+      <ResourceDetail
+          resource={resource}
+          serviceType={serviceType}
+      />
+      <EditPolicy
+          resource={resource}
+      />
+      <DeleteResourceModel
+          toggle={toggleDelete}
+          setToggle={setToggleDelete}
+          resource={resource}
+      />
+      <Dimmer
+        active={isLoaderActive}
+        inverted
       >
-        <Modal.Header>Deleting the role {resource.name}</Modal.Header>
-        <Modal.Content image>
-          <Modal.Description>
-            <p>Are you sure to delete this role?</p>
-          </Modal.Description>
-        </Modal.Content>
-        <Modal.Actions>
-          <Button
-            content="Delete"
-            labelPosition="left"
-            icon="remove"
-            onClick={() => setOpen(false)}
-            negative
-          />
-          <Button onClick={() => setOpen(false)}>Cancel</Button>
-        </Modal.Actions>
-      </Modal>
-      <Dimmer inverted active={isLoaderActive}>
         <Loader />
       </Dimmer>
     </Dimmer.Dimmable>
