@@ -1188,61 +1188,6 @@ def clear_old_redis_iam_cache() -> bool:
     return True
 
 
-@app.task(soft_time_limit=1800)
-def get_inventory_of_iam_keys() -> dict:
-    """
-    This function will get all the AWS IAM Keys for all the IAM users in all the AWS accounts.
-    - Create an Array of IAM Access key ID
-    - Write this data to an S3 bucket
-    """
-    function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
-    log_data = {"function": function, "message": "Get inventory of IAM Keys"}
-    # First, get list of accounts
-    key_data = []
-    if not config.get("get_inventory_of_iam_keys.enabled"):
-        stats.count(f"{function}.success")
-        return {}
-    if (
-        config.region == config.get("celery.active_region")
-        and config.get("environment") == "prod"
-    ):
-        accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
-        for account_id in accounts_d.keys():
-            try:
-                iam_users = get_account_authorization_details(
-                    account_number=account_id,
-                    assume_role=config.get("policies.role_name"),
-                    region=config.region,
-                    filter="User",
-                )
-
-                for user in iam_users:
-                    kd = get_user_access_keys(
-                        account_number=account_id,
-                        assume_role=config.get("policies.role_name"),
-                        region=config.region,
-                        user=user,
-                    )
-                    for key_details in kd:
-                        key_data.append(key_details.get("AccessKeyId"))
-            except Exception as e:
-                log_data["error"] = e
-                log.error(log_data, exc_info=True)
-        put_object(
-            Bucket=config.get("get_inventory_of_iam_keys.bucket"),
-            assume_role=config.get("get_inventory_of_iam_keys.assume_role"),
-            account_number=config.get("get_inventory_of_iam_keys.account_number"),
-            region=config.get("get_inventory_of_iam_keys.region"),
-            Key=config.get("get_inventory_of_iam_keys.key"),
-            Body=json.dumps(key_data),
-            session_name=config.get("get_inventory_of_iam_keys.session_name"),
-        )
-    log_data["total_iam_access_key_id"] = len(key_data)
-    log.debug(log_data)
-    stats.count(f"{function}.success")
-    return log_data
-
-
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_resources_from_aws_config_for_account(account_id) -> dict:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
@@ -1550,11 +1495,6 @@ schedule = {
         "task": "consoleme.celery.celery_tasks.cache_audit_table_details",
         "options": {"expires": 300},
         "schedule": schedule_5_minutes,
-    },
-    "get_inventory_of_iam_keys": {
-        "task": "consoleme.celery.celery_tasks.get_inventory_of_iam_keys",
-        "options": {"expires": 300},
-        "schedule": schedule_24_hours,
     },
     "get_iam_role_limit": {
         "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
