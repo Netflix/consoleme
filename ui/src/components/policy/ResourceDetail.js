@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Table } from 'semantic-ui-react';
+import { usePolicyContext } from "./hooks/PolicyProvider";
 
-
-const ResourceDetail = ({ serviceType = "", resource = {} }) => {
+const ResourceDetail = () => {
+    const { params = {}, resource = {} } = usePolicyContext();
+    const { serviceType = "iamrole" } = params;
     const {
         account_id,
         account_name,

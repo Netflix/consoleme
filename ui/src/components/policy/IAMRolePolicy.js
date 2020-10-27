@@ -1,15 +1,16 @@
 import React from "react";
 import { Label, Tab } from "semantic-ui-react";
+import { usePolicyContext } from "./hooks/PolicyProvider";
 import AssumeRolePolicy from "./AssumeRolePolicy";
 import ManagedPolicy from "./ManagedPolicy";
 import InlinePolicy from "./InlinePolicy";
 import Issues from "./Issues";
 import Tags from "./Tags";
 
-const IAMRolePolicy = ({ resource }) => {
+const IAMRolePolicy = () => {
+  const { resource = {} } = usePolicyContext();
   const {
     arn = "",
-    assume_role_policy_document = {},
     cloudtrail_details = {},
     inline_policies = [],
     managed_policies = [],
@@ -31,10 +32,7 @@ const IAMRolePolicy = ({ resource }) => {
       render: () => {
         return (
           <Tab.Pane>
-            <InlinePolicy
-              arn={arn}
-              policies={inline_policies}
-            />
+            <InlinePolicy />
           </Tab.Pane>
         );
       },
@@ -44,10 +42,7 @@ const IAMRolePolicy = ({ resource }) => {
       render: () => {
         return (
           <Tab.Pane>
-            <AssumeRolePolicy
-              policies={assume_role_policy_document}
-              arn={arn}
-            />
+            <AssumeRolePolicy />
           </Tab.Pane>
         );
       },

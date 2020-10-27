@@ -7,6 +7,7 @@ import {
 } from "../../helpers/utils";
 import * as monaco from "monaco-editor";
 import { templateOptions } from "./policyTemplates";
+import { usePolicyContext } from "./hooks/PolicyProvider";
 
 monaco.languages.registerCompletionItemProvider("json", {
   triggerCharacters: getMonacoTriggerCharacters(),
@@ -58,14 +59,14 @@ const editorDidMount = (editor) => {
   });
 };
 
-export const PolicyMonacoEditor = (props) => {
+export const PolicyMonacoEditor = ({ policy }) => {
   const {
-    policy,
-    setAdminAutoApprove,
-    updatePolicy,
     deletePolicy,
-    setOpenJustification,
-  } = props;
+    updatePolicy,
+    setAdminAutoApprove,
+    setTogglePolicyModal,
+  } = usePolicyContext();
+
   const [policyDocument, setPolicyDocument] = useState(
     JSON.stringify(policy.PolicyDocument, null, "\t")
   );
@@ -80,7 +81,7 @@ export const PolicyMonacoEditor = (props) => {
       PolicyDocument: JSON.parse(policyDocument),
     });
     setAdminAutoApprove(true);
-    setOpenJustification(true);
+    setTogglePolicyModal(true);
   };
 
   const handlePolicySubmit = (e) => {
@@ -89,7 +90,7 @@ export const PolicyMonacoEditor = (props) => {
       PolicyDocument: JSON.parse(policyDocument),
     });
     setAdminAutoApprove(false);
-    setOpenJustification(true);
+    setTogglePolicyModal(true);
   };
 
   const handleDelete = (e) => {
@@ -98,7 +99,7 @@ export const PolicyMonacoEditor = (props) => {
       PolicyDocument: JSON.parse(policyDocument),
     });
     setAdminAutoApprove(true);
-    setOpenJustification(true);
+    setTogglePolicyModal(true);
   };
 
   return (
@@ -151,13 +152,13 @@ export const PolicyMonacoEditor = (props) => {
   );
 };
 
-export const NewPolicyMonacoEditor = (props) => {
+export const NewPolicyMonacoEditor = () => {
   const {
-    setNewPolicy,
-    cancelInlinePolicy,
+    addPolicy,
+    setIsNewPolicy,
     setAdminAutoApprove,
-    setOpenJustification,
-  } = props;
+    setTogglePolicyModal,
+  } = usePolicyContext();
 
   const [newPolicyName, setNewPolicyName] = useState("");
   const [policyDocument, setPolicyDocument] = useState(
@@ -174,21 +175,21 @@ export const NewPolicyMonacoEditor = (props) => {
   };
 
   const handlePolicyAdminSave = (e) => {
-    setNewPolicy({
+    addPolicy({
       PolicyName: newPolicyName,
       PolicyDocument: JSON.parse(policyDocument),
     });
     setAdminAutoApprove(true);
-    setOpenJustification(true);
+    setTogglePolicyModal(true);
   };
 
   const handlePolicySubmit = (e) => {
-    setNewPolicy({
+    addPolicy({
       PolicyName: newPolicyName,
       PolicyDocument: JSON.parse(policyDocument),
     });
     setAdminAutoApprove(false);
-    setOpenJustification(true);
+    setTogglePolicyModal(true);
   };
 
   const onTemplateChange = (e, { value }) => {
@@ -254,7 +255,7 @@ export const NewPolicyMonacoEditor = (props) => {
           negative
           icon="remove"
           content="Cancel"
-          onClick={cancelInlinePolicy}
+          onClick={setIsNewPolicy}
         />
       </Button.Group>
     </>

@@ -3,20 +3,14 @@ import { BrowserRouter, Redirect, Route, Switch } from "react-router-dom";
 
 import AuthProvider from "./auth/AuthProvider";
 import ProtectedRoute from "./auth/ProtectedRoute";
-
-
 import ConsoleMeDataTable from "./components/ConsoleMeDataTable";
 import ConsoleMeSelfService from "./components/SelfService";
 import ConsoleMeDynamicConfig from "./components/DynamicConfig";
 import PolicyRequestReview from "./components/PolicyRequestsReview";
 import PolicyEditor from "./components/policy/PolicyEditor";
 
-// import ConsoleMeCatalog from "./components/Catalog";
-// import ConsoleMeLogin from "./components/Login";
-
 const LOCAL_KEY = "consoleMeLocalStorage";
 
-// TODO(heewonk), come up with better 404 page
 const NoMatch = ({ location }) => (
   <h3>
     No match for <code>{location.pathname}</code>

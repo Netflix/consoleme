@@ -1,38 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Accordion, Button, Header, Segment } from "semantic-ui-react";
 import { Link } from "react-router-dom";
-import {
-  PolicyMonacoEditor,
-  NewPolicyMonacoEditor,
-} from "./PolicyMonacoEditor";
+
+import { usePolicyContext } from "./hooks/PolicyProvider";
+import { PolicyMonacoEditor, NewPolicyMonacoEditor } from "./PolicyMonacoEditor";
 import { JustificationModal } from "./PolicyModals";
-import { useInlinePolicy } from "../../hooks/usePolicy";
 
-const InlinePolicy = ({ arn = "", policies = [] }) => {
+const InlinePolicy = () => {
   const {
-    currentPolicies,
-    newPolicy,
-    addPolicy,
-    removePolicy,
-    setAdminAutoApprove,
-    justification,
-    setJustification,
-    updatePolicy,
-    deletePolicy,
-    handlePolicySubmit,
-  } = useInlinePolicy({ arn, policies });
-
-  const [activeIndex, setActiveIndex] = useState([]);
-  const [isNewPolicy, setIsNewPolicy] = useState(false);
-  const [openJustification, setOpenJustification] = useState(false);
+    activeIndex = [],
+    inlinePolicies = [],
+    isNewPolicy = false,
+    resource = {},
+    setActiveIndex,
+    setIsNewPolicy,
+  } = usePolicyContext();
 
   const addInlinePolicy = () => {
     setIsNewPolicy(true);
-  };
-
-  const cancelInlinePolicy = () => {
-    // TODO, do more clean up
-    setIsNewPolicy(false);
   };
 
   const onTitleClick = (e, { index }) => {
@@ -43,25 +28,13 @@ const InlinePolicy = ({ arn = "", policies = [] }) => {
     }
   };
 
-  useEffect(() => {
-    setActiveIndex([...Array(currentPolicies.length).keys()]);
-  }, [currentPolicies]);
-
-  const panels = currentPolicies.map((policy) => {
+  const panels = inlinePolicies.map((policy) => {
     return {
       key: policy.PolicyName,
       title: policy.PolicyName,
       content: {
-        content: (
-          <PolicyMonacoEditor
-            policy={policy}
-            setAdminAutoApprove={setAdminAutoApprove}
-            updatePolicy={updatePolicy}
-            deletePolicy={deletePolicy}
-            setOpenJustification={setOpenJustification}
-          />
-        ),
-      },
+        content: <PolicyMonacoEditor policy={policy} />
+      }
     };
   });
 
@@ -70,16 +43,8 @@ const InlinePolicy = ({ arn = "", policies = [] }) => {
       key: "new_policy",
       title: "New Policy",
       content: {
-        content: (
-          <NewPolicyMonacoEditor
-            policy={newPolicy}
-            setAdminAutoApprove={setAdminAutoApprove}
-            setNewPolicy={addPolicy}
-            cancelInlinePolicy={cancelInlinePolicy}
-            setOpenJustification={setOpenJustification}
-          />
-        ),
-      },
+        content: <NewPolicyMonacoEditor />
+      }
     });
   }
 
@@ -107,7 +72,7 @@ const InlinePolicy = ({ arn = "", policies = [] }) => {
           <Button
             as={Link}
             disabled={false}
-            to={`/ui/selfservice?arn=${encodeURIComponent(arn)}`}
+            to={`/ui/selfservice?arn=${encodeURIComponent(resource.arn)}`}
             primary
           >
             Policy Wizard
@@ -122,14 +87,7 @@ const InlinePolicy = ({ arn = "", policies = [] }) => {
         panels={panels}
         styled
       />
-      <JustificationModal
-        justification={justification}
-        setJustification={setJustification}
-        openJustification={openJustification}
-        setOpenJustification={setOpenJustification}
-        removePolicy={removePolicy}
-        handleSubmit={handlePolicySubmit}
-      />
+      <JustificationModal />
     </>
   );
 };

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Icon, Header, Message, Segment } from "semantic-ui-react";
 import MonacoEditor from "react-monaco-editor";
 import { sendRequestCommon } from "../../helpers/utils";
+import { usePolicyContext } from "./hooks/PolicyProvider";
 
 const editorOptions = {
   selectOnLineNumbers: true,
@@ -13,8 +14,13 @@ const editorOptions = {
   automaticLayout: true,
 };
 
-const AssumeRolePolicy = ({ policies = "", arn = "" }) => {
-  const [adminAutoApprove, setAdminAutoApprove] = useState(true);
+const AssumeRolePolicy = () => {
+  const {
+    resource = {},
+    adminAutoApprove,
+    setAdminAutoApprove
+  } = usePolicyContext();
+  const { arn, assume_role_policy_document } = resource;
   const [assumeRolePolicy, setAssumeRolePolicy] = useState("");
 
   const onEditChange = (e, d) => {
@@ -26,6 +32,7 @@ const AssumeRolePolicy = ({ policies = "", arn = "" }) => {
     setAdminAutoApprove(true);
     await handleAssumeRolePolicySubmit();
   };
+
   const handleAssumeRolePolicySubmit = async () => {
     if (!assumeRolePolicy) {
       // TODO: Show error to end-user
@@ -49,8 +56,8 @@ const AssumeRolePolicy = ({ policies = "", arn = "" }) => {
         ],
       },
     };
+
     const response = await sendRequestCommon(requestV2, "/api/v2/request");
-    console.log(response);
 
     // EXAMPLE RESPONSE:
     // {"errors": 0, "request_created": true, "request_id": "63478ecd-37ac-490b-a87f-8194e52dbc40", "request_url": "/policies/request/63478ecd-37ac-490b-a87f-8194e52dbc40", "action_results": []}
@@ -94,7 +101,7 @@ const AssumeRolePolicy = ({ policies = "", arn = "" }) => {
           height="540px"
           language="yaml"
           theme="vs-dark"
-          defaultValue={JSON.stringify(policies, null, "\t")}
+          defaultValue={JSON.stringify(assume_role_policy_document, null, "\t")}
           onChange={onEditChange}
           options={editorOptions}
           textAlign="center"
