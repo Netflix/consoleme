@@ -24,6 +24,7 @@ import {
   sendRequestCommon,
   updateRequestStatus,
 } from "../helpers/utils";
+import ResourceTagChangeComponent from "./blocks/ResourceTagChangeComponent";
 
 class PolicyRequestReview extends Component {
   constructor(props) {
@@ -311,6 +312,18 @@ class PolicyRequestReview extends Component {
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}
                   updatePolicyDocument={this.updatePolicyDocument}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
+                />
+              );
+            }
+            if (change.change_type === "resource_tag") {
+              return (
+                <ResourceTagChangeComponent
+                  change={change}
+                  config={requestConfig}
+                  requestReadOnly={requestReadOnly}
+                  updateTag={this.updateTag}
                   reloadDataFromBackend={this.reloadDataFromBackend}
                   requestID={requestID}
                 />

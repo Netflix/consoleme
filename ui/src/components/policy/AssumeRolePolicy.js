@@ -18,7 +18,7 @@ const AssumeRolePolicy = () => {
   const {
     resource = {},
     adminAutoApprove,
-    setAdminAutoApprove
+    setAdminAutoApprove,
   } = usePolicyContext();
   const { arn, assume_role_policy_document } = resource;
   const [assumeRolePolicy, setAssumeRolePolicy] = useState("");
@@ -99,7 +99,7 @@ const AssumeRolePolicy = () => {
       >
         <MonacoEditor
           height="540px"
-          language="yaml"
+          language="json"
           theme="vs-dark"
           defaultValue={JSON.stringify(assume_role_policy_document, null, "\t")}
           onChange={onEditChange}

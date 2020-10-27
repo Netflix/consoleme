@@ -166,7 +166,9 @@ export const NewPolicyMonacoEditor = () => {
   );
 
   const onEditChange = (value) => {
-    setPolicyDocument(JSON.stringify(JSON.parse(value), null, "\t"));
+    try {
+      setPolicyDocument(JSON.stringify(JSON.parse(value), null, "\t"));
+    } catch {}
   };
 
   const handleChangeNewPolicyName = (e) => {

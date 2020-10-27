@@ -5,10 +5,10 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 const ConsoleMeHeader = () => {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
 
   if (!user) {
-    return null;
+    login();
   }
 
   const generatePoliciesDropDown = () => {

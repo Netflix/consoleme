@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
 
 export const useApi = (url, options = {}) => {
-  const { isAuthenticated, login } = useAuth();
+  const { login } = useAuth();
   const [state, setState] = useState({
     error: null,
     loading: true,
@@ -12,10 +12,6 @@ export const useApi = (url, options = {}) => {
 
   useEffect(() => {
     (async () => {
-      if (!isAuthenticated()) {
-        await login();
-      }
-
       try {
         const xsrf = Cookies.get("_xsrf");
         const { body, headers, method = "get", ...fetchOptions } = options;

@@ -30,7 +30,7 @@ export const reducer = (state, action) => {
         ...state,
         newPolicy: {
           ...action.policy,
-          new: true,
+          new: false,
         },
       };
     case "DELETE_POLICY":
@@ -42,8 +42,8 @@ export const reducer = (state, action) => {
           new: false,
           PolicyDocument: {
             deleted: true,
-          }
-        }
+          },
+        },
       };
     case "SET_ACTIVE_INDEX":
       return {
@@ -54,7 +54,7 @@ export const reducer = (state, action) => {
       return {
         ...state,
         isNewPolicy: action.isNewPolicy,
-      }
+      };
     case "TOGGLE_POLICY_MODAL":
       return {
         ...state,

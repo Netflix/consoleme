@@ -317,7 +317,7 @@ class RequestHandler(BaseAPIV2Handler):
                 f"{log_data['function']}.validation_exception", tags={"user": self.user}
             )
             self.write_error(400, message="Error validating input: " + str(e))
-            raise  # TODO REVERT
+            return
         except Exception as e:
             log_data["message"] = "Unknown Exception occurred while parsing request"
             log.error(log_data, exc_info=True)
@@ -495,7 +495,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
         except InvalidRequestParameter as e:
             sentry_sdk.capture_exception(tags={"user": self.user})
             self.write_error(400, message="Error validating input: " + str(e))
-            raise  # TODO REVERT
+            return
         except NoMatchingRequest as e:
             sentry_sdk.capture_exception(tags={"user": self.user})
             self.write_error(404, message="Error getting request:" + str(e))
@@ -586,7 +586,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
                 f"{log_data['function']}.validation_exception", tags={"user": self.user}
             )
             self.write_error(400, message="Error validating input: " + str(e))
-            raise  # TODO REVERT
+            return
         except Unauthorized as e:
             log_data["message"] = "Unauthorized"
             log.error(log_data, exc_info=True)
