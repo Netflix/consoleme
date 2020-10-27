@@ -1,6 +1,7 @@
 # Table of contents
 
 * [About](README.md)
+* [Readme](readme.md)
 * [Architecture](architecture.md)
 * [Quick Start](quick-start/README.md)
   * [Exercises](quick-start/exercises/README.md)
