@@ -67,6 +67,7 @@ from consoleme.models import (
     ResourcePolicyChangeModel,
     ResourceTagChangeModel,
     Status,
+    TagAction,
     UpdateChangeModificationModel,
     UserModel,
 )
@@ -729,7 +730,8 @@ async def apply_changes_to_role(
                     )
                 )
         elif change.change_type == "resource_tag":
-            if change.action == "update":
+            if change.tag_action in [TagAction.create, TagAction.update]:
+                # TODO: Support more resource types in the future
                 try:
                     await sync_to_async(iam_client.tag_role)(
                         RoleName=role_name,
@@ -741,6 +743,16 @@ async def apply_changes_to_role(
                             message=f"Successfully created or updated tag for role: {role_name}",
                         )
                     )
+                    if change.original_key:
+                        await sync_to_async(iam_client.untag_role)(
+                            RoleName=role_name, TagKeys=[change.original_key]
+                        )
+                        response.action_results.append(
+                            ActionResult(
+                                status="success",
+                                message=f"Successfully renamed tag {change.original_key} to {change.key}.",
+                            )
+                        )
                     change.status = Status.applied
                 except Exception as e:
                     log_data["message"] = "Exception occurred creating or updating tag"
@@ -755,7 +767,7 @@ async def apply_changes_to_role(
                             + str(e),
                         )
                     )
-            if change.action == "delete":
+            if change.tag_action == TagAction.delete:
                 try:
                     await sync_to_async(iam_client.untag_role)(
                         RoleName=role_name, TagKeys=[change.key]

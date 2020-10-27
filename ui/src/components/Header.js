@@ -9,6 +9,7 @@ const ConsoleMeHeader = () => {
 
   if (!user) {
     login();
+    return <> </>;
   }
 
   const generatePoliciesDropDown = () => {

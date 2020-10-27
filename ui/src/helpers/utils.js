@@ -280,6 +280,57 @@ export function updateRequestStatus(command) {
   );
 }
 
+export async function sendProposedPolicyWithHooks(
+  command,
+  change,
+  newStatement,
+  requestID,
+  setIsLoading,
+  setButtonResponseMessage,
+  reloadDataFromBackend
+) {
+  setIsLoading(true);
+  const request = {
+    modification_model: {
+      command,
+      change_id: change.id,
+    },
+  };
+  if (newStatement) {
+    request.modification_model.policy_document = JSON.parse(newStatement);
+  }
+  await sendRequestCommon(request, "/api/v2/requests/" + requestID, "PUT").then(
+    (response) => {
+      if (
+        response.status === 403 ||
+        response.status === 400 ||
+        response.status === 500
+      ) {
+        // Error occurred making the request
+        setIsLoading(false);
+        setButtonResponseMessage([
+          {
+            status: "error",
+            message: response.message,
+          },
+        ]);
+      } else {
+        // Successful request
+        setIsLoading(false);
+        setButtonResponseMessage(
+          response.action_results.reduce((resultsReduced, result) => {
+            if (result.visible === true) {
+              resultsReduced.push(result);
+            }
+            return resultsReduced;
+          }, [])
+        );
+        reloadDataFromBackend();
+      }
+    }
+  );
+}
+
 export function sendProposedPolicy(command) {
   const { change, newStatement, requestID } = this.state;
   this.setState(
