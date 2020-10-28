@@ -3,7 +3,10 @@ import { Accordion, Button, Header, Segment } from "semantic-ui-react";
 import { Link } from "react-router-dom";
 
 import { usePolicyContext } from "./hooks/PolicyProvider";
-import { PolicyMonacoEditor, NewPolicyMonacoEditor } from "./PolicyMonacoEditor";
+import {
+  PolicyMonacoEditor,
+  NewPolicyMonacoEditor,
+} from "./PolicyMonacoEditor";
 import { JustificationModal } from "./PolicyModals";
 
 const InlinePolicy = () => {
@@ -14,6 +17,7 @@ const InlinePolicy = () => {
     resource = {},
     setActiveIndex,
     setIsNewPolicy,
+    setPolicyType,
   } = usePolicyContext();
 
   const addInlinePolicy = () => {
@@ -33,8 +37,10 @@ const InlinePolicy = () => {
       key: policy.PolicyName,
       title: policy.PolicyName,
       content: {
-        content: <PolicyMonacoEditor policy={policy} />
-      }
+        content: (
+          <PolicyMonacoEditor policy={policy} policyType={"inline_policy"} />
+        ),
+      },
     };
   });
 
@@ -43,8 +49,8 @@ const InlinePolicy = () => {
       key: "new_policy",
       title: "New Policy",
       content: {
-        content: <NewPolicyMonacoEditor />
-      }
+        content: <NewPolicyMonacoEditor policyType={"inline_policy"} />,
+      },
     });
   }
 

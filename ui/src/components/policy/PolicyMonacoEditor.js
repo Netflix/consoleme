@@ -59,12 +59,13 @@ const editorDidMount = (editor) => {
   });
 };
 
-export const PolicyMonacoEditor = ({ policy }) => {
+export const PolicyMonacoEditor = ({ policy, policyType }) => {
   const {
     deletePolicy,
     updatePolicy,
     setAdminAutoApprove,
     setTogglePolicyModal,
+    setPolicyType,
   } = usePolicyContext();
 
   const [policyDocument, setPolicyDocument] = useState(
@@ -82,6 +83,7 @@ export const PolicyMonacoEditor = ({ policy }) => {
     });
     setAdminAutoApprove(true);
     setTogglePolicyModal(true);
+    setPolicyType(policyType);
   };
 
   const handlePolicySubmit = (e) => {
@@ -91,6 +93,7 @@ export const PolicyMonacoEditor = ({ policy }) => {
     });
     setAdminAutoApprove(false);
     setTogglePolicyModal(true);
+    setPolicyType(policyType);
   };
 
   const handleDelete = (e) => {
@@ -100,6 +103,7 @@ export const PolicyMonacoEditor = ({ policy }) => {
     });
     setAdminAutoApprove(true);
     setTogglePolicyModal(true);
+    setPolicyType(policyType);
   };
 
   return (
@@ -140,24 +144,32 @@ export const PolicyMonacoEditor = ({ policy }) => {
           content="Submit"
           onClick={handlePolicySubmit}
         />
-        <Button.Or />
-        <Button
-          negative
-          icon="remove"
-          content="Delete"
-          onClick={handleDelete}
-        />
+        {
+          // Show delete button for inline policies only
+          policyType === "inline_policy" ? (
+            <>
+              <Button.Or />
+              <Button
+                negative
+                icon="remove"
+                content="Delete"
+                onClick={handleDelete}
+              />{" "}
+            </>
+          ) : null
+        }
       </Button.Group>
     </>
   );
 };
 
-export const NewPolicyMonacoEditor = () => {
+export const NewPolicyMonacoEditor = (policyType) => {
   const {
     addPolicy,
     setIsNewPolicy,
     setAdminAutoApprove,
     setTogglePolicyModal,
+    setPolicyType,
   } = usePolicyContext();
 
   const [newPolicyName, setNewPolicyName] = useState("");
@@ -183,6 +195,7 @@ export const NewPolicyMonacoEditor = () => {
     });
     setAdminAutoApprove(true);
     setTogglePolicyModal(true);
+    setPolicyType(policyType);
   };
 
   const handlePolicySubmit = (e) => {
@@ -192,6 +205,7 @@ export const NewPolicyMonacoEditor = () => {
     });
     setAdminAutoApprove(false);
     setTogglePolicyModal(true);
+    setPolicyType(policyType);
   };
 
   const onTemplateChange = (e, { value }) => {

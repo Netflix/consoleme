@@ -10,6 +10,7 @@ export const initialState = {
   requestId: "",
   togglePolicyModal: false,
   inlinePolicies: [],
+  policyType: "",
 };
 
 export const reducer = (state, action) => {
@@ -66,6 +67,13 @@ export const reducer = (state, action) => {
         ...state,
         adminAutoApprove: approve,
       };
+    case "SET_POLICY_TYPE":
+      const { policyType = "inline_policy" } = action;
+      return {
+        ...state,
+        policyType: policyType,
+      };
+
     case "SET_JUSTIFICATION":
       return {
         ...state,
