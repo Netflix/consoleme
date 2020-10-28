@@ -1,65 +1,145 @@
-import React from 'react';
-import {
-    Header,
-    Table
-} from 'semantic-ui-react';
+import React from "react";
+import { Header, Table } from "semantic-ui-react";
 
+const Issues = ({ cloudtrail = [], s3 = [] }) => {
+  const cloudTrailErrors = () => {
+    if (cloudtrail.errors.cloudtrail_errors.length > 0) {
+      const header = (
+        <Table.Header>
+          <Table.Row>
+            <Table.HeaderCell>Error Call</Table.HeaderCell>
+            <Table.HeaderCell>Count</Table.HeaderCell>
+          </Table.Row>
+        </Table.Header>
+      );
 
-const Issues = ({ cloudtrail = [], s3 = []}) => {
-    return (
+      let rows = [];
+      cloudtrail.errors.cloudtrail_errors.forEach((error) => {
+        rows.push(
+          <Table.Row negative>
+            <Table.Cell>{error.event_call}</Table.Cell>
+            <Table.Cell>{error.count}</Table.Cell>
+          </Table.Row>
+        );
+      });
+      const errorLink = () => {
+        if (cloudtrail.error_url) {
+          return (
+            <>
+              {"("}
+              <a href={cloudtrail.error_url} target={"_blank"}>
+                Click here to see logs
+              </a>
+              {")"}
+            </>
+          );
+        }
+        return null;
+      };
+      return (
         <>
-            <Header as="h2">
-                <Header.Content>
-                    Recent Permission Errors (Click here to see logs)
-                    <Header.Subheader>
-                        This section shows the permission errors discovered for this role in the last 24 hours. This data originated from CloudTrail.
-                    </Header.Subheader>
-                </Header.Content>
-            </Header>
-            <Table celled>
-                <Table.Header>
-                    <Table.Row>
-                        <Table.HeaderCell>Error Call</Table.HeaderCell>
-                        <Table.HeaderCell>Count</Table.HeaderCell>
-                    </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                    <Table.Row negative>
-                        <Table.Cell>lambda:GetPolicy20150331v2</Table.Cell>
-                        <Table.Cell>48</Table.Cell>
-                    </Table.Row>
-                </Table.Body>
-            </Table>
-            <Header as="h2">
-                Recent S3 Errors (Click here to query for recent S3 errors)
-                <Header.Subheader>
-                    This section shows the permission errors discovered for this role in the last 24 hours. This data originated from CloudTrail.
-                </Header.Subheader>
-            </Header>
-            <Table celled>
-                <Table.Header>
-                    <Table.Row>
-                        <Table.HeaderCell>Error Call</Table.HeaderCell>
-                        <Table.HeaderCell>Count</Table.HeaderCell>
-                        <Table.HeaderCell>Bucket Name</Table.HeaderCell>
-                        <Table.HeaderCell>Bucket Prefix</Table.HeaderCell>
-                        <Table.HeaderCell>Error Status</Table.HeaderCell>
-                        <Table.HeaderCell>Error Code</Table.HeaderCell>
-                    </Table.Row>
-                </Table.Header>
-                <Table.Body>
-                    <Table.Row negative>
-                        <Table.Cell>s3:PutObject</Table.Cell>
-                        <Table.Cell>14</Table.Cell>
-                        <Table.Cell>nflx-awsconfig-bunkerprod-sa-east-1</Table.Cell>
-                        <Table.Cell>nflx-awsconfig-bunkerprod-sa-east-1/AWSLogs/388300705741/Config</Table.Cell>
-                        <Table.Cell>403</Table.Cell>
-                        <Table.Cell>AccessDenied</Table.Cell>
-                    </Table.Row>
-                </Table.Body>
-            </Table>
+          <Header as="h2">
+            Recent Permission Errors {errorLink()}
+            <Header.Subheader>
+              This section shows Cloudtrail permission errors discovered for
+              this role in the last 24 hours.
+            </Header.Subheader>
+          </Header>
+          <Table celled>
+            {header}
+            <Table.Body>{rows}</Table.Body>
+          </Table>
         </>
-    );
+      );
+    } else
+      return (
+        <>
+          <Header as="h2">
+            No Cloudtrail Errors
+            <Header.Subheader>
+              We didn't find recent Cloudtrail errors associated with this role.
+            </Header.Subheader>
+          </Header>
+        </>
+      );
+  };
+
+  const s3Errors = () => {
+    if (s3.errors.s3_errors.length > 0) {
+      const header = (
+        <Table.Header>
+          <Table.Row>
+            <Table.HeaderCell>Error Call</Table.HeaderCell>
+            <Table.HeaderCell>Count</Table.HeaderCell>
+            <Table.HeaderCell>Bucket Name</Table.HeaderCell>
+            <Table.HeaderCell>Bucket Prefix</Table.HeaderCell>
+            <Table.HeaderCell>Error Status</Table.HeaderCell>
+            <Table.HeaderCell>Error Code</Table.HeaderCell>
+          </Table.Row>
+        </Table.Header>
+      );
+      let rows = [];
+      s3.errors.s3_errors.forEach((error) => {
+        rows.push(
+          <Table.Row negative>
+            <Table.Cell>{error.error_call}</Table.Cell>
+            <Table.Cell>{error.count}</Table.Cell>
+            <Table.Cell>{error.bucket_name}</Table.Cell>
+            <Table.Cell>{error.request_prefix}</Table.Cell>
+            <Table.Cell>{error.status_code}</Table.Cell>
+            <Table.Cell>{error.status_text}</Table.Cell>
+          </Table.Row>
+        );
+      });
+
+      const errorLink = () => {
+        if (s3.error_url) {
+          return (
+            <>
+              {"("}
+              <a href={s3.error_url} target={"_blank"}>
+                Click here to see logs
+              </a>
+              {")"}
+            </>
+          );
+        }
+      };
+
+      return (
+        <>
+          <Header as="h2">
+            Recent S3 Errors {errorLink()}
+            <Header.Subheader>
+              This section shows the top S3 permission errors discovered for
+              this role in the last 24 hours.
+            </Header.Subheader>
+          </Header>
+          <Table celled>
+            {header}
+            <Table.Body>{rows}</Table.Body>
+          </Table>
+        </>
+      );
+    } else
+      return (
+        <>
+          <Header as="h2">
+            No S3 Errors
+            <Header.Subheader>
+              We didn't find any recent S3 errors associated with this role.
+            </Header.Subheader>
+          </Header>
+        </>
+      );
+  };
+
+  return (
+    <>
+      {cloudTrailErrors()}
+      {s3Errors()}
+    </>
+  );
 };
 
 export default Issues;

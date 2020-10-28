@@ -82,9 +82,11 @@ async def get_s3_details_for_role(account_id: str, role_name: str) -> S3DetailsM
                 count=error["count"],
                 bucket_name=error["bucket_name"],
                 request_prefix=error["request_prefix"],
-                operation=error["operation"],
-                error_status=error["error_status"],
-                error_code=error["error_code"],
+                error_call=error["operation"],
+                status_code=error[
+                    "error_status"
+                ],  # TODO: Fix the ambiguity with status_code and status_text
+                status_text=error["error_code"],
                 role_arn=arn,
             )
         )

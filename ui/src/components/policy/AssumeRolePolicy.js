@@ -82,13 +82,22 @@ const AssumeRolePolicy = () => {
       <Header as="h2">
         Assume Role Policy Document
         <Header.Subheader>
-          You can add/edit/delete assume role policy for this role from here.
+          You can modify this role's assume role policy here.
         </Header.Subheader>
       </Header>
       <Message warning attached="top">
         <Icon name="warning" />
-        Make sure the roles that assume this role are carefully reviewed and
-        have sts:assumerole permission.
+        Other roles that need to assume this role must have an
+        <a
+          href={
+            "https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_control-access_enable-create.html"
+          }
+          target={"_blank"}
+        >
+          {" "}
+          sts:AssumeRole
+        </a>{" "}
+        allowance for this role.
       </Message>
       <Segment
         attached
