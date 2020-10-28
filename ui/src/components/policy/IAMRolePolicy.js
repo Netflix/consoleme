@@ -15,7 +15,6 @@ const IAMRolePolicy = () => {
     inline_policies = [],
     managed_policies = [],
     s3_details = {},
-    tags = [],
   } = resource;
 
   const tabs = [
@@ -62,7 +61,7 @@ const IAMRolePolicy = () => {
       render: () => {
         return (
           <Tab.Pane>
-            <Tags tags={tags} />
+            <Tags />
           </Tab.Pane>
         );
       },

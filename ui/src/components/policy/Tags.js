@@ -1,109 +1,126 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Button, Form, Header, Segment } from "semantic-ui-react";
+import { usePolicyContext } from "./hooks/PolicyProvider";
 
-const Tags = ({ tags = [] }) => {
-  const [tagPanels, setTagPanels] = useState([]);
-  const [Tags, setTags] = useState(JSON.parse(JSON.stringify(tags)));
-  const originalTags = JSON.parse(JSON.stringify(tags));
+const Tags = () => {
+    const {
+        tags = [],
+        isNewTag = false,
+        createTag,
+        updateTag,
+        deleteTag,
+        tagChanges,
+        toggleNewTag,
+    } = usePolicyContext();
+    const [newTag, setNewTag] = useState({ Key: "", Value: "" });
 
-  const createNewTag = () => {
-    Tags.push({
-      Key: "",
-      Value: "",
+    const onCreateTag = () => {
+        toggleNewTag(true);
+    };
+
+    const onDeleteTag = (key) => {
+        deleteTag(key);
+    };
+
+    const onUpdateTagValue = (key, { target: { value } }) => {
+        updateTag({ Key: key, Value: value });
+    };
+
+    const onSaveTags = () => {
+        console.log(tagChanges);
+    };
+
+    const tagList = tags.map(tag => {
+        return (
+            <Form.Group key={tag.Key} inline>
+                <Form.Input
+                    label="Key"
+                    placeholder="Key"
+                    value={tag.Key}
+                    onChange={onUpdateTagValue.bind(this, tag.Key)}
+                />
+                <Form.Input
+                    label="Value"
+                    placeholder="Value"
+                    defaultValue={tag.Value}
+                    onChange={onUpdateTagValue.bind(this, tag.Key)}
+                />
+                <Form.Button
+                    negative
+                    icon="remove"
+                    content="Delete Tag"
+                    onClick={onDeleteTag.bind(this, tag.Key)}
+                />
+            </Form.Group>
+        );
     });
-    setTags(Tags);
-  };
-  useEffect(() => {
-    setTags(tags);
-  }, []); //eslint-disable-line
 
-  useEffect(() => {
-    const generatedTagPanels = Tags.map((tag) => {
-      return (
-        <Form.Group key={tag.Key} inline>
-          <Form.Input
-            label="Key"
-            placeholder="Key"
-            defaultValue={tag.Key}
-            onChange={(e) => updateTagKey(tag.Key, e)}
-          />
-          <Form.Input
-            label="Value"
-            placeholder="Value"
-            defaultValue={tag.Value}
-            onChange={(e) => updateTagValue(tag.Key, e)}
-          />
-          <Form.Button
-            negative
-            icon="remove"
-            content="Delete Tag"
-            onClick={() => deleteTag(tag.Key)}
-          />
-        </Form.Group>
-      );
-    });
-    setTagPanels(generatedTagPanels);
-  }, [Tags, tags]); //eslint-disable-line
-  // http://localhost:8081/policies/edit/985081345396/iamrole/consoleme_oss_2_test_admin
-  // [{type: "delete_tag", name: "nflxtag-t"}]
-  // [{"type":"update_tag","name":"nflxtag-test","value":"test1"},{"type":"update_tag","name":"nflxtag-test2","value":"test2"}]
-  // Do not support renaming currently
-  const deleteTag = (key, e) => {
-    setTags(Tags.filter((tag) => tag.Key !== key));
-  };
+    if (isNewTag) {
+        tagList.unshift(
+            <Form.Group key="newTag" inline>
+                <Form.Input
+                    label="Key"
+                    placeholder="Key"
+                    onChange={({ target: { value }}) => {
+                        setNewTag({ ...newTag, Key: value });
+                    }}
+                />
+                <Form.Input
+                    label="Value"
+                    placeholder="Value"
+                    onChange={({ target: { value }}) => {
+                        setNewTag({ ...newTag, Value: value });
+                    }}
+                />
+                <Button.Group>
+                    <Button
+                        positive
+                        icon="add"
+                        content="Add"
+                        onClick={() => {
+                            createTag(newTag);
+                            setNewTag({ Key: "", Value: "" });
+                        }}
+                    />
+                    <Button.Or />
+                    <Button
+                        negative
+                        icon="remove"
+                        content="Cancel"
+                        onClick={() => toggleNewTag(false)}
+                    />
+                </Button.Group>
+            </Form.Group>
+        )
+    }
 
-  const updateTagKey = (originalKey, e) => {
-    Tags.forEach((tag) => {
-      if (tag.Key === originalKey) {
-        tag.Key = e.target.value;
-      }
-    });
-    setTags(Tags);
-  };
-
-  const updateTagValue = (originalKey, e) => {
-    Tags.forEach((tag) => {
-      if (tag.Key === originalKey) {
-        tag.Value = e.target.value;
-      }
-    });
-    setTags(Tags);
-  };
-
-  const saveTags = (e) => {
-    // TODO: Need access to the original tags. Need to do comparison against `Tags`. Need to compile appropriate
-    // change model
-
-    console.log(Tags);
-  };
-  // TODO, add expand all, close all features
-  return (
-    <>
-      <Segment
-        basic
-        clearing
-        style={{
-          padding: 0,
-        }}
-      >
-        <Header as="h2" floated="left">
-          Tags
-          <Header.Subheader>
-            You can add/edit/delete tags for this role from here.
-          </Header.Subheader>
-        </Header>
-        <Button.Group floated="right">
-          <Button positive onClick={createNewTag}>
-            Create New Tag
-          </Button>
-        </Button.Group>
-      </Segment>
-      <Form>
-        {tagPanels}
-        <Form.Button primary icon="save" content="Save" onClick={saveTags} />
-      </Form>
-    </>
-  );
+    return (
+        <>
+            <Segment
+                basic
+                clearing
+                style={{
+                    padding: 0,
+                }}
+            >
+                <Header as="h2" floated="left">
+                    Tags
+                    <Header.Subheader>
+                        You can add/edit/delete tags for this role from here.
+                    </Header.Subheader>
+                </Header>
+                <Button.Group floated="right">
+                    <Button positive onClick={onCreateTag}>
+                        Create New Tag
+                    </Button>
+                </Button.Group>
+            </Segment>
+            <Form>
+                {tagList}
+                <Form.Button primary icon="save" content="Save" onClick={onSaveTags} />
+            </Form>
+        </>
+    );
 };
 
 export default Tags;

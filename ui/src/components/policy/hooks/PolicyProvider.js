@@ -39,6 +39,7 @@ export const PolicyProvider = ({ children }) => {
             setParams({ accountID, region, resourceName, serviceType, });
             setResource(resource);
             inlinePolicyHooks.setInlinePolicies(resource.inline_policies);
+            setTags(resource.tags);
             setIsPolicyEditorLoading(false);
         })();
     }, [accountID, region, resourceName, serviceType, state.isSuccess]);
@@ -49,7 +50,15 @@ export const PolicyProvider = ({ children }) => {
     const setIsPolicyEditorLoading = (loading) => dispatch({ type: "TOGGLE_LOADING", loading });
     const setToggleDeleteRole = (toggle) => dispatch({ type: "TOGGLE_DELETE_ROLE", toggle });
     const setIsSuccess = (isSuccess) => dispatch({ type: "SET_IS_SUCCESS", isSuccess });
-
+    const setTags = (tags) => dispatch({ type: "SET_TAGS", tags });
+    const createTag = (tag) => dispatch({ type: "CREATE_TAG", tag });
+    const deleteTag = (key) => dispatch({ type: "DELETE_TAG", key });
+    const updateTag = (tag) => dispatch({ type: "UPDATE_TAG", tag });
+    const toggleNewTag = (toggle) => dispatch({ type: "TOGGLE_NEW_TAG", toggle });
+    const handleTagSave = () => {
+        // TODO, add a logic to save tags
+        console.log(state.tagChanges);
+    };
     // InlinePolicy States Handler
     const inlinePolicyHooks = useInlinePolicy();
 
@@ -62,6 +71,12 @@ export const PolicyProvider = ({ children }) => {
                 setIsPolicyEditorLoading,
                 setToggleDeleteRole,
                 setIsSuccess,
+                setTags,
+                createTag,
+                deleteTag,
+                updateTag,
+                toggleNewTag,
+                handleTagSave,
                 ...inlinePolicyHooks,
             }}
         >
