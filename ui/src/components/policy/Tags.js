@@ -9,8 +9,8 @@ const Tags = () => {
         createTag,
         updateTag,
         deleteTag,
-        tagChanges,
         toggleNewTag,
+        handleTagSave,
     } = usePolicyContext();
     const [newTag, setNewTag] = useState({ Key: "", Value: "" });
 
@@ -27,7 +27,7 @@ const Tags = () => {
     };
 
     const onSaveTags = () => {
-        console.log(tagChanges);
+        handleTagSave()
     };
 
     const tagList = tags.map(tag => {
