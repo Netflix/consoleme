@@ -49,26 +49,15 @@ const usePolicyTag = () => {
         dispatch({ type: "UPDATE_TAG", changed });
     }
     const toggleNewTag = (toggle) => dispatch({ type: "TOGGLE_NEW_TAG", toggle });
-    const handleTagSave = async ({ arn, adminAutoApprove, justification, policyType }) => {
-        let requestV2 = {};
-        if (policyType === "inline_policy") {
-            requestV2 = {
-                justification,
-                admin_auto_approve: adminAutoApprove,
-                changes: {
-                    changes: state.tagChanges,
-                },
-            };
-        } else if (policyType === "resource_policy") {
-            requestV2 = {
-                justification,
-                admin_auto_approve: adminAutoApprove,
-                changes: {
-                    changes: state.tagChanges,
-                },
-            };
-        }
-        console.log(requestV2);
+    const handleTagSave = async ({ arn, adminAutoApprove, justification }) => {
+        const requestV2 = {
+            justification,
+            admin_auto_approve: adminAutoApprove,
+            changes: {
+                changes: state.tagChanges,
+            },
+        };
+
         const response = await sendRequestCommon(requestV2, "/api/v2/request");
 
         if (response) {
