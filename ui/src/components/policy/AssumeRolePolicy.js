@@ -1,20 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Button, Icon, Header, Message, Segment } from "semantic-ui-react";
-import MonacoEditor from "react-monaco-editor";
-import { sendRequestCommon } from "../../helpers/utils";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import { PolicyMonacoEditor } from "./PolicyMonacoEditor";
 import { JustificationModal } from "./PolicyModals";
-
-const editorOptions = {
-  selectOnLineNumbers: true,
-  quickSuggestions: true,
-  scrollbar: {
-    alwaysConsumeMouseWheel: false,
-  },
-  scrollBeyondLastLine: false,
-  automaticLayout: true,
-};
 
 const AssumeRolePolicy = () => {
   const { resource = {} } = usePolicyContext();

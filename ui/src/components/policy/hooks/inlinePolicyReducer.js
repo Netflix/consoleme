@@ -16,10 +16,21 @@ export const initialState = {
 export const reducer = (state, action) => {
   switch (action.type) {
     case "SET_POLICIES":
+      if (action.policies) {
+        return {
+          ...state,
+          activeIndex: [...Array(action.policies.length).keys()],
+          inlinePolicies: action.policies,
+        };
+      } else {
+        return {
+          ...state,
+        };
+      }
+    case "SET_RESOURCE_POLICY":
       return {
         ...state,
-        activeIndex: [...Array(action.policies.length).keys()],
-        inlinePolicies: action.policies,
+        resourcePolicy: action.policy,
       };
     case "ADD_POLICY":
       return {

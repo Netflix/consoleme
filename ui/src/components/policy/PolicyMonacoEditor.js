@@ -60,6 +60,7 @@ const editorDidMount = (editor) => {
 };
 
 export const PolicyMonacoEditor = ({ policy, policyType }) => {
+  console.log(policy);
   const {
     deletePolicy,
     updatePolicy,
@@ -71,6 +72,10 @@ export const PolicyMonacoEditor = ({ policy, policyType }) => {
   const [policyDocument, setPolicyDocument] = useState(
     JSON.stringify(policy.PolicyDocument, null, "\t")
   );
+
+  useEffect(() => {
+    setPolicyDocument(JSON.stringify(policy.PolicyDocument, null, "\t"));
+  }, [policy]);
 
   const onEditChange = (value) => {
     setPolicyDocument(value);

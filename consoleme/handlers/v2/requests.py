@@ -5,6 +5,7 @@ import uuid
 
 import sentry_sdk
 import ujson as json
+from policy_sentry.util.arns import parse_arn
 from pydantic import ValidationError
 
 from consoleme.config import config
@@ -341,10 +342,13 @@ class RequestHandler(BaseAPIV2Handler):
             # Update in dynamo
             await dynamo.write_policy_request_v2(extended_request)
             account_id = await get_resource_account(extended_request.arn)
+
             # Force a refresh of the role in Redis/DDB
-            await aws.fetch_iam_role(
-                account_id, extended_request.arn, force_refresh=True
-            )
+            arn_parsed = parse_arn(extended_request.arn)
+            if arn_parsed["service"] == "iam" and arn_parsed["resource"] == "role":
+                await aws.fetch_iam_role(
+                    account_id, extended_request.arn, force_refresh=True
+                )
             log_data["request"] = extended_request.dict()
             log_data["message"] = "Applied changes based on approved request"
             log_data["response"] = response.dict()

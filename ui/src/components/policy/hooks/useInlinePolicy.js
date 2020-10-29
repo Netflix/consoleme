@@ -7,24 +7,45 @@ const useInlinePolicy = () => {
 
   const handleInlinePolicySubmit = async (arn) => {
     const { adminAutoApprove, justification, newPolicy, policyType } = state;
-    const requestV2 = {
-      justification,
-      admin_auto_approve: adminAutoApprove,
-      changes: {
-        changes: [
-          {
-            principal_arn: arn,
-            change_type: policyType,
-            new: newPolicy.new,
-            policy_name: newPolicy.PolicyName,
-            action: newPolicy.action || "attach",
-            policy: {
-              policy_document: newPolicy.PolicyDocument,
+    let requestV2 = {};
+
+    if (policyType === "inline_policy") {
+      requestV2 = {
+        justification,
+        admin_auto_approve: adminAutoApprove,
+        changes: {
+          changes: [
+            {
+              principal_arn: arn,
+              change_type: policyType,
+              new: newPolicy.new,
+              policy_name: newPolicy.PolicyName,
+              action: newPolicy.action || "attach",
+              policy: {
+                policy_document: newPolicy.PolicyDocument,
+              },
             },
-          },
-        ],
-      },
-    };
+          ],
+        },
+      };
+    } else if (policyType === "resource_policy") {
+      requestV2 = {
+        justification,
+        admin_auto_approve: adminAutoApprove,
+        changes: {
+          changes: [
+            {
+              principal_arn: arn,
+              arn: arn,
+              change_type: policyType,
+              policy: {
+                policy_document: newPolicy.PolicyDocument,
+              },
+            },
+          ],
+        },
+      };
+    }
 
     const response = await sendRequestCommon(requestV2, "/api/v2/request");
 
@@ -68,6 +89,8 @@ const useInlinePolicy = () => {
       };
     }
   };
+  const setResourcePolicy = (policy) =>
+    dispatch({ type: "SET_RESOURCE_POLICY", policy });
   const setInlinePolicies = (policies) =>
     dispatch({ type: "SET_POLICIES", policies });
   const setAdminAutoApprove = (approve) =>
@@ -93,6 +116,7 @@ const useInlinePolicy = () => {
     setTogglePolicyModal,
     setAdminAutoApprove,
     setInlinePolicies,
+    setResourcePolicy,
     updatePolicy,
     deletePolicy,
     addPolicy,

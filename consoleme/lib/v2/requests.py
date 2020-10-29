@@ -322,10 +322,11 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
             "message"
         ] = "ARN type not supported for generating resource policy changes."
         log.error(log_data)
-        raise InvalidRequestParameter(log_data["message"])
 
     resource_policy = {"Version": "2012-10-17", "Statement": []}
     resource_policy_sha = sha256(json.dumps(resource_policy).encode()).hexdigest()
+    if not arn_parsed.get("resource_path") or not arn_parsed.get("service"):
+        return extended_request
     primary_principal_resource_model = ResourceModel(
         arn=extended_request.arn,
         name=arn_parsed["resource_path"].split("/")[-1],

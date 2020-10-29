@@ -17,7 +17,6 @@ const InlinePolicy = () => {
     resource = {},
     setActiveIndex,
     setIsNewPolicy,
-    setPolicyType,
   } = usePolicyContext();
 
   const addInlinePolicy = () => {
