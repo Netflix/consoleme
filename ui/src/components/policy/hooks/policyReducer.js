@@ -1,12 +1,13 @@
 export const initialState = {
+  adminAutoApprove: false,
   params: {},
   isPolicyEditorLoading: true,
   resource: {},
   toggleDeleteRole: false,
   isSuccess: false,
-  tags: [],
-  isNewTag: false,
-  tagChanges: [],
+  justification: "",
+  togglePolicyModal: false,
+  policyType: "",
 };
 
 export const reducer = (state, action) => {
@@ -36,47 +37,27 @@ export const reducer = (state, action) => {
         ...state,
         isSuccess: action.isSuccess,
       };
-    case "SET_TAGS":
+    case "TOGGLE_POLICY_MODAL":
       return {
         ...state,
-        tags: action.tags,
+        togglePolicyModal: action.toggle,
       };
-    case "TOGGLE_NEW_TAG":
+    case "SET_ADMIN_AUTO_APPROVE":
+      const { approve = false } = action;
       return {
         ...state,
-        isNewTag: action.toggle,
+        adminAutoApprove: approve,
       };
-    case "CREATE_TAG":
+    case "SET_POLICY_TYPE":
+      const { policyType = "inline_policy" } = action;
       return {
         ...state,
-        isNewTag: false,
-        tags: [{ Key: action.tag.Key, Value: action.tag.Value }, ...state.tags],
-        tagChanges: [
-          ...state.tagChanges.filter(change => change.name !== action.tag.Key),
-          { type: "create_tag", name: action.tag.Key, value: action.tag.Value },
-        ],
+        policyType: policyType,
       };
-    case "DELETE_TAG":
-      const newChanges = [...state.tagChanges, { type: "delete_tag", name: action.key }];
-      // check if there were newly created tags but deleted before save.
-      const removeItems = newChanges.map(change => {
-        if (change.type === "create_tag" && change.name === action.key) {
-          return change.name;
-        }
-      });
-
+    case "SET_JUSTIFICATION":
       return {
         ...state,
-        tags: [...state.tags.filter(tag => tag.Key !== action.key)],
-        tagChanges: newChanges.filter(change => !removeItems.includes(change.name))
-      };
-    case "UPDATE_TAG":
-      return {
-        ...state,
-        tagChanges: [
-          ...state.tagChanges.filter(change => change.name !== action.tag.Key),
-          { type: "update_tag", name: action.tag.Key, value: action.tag.Value },
-        ],
+        justification: action.justification,
       };
     default:
       throw new Error(`No such action type ${action.type} exist`);

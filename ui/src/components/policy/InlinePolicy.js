@@ -17,6 +17,7 @@ const InlinePolicy = () => {
     resource = {},
     setActiveIndex,
     setIsNewPolicy,
+    handleInlinePolicySubmit,
   } = usePolicyContext();
 
   const addInlinePolicy = () => {
@@ -37,7 +38,7 @@ const InlinePolicy = () => {
       title: policy.PolicyName,
       content: {
         content: (
-          <PolicyMonacoEditor policy={policy} policyType={"inline_policy"} />
+          <PolicyMonacoEditor policy={policy} />
         ),
       },
     };
@@ -48,7 +49,7 @@ const InlinePolicy = () => {
       key: "new_policy",
       title: "New Policy",
       content: {
-        content: <NewPolicyMonacoEditor policyType={"inline_policy"} />,
+        content: <NewPolicyMonacoEditor />,
       },
     });
   }
@@ -92,7 +93,9 @@ const InlinePolicy = () => {
         panels={panels}
         styled
       />
-      <JustificationModal />
+      <JustificationModal
+          handleSubmit={handleInlinePolicySubmit}
+      />
     </>
   );
 };

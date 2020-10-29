@@ -35,18 +35,19 @@ const StatusMessage = ({ message, isSuccess }) => {
   }
 };
 
-export const JustificationModal = () => {
+export const JustificationModal = ({ handleSubmit }) => {
   const {
+    adminAutoApprove,
     justification,
     setJustification,
     togglePolicyModal,
     setTogglePolicyModal,
-    handleInlinePolicySubmit,
     isPolicyEditorLoading,
     setIsPolicyEditorLoading,
     isSuccess,
     setIsSuccess,
     setIsNewPolicy,
+    policyType,
     resource,
   } = usePolicyContext();
 
@@ -63,7 +64,12 @@ export const JustificationModal = () => {
       return;
     }
     setIsPolicyEditorLoading(true);
-    const { message, request_created } = await handleInlinePolicySubmit(resource.arn);
+    const { message, request_created } = await handleSubmit({
+      arn: resource.arn,
+      adminAutoApprove,
+      justification,
+      policyType,
+    });
     setMessage(message);
     setIsPolicyEditorLoading(false);
     setIsSuccess(request_created);

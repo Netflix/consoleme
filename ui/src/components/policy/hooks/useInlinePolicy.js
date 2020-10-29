@@ -5,10 +5,10 @@ import { sendRequestCommon } from "../../../helpers/utils";
 const useInlinePolicy = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const handleInlinePolicySubmit = async (arn) => {
-    const { adminAutoApprove, justification, newPolicy, policyType } = state;
-    let requestV2 = {};
+  const handleInlinePolicySubmit = async ({ arn, adminAutoApprove, justification, policyType }) => {
+    const { newPolicy } = state;
 
+    let requestV2 = {};
     if (policyType === "inline_policy") {
       requestV2 = {
         justification,
@@ -93,35 +93,23 @@ const useInlinePolicy = () => {
     dispatch({ type: "SET_RESOURCE_POLICY", policy });
   const setInlinePolicies = (policies) =>
     dispatch({ type: "SET_POLICIES", policies });
-  const setAdminAutoApprove = (approve) =>
-    dispatch({ type: "SET_ADMIN_AUTO_APPROVE", approve });
-  const setPolicyType = (policyType) =>
-    dispatch({ type: "SET_POLICY_TYPE", policyType });
   const setActiveIndex = (activeIndex) =>
     dispatch({ type: "SET_ACTIVE_INDEX", activeIndex });
   const setIsNewPolicy = (isNewPolicy) =>
     dispatch({ type: "SET_IS_NEW_POLICY", isNewPolicy });
-  const setTogglePolicyModal = (toggle) =>
-    dispatch({ type: "TOGGLE_POLICY_MODAL", toggle });
   const addPolicy = (policy) => dispatch({ type: "ADD_POLICY", policy });
   const updatePolicy = (policy) => dispatch({ type: "UPDATE_POLICY", policy });
   const deletePolicy = (policy) => dispatch({ type: "DELETE_POLICY", policy });
-  const setJustification = (justification) =>
-    dispatch({ type: "SET_JUSTIFICATION", justification });
 
   return {
     ...state,
     setActiveIndex,
     setIsNewPolicy,
-    setTogglePolicyModal,
-    setAdminAutoApprove,
     setInlinePolicies,
     setResourcePolicy,
     updatePolicy,
     deletePolicy,
     addPolicy,
-    setPolicyType,
-    setJustification,
     handleInlinePolicySubmit,
   };
 };

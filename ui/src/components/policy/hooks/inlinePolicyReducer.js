@@ -1,16 +1,11 @@
 export const initialState = {
   activeIndex: [],
   isNewPolicy: false,
-  adminAutoApprove: false,
   newPolicy: {
     PolicyName: "",
     PolicyDocument: {},
   },
-  justification: "",
-  requestId: "",
-  togglePolicyModal: false,
   inlinePolicies: [],
-  policyType: "",
 };
 
 export const reducer = (state, action) => {
@@ -66,29 +61,6 @@ export const reducer = (state, action) => {
       return {
         ...state,
         isNewPolicy: action.isNewPolicy,
-      };
-    case "TOGGLE_POLICY_MODAL":
-      return {
-        ...state,
-        togglePolicyModal: action.toggle,
-      };
-    case "SET_ADMIN_AUTO_APPROVE":
-      const { approve = false } = action;
-      return {
-        ...state,
-        adminAutoApprove: approve,
-      };
-    case "SET_POLICY_TYPE":
-      const { policyType = "inline_policy" } = action;
-      return {
-        ...state,
-        policyType: policyType,
-      };
-
-    case "SET_JUSTIFICATION":
-      return {
-        ...state,
-        justification: action.justification,
       };
     default:
       throw new Error(`No such action type ${action.type} exist`);

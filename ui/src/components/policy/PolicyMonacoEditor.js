@@ -59,9 +59,9 @@ const editorDidMount = (editor) => {
   });
 };
 
-export const PolicyMonacoEditor = ({ policy, policyType }) => {
-  console.log(policy);
+export const PolicyMonacoEditor = ({ policy }) => {
   const {
+    policyType,
     deletePolicy,
     updatePolicy,
     setAdminAutoApprove,
@@ -88,7 +88,6 @@ export const PolicyMonacoEditor = ({ policy, policyType }) => {
     });
     setAdminAutoApprove(true);
     setTogglePolicyModal(true);
-    setPolicyType(policyType);
   };
 
   const handlePolicySubmit = (e) => {
@@ -98,7 +97,6 @@ export const PolicyMonacoEditor = ({ policy, policyType }) => {
     });
     setAdminAutoApprove(false);
     setTogglePolicyModal(true);
-    setPolicyType(policyType);
   };
 
   const handleDelete = (e) => {
@@ -108,7 +106,6 @@ export const PolicyMonacoEditor = ({ policy, policyType }) => {
     });
     setAdminAutoApprove(true);
     setTogglePolicyModal(true);
-    setPolicyType(policyType);
   };
 
   return (
@@ -168,8 +165,9 @@ export const PolicyMonacoEditor = ({ policy, policyType }) => {
   );
 };
 
-export const NewPolicyMonacoEditor = (policyType) => {
+export const NewPolicyMonacoEditor = () => {
   const {
+    policyType,
     addPolicy,
     setIsNewPolicy,
     setAdminAutoApprove,
@@ -200,7 +198,6 @@ export const NewPolicyMonacoEditor = (policyType) => {
     });
     setAdminAutoApprove(true);
     setTogglePolicyModal(true);
-    setPolicyType(policyType);
   };
 
   const handlePolicySubmit = (e) => {
@@ -210,7 +207,6 @@ export const NewPolicyMonacoEditor = (policyType) => {
     });
     setAdminAutoApprove(false);
     setTogglePolicyModal(true);
-    setPolicyType(policyType);
   };
 
   const onTemplateChange = (e, { value }) => {

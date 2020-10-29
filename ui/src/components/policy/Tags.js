@@ -1,55 +1,65 @@
 import React, { useEffect, useState } from "react";
 import { Button, Form, Header, Segment } from "semantic-ui-react";
 import { usePolicyContext } from "./hooks/PolicyProvider";
+import { JustificationModal } from "./PolicyModals";
 
 const Tags = () => {
     const {
+        resource = {},
         tags = [],
         isNewTag = false,
+        tagChanges = [],
         createTag,
         updateTag,
         deleteTag,
+        setAdminAutoApprove,
+        setTogglePolicyModal,
         toggleNewTag,
         handleTagSave,
     } = usePolicyContext();
+    const { arn } = resource;
     const [newTag, setNewTag] = useState({ Key: "", Value: "" });
 
-    const onCreateTag = () => {
-        toggleNewTag(true);
+    const onCreateTag = () => toggleNewTag(true);
+    const onDeleteTag = (tag) => deleteTag({ arn, tag });
+    const onUpdateTag = ( originalTag, action, { target: { value } }) => {
+        updateTag({
+            arn,
+            originalTag,
+            action,
+            value,
+        });
     };
-
-    const onDeleteTag = (key) => {
-        deleteTag(key);
-    };
-
-    const onUpdateTagValue = (key, { target: { value } }) => {
-        updateTag({ Key: key, Value: value });
-    };
-
     const onSaveTags = () => {
-        handleTagSave()
+        setAdminAutoApprove(true);
+        setTogglePolicyModal(true);
     };
 
     const tagList = tags.map(tag => {
         return (
-            <Form.Group key={tag.Key} inline>
+            <Form.Group
+                key={tag.Key}
+                inline
+            >
                 <Form.Input
                     label="Key"
                     placeholder="Key"
-                    value={tag.Key}
-                    onChange={onUpdateTagValue.bind(this, tag.Key)}
+                    defaultValue={tag.Key}
+                    onChange={onUpdateTag.bind(this, tag, 'update_key')}
+                    disabled={tag.New}
                 />
                 <Form.Input
                     label="Value"
                     placeholder="Value"
                     defaultValue={tag.Value}
-                    onChange={onUpdateTagValue.bind(this, tag.Key)}
+                    onChange={onUpdateTag.bind(this, tag, 'update_value')}
+                    disabled={tag.New}
                 />
                 <Form.Button
                     negative
                     icon="remove"
                     content="Delete Tag"
-                    onClick={onDeleteTag.bind(this, tag.Key)}
+                    onClick={onDeleteTag.bind(this, tag)}
                 />
             </Form.Group>
         );
@@ -78,7 +88,7 @@ const Tags = () => {
                         icon="add"
                         content="Add"
                         onClick={() => {
-                            createTag(newTag);
+                            createTag({ arn, newTag });
                             setNewTag({ Key: "", Value: "" });
                         }}
                     />
@@ -117,8 +127,17 @@ const Tags = () => {
             </Segment>
             <Form>
                 {tagList}
-                <Form.Button primary icon="save" content="Save" onClick={onSaveTags} />
+                <Form.Button
+                    primary
+                    icon="save"
+                    content="Save"
+                    onClick={onSaveTags}
+                    disabled={!tagChanges.length}
+                />
             </Form>
+            <JustificationModal
+                handleSubmit={handleTagSave}
+            />
         </>
     );
 };

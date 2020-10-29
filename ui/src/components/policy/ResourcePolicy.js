@@ -43,7 +43,6 @@ const ResourcePolicy = () => {
                     PolicyName: "Resource Policy",
                     PolicyDocument: resource_details.Policy,
                   }}
-                  policyType={"resource_policy"}
                 />
               </Segment>
             </>

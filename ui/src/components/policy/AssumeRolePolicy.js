@@ -44,7 +44,6 @@ const AssumeRolePolicy = () => {
       >
         <PolicyMonacoEditor
           policy={assumeRolePolicy}
-          policyType={"assume_role_policy"}
         />
       </Segment>
       <JustificationModal />
