@@ -10,6 +10,7 @@ export const reducer = (state, action) => {
       return {
         ...state,
         tags: action.tags,
+        tagChanges: [],
       };
     case "TOGGLE_NEW_TAG":
       return {
