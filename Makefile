@@ -40,7 +40,11 @@ install: clean
 
 .PHONY: bootstrap
 bootstrap:
-	docker volume create dynamodb-data
+	if docker volume create dynamodb-data; then \
+		echo "Created persistent docker volume for dynamodb."; \
+	else \
+		echo "Unable to configure persistent Dynamo directory. Docker must be installed on this host or container."; \
+	fi
 	make dynamo
 	make redis
 
@@ -163,5 +167,3 @@ endif
 .PHONY: default_plugins
 default_plugins:
 	pip install -e default_plugins
-
-

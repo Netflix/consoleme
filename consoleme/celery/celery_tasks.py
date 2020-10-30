@@ -33,11 +33,7 @@ from celery.signals import (
     task_unknown,
 )
 from cloudaux import sts_conn
-from cloudaux.aws.iam import (
-    get_account_authorization_details,
-    get_all_managed_policies,
-    get_user_access_keys,
-)
+from cloudaux.aws.iam import get_all_managed_policies
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
@@ -66,7 +62,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import cache_all_policy_requests, get_request_review_url
-from consoleme.lib.s3_helpers import put_object
 from consoleme.lib.ses import send_group_modification_notification
 from consoleme.lib.timeout import Timeout
 
@@ -1372,17 +1367,7 @@ def get_iam_role_limit() -> dict:
 @app.task(soft_time_limit=300)
 def cache_policy_requests() -> Dict:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    s3_bucket = None
-    s3_key = None
-    redis_key = config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS")
-    if config.region == config.get("celery.active_region") or config.get(
-        "environment"
-    ) in ["dev", "test"]:
-        s3_bucket = config.get("cache_policy_requests.s3.bucket")
-        s3_key = config.get("cache_policy_requests.s3.file")
-    requests = async_to_sync(cache_all_policy_requests)(
-        redis_key=redis_key, s3_bucket=s3_bucket, s3_key=s3_key
-    )
+    requests = async_to_sync(cache_all_policy_requests)()
 
     log_data = {
         "function": function,
