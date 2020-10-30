@@ -67,7 +67,10 @@ class DynamicConfigApiHandler(BaseHandler):
                 403, "Only the owner is authorized to view this page."
             )
         existing_dynamic_config = await ddb.get_dynamic_config_yaml()
-        existing_dynamic_config_sha256 = sha256(existing_dynamic_config).hexdigest()
+        if existing_dynamic_config:
+            existing_dynamic_config_sha256 = sha256(existing_dynamic_config).hexdigest()
+        else:
+            existing_dynamic_config_sha256 = None
         result = {"status": "success"}
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -84,7 +87,10 @@ class DynamicConfigApiHandler(BaseHandler):
                 raise Exception(
                     "You didn't change the dynamic configuration. Try again!"
                 )
-            if not existing_dynamic_config_sha256 == existing_sha256:
+            if (
+                existing_dynamic_config_sha256
+                and not existing_dynamic_config_sha256 == existing_sha256
+            ):
                 raise Exception(
                     "Dynamic configuration was updated by another user before your changes were processed. "
                     "Please refresh your page and try again."

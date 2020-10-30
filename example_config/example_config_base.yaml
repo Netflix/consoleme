@@ -40,19 +40,15 @@ auth:
   groups_header_name: group_header
   user_header_name: user_header
 
-# You'll probably want to override FUNCTION to generate this data with your own business logic.
-application_settings:
-  application_1:
-    owner: groupa@example.com
-    owner_url: https://www.example.com/groupa@example.com
-    app_url: https://www.example.com/ci_cd_pipeline/application_1
-    roles:
-      - arn:aws:iam::123456789012:role/application_1InstanceProfile
-      - arn:aws:iam::123456789013:role/application_1InstanceProfile
-  application_2:
-    owner: groupa@example.com
-    roles:
-      - arn:aws:iam::123456789012:role/application_2InstanceProfile
+# This is where you would define the IAM role tags that dictate which users/groups are authorized to access the role.
+cloud_credential_authorization_mapping:
+  role_tags:
+    enabled: true
+    authorized_groups_tags:
+      - consoleme-authorized
+    authorized_groups_cli_only_tags:
+      - consoleme-owner-dl
+      - consoleme-authorized-cli-only
 
 # This is where you would define the IAM role tags that dictate which users/groups are authorized to access the role.
 cloud_credential_authorization_mapping:
@@ -104,13 +100,6 @@ headers:
     enabled: true
 
 enable_self_service: true
-
-dynamic_config:
-  group_mapping:
-    groupa@example.com:
-      roles:
-        - arn:aws:iam::123456789012:role/roleA
-        - arn:aws:iam::123456789012:role/roleB
 
 groups:
   can_edit_config:

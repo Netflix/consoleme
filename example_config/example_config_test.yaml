@@ -41,6 +41,10 @@ dynamic_config:
         - arn:aws:iam::123456789012:role/rolename
       cli_only_roles:
         - arn:aws:iam::123456789012:role/rolename2
+    groupa@example.com:
+      roles:
+        - arn:aws:iam::123456789012:role/roleA
+        - arn:aws:iam::123456789012:role/roleB
 
 duo:
   lambda_arn: arn:aws:lambda:{}:123456789012:function:duo_lambda
@@ -104,3 +108,17 @@ cache_cloud_accounts:
   s3:
     bucket: fakebucket
     file: test/cache_cloud_accounts_v1.json
+
+# You'll probably want to override FUNCTION to generate this data with your own business logic.
+application_settings:
+  application_1:
+    owner: groupa@example.com
+    owner_url: https://www.example.com/groupa@example.com
+    app_url: https://www.example.com/ci_cd_pipeline/application_1
+    roles:
+      - arn:aws:iam::123456789012:role/application_1InstanceProfile
+      - arn:aws:iam::123456789013:role/application_1InstanceProfile
+  application_2:
+    owner: groupa@example.com
+    roles:
+      - arn:aws:iam::123456789012:role/application_2InstanceProfile

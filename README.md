@@ -49,10 +49,14 @@ BEFORE RUNNING THE COMMAND BELOW: We highly recommend that you put valid AWS cre
 the `make redis` command using docker exec, it will attempt to populate your redis cache with live resources from your
 account.
 
-`docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up`
+`docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d`
 
 When the container is running, you can run the following command to populate your resource cache for your
 current AWS credentials:
+
+`docker exec -w "/apps/consoleme" -it consoleme_consoleme_1 /usr/bin/make install`
+
+You can subsequently only update your resource cache with the following command:
 
 `docker exec -w "/apps/consoleme" -it consoleme_consoleme_1 /usr/bin/make redis`
 
