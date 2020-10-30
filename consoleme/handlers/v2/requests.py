@@ -459,7 +459,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
         request = requests[0]
 
         if request.get("version") != "2":
-            # Request format is not compitable with this endpoint version
+            # Request format is not compatible with this endpoint version
             raise InvalidRequestParameter("Request with that ID is not a v2 request")
 
         extended_request = ExtendedRequestModel.parse_obj(

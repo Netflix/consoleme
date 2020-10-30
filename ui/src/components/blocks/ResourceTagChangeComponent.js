@@ -136,35 +136,39 @@ const ResourceTagChangeComponent = (props) => {
       </Grid.Column>
     ) : null;
 
-  const originalTagKey = change.original_key ? (
-    <Table.Row>
-      <Table.Cell>
-        Previous Tag Key Name (Approving will rename the tag)
-      </Table.Cell>
-      <Table.Cell>{change.original_key}</Table.Cell>
-    </Table.Row>
-  ) : null;
+  const originalTagKey =
+    change.original_key && change.original_key !== change.key ? (
+      <Table.Row>
+        <Table.Cell>
+          Previous Tag Key Name (Approving will rename the tag)
+        </Table.Cell>
+        <Table.Cell>{change.original_key}</Table.Cell>
+      </Table.Row>
+    ) : null;
 
   const desiredTagKey = change.key ? (
     <Table.Row>
-      <Table.Cell>Desired Tag Key</Table.Cell>
-      <Table.Cell>{change.key}</Table.Cell>
+      <Table.Cell>Key</Table.Cell>
+      <Table.Cell positive>{change.key}</Table.Cell>
     </Table.Row>
   ) : null;
 
-  const originalTagValue = change.original_value ? (
-    <Table.Row>
-      <Table.Cell>
-        Previous Tag Value (Approving will change the value)
-      </Table.Cell>
-      <Table.Cell>{change.original_value}</Table.Cell>
-    </Table.Row>
-  ) : null;
+  const originalTagValue =
+    change.value &&
+    change.original_value &&
+    change.original_value !== change.value ? (
+      <Table.Row>
+        <Table.Cell>
+          Previous Tag Value (Approving will change the value)
+        </Table.Cell>
+        <Table.Cell>{change.original_value}</Table.Cell>
+      </Table.Row>
+    ) : null;
 
   const desiredTagValue = change.value ? (
     <Table.Row>
-      <Table.Cell>Desired Tag Value</Table.Cell>
-      <Table.Cell>{change.value}</Table.Cell>
+      <Table.Cell>Value</Table.Cell>
+      <Table.Cell positive>{change.value}</Table.Cell>
     </Table.Row>
   ) : null;
 

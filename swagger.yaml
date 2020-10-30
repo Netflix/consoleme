@@ -787,7 +787,6 @@ components:
         - $ref: "#/components/schemas/ChangeModel"
         - type: object
           required:
-            - key
             - tag_action
           properties:
             original_key:

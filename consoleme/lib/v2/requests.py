@@ -733,6 +733,10 @@ async def apply_changes_to_role(
                 )
         elif change.change_type == "resource_tag":
             if change.tag_action in [TagAction.create, TagAction.update]:
+                if change.original_key and not change.key:
+                    change.key = change.original_key
+                if change.original_value and not change.value:
+                    change.value = change.original_value
                 # TODO: Support more resource types in the future
                 try:
                     await sync_to_async(iam_client.tag_role)(
@@ -745,7 +749,7 @@ async def apply_changes_to_role(
                             message=f"Successfully created or updated tag for role: {role_name}",
                         )
                     )
-                    if change.original_key:
+                    if change.original_key and change.original_key != change.key:
                         await sync_to_async(iam_client.untag_role)(
                             RoleName=role_name, TagKeys=[change.original_key]
                         )
