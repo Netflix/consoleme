@@ -13,6 +13,7 @@ _development_groups_override:
   - groupb@example.com
   - configeditors@example.com
   - consoleme_admins@example.com
+  - consoleme_admins # Groups do not need go be an email address
 
 # ConsoleMe uses a Local DynamoDB docker container for development. You won't want this setting in your
 # test/prod stacks.

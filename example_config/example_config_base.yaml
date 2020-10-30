@@ -54,6 +54,16 @@ application_settings:
     roles:
       - arn:aws:iam::123456789012:role/application_2InstanceProfile
 
+# This is where you would define the IAM role tags that dictate which users/groups are authorized to access the role.
+cloud_credential_authorization_mapping:
+  role_tags:
+    enabled: true
+    authorized_groups_tags:
+      - consoleme-authorized
+    authorized_groups_cli_only_tags:
+      - consoleme-owner-dl
+      - consoleme-authorized-cli-only
+
 aws:
   console_url: "https://{}.console.aws.amazon.com"
   federation_url: "https://signin.aws.amazon.com/federation"
