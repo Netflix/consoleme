@@ -461,6 +461,9 @@ components:
           type: string
           description: the principal arn's URL
           readOnly: true
+        admin_auto_approve:
+          type: boolean
+          default: False
     ExtendedRequestModel:
       allOf:
         - $ref: "#/components/schemas/RequestModel"
