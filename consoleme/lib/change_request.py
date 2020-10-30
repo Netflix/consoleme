@@ -58,6 +58,8 @@ async def _generate_policy_sid(user: str) -> str:
     :return: policy SID string
     """
     user_stripped = user.split("@")[0]
+    # Strip out any special characters from username
+    user_stripped = "".join(e for e in user_stripped if e.isalnum())
     random_string = await generate_random_string()
     return f"cm{user_stripped}{int(time.time())}{random_string}"
 
