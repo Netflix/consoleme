@@ -387,3 +387,71 @@ export function sendProposedPolicy(command) {
     }
   );
 }
+
+export const getResourceEndpoint = (accountID, serviceType, region, resourceName) => {
+  const endpoint = ((accountID, serviceType, region, resourceName) => {
+    switch (serviceType) {
+      case "iamrole": {
+        return `/api/v2/roles/${accountID}/${resourceName}`;
+      }
+      case "s3": {
+        return `/api/v2/resources/${accountID}/s3/${resourceName}`;
+      }
+      case "sqs": {
+        return `/api/v2/resources/${accountID}/sqs/${region}/${resourceName}`;
+      }
+      case "sns": {
+        return `/api/v2/resources/${accountID}/sns/${region}/${resourceName}`;
+      }
+      default: {
+        throw new Error("No such service exist");
+      }
+    }
+  })(accountID, serviceType, region, resourceName);
+
+  return endpoint;
+};
+
+export const sendRequestV2 = async (requestV2) => {
+  const response = await sendRequestCommon(requestV2, "/api/v2/request");
+
+  if (response) {
+    const { request_created, request_id, request_url, errors } = response;
+    if (request_created === true) {
+      if (requestV2.admin_auto_approve && errors === 0) {
+        return {
+          message: `Successfully created and applied request: [${request_id}](${request_url}).`,
+          request_created,
+          error: false,
+        };
+      } else if (errors === 0) {
+        return {
+          message: `Successfully created request: [${request_id}](${request_url}).`,
+          request_created,
+          error: false,
+        };
+      } else {
+        return {
+          message: `This request was created and partially successful: : [${request_id}](${request_url}). But the server reported some errors with the request: ${JSON.stringify(
+              response
+          )}`,
+          request_created,
+          error: true,
+        };
+      }
+    }
+    return {
+      message: `Server reported an error with the request: ${JSON.stringify(
+          response
+      )}`,
+      request_created,
+      error: true,
+    };
+  } else {
+    return {
+      message: `"Failed to submit request: ${JSON.stringify(response)}`,
+      request_created: false,
+      error: true,
+    };
+  }
+};

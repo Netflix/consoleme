@@ -199,7 +199,7 @@ async def generate_request_from_change_model_array(
         if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
             log_data[
                 "message"
-            ] = "ARN type not supported for inline/managed/assume role policy changes."
+            ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
             log.error(log_data)
             raise InvalidRequestParameter(log_data["message"])
         role_name = arn_parsed["resource_path"].split("/")[-1]
@@ -567,7 +567,7 @@ async def apply_changes_to_role(
     if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
         log_data[
             "message"
-        ] = "ARN type not supported for inline/managed/assume role policy changes."
+        ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
         log.error(log_data)
         response.errors += 1
         response.action_results.append(
