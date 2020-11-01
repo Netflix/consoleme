@@ -5,7 +5,40 @@ import { sendRequestCommon } from "../../../helpers/utils";
 const useInlinePolicy = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  const handleInlinePolicySubmit = async ({ arn, adminAutoApprove, justification, policyType }) => {
+  const handleResourcePolicySubmit = async ({
+    arn,
+    adminAutoApprove,
+    justification,
+    policyType,
+  }) => {
+    return await handleInlinePolicySubmit({
+      arn,
+      adminAutoApprove,
+      justification,
+      policyType: "resource_policy",
+    });
+  };
+
+  const handleAssumeRolePolicySubmit = async ({
+    arn,
+    adminAutoApprove,
+    justification,
+    policyType,
+  }) => {
+    return await handleInlinePolicySubmit({
+      arn,
+      adminAutoApprove,
+      justification,
+      policyType: "assume_role_policy",
+    });
+  };
+
+  const handleInlinePolicySubmit = async ({
+    arn,
+    adminAutoApprove,
+    justification,
+    policyType,
+  }) => {
     const { newPolicy } = state;
 
     let requestV2 = {};
@@ -21,6 +54,22 @@ const useInlinePolicy = () => {
               new: newPolicy.new,
               policy_name: newPolicy.PolicyName,
               action: newPolicy.action || "attach",
+              policy: {
+                policy_document: newPolicy.PolicyDocument,
+              },
+            },
+          ],
+        },
+      };
+    } else if (policyType === "assume_role_policy") {
+      requestV2 = {
+        justification,
+        admin_auto_approve: adminAutoApprove,
+        changes: {
+          changes: [
+            {
+              principal_arn: arn,
+              change_type: policyType,
               policy: {
                 policy_document: newPolicy.PolicyDocument,
               },
@@ -111,6 +160,8 @@ const useInlinePolicy = () => {
     deletePolicy,
     addPolicy,
     handleInlinePolicySubmit,
+    handleAssumeRolePolicySubmit,
+    handleResourcePolicySubmit,
   };
 };
 

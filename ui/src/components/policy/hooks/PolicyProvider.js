@@ -44,13 +44,14 @@ export const PolicyProvider = ({ children }) => {
       setParams({ accountID, region, resourceName, serviceType });
       setResource(resource);
       if (serviceType === "iamrole") {
+        policyTagHooks.setTags(resource.tags);
         inlinePolicyHooks.setInlinePolicies(resource.inline_policies);
         setPolicyType("inline_policy");
       } else if (resource && resource.resource_details) {
+        policyTagHooks.setTags(resource.resource_details.TagSet);
         inlinePolicyHooks.setResourcePolicy(resource.resource_details.Policy);
         setPolicyType("resource_policy");
       }
-      policyTagHooks.setTags(resource.tags);
       setIsPolicyEditorLoading(false);
     })();
   }, [accountID, region, resourceName, serviceType, state.isSuccess]); //eslint-disable-line
@@ -58,42 +59,41 @@ export const PolicyProvider = ({ children }) => {
   // PolicyEditor States Handlers
   const setParams = (params) => dispatch({ type: "UPDATE_PARAMS", params });
   const setResource = (resource) =>
-      dispatch({ type: "UPDATE_RESOURCE", resource });
+    dispatch({ type: "UPDATE_RESOURCE", resource });
   const setIsPolicyEditorLoading = (loading) =>
-      dispatch({ type: "TOGGLE_LOADING", loading });
+    dispatch({ type: "TOGGLE_LOADING", loading });
   const setToggleDeleteRole = (toggle) =>
-      dispatch({ type: "TOGGLE_DELETE_ROLE", toggle });
+    dispatch({ type: "TOGGLE_DELETE_ROLE", toggle });
   const setIsSuccess = (isSuccess) =>
-      dispatch({ type: "SET_IS_SUCCESS", isSuccess });
+    dispatch({ type: "SET_IS_SUCCESS", isSuccess });
 
   const setAdminAutoApprove = (approve) =>
-      dispatch({ type: "SET_ADMIN_AUTO_APPROVE", approve });
+    dispatch({ type: "SET_ADMIN_AUTO_APPROVE", approve });
   const setPolicyType = (policyType) =>
-      dispatch({ type: "SET_POLICY_TYPE", policyType });
+    dispatch({ type: "SET_POLICY_TYPE", policyType });
   const setTogglePolicyModal = (toggle) =>
-      dispatch({ type: "TOGGLE_POLICY_MODAL", toggle });
+    dispatch({ type: "TOGGLE_POLICY_MODAL", toggle });
   const setJustification = (justification) =>
-      dispatch({ type: "SET_JUSTIFICATION", justification });
-
+    dispatch({ type: "SET_JUSTIFICATION", justification });
 
   // There are chances that same state and handler exists in other hooks
   return (
-      <PolicyContext.Provider
-          value={{
-            ...state,
-            setResource,
-            setIsPolicyEditorLoading,
-            setToggleDeleteRole,
-            setIsSuccess,
-            setPolicyType,
-            setJustification,
-            setTogglePolicyModal,
-            setAdminAutoApprove,
-            ...inlinePolicyHooks,
-            ...policyTagHooks,
-          }}
-      >
-        {children}
-      </PolicyContext.Provider>
+    <PolicyContext.Provider
+      value={{
+        ...state,
+        setResource,
+        setIsPolicyEditorLoading,
+        setToggleDeleteRole,
+        setIsSuccess,
+        setPolicyType,
+        setJustification,
+        setTogglePolicyModal,
+        setAdminAutoApprove,
+        ...inlinePolicyHooks,
+        ...policyTagHooks,
+      }}
+    >
+      {children}
+    </PolicyContext.Provider>
   );
 };

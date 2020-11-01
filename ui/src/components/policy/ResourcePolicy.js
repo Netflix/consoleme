@@ -7,7 +7,7 @@ import { PolicyMonacoEditor } from "./PolicyMonacoEditor";
 import { JustificationModal } from "./PolicyModals";
 
 const ResourcePolicy = () => {
-  const { resource = {} } = usePolicyContext();
+  const { resource = {}, handleResourcePolicySubmit } = usePolicyContext();
   const { s3_errors = {}, resource_details = {} } = resource;
 
   const tabs = [
@@ -83,7 +83,7 @@ const ResourcePolicy = () => {
   return (
     <>
       <Tab panes={tabs} />
-      <JustificationModal />
+      <JustificationModal handleSubmit={handleResourcePolicySubmit} />
     </>
   );
 };

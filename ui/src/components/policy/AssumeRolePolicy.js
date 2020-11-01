@@ -5,7 +5,7 @@ import { PolicyMonacoEditor } from "./PolicyMonacoEditor";
 import { JustificationModal } from "./PolicyModals";
 
 const AssumeRolePolicy = () => {
-  const { resource = {} } = usePolicyContext();
+  const { resource = {}, handleAssumeRolePolicySubmit } = usePolicyContext();
 
   const { assume_role_policy_document } = resource;
   const [assumeRolePolicy] = useState({
@@ -42,11 +42,9 @@ const AssumeRolePolicy = () => {
           padding: 0,
         }}
       >
-        <PolicyMonacoEditor
-          policy={assumeRolePolicy}
-        />
+        <PolicyMonacoEditor policy={assumeRolePolicy} />
       </Segment>
-      <JustificationModal />
+      <JustificationModal handleSubmit={handleAssumeRolePolicySubmit} />
     </>
   );
 };
