@@ -1,22 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Button, Form, Header, Segment } from "semantic-ui-react";
 import { usePolicyContext } from "./hooks/PolicyProvider";
+import usePolicyTag from "./hooks/usePolicyTag";
 import { JustificationModal } from "./PolicyModals";
 
 const Tags = () => {
     const {
         resource = {},
+        setAdminAutoApprove,
+        setTogglePolicyModal,
+    } = usePolicyContext();
+
+    const {
         tags = [],
         isNewTag = false,
         tagChanges = [],
         createTag,
         updateTag,
         deleteTag,
-        setAdminAutoApprove,
-        setTogglePolicyModal,
         toggleNewTag,
         handleTagSave,
-    } = usePolicyContext();
+    } = usePolicyTag(resource);
+
     const { arn } = resource;
     const [newTag, setNewTag] = useState({ Key: "", Value: "" });
 

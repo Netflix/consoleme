@@ -1,24 +1,24 @@
 import React from "react";
 import { Header, Segment } from "semantic-ui-react";
 import { usePolicyContext } from "./hooks/PolicyProvider";
-import useAssumeRolePolicy from "./hooks/useAssumeRolePolicy";
+import useResourcePolicy from "./hooks/useResourcePolicy";
 import { PolicyMonacoEditor } from "./PolicyMonacoEditor";
 import { JustificationModal } from "./PolicyModals";
 
-const AssumeRolePolicy = () => {
+const ResourcePolicyEditor = () => {
     const { resource = {} } = usePolicyContext();
     const {
-        assumeRolePolicy = {},
-        setAssumeRolePolicy,
-        handleAssumeRolePolicySubmit,
-    } = useAssumeRolePolicy(resource);
+        resourcePolicy = {},
+        setResourcePolicy,
+        handleResourcePolicySubmit,
+    } = useResourcePolicy(resource);
 
     return (
         <>
             <Header as="h2">
-                Assume Role Policy Document
+                Resource Policy
                 <Header.Subheader>
-                    You can modify this role's assume role policy here.
+                    You can add/edit/delete resource policy here.
                 </Header.Subheader>
             </Header>
             <Segment
@@ -29,16 +29,16 @@ const AssumeRolePolicy = () => {
                 }}
             >
                 <PolicyMonacoEditor
-                    context="assume_role_policy"
-                    policy={assumeRolePolicy}
-                    updatePolicy={setAssumeRolePolicy}
+                    context="resource_policy"
+                    policy={resourcePolicy}
+                    updatePolicy={setResourcePolicy}
                 />
             </Segment>
             <JustificationModal
-                handleSubmit={handleAssumeRolePolicySubmit}
+                handleSubmit={handleResourcePolicySubmit}
             />
         </>
     );
 };
 
-export default AssumeRolePolicy;
+export default ResourcePolicyEditor;

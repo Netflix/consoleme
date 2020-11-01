@@ -9,11 +9,10 @@ import Tags from "./Tags";
 
 const IAMRolePolicy = () => {
   const { resource = {} } = usePolicyContext();
+
   const {
-    arn = "",
     cloudtrail_details = {},
     inline_policies = [],
-    managed_policies = [],
     s3_details = {},
   } = resource;
 
@@ -37,7 +36,10 @@ const IAMRolePolicy = () => {
       },
     },
     {
-      menuItem: "Assume Role Policy",
+      menuItem: {
+        key: "assume_role_policy",
+        content: "Assume Role Policy",
+      },
       render: () => {
         return (
           <Tab.Pane>
@@ -47,17 +49,23 @@ const IAMRolePolicy = () => {
       },
     },
     {
-      menuItem: "Managed Policy",
+      menuItem: {
+        key: "managed_policy",
+        content: "Managed Policy",
+      },
       render: () => {
         return (
           <Tab.Pane>
-            <ManagedPolicy policies={managed_policies} arn={arn} />
+            <ManagedPolicy />
           </Tab.Pane>
         );
       },
     },
     {
-      menuItem: "Tags",
+      menuItem: {
+        key: "tags",
+        content: "Tags",
+      },
       render: () => {
         return (
           <Tab.Pane>
@@ -92,14 +100,16 @@ const IAMRolePolicy = () => {
       render: () => {
         return (
           <Tab.Pane>
-            <Issues cloudtrail={cloudtrail_details} s3={s3_details} />
+            <Issues />
           </Tab.Pane>
         );
       },
     },
   ];
 
-  return <Tab panes={tabs} />;
+  return (
+      <Tab panes={tabs} />
+  );
 };
 
 export default IAMRolePolicy;

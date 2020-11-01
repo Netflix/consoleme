@@ -59,23 +59,14 @@ const editorDidMount = (editor) => {
   });
 };
 
-export const PolicyMonacoEditor = ({ policy }) => {
+export const PolicyMonacoEditor = ({ context, policy, updatePolicy, deletePolicy }) => {
   const {
-    policyType,
-    deletePolicy,
-    updatePolicy,
     setAdminAutoApprove,
     setTogglePolicyModal,
-    setPolicyType,
   } = usePolicyContext();
 
-  const [policyDocument, setPolicyDocument] = useState(
-    JSON.stringify(policy.PolicyDocument, null, "\t")
-  );
-
-  useEffect(() => {
-    setPolicyDocument(JSON.stringify(policy.PolicyDocument, null, "\t"));
-  }, [policy]);
+  const policyDocumentOriginal = JSON.stringify(policy.PolicyDocument, null, "\t");
+  const [policyDocument, setPolicyDocument] = useState(policyDocumentOriginal);
 
   const onEditChange = (value) => {
     setPolicyDocument(value);
@@ -91,7 +82,7 @@ export const PolicyMonacoEditor = ({ policy }) => {
   };
 
   const handlePolicySubmit = (e) => {
-    updatePolicy({
+    deletePolicy({
       ...policy,
       PolicyDocument: JSON.parse(policyDocument),
     });
@@ -138,6 +129,7 @@ export const PolicyMonacoEditor = ({ policy }) => {
           icon="save"
           content="Save"
           onClick={handlePolicyAdminSave}
+          disabled={!policyDocument || policyDocumentOriginal === policyDocument}
         />
         <Button.Or />
         <Button
@@ -145,10 +137,11 @@ export const PolicyMonacoEditor = ({ policy }) => {
           icon="send"
           content="Submit"
           onClick={handlePolicySubmit}
+          disabled={!policyDocument || policyDocumentOriginal === policyDocument}
         />
         {
           // Show delete button for inline policies only
-          policyType === "inline_policy" ? (
+          context === "inline_policy" ? (
             <>
               <Button.Or />
               <Button
@@ -165,14 +158,11 @@ export const PolicyMonacoEditor = ({ policy }) => {
   );
 };
 
-export const NewPolicyMonacoEditor = () => {
+export const NewPolicyMonacoEditor = ({ addPolicy }) => {
   const {
-    policyType,
-    addPolicy,
     setIsNewPolicy,
     setAdminAutoApprove,
     setTogglePolicyModal,
-    setPolicyType,
   } = usePolicyContext();
 
   const [newPolicyName, setNewPolicyName] = useState("");

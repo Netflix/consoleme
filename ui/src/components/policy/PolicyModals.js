@@ -37,26 +37,25 @@ const StatusMessage = ({ message, isSuccess }) => {
 
 export const JustificationModal = ({ handleSubmit }) => {
   const {
-    adminAutoApprove,
-    justification,
-    setJustification,
-    togglePolicyModal,
+    adminAutoApprove = false,
+    context = "inline_policy",
+    isSuccess = false,
+    resource = {},
+    togglePolicyModal = false,
     setTogglePolicyModal,
     isPolicyEditorLoading,
     setIsPolicyEditorLoading,
-    isSuccess,
     setIsSuccess,
-    setIsNewPolicy,
-    policyType,
-    resource,
   } = usePolicyContext();
 
   const [message, setMessage] = useState("");
+  const [justification, setJustification] = useState("");
 
   const handleJustificationUpdate = (e) => {
     setJustification(e.target.value);
   };
 
+  // TODO, there are too many state updates happening here. try do more in the reducer.
   const handleJustificationSubmit = async () => {
     if (!justification) {
       setMessage("No empty justification is allowed.");
@@ -64,17 +63,18 @@ export const JustificationModal = ({ handleSubmit }) => {
       return;
     }
     setIsPolicyEditorLoading(true);
+
     const { message, request_created } = await handleSubmit({
       arn: resource.arn,
       adminAutoApprove,
+      context,
       justification,
-      policyType,
     });
+
     setMessage(message);
     setIsPolicyEditorLoading(false);
     setIsSuccess(request_created);
     setJustification("");
-    setIsNewPolicy(false);
   };
 
   const handleOk = () => {

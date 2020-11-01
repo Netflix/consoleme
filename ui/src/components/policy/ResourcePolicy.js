@@ -1,52 +1,21 @@
-import React, { useState } from "react";
-import { Header, Icon, Message, Segment, Tab } from "semantic-ui-react";
+import React  from "react";
+import { Tab } from "semantic-ui-react";
 import Issues from "./Issues";
+import ResourcePolicyEditor from "./ResourcePolicyEditor";
 import Tags from "./Tags";
-import { usePolicyContext } from "./hooks/PolicyProvider";
-import { PolicyMonacoEditor } from "./PolicyMonacoEditor";
-import { JustificationModal } from "./PolicyModals";
 
 const ResourcePolicy = () => {
-  const { resource = {} } = usePolicyContext();
-  const { s3_errors = {}, resource_details = {} } = resource;
-
   const tabs = [
     {
       menuItem: {
-        key: "policy",
+        key: "resource_policy",
         content: "Resource Policy",
       },
       render: () => {
         return (
-          <Tab.Pane>
-            <>
-              <Header as="h2">
-                Resource Policy
-                <Header.Subheader>
-                  You can add/edit/delete resource policy here.
-                </Header.Subheader>
-              </Header>
-              <Message warning attached="top">
-                <Icon name="warning" />
-                Double check whether cross account access for this resource is
-                necessary.
-              </Message>
-              <Segment
-                attached
-                style={{
-                  border: 0,
-                  padding: 0,
-                }}
-              >
-                <PolicyMonacoEditor
-                  policy={{
-                    PolicyName: "Resource Policy",
-                    PolicyDocument: resource_details.Policy,
-                  }}
-                />
-              </Segment>
-            </>
-          </Tab.Pane>
+            <Tab.Pane>
+                <ResourcePolicyEditor />
+            </Tab.Pane>
         );
       },
     },
@@ -57,9 +26,9 @@ const ResourcePolicy = () => {
       },
       render: () => {
         return (
-          <Tab.Pane>
-            <Tags tags={resource_details.TagSet} />
-          </Tab.Pane>
+            <Tab.Pane>
+              <Tags />
+            </Tab.Pane>
         );
       },
     },
@@ -72,19 +41,18 @@ const ResourcePolicy = () => {
       },
       render: () => {
         return (
-          <Tab.Pane>
-            <Issues s3={s3_errors} />
-          </Tab.Pane>
+            <Tab.Pane>
+              <Issues />
+            </Tab.Pane>
         );
       },
     },
   ];
 
   return (
-    <>
-      <Tab panes={tabs} />
-      <JustificationModal />
-    </>
+      <>
+        <Tab panes={tabs} />
+      </>
   );
 };
 

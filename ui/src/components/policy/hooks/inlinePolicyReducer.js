@@ -16,17 +16,14 @@ export const reducer = (state, action) => {
           ...state,
           activeIndex: [...Array(action.policies.length).keys()],
           inlinePolicies: action.policies,
+          isNewPolicy: false,
         };
       } else {
         return {
           ...state,
+          isNewPolicy: false,
         };
       }
-    case "SET_RESOURCE_POLICY":
-      return {
-        ...state,
-        resourcePolicy: action.policy,
-      };
     case "ADD_POLICY":
       return {
         ...state,

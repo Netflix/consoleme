@@ -1,7 +1,23 @@
 import React from "react";
 import { Header, Table } from "semantic-ui-react";
+import { usePolicyContext } from "./hooks/PolicyProvider";
 
-const Issues = ({ cloudtrail = [], s3 = [] }) => {
+const Issues = () => {
+  const { resource = {} } = usePolicyContext();
+  let s3 = null;
+  let cloudtrail = null;
+
+  if (resource && resource.s3_errors) {
+      s3 = {
+          errors: {
+              s3_errors: resource.s3_errors
+          },
+      };
+  } else {
+      cloudtrail = resource.cloudtrail_details;
+      s3 = resource.s3_details;
+  }
+
   const cloudTrailErrors = () => {
     if (cloudtrail.errors.cloudtrail_errors.length > 0) {
       const header = (
@@ -136,8 +152,8 @@ const Issues = ({ cloudtrail = [], s3 = [] }) => {
 
   return (
     <>
-      {cloudTrailErrors()}
-      {s3Errors()}
+      {cloudtrail && cloudTrailErrors()}
+      {s3 && s3Errors()}
     </>
   );
 };
