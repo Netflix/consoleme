@@ -5,8 +5,10 @@ import { sendRequestV2 } from "../../../helpers/utils";
 const useResourcePolicy = (resource) => {
     const [state, dispatch] = useReducer(reducer, initialState);
     useEffect(() => {
-        // TODO, check whether it's from resource policy or not
-        setResourcePolicy(resource.resource_details);
+        if (!resource.resource_details) {
+            return;
+        }
+        setResourcePolicy(resource.resource_details.Policy);
     }, [resource.resource_details]);
 
     const setResourcePolicy = (policy) =>

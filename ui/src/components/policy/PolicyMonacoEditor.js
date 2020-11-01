@@ -26,19 +26,8 @@ const editorOptions = {
   automaticLayout: true,
 };
 
-const onLintError = (lintErrors) => {
-  // TODO: heewonk - Display these lint errors if they exist
-  console.log("LintErrors: " + JSON.stringify(lintErrors));
-  // const [lintErrors, setLintErrors] = useState([])
-  // const [isError, setIsError] = useState(false)
-  // if (lintErrors.length > 0) {
-  //     setLintErrors(lintErrors)
-  //     setIsError(true)
-  // } else {
-  //   setLintErrors([])
-  //   setIsError(false)
-  // }
-};
+// Stub lint error callback, will be setup later
+let onLintError = (lintErrors) => {};
 
 const editorDidMount = (editor) => {
   editor.onDidChangeModelDecorations(() => {
@@ -67,9 +56,18 @@ export const PolicyMonacoEditor = ({ context, policy, updatePolicy, deletePolicy
 
   const policyDocumentOriginal = JSON.stringify(policy.PolicyDocument, null, "\t");
   const [policyDocument, setPolicyDocument] = useState(policyDocumentOriginal);
+  const [error, setError] = useState("");
 
   const onEditChange = (value) => {
     setPolicyDocument(value);
+  };
+
+  onLintError = (lintErrors) => {
+    if (lintErrors.length > 0) {
+      setError(`LintErrors: ${JSON.stringify(lintErrors)}`);
+    } else {
+      setError("");
+    }
   };
 
   const handlePolicyAdminSave = (e) => {
@@ -103,7 +101,10 @@ export const PolicyMonacoEditor = ({ context, policy, updatePolicy, deletePolicy
     <>
       <Message warning attached="top">
         <Icon name="warning" />
-        {`You are editing the policy ${policy.PolicyName}.`}
+        { error
+            ? error
+            :`You are editing the policy ${policy.PolicyName}.`
+        }
       </Message>
       <Segment
         attached
@@ -129,7 +130,7 @@ export const PolicyMonacoEditor = ({ context, policy, updatePolicy, deletePolicy
           icon="save"
           content="Save"
           onClick={handlePolicyAdminSave}
-          disabled={!policyDocument || policyDocumentOriginal === policyDocument}
+          disabled={error || !policyDocument || policyDocumentOriginal === policyDocument}
         />
         <Button.Or />
         <Button
@@ -137,7 +138,7 @@ export const PolicyMonacoEditor = ({ context, policy, updatePolicy, deletePolicy
           icon="send"
           content="Submit"
           onClick={handlePolicySubmit}
-          disabled={!policyDocument || policyDocumentOriginal === policyDocument}
+          disabled={error || !policyDocument || policyDocumentOriginal === policyDocument}
         />
         {
           // Show delete button for inline policies only
@@ -167,7 +168,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy }) => {
 
   const [newPolicyName, setNewPolicyName] = useState("");
   const [policyDocument, setPolicyDocument] = useState(
-    JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")
+      JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")
   );
 
   const onEditChange = (value) => {

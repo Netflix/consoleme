@@ -10,7 +10,10 @@ export const reducer = (state, action) => {
         case "SET_RESOURCE_POLICY":
             return {
                 ...state,
-                resourcePolicy: action.policy || state.resourcePolicy,
+                resourcePolicy: {
+                    ...state.resourcePolicy,
+                    PolicyDocument: action.policy || {},
+                },
             };
         default:
             throw new Error(`No such action type ${action.type} exist`);
