@@ -12,8 +12,10 @@ import { usePolicyContext } from "./hooks/PolicyProvider";
 import useManagedPolicy from "./hooks/useManagedPolicy";
 import { JustificationModal } from "./PolicyModals";
 import { sendRequestCommon } from "../../helpers/utils";
+import { useAuth } from "../../auth/AuthContext";
 
 const ManagedPolicy = () => {
+  const { user } = useAuth();
   const {
     params = {},
     resource = {},
@@ -34,9 +36,9 @@ const ManagedPolicy = () => {
   useEffect(() => {
     (async () => {
       const result = await sendRequestCommon(
-          null,
-          `/api/v2/managed_policies/${params.accountID}`,
-          "get"
+        null,
+        `/api/v2/managed_policies/${params.accountID}`,
+        "get"
       );
       setAvailableManagedPolicies(result);
     })();
@@ -52,9 +54,15 @@ const ManagedPolicy = () => {
     deleteManagedPolicy(arn);
     setAdminAutoApprove(true);
     setTogglePolicyModal(true);
-  }
+  };
 
-  const options = availableManagedPolicies.map(policy => {
+  const onManagePolicyDeleteRequest = (arn) => {
+    deleteManagedPolicy(arn);
+    setAdminAutoApprove(false);
+    setTogglePolicyModal(true);
+  };
+
+  const options = availableManagedPolicies.map((policy) => {
     return {
       key: policy.PolicyArn,
       value: policy.PolicyArn,
@@ -63,54 +71,74 @@ const ManagedPolicy = () => {
   });
 
   return (
-      <>
-        <Header as="h2">Managed Policies</Header>
-        <Form>
-          <Form.Field>
-            <label>
-              Select a managed policy from the dropdown that you wish to add to
-              this role.
-            </label>
-            <Dropdown
-                placeholder="Choose a managed policy to add to this role."
-                fluid
-                search
-                selection
-                options={options}
-                onChange={onManagePolicyChange}
-            />
-          </Form.Field>
-        </Form>
-        <Header as="h3" attached="top" content="Attached Policies" />
-        <Segment attached="bottom">
-          <List divided size="medium" relaxed="very" verticalAlign="middle">
-            {managedPolicies.map((policy) => {
-              return (
-                  <List.Item key={policy.PolicyName}>
-                    <List.Content floated="right">
-                      <Button
+    <>
+      <Header as="h2">Managed Policies</Header>
+      <Form>
+        <Form.Field>
+          <label>
+            Select a managed policy from the dropdown that you wish to add to
+            this role.
+          </label>
+          <Dropdown
+            placeholder="Choose a managed policy to add to this role."
+            fluid
+            search
+            selection
+            options={options}
+            onChange={onManagePolicyChange}
+          />
+        </Form.Field>
+      </Form>
+      <Header as="h3" attached="top" content="Attached Policies" />
+      <Segment attached="bottom">
+        <List divided size="medium" relaxed="very" verticalAlign="middle">
+          {managedPolicies.map((policy) => {
+            return (
+              <List.Item key={policy.PolicyName}>
+                <List.Content floated="right">
+                  <Button.Group attached="bottom">
+                    {user.authorization.can_edit_policies === true ? (
+                      <>
+                        <Button
                           negative
                           size="small"
                           name={policy.PolicyArn}
-                          onClick={onManagePolicyDelete.bind(this, policy.PolicyArn)}
-                      >
-                        <Icon name="remove" />
-                        Remove
-                      </Button>
-                    </List.Content>
-                    <List.Content>
-                      <List.Header>{policy.PolicyName}</List.Header>
-                      <List.Description as="a">{policy.PolicyArn}</List.Description>
-                    </List.Content>
-                  </List.Item>
-              );
-            })}
-          </List>
-        </Segment>
-        <JustificationModal
-            handleSubmit={handleManagedPolicySubmit}
-        />
-      </>
+                          onClick={onManagePolicyDelete.bind(
+                            this,
+                            policy.PolicyArn
+                          )}
+                        >
+                          <Icon name="remove" />
+                          Remove
+                        </Button>
+                        <Button.Or />
+                      </>
+                    ) : null}
+                    <Button
+                      negative
+                      size="small"
+                      name={policy.PolicyArn}
+                      onClick={onManagePolicyDeleteRequest.bind(
+                        this,
+                        policy.PolicyArn
+                      )}
+                    >
+                      <Icon name="remove" />
+                      Request Removal
+                    </Button>
+                  </Button.Group>
+                </List.Content>
+                <List.Content>
+                  <List.Header>{policy.PolicyName}</List.Header>
+                  <List.Description as="a">{policy.PolicyArn}</List.Description>
+                </List.Content>
+              </List.Item>
+            );
+          })}
+        </List>
+      </Segment>
+      <JustificationModal handleSubmit={handleManagedPolicySubmit} />
+    </>
   );
 };
 

@@ -8,6 +8,7 @@ import {
 import * as monaco from "monaco-editor";
 import { templateOptions } from "./policyTemplates";
 import { usePolicyContext } from "./hooks/PolicyProvider";
+import { useAuth } from "../../auth/AuthContext";
 
 monaco.languages.registerCompletionItemProvider("json", {
   triggerCharacters: getMonacoTriggerCharacters(),
@@ -48,13 +49,20 @@ const editorDidMount = (editor) => {
   });
 };
 
-export const PolicyMonacoEditor = ({ context, policy, updatePolicy, deletePolicy }) => {
-  const {
-    setAdminAutoApprove,
-    setTogglePolicyModal,
-  } = usePolicyContext();
+export const PolicyMonacoEditor = ({
+  context,
+  policy,
+  updatePolicy,
+  deletePolicy,
+}) => {
+  const { user } = useAuth();
+  const { setAdminAutoApprove, setTogglePolicyModal } = usePolicyContext();
 
-  const policyDocumentOriginal = JSON.stringify(policy.PolicyDocument, null, "\t");
+  const policyDocumentOriginal = JSON.stringify(
+    policy.PolicyDocument,
+    null,
+    "\t"
+  );
   const [policyDocument, setPolicyDocument] = useState(policyDocumentOriginal);
   const [error, setError] = useState("");
 
@@ -101,10 +109,7 @@ export const PolicyMonacoEditor = ({ context, policy, updatePolicy, deletePolicy
     <>
       <Message warning attached="top">
         <Icon name="warning" />
-        { error
-            ? error
-            :`You are editing the policy ${policy.PolicyName}.`
-        }
+        {error ? error : `You are editing the policy ${policy.PolicyName}.`}
       </Message>
       <Segment
         attached
@@ -125,20 +130,32 @@ export const PolicyMonacoEditor = ({ context, policy, updatePolicy, deletePolicy
         />
       </Segment>
       <Button.Group attached="bottom">
-        <Button
-          positive
-          icon="save"
-          content="Save"
-          onClick={handlePolicyAdminSave}
-          disabled={error || !policyDocument || policyDocumentOriginal === policyDocument}
-        />
-        <Button.Or />
+        {user && user.authorization.can_edit_policies === true ? (
+          <>
+            <Button
+              positive
+              icon="save"
+              content="Save"
+              onClick={handlePolicyAdminSave}
+              disabled={
+                error ||
+                !policyDocument ||
+                policyDocumentOriginal === policyDocument
+              }
+            />
+            <Button.Or />
+          </>
+        ) : null}
         <Button
           primary
           icon="send"
           content="Submit"
           onClick={handlePolicySubmit}
-          disabled={error || !policyDocument || policyDocumentOriginal === policyDocument}
+          disabled={
+            error ||
+            !policyDocument ||
+            policyDocumentOriginal === policyDocument
+          }
         />
         {
           // Show delete button for inline policies only
@@ -160,6 +177,7 @@ export const PolicyMonacoEditor = ({ context, policy, updatePolicy, deletePolicy
 };
 
 export const NewPolicyMonacoEditor = ({ addPolicy }) => {
+  const { user } = useAuth();
   const {
     setIsNewPolicy,
     setAdminAutoApprove,
@@ -168,7 +186,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy }) => {
 
   const [newPolicyName, setNewPolicyName] = useState("");
   const [policyDocument, setPolicyDocument] = useState(
-      JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")
+    JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")
   );
 
   const onEditChange = (value) => {
@@ -245,13 +263,17 @@ export const NewPolicyMonacoEditor = ({ addPolicy }) => {
         />
       </Segment>
       <Button.Group attached="bottom">
-        <Button
-          positive
-          icon="save"
-          content="Save"
-          onClick={handlePolicyAdminSave}
-        />
-        <Button.Or />
+        {user.authorization.can_edit_policies === true ? (
+          <>
+            <Button
+              positive
+              icon="save"
+              content="Save"
+              onClick={handlePolicyAdminSave}
+            />
+            <Button.Or />
+          </>
+        ) : null}
         <Button
           primary
           icon="send"

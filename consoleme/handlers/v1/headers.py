@@ -4,6 +4,7 @@ from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV1Handler, BaseHandler, BaseMtlsHandler
 from consoleme.lib.generic import get_random_security_logo, is_in_group
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.policies import can_manage_policy_requests
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
@@ -25,11 +26,17 @@ class UserProfileHandler(BaseAPIV1Handler):
             "employee_info_url": config.config_plugin().get_employee_info_url(
                 self.user
             ),
+            "authorization": {
+                "can_edit_policies": await can_manage_policy_requests(
+                    self.user, self.groups
+                )
+            },
             "pages": {
                 "groups": {"enabled": config.get("headers.group_access.enabled", True)},
                 "users": {"enabled": config.get("headers.group_access.enabled", True)},
                 "policies": {
-                    "enabled": True or config.get("headers.policies.enabled", True)
+                    "enabled": True
+                    or config.get("headers.policies.enabled", True)
                     and not is_contractor
                 },
                 "self_service": {"enabled": config.get("enable_self_service", True)},
