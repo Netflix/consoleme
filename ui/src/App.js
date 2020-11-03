@@ -25,7 +25,6 @@ function App() {
             path="/ui/"
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/role_table_config"}
-            queryString={""}
           />
           <ProtectedRoute
             exact
@@ -37,7 +36,6 @@ function App() {
             path="/ui/policies"
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/policies_table_config"}
-            queryString={""}
           />
           <ProtectedRoute
             exact
@@ -49,7 +47,6 @@ function App() {
             path="/ui/requests"
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/requests_table_config"}
-            queryString={""}
           />
           <ProtectedRoute
             path="/ui/policies/edit/:accountID/:serviceType/:region/:resourceName"
