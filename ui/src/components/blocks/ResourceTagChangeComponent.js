@@ -192,7 +192,7 @@ const ResourceTagChangeComponent = (props) => {
           ) : null}
         </Table.Row>
         <Table.Row>
-          <Table.Cell>Role ARN</Table.Cell>
+          <Table.Cell>ARN</Table.Cell>
           <Table.Cell>{change.principal_arn}</Table.Cell>
         </Table.Row>
       </Table.Body>

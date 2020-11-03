@@ -21,6 +21,7 @@ from consoleme.exceptions.exceptions import (
 )
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.aws import (
+    fetch_resource_details,
     generate_updated_resource_policy,
     get_region_from_arn,
     get_resource_account,
@@ -1008,6 +1009,192 @@ async def populate_cross_account_resource_policies(
     return {"changed": resource_policies_changed, "extended_request": extended_request}
 
 
+async def apply_non_iam_resource_tag_change(
+    extended_request: ExtendedRequestModel,
+    change: ResourceTagChangeModel,
+    response: PolicyRequestModificationResponseModel,
+    user: str,
+) -> PolicyRequestModificationResponseModel:
+    """
+    Applies resource tagging changes for supported non IAM role tags
+
+    Caution: this method applies changes blindly... meaning it assumes before calling this method,
+    you have validated the changes being made are authorized.
+
+    :param change: ResourcePolicyChangeModel
+    :param extended_request: ExtendedRequestModel
+    :param user: Str - requester's email address
+    :param response: RequestCreationResponse
+
+    """
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "change": change.dict(),
+        "message": "Applying resource policy change changes",
+        "request": extended_request.dict(),
+    }
+    resource_arn_parsed = parse_arn(change.principal_arn)
+    resource_type = resource_arn_parsed["service"]
+    resource_name = resource_arn_parsed["resource"]
+    resource_region = resource_arn_parsed["region"]
+    resource_account = resource_arn_parsed["account"]
+    if not resource_account:
+        resource_account = await get_resource_account(change.principal_arn)
+
+    if not resource_account:
+        # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
+        # we can't apply this change
+        log_data["message"] = "Resource account not found"
+        log.warn(log_data)
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Cannot apply change to {change.principal_arn} as cannot determine resource account",
+            )
+        )
+        return response
+
+    supported_resource_types = config.get(
+        "policies.supported_resource_types_for_policy_application", []
+    )
+
+    if resource_type not in supported_resource_types:
+        log_data["message"] = "Resource change not supported"
+        log.warn(log_data)
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Cannot apply change to {change.principal_arn} as it's not supported",
+            )
+        )
+        return response
+
+    try:
+        client = await sync_to_async(boto3_cached_conn)(
+            resource_type,
+            service_type="client",
+            future_expiration_minutes=15,
+            account_number=resource_account,
+            assume_role=config.get("policies.role_name"),
+            region=resource_region or config.region,
+            session_name="ConsoleMe_apply_resource_tag_v2",
+            arn_partition="aws",
+        )
+
+        resource_details = await fetch_resource_details(
+            resource_account,
+            resource_type,
+            resource_name,
+            resource_region or config.region,
+        )
+
+        if change.original_key and not change.key:
+            change.key = change.original_key
+        if change.original_value and not change.value:
+            change.value = change.original_value
+
+        if resource_type == "s3":
+            if change.tag_action in [TagAction.create, TagAction.update]:
+                resource_details["TagSet"].append(
+                    {"Key": change.key, "Value": change.value}
+                )
+
+                await sync_to_async(client.put_bucket_tagging)(
+                    Bucket=resource_name,
+                    Tagging={"TagSet": resource_details["TagSet"]},
+                )
+
+                # Rename a tag key
+                resulting_tagset = []
+                if change.original_key and change.original_key != change.key:
+                    for tag in resource_details["TagSet"]:
+                        if tag.get("Key") != change.original_key:
+                            resulting_tagset.append(tag)
+
+                    resource_details["TagSet"] = resulting_tagset
+                    await sync_to_async(client.put_bucket_tagging)(
+                        Bucket=resource_name,
+                        Tagging={"TagSet": resource_details["TagSet"]},
+                    )
+
+            elif change.tag_action == TagAction.delete:
+                resulting_tagset = []
+
+                for tag in resource_details["TagSet"]:
+                    if tag.get("Key") != change.key:
+                        resulting_tagset.append(tag)
+
+                resource_details["TagSet"] = resulting_tagset
+                await sync_to_async(client.put_bucket_tagging)(
+                    Bucket=resource_name,
+                    Tagging={"TagSet": resource_details["TagSet"]},
+                )
+        elif resource_type == "sns":
+            if change.tag_action in [TagAction.create, TagAction.update]:
+                await sync_to_async(client.tag_resource)(
+                    ResourceArn=change.principal_arn,
+                    Tags=[{"Key": change.key, "Value": change.value}],
+                )
+                # Renaming a key
+                if change.original_key and change.original_key != change.key:
+                    await sync_to_async(client.untag_resource)(
+                        ResourceArn=change.principal_arn,
+                        TagKeys=[change.original_key],
+                    )
+            elif change.tag_action == TagAction.delete:
+                await sync_to_async(client.untag_resource)(
+                    ResourceArn=change.principal_arn,
+                    TagKeys=[change.key],
+                )
+        elif resource_type == "sqs":
+            if change.tag_action in [TagAction.create, TagAction.update]:
+                await sync_to_async(client.tag_queue)(
+                    QueueUrl=resource_details["QueueUrl"],
+                    Tags={change.key: change.value},
+                )
+                # Renaming a key
+                if change.original_key and change.original_key != change.key:
+                    await sync_to_async(client.untag_queue)(
+                        QueueUrl=resource_details["QueueUrl"],
+                        TagKeys=[change.original_key],
+                    )
+            elif change.tag_action == TagAction.delete:
+                await sync_to_async(client.untag_queue)(
+                    QueueUrl=resource_details["QueueUrl"], TagKeys=[change.key]
+                )
+        response.action_results.append(
+            ActionResult(
+                status="success",
+                message=f"Successfully updated resource policy for {change.principal_arn}",
+            )
+        )
+        change.status = Status.applied
+
+    except Exception as e:
+        log_data["message"] = "Exception changing resource tags"
+        log_data["error"] = str(e)
+        log.error(log_data, exc_info=True)
+        sentry_sdk.capture_exception()
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Error occurred changing resource tags for {change.principal_arn}"
+                + str(e),
+            )
+        )
+
+    log_data["message"] = "Finished applying resource tagging change"
+    log_data["response"] = response.dict()
+    log_data["request"] = extended_request.dict()
+    log_data["change"] = change.dict()
+    log.debug(log_data)
+    return response
+
+
 async def apply_resource_policy_change(
     extended_request: ExtendedRequestModel,
     change: ResourcePolicyChangeModel,
@@ -1227,7 +1414,10 @@ async def maybe_approve_reject_request(
         )
         await send_communications_policy_change_request_v2(extended_request)
         account_id = await get_resource_account(extended_request.arn)
-        await aws.fetch_iam_role(account_id, extended_request.arn, force_refresh=True)
+        if extended_request.arn.startswith("aws:aws:iam::"):
+            await aws.fetch_iam_role(
+                account_id, extended_request.arn, force_refresh=True
+            )
     return response
 
 
@@ -1387,6 +1577,13 @@ async def parse_and_apply_policy_request_modification(
                 )
             if specific_change.change_type == "resource_policy":
                 response = await apply_resource_policy_change(
+                    extended_request, specific_change, response, user
+                )
+            elif (
+                specific_change.change_type == "resource_tag"
+                and not specific_change.principal_arn.startswith("arn:aws:iam::")
+            ):
+                response = await apply_non_iam_resource_tag_change(
                     extended_request, specific_change, response, user
                 )
             else:
