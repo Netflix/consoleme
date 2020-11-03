@@ -324,6 +324,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
             "message"
         ] = "ARN type not supported for generating resource policy changes."
         log.error(log_data)
+        return extended_request
 
     resource_policy = {"Version": "2012-10-17", "Statement": []}
     resource_policy_sha = sha256(json.dumps(resource_policy).encode()).hexdigest()
@@ -738,7 +739,6 @@ async def apply_changes_to_role(
                     change.key = change.original_key
                 if change.original_value and not change.value:
                     change.value = change.original_value
-                # TODO: Support more resource types in the future
                 try:
                     await sync_to_async(iam_client.tag_role)(
                         RoleName=role_name,

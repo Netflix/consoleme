@@ -35,8 +35,7 @@ class UserProfileHandler(BaseAPIV1Handler):
                 "groups": {"enabled": config.get("headers.group_access.enabled", True)},
                 "users": {"enabled": config.get("headers.group_access.enabled", True)},
                 "policies": {
-                    "enabled": True
-                    or config.get("headers.policies.enabled", True)
+                    "enabled": config.get("headers.policies.enabled", True)
                     and not is_contractor
                 },
                 "self_service": {"enabled": config.get("enable_self_service", True)},
