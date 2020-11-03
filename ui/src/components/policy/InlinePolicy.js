@@ -57,7 +57,12 @@ const InlinePolicy = () => {
       key: "new_policy",
       title: "New Policy",
       content: {
-        content: <NewPolicyMonacoEditor addPolicy={addInlinePolicy} />,
+        content: (
+          <NewPolicyMonacoEditor
+            addPolicy={addInlinePolicy}
+            setIsNewPolicy={setIsNewPolicy}
+          />
+        ),
       },
     });
   }

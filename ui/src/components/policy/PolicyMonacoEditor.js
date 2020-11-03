@@ -180,13 +180,9 @@ export const PolicyMonacoEditor = ({
   );
 };
 
-export const NewPolicyMonacoEditor = ({ addPolicy }) => {
+export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const { user } = useAuth();
-  const {
-    setIsNewPolicy,
-    setAdminAutoApprove,
-    setTogglePolicyModal,
-  } = usePolicyContext();
+  const { setAdminAutoApprove, setTogglePolicyModal } = usePolicyContext();
 
   const [newPolicyName, setNewPolicyName] = useState("");
   const [policyDocument, setPolicyDocument] = useState(
@@ -289,7 +285,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy }) => {
           negative
           icon="remove"
           content="Cancel"
-          onClick={setIsNewPolicy}
+          onClick={() => setIsNewPolicy(false)}
         />
       </Button.Group>
     </>
