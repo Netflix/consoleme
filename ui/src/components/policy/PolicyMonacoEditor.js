@@ -66,6 +66,10 @@ export const PolicyMonacoEditor = ({
   const [policyDocument, setPolicyDocument] = useState(policyDocumentOriginal);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    setPolicyDocument(policyDocumentOriginal);
+  }, [policyDocumentOriginal]);
+
   const onEditChange = (value) => {
     setPolicyDocument(value);
   };
@@ -88,7 +92,7 @@ export const PolicyMonacoEditor = ({
   };
 
   const handlePolicySubmit = (e) => {
-    deletePolicy({
+    updatePolicy({
       ...policy,
       PolicyDocument: JSON.parse(policyDocument),
     });
@@ -130,7 +134,7 @@ export const PolicyMonacoEditor = ({
         />
       </Segment>
       <Button.Group attached="bottom">
-        {user && user.authorization.can_edit_policies === true ? (
+        {user?.authorization?.can_edit_policies === true ? (
           <>
             <Button
               positive
@@ -263,7 +267,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy }) => {
         />
       </Segment>
       <Button.Group attached="bottom">
-        {user.authorization.can_edit_policies === true ? (
+        {user?.authorization?.can_edit_policies === true ? (
           <>
             <Button
               positive

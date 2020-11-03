@@ -1057,7 +1057,7 @@ async def apply_non_iam_resource_tag_change(
         return response
 
     supported_resource_types = config.get(
-        "policies.supported_resource_types_for_policy_application", []
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
 
     if resource_type not in supported_resource_types:
@@ -1246,7 +1246,7 @@ async def apply_resource_policy_change(
         return response
 
     supported_resource_types = config.get(
-        "policies.supported_resource_types_for_policy_application", []
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
 
     if not change.supported or resource_type not in supported_resource_types:

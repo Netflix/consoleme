@@ -1,11 +1,5 @@
-import React  from "react";
-import {
-  Button,
-  Dimmer,
-  Header,
-  Loader,
-  Segment,
-} from "semantic-ui-react";
+import React from "react";
+import { Button, Dimmer, Header, Loader, Segment } from "semantic-ui-react";
 import { PolicyProvider, usePolicyContext } from "./hooks/PolicyProvider";
 import IAMRolePolicy from "./IAMRolePolicy";
 import ResourcePolicy from "./ResourcePolicy";
@@ -23,47 +17,36 @@ const PolicyEditor = () => {
 
   const onDeleteClick = () => setToggleDeleteRole(true);
 
-  const EditPolicy = (serviceType === "iamrole") ? IAMRolePolicy : ResourcePolicy
+  const EditPolicy = serviceType === "iamrole" ? IAMRolePolicy : ResourcePolicy;
 
   return (
-      <Dimmer.Dimmable
-          as={Segment}
-          dimmed={isPolicyEditorLoading}
-      >
-        <>
-          <Header
-              as="h1"
-              floated="left"
-          >
-            Edit Policy for {`${resource.arn || ""}`}
-          </Header>
-          <Button
-              negative
-              floated="right"
-              onClick={onDeleteClick}
-          >
+    <Dimmer.Dimmable as={Segment} dimmed={isPolicyEditorLoading}>
+      <>
+        <Header as="h1" floated="left">
+          Edit Policy for {`${resource.arn || ""}`}
+        </Header>
+        {serviceType === "iamrole" ? (
+          <Button negative floated="right" onClick={onDeleteClick}>
             Delete
           </Button>
-        </>
-        <ResourceDetail />
-        <EditPolicy />
-        <DeleteResourceModel />
-        <Dimmer
-            active={isPolicyEditorLoading}
-            inverted
-        >
-          <Loader />
-        </Dimmer>
-      </Dimmer.Dimmable>
+        ) : null}
+      </>
+      <ResourceDetail />
+      <EditPolicy />
+      <DeleteResourceModel />
+      <Dimmer active={isPolicyEditorLoading} inverted>
+        <Loader />
+      </Dimmer>
+    </Dimmer.Dimmable>
   );
 };
 
 const PolicyEditorWrapper = () => {
   return (
-      <PolicyProvider>
-        <PolicyEditor />
-      </PolicyProvider>
-  )
+    <PolicyProvider>
+      <PolicyEditor />
+    </PolicyProvider>
+  );
 };
 
 export default PolicyEditorWrapper;

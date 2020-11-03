@@ -33,11 +33,7 @@ from celery.signals import (
     task_unknown,
 )
 from cloudaux import sts_conn
-from cloudaux.aws.iam import (
-    get_account_authorization_details,
-    get_all_managed_policies,
-    get_user_access_keys,
-)
+from cloudaux.aws.iam import get_all_managed_policies
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
@@ -66,7 +62,6 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import cache_all_policy_requests, get_request_review_url
-from consoleme.lib.s3_helpers import put_object
 from consoleme.lib.ses import send_group_modification_notification
 from consoleme.lib.timeout import Timeout
 
@@ -701,7 +696,9 @@ def cache_policies_table_details() -> bool:
                     }
                 )
 
-    resources_from_aws_config_redis_key: str = config.get("aws_config_cache.redis_key")
+    resources_from_aws_config_redis_key: str = config.get(
+        "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+    )
     resources_from_aws_config = red.hgetall(resources_from_aws_config_redis_key)
     if resources_from_aws_config:
         for arn, value in resources_from_aws_config.items():
@@ -1218,7 +1215,9 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
 
         async_to_sync(store_json_results_in_redis_and_s3)(
             redis_result_set,
-            redis_key=config.get("aws_config_cache.redis_key"),
+            redis_key=config.get(
+                "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+            ),
             redis_data_type="hash",
             s3_bucket=s3_bucket,
             s3_key=s3_key,
@@ -1232,7 +1231,9 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
 
         async_to_sync(store_json_results_in_redis_and_s3)(
             redis_result_set,
-            redis_key=config.get("aws_config_cache.redis_key"),
+            redis_key=config.get(
+                "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+            ),
             redis_data_type="hash",
         )
     log_data = {
@@ -1247,7 +1248,9 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
 @app.task(soft_time_limit=1800)
 def cache_resources_from_aws_config_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    resource_redis_cache_key = config.get("aws_config_cache.redis_key")
+    resource_redis_cache_key = config.get(
+        "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+    )
 
     # First, get list of accounts
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()

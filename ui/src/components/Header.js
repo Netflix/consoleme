@@ -13,7 +13,7 @@ const ConsoleMeHeader = () => {
   }
 
   const generatePoliciesDropDown = () => {
-    if (user.pages.policies.enabled === true) {
+    if (user?.pages?.policies?.enabled === true) {
       return (
         <Dropdown text="Roles and Policies" pointing className="link item">
           <Dropdown.Menu>
@@ -37,7 +37,7 @@ const ConsoleMeHeader = () => {
   };
 
   const generateAdvancedDropDown = () => {
-    if (user.pages.config.enabled === true) {
+    if (user?.pages?.config?.enabled === true) {
       return (
         <Dropdown text="Advanced" pointing className="link item">
           <Dropdown.Menu>

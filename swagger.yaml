@@ -1146,6 +1146,9 @@ components:
               type: array
               items:
                 type: object # TODO: make tags schema
+            config_timeline_url:
+              type: string
+              description: A link to the role's AWS Config Timeline
             templated:
               type: boolean
               readOnly: true

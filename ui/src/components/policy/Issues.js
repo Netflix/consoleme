@@ -8,14 +8,14 @@ const Issues = () => {
   let cloudtrail = null;
 
   if (resource && resource.s3_errors) {
-      s3 = {
-          errors: {
-              s3_errors: resource.s3_errors
-          },
-      };
+    s3 = {
+      errors: {
+        s3_errors: resource.s3_errors,
+      },
+    };
   } else {
-      cloudtrail = resource.cloudtrail_details;
-      s3 = resource.s3_details;
+    cloudtrail = resource.cloudtrail_details;
+    s3 = resource.s3_details;
   }
 
   const cloudTrailErrors = () => {
@@ -58,7 +58,7 @@ const Issues = () => {
             Recent Permission Errors {errorLink()}
             <Header.Subheader>
               This section shows Cloudtrail permission errors discovered for
-              this role in the last 24 hours.
+              this resource in the last 24 hours.
             </Header.Subheader>
           </Header>
           <Table celled>
@@ -73,7 +73,8 @@ const Issues = () => {
           <Header as="h2">
             No Cloudtrail Errors
             <Header.Subheader>
-              We didn't find recent Cloudtrail errors associated with this role.
+              We didn't find recent Cloudtrail errors associated with this
+              resource.
             </Header.Subheader>
           </Header>
         </>
@@ -128,7 +129,7 @@ const Issues = () => {
             Recent S3 Errors {errorLink()}
             <Header.Subheader>
               This section shows the top S3 permission errors discovered for
-              this role in the last 24 hours.
+              this resource in the last 24 hours.
             </Header.Subheader>
           </Header>
           <Table celled>
@@ -143,7 +144,7 @@ const Issues = () => {
           <Header as="h2">
             No S3 Errors
             <Header.Subheader>
-              We didn't find any recent S3 errors associated with this role.
+              We didn't find any recent S3 errors associated with this resource.
             </Header.Subheader>
           </Header>
         </>

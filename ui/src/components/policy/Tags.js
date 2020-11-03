@@ -137,10 +137,10 @@ const Tags = () => {
       <Form>
         {tagList}
         <Button.Group attached="bottom">
-          {user.authorization.can_edit_policies === true ? (
+          {user?.authorization?.can_edit_policies === true ? (
             <>
               <Form.Button
-                primary
+                positive
                 icon="save"
                 content="Save"
                 onClick={onSaveTags}
@@ -151,7 +151,7 @@ const Tags = () => {
           ) : null}
           <Form.Button
             primary
-            icon="save"
+            icon="send"
             content="Submit"
             onClick={onSubmitTags}
             disabled={!tagChanges.length}

@@ -7,6 +7,8 @@ import {
   Icon,
   Header,
   Segment,
+  ButtonGroup,
+  ButtonOr,
 } from "semantic-ui-react";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import useManagedPolicy from "./hooks/useManagedPolicy";
@@ -31,6 +33,10 @@ const ManagedPolicy = () => {
   } = useManagedPolicy(resource);
 
   const [availableManagedPolicies, setAvailableManagedPolicies] = useState([]);
+  const [
+    selectedManagedPolicyToAdd,
+    setSelectedManagedPolicyToAdd,
+  ] = useState();
 
   // available managed policies are only used for rendering. so let's retrieve from here.
   useEffect(() => {
@@ -46,7 +52,16 @@ const ManagedPolicy = () => {
 
   const onManagePolicyChange = (e, { value }) => {
     addManagedPolicy(value);
+    setSelectedManagedPolicyToAdd(value);
+  };
+
+  const onManagedPolicySave = (e, { value }) => {
     setAdminAutoApprove(true);
+    setTogglePolicyModal(true);
+  };
+
+  const onManagedPolicySubmit = (e, { value }) => {
+    setAdminAutoApprove(false);
     setTogglePolicyModal(true);
   };
 
@@ -62,13 +77,15 @@ const ManagedPolicy = () => {
     setTogglePolicyModal(true);
   };
 
-  const options = availableManagedPolicies.map((policy) => {
-    return {
-      key: policy.PolicyArn,
-      value: policy.PolicyArn,
-      text: policy.PolicyName,
-    };
-  });
+  const options =
+    availableManagedPolicies &&
+    availableManagedPolicies.map((policy) => {
+      return {
+        key: policy,
+        value: policy,
+        text: policy,
+      };
+    });
 
   return (
     <>
@@ -87,6 +104,27 @@ const ManagedPolicy = () => {
             options={options}
             onChange={onManagePolicyChange}
           />
+          <ButtonGroup attached="bottom">
+            {user?.authorization?.can_edit_policies === true ? (
+              <>
+                <Button
+                  positive
+                  icon="save"
+                  content="Add"
+                  onClick={onManagedPolicySave}
+                  disabled={!selectedManagedPolicyToAdd}
+                />
+                <ButtonOr />
+              </>
+            ) : null}
+            <Button
+              primary
+              icon="send"
+              content="Request"
+              onClick={onManagedPolicySubmit}
+              disabled={!selectedManagedPolicyToAdd}
+            />
+          </ButtonGroup>
         </Form.Field>
       </Form>
       <Header as="h3" attached="top" content="Attached Policies" />
@@ -97,7 +135,7 @@ const ManagedPolicy = () => {
               <List.Item key={policy.PolicyName}>
                 <List.Content floated="right">
                   <Button.Group attached="bottom">
-                    {user.authorization.can_edit_policies === true ? (
+                    {user?.authorization?.can_edit_policies === true ? (
                       <>
                         <Button
                           negative
