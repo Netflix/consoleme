@@ -1375,17 +1375,7 @@ def get_iam_role_limit() -> dict:
 @app.task(soft_time_limit=300)
 def cache_policy_requests() -> Dict:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    s3_bucket = None
-    s3_key = None
-    redis_key = config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS")
-    if config.region == config.get("celery.active_region") or config.get(
-        "environment"
-    ) in ["dev", "test"]:
-        s3_bucket = config.get("cache_policy_requests.s3.bucket")
-        s3_key = config.get("cache_policy_requests.s3.file")
-    requests = async_to_sync(cache_all_policy_requests)(
-        redis_key=redis_key, s3_bucket=s3_bucket, s3_key=s3_key
-    )
+    requests = async_to_sync(cache_all_policy_requests)()
 
     log_data = {
         "function": function,

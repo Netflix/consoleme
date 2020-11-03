@@ -19,8 +19,9 @@ class RoleTagAuthorizationMappingGenerator(CredentialAuthzMappingGenerator):
     ) -> Dict[user_or_group, RoleAuthorizations]:
         """This will list accounts that meet the account attribute search criteria."""
         # Retrieve roles
+        cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
         all_roles = await retrieve_json_data_from_redis_or_s3(
-            redis_key=config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"),
+            redis_key=cache_key,
             redis_data_type="hash",
             s3_bucket=config.get(
                 "cache_roles_across_accounts.all_roles_combined.s3.bucket"

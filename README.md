@@ -49,10 +49,14 @@ BEFORE RUNNING THE COMMAND BELOW: We highly recommend that you put valid AWS cre
 the `make redis` command using docker exec, it will attempt to populate your redis cache with live resources from your
 account.
 
-`docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up`
+`docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d`
 
 When the container is running, you can run the following command to populate your resource cache for your
 current AWS credentials:
+
+`docker exec -w "/apps/consoleme" -it consoleme_consoleme_1 /usr/bin/make install`
+
+You can subsequently only update your resource cache with the following command:
 
 `docker exec -w "/apps/consoleme" -it consoleme_consoleme_1 /usr/bin/make redis`
 
@@ -152,8 +156,10 @@ are authenticated as for development, or you can Configure a header injector suc
 configuration file. In our example configurations, they are specified in `example_config_base.yaml` under the
 `auth.user_header_name` and `auth.groups_header_name` keys. The user header should be an email address, i.e.
 `you@example.com`. The groups header should be a list of comma-separated groups that you are a member of, i.e.
-`group1@example.com,group2@example.com,groupx@example.com`. You can see which headers are being passed to ConsoleMe
-by visiting the [`/myheaders` endpoint](http://localhost:8081/myheaders) in ConsoleMe.
+`group1@example.com,group2@example.com,groupx@example.com, groupy`. Groups do not need to be an email address.
+
+You can see which headers are being passed to ConsoleMe by visiting the [`/myheaders` endpoint](http://localhost:8081/myheaders)
+in ConsoleMe.
 
 > Make sure you have at least two groups in your list, otherwise every time you visit your local consoleme Role page it will auto-login to the console with your one role.
 
@@ -380,8 +386,36 @@ can retrieve credentials from ConsoleMe in your production environment). You'll 
 environmental variables or your ~/.aws/credentials file locally for now so that ConsoleMe can find them. (ConsoleMe uses
 boto3, which like all AWS SDKs, looks for credentials [in the following order](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#credentials-default).)
 
-Once we have this up and running, you can statically define a map in your configuration of what roles to display, and
-specify which users/groups are authorized to access which roles in your environment:
+Once we have this up and running, we can rely on role tags to determine which users/groups are authorized to retrieve
+credentials for a role. Alternative, ou can statically define a map in your configuration of what roles to display, and
+specify which users/groups are authorized to access which roles in your environment.
+
+#### Authorization based on role tags
+
+The configuration below enables authorization by role tags. In the example below, if a role is tagged with:
+
+```bash
+consoleme-authorized=user1@example.com:group1
+```
+
+User user1@example.com and members of the group `group1` will be able to get credentials for the role, and will also
+be able to access the AWS Console using the role's credentials on the ConsoleMe web interace.
+
+Conversely, if a role had the `consoleme-authorized-cli-only` tag configured, users would be able to get credentials
+for the role via the CLI, but they would not see the role in ConsoleMe's web interface.
+
+```yaml
+cloud_credential_authorization_mapping:
+  role_tags:
+    enabled: true
+    authorized_groups_tags:
+      - consoleme-authorized
+    authorized_groups_cli_only_tags:
+      - consoleme-owner-dl
+      - consoleme-authorized-cli-only
+```
+
+#### Static authorization mapping
 
 In your configuration, you'll want to specify an `account_ids_to_name` mapping of your AWS accounts. An example is
 provided in [example_config/example_config_base.yaml]:

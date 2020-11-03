@@ -27,6 +27,7 @@ from consoleme.lib.policies import (
     can_update_cancel_requests_v2,
     should_auto_approve_policy_v2,
 )
+from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.timeout import Timeout
 from consoleme.lib.v2.requests import (
     generate_request_from_change_model_array,
@@ -385,6 +386,9 @@ class RequestHandler(BaseAPIV2Handler):
             extended_request, admin_approved, approval_probe_approved
         )
         self.write(response.json())
+        await self.finish()
+        await cache_all_policy_requests()
+        return
 
 
 class RequestsHandler(BaseAPIV2Handler):
@@ -632,6 +636,9 @@ class RequestDetailHandler(BaseAPIV2Handler):
                 raise
             return
         self.write(response.json())
+        await self.finish()
+        await cache_all_policy_requests()
+        return
 
 
 class RequestsTableConfigHandler(BaseHandler):

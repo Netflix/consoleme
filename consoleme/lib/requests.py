@@ -118,6 +118,15 @@ async def get_all_policy_requests(user, status=None):
 async def cache_all_policy_requests(
     user="consoleme", redis_key=None, s3_bucket=None, s3_key=None
 ):
+
+    if not redis_key:
+        redis_key = config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS")
+    if not s3_bucket and not s3_key:
+        if config.region == config.get("celery.active_region") or config.get(
+            "environment"
+        ) in ["dev", "test"]:
+            s3_bucket = config.get("cache_policy_requests.s3.bucket")
+            s3_key = config.get("cache_policy_requests.s3.file")
     requests = await get_all_policy_requests(user)
     requests_to_cache = []
     for request in requests:
