@@ -763,6 +763,8 @@ components:
           type: boolean
           readOnly: true
           default: false
+        updated_by:
+          type: string
     InlinePolicyChangeModel:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"

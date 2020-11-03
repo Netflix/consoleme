@@ -50,16 +50,6 @@ cloud_credential_authorization_mapping:
       - consoleme-owner-dl
       - consoleme-authorized-cli-only
 
-# This is where you would define the IAM role tags that dictate which users/groups are authorized to access the role.
-cloud_credential_authorization_mapping:
-  role_tags:
-    enabled: true
-    authorized_groups_tags:
-      - consoleme-authorized
-    authorized_groups_cli_only_tags:
-      - consoleme-owner-dl
-      - consoleme-authorized-cli-only
-
 aws:
   console_url: "https://{}.console.aws.amazon.com"
   federation_url: "https://signin.aws.amazon.com/federation"
@@ -309,6 +299,10 @@ self_service_iam:
           text: Set Queue Attributes
           permissions:
             - sqs:SetQueueAttributes
+        - name: purge_messages
+          text: Purge Queue (You monster!)
+          permissions:
+            - sqs:PurgeQueue
     sns:
       text: SNS Topic
       description: ""
