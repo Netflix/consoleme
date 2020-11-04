@@ -8,7 +8,6 @@ import ConsoleMeSidebar from "../components/Sidebar";
 
 const ProtectedRoute = (props) => {
   const { login, user } = useAuth();
-
   const match = useRouteMatch(props);
 
   useEffect(() => {
@@ -21,6 +20,7 @@ const ProtectedRoute = (props) => {
   }, [match]); // eslint-disable-line
 
   const { component: Component, ...rest } = props;
+
   return (
     <>
       <ConsoleMeHeader />
