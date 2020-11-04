@@ -1,7 +1,7 @@
 # Table of contents
 
 * [About](README.md)
-* [Readme](readme.md)
+* [Readme](readme-1.md)
 * [Architecture](architecture.md)
 * [Quick Start](quick-start/README.md)
   * [Exercises](quick-start/exercises/README.md)
@@ -29,13 +29,15 @@
     * [SAML \(Auth0\)](configuration/authentication-and-authorization/saml-auth0.md)
     * [ALB Auth](configuration/authentication-and-authorization/alb-auth.md)
     * [Plain-Text Headers](configuration/authentication-and-authorization/apache-nginx-headers.md)
+  * [CLI Authentication](configuration/cli-authentication.md)
   * [AWS Config](configuration/aws-config.md)
   * [AWS Organizations](configuration/aws-organizations.md)
 * [Deployment](deployment.md)
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
   * [Terraform](celery-tasks/terraform.md)
-* [CLI](cli.md)
+* [CLI](cli/README.md)
+  * [Untitled](cli/untitled.md)
 * [Self-Service](self-service.md)
 * [License](license.md)
 

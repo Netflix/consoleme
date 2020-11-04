@@ -6,5 +6,9 @@ Weep can export credentials as environmental variables, or host a local IMDS met
 
 
 
-![](.gitbook/assets/weep.gif)
+![](../.gitbook/assets/weep.gif)
+
+
+
+
 
