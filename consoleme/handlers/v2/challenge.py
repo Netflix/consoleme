@@ -50,7 +50,11 @@ class ChallengeGeneratorHandler(tornado.web.RequestHandler):
             "status": "pending",
             "user": user,
         }
-        red.hset(config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"), token, json.dumps(entry))
+        red.hset(
+            config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
+            token,
+            json.dumps(entry),
+        )
 
         challenge_url = "{url}/challenge_validator/{token}".format(
             url=config.get("url"), token=token
@@ -98,7 +102,9 @@ class ChallengeValidatorHandler(BaseHandler):
         }
         log.debug(log_data)
 
-        all_challenges = red.hgetall(config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"))
+        all_challenges = red.hgetall(
+            config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP")
+        )
         current_time = int(datetime.utcnow().replace(tzinfo=pytz.UTC).timestamp())
         expired_challenge_tokens = []
         # Delete expired tokens
@@ -109,7 +115,8 @@ class ChallengeValidatorHandler(BaseHandler):
                     expired_challenge_tokens.append(token)
             if expired_challenge_tokens:
                 red.hdel(
-                    config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"), *expired_challenge_tokens
+                    config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
+                    *expired_challenge_tokens,
                 )
         else:
             self.write(
@@ -119,7 +126,8 @@ class ChallengeValidatorHandler(BaseHandler):
             return
         # Get fresh challenge for user's request
         user_challenge_j = red.hget(
-            config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"), requested_challenge_token
+            config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
+            requested_challenge_token,
         )
         if user_challenge_j:
             # Do a double-take check on the ttl
@@ -180,7 +188,8 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
                 "Challenge URL Authentication is not enabled in ConsoleMe's configuration"
             )
         challenge_j = red.hget(
-            config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"), requested_challenge_token
+            config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
+            requested_challenge_token,
         )
         if not challenge_j:
             self.write({"status": "unknown"})
@@ -190,7 +199,10 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
         # Delete the token if it has expired
         current_time = int(datetime.utcnow().replace(tzinfo=pytz.UTC).timestamp())
         if challenge.get("ttl", 0) < current_time:
-            red.hdel(config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"), requested_challenge_token)
+            red.hdel(
+                config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
+                requested_challenge_token,
+            )
             self.write({"status": "expired"})
             return
 
@@ -209,11 +221,14 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
                     "cookie_name": config.get("auth_cookie_name", "consoleme_auth"),
                     "expiration": int(jwt_expiration.timestamp()),
                     "encoded_jwt": encoded_jwt.decode("utf-8"),
-                    "user": challenge["user"]
+                    "user": challenge["user"],
                 }
             )
             # Delete the token so that it cannot be re-used
-            red.hdel(config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"), requested_challenge_token)
+            red.hdel(
+                config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
+                requested_challenge_token,
+            )
             return
         self.write({"status": challenge.get("status")})
         return
