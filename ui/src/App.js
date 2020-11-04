@@ -8,6 +8,7 @@ import ConsoleMeSelfService from "./components/SelfService";
 import ConsoleMeDynamicConfig from "./components/DynamicConfig";
 import PolicyRequestReview from "./components/PolicyRequestsReview";
 import PolicyEditor from "./components/policy/PolicyEditor";
+import ConsoleMeChallengeValidator from "./components/challenge/ConsoleMeChallengeValidator";
 
 const NoMatch = ({ location }) => (
   <h3>
@@ -68,6 +69,12 @@ function App() {
             exact
             path="/ui/config"
             component={ConsoleMeDynamicConfig}
+          />
+          <ProtectedRoute
+            key="config"
+            exact
+            path="/ui/challenge_validator/:challengeToken"
+            component={ConsoleMeChallengeValidator}
           />
           <Route component={NoMatch} />
         </Switch>
