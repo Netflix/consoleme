@@ -9,7 +9,6 @@ tornado:
 
 challenge_url:
   enabled: true
-  redis_key: TOKEN_CHALLENGES_TEMP
 
 development: true
 environment: prod
