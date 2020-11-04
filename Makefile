@@ -11,20 +11,10 @@ test_args := --cov-report term-missing
 
 .DEFAULT_GOAL := test-lint
 
-env/bin/activate:
-ifndef CONDA_SHLVL
-	# If using Conda for environments, don't create a virtualenv
-	virtualenv -p $(shell which python3) env
-else
-    VIRTUAL_ENV := $(shell which python3)
-endif
-
 # Set CONSOLEME_CONFIG_ENTRYPOINT make variable to CONSOLEME_CONFIG_ENTRYPOINT env variable, or "default_config"
 CONSOLEME_CONFIG_ENTRYPOINT := $(or ${CONSOLEME_CONFIG_ENTRYPOINT},${CONSOLEME_CONFIG_ENTRYPOINT},default_config)
 .PHONY: env_install
-env_install: env/bin/activate
-	# Activate either the virtualenv in env/ or tell conda to activate
-	. env/bin/activate || source activate consoleme;\
+env_install:
 	pip install wheel
 	pip install -e default_plugins ;\
 	pip install -r requirements.txt ;\
@@ -110,9 +100,6 @@ requirements-docs.txt: requirements-docs.in
 	pip-compile --no-index requirements-docs.in
 
 up-reqs: clean
-ifndef VIRTUAL_ENV
-	$(error Please activate virtualenv first)
-endif
 	@echo "--> Updating Python requirements"
 	pip install --upgrade pip
 	pip install --upgrade pip-tools
