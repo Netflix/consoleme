@@ -8,6 +8,7 @@ import ConsoleMeSelfService from "./components/SelfService";
 import ConsoleMeDynamicConfig from "./components/DynamicConfig";
 import PolicyRequestReview from "./components/PolicyRequestsReview";
 import PolicyEditor from "./components/policy/PolicyEditor";
+import ConsoleLogin from "./components/ConsoleLogin.js";
 
 const NoMatch = ({ location }) => (
   <h3>
@@ -60,6 +61,11 @@ function App() {
             exact
             path="/ui/config"
             component={ConsoleMeDynamicConfig}
+          />
+          <ProtectedRoute
+            exact
+            path="/ui/role/:roleQuery"
+            component={ConsoleLogin}
           />
           <Route component={NoMatch} />
         </Switch>

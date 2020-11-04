@@ -74,6 +74,7 @@ from consoleme.handlers.v2.roles import (
     RoleCloneHandler,
     RoleDetailAppHandler,
     RoleDetailHandler,
+    RoleConsoleLoginHandler,
     RolesHandler,
 )
 from consoleme.handlers.v2.self_service import SelfServiceConfigHandler
@@ -166,6 +167,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
         (r"/api/v2/typeahead/resources", ResourceTypeAheadHandlerV2),
+        (r"/api/v2/role_login/(.*)", RoleConsoleLoginHandler),
         (r"/config/?", DynamicConfigHandler),
         (r"/create_role/?", CreateRoleViewHandler),
         (r"/myheaders/?", HeaderHandler),
