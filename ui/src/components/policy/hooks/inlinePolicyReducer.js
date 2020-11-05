@@ -18,12 +18,11 @@ export const reducer = (state, action) => {
           inlinePolicies: action.policies,
           isNewPolicy: false,
         };
-      } else {
-        return {
-          ...state,
-          isNewPolicy: false,
-        };
       }
+      return {
+        ...state,
+        isNewPolicy: false,
+      };
     case "ADD_POLICY":
       return {
         ...state,

@@ -45,6 +45,7 @@ export const reducer = (state, action) => {
       return {
         ...state,
         adminAutoApprove: action.approve,
+        togglePolicyModal: true,
       };
     case "SET_CONTEXT":
       return {

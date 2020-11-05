@@ -10,7 +10,6 @@ import {
   ButtonGroup,
   ButtonOr,
 } from "semantic-ui-react";
-import { usePolicyContext } from "./hooks/PolicyProvider";
 import useManagedPolicy from "./hooks/useManagedPolicy";
 import { JustificationModal } from "./PolicyModals";
 import { sendRequestCommon } from "../../helpers/utils";
@@ -19,62 +18,42 @@ import { useAuth } from "../../auth/AuthContext";
 const ManagedPolicy = () => {
   const { user } = useAuth();
   const {
-    params = {},
-    resource = {},
-    setAdminAutoApprove,
-    setTogglePolicyModal,
-  } = usePolicyContext();
-
-  const {
+    accountID = "",
     managedPolicies = [],
     addManagedPolicy,
     deleteManagedPolicy,
+    setModalWithAdminAutoApprove,
     handleManagedPolicySubmit,
-  } = useManagedPolicy(resource);
+  } = useManagedPolicy();
 
   const [availableManagedPolicies, setAvailableManagedPolicies] = useState([]);
-  const [
-    selectedManagedPolicyToAdd,
-    setSelectedManagedPolicyToAdd,
-  ] = useState();
+  const [selected, setSelected] = useState(null);
 
   // available managed policies are only used for rendering. so let's retrieve from here.
   useEffect(() => {
     (async () => {
       const result = await sendRequestCommon(
         null,
-        `/api/v2/managed_policies/${params.accountID}`,
+        `/api/v2/managed_policies/${accountID}`,
         "get"
       );
       setAvailableManagedPolicies(result);
     })();
-  }, [managedPolicies]); //eslint-disable-line
+  }, []);
 
   const onManagePolicyChange = (e, { value }) => {
     addManagedPolicy(value);
-    setSelectedManagedPolicyToAdd(value);
+    setSelected(value);
   };
-
-  const onManagedPolicySave = (e, { value }) => {
-    setAdminAutoApprove(true);
-    setTogglePolicyModal(true);
-  };
-
-  const onManagedPolicySubmit = (e, { value }) => {
-    setAdminAutoApprove(false);
-    setTogglePolicyModal(true);
-  };
-
+  const onManagedPolicySave = () => setModalWithAdminAutoApprove(true);
+  const onManagedPolicySubmit = () => setModalWithAdminAutoApprove(false);
   const onManagePolicyDelete = (arn) => {
     deleteManagedPolicy(arn);
-    setAdminAutoApprove(true);
-    setTogglePolicyModal(true);
+    setModalWithAdminAutoApprove(true);
   };
-
   const onManagePolicyDeleteRequest = (arn) => {
     deleteManagedPolicy(arn);
-    setAdminAutoApprove(false);
-    setTogglePolicyModal(true);
+    setModalWithAdminAutoApprove(false);
   };
 
   const options =
@@ -105,14 +84,14 @@ const ManagedPolicy = () => {
             onChange={onManagePolicyChange}
           />
           <ButtonGroup attached="bottom">
-            {user?.authorization?.can_edit_policies === true ? (
+            {user?.authorization?.can_edit_policies ? (
               <>
                 <Button
                   positive
                   icon="save"
                   content="Add"
                   onClick={onManagedPolicySave}
-                  disabled={!selectedManagedPolicyToAdd}
+                  disabled={!selected}
                 />
                 <ButtonOr />
               </>
@@ -122,7 +101,7 @@ const ManagedPolicy = () => {
               icon="send"
               content="Request"
               onClick={onManagedPolicySubmit}
-              disabled={!selectedManagedPolicyToAdd}
+              disabled={!selected}
             />
           </ButtonGroup>
         </Form.Field>
@@ -135,16 +114,13 @@ const ManagedPolicy = () => {
               <List.Item key={policy.PolicyName}>
                 <List.Content floated="right">
                   <Button.Group attached="bottom">
-                    {user?.authorization?.can_edit_policies === true ? (
+                    {user?.authorization?.can_edit_policies ? (
                       <>
                         <Button
                           negative
                           size="small"
                           name={policy.PolicyArn}
-                          onClick={onManagePolicyDelete.bind(
-                            this,
-                            policy.PolicyArn
-                          )}
+                          onClick={() => onManagePolicyDelete(policy.PolicyArn)}
                         >
                           <Icon name="remove" />
                           Remove
@@ -156,10 +132,9 @@ const ManagedPolicy = () => {
                       negative
                       size="small"
                       name={policy.PolicyArn}
-                      onClick={onManagePolicyDeleteRequest.bind(
-                        this,
-                        policy.PolicyArn
-                      )}
+                      onClick={() =>
+                        onManagePolicyDeleteRequest(policy.PolicyArn)
+                      }
                     >
                       <Icon name="remove" />
                       Request Removal

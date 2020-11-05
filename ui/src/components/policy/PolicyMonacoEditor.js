@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Button, Form, Icon, Message, Segment } from "semantic-ui-react";
 import MonacoEditor from "react-monaco-editor";
+import * as monaco from "monaco-editor";
 import {
   getMonacoCompletions,
   getMonacoTriggerCharacters,
 } from "../../helpers/utils";
-import * as monaco from "monaco-editor";
-import { templateOptions } from "./policyTemplates";
+import templateOptions from "./policyTemplates";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import { useAuth } from "../../auth/AuthContext";
 
@@ -28,7 +28,7 @@ const editorOptions = {
 };
 
 // Stub lint error callback, will be setup later
-let onLintError = (lintErrors) => {};
+let onLintError = () => {};
 
 const editorDidMount = (editor) => {
   editor.onDidChangeModelDecorations(() => {
@@ -56,7 +56,7 @@ export const PolicyMonacoEditor = ({
   deletePolicy,
 }) => {
   const { user } = useAuth();
-  const { setAdminAutoApprove, setTogglePolicyModal } = usePolicyContext();
+  const { setModalWithAdminAutoApprove } = usePolicyContext();
 
   const policyDocumentOriginal = JSON.stringify(
     policy.PolicyDocument,
@@ -82,38 +82,35 @@ export const PolicyMonacoEditor = ({
     }
   };
 
-  const handlePolicyAdminSave = (e) => {
+  const handlePolicyAdminSave = () => {
     updatePolicy({
       ...policy,
       PolicyDocument: JSON.parse(policyDocument),
     });
-    setAdminAutoApprove(true);
-    setTogglePolicyModal(true);
+    setModalWithAdminAutoApprove(true);
   };
 
-  const handlePolicySubmit = (e) => {
+  const handlePolicySubmit = () => {
     updatePolicy({
       ...policy,
       PolicyDocument: JSON.parse(policyDocument),
     });
-    setAdminAutoApprove(false);
-    setTogglePolicyModal(true);
+    setModalWithAdminAutoApprove(false);
   };
 
-  const handleDelete = (e) => {
+  const handleDelete = () => {
     deletePolicy({
       ...policy,
       PolicyDocument: JSON.parse(policyDocument),
     });
-    setAdminAutoApprove(true);
-    setTogglePolicyModal(true);
+    setModalWithAdminAutoApprove(true);
   };
 
   return (
     <>
       <Message warning attached="top">
         <Icon name="warning" />
-        {error ? error : `You are editing the policy ${policy.PolicyName}.`}
+        {error || `You are editing the policy ${policy.PolicyName}.`}
       </Message>
       <Segment
         attached
@@ -182,7 +179,7 @@ export const PolicyMonacoEditor = ({
 
 export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const { user } = useAuth();
-  const { setAdminAutoApprove, setTogglePolicyModal } = usePolicyContext();
+  const { setModalWithAdminAutoApprove } = usePolicyContext();
 
   const [newPolicyName, setNewPolicyName] = useState("");
   const [policyDocument, setPolicyDocument] = useState(
@@ -190,32 +187,27 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   );
 
   const onEditChange = (value) => {
-    try {
-      setPolicyDocument(JSON.stringify(JSON.parse(value), null, "\t"));
-    } catch {}
+    setPolicyDocument(JSON.stringify(JSON.parse(value), null, "\t"));
   };
 
   const handleChangeNewPolicyName = (e) => {
-    // TODO, make sure there is no duplicate policy names
     setNewPolicyName(e.target.value);
   };
 
-  const handlePolicyAdminSave = (e) => {
+  const handlePolicyAdminSave = () => {
     addPolicy({
       PolicyName: newPolicyName,
       PolicyDocument: JSON.parse(policyDocument),
     });
-    setAdminAutoApprove(true);
-    setTogglePolicyModal(true);
+    setModalWithAdminAutoApprove(true);
   };
 
-  const handlePolicySubmit = (e) => {
+  const handlePolicySubmit = () => {
     addPolicy({
       PolicyName: newPolicyName,
       PolicyDocument: JSON.parse(policyDocument),
     });
-    setAdminAutoApprove(false);
-    setTogglePolicyModal(true);
+    setModalWithAdminAutoApprove(false);
   };
 
   const onTemplateChange = (e, { value }) => {

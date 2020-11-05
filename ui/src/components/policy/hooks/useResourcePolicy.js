@@ -1,23 +1,25 @@
 import { useEffect, useReducer } from "react";
 import { initialState, reducer } from "./resourcePolicyReducer";
+import { usePolicyContext } from "./PolicyProvider";
 import { sendRequestV2 } from "../../../helpers/utils";
 
-const useResourcePolicy = (resource) => {
+const useResourcePolicy = () => {
+  const { resource = {} } = usePolicyContext();
   const [state, dispatch] = useReducer(reducer, initialState);
+
   useEffect(() => {
     if (!resource.resource_details) {
       return;
     }
-    setResourcePolicy(resource.resource_details.Policy);
+    dispatch({
+      type: "SET_RESOURCE_POLICY",
+      policy: resource.resource_details.Policy,
+    });
   }, [resource.resource_details]);
-
-  const setResourcePolicy = (policy) =>
-    dispatch({ type: "SET_RESOURCE_POLICY", policy });
 
   const handleResourcePolicySubmit = async ({
     arn,
     adminAutoApprove,
-    context,
     justification,
   }) => {
     const requestV2 = {
@@ -27,7 +29,7 @@ const useResourcePolicy = (resource) => {
         changes: [
           {
             principal_arn: arn,
-            arn: arn,
+            arn,
             change_type: "resource_policy",
             policy: {
               policy_document:
@@ -42,7 +44,11 @@ const useResourcePolicy = (resource) => {
 
   return {
     ...state,
-    setResourcePolicy,
+    setResourcePolicy: (policy) =>
+      dispatch({
+        type: "SET_RESOURCE_POLICY",
+        policy,
+      }),
     handleResourcePolicySubmit,
   };
 };

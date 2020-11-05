@@ -91,7 +91,7 @@ const ConsoleMeHeader = () => {
         ConsoleMe
       </Menu.Item>
       <Menu.Menu position="left">
-        <Menu.Item active={false} exact as={NavLink} name={"roles"} to="/ui/">
+        <Menu.Item active={false} exact as={NavLink} name="roles" to="/ui/">
           AWS Console Roles
         </Menu.Item>
         {generatePoliciesDropDown()}

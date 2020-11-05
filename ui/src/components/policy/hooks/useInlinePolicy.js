@@ -1,25 +1,22 @@
 import { useEffect, useReducer } from "react";
+import { usePolicyContext } from "./PolicyProvider";
 import { initialState, reducer } from "./inlinePolicyReducer";
 import { sendRequestV2 } from "../../../helpers/utils";
 
-const useInlinePolicy = (resource) => {
+const useInlinePolicy = () => {
+  const { resource = {} } = usePolicyContext();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    setInlinePolicies(resource.inline_policies);
+    dispatch({ type: "SET_POLICIES", policies: resource.inline_policies })
   }, [resource.inline_policies]);
 
-  const setInlinePolicies = (policies) =>
-      dispatch({ type: "SET_POLICIES", policies });
-  const setActiveIndex = (activeIndex) =>
-      dispatch({ type: "SET_ACTIVE_INDEX", activeIndex });
-  const setIsNewPolicy = (isNewPolicy) =>
-      dispatch({ type: "SET_IS_NEW_POLICY", isNewPolicy });
-  const addInlinePolicy = (policy) => dispatch({ type: "ADD_POLICY", policy });
-  const updateInlinePolicy = (policy) => dispatch({ type: "UPDATE_POLICY", policy });
-  const deleteInlinePolicy = (policy) => dispatch({ type: "DELETE_POLICY", policy });
-  const handleInlinePolicySubmit = async ({ arn, adminAutoApprove, justification }) => {
-    const requestV2 = {
+  const handleInlinePolicySubmit = async ({
+    arn,
+    adminAutoApprove,
+    justification,
+  }) => {
+    return sendRequestV2({
       justification,
       admin_auto_approve: adminAutoApprove,
       changes: {
@@ -36,19 +33,24 @@ const useInlinePolicy = (resource) => {
           },
         ],
       },
-    };
-    return sendRequestV2(requestV2);
+    });
   };
-
 
   return {
     ...state,
-    setActiveIndex,
-    setIsNewPolicy,
-    setInlinePolicies,
-    addInlinePolicy,
-    updateInlinePolicy,
-    deleteInlinePolicy,
+    arn: resource?.arn,
+    setActiveIndex: (activeIndex) =>
+      dispatch({ type: "SET_ACTIVE_INDEX", activeIndex }),
+    setIsNewPolicy: (isNewPolicy) =>
+      dispatch({ type: "SET_IS_NEW_POLICY", isNewPolicy }),
+    setInlinePolicies: (policies) =>
+      dispatch({ type: "SET_POLICIES", policies }),
+    addInlinePolicy: (policy) =>
+      dispatch({ type: "ADD_POLICY", policy }),
+    updateInlinePolicy: (policy) =>
+      dispatch({ type: "UPDATE_POLICY", policy }),
+    deleteInlinePolicy: (policy) =>
+      dispatch({ type: "DELETE_POLICY", policy }),
     handleInlinePolicySubmit,
   };
 };
