@@ -1,3 +1,4 @@
+import base64
 import sys
 from urllib.parse import parse_qs, urlencode, urlparse
 
@@ -102,8 +103,17 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             ] = "You have more than one role matching your query. Please select one."
             log.error(log_data)
             self.set_status(403)
-            redirect_url = furl(f"/?arn={role}")
-            redirect_url.args = {**redirect_url.args, **arguments}
+            warning_message_arg = {
+                "warningMessage": base64.b64encode(log_data["message"].encode()).decode(
+                    "utf-8"
+                )
+            }
+            redirect_url = furl(f"/ui/?arn={role}")
+            redirect_url.args = {
+                **redirect_url.args,
+                **arguments,
+                **warning_message_arg,
+            }
             self.write(
                 {
                     "type": "redirect",

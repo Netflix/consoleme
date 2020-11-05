@@ -2,11 +2,13 @@ import React, { ComponentType, useState } from "react";
 import { sendRequestCommon } from "../helpers/utils";
 import { useParams } from "react-router-dom";
 import qs from "qs";
+import { Message } from "semantic-ui-react";
 
 function ConsoleLogin(props) {
   const { roleQuery } = useParams();
   const [queryString, setQueryString] = useState(window.location.search);
   const [signOut, setSignOut] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const signOutUrl = "https://signin.aws.amazon.com/oauth?Action=logout";
   const logOutIframeStyle = {
     width: 0,
@@ -51,6 +53,10 @@ function ConsoleLogin(props) {
       return;
     }
 
+    if (roleData.type === "error") {
+      setErrorMessage(roleData.message);
+    }
+
     console.log(roleData);
     const parsedQueryString = qs.parse(queryString, {
       ignoreQueryPrefix: true,
@@ -64,6 +70,12 @@ function ConsoleLogin(props) {
 
   return (
     <>
+      {errorMessage ? (
+        <Message negative>
+          <Message.Header>Oops! there was a problem</Message.Header>
+          <p>{errorMessage}</p>
+        </Message>
+      ) : null}
       <p>Attempting to log into the AWS Console.</p>
       <p>Please wait a second.</p>
       <iframe

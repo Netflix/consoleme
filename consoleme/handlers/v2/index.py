@@ -1,7 +1,7 @@
 from operator import itemgetter
 
-import ujson as json
 import tornado.web
+import ujson as json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
@@ -162,7 +162,7 @@ class IndexHandler(BaseHandler):
                     "account_name": formatted_account_name,
                     "account_id": account_id,
                     "role_name": f"[{role_name}](/policies/edit/{account_id}/iamrole/{role_name})",
-                    "redirect_uri": f"/role/{arn}",
+                    "redirect_uri": f"/ui/role/{arn}",
                 }
             )
 
@@ -179,9 +179,7 @@ class FrontendHandler(tornado.web.StaticFileHandler):
         try:
             return super().validate_absolute_path(root, absolute_path)
         except tornado.web.HTTPError as exc:
-            if exc.status_code == 404 and \
-                    self.default_filename is not None:
-                absolute_path = self.get_absolute_path(
-                    self.root, self.default_filename)
+            if exc.status_code == 404 and self.default_filename is not None:
+                absolute_path = self.get_absolute_path(self.root, self.default_filename)
                 return super().validate_absolute_path(root, absolute_path)
             raise exc
