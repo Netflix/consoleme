@@ -1,8 +1,9 @@
 import sys
-from urllib.parse import urlparse, parse_qs, urlencode
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import sentry_sdk
 import ujson as json
+from furl import furl
 from pydantic import ValidationError
 
 from consoleme.config import config
@@ -42,7 +43,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
         arguments = {k: self.get_argument(k) for k in self.request.arguments}
         role = role.lower()
         selected_roles = await group_mapping.filter_eligible_roles(role, self)
-        region = arguments.get("region")
+        region = arguments.get("r", "us-east-1")
         redirect = arguments.get("redirect")
         log_data = {
             "user": self.user,
@@ -67,15 +68,12 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                     "redirect": True if redirect else False,
                 },
             )
-            log_data["message"] = "You do not have any roles matching your search criteria. "
+            log_data[
+                "message"
+            ] = "You do not have any roles matching your search criteria. "
             log.error(log_data)
             self.set_status(403)
-            self.write(
-                {
-                    "type": "error",
-                    "message": log_data["message"]
-                }
-            )
+            self.write({"type": "error", "message": log_data["message"]})
             return
 
         stats.count(
@@ -88,7 +86,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             },
         )
 
-        if selected_roles > 1:
+        if len(selected_roles) > 1:
             # Not sure which role the user wants. Redirect them to main page to select one.
             stats.count(
                 "RoleConsoleLoginHandler.post",
@@ -99,19 +97,22 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                     "redirect": True if redirect else False,
                 },
             )
-            log_data["message"] = "You have more than one role matching your query. Please select one."
+            log_data[
+                "message"
+            ] = "You have more than one role matching your query. Please select one."
             log.error(log_data)
             self.set_status(403)
+            redirect_url = furl(f"/?arn={role}")
+            redirect_url.args = {**redirect_url.args, **arguments}
             self.write(
                 {
                     "type": "redirect",
                     "message": log_data["message"],
-                    "reason": "console_login_redirect",
-                    "redirect_url": "/", # TODO: Add role and query context here, or in another response arg
+                    "reason": "error",
+                    "redirect_url": redirect_url.url,
                 }
             )
             return
-
 
         log_data["message"] = "Incoming request"
         log.debug(log_data)
@@ -123,27 +124,35 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             user_role = False
             account_id = None
 
+            selected_role = selected_roles[0]
+
             # User role must be defined as a user attribute
             if (
-                    self.user_role_name
-                    and "role/" in role
-                    and role.split("role/")[1] == self.user_role_name
+                self.user_role_name
+                and "role/" in role
+                and role.split("role/")[1] == self.user_role_name
             ):
                 user_role = True
                 account_id = role.split("arn:aws:iam::")[1].split(":role")[0]
 
             url = await aws.generate_url(
-                self.user, role, region, user_role=user_role, account_id=account_id
+                self.user,
+                selected_role,
+                region,
+                user_role=user_role,
+                account_id=account_id,
             )
         except Exception as e:
             log_data["message"] = "Exception generating AWS console URL"
+            log_data["error"] = e
             log.error(log_data, exc_info=True)
             stats.count("index.post.exception")
             self.set_status(403)
             self.write(
                 {
                     "type": "error",
-                    "message": log_data["message"]
+                    "message": log_data["message"],
+                    "error": log_data["error"],
                 }
             )
             return
@@ -158,6 +167,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 "type": "redirect",
                 "redirect_url": url,
                 "reason": "console_login",
+                "role": selected_role,
             }
         )
         return

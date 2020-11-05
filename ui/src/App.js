@@ -64,7 +64,7 @@ function App() {
           />
           <ProtectedRoute
             exact
-            path="/ui/role/:roleQuery"
+            path="/ui/role/:roleQuery+"
             component={ConsoleLogin}
           />
           <Route component={NoMatch} />

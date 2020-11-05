@@ -1,13 +1,20 @@
-import React, {ComponentType} from "react"
-import {sendRequestCommon} from "../helpers/utils";
-import {useParams} from "react-router-dom";
+import React, { ComponentType, useState } from "react";
+import { sendRequestCommon } from "../helpers/utils";
+import { useParams } from "react-router-dom";
 import qs from "qs";
 
 function ConsoleLogin(props) {
-  const {roleQuery} = useParams();
-  const queryString = window.location.search;
-  console.log(queryString)
-  console.log(roleQuery)
+  const { roleQuery } = useParams();
+  const [queryString, setQueryString] = useState(window.location.search);
+  const [signOut, setSignOut] = useState(false);
+  const signOutUrl = "https://signin.aws.amazon.com/oauth?Action=logout";
+  const logOutIframeStyle = {
+    width: 0,
+    height: 0,
+    border: "none",
+  };
+  console.log(queryString);
+  console.log(roleQuery);
   // Parse query string
   // POST to backend
   // If told to redirect due to successful authz, trigger logout iframe
@@ -22,39 +29,50 @@ function ConsoleLogin(props) {
   // );
   const loginAndRedirect = async () => {
     const roleData = await sendRequestCommon(
-      {
-        limit: 1000,
-      },
-      "/",
+      null,
+      "/api/v2/role_login/" + roleQuery + queryString,
       "get"
     );
-    console.log(roleData)
+
+    if (roleData.type === "redirect" && roleData.reason === "error") {
+      window.location.href = roleData.redirect_url;
+    }
+
+    if (roleData.type === "redirect" && roleData.reason === "console_login") {
+      // Success
+      // TODO: Set Recent Roles
+      // TODO: Test iframe
+      // TODO: Delay redirect
+      setSignOut(true);
+      setTimeout(() => {
+        window.location.href = roleData.redirect_url;
+      }, 2000);
+
+      return;
+    }
+
+    console.log(roleData);
     const parsedQueryString = qs.parse(queryString, {
       ignoreQueryPrefix: true,
     });
 
-    console.log(parsedQueryString)
+    console.log(parsedQueryString);
+  };
+  // "https://signin.aws.amazon.com/oauth?Action=logout"
 
-  }
-
-  const logOutIframe = () => {
-    const logOutIframeStyle = {
-      width: 0,
-      height: 0,
-      border: "none"
-    }
-    return <iframe title={"logOutIframe"} style={logOutIframeStyle}/>
-  }
-
-  const result = loginAndRedirect()
+  const result = loginAndRedirect();
 
   return (
     <>
-      LOL
-      {logOutIframe()}
+      <p>Attempting to log into the AWS Console.</p>
+      <p>Please wait a second.</p>
+      <iframe
+        className="logOutIframe"
+        style={logOutIframeStyle}
+        src={signOut ? signOutUrl : null}
+      />
     </>
-  )
+  );
 }
-
 
 export default ConsoleLogin;
