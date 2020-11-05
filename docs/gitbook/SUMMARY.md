@@ -1,7 +1,6 @@
 # Table of contents
 
 * [About](README.md)
-* [Readme](readme-1.md)
 * [Architecture](architecture.md)
 * [Quick Start](quick-start/README.md)
   * [Exercises](quick-start/exercises/README.md)
@@ -36,8 +35,7 @@
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
   * [Terraform](celery-tasks/terraform.md)
-* [CLI](cli/README.md)
-  * [Untitled](cli/untitled.md)
+* [Weep CLI](cli.md)
 * [Self-Service](self-service.md)
 * [License](license.md)
 
