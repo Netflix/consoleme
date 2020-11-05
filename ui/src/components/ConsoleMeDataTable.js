@@ -502,7 +502,6 @@ class ConsoleMeDataTable extends Component {
           cells.push(
             <Table.Cell collapsing style={column.style}>
               <ReactMarkdown
-                linkTarget="_blank"
                 source={"" || new Date(entry[column.key] * 1000).toUTCString()}
               />
             </Table.Cell>
@@ -548,7 +547,6 @@ class ConsoleMeDataTable extends Component {
           cells.push(
             <Table.Cell collapsing style={column.style}>
               <ReactMarkdown
-                linkTarget="_blank"
                 source={
                   "" ||
                   (entry[column.key] != null && entry[column.key].toString())
