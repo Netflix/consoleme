@@ -215,6 +215,7 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
                     "cookie_name": config.get("auth_cookie_name", "consoleme_auth"),
                     "expiration": int(jwt_expiration.timestamp()),
                     "encoded_jwt": encoded_jwt.decode("utf-8"),
+                    "user": challenge.get("user"),
                 }
             )
             red.hdel(config.get("challenge_url.redis_key"), requested_challenge_token)
