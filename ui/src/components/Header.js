@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Dropdown, Menu, Image } from "semantic-ui-react";
 import { NavLink } from "react-router-dom";
 
@@ -9,7 +9,7 @@ const ConsoleMeHeader = () => {
 
   if (!user) {
     login();
-    return <> </>;
+    return null;
   }
 
   const generatePoliciesDropDown = () => {
@@ -17,9 +17,6 @@ const ConsoleMeHeader = () => {
       return (
         <Dropdown text="Roles and Policies" pointing className="link item">
           <Dropdown.Menu>
-            {/*<Dropdown.Item as={NavLink} to="/ui/catalog">*/}
-            {/*  Service Catalog*/}
-            {/*</Dropdown.Item>*/}
             <Dropdown.Item as={NavLink} to="/ui/policies">
               Policies
             </Dropdown.Item>

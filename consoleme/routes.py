@@ -72,9 +72,9 @@ from consoleme.handlers.v2.resources import ResourceDetailHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
+    RoleConsoleLoginHandler,
     RoleDetailAppHandler,
     RoleDetailHandler,
-    RoleConsoleLoginHandler,
     RolesHandler,
 )
 from consoleme.handlers.v2.self_service import SelfServiceConfigHandler
@@ -191,7 +191,16 @@ def make_app(jwt_validator=None):
         (r"/self_service", SelfServiceV2Handler),
         (r"/self_service/\d{12}/.+", SelfServiceV2Handler),
         (r"/requests", RequestsWebHandler),
-        (r"/challenge_validator/([a-zA-Z0-9_-]+)", ChallengeValidatorHandler),
+        (
+            r"/challenge_validator/([a-zA-Z0-9_-]+)",
+            ChallengeValidatorHandler,
+            {"type": "web"},
+        ),
+        (
+            r"/api/v2/challenge_validator/([a-zA-Z0-9_-]+)",
+            ChallengeValidatorHandler,
+            {"type": "api"},
+        ),
         (r"/noauth/v1/challenge_generator/(.*)", ChallengeGeneratorHandler),
         (r"/noauth/v1/challenge_poller/([a-zA-Z0-9_-]+)", ChallengePollerHandler),
     ]
