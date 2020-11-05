@@ -166,10 +166,17 @@ export async function getMonacoCompletions(model, position, monaco) {
     }
   }
   const lastLine = model.getLineContent(position.lineNumber);
-  const prefix = lastLine.trim().replace(/"/g, "");
+  const prefix = lastLine
+    .trim()
+    .replace(/"/g, "")
+    .replace(/Action:/g, "")
+    .replace(/Resource:/g, "")
+    .replace(/,/g, "")
+    .replace(" ", "")
+    .replace(/\[/, "")
+    .replace(/]/, "");
   // prefixRange is the range of the prefix that will be replaced if someone selects the suggestion
   const prefixRange = model.findPreviousMatch(prefix, position);
-  const limit = 500;
   const defaultWordList = [];
   if (action === true) {
     const wordList = await sendRequestCommon(
@@ -177,6 +184,9 @@ export async function getMonacoCompletions(model, position, monaco) {
       "/api/v1/policyuniverse/autocomplete?prefix=" + prefix,
       "get"
     );
+    if (!prefixRange) {
+      return { suggestions: defaultWordList };
+    }
     const suggestedWordList = wordList.map((ea) => ({
       label: ea.permission,
       insertText: ea.permission,
@@ -270,6 +280,57 @@ export function updateRequestStatus(command) {
   );
 }
 
+export async function sendProposedPolicyWithHooks(
+  command,
+  change,
+  newStatement,
+  requestID,
+  setIsLoading,
+  setButtonResponseMessage,
+  reloadDataFromBackend
+) {
+  setIsLoading(true);
+  const request = {
+    modification_model: {
+      command,
+      change_id: change.id,
+    },
+  };
+  if (newStatement) {
+    request.modification_model.policy_document = JSON.parse(newStatement);
+  }
+  await sendRequestCommon(request, "/api/v2/requests/" + requestID, "PUT").then(
+    (response) => {
+      if (
+        response.status === 403 ||
+        response.status === 400 ||
+        response.status === 500
+      ) {
+        // Error occurred making the request
+        setIsLoading(false);
+        setButtonResponseMessage([
+          {
+            status: "error",
+            message: response.message,
+          },
+        ]);
+      } else {
+        // Successful request
+        setIsLoading(false);
+        setButtonResponseMessage(
+          response.action_results.reduce((resultsReduced, result) => {
+            if (result.visible === true) {
+              resultsReduced.push(result);
+            }
+            return resultsReduced;
+          }, [])
+        );
+        reloadDataFromBackend();
+      }
+    }
+  );
+}
+
 export function sendProposedPolicy(command) {
   const { change, newStatement, requestID } = this.state;
   this.setState(
@@ -326,3 +387,71 @@ export function sendProposedPolicy(command) {
     }
   );
 }
+
+export const getResourceEndpoint = (accountID, serviceType, region, resourceName) => {
+  const endpoint = ((accountID, serviceType, region, resourceName) => {
+    switch (serviceType) {
+      case "iamrole": {
+        return `/api/v2/roles/${accountID}/${resourceName}`;
+      }
+      case "s3": {
+        return `/api/v2/resources/${accountID}/s3/${resourceName}`;
+      }
+      case "sqs": {
+        return `/api/v2/resources/${accountID}/sqs/${region}/${resourceName}`;
+      }
+      case "sns": {
+        return `/api/v2/resources/${accountID}/sns/${region}/${resourceName}`;
+      }
+      default: {
+        throw new Error("No such service exist");
+      }
+    }
+  })(accountID, serviceType, region, resourceName);
+
+  return endpoint;
+};
+
+export const sendRequestV2 = async (requestV2) => {
+  const response = await sendRequestCommon(requestV2, "/api/v2/request");
+
+  if (response) {
+    const { request_created, request_id, request_url, errors } = response;
+    if (request_created === true) {
+      if (requestV2.admin_auto_approve && errors === 0) {
+        return {
+          message: `Successfully created and applied request: [${request_id}](${request_url}).`,
+          request_created,
+          error: false,
+        };
+      } else if (errors === 0) {
+        return {
+          message: `Successfully created request: [${request_id}](${request_url}).`,
+          request_created,
+          error: false,
+        };
+      } else {
+        return {
+          message: `This request was created and partially successful: : [${request_id}](${request_url}). But the server reported some errors with the request: ${JSON.stringify(
+              response
+          )}`,
+          request_created,
+          error: true,
+        };
+      }
+    }
+    return {
+      message: `Server reported an error with the request: ${JSON.stringify(
+          response
+      )}`,
+      request_created,
+      error: true,
+    };
+  } else {
+    return {
+      message: `"Failed to submit request: ${JSON.stringify(response)}`,
+      request_created: false,
+      error: true,
+    };
+  }
+};

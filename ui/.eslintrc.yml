@@ -1,0 +1,45 @@
+env:
+  browser: true
+  es6: true
+  node: true
+extends:
+  - "plugin:react/recommended"
+  - airbnb
+  - prettier
+  - prettier/react
+globals:
+  Atomics: readonly
+  SharedArrayBuffer: readonly
+parser: babel-eslint
+parserOptions:
+  ecmaFeatures:
+    jsx: true
+  ecmaVersion: 2018
+  sourceType: module
+plugins:
+  - react
+  - jsx-a11y
+  - import
+  - prettier
+rules:
+  prettier/prettier: error
+  import/no-extraneous-dependencies:
+    - error
+    - devDependencies: true
+  no-param-reassign:
+    - error
+    - props: false
+  react/jsx-filename-extension: 0
+  react/prefer-stateless-function: 0
+  prefer-destructuring: 0
+  react/prop-types: 0
+  react/destructuring-assignment: 0
+  linebreak-style: 0
+  react/jsx-one-expression-per-line: 0
+  no-useless-concat: 0
+  prefer-template: 0
+  jsx-quotes: 0
+  array-callback-return: 0
+  camelcase: 0
+  jsx-a11y/label-has-associated-control: 0
+  max-len: [2, 128, 4]

@@ -50,8 +50,13 @@ from consoleme.handlers.v2.dynamic_config import DynamicConfigApiHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
-from consoleme.handlers.v2.index import EligibleRoleTableConfigHandler, IndexHandler, FrontendHandler
+from consoleme.handlers.v2.index import (
+    EligibleRoleTableConfigHandler,
+    FrontendHandler,
+    IndexHandler,
+)
 from consoleme.handlers.v2.policies import (
+    ManagedPoliciesHandler,
     PoliciesHandler,
     PoliciesTableConfigHandler,
     PolicyReviewV2Handler,
@@ -63,6 +68,7 @@ from consoleme.handlers.v2.requests import (
     RequestsTableConfigHandler,
     RequestsWebHandler,
 )
+from consoleme.handlers.v2.resources import ResourceDetailHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
@@ -141,6 +147,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/dynamic_config", DynamicConfigApiHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
+        (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
         (r"/api/v2/policies", PoliciesHandler),
         (r"/api/v2/policies_table_config", PoliciesTableConfigHandler),
         (r"/api/v2/role_table_config", EligibleRoleTableConfigHandler),
@@ -151,6 +158,10 @@ def make_app(jwt_validator=None):
         (r"/api/v2/roles/?", RolesHandler),
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
+        (
+            r"/api/v2/resources/(\d{12})/(s3|sqs|sns)(?:/([a-z\-1-9]+))?/(.*)",
+            ResourceDetailHandler,
+        ),
         (r"/api/v2/mtls/roles/(\d{12})/(.*)", RoleDetailAppHandler),
         (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
@@ -178,7 +189,16 @@ def make_app(jwt_validator=None):
         (r"/self_service", SelfServiceV2Handler),
         (r"/self_service/\d{12}/.+", SelfServiceV2Handler),
         (r"/requests", RequestsWebHandler),
-        (r"/challenge_validator/([a-zA-Z0-9_-]+)", ChallengeValidatorHandler),
+        (
+            r"/challenge_validator/([a-zA-Z0-9_-]+)",
+            ChallengeValidatorHandler,
+            {"type": "web"},
+        ),
+        (
+            r"/api/v2/challenge_validator/([a-zA-Z0-9_-]+)",
+            ChallengeValidatorHandler,
+            {"type": "api"},
+        ),
         (r"/noauth/v1/challenge_generator/(.*)", ChallengeGeneratorHandler),
         (r"/noauth/v1/challenge_poller/([a-zA-Z0-9_-]+)", ChallengePollerHandler),
     ]

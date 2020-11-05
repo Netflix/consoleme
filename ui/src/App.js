@@ -1,19 +1,15 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter, Redirect, Route, Switch } from "react-router-dom";
+import React from "react";
+import { BrowserRouter, Route, Switch } from "react-router-dom";
 
 import AuthProvider from "./auth/AuthProvider";
 import ProtectedRoute from "./auth/ProtectedRoute";
-
-import ConsoleMeCatalog from "./components/Catalog";
 import ConsoleMeDataTable from "./components/ConsoleMeDataTable";
 import ConsoleMeSelfService from "./components/SelfService";
 import ConsoleMeDynamicConfig from "./components/DynamicConfig";
 import PolicyRequestReview from "./components/PolicyRequestsReview";
-// import ConsoleMeLogin from "./components/Login";
+import PolicyEditor from "./components/policy/PolicyEditor";
+import ConsoleMeChallengeValidator from "./components/challenge/ConsoleMeChallengeValidator";
 
-const LOCAL_KEY = "consoleMeLocalStorage";
-
-// TODO(heewonk), come up with better 404 page
 const NoMatch = ({ location }) => (
   <h3>
     No match for <code>{location.pathname}</code>
@@ -26,46 +22,60 @@ function App() {
       <AuthProvider>
         <Switch>
           <ProtectedRoute
+            key="roles"
             exact
             path="/ui/"
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/role_table_config"}
-            queryString={""}
           />
           <ProtectedRoute
+            key="selfservice"
             exact
             path="/ui/selfservice"
             component={ConsoleMeSelfService}
           />
           <ProtectedRoute
+            key="policies"
             exact
             path="/ui/policies"
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/policies_table_config"}
-            queryString={""}
           />
           <ProtectedRoute
+            key="review"
             exact
-            path="/policies/request/:requestID"
+            path="/ui/policies/request/:requestID"
             component={PolicyRequestReview}
           />
           <ProtectedRoute
+            key="requests"
             exact
             path="/ui/requests"
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/requests_table_config"}
-            queryString={""}
           />
           <ProtectedRoute
+            key="iamrole_policy"
+            path="/ui/policies/edit/:accountID/:serviceType/:region/:resourceName"
+            component={PolicyEditor}
+          />
+          <ProtectedRoute
+            key="resource_policy"
+            path="/ui/policies/edit/:accountID/:serviceType/:resourceName"
+            component={PolicyEditor}
+          />
+          <ProtectedRoute
+            key="config"
             exact
             path="/ui/config"
             component={ConsoleMeDynamicConfig}
           />
-          {/*<ProtectedRoute*/}
-          {/*  exact*/}
-          {/*  path="/ui/catalog"*/}
-          {/*  component={ConsoleMeCatalog}*/}
-          {/*/>*/}
+          <ProtectedRoute
+            key="config"
+            exact
+            path="/ui/challenge_validator/:challengeToken"
+            component={ConsoleMeChallengeValidator}
+          />
           <Route component={NoMatch} />
         </Switch>
       </AuthProvider>

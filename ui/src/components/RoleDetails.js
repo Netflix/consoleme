@@ -95,7 +95,7 @@ function RoleDetails(props) {
                 <List.Header>Template</List.Header>
                 <List.Description>
                   {role.templated
-                    ? "This is role is templated by Honeybee"
+                    ? "This is role is templated"
                     : "There is no template for this role"}
                 </List.Description>
               </List.Content>

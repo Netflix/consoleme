@@ -8,6 +8,7 @@ from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler, redis_get
 from consoleme.models import (
     CloudTrailDetailsModel,
@@ -27,6 +28,15 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
 internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
 red = RedisHandler().redis_sync()
+
+
+async def get_config_timeline_url_for_role(role, account_id):
+    resource_id = role.get("resourceId")
+    if resource_id:
+        config_history_url = await get_aws_config_history_url_for_resource(
+            account_id, resource_id, "AWS::IAM::Role"
+        )
+        return config_history_url
 
 
 async def get_cloudtrail_details_for_role(arn: str):
@@ -82,9 +92,11 @@ async def get_s3_details_for_role(account_id: str, role_name: str) -> S3DetailsM
                 count=error["count"],
                 bucket_name=error["bucket_name"],
                 request_prefix=error["request_prefix"],
-                operation=error["operation"],
-                error_status=error["error_status"],
-                error_code=error["error_code"],
+                error_call=error["operation"],
+                status_code=error[
+                    "error_status"
+                ],  # TODO: Fix the ambiguity with status_code and status_text
+                status_text=error["error_code"],
                 role_arn=arn,
             )
         )
@@ -129,6 +141,9 @@ async def get_role_details(
             arn=arn,
             inline_policies=role["policy"]["RolePolicyList"],
             assume_role_policy_document=role["policy"]["AssumeRolePolicyDocument"],
+            config_timeline_url=await get_config_timeline_url_for_role(
+                role, account_id
+            ),
             cloudtrail_details=await get_cloudtrail_details_for_role(arn),
             s3_details=await get_s3_details_for_role(
                 account_id=account_id, role_name=role_name

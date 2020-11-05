@@ -177,12 +177,14 @@ async def get_resource_account(arn: str) -> str:
     if resource_account:
         return resource_account
 
-    resources_from_aws_config_redis_key: str = config.get("aws_config_cache.redis_key")
+    resources_from_aws_config_redis_key: str = config.get(
+        "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+    )
 
     if not red.exists(resources_from_aws_config_redis_key):
         # This will force a refresh of our redis cache if the data exists in S3
         await retrieve_json_data_from_redis_or_s3(
-            redis_key=config.get("aws_config_cache.redis_key"),
+            redis_key=resources_from_aws_config_redis_key,
             s3_bucket=config.get("aws_config_cache_combined.s3.bucket"),
             s3_key=config.get("aws_config_cache_combined.s3.file"),
             redis_data_type="hash",
