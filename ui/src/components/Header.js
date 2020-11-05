@@ -1,24 +1,22 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Dropdown, Menu, Image } from "semantic-ui-react";
 import { NavLink } from "react-router-dom";
 
 import { useAuth } from "../auth/AuthContext";
 
 const ConsoleMeHeader = () => {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
 
   if (!user) {
+    login();
     return null;
   }
 
   const generatePoliciesDropDown = () => {
-    if (user.pages.policies.enabled === true) {
+    if (user?.pages?.policies?.enabled === true) {
       return (
         <Dropdown text="Roles and Policies" pointing className="link item">
           <Dropdown.Menu>
-            {/*<Dropdown.Item as={NavLink} to="/ui/catalog">*/}
-            {/*  Service Catalog*/}
-            {/*</Dropdown.Item>*/}
             <Dropdown.Item as={NavLink} to="/ui/policies">
               Policies
             </Dropdown.Item>
@@ -36,7 +34,7 @@ const ConsoleMeHeader = () => {
   };
 
   const generateAdvancedDropDown = () => {
-    if (user.pages.config.enabled === true) {
+    if (user?.pages?.config?.enabled === true) {
       return (
         <Dropdown text="Advanced" pointing className="link item">
           <Dropdown.Menu>
@@ -93,7 +91,7 @@ const ConsoleMeHeader = () => {
         ConsoleMe
       </Menu.Item>
       <Menu.Menu position="left">
-        <Menu.Item active={false} exact as={NavLink} name={"roles"} to="/ui/">
+        <Menu.Item active={false} exact as={NavLink} name="roles" to="/ui/">
           AWS Console Roles
         </Menu.Item>
         {generatePoliciesDropDown()}

@@ -7,6 +7,13 @@ import {
 } from "../../helpers/utils";
 import * as monaco from "monaco-editor";
 
+monaco.languages.registerCompletionItemProvider("json", {
+  triggerCharacters: getMonacoTriggerCharacters(),
+  async provideCompletionItems(model, position) {
+    const response = await getMonacoCompletions(model, position, monaco);
+    return response;
+  },
+});
 class MonacoDiffComponent extends React.Component {
   constructor(props) {
     super(props);
@@ -23,31 +30,9 @@ class MonacoDiffComponent extends React.Component {
   }
 
   onChange(newValue, e) {
-    const { modifiedEditor, debounceWait, triggerCharacters } = this.state;
-    if (e.changes.length > 0) {
-      const characterTyped = e.changes[0].text;
-      if (triggerCharacters.includes(characterTyped)) {
-        clearTimeout(this.timer);
-        this.timer = setTimeout(() => {
-          modifiedEditor.trigger(
-            "manual_trigger",
-            "editor.action.triggerSuggest"
-          );
-        }, debounceWait);
-      }
-    }
     this.onValueChange(newValue);
   }
 
-  editorWillMount(monaco) {
-    monaco.languages.registerCompletionItemProvider("json", {
-      triggerCharacters: [],
-      async provideCompletionItems(model, position) {
-        const response = await getMonacoCompletions(model, position, monaco);
-        return response;
-      },
-    });
-  }
   editorDidMount(editor) {
     editor.modifiedEditor.onDidChangeModelDecorations(() => {
       const { modifiedEditor } = this.state;

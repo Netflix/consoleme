@@ -2,6 +2,7 @@ import sys
 from typing import List
 
 import boto3
+import sentry_sdk
 from asgiref.sync import sync_to_async
 
 from consoleme.config import config
@@ -34,9 +35,14 @@ async def send_email(
     }
 
     if not config.get("ses.arn"):
-        raise Exception(
-            "Configuration value for `ses.arn` is not defined. Unable to send e-mail."
+        log.error(
+            {
+                **log_data,
+                "error": "Configuration value for `ses.arn` is not defined. Unable to send e-mail.",
+            },
+            exc_info=True,
         )
+        sentry_sdk.capture_exception()
 
     if config.get("development") and config.get("ses.override_receivers_for_dev"):
         log_data["original_to_addresses"] = to_addresses

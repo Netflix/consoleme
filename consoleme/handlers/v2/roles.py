@@ -178,7 +178,6 @@ class RoleDetailHandler(BaseAPIV2Handler):
                 message=f"Unable to retrieve the specified role: {account_id}/{role_name}. {error}",
             )
             return
-
         self.write(role_details.json())
 
     async def put(self, account_id, role_name):

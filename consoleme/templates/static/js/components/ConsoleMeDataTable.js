@@ -37,7 +37,8 @@ const expandNestedJson = (data) => {
 class ConsoleMeDataTable extends Component {
   constructor(props) {
     super(props);
-    const { configEndpoint, queryString } = props;
+    const { configEndpoint } = props;
+    const queryString = this.props.location.search;
     this.state = {
       configEndpoint,
       queryString,

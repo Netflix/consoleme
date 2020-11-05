@@ -7,27 +7,20 @@ import ConsoleMeHeader from "../components/Header";
 import ConsoleMeSidebar from "../components/Sidebar";
 
 const ProtectedRoute = (props) => {
-  const { isAuthenticated, login } = useAuth();
+  const { login, user } = useAuth();
   const match = useRouteMatch(props);
 
   useEffect(() => {
     if (!match) {
       return;
     }
-    if (!isAuthenticated()) {
+    if (!user) {
       login();
     }
   }, [match]); // eslint-disable-line
 
-  if (!isAuthenticated()) {
-    return (
-      <Dimmer active inverted>
-        <Loader size="large">Loading</Loader>
-      </Dimmer>
-    );
-  }
-
   const { component: Component, ...rest } = props;
+
   return (
     <>
       <ConsoleMeHeader />

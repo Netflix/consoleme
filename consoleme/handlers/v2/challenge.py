@@ -88,6 +88,7 @@ class ChallengeValidatorHandler(BaseHandler):
             raise MissingConfigurationValue(
                 "Challenge URL Authentication is not enabled in ConsoleMe's configuration"
             )
+        endpoint = self.kwargs.get("type")
         ip = self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
             ","
         )
@@ -119,10 +120,14 @@ class ChallengeValidatorHandler(BaseHandler):
                     *expired_challenge_tokens,
                 )
         else:
-            self.write(
-                "Unable to find a matching challenge URL. This usually means that it has expired. Please try "
-                "requesting a new challenge URL."
+            message = (
+                "Unable to find a matching challenge URL. This usually means that it has expired. "
+                "Please try requesting a new challenge URL."
             )
+            if endpoint == "web":
+                self.write(message)
+            elif endpoint == "api":
+                self.write({"message": message})
             return
         # Get fresh challenge for user's request
         user_challenge_j = red.hget(
@@ -134,9 +139,11 @@ class ChallengeValidatorHandler(BaseHandler):
             # Delete the token
             user_challenge = json.loads(user_challenge_j)
             if user_challenge.get("ttl", 0) < current_time:
-                self.write(
-                    "This challenge URL has expired. Please try requesting a new challenge URL."
-                )
+                message = "This challenge URL has expired. Please try requesting a new challenge URL."
+                if endpoint == "web":
+                    self.write(message)
+                elif endpoint == "api":
+                    self.write({"message": message})
                 return
             if ip != user_challenge.get("ip"):
                 # Todo: Sometimes the request from the CLI will be IPv6, and the request from browser is ipv4. How
@@ -151,10 +158,14 @@ class ChallengeValidatorHandler(BaseHandler):
                     "challenge_user": user_challenge.get("user"),
                 }
                 log.error(log_data)
-                self.write(
-                    "This challenge URL is associated with a different user. Ensure that your client configuration is "
-                    "specifying the correct user."
+                message = (
+                    "This challenge URL is associated with a different user. Ensure that your client"
+                    "configuration is specifying the correct user."
                 )
+                if endpoint == "web":
+                    self.write(message)
+                elif endpoint == "api":
+                    self.write({"message": message})
                 return
             user_challenge["status"] = "success"
             user_challenge["user"] = self.user
@@ -164,13 +175,17 @@ class ChallengeValidatorHandler(BaseHandler):
                 requested_challenge_token,
                 json.dumps(user_challenge),
             )
-            self.write(
-                "You've successfully authenticated to ConsoleMe and may now close this page."
-            )
+            message = "You've successfully authenticated to ConsoleMe and may now close this page."
+            if endpoint == "web":
+                self.write(message)
+            elif endpoint == "api":
+                self.write({"message": message})
         else:
-            self.write(
-                "The requested challenge URL was not found. Please try requesting a new challenge URL."
-            )
+            message = "The requested challenge URL was not found. Please try requesting a new challenge URL."
+            if endpoint == "web":
+                self.write(message)
+            elif endpoint == "api":
+                self.write({"message": message})
             return
 
 

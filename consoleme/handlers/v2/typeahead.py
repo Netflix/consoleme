@@ -48,7 +48,9 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
         except TypeError:
             limit = 20
 
-        resource_redis_cache_key = config.get("aws_config_cache.redis_key")
+        resource_redis_cache_key = config.get(
+            "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+        )
         all_resource_arns = await sync_to_async(red.hkeys)(resource_redis_cache_key)
         # Fall back to DynamoDB or S3?
         if not all_resource_arns:

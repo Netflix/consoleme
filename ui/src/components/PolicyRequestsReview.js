@@ -24,6 +24,7 @@ import {
   sendRequestCommon,
   updateRequestStatus,
 } from "../helpers/utils";
+import ResourceTagChangeComponent from "./blocks/ResourceTagChangeComponent";
 
 class PolicyRequestReview extends Component {
   constructor(props) {
@@ -316,6 +317,18 @@ class PolicyRequestReview extends Component {
                 />
               );
             }
+            if (change.change_type === "resource_tag") {
+              return (
+                <ResourceTagChangeComponent
+                  change={change}
+                  config={requestConfig}
+                  requestReadOnly={requestReadOnly}
+                  updateTag={this.updateTag}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
+                />
+              );
+            }
             if (change.change_type === "resource_policy") {
               return (
                 <ResourcePolicyChangeComponent
@@ -396,25 +409,25 @@ class PolicyRequestReview extends Component {
 
     const pageContent =
       messagesToShow === null ? (
-        <Segment>
+        <>
+          <Header size="huge">Request Review for: {extendedRequest.arn}</Header>
           {requestDetails}
           {descriptionContent}
           {changesContent}
           {commentsContent}
           {requestButtonsContent}
-        </Segment>
+        </>
       ) : (
         messagesToShow
       );
 
     return (
-      <>
+      <Dimmer.Dimmable as={Segment} dimmed={isSubmitting || loading}>
+        {pageContent}
         <Dimmer active={isSubmitting || loading} inverted>
           <Loader />
         </Dimmer>
-        <Header size="huge">Request Review for: {extendedRequest.arn}</Header>
-        {pageContent}
-      </>
+      </Dimmer.Dimmable>
     );
   }
 }
