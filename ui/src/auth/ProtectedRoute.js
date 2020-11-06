@@ -24,9 +24,7 @@ const ProtectedRoute = (props) => {
   return (
     <>
       <ConsoleMeHeader />
-      <ConsoleMeSidebar
-        recentRoles={["example_role_1", "example_role_2", "example_role_3"]}
-      />
+      <ConsoleMeSidebar />
       <Segment
         basic
         style={{

@@ -72,6 +72,7 @@ from consoleme.handlers.v2.resources import ResourceDetailHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
+    RoleConsoleLoginHandler,
     RoleDetailAppHandler,
     RoleDetailHandler,
     RolesHandler,
@@ -106,17 +107,12 @@ def make_app(jwt_validator=None):
         (
             r"/static_ui/(.*)",
             NoCacheStaticFileHandler,
-            dict(
-                path=os.path.join(path, "dist"),
-            ),
+            dict(path=os.path.join(path, "dist")),
         ),
         (
             r"/ui/(.*)",
             FrontendHandler,
-            dict(
-                path=os.path.join(path, "dist"),
-                default_filename="index.html",
-            ),
+            dict(path=os.path.join(path, "dist"), default_filename="index.html"),
         ),
         (r"/", IndexHandler),
         (r"/auth", AuthHandler),
@@ -166,6 +162,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
         (r"/api/v2/typeahead/resources", ResourceTypeAheadHandlerV2),
+        (r"/api/v2/role_login/(.*)", RoleConsoleLoginHandler),
         (r"/config/?", DynamicConfigHandler),
         (r"/create_role/?", CreateRoleViewHandler),
         (r"/myheaders/?", HeaderHandler),

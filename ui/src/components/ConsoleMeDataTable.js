@@ -11,6 +11,7 @@ import {
   Input,
   Label,
   Loader,
+  Message,
   Pagination,
   Segment,
   Table,
@@ -64,6 +65,7 @@ class ConsoleMeDataTable extends Component {
       direction: "descending",
       debounceWait: 500,
       isLoading: false,
+      warningMessage: "",
     };
 
     this.generateRows = this.generateRows.bind(this);
@@ -74,6 +76,9 @@ class ConsoleMeDataTable extends Component {
     this.renderRedirect = this.renderRedirect.bind(this);
     this.filterColumn = this.filterColumn.bind(this);
     this.filterDateRangeTime = this.filterDateRangeTime.bind(this);
+    this.generateMessagesFromQueryString = this.generateMessagesFromQueryString.bind(
+      this
+    );
   }
 
   async componentDidMount() {
@@ -110,6 +115,7 @@ class ConsoleMeDataTable extends Component {
           },
           async () => {
             await this.generateFilterFromQueryString();
+            await this.generateMessagesFromQueryString();
           }
         );
       }
@@ -328,6 +334,22 @@ class ConsoleMeDataTable extends Component {
     );
   }
 
+  async generateMessagesFromQueryString() {
+    const { queryString } = this.state;
+    const parsedQueryString = qs.parse(queryString, {
+      ignoreQueryPrefix: true,
+    });
+    if (parsedQueryString) {
+      Object.keys(parsedQueryString).forEach((key) => {
+        if (key === "warningMessage") {
+          this.setState({
+            warningMessage: atob(parsedQueryString[key]),
+          });
+        }
+      });
+    }
+  }
+
   async generateFilterFromQueryString() {
     const { tableConfig, queryString } = this.state;
     const parsedQueryString = qs.parse(queryString, {
@@ -410,7 +432,7 @@ class ConsoleMeDataTable extends Component {
             return;
           }
           const re = new RegExp(filter, "g");
-          if (!re.test(item[key])) {
+          if (item[key] && !re.test(item[key])) {
             isMatched = false;
           }
         });
@@ -480,7 +502,6 @@ class ConsoleMeDataTable extends Component {
           cells.push(
             <Table.Cell collapsing style={column.style}>
               <ReactMarkdown
-                linkTarget="_blank"
                 source={"" || new Date(entry[column.key] * 1000).toUTCString()}
               />
             </Table.Cell>
@@ -526,7 +547,6 @@ class ConsoleMeDataTable extends Component {
           cells.push(
             <Table.Cell collapsing style={column.style}>
               <ReactMarkdown
-                linkTarget="_blank"
                 source={
                   "" ||
                   (entry[column.key] != null && entry[column.key].toString())
@@ -573,6 +593,7 @@ class ConsoleMeDataTable extends Component {
       isLoading,
       redirect,
       tableConfig,
+      warningMessage,
     } = this.state;
     const totalPages = parseInt(
       filteredData.length / tableConfig.rowsPerPage,
@@ -605,6 +626,12 @@ class ConsoleMeDataTable extends Component {
           source={tableConfig.tableDescription}
           escapeHtml={false}
         />
+        {warningMessage ? (
+          <Message warning>
+            <Message.Header>Oops! there was a problem</Message.Header>
+            <p>{warningMessage}</p>
+          </Message>
+        ) : null}
         <Table collapsing sortable celled compact selectable striped>
           {columns}
           <Table.Body>{this.generateRows()}</Table.Body>

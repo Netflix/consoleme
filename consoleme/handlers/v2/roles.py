@@ -1,7 +1,10 @@
+import base64
 import sys
+from urllib.parse import parse_qs, urlencode, urlparse
 
 import sentry_sdk
 import ujson as json
+from furl import furl
 from pydantic import ValidationError
 
 from consoleme.config import config
@@ -24,7 +27,160 @@ log = config.get_logger()
 crypto = Crypto()
 auth = get_plugin_by_name(config.get("plugins.auth"))()
 aws = get_plugin_by_name(config.get("plugins.aws"))()
+group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
 internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
+
+
+class RoleConsoleLoginHandler(BaseAPIV2Handler):
+    async def get(self, role=None):
+        """
+        Attempt to retrieve credentials and redirect the user to the AWS Console
+        ---
+        description: Retrieves credentials and redirects user to AWS console.
+        responses:
+            302:
+                description: Redirects to AWS console
+        """
+        arguments = {k: self.get_argument(k) for k in self.request.arguments}
+        role = role.lower()
+        selected_roles = await group_mapping.filter_eligible_roles(role, self)
+        region = arguments.get("r", "us-east-1")
+        redirect = arguments.get("redirect")
+        log_data = {
+            "user": self.user,
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "role": role,
+            "region": region,
+            "redirect": redirect,
+            "ip": self.ip,
+        }
+
+        log_data["role"] = role
+        if not selected_roles:
+            # Not authorized
+            stats.count(
+                "RoleConsoleLoginHandler.post",
+                tags={
+                    "user": self.user,
+                    "role": role,
+                    "authorized": False,
+                    "redirect": True if redirect else False,
+                },
+            )
+            log_data[
+                "message"
+            ] = "You do not have any roles matching your search criteria. "
+            log.error(log_data)
+            self.set_status(403)
+            self.write({"type": "error", "message": log_data["message"]})
+            return
+
+        stats.count(
+            "RoleConsoleLoginHandler.post",
+            tags={
+                "user": self.user,
+                "role": role,
+                "authorized": True,
+                "redirect": True if redirect else False,
+            },
+        )
+
+        if len(selected_roles) > 1:
+            # Not sure which role the user wants. Redirect them to main page to select one.
+            stats.count(
+                "RoleConsoleLoginHandler.post",
+                tags={
+                    "user": self.user,
+                    "role": role,
+                    "authorized": False,
+                    "redirect": True if redirect else False,
+                },
+            )
+            log_data[
+                "message"
+            ] = "You have more than one role matching your query. Please select one."
+            log.error(log_data)
+            self.set_status(403)
+            warning_message_arg = {
+                "warningMessage": base64.b64encode(log_data["message"].encode()).decode(
+                    "utf-8"
+                )
+            }
+            redirect_url = furl(f"/ui/?arn={role}")
+            redirect_url.args = {
+                **redirect_url.args,
+                **arguments,
+                **warning_message_arg,
+            }
+            self.write(
+                {
+                    "type": "redirect",
+                    "message": log_data["message"],
+                    "reason": "error",
+                    "redirect_url": redirect_url.url,
+                }
+            )
+            return
+
+        log_data["message"] = "Incoming request"
+        log.debug(log_data)
+
+        # User is authorized
+        try:
+            # User-role logic:
+            # User-role should come in as cm-[username or truncated username]_[N or NC]
+            user_role = False
+            account_id = None
+
+            selected_role = selected_roles[0]
+
+            # User role must be defined as a user attribute
+            if (
+                self.user_role_name
+                and "role/" in role
+                and role.split("role/")[1] == self.user_role_name
+            ):
+                user_role = True
+                account_id = role.split("arn:aws:iam::")[1].split(":role")[0]
+
+            url = await aws.generate_url(
+                self.user,
+                selected_role,
+                region,
+                user_role=user_role,
+                account_id=account_id,
+            )
+        except Exception as e:
+            log_data["message"] = "Exception generating AWS console URL"
+            log_data["error"] = e
+            log.error(log_data, exc_info=True)
+            stats.count("index.post.exception")
+            self.set_status(403)
+            self.write(
+                {
+                    "type": "error",
+                    "message": log_data["message"],
+                    "error": log_data["error"],
+                }
+            )
+            return
+        if redirect:
+            parsed_url = urlparse(url)
+            parsed_url_query = parse_qs(parsed_url.query)
+            parsed_url_query["Destination"] = redirect
+            updated_query = urlencode(parsed_url_query, doseq=True)
+            url = parsed_url._replace(query=updated_query).geturl()
+        self.write(
+            {
+                "type": "redirect",
+                "redirect_url": url,
+                "reason": "console_login",
+                "role": selected_role,
+            }
+        )
+        return
 
 
 class RolesHandler(BaseAPIV2Handler):

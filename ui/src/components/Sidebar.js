@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Label, Icon, Image, Menu } from "semantic-ui-react";
 import { useApi } from "../auth/useApi";
+import { parseLocalStorageCache } from "../helpers/utils";
+import { NavLink } from "react-router-dom";
 
 const LOGO_URL =
   "/static/screenplay/assets/netflix-security-dark-bg-tight.5f1eba5edb.svg";
@@ -20,6 +22,9 @@ const ConsoleMeSidebar = (props) => {
     support_slack,
   } = data;
 
+  const localStorageRecentRolesKey = "consoleMeLocalStorage";
+  const recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
+
   return (
     <Menu
       color="black"
@@ -34,16 +39,24 @@ const ConsoleMeSidebar = (props) => {
       }}
     >
       <Menu.Item>
-        <Label>{props.recentRoles.length}</Label>
+        <Label>{recentRoles && recentRoles.length}</Label>
         <Menu.Header>Recent Roles</Menu.Header>
         <Menu.Menu>
-          {props.recentRoles.map((role) => {
-            return (
-              <Menu.Item as="a" name={role} key={role}>
-                {role}
-              </Menu.Item>
-            );
-          })}
+          {recentRoles &&
+            recentRoles.map((role) => {
+              const accountId = role.split(":")[4];
+              const roleName = role.split("/").pop();
+              return (
+                <Menu.Item
+                  as={NavLink}
+                  name={role}
+                  key={role}
+                  to={"/ui/role/" + role}
+                >
+                  {roleName} ({accountId})
+                </Menu.Item>
+              );
+            })}
         </Menu.Menu>
       </Menu.Item>
       <Menu.Item>
