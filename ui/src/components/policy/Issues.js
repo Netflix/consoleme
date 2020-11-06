@@ -7,7 +7,8 @@ const Issues = () => {
   let s3 = null;
   let cloudtrail = null;
 
-  if (resource && resource.s3_errors) {
+  // This is where s3 errors stored for resource policy
+  if (resource?.s3_errors) {
     s3 = {
       errors: {
         s3_errors: resource.s3_errors,
@@ -19,7 +20,8 @@ const Issues = () => {
   }
 
   const cloudTrailErrors = () => {
-    if (cloudtrail.errors.cloudtrail_errors.length > 0) {
+    if (cloudtrail?.errors?.cloudtrail_errors.length > 0) {
+      const rows = [];
       const header = (
         <Table.Header>
           <Table.Row>
@@ -29,7 +31,6 @@ const Issues = () => {
         </Table.Header>
       );
 
-      let rows = [];
       cloudtrail.errors.cloudtrail_errors.forEach((error) => {
         rows.push(
           <Table.Row negative>
@@ -38,20 +39,26 @@ const Issues = () => {
           </Table.Row>
         );
       });
+
       const errorLink = () => {
-        if (cloudtrail.error_url) {
+        if (cloudtrail?.error_url) {
           return (
             <>
-              {"("}
-              <a href={cloudtrail.error_url} target={"_blank"}>
+              (
+              <a
+                href={cloudtrail.error_url}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
                 Click here to see logs
               </a>
-              {")"}
+              )
             </>
           );
         }
         return null;
       };
+
       return (
         <>
           <Header as="h2">
@@ -67,22 +74,22 @@ const Issues = () => {
           </Table>
         </>
       );
-    } else
-      return (
-        <>
-          <Header as="h2">
-            No Cloudtrail Errors
-            <Header.Subheader>
-              We didn't find recent Cloudtrail errors associated with this
-              resource.
-            </Header.Subheader>
-          </Header>
-        </>
-      );
+    }
+    return (
+      <>
+        <Header as="h2">
+          No Cloudtrail Errors
+          <Header.Subheader>
+            We didn&apos;t find recent Cloudtrail errors associated with this
+            resource.
+          </Header.Subheader>
+        </Header>
+      </>
+    );
   };
 
   const s3Errors = () => {
-    if (s3.errors.s3_errors.length > 0) {
+    if (s3?.errors?.s3_errors?.length > 0) {
       const header = (
         <Table.Header>
           <Table.Row>
@@ -95,7 +102,8 @@ const Issues = () => {
           </Table.Row>
         </Table.Header>
       );
-      let rows = [];
+
+      const rows = [];
       s3.errors.s3_errors.forEach((error) => {
         rows.push(
           <Table.Row negative>
@@ -109,19 +117,15 @@ const Issues = () => {
         );
       });
 
-      const errorLink = () => {
-        if (s3.error_url) {
-          return (
-            <>
-              {"("}
-              <a href={s3.error_url} target={"_blank"}>
-                Click here to see logs
-              </a>
-              {")"}
-            </>
-          );
-        }
-      };
+      const errorLink = s3?.error_url ? (
+        <>
+          (
+          <a href={s3.error_url} rel="noopener noreferrer" target="_blank">
+            Click here to see logs
+          </a>
+          )
+        </>
+      ) : null;
 
       return (
         <>
@@ -138,17 +142,18 @@ const Issues = () => {
           </Table>
         </>
       );
-    } else
-      return (
-        <>
-          <Header as="h2">
-            No S3 Errors
-            <Header.Subheader>
-              We didn't find any recent S3 errors associated with this resource.
-            </Header.Subheader>
-          </Header>
-        </>
-      );
+    }
+    return (
+      <>
+        <Header as="h2">
+          No S3 Errors
+          <Header.Subheader>
+            We didn&apos;t find any recent S3 errors associated with this
+            resource.
+          </Header.Subheader>
+        </Header>
+      </>
+    );
   };
 
   return (

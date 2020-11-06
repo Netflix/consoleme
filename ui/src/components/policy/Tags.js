@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Button, Form, Header, Segment } from "semantic-ui-react";
-import { usePolicyContext } from "./hooks/PolicyProvider";
 import usePolicyTag from "./hooks/usePolicyTag";
 import { JustificationModal } from "./PolicyModals";
 import { useAuth } from "../../auth/AuthContext";
@@ -8,12 +7,7 @@ import { useAuth } from "../../auth/AuthContext";
 const Tags = () => {
   const { user } = useAuth();
   const {
-    resource = {},
-    setAdminAutoApprove,
-    setTogglePolicyModal,
-  } = usePolicyContext();
-
-  const {
+    arn,
     tags = [],
     isNewTag = false,
     tagChanges = [],
@@ -22,9 +16,9 @@ const Tags = () => {
     deleteTag,
     toggleNewTag,
     handleTagSave,
-  } = usePolicyTag(resource);
+    setModalWithAdminAutoApprove,
+  } = usePolicyTag();
 
-  const { arn } = resource;
   const [newTag, setNewTag] = useState({ Key: "", Value: "" });
 
   const onCreateTag = () => toggleNewTag(true);
@@ -38,13 +32,11 @@ const Tags = () => {
     });
   };
   const onSaveTags = () => {
-    setAdminAutoApprove(true);
-    setTogglePolicyModal(true);
+    setModalWithAdminAutoApprove(true);
   };
 
   const onSubmitTags = () => {
-    setAdminAutoApprove(false);
-    setTogglePolicyModal(true);
+    setModalWithAdminAutoApprove(false);
   };
 
   const tagList = tags.map((tag) => {
@@ -54,21 +46,21 @@ const Tags = () => {
           label="Key"
           placeholder="Key"
           defaultValue={tag.Key}
-          onChange={onUpdateTag.bind(this, tag, "update_key")}
+          onChange={(e) => onUpdateTag(tag, "update_key", e)}
           disabled={tag.New}
         />
         <Form.Input
           label="Value"
           placeholder="Value"
           defaultValue={tag.Value}
-          onChange={onUpdateTag.bind(this, tag, "update_value")}
+          onChange={(e) => onUpdateTag(tag, "update_value", e)}
           disabled={tag.New}
         />
         <Form.Button
           negative
           icon="remove"
           content="Delete Tag"
-          onClick={onDeleteTag.bind(this, tag)}
+          onClick={(e) => onDeleteTag(tag, e)}
         />
       </Form.Group>
     );

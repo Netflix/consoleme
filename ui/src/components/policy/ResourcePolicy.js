@@ -1,4 +1,4 @@
-import React  from "react";
+import React from "react";
 import { Tab } from "semantic-ui-react";
 import Issues from "./Issues";
 import ResourcePolicyEditor from "./ResourcePolicyEditor";
@@ -13,9 +13,9 @@ const ResourcePolicy = () => {
       },
       render: () => {
         return (
-            <Tab.Pane>
-                <ResourcePolicyEditor />
-            </Tab.Pane>
+          <Tab.Pane>
+            <ResourcePolicyEditor />
+          </Tab.Pane>
         );
       },
     },
@@ -26,9 +26,9 @@ const ResourcePolicy = () => {
       },
       render: () => {
         return (
-            <Tab.Pane>
-              <Tags />
-            </Tab.Pane>
+          <Tab.Pane>
+            <Tags />
+          </Tab.Pane>
         );
       },
     },
@@ -41,18 +41,18 @@ const ResourcePolicy = () => {
       },
       render: () => {
         return (
-            <Tab.Pane>
-              <Issues />
-            </Tab.Pane>
+          <Tab.Pane>
+            <Issues />
+          </Tab.Pane>
         );
       },
     },
   ];
 
   return (
-      <>
-        <Tab panes={tabs} />
-      </>
+    <>
+      <Tab panes={tabs} />
+    </>
   );
 };
 

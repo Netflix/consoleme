@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+/* eslint-disable camelcase */
+import React from "react";
 import { Message, Table } from "semantic-ui-react";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 
@@ -8,7 +9,6 @@ const ResourceDetail = () => {
   const {
     account_id,
     account_name,
-    apps,
     arn,
     cloudtrail_details,
     name,
@@ -18,7 +18,6 @@ const ResourceDetail = () => {
     config_timeline_url,
   } = resource;
 
-  // TODO, need information for resource id, resource type, created on, last updated, bigbrother link, s3 hive
   return (
     <>
       <Table celled striped definition>
@@ -48,6 +47,7 @@ const ResourceDetail = () => {
                 href={
                   (cloudtrail_details && cloudtrail_details.error_url) || ""
                 }
+                rel="noopener noreferrer"
                 target="_blank"
               >
                 Link
@@ -59,6 +59,7 @@ const ResourceDetail = () => {
             <Table.Cell>
               <a
                 href={(s3_details && s3_details.error_url) || ""}
+                rel="noopener noreferrer"
                 target="_blank"
               >
                 Link
@@ -69,7 +70,11 @@ const ResourceDetail = () => {
             <Table.Row>
               <Table.Cell>Config Timeline</Table.Cell>
               <Table.Cell>
-                <a href={config_timeline_url} target="_blank">
+                <a
+                  href={config_timeline_url}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
                   Link
                 </a>
               </Table.Cell>
@@ -92,7 +97,11 @@ const ResourceDetail = () => {
                   <>
                     {" "}
                     (
-                    <a href={template_link} target="_blank">
+                    <a
+                      href={template_link}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
                       Link
                     </a>
                     )
@@ -114,7 +123,7 @@ const ResourceDetail = () => {
             <>
               {" "}
               You may view the template{" "}
-              <a href={template_link} target="_blank">
+              <a href={template_link} rel="noopener noreferrer" target="_blank">
                 here
               </a>
               .

@@ -1,7 +1,6 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { Accordion, Button, Header, Segment } from "semantic-ui-react";
 import { Link } from "react-router-dom";
-import { usePolicyContext } from "./hooks/PolicyProvider";
 import useInlinePolicy from "./hooks/useInlinePolicy";
 import {
   PolicyMonacoEditor,
@@ -10,8 +9,8 @@ import {
 import { JustificationModal } from "./PolicyModals";
 
 const InlinePolicy = () => {
-  const { resource = {} } = usePolicyContext();
   const {
+    arn,
     activeIndex = [],
     inlinePolicies = [],
     isNewPolicy = false,
@@ -21,7 +20,7 @@ const InlinePolicy = () => {
     updateInlinePolicy,
     deleteInlinePolicy,
     handleInlinePolicySubmit,
-  } = useInlinePolicy(resource);
+  } = useInlinePolicy();
 
   const toggleNewInlinePolicy = () => {
     setIsNewPolicy(true);
@@ -91,7 +90,7 @@ const InlinePolicy = () => {
           <Button
             as={Link}
             disabled={false}
-            to={`/ui/selfservice?arn=${encodeURIComponent(resource.arn)}`}
+            to={`/ui/selfservice?arn=${encodeURIComponent(arn)}`}
             primary
           >
             Policy Wizard

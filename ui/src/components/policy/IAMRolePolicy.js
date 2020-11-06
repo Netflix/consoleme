@@ -78,23 +78,18 @@ const IAMRolePolicy = () => {
       menuItem: {
         key: "issues",
         content: (() => {
-          const cloudtrail_details_errors =
-            cloudtrail_details && cloudtrail_details.errors;
-          const s3_details_errors = s3_details && s3_details.errors;
-
-          if (cloudtrail_details_errors && s3_details_errors) {
+          if (cloudtrail_details?.errors || s3_details?.errors) {
             return (
               <>
                 Issues
                 <Label color="red">
-                  {cloudtrail_details_errors.cloudtrail_errors.length +
-                    s3_details_errors.s3_errors.length}
+                  {cloudtrail_details?.errors?.cloudtrail_errors.length +
+                    s3_details?.errors?.s3_errors.length}
                 </Label>
               </>
             );
-          } else {
-            return "Issues";
           }
+          return "Issues";
         })(),
       },
       render: () => {
@@ -107,9 +102,7 @@ const IAMRolePolicy = () => {
     },
   ];
 
-  return (
-      <Tab panes={tabs} />
-  );
+  return <Tab panes={tabs} />;
 };
 
 export default IAMRolePolicy;

@@ -6,19 +6,18 @@ const useAssumeRolePolicy = (resource) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    setAssumeRolePolicy(resource.assume_role_policy_document);
+    dispatch({
+      type: "SET_ASSUMEROLE_POLICY",
+      policy: resource.assume_role_policy_document,
+    });
   }, [resource.assume_role_policy_document]);
-
-  const setAssumeRolePolicy = (policy) => {
-    dispatch({ type: "SET_ASSUMEROLE_POLICY", policy });
-  };
 
   const handleAssumeRolePolicySubmit = async ({
     arn,
     adminAutoApprove,
     justification,
   }) => {
-    const requestV2 = {
+    return sendRequestV2({
       justification,
       admin_auto_approve: adminAutoApprove,
       changes: {
@@ -34,13 +33,13 @@ const useAssumeRolePolicy = (resource) => {
           },
         ],
       },
-    };
-    return sendRequestV2(requestV2);
+    });
   };
 
   return {
     ...state,
-    setAssumeRolePolicy,
+    setAssumeRolePolicy: (policy) =>
+      dispatch({ type: "SET_ASSUMEROLE_POLICY", policy }),
     handleAssumeRolePolicySubmit,
   };
 };
