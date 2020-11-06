@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import { sendRequestCommon, parseLocalStorageCache } from "../helpers/utils";
 import { useParams } from "react-router-dom";
 import { Message } from "semantic-ui-react";
+import { sendRequestCommon, parseLocalStorageCache } from "../helpers/utils";
 
-function ConsoleLogin(props) {
+function ConsoleLogin() {
   const { roleQuery } = useParams();
   const queryString = window.location.search;
   const [signOut, setSignOut] = useState(false);

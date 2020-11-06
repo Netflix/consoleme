@@ -42,20 +42,21 @@ const ConsoleMeSidebar = (props) => {
         <Label>{recentRoles && recentRoles.length}</Label>
         <Menu.Header>Recent Roles</Menu.Header>
         <Menu.Menu>
-          {recentRoles.map((role) => {
-            const accountId = role.split(":")[4];
-            const roleName = role.split("/").pop();
-            return (
-              <Menu.Item
-                as={NavLink}
-                name={role}
-                key={role}
-                to={"/ui/role/" + role}
-              >
-                {roleName} ({accountId})
-              </Menu.Item>
-            );
-          })}
+          {recentRoles &&
+            recentRoles.map((role) => {
+              const accountId = role.split(":")[4];
+              const roleName = role.split("/").pop();
+              return (
+                <Menu.Item
+                  as={NavLink}
+                  name={role}
+                  key={role}
+                  to={"/ui/role/" + role}
+                >
+                  {roleName} ({accountId})
+                </Menu.Item>
+              );
+            })}
         </Menu.Menu>
       </Menu.Item>
       <Menu.Item>
