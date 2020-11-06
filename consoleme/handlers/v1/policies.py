@@ -757,7 +757,8 @@ class PolicyReviewHandler(BaseHandler):
             self.user, self.groups
         )
         supported_resource_policies = config.get(
-            "policies.supported_resource_types_for_policy_application", []
+            "policies.supported_resource_types_for_policy_application",
+            ["s3", "sqs", "sns"],
         )
         resource_policies: List[Dict] = request.get("resource_policies", [])
         for resource_policy in resource_policies:

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
 
 export const useApi = (url, options = {}) => {
-  const { isAuthenticated, login } = useAuth();
+  const { login, user } = useAuth();
   const [state, setState] = useState({
     error: null,
     loading: true,
@@ -12,7 +12,7 @@ export const useApi = (url, options = {}) => {
 
   useEffect(() => {
     (async () => {
-      if (!isAuthenticated()) {
+      if (!user) {
         await login();
       }
 

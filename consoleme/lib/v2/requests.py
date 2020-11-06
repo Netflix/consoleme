@@ -3,7 +3,7 @@ import sys
 import time
 import uuid
 from hashlib import sha256
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 import sentry_sdk
 import ujson as json
@@ -21,6 +21,7 @@ from consoleme.exceptions.exceptions import (
 )
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.aws import (
+    fetch_resource_details,
     generate_updated_resource_policy,
     get_region_from_arn,
     get_resource_account,
@@ -65,7 +66,9 @@ from consoleme.models import (
     RequestStatus,
     ResourceModel,
     ResourcePolicyChangeModel,
+    ResourceTagChangeModel,
     Status,
+    TagAction,
     UpdateChangeModificationModel,
     UserModel,
 )
@@ -105,11 +108,13 @@ async def generate_request_from_change_model_array(
     managed_policy_changes = []
     resource_policy_changes = []
     assume_role_policy_changes = []
+    resource_tag_changes = []
+    role = None
 
     extended_request_uuid = str(uuid.uuid4())
     incremental_change_id = 0
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application", []
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
 
     for change in change_models.changes:
@@ -151,6 +156,10 @@ async def generate_request_from_change_model_array(
             assume_role_policy_changes.append(
                 AssumeRolePolicyChangeModel.parse_obj(change.__dict__)
             )
+        elif change.change_type == "resource_tag":
+            resource_tag_changes.append(
+                ResourceTagChangeModel.parse_obj(change.__dict__)
+            )
         else:
             raise UnsupportedChangeType(
                 f"Invalid `change_type` for change: {change.__dict__}"
@@ -187,11 +196,11 @@ async def generate_request_from_change_model_array(
         or len(managed_policy_changes) > 0
         or len(assume_role_policy_changes) > 0
     ):
-        # for inline policies and managed policies, principal arn must be a role
+        # for inline/managed/assume role policies, principal arn must be a role
         if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
             log_data[
                 "message"
-            ] = "ARN type not supported for inline/managed/assume role policy changes."
+            ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
             log.error(log_data)
             raise InvalidRequestParameter(log_data["message"])
         role_name = arn_parsed["resource_path"].split("/")[-1]
@@ -207,6 +216,8 @@ async def generate_request_from_change_model_array(
             await validate_assume_role_policy_change(
                 assume_role_policy_change, user, role
             )
+        for resource_tag_change in resource_tag_changes:
+            await validate_resource_tag_change(resource_tag_change, user, role)
 
     # TODO: validate resource policy logic when we are ready to apply that
 
@@ -216,8 +227,10 @@ async def generate_request_from_change_model_array(
         + managed_policy_changes
         + resource_policy_changes
         + assume_role_policy_changes
+        + resource_tag_changes
     )
     extended_request = ExtendedRequestModel(
+        admin_auto_approve=request_creation.admin_auto_approve,
         id=extended_request_uuid,
         arn=primary_principal_arn,
         timestamp=int(time.time()),
@@ -236,6 +249,7 @@ async def generate_request_from_change_model_array(
         cross_account=False,
         arn_url=arn_url,
     )
+    extended_request = await populate_old_policies(extended_request, user, role)
     extended_request = await generate_resource_policies(extended_request, user)
     return extended_request
 
@@ -310,10 +324,12 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
             "message"
         ] = "ARN type not supported for generating resource policy changes."
         log.error(log_data)
-        raise InvalidRequestParameter(log_data["message"])
+        return extended_request
 
     resource_policy = {"Version": "2012-10-17", "Statement": []}
     resource_policy_sha = sha256(json.dumps(resource_policy).encode()).hexdigest()
+    if not arn_parsed.get("resource_path") or not arn_parsed.get("service"):
+        return extended_request
     primary_principal_resource_model = ResourceModel(
         arn=extended_request.arn,
         name=arn_parsed["resource_path"].split("/")[-1],
@@ -372,7 +388,7 @@ async def validate_inline_policy_change(
         "request": change.dict(),
         "message": "Validating inline policy change",
     }
-    log.info(log_data)
+    log.debug(log_data)
     if (
         await invalid_characters_in_policy(change.policy.policy_document)
         or await invalid_characters_in_policy(change.policy_name)
@@ -402,6 +418,7 @@ async def validate_inline_policy_change(
         if (
             not change.new
             and change.policy.policy_document == existing_policy.get("PolicyDocument")
+            and change.policy_name == existing_policy.get("PolicyName")
             and change.action == Action.attach
         ):
             log_data[
@@ -442,7 +459,8 @@ async def validate_managed_policy_change(
         "message": "Validating managed policy change",
     }
     log.info(log_data)
-    if await invalid_characters_in_policy(change.policy_name):
+    policy_name = change.arn.split("/")[-1]
+    if await invalid_characters_in_policy(policy_name):
         log_data["message"] = "Invalid characters were detected in the policy name."
         log.error(log_data)
         raise InvalidRequestParameter(log_data["message"])
@@ -474,6 +492,22 @@ async def validate_managed_policy_change(
     # TODO: check policy name is same what ARN claims
 
 
+async def validate_resource_tag_change(
+    change: ResourceTagChangeModel, user: str, role: ExtendedRoleModel
+):
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "arn": change.principal_arn,
+        "request": change.dict(),
+        "role": role,
+        "message": "Validating resource tag change",
+    }
+    log.debug(log_data)
+    # TODO: Add validation here
+    return
+
+
 async def validate_assume_role_policy_change(
     change: AssumeRolePolicyChangeModel, user: str, role: ExtendedRoleModel
 ):
@@ -484,7 +518,7 @@ async def validate_assume_role_policy_change(
         "request": change.dict(),
         "message": "Validating assume role policy change",
     }
-    log.info(log_data)
+    log.debug(log_data)
     if await invalid_characters_in_policy(
         change.policy.policy_document
     ) or await invalid_characters_in_policy(change.policy.version):
@@ -535,7 +569,7 @@ async def apply_changes_to_role(
     if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
         log_data[
             "message"
-        ] = "ARN type not supported for inline/managed/assume role policy changes."
+        ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
         log.error(log_data)
         response.errors += 1
         response.action_results.append(
@@ -699,18 +733,89 @@ async def apply_changes_to_role(
                         + str(e),
                     )
                 )
+        elif change.change_type == "resource_tag":
+            if change.tag_action in [TagAction.create, TagAction.update]:
+                if change.original_key and not change.key:
+                    change.key = change.original_key
+                if change.original_value and not change.value:
+                    change.value = change.original_value
+                try:
+                    await sync_to_async(iam_client.tag_role)(
+                        RoleName=role_name,
+                        Tags=[{"Key": change.key, "Value": change.value}],
+                    )
+                    response.action_results.append(
+                        ActionResult(
+                            status="success",
+                            message=f"Successfully created or updated tag for role: {role_name}",
+                        )
+                    )
+                    if change.original_key and change.original_key != change.key:
+                        await sync_to_async(iam_client.untag_role)(
+                            RoleName=role_name, TagKeys=[change.original_key]
+                        )
+                        response.action_results.append(
+                            ActionResult(
+                                status="success",
+                                message=f"Successfully renamed tag {change.original_key} to {change.key}.",
+                            )
+                        )
+                    change.status = Status.applied
+                except Exception as e:
+                    log_data["message"] = "Exception occurred creating or updating tag"
+                    log_data["error"] = str(e)
+                    log.error(log_data, exc_info=True)
+                    sentry_sdk.capture_exception()
+                    response.errors += 1
+                    response.action_results.append(
+                        ActionResult(
+                            status="error",
+                            message=f"Error occurred updating tag for role: {role_name}: "
+                            + str(e),
+                        )
+                    )
+            if change.tag_action == TagAction.delete:
+                try:
+                    await sync_to_async(iam_client.untag_role)(
+                        RoleName=role_name, TagKeys=[change.key]
+                    )
+                    response.action_results.append(
+                        ActionResult(
+                            status="success",
+                            message=f"Successfully deleted tag for role: {role_name}",
+                        )
+                    )
+                    change.status = Status.applied
+                except Exception as e:
+                    log_data["message"] = "Exception occurred deleting tag"
+                    log_data["error"] = str(e)
+                    log.error(log_data, exc_info=True)
+                    sentry_sdk.capture_exception()
+                    response.errors += 1
+                    response.action_results.append(
+                        ActionResult(
+                            status="error",
+                            message=f"Error occurred deleting tag for role: {role_name}: "
+                            + str(e),
+                        )
+                    )
         else:
             # unsupported type for auto-application
-            response.action_results.append(
-                ActionResult(
-                    status="error",
-                    message=f"Error occurred applying: Change type {change.change_type} is not supported",
+            if change.autogenerated and extended_request.admin_auto_approve:
+                # If the change was auto-generated and an administrator auto-approved the choices, there's no need
+                # to try to apply the auto-generated policies.
+                pass
+            else:
+                response.action_results.append(
+                    ActionResult(
+                        status="error",
+                        message=f"Error occurred applying: Change type {change.change_type} is not supported",
+                    )
                 )
-            )
-            response.errors += 1
-            log_data["message"] = "Unsupported type for auto-application detected"
-            log_data["change"] = change.dict()
-            log.error(log_data)
+                response.errors += 1
+                log_data["message"] = "Unsupported type for auto-application detected"
+                log_data["change"] = change.dict()
+                log.error(log_data)
 
     log_data["message"] = "Finished applying request changes"
     log_data["request"] = extended_request.dict()
@@ -719,7 +824,9 @@ async def apply_changes_to_role(
 
 
 async def populate_old_policies(
-    extended_request: ExtendedRequestModel, user: str
+    extended_request: ExtendedRequestModel,
+    user: str,
+    role: Optional[ExtendedRoleModel] = None,
 ) -> ExtendedRequestModel:
     """
     Populates the old policies for each inline policy.
@@ -750,9 +857,10 @@ async def populate_old_policies(
         return extended_request
 
     role_name = arn_parsed["resource_path"].split("/")[-1]
-    role = await get_role_details(
-        role_account_id, role_name=role_name, extended=True, force_refresh=True
-    )
+    if not role:
+        role = await get_role_details(
+            role_account_id, role_name=role_name, extended=True, force_refresh=True
+        )
 
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
@@ -901,6 +1009,192 @@ async def populate_cross_account_resource_policies(
     return {"changed": resource_policies_changed, "extended_request": extended_request}
 
 
+async def apply_non_iam_resource_tag_change(
+    extended_request: ExtendedRequestModel,
+    change: ResourceTagChangeModel,
+    response: PolicyRequestModificationResponseModel,
+    user: str,
+) -> PolicyRequestModificationResponseModel:
+    """
+    Applies resource tagging changes for supported non IAM role tags
+
+    Caution: this method applies changes blindly... meaning it assumes before calling this method,
+    you have validated the changes being made are authorized.
+
+    :param change: ResourcePolicyChangeModel
+    :param extended_request: ExtendedRequestModel
+    :param user: Str - requester's email address
+    :param response: RequestCreationResponse
+
+    """
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "change": change.dict(),
+        "message": "Applying resource policy change changes",
+        "request": extended_request.dict(),
+    }
+    resource_arn_parsed = parse_arn(change.principal_arn)
+    resource_type = resource_arn_parsed["service"]
+    resource_name = resource_arn_parsed["resource"]
+    resource_region = resource_arn_parsed["region"]
+    resource_account = resource_arn_parsed["account"]
+    if not resource_account:
+        resource_account = await get_resource_account(change.principal_arn)
+
+    if not resource_account:
+        # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
+        # we can't apply this change
+        log_data["message"] = "Resource account not found"
+        log.warn(log_data)
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Cannot apply change to {change.principal_arn} as cannot determine resource account",
+            )
+        )
+        return response
+
+    supported_resource_types = config.get(
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+    )
+
+    if resource_type not in supported_resource_types:
+        log_data["message"] = "Resource change not supported"
+        log.warn(log_data)
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Cannot apply change to {change.principal_arn} as it's not supported",
+            )
+        )
+        return response
+
+    try:
+        client = await sync_to_async(boto3_cached_conn)(
+            resource_type,
+            service_type="client",
+            future_expiration_minutes=15,
+            account_number=resource_account,
+            assume_role=config.get("policies.role_name"),
+            region=resource_region or config.region,
+            session_name="ConsoleMe_apply_resource_tag_v2",
+            arn_partition="aws",
+        )
+
+        resource_details = await fetch_resource_details(
+            resource_account,
+            resource_type,
+            resource_name,
+            resource_region or config.region,
+        )
+
+        if change.original_key and not change.key:
+            change.key = change.original_key
+        if change.original_value and not change.value:
+            change.value = change.original_value
+
+        if resource_type == "s3":
+            if change.tag_action in [TagAction.create, TagAction.update]:
+                resource_details["TagSet"].append(
+                    {"Key": change.key, "Value": change.value}
+                )
+
+                await sync_to_async(client.put_bucket_tagging)(
+                    Bucket=resource_name,
+                    Tagging={"TagSet": resource_details["TagSet"]},
+                )
+
+                # Rename a tag key
+                resulting_tagset = []
+                if change.original_key and change.original_key != change.key:
+                    for tag in resource_details["TagSet"]:
+                        if tag.get("Key") != change.original_key:
+                            resulting_tagset.append(tag)
+
+                    resource_details["TagSet"] = resulting_tagset
+                    await sync_to_async(client.put_bucket_tagging)(
+                        Bucket=resource_name,
+                        Tagging={"TagSet": resource_details["TagSet"]},
+                    )
+
+            elif change.tag_action == TagAction.delete:
+                resulting_tagset = []
+
+                for tag in resource_details["TagSet"]:
+                    if tag.get("Key") != change.key:
+                        resulting_tagset.append(tag)
+
+                resource_details["TagSet"] = resulting_tagset
+                await sync_to_async(client.put_bucket_tagging)(
+                    Bucket=resource_name,
+                    Tagging={"TagSet": resource_details["TagSet"]},
+                )
+        elif resource_type == "sns":
+            if change.tag_action in [TagAction.create, TagAction.update]:
+                await sync_to_async(client.tag_resource)(
+                    ResourceArn=change.principal_arn,
+                    Tags=[{"Key": change.key, "Value": change.value}],
+                )
+                # Renaming a key
+                if change.original_key and change.original_key != change.key:
+                    await sync_to_async(client.untag_resource)(
+                        ResourceArn=change.principal_arn,
+                        TagKeys=[change.original_key],
+                    )
+            elif change.tag_action == TagAction.delete:
+                await sync_to_async(client.untag_resource)(
+                    ResourceArn=change.principal_arn,
+                    TagKeys=[change.key],
+                )
+        elif resource_type == "sqs":
+            if change.tag_action in [TagAction.create, TagAction.update]:
+                await sync_to_async(client.tag_queue)(
+                    QueueUrl=resource_details["QueueUrl"],
+                    Tags={change.key: change.value},
+                )
+                # Renaming a key
+                if change.original_key and change.original_key != change.key:
+                    await sync_to_async(client.untag_queue)(
+                        QueueUrl=resource_details["QueueUrl"],
+                        TagKeys=[change.original_key],
+                    )
+            elif change.tag_action == TagAction.delete:
+                await sync_to_async(client.untag_queue)(
+                    QueueUrl=resource_details["QueueUrl"], TagKeys=[change.key]
+                )
+        response.action_results.append(
+            ActionResult(
+                status="success",
+                message=f"Successfully updated resource policy for {change.principal_arn}",
+            )
+        )
+        change.status = Status.applied
+
+    except Exception as e:
+        log_data["message"] = "Exception changing resource tags"
+        log_data["error"] = str(e)
+        log.error(log_data, exc_info=True)
+        sentry_sdk.capture_exception()
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Error occurred changing resource tags for {change.principal_arn}"
+                + str(e),
+            )
+        )
+
+    log_data["message"] = "Finished applying resource tagging change"
+    log_data["response"] = response.dict()
+    log_data["request"] = extended_request.dict()
+    log_data["change"] = change.dict()
+    log.debug(log_data)
+    return response
+
+
 async def apply_resource_policy_change(
     extended_request: ExtendedRequestModel,
     change: ResourcePolicyChangeModel,
@@ -952,7 +1246,7 @@ async def apply_resource_policy_change(
         return response
 
     supported_resource_types = config.get(
-        "policies.supported_resource_types_for_policy_application", []
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
 
     if not change.supported or resource_type not in supported_resource_types:
@@ -1109,6 +1403,7 @@ async def maybe_approve_reject_request(
         extended_request.request_status = RequestStatus.cancelled
         request_status_changed = True
     if request_status_changed:
+        extended_request.reviewer = user
         response = await _update_dynamo_with_change(
             user,
             extended_request,
@@ -1120,7 +1415,10 @@ async def maybe_approve_reject_request(
         )
         await send_communications_policy_change_request_v2(extended_request)
         account_id = await get_resource_account(extended_request.arn)
-        await aws.fetch_iam_role(account_id, extended_request.arn, force_refresh=True)
+        if extended_request.arn.startswith("aws:aws:iam::"):
+            await aws.fetch_iam_role(
+                account_id, extended_request.arn, force_refresh=True
+            )
     return response
 
 
@@ -1249,6 +1547,7 @@ async def parse_and_apply_policy_request_modification(
                 specific_change.autogenerated = False
             success_message = "Successfully updated policy document"
             error_message = "Error occurred updating policy document"
+            specific_change.updated_by = user
             response = await _update_dynamo_with_change(
                 user,
                 extended_request,
@@ -1282,6 +1581,13 @@ async def parse_and_apply_policy_request_modification(
                 response = await apply_resource_policy_change(
                     extended_request, specific_change, response, user
                 )
+            elif (
+                specific_change.change_type == "resource_tag"
+                and not specific_change.principal_arn.startswith("arn:aws:iam::")
+            ):
+                response = await apply_non_iam_resource_tag_change(
+                    extended_request, specific_change, response, user
+                )
             else:
                 # Save current policy by populating "old" policies at the time of application for historical record
                 extended_request = await populate_old_policies(extended_request, user)
@@ -1296,6 +1602,7 @@ async def parse_and_apply_policy_request_modification(
                 # Change was successful, update in dynamo
                 success_message = "Successfully updated change in dynamo"
                 error_message = "Error updating change in dynamo"
+                specific_change.updated_by = user
                 response = await _update_dynamo_with_change(
                     user,
                     extended_request,
@@ -1319,6 +1626,7 @@ async def parse_and_apply_policy_request_modification(
         if specific_change and specific_change.status == Status.not_applied:
             # Update the status
             specific_change.status = Status.cancelled
+            specific_change.updated_by = user
             # Update in dynamo
             success_message = "Successfully updated change in dynamo"
             error_message = "Error updating change in dynamo"
@@ -1363,6 +1671,7 @@ async def parse_and_apply_policy_request_modification(
         extended_request.request_status = RequestStatus.cancelled
         success_message = "Successfully cancelled request"
         error_message = "Error cancelling request"
+        extended_request.reviewer = user
         response = await _update_dynamo_with_change(
             user, extended_request, log_data, response, success_message, error_message
         )
@@ -1394,6 +1703,7 @@ async def parse_and_apply_policy_request_modification(
         extended_request.request_status = RequestStatus.rejected
         success_message = "Successfully rejected request"
         error_message = "Error rejected request"
+        extended_request.reviewer = user
         response = await _update_dynamo_with_change(
             user, extended_request, log_data, response, success_message, error_message
         )
@@ -1478,6 +1788,10 @@ async def get_resources_from_policy_change(change: ChangeModel):
             # based on a partial wildcard in a resource name
             if "*" in resource:
                 continue
+            if not resource:
+                raise Exception(
+                    "One or more resources must be specified in the policy."
+                )
             resource_name = get_resource_from_arn(resource)
             resource_action = {
                 "arn": resource,

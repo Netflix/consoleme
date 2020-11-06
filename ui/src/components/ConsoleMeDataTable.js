@@ -37,7 +37,8 @@ const expandNestedJson = (data) => {
 class ConsoleMeDataTable extends Component {
   constructor(props) {
     super(props);
-    const { configEndpoint, queryString } = props;
+    const { configEndpoint } = props;
+    const queryString = this.props.location.search;
     this.state = {
       configEndpoint,
       queryString,
@@ -334,13 +335,8 @@ class ConsoleMeDataTable extends Component {
     });
     const filters = {};
     if (parsedQueryString) {
-      tableConfig.columns.forEach((column) => {
-        if (
-          parsedQueryString[column.key] != null &&
-          parsedQueryString[column.key]
-        ) {
-          filters[column.key] = parsedQueryString[column.key];
-        }
+      Object.keys(parsedQueryString).forEach((key) => {
+        filters[key] = parsedQueryString[key];
       });
     }
 
@@ -641,19 +637,11 @@ class ConsoleMeDataTable extends Component {
 
 ConsoleMeDataTable.propTypes = {
   configEndpoint: PropTypes.string.isRequired,
-  queryString: PropTypes.string,
 };
 
-ConsoleMeDataTable.defaultProps = {
-  queryString: "",
-};
-
-export function renderDataTable(configEndpoint, queryString = "") {
+export function renderDataTable(configEndpoint) {
   ReactDOM.render(
-    <ConsoleMeDataTable
-      configEndpoint={configEndpoint}
-      queryString={queryString}
-    />,
+    <ConsoleMeDataTable configEndpoint={configEndpoint} />,
     document.getElementById("datatable")
   );
 }

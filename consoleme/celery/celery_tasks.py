@@ -696,7 +696,9 @@ def cache_policies_table_details() -> bool:
                     }
                 )
 
-    resources_from_aws_config_redis_key: str = config.get("aws_config_cache.redis_key")
+    resources_from_aws_config_redis_key: str = config.get(
+        "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+    )
     resources_from_aws_config = red.hgetall(resources_from_aws_config_redis_key)
     if resources_from_aws_config:
         for arn, value in resources_from_aws_config.items():
@@ -1213,7 +1215,9 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
 
         async_to_sync(store_json_results_in_redis_and_s3)(
             redis_result_set,
-            redis_key=config.get("aws_config_cache.redis_key"),
+            redis_key=config.get(
+                "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+            ),
             redis_data_type="hash",
             s3_bucket=s3_bucket,
             s3_key=s3_key,
@@ -1227,7 +1231,9 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
 
         async_to_sync(store_json_results_in_redis_and_s3)(
             redis_result_set,
-            redis_key=config.get("aws_config_cache.redis_key"),
+            redis_key=config.get(
+                "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+            ),
             redis_data_type="hash",
         )
     log_data = {
@@ -1242,7 +1248,9 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
 @app.task(soft_time_limit=1800)
 def cache_resources_from_aws_config_across_accounts() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    resource_redis_cache_key = config.get("aws_config_cache.redis_key")
+    resource_redis_cache_key = config.get(
+        "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+    )
 
     # First, get list of accounts
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()

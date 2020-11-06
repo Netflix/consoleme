@@ -284,7 +284,6 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Invalid characters were detected in the policy.", str(e))
 
         # Trying to detach a policy that is not attached
-        managed_policy_change_model.policy_name = "TestManagedPolicy"
         managed_policy_change_model.action = Action1.detach
         with pytest.raises(InvalidRequestParameter) as e:
             await validate_managed_policy_change(
@@ -760,7 +759,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         }
 
         client.create_policy(
-            PolicyName=managed_policy_change_model.policy_name,
+            PolicyName=managed_policy_change["policy_name"],
             PolicyDocument=json.dumps(managed_policy_sample),
         )
 

@@ -148,7 +148,8 @@ class BaseHandler(tornado.web.RequestHandler):
             "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
         )
 
-    def initialize(self) -> None:
+    def initialize(self, **kwargs) -> None:
+        self.kwargs = kwargs
         self.tracer = None
         self.responses = []
         super(BaseHandler, self).initialize()

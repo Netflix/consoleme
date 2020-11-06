@@ -3,7 +3,9 @@ import sys
 import ujson as json
 
 from consoleme.config import config
+from consoleme.exceptions.exceptions import MustBeFte
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
+from consoleme.lib.aws import get_all_iam_managed_policies_for_account
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.generic import filter_table
 from consoleme.lib.plugins import get_plugin_by_name
@@ -185,3 +187,19 @@ class PoliciesTableConfigHandler(BaseHandler):
         )
 
         self.write(table_configuration)
+
+
+class ManagedPoliciesHandler(BaseHandler):
+    async def get(self, account_id):
+        """
+        Retrieve a list of managed policies for an account.
+        """
+        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
+            if self.user not in config.get(
+                "groups.can_bypass_contractor_restrictions", []
+            ):
+                raise MustBeFte("Only FTEs are authorized to view this page.")
+        all_account_managed_policies = await get_all_iam_managed_policies_for_account(
+            account_id
+        )
+        self.write(json.dumps(all_account_managed_policies))
