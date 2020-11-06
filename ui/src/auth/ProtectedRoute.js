@@ -1,10 +1,7 @@
 import React, { useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { Route, useRouteMatch } from "react-router-dom";
-import { Dimmer, Loader, Segment } from "semantic-ui-react";
-
-import ConsoleMeHeader from "../components/Header";
-import ConsoleMeSidebar from "../components/Sidebar";
+import { Segment } from "semantic-ui-react";
 
 const ProtectedRoute = (props) => {
   const { login, user } = useAuth();
@@ -22,24 +19,20 @@ const ProtectedRoute = (props) => {
   const { component: Component, ...rest } = props;
 
   return (
-    <>
-      <ConsoleMeHeader />
-      <ConsoleMeSidebar />
-      <Segment
-        basic
-        style={{
-          marginTop: "72px",
-          marginLeft: "240px",
+    <Segment
+      basic
+      style={{
+        marginTop: "72px",
+        marginLeft: "240px",
+      }}
+    >
+      <Route
+        {...rest}
+        render={(props) => {
+          return <Component {...props} {...rest} />;
         }}
-      >
-        <Route
-          {...rest}
-          render={(props) => {
-            return <Component {...props} {...rest} />;
-          }}
-        />
-      </Segment>
-    </>
+      />
+    </Segment>
   );
 };
 

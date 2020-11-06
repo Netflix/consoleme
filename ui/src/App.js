@@ -1,7 +1,8 @@
 import React from "react";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
-
 import AuthProvider from "./auth/AuthProvider";
+import ConsoleMeHeader from "./components/Header";
+import ConsoleMeSidebar from "./components/Sidebar";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import ConsoleMeDataTable from "./components/ConsoleMeDataTable";
 import ConsoleMeSelfService from "./components/SelfService";
@@ -21,6 +22,8 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ConsoleMeHeader />
+        <ConsoleMeSidebar />
         <Switch>
           <ProtectedRoute
             key="roles"

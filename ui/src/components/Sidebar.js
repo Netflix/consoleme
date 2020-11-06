@@ -1,29 +1,26 @@
 import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
 import { Label, Icon, Image, Menu } from "semantic-ui-react";
-import { useApi } from "../auth/useApi";
 import { parseLocalStorageCache } from "../helpers/utils";
 import { NavLink } from "react-router-dom";
 
-const LOGO_URL =
-  "/static/screenplay/assets/netflix-security-dark-bg-tight.5f1eba5edb.svg";
+const localStorageRecentRolesKey = "consoleMeLocalStorage";
 
-const ConsoleMeSidebar = (props) => {
-  const { loading, data, error } = useApi("/api/v1/siteconfig");
+const ConsoleMeSidebar = () => {
+  const [siteConfig, setSiteConfig] = useState({});
+  const recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
 
-  if (loading || !data) {
-    return null;
-  }
+  useEffect(() => {
+    (async () => {
+      const siteconfig = await fetch("/api/v1/siteconfig").then((res) => res.json());
+      setSiteConfig(siteconfig);
+    })();
+  }, []);
 
   const {
-    consoleme_logo,
     documentation_url,
     support_contact,
     support_slack,
-  } = data;
-
-  const localStorageRecentRolesKey = "consoleMeLocalStorage";
-  const recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
+  } = siteConfig;
 
   return (
     <Menu
@@ -39,12 +36,11 @@ const ConsoleMeSidebar = (props) => {
       }}
     >
       <Menu.Item>
-        <Label>{recentRoles && recentRoles.length}</Label>
+        <Label>{recentRoles.length}</Label>
         <Menu.Header>Recent Roles</Menu.Header>
         <Menu.Menu>
-          {recentRoles &&
+          {
             recentRoles.map((role) => {
-              const accountId = role.split(":")[4];
               const roleName = role.split("/").pop();
               return (
                 <Menu.Item
@@ -53,7 +49,7 @@ const ConsoleMeSidebar = (props) => {
                   key={role}
                   to={"/role/" + role}
                 >
-                  {roleName} ({accountId})
+                  {roleName}
                 </Menu.Item>
               );
             })}

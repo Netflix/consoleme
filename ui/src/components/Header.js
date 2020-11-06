@@ -5,12 +5,7 @@ import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 const ConsoleMeHeader = () => {
-  const { user, login } = useAuth();
-
-  if (!user) {
-    login();
-    return null;
-  }
+  const { user } = useAuth();
 
   const generatePoliciesDropDown = () => {
     if (user?.pages?.policies?.enabled === true) {
@@ -49,7 +44,7 @@ const ConsoleMeHeader = () => {
   };
 
   const getAvatarImage = () => {
-    if (user.employee_photo_url) {
+    if (user?.employee_photo_url) {
       return (
         <Image
           alt={user.user}

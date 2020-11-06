@@ -464,7 +464,7 @@ export const sendRequestV2 = async (requestV2) => {
 export const parseLocalStorageCache = (key) => {
   const value = window.localStorage.getItem(key);
   if (value == null) {
-    return null;
+    return [];
   }
   try {
     return JSON.parse(value);

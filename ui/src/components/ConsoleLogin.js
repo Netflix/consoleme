@@ -8,6 +8,7 @@ function ConsoleLogin() {
   const queryString = window.location.search;
   const [signOut, setSignOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
   const signOutUrl = "https://signin.aws.amazon.com/oauth?Action=logout";
   const localStorageRecentRolesKey = "consoleMeLocalStorage";
   const logOutIframeStyle = {
