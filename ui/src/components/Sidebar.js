@@ -51,7 +51,7 @@ const ConsoleMeSidebar = (props) => {
                   as={NavLink}
                   name={role}
                   key={role}
-                  to={"/ui/role/" + role}
+                  to={"/role/" + role}
                 >
                   {roleName} ({accountId})
                 </Menu.Item>

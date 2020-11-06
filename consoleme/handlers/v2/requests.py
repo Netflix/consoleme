@@ -453,9 +453,15 @@ class RequestsHandler(BaseAPIV2Handler):
                 request[
                     "request_id"
                 ] = f"[{request['request_id']}](/policies/request/{request['request_id']})"
+                service_type = request["arn"].split(":")[2]
+                if (
+                    service_type == "iam"
+                    and request["arn"].split(":")[5].split("/")[0] == "role"
+                ):
+                    service_type = "iamrole"
                 request[
                     "arn"
-                ] = f"[{request['arn']}](/policies/edit/{request['arn'].split(':')[4]}/iamrole/{request['arn'].split('/')[-1]})"
+                ] = f"[{request['arn']}](/policies/edit/{request['arn'].split(':')[4]}/{service_type}/{request['arn'].split('/')[-1]})"
                 requests_to_write.append(request)
         else:
             requests_to_write = requests[0:limit]

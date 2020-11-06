@@ -79,7 +79,7 @@ class EligibleRoleTableConfigHandler(BaseHandler):
                 "role_select_page.table_description",
                 "Select a role to login to the AWS console.",
             ),
-            "dataEndpoint": "/",
+            "dataEndpoint": "/api/v2/eligible_roles",
             "sortable": False,
             "totalRows": 1000,
             "rowsPerPage": 50,
@@ -106,7 +106,7 @@ class EligibleRoleTableConfigHandler(BaseHandler):
         self.write(table_configuration)
 
 
-class IndexHandler(BaseHandler):
+class EligibleRoleHandler(BaseHandler):
     async def get(self) -> None:
         """
         Get the index endpoint
@@ -162,7 +162,7 @@ class IndexHandler(BaseHandler):
                     "account_name": formatted_account_name,
                     "account_id": account_id,
                     "role_name": f"[{role_name}](/policies/edit/{account_id}/iamrole/{role_name})",
-                    "redirect_uri": f"/ui/role/{arn}",
+                    "redirect_uri": f"/role/{arn}",
                 }
             )
 

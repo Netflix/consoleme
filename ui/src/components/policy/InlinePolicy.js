@@ -90,7 +90,7 @@ const InlinePolicy = () => {
           <Button
             as={Link}
             disabled={false}
-            to={`/ui/selfservice?arn=${encodeURIComponent(arn)}`}
+            to={`/selfservice?arn=${encodeURIComponent(arn)}`}
             primary
           >
             Policy Wizard

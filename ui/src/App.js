@@ -25,62 +25,62 @@ function App() {
           <ProtectedRoute
             key="roles"
             exact
-            path="/ui/"
+            path="/"
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/role_table_config"}
           />
           <ProtectedRoute
             key="selfservice"
             exact
-            path="/ui/selfservice"
+            path="/selfservice"
             component={ConsoleMeSelfService}
           />
           <ProtectedRoute
             key="policies"
             exact
-            path="/ui/policies"
+            path="/policies"
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/policies_table_config"}
           />
           <ProtectedRoute
             key="review"
             exact
-            path="/ui/policies/request/:requestID"
+            path="/policies/request/:requestID"
             component={PolicyRequestReview}
           />
           <ProtectedRoute
             key="requests"
             exact
-            path="/ui/requests"
+            path="/requests"
             component={ConsoleMeDataTable}
             configEndpoint={"/api/v2/requests_table_config"}
           />
           <ProtectedRoute
             key="iamrole_policy"
-            path="/ui/policies/edit/:accountID/:serviceType/:region/:resourceName"
+            path="/policies/edit/:accountID/:serviceType/:region/:resourceName"
             component={PolicyEditor}
           />
           <ProtectedRoute
             key="resource_policy"
-            path="/ui/policies/edit/:accountID/:serviceType/:resourceName"
+            path="/policies/edit/:accountID/:serviceType/:resourceName"
             component={PolicyEditor}
           />
           <ProtectedRoute
             key="config"
             exact
-            path="/ui/config"
+            path="/config"
             component={ConsoleMeDynamicConfig}
           />
           <ProtectedRoute
             key="role_query"
             exact
-            path="/ui/role/:roleQuery+"
+            path="/role/:roleQuery+"
             component={ConsoleLogin}
           />
           <ProtectedRoute
             key="challenge_validator"
             exact
-            path="/ui/challenge_validator/:challengeToken"
+            path="/challenge_validator/:challengeToken"
             component={ConsoleMeChallengeValidator}
           />
           <Route component={NoMatch} />

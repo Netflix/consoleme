@@ -108,7 +108,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                     "utf-8"
                 )
             }
-            redirect_url = furl(f"/ui/?arn={role}")
+            redirect_url = furl(f"/?arn={role}")
             redirect_url.args = {
                 **redirect_url.args,
                 **arguments,

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Message } from "semantic-ui-react";
+import { Icon, Message } from "semantic-ui-react";
 import { sendRequestCommon, parseLocalStorageCache } from "../helpers/utils";
 
 function ConsoleLogin() {
@@ -68,9 +68,16 @@ function ConsoleLogin() {
           <Message.Header>Oops! there was a problem</Message.Header>
           <p>{errorMessage}</p>
         </Message>
-      ) : null}
-      <p>Attempting to log into the AWS Console.</p>
-      <p>Please wait a second.</p>
+      ) : (
+        <Message icon>
+          <Icon name="circle notched" loading />
+          <Message.Content>
+            <Message.Header>Just a few seconds second</Message.Header>
+            Attempting to log into the AWS Console
+          </Message.Content>
+        </Message>
+      )}
+
       <iframe
         className="logOutIframe"
         style={logOutIframeStyle}
