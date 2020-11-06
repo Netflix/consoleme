@@ -122,3 +122,7 @@ application_settings:
     owner: groupa@example.com
     roles:
       - arn:aws:iam::123456789012:role/application_2InstanceProfile
+
+api_auth:
+  valid_entities:
+    - user@example.com

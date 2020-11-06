@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Icon, Message } from "semantic-ui-react";
 import { sendRequestCommon, parseLocalStorageCache } from "../helpers/utils";
 
 function ConsoleLogin() {
   const { roleQuery } = useParams();
-  const queryString = window.location.search;
+  const queryString = useLocation().search;
   const [signOut, setSignOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -49,6 +49,7 @@ function ConsoleLogin() {
       setRecentRoles(roleData.role);
       setSignOut(true);
       setTimeout(() => {
+        setSignOut(false);
         window.location.href = roleData.redirect_url;
       }, 2000);
 
@@ -73,7 +74,7 @@ function ConsoleLogin() {
         <Message icon>
           <Icon name="circle notched" loading />
           <Message.Content>
-            <Message.Header>Just a few seconds second</Message.Header>
+            <Message.Header>Just a few seconds...</Message.Header>
             Attempting to log into the AWS Console
           </Message.Content>
         </Message>

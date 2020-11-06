@@ -143,11 +143,6 @@ class BaseHandler(tornado.web.RequestHandler):
         """Receives the data."""
         pass
 
-    def set_default_headers(self) -> None:
-        self.set_header(
-            "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
-        )
-
     def initialize(self, **kwargs) -> None:
         self.kwargs = kwargs
         self.tracer = None
@@ -524,11 +519,11 @@ class BaseMtlsHandler(BaseAPIV2Handler):
                 )
             except (MissingCertificateException, Exception) as e:
                 if isinstance(e, MissingCertificateException):
-                    stats.count("GetCredentialsHandler.post.missing_certificate_header")
+                    stats.count("BaseMtlsHandler.post.missing_certificate_header")
                     message = "Missing Certificate in Header."
                 else:
-                    stats.count("GetCredentialsHandler.post.invalid_mtls_certificate")
-                    message = "Invalid Mtls Certificate."
+                    stats.count("BaseMtlsHandler.post.exception")
+                    message = f"Invalid Mtls Certificate: {e}"
                 self.set_status(400)
                 self.write({"code": "400", "message": message})
                 await self.finish()

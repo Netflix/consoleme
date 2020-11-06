@@ -80,7 +80,7 @@ const ConsoleMeHeader = () => {
       >
         <Image
           size="mini"
-          src="/static_ui/images/logo192.png"
+          src="/static/ui/images/logo192.png"
           style={{ marginRight: "1.5em" }}
         />
         ConsoleMe

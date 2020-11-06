@@ -11,16 +11,14 @@ const ConsoleMeSidebar = () => {
 
   useEffect(() => {
     (async () => {
-      const siteconfig = await fetch("/api/v1/siteconfig").then((res) => res.json());
+      const siteconfig = await fetch("/api/v1/siteconfig").then((res) =>
+        res.json()
+      );
       setSiteConfig(siteconfig);
     })();
   }, []);
 
-  const {
-    documentation_url,
-    support_contact,
-    support_slack,
-  } = siteConfig;
+  const { documentation_url, support_contact, support_slack } = siteConfig;
 
   return (
     <Menu
@@ -39,20 +37,19 @@ const ConsoleMeSidebar = () => {
         <Label>{recentRoles.length}</Label>
         <Menu.Header>Recent Roles</Menu.Header>
         <Menu.Menu>
-          {
-            recentRoles.map((role) => {
-              const roleName = role.split("/").pop();
-              return (
-                <Menu.Item
-                  as={NavLink}
-                  name={role}
-                  key={role}
-                  to={"/role/" + role}
-                >
-                  {roleName}
-                </Menu.Item>
-              );
-            })}
+          {recentRoles.map((role) => {
+            const roleName = role.split("/").pop();
+            return (
+              <Menu.Item
+                as={NavLink}
+                name={role}
+                key={role}
+                to={"/role/" + role}
+              >
+                {roleName}
+              </Menu.Item>
+            );
+          })}
         </Menu.Menu>
       </Menu.Item>
       <Menu.Item>
@@ -98,11 +95,11 @@ const ConsoleMeSidebar = () => {
         }}
       >
         <Menu.Item>
-          <Image size="medium" src="/static_ui/images/logos/quarantine/1.png" />
+          <Image size="medium" src="/static/ui/images/logos/quarantine/1.png" />
           <br />
           <Image
             size="medium"
-            src="/static_ui/images/netflix-security-dark-bg-tight.svg"
+            src="/static/ui/images/netflix-security-dark-bg-tight.svg"
           />
         </Menu.Item>
       </Menu.Menu>

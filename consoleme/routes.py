@@ -15,7 +15,6 @@ from consoleme.config import config
 from consoleme.handlers.auth import AuthHandler
 from consoleme.handlers.base import NoCacheStaticFileHandler
 from consoleme.handlers.v1.credentials import GetCredentialsHandler
-from consoleme.handlers.v1.errors import Consolme404Handler
 from consoleme.handlers.v1.headers import (
     ApiHeaderHandler,
     HeaderHandler,
@@ -95,11 +94,6 @@ def make_app(jwt_validator=None):
     path = pkg_resources.resource_filename("consoleme", "templates")
 
     oss_routes = [
-        (
-            r"/static_ui/(.*)",
-            NoCacheStaticFileHandler,
-            dict(path=os.path.join(path, "dist")),
-        ),
         (r"/auth", AuthHandler),
         (r"/healthcheck", HealthHandler),
         (
@@ -168,6 +162,7 @@ def make_app(jwt_validator=None):
         ),
         (r"/noauth/v1/challenge_generator/(.*)", ChallengeGeneratorHandler),
         (r"/noauth/v1/challenge_poller/([a-zA-Z0-9_-]+)", ChallengePollerHandler),
+        (r"/api/v2/.*", V2NotFoundHandler),
         (
             r"/(.*)",
             FrontendHandler,
@@ -180,10 +175,6 @@ def make_app(jwt_validator=None):
         make_jwt_validator, jwt_validator
     )
     routes = internal_route_list + oss_routes
-
-    # Return a JSON 404 for unmatched /api/v2/ requests
-    routes.append((r"/api/v2/.*", V2NotFoundHandler))
-    routes.append((r".*", Consolme404Handler))
 
     app = tornado.web.Application(
         routes,

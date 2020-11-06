@@ -40,6 +40,7 @@ class TestCelerySync(TestCase):
             "arn:aws:iam::123456789012:role/cm_someuser_N",
             "arn:aws:iam::123456789012:role/awsaccount_user",
             "arn:aws:iam::123456789012:role/TestInstanceProfile",
+            "arn:aws:iam::123456789012:role/rolename",
         ] + [f"arn:aws:iam::123456789012:role/RoleNumber{num}" for num in range(0, 10)]
 
         self.assertEqual(results["Count"], len(remaining_roles))

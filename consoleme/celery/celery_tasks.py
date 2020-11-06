@@ -1194,7 +1194,7 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     # Only query in active region, otherwise get data from DDB
     if config.region == config.get("celery.active_region") or config.get(
         "environment"
-    ) in ["dev"]:
+    ) in ["dev", "test"]:
         results = aws_config.query(
             config.get(
                 "cache_all_resources_from_aws_config.aws_config.all_resources_query",

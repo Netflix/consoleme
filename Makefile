@@ -58,7 +58,7 @@ bandit: clean
 
 .PHONY: testhtml
 testhtml: clean
-	CONSOLEME_CONFIG_ENTRYPOINT=default_config $(pytest) $(html_report) && open htmlcov/index.html
+	CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest) $(html_report) && open htmlcov/index.html
 
 .PHONY: clean
 clean:
