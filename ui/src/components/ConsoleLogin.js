@@ -1,34 +1,38 @@
-import React, { ComponentType, useState } from "react";
-import { sendRequestCommon } from "../helpers/utils";
+import React, { useState } from "react";
+import { sendRequestCommon, parseLocalStorageCache } from "../helpers/utils";
 import { useParams } from "react-router-dom";
-import qs from "qs";
 import { Message } from "semantic-ui-react";
 
 function ConsoleLogin(props) {
   const { roleQuery } = useParams();
-  const [queryString, setQueryString] = useState(window.location.search);
+  const queryString = window.location.search;
   const [signOut, setSignOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const signOutUrl = "https://signin.aws.amazon.com/oauth?Action=logout";
+  const localStorageRecentRolesKey = "consoleMeLocalStorage";
   const logOutIframeStyle = {
     width: 0,
     height: 0,
     border: "none",
   };
-  console.log(queryString);
-  console.log(roleQuery);
-  // Parse query string
-  // POST to backend
-  // If told to redirect due to successful authz, trigger logout iframe
-  // If told to redirect to main page due to error or multiple roles, handle the redirect, filter,  and display message
-  // POST to http://localhost:3000/api/v2/role_login/roledetails
 
-  // const roleData = await sendRequestCommon(
-  //   {
-  //     limit: 1000,
-  //   },
-  //   "/"
-  // );
+  const setRecentRoles = (role) => {
+    let recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
+    if (recentRoles == null) {
+      recentRoles = [role];
+    } else {
+      const existingRoleLength = recentRoles.unshift(role);
+      recentRoles = [...new Set(recentRoles)];
+      if (existingRoleLength > 5) {
+        recentRoles = recentRoles.slice(0, 5);
+      }
+    }
+    window.localStorage.setItem(
+      localStorageRecentRolesKey,
+      JSON.stringify(recentRoles)
+    );
+  };
+
   const loginAndRedirect = async () => {
     const roleData = await sendRequestCommon(
       null,
@@ -41,10 +45,7 @@ function ConsoleLogin(props) {
     }
 
     if (roleData.type === "redirect" && roleData.reason === "console_login") {
-      // Success
-      // TODO: Set Recent Roles
-      // TODO: Test iframe
-      // TODO: Delay redirect
+      setRecentRoles(roleData.role);
       setSignOut(true);
       setTimeout(() => {
         window.location.href = roleData.redirect_url;
@@ -56,17 +57,9 @@ function ConsoleLogin(props) {
     if (roleData.type === "error") {
       setErrorMessage(roleData.message);
     }
-
-    console.log(roleData);
-    const parsedQueryString = qs.parse(queryString, {
-      ignoreQueryPrefix: true,
-    });
-
-    console.log(parsedQueryString);
   };
-  // "https://signin.aws.amazon.com/oauth?Action=logout"
 
-  const result = loginAndRedirect();
+  loginAndRedirect();
 
   return (
     <>
