@@ -26,6 +26,7 @@ from consoleme.handlers.v1.policies import (
     ApiResourceTypeAheadHandler,
     AutocompleteHandler,
     PolicyReviewHandler,
+    ResourceTypeAheadHandler,
     SelfServiceHandler,
     SelfServiceV2Handler,
 )
@@ -146,6 +147,7 @@ def make_app(jwt_validator=None):
         (r"/myheaders/?", HeaderHandler),
         (r"/policies/request_v1/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
         (r"/policies/request_v2/([a-zA-Z0-9_-]+)", PolicyReviewV2Handler),
+        (r"/policies/typeahead/?", ResourceTypeAheadHandler),
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service_v1", SelfServiceHandler),
         (r"/self_service", SelfServiceV2Handler),
@@ -166,7 +168,7 @@ def make_app(jwt_validator=None):
         (
             r"/(.*)",
             FrontendHandler,
-            dict(path=os.path.join(path, "dist"), default_filename="index.html"),
+            dict(path=os.path.join(path, "static/ui"), default_filename="index.html"),
         ),
     ]
 

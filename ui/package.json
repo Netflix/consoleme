@@ -28,8 +28,8 @@
     "build": "react-app-rewired build",
     "test": "react-app-rewired test --env=jsdom",
     "eject": "react-scripts eject",
-    "copy:dev": "cp -a build/ ../consoleme/templates/dist",
-    "clean:dev": "rm -rf build && rm -rf ../consoleme/templates/dist",
+    "copy:dev": "cp -a build/ ../consoleme/templates/static/ui",
+    "clean:dev": "rm -rf build && rm -rf ../consoleme/templates/static/ui",
     "build:dev": "yarn run clean:dev && yarn build && yarn run copy:dev"
   },
   "eslintConfig": {
