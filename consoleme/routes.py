@@ -13,7 +13,6 @@ from sentry_sdk.integrations.tornado import TornadoIntegration
 import consoleme
 from consoleme.config import config
 from consoleme.handlers.auth import AuthHandler
-from consoleme.handlers.base import NoCacheStaticFileHandler
 from consoleme.handlers.v1.credentials import GetCredentialsHandler
 from consoleme.handlers.v1.headers import (
     ApiHeaderHandler,
@@ -99,12 +98,12 @@ def make_app(jwt_validator=None):
         (r"/healthcheck", HealthHandler),
         (
             r"/static/(.*)",
-            NoCacheStaticFileHandler,
+            tornado.web.StaticFileHandler,
             dict(path=os.path.join(path, "static")),
         ),
         (
             r"/(favicon.ico)",
-            NoCacheStaticFileHandler,
+            tornado.web.StaticFileHandler,
             dict(path=os.path.join(path, "static")),
         ),
         # Generally, everything behind "/api" in a production instance is not protected by SSO.
