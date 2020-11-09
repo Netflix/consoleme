@@ -48,6 +48,9 @@ class GroupMapping:
     async def filter_eligible_roles(query: str, obj: object) -> List:
         selected_roles: List = []
         for r in obj.eligible_roles:
+            if query.lower() == r.lower():
+                # Exact match. Only return the specific role
+                return [r]
             if query.lower() in r.lower():
                 selected_roles.append(r)
         return list(set(selected_roles))
