@@ -13,6 +13,7 @@ from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
     MustBeFte,
     NoMatchingRequest,
+    ResourceNotFound,
     Unauthorized,
 )
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
@@ -25,6 +26,7 @@ from consoleme.lib.policies import (
     can_manage_policy_requests,
     can_move_back_to_pending_v2,
     can_update_cancel_requests_v2,
+    get_url_for_resource,
     should_auto_approve_policy_v2,
 )
 from consoleme.lib.requests import cache_all_policy_requests
@@ -449,19 +451,28 @@ class RequestsHandler(BaseAPIV2Handler):
         if markdown:
             requests_to_write = []
             for request in requests[0:limit]:
+                resource_name = request["arn"].split(":")[5]
+                if "/" in resource_name:
+                    resource_name = resource_name.split("/")[-1]
+                region = request["arn"].split(":")[3]
+                service_type = request["arn"].split(":")[2]
+                account_id = request["arn"].split(":")[4]
+                try:
+                    url = await get_url_for_resource(
+                        request["arn"],
+                        service_type,
+                        account_id,
+                        region,
+                        resource_name,
+                    )
+                except ResourceNotFound:
+                    url = None
                 # Convert request_id and role ARN to link
                 request[
                     "request_id"
                 ] = f"[{request['request_id']}](/policies/request/{request['request_id']})"
-                service_type = request["arn"].split(":")[2]
-                if (
-                    service_type == "iam"
-                    and request["arn"].split(":")[5].split("/")[0] == "role"
-                ):
-                    service_type = "iamrole"
-                request[
-                    "arn"
-                ] = f"[{request['arn']}](/policies/edit/{request['arn'].split(':')[4]}/{service_type}/{request['arn'].split('/')[-1]})"
+                if url:
+                    request["arn"] = f"[{request['arn']}]({url})"
                 requests_to_write.append(request)
         else:
             requests_to_write = requests[0:limit]

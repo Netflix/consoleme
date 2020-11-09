@@ -11,6 +11,7 @@ import PolicyRequestReview from "./components/PolicyRequestsReview";
 import PolicyEditor from "./components/policy/PolicyEditor";
 import ConsoleLogin from "./components/ConsoleLogin.js";
 import ConsoleMeChallengeValidator from "./components/challenge/ConsoleMeChallengeValidator";
+import CreateCloneFeature from "./components/CreateCloneFeature";
 
 const NoMatch = ({ location }) => (
   <h3>
@@ -85,6 +86,12 @@ function App() {
             exact
             path="/challenge_validator/:challengeToken"
             component={ConsoleMeChallengeValidator}
+          />
+          <ProtectedRoute
+            key="create_role"
+            exact
+            path="/create_role"
+            component={CreateCloneFeature}
           />
           <Route component={NoMatch} />
         </Switch>

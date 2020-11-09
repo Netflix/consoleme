@@ -33,7 +33,10 @@ class TestProfile(AsyncHTTPTestCase):
                 "is_contractor": False,
                 "employee_photo_url": None,
                 "employee_info_url": None,
-                "authorization": {"can_edit_policies": False},
+                "authorization": {
+                    "can_edit_policies": False,
+                    "can_create_roles": False,
+                },
                 "pages": {
                     "groups": {"enabled": False},
                     "users": {"enabled": False},

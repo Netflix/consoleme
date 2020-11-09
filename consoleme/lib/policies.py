@@ -13,13 +13,14 @@ from deepdiff import DeepDiff
 from policy_sentry.util.actions import get_service_from_action
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import InvalidRequestParameter
+from consoleme.exceptions.exceptions import InvalidRequestParameter, ResourceNotFound
 from consoleme.lib.aws import (
     get_region_from_arn,
     get_resource_account,
     get_resource_from_arn,
     get_service_from_arn,
 )
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.handler import update_role
 from consoleme.lib.ses import (
@@ -699,7 +700,61 @@ async def send_communications_new_comment(
     )
 
 
-async def get_url_for_resource(arn, resource_type, account_id, region, resource_name):
+async def get_account_id_for_arn(arn: str) -> str:
+    # 1. Try to split ARN to retrieve account ID
+    account_id = arn.split(":")[4]
+
+    # 2. Search AWS Config Cache, if it exists
+    if not account_id:
+        resource_redis_cache_key = config.get(
+            "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+        )
+        resource_cache = await retrieve_json_data_from_redis_or_s3(
+            redis_key=resource_redis_cache_key,
+            redis_data_type="hash",
+            s3_bucket=config.get("aws_config_cache_combined.s3.bucket"),
+            s3_key=config.get("aws_config_cache_combined.s3.file"),
+        )
+
+        resource_details = resource_cache.get(arn)
+        if resource_details:
+            resource_details_j = json.loads(resource_details)
+            account_id = resource_details_j.get("accountId")
+
+    if not account_id:
+        raise ResourceNotFound(
+            f"Unable to identify resource account ID for resource: {arn}"
+        )
+    return account_id
+
+
+async def get_resource_type_for_arn(arn: str) -> str:
+    return arn.split(":")[2]
+
+
+async def get_region_for_arn(arn: str) -> str:
+    # TODO: Provide region for S3 buckets and other organization resource types where it isn't known?
+    return arn.split(":")[3]
+
+
+async def get_resource_name_for_arn(arn: str) -> str:
+    resource_name = arn.split(":")[5]
+    if "/" in resource_name:
+        resource_name = resource_name.split("/")[-1]
+    return resource_name
+
+
+async def get_url_for_resource(
+    arn, resource_type=None, account_id=None, region=None, resource_name=None
+):
+    if not resource_type:
+        resource_type = await get_resource_type_for_arn(arn)
+    if not account_id:
+        account_id = await get_account_id_for_arn(arn)
+    if not region:
+        region = await get_region_for_arn(arn)
+    if not resource_name:
+        resource_name = await get_resource_name_for_arn(arn)
     url = ""
     if resource_type == "iam":
         resource_name = arn.split("/")[-1]

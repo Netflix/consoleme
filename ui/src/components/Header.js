@@ -8,6 +8,7 @@ const ConsoleMeHeader = () => {
   const { user } = useAuth();
 
   const generatePoliciesDropDown = () => {
+    const canCreateRoles = user?.authorization?.can_create_roles;
     if (user?.pages?.policies?.enabled === true) {
       return (
         <Dropdown text="Roles and Policies" pointing className="link item">
@@ -21,6 +22,11 @@ const ConsoleMeHeader = () => {
             <Dropdown.Item as={NavLink} to="/requests">
               All Policy Requests
             </Dropdown.Item>
+            {canCreateRoles ? (
+              <Dropdown.Item as={NavLink} to="/create_role">
+                Create Role
+              </Dropdown.Item>
+            ) : null}
           </Dropdown.Menu>
         </Dropdown>
       );

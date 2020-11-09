@@ -29,7 +29,10 @@ class UserProfileHandler(BaseAPIV1Handler):
             "authorization": {
                 "can_edit_policies": await can_manage_policy_requests(
                     self.user, self.groups
-                )
+                ),
+                "can_create_roles": is_in_group(
+                    self.user, self.groups, config.get("groups.can_create_roles", [])
+                ),
             },
             "pages": {
                 "groups": {"enabled": config.get("headers.group_access.enabled", True)},
