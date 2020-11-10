@@ -24,7 +24,7 @@ class TestRoleLoginApi(AsyncHTTPTestCase):
         }
 
         response = self.fetch("/api/v2/role_login/role123", headers=headers)
-        self.assertEqual(response.code, 403)
+        self.assertEqual(response.code, 404)
         self.assertEqual(
             json.loads(response.body),
             {
@@ -40,7 +40,7 @@ class TestRoleLoginApi(AsyncHTTPTestCase):
         }
 
         response = self.fetch("/api/v2/role_login/role", headers=headers)
-        self.assertEqual(response.code, 403)
+        self.assertEqual(response.code, 300)
         response_j = json.loads(response.body)
         self.assertEqual(
             response_j["message"],

@@ -73,7 +73,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 "message"
             ] = "You do not have any roles matching your search criteria. "
             log.error(log_data)
-            self.set_status(403)
+            self.set_status(404)
             self.write({"type": "error", "message": log_data["message"]})
             return
 
@@ -102,7 +102,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 "message"
             ] = "You have more than one role matching your query. Please select one."
             log.error(log_data)
-            self.set_status(403)
+            self.set_status(300)
             warning_message_arg = {
                 "warningMessage": base64.b64encode(log_data["message"].encode()).decode(
                     "utf-8"
