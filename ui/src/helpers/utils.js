@@ -472,3 +472,21 @@ export const parseLocalStorageCache = (key) => {
     return value;
   }
 };
+
+export const setRecentRoles = (role) => {
+  const localStorageRecentRolesKey = "consoleMeLocalStorage";
+  let recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
+  if (recentRoles == null) {
+    recentRoles = [role];
+  } else {
+    const existingRoleLength = recentRoles.unshift(role);
+    recentRoles = [...new Set(recentRoles)];
+    if (existingRoleLength > 5) {
+      recentRoles = recentRoles.slice(0, 5);
+    }
+  }
+  window.localStorage.setItem(
+    localStorageRecentRolesKey,
+    JSON.stringify(recentRoles)
+  );
+};

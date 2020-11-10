@@ -1,67 +1,31 @@
 import React, { useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { Icon, Message } from "semantic-ui-react";
-import { sendRequestCommon, parseLocalStorageCache } from "../helpers/utils";
+import { sendRequestCommon, setRecentRoles } from "../helpers/utils";
 
-function ConsoleLogin() {
+const signOutUrl = "https://signin.aws.amazon.com/oauth?Action=logout";
+
+const ConsoleLogin = () => {
+  const { search } = useLocation();
   const { roleQuery } = useParams();
-  const queryString = useLocation().search;
-  const [signOut, setSignOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const signOutUrl = "https://signin.aws.amazon.com/oauth?Action=logout";
-  const localStorageRecentRolesKey = "consoleMeLocalStorage";
-  const logOutIframeStyle = {
-    width: 0,
-    height: 0,
-    border: "none",
-  };
-
-  const setRecentRoles = (role) => {
-    let recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
-    if (recentRoles == null) {
-      recentRoles = [role];
-    } else {
-      const existingRoleLength = recentRoles.unshift(role);
-      recentRoles = [...new Set(recentRoles)];
-      if (existingRoleLength > 5) {
-        recentRoles = recentRoles.slice(0, 5);
-      }
-    }
-    window.localStorage.setItem(
-      localStorageRecentRolesKey,
-      JSON.stringify(recentRoles)
-    );
-  };
-
-  const loginAndRedirect = async () => {
+  const onSignIn = async () => {
     const roleData = await sendRequestCommon(
       null,
-      "/api/v2/role_login/" + roleQuery + queryString,
+      "/api/v2/role_login/" + roleQuery + search,
       "get"
     );
 
-    if (roleData.type === "redirect" && roleData.reason === "error") {
-      window.location.href = roleData.redirect_url;
+    if (roleData.type === "redirect") {
+      if (roleData.reason === "console_login") {
+        setRecentRoles(roleData.role);
+      }
+      window.location.assign(roleData.redirect_url);
     }
 
-    if (roleData.type === "redirect" && roleData.reason === "console_login") {
-      setRecentRoles(roleData.role);
-      setSignOut(true);
-      setTimeout(() => {
-        setSignOut(false);
-        window.location.href = roleData.redirect_url;
-      }, 2000);
-
-      return;
-    }
-
-    if (roleData.type === "error") {
-      setErrorMessage(roleData.message);
-    }
+    setErrorMessage(roleData.message);
   };
-
-  loginAndRedirect();
 
   return (
     <>
@@ -79,14 +43,17 @@ function ConsoleLogin() {
           </Message.Content>
         </Message>
       )}
-
       <iframe
-        className="logOutIframe"
-        style={logOutIframeStyle}
-        src={signOut ? signOutUrl : null}
+        style={{
+          width: 0,
+          height: 0,
+          border: "none",
+        }}
+        onLoad={onSignIn}
+        src={signOutUrl}
       />
     </>
   );
-}
+};
 
 export default ConsoleLogin;
