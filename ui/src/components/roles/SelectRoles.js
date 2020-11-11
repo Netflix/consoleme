@@ -69,7 +69,6 @@ const SelectRoles = () => {
         </Header>
         <ConsoleMeDataTable
             config={tableConfig}
-            configEndpoint="/api/v2/role_table_config"
         />
       </>
   );
