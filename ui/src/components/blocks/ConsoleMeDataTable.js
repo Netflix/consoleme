@@ -163,7 +163,7 @@ class ConsoleMeDataTable extends Component {
   }
 
   generateColumnOptions() {
-    const { data } = this.state;
+    const { data = [] } = this.state;
     const columnOptionSet = {};
 
     // Iterate through our data
@@ -557,29 +557,30 @@ class ConsoleMeDataTable extends Component {
         } else if (column.type === "link") {
           // TODO, provide an option not to send markdown format
           const value = entry[column.key] != null && entry[column.key].toString();
-          let found = value.match(/\[(.+?)\]\((.+?)\)/);
-          if (!found) {
-            found = value.match(/\[(.+?)\]\(\)/);
+          const found = value.match(/\[(.+?)\]\((.+?)\)/);
+          if (found) {
             cells.push(
               <Table.Cell
                 key={`cell-${ridx}-${cidx}`}
                 collapsing
                 style={column.style}
               >
-                {found[1]}
+                <Link to={found[2]}>
+                  {found[1]}
+                </Link>
               </Table.Cell>
             );
           } else {
             cells.push(
-                <Table.Cell
-                    key={`cell-${ridx}-${cidx}`}
-                    collapsing
-                    style={column.style}
-                >
-                  <Link to={found[2]}>
-                    {found[1]}
-                  </Link>
-                </Table.Cell>
+              <Table.Cell
+                key={`cell-${ridx}-${cidx}`}
+                collapsing
+                style={column.style}
+              >
+                <ReactMarkdown
+                    source={(entry[column.key] != null && entry[column.key].toString())}
+                />
+              </Table.Cell>
             );
           }
         } else {
