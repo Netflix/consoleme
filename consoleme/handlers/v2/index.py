@@ -60,52 +60,6 @@ async def get_as_tags(name="main", extension=None, config=config, attrs=""):
     return tags
 
 
-class EligibleRoleTableConfigHandler(BaseHandler):
-    async def get(self):
-        """
-        /role_table_config
-        ---
-        get:
-            description: Retrieve Role Table Configuration
-            responses:
-                200:
-                    description: Returns Role Table Configuration
-        """
-        # TODO: Support getting CLI Credentials via web interface
-        default_configuration = {
-            "expandableRows": True,
-            "tableName": "Select a Role",
-            "tableDescription": config.get(
-                "role_select_page.table_description",
-                "Select a role to login to the AWS console.",
-            ),
-            "dataEndpoint": "/api/v2/eligible_roles",
-            "sortable": False,
-            "totalRows": 1000,
-            "rowsPerPage": 50,
-            "serverSideFiltering": False,
-            "columns": [
-                {"placeholder": "Account Name", "key": "account_name", "type": "input"},
-                {"placeholder": "Account ID", "key": "account_id", "type": "input"},
-                {"placeholder": "Role Name", "key": "role_name", "type": "input"},
-                {
-                    "placeholder": "AWS Console Sign-In",
-                    "key": "redirect_uri",
-                    "type": "button",
-                    "icon": "sign-in",
-                    "content": "Sign-In",
-                    "onClick": {"action": "redirect"},
-                },
-            ],
-        }
-
-        table_configuration = config.get(
-            "role_table_config.table_configuration_override", default_configuration
-        )
-
-        self.write(table_configuration)
-
-
 class EligibleRoleHandler(BaseHandler):
     async def get(self) -> None:
         """

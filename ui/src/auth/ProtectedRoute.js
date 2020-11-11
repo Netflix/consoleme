@@ -6,6 +6,7 @@ import { Segment } from "semantic-ui-react";
 const ProtectedRoute = (props) => {
   const { login, user } = useAuth();
   const match = useRouteMatch(props);
+  const { component: Component, ...rest } = props;
 
   useEffect(() => {
     if (!match) {
@@ -15,8 +16,6 @@ const ProtectedRoute = (props) => {
       login();
     }
   }, [match]); // eslint-disable-line
-
-  const { component: Component, ...rest } = props;
 
   return (
     <Segment

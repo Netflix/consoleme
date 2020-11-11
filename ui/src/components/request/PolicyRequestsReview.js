@@ -1,10 +1,7 @@
-import ReactDOM from "react-dom";
-
 import React, { Component } from "react";
 import {
   Button,
   Dimmer,
-  Divider,
   Grid,
   Header,
   Icon,
@@ -14,17 +11,17 @@ import {
   Segment,
   Table,
 } from "semantic-ui-react";
-import CommentsFeedBlockComponent from "./blocks/CommentsFeedBlockComponent";
-import InlinePolicyChangeComponent from "./blocks/InlinePolicyChangeComponent";
-import ManagedPolicyChangeComponent from "./blocks/ManagedPolicyChangeComponent";
-import AssumeRolePolicyChangeComponent from "./blocks/AssumeRolePolicyChangeComponent";
-import ResourcePolicyChangeComponent from "./blocks/ResourcePolicyChangeComponent";
+import CommentsFeedBlockComponent from "../blocks/CommentsFeedBlockComponent";
+import InlinePolicyChangeComponent from "../blocks/InlinePolicyChangeComponent";
+import ManagedPolicyChangeComponent from "../blocks/ManagedPolicyChangeComponent";
+import AssumeRolePolicyChangeComponent from "../blocks/AssumeRolePolicyChangeComponent";
+import ResourcePolicyChangeComponent from "../blocks/ResourcePolicyChangeComponent";
 import {
   sendProposedPolicy,
   sendRequestCommon,
   updateRequestStatus,
-} from "../helpers/utils";
-import ResourceTagChangeComponent from "./blocks/ResourceTagChangeComponent";
+} from "../../helpers/utils";
+import ResourceTagChangeComponent from "../blocks/ResourceTagChangeComponent";
 
 class PolicyRequestReview extends Component {
   constructor(props) {

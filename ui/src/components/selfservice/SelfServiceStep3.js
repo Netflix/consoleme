@@ -21,7 +21,7 @@ import {
   generate_id,
   getCompletions,
   sendRequestCommon,
-} from "../helpers/utils";
+} from "../../helpers/utils";
 import "brace/ext/language_tools";
 import "brace/theme/monokai";
 import "brace/mode/json";

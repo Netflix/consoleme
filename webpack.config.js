@@ -6,14 +6,6 @@ const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 module.exports = {
   mode: "production",
   entry: {
-    policyEditor: "./consoleme/templates/static/js/policy_editor.jsx",
-    selfService: "./consoleme/templates/static/js/components/SelfService.js",
-    createCloneFeature:
-      "./consoleme/templates/static/js/components/CreateCloneFeature.js",
-    consoleMeDataTable:
-      "./consoleme/templates/static/js/components/ConsoleMeDataTable.js",
-    dynamicConfig:
-      "./consoleme/templates/static/js/components/DynamicConfig.js",
     policyRequestsReview:
       "./consoleme/templates/static/js/components/PolicyRequestsReview.js",
   },

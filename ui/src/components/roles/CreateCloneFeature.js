@@ -15,7 +15,7 @@ import {
   Radio,
   Feed,
 } from "semantic-ui-react";
-import { sendRequestCommon } from "../helpers/utils";
+import { sendRequestCommon } from "../../helpers/utils";
 
 const clone_options = [
   { text: "Assume Role Policy Document", value: "assume_role_policy" },

@@ -44,13 +44,14 @@ const ConsoleLogin = () => {
         </Message>
       )}
       <iframe
+        onLoad={onSignIn}
+        src={signOutUrl}
         style={{
           width: 0,
           height: 0,
           border: "none",
         }}
-        onLoad={onSignIn}
-        src={signOutUrl}
+        title="Console Sign Out"
       />
     </>
   );

@@ -2,9 +2,9 @@ import _ from "lodash";
 import React, { Component } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button, Form, Header, Message } from "semantic-ui-react";
-import DropDownBlockComponent from "./blocks/DropDownBlockComponent";
-import TextInputBlockComponent from "./blocks/TextInputBlockComponent";
-import TypeaheadBlockComponent from "./blocks/TypeaheadBlockComponent";
+import DropDownBlockComponent from "../blocks/DropDownBlockComponent";
+import TextInputBlockComponent from "../blocks/TextInputBlockComponent";
+import TypeaheadBlockComponent from "../blocks/TypeaheadBlockComponent";
 
 class SelfServiceComponent extends Component {
   constructor(props) {

@@ -9,9 +9,9 @@ import {
   Search,
   Segment,
 } from "semantic-ui-react";
-import RoleDetails from "./RoleDetails";
+import RoleDetails from "../roles/RoleDetails";
 import "./SelfService.css";
-import { sendRequestCommon } from "../helpers/utils";
+import { sendRequestCommon } from "../../helpers/utils";
 
 const ARN_REGEX = /^arn:aws:iam::(?<accountId>\d{12}):role\/(?<roleName>.+)$/;
 

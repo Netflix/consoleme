@@ -4,14 +4,16 @@ import AuthProvider from "./auth/AuthProvider";
 import ConsoleMeHeader from "./components/Header";
 import ConsoleMeSidebar from "./components/Sidebar";
 import ProtectedRoute from "./auth/ProtectedRoute";
-import ConsoleMeDataTable from "./components/ConsoleMeDataTable";
-import ConsoleMeSelfService from "./components/SelfService";
+import ConsoleMeSelectRoles from "./components/roles/SelectRoles";
+import ConsoleMePolicyTable from "./components/policy/PolicyTable";
+import ConsoleMeRequestTable from "./components/request/RequestTable";
+import ConsoleMeSelfService from "./components/selfservice/SelfService";
 import ConsoleMeDynamicConfig from "./components/DynamicConfig";
-import PolicyRequestReview from "./components/PolicyRequestsReview";
+import PolicyRequestReview from "./components/request/PolicyRequestsReview";
 import PolicyEditor from "./components/policy/PolicyEditor";
-import ConsoleLogin from "./components/ConsoleLogin.js";
+import ConsoleLogin from "./components/ConsoleLogin";
 import ConsoleMeChallengeValidator from "./components/challenge/ConsoleMeChallengeValidator";
-import CreateCloneFeature from "./components/CreateCloneFeature";
+import CreateCloneFeature from "./components/roles/CreateCloneFeature";
 
 const NoMatch = ({ location }) => (
   <h3>
@@ -30,8 +32,7 @@ function App() {
             key="roles"
             exact
             path="/"
-            component={ConsoleMeDataTable}
-            configEndpoint={"/api/v2/role_table_config"}
+            component={ConsoleMeSelectRoles}
           />
           <ProtectedRoute
             key="selfservice"
@@ -43,8 +44,7 @@ function App() {
             key="policies"
             exact
             path="/policies"
-            component={ConsoleMeDataTable}
-            configEndpoint={"/api/v2/policies_table_config"}
+            component={ConsoleMePolicyTable}
           />
           <ProtectedRoute
             key="review"
@@ -56,8 +56,7 @@ function App() {
             key="requests"
             exact
             path="/requests"
-            component={ConsoleMeDataTable}
-            configEndpoint={"/api/v2/requests_table_config"}
+            component={ConsoleMeRequestTable}
           />
           <ProtectedRoute
             key="iamrole_policy"

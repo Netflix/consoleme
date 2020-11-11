@@ -7,7 +7,7 @@ import SelfServiceStep1 from "./SelfServiceStep1";
 import SelfServiceStep2 from "./SelfServiceStep2";
 import SelfServiceStep3 from "./SelfServiceStep3";
 import { SelfServiceStepEnum } from "./SelfServiceEnums";
-import { sendRequestCommon } from "../helpers/utils";
+import { sendRequestCommon } from "../../helpers/utils";
 
 const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):role\/(.+\/)?(?<roleName>(.+))/;
 
