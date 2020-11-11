@@ -22,5 +22,8 @@ RUN apt-get install -y nodejs
 RUN npm install yarn -g
 RUN yarn
 RUN yarn install
-# Run Webpack to generate Frontend / React files
+# Run Webpack to generate legacy Frontend / React files
 RUN ./node_modules/.bin/webpack
+
+# Install SPA frontend
+RUN yarn --cwd ui
