@@ -1212,18 +1212,18 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
                 if redis_result_set.get(result["arn"]):
                     continue
                 redis_result_set[result["arn"]] = json.dumps(result)
+        if redis_result_set:
+            async_to_sync(store_json_results_in_redis_and_s3)(
+                redis_result_set,
+                redis_key=config.get(
+                    "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+                ),
+                redis_data_type="hash",
+                s3_bucket=s3_bucket,
+                s3_key=s3_key,
+            )
 
-        async_to_sync(store_json_results_in_redis_and_s3)(
-            redis_result_set,
-            redis_key=config.get(
-                "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
-            ),
-            redis_data_type="hash",
-            s3_bucket=s3_bucket,
-            s3_key=s3_key,
-        )
-
-        dynamo.write_resource_cache_data(results)
+            dynamo.write_resource_cache_data(results)
     else:
         redis_result_set = async_to_sync(retrieve_json_data_from_redis_or_s3)(
             s3_bucket=s3_bucket, s3_key=s3_key
