@@ -43,6 +43,7 @@ from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 from consoleme.handlers.v2.index import (
     EligibleRoleHandler,
+    EligibleRolePageConfigHandler,
     FrontendHandler,
 )
 from consoleme.handlers.v2.policies import (
@@ -117,6 +118,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/dynamic_config", DynamicConfigApiHandler),
         (r"/api/v2/eligible_roles", EligibleRoleHandler),
+        (r"/api/v2/eligible_roles_page_config", EligibleRolePageConfigHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
         (r"/api/v2/policies", PoliciesHandler),

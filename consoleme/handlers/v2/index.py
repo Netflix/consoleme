@@ -128,6 +128,32 @@ class EligibleRoleHandler(BaseHandler):
         await self.finish()
 
 
+class EligibleRolePageConfigHandler(BaseHandler):
+    async def get(self):
+        """
+        /eligible_roles_page_config
+        ---
+        get:
+            description: Retrieve Role Page Configuration
+            responses:
+                200:
+                    description: Returns Role Page Configuration
+        """
+        page_configuration = {
+            "pageName": "Select a Role",
+            "pageDescription": config.get(
+                "role_select_page.table_description",
+                "Select a role to login to the AWS console.",
+            ),
+        }
+
+        table_configuration = config.get(
+            "role_table_config.table_configuration_override", page_configuration
+        )
+
+        self.write(table_configuration)
+
+
 class FrontendHandler(tornado.web.StaticFileHandler):
     def validate_absolute_path(self, root, absolute_path):
         try:
