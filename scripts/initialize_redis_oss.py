@@ -1,3 +1,5 @@
+import argparse
+
 from asgiref.sync import async_to_sync
 
 from consoleme.celery import celery_tasks as celery
@@ -6,9 +8,28 @@ from consoleme_default_plugins.plugins.celery_tasks import (
     celery_tasks as default_celery_tasks,
 )
 
-use_celery = False
 
-if use_celery:
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
+parser = argparse.ArgumentParser(description="Populate ConsoleMe's Redis Cache")
+parser.add_argument(
+    "--use_celery",
+    default=False,
+    type=str2bool,
+    help="Invoke celery tasks instead of running synchronously",
+)
+args = parser.parse_args()
+
+if args.use_celery:
     # Initialize Redis locally. If use_celery is set to `True`, you must be running a celery beat and worker. You can
     # run this locally with the following command:
     # `celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=8`
@@ -22,7 +43,7 @@ if use_celery:
     celery.cache_resources_from_aws_config_across_accounts()
     celery.cache_policies_table_details.apply_async(countdown=180)
     celery.cache_policy_requests()
-    celery.cache_credential_authorization_mapping(countdown=180)
+    celery.cache_credential_authorization_mapping.apply_async(countdown=180)
 
 else:
     celery.cache_cloud_account_mapping()
