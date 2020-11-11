@@ -437,6 +437,7 @@ export const sendRequestV2 = async (requestV2) => {
         };
       } else {
         return {
+          // eslint-disable-next-line max-len
           message: `This request was created and partially successful: : [${request_id}](${request_url}). But the server reported some errors with the request: ${JSON.stringify(
             response
           )}`,

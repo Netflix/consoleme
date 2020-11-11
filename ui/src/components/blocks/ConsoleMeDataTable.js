@@ -84,26 +84,26 @@ class ConsoleMeDataTable extends Component {
     const { tableConfig } = this.state;
 
     this.setState(
-      {
-        isLoading: true,
-      }, async () => {
-        const data = await sendRequestCommon(
-          {
-            limit: tableConfig.totalRows,
-          },
-          tableConfig.dataEndpoint
-        );
+        {
+          isLoading: true,
+        }, async () => {
+          const data = await sendRequestCommon(
+              {
+                limit: tableConfig.totalRows,
+              },
+              tableConfig.dataEndpoint
+          );
 
-        this.setState(
-          {
-            data,
-              filteredData: data,
-              isLoading: false,
-            },
-            async () => {
-              await this.generateFilterFromQueryString();
-              await this.generateMessagesFromQueryString();
-            }
+          this.setState(
+              {
+                data,
+                filteredData: data,
+                isLoading: false,
+              },
+              async () => {
+                await this.generateFilterFromQueryString();
+                await this.generateMessagesFromQueryString();
+              }
           );
         }
     );
@@ -557,18 +557,31 @@ class ConsoleMeDataTable extends Component {
         } else if (column.type === "link") {
           // TODO, provide an option not to send markdown format
           const value = entry[column.key] != null && entry[column.key].toString();
-          const found = value.match(/\[(.+?)\]\((.+?)\)/);
-          cells.push(
+          let found = value.match(/\[(.+?)\]\((.+?)\)/);
+          if (!found) {
+            found = value.match(/\[(.+?)\]\(\)/);
+            cells.push(
               <Table.Cell
-                  key={`cell-${ridx}-${cidx}`}
-                  collapsing
-                  style={column.style}
+                key={`cell-${ridx}-${cidx}`}
+                collapsing
+                style={column.style}
               >
-                <Link to={found[2]}>
-                  {found[1]}
-                </Link>
+                {found[1]}
               </Table.Cell>
-          );
+            );
+          } else {
+            cells.push(
+                <Table.Cell
+                    key={`cell-${ridx}-${cidx}`}
+                    collapsing
+                    style={column.style}
+                >
+                  <Link to={found[2]}>
+                    {found[1]}
+                  </Link>
+                </Table.Cell>
+            );
+          }
         } else {
           cells.push(
               <Table.Cell
