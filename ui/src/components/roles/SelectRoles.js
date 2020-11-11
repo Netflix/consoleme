@@ -60,7 +60,11 @@ const SelectRoles = () => {
         <Header as="h1">
           {pageName}
           <Header.Subheader>
-            <ReactMarkdown source={pageDescription} />
+            <ReactMarkdown
+                escapeHtml={false}
+                linkTarget="_blank"
+                source={pageDescription}
+            />
           </Header.Subheader>
         </Header>
         <ConsoleMeDataTable
