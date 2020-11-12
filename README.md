@@ -39,29 +39,31 @@ be interested in implementing. These include:
 
 Docker-Compose is the quickest way to get ConsoleMe up and running locally for testing purposes.
 For development, we highly recommend setting up ConsoleMe locally with the instructions below this Quick Start.
-The Dockerfile is a great point of reference for the installation process.
-If you are going to deploy ConsoleMe in a production environment,
-we recommend deploying it to an isolated, locked-down AWS account.
 
-BEFORE RUNNING THE COMMAND BELOW: We highly recommend that you put valid AWS credentials for your account in your
-~/.aws/credentials file. The role you use should have the permissions outlined under
-`ConsoleMeInstanceProfile configuration` below. These credentials will be shared with the container, and when you run
-the `make redis` command using docker exec, it will attempt to populate your redis cache with live resources from your
-account.
+BEFORE RUNNING THE COMMAND BELOW: We highly recommend that you put valid AWS credentials in your
+[~/.aws/credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-where),
+using the default profile.
 
-`docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d`
+The role you use should have the permissions outlined under the
+[ConsoleMeInstanceProfile configuration](####ConsoleMeInstanceProfile configuration) section. These credentials will be shared with the container, and when you start
+the containers, it will attempt to populate your redis cache with live resources from your account. Please
 
-When the container is running, you can run the following command to populate your resource cache for your
-current AWS credentials:
+```bash
+# Ensure that you have valid AWS Credentials in your ~/.aws/credentials file under your `default` profile
+# before running this command
+docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d
+```
 
-`docker exec -w "/apps/consoleme" -it consoleme_consoleme_1 /usr/bin/make install`
+After this is done, visit `http://localhost:3000`. You may notice the page is rather empty. One of the containers we
+started should be initializing your redis cache with your AWS account resources, so you may need to give it a moment.
+To follow along with resource caching, run the following docker command:
 
-You can subsequently only update your resource cache with the following command:
+```bash
+docker container logs -f consoleme-celery
+```
 
-`docker exec -w "/apps/consoleme" -it consoleme_consoleme_1 /usr/bin/make redis`
-
-After this is done, visit `http://localhost:8081`. With the local configuration, you are operating as an administrator
-with no authentication.
+By default, you're running ConsoleMe as an administrator with the local
+[Docker development configuration](example_config/example_config_docker_development.yaml).
 
 ## Build and Run Instructions
 
