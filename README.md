@@ -546,7 +546,8 @@ Run `make test` or `make testhtml` to run unit tests
 1. Update ConsoleMe's configuration with your configuration parameters (This is under `get_user_by_saml_settings`). [Example](example_config/example_config_saml.yaml)
 1. Put your Service Provider certificate and private key in the location you specified in your
    `get_user_by_saml_settings.saml_path` configuration value. Default: [example_config/saml_example/certs/](example_config/saml_example/certs/)
-   as `sp.crt` and `sp.key`
+   as `sp.crt` and `sp.key`. (You can generate a certificate and private key with the following command:
+   `openssl req -x509 -nodes -sha256 -days 3650 -newkey rsa:2048 -keyout sp.key -out sp.crt`)
 1. Start ConsoleMe with your desired configuration, and test the flow:
 
 ```bash

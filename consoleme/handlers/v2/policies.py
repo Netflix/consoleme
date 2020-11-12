@@ -102,9 +102,14 @@ class PoliciesPageConfigHandler(BaseHandler):
                         "type": "input",
                         "style": {"width": "100px"},
                     },
-                    {"placeholder": "Errors", "key": "errors", "color": "red", "width": 1},
+                    {
+                        "placeholder": "Errors",
+                        "key": "errors",
+                        "color": "red",
+                        "width": 1,
+                    },
                 ],
-            }
+            },
         }
 
         table_configuration = config.get(
@@ -177,7 +182,8 @@ class PoliciesHandler(BaseAPIV2Handler):
                     region,
                     resource_name,
                 )
-                policy["arn"] = f"[{policy['arn']}]({url})"
+                if url:
+                    policy["arn"] = f"[{policy['arn']}]({url})"
                 if not policy.get("templated"):
                     policy["templated"] = "N/A"
                 else:
@@ -198,7 +204,7 @@ class ManagedPoliciesHandler(BaseHandler):
         """
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         all_account_managed_policies = await get_all_iam_managed_policies_for_account(

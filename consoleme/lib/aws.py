@@ -192,7 +192,19 @@ async def get_resource_account(arn: str) -> str:
     resource_info = await redis_hget(resources_from_aws_config_redis_key, arn)
     if resource_info:
         return json.loads(resource_info).get("accountId", "")
-
+    elif "arn:aws:s3:::" in arn:
+        # Try to retrieve S3 bucket information from S3 cache. This is inefficient and we should ideally have
+        # retrieved this info from our AWS Config cache, but we've encountered problems with AWS Config historically
+        # that have necessitated this code.
+        s3_cache = await retrieve_json_data_from_redis_or_s3(
+            redis_key=config.get("redis.s3_buckets_key", "S3_BUCKETS"),
+            redis_data_type="hash",
+        )
+        search_bucket_name = arn.split(":")[-1]
+        for bucket_account_id, buckets in s3_cache.items():
+            buckets_j = json.loads(buckets)
+            if search_bucket_name in buckets_j:
+                return bucket_account_id
     return ""
 
 
