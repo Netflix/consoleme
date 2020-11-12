@@ -1,6 +1,13 @@
-import React, { useReducer } from "react";
-import AuthContext from "./AuthContext";
-import { initialAuthState } from "./AuthState";
+import React, { createContext, useContext, useReducer } from "react";
+
+const initialAuthState = {
+    auth: null, // contains authentication information such as JWT expiration time and backend current time
+    user: null, // user profile data
+};
+
+const AuthContext = createContext(initialAuthState);
+
+export const useAuth = () => useContext(AuthContext);
 
 const reducer = (state, action) => {
   switch (action.type) {

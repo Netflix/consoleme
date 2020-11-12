@@ -17,7 +17,6 @@ function ConsoleMeDynamicConfig() {
   const [statusMessage, setStatusMessage] = useState(null);
 
   useEffect(() => {
-    // TODO: Replace with new useApi when SPA work is complete
     async function fetchDynamicConfig() {
       const resJson = await sendRequestCommon(
         null,
@@ -30,7 +29,6 @@ function ConsoleMeDynamicConfig() {
     fetchDynamicConfig();
   }, []);
 
-  // TODO: Replace with new useApi when SPA work is complete
   const updateConfig = async () => {
     const res = await sendRequestCommon(
       { new_config: config, existing_sha256: configSha256 },

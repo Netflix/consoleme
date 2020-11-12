@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Button, Form, Header, Segment } from "semantic-ui-react";
 import usePolicyTag from "./hooks/usePolicyTag";
 import { JustificationModal } from "./PolicyModals";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/AuthProvider";
 
 const Tags = () => {
   const { user } = useAuth();

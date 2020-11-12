@@ -50,11 +50,13 @@ from consoleme.handlers.v2.policies import (
     ManagedPoliciesHandler,
     PoliciesHandler,
     PolicyReviewV2Handler,
+    PoliciesPageConfigHandler,
 )
 from consoleme.handlers.v2.requests import (
     RequestDetailHandler,
     RequestHandler,
     RequestsHandler,
+    RequestsPageConfigHandler,
 )
 from consoleme.handlers.v2.resources import ResourceDetailHandler
 from consoleme.handlers.v2.roles import (
@@ -119,6 +121,8 @@ def make_app(jwt_validator=None):
         (r"/api/v2/dynamic_config", DynamicConfigApiHandler),
         (r"/api/v2/eligible_roles", EligibleRoleHandler),
         (r"/api/v2/eligible_roles_page_config", EligibleRolePageConfigHandler),
+        (r"/api/v2/policies_page_config", PoliciesPageConfigHandler),
+        (r"/api/v2/requests_page_config", RequestsPageConfigHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
         (r"/api/v2/policies", PoliciesHandler),

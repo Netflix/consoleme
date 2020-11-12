@@ -145,6 +145,27 @@ class EligibleRolePageConfigHandler(BaseHandler):
                 "role_select_page.table_description",
                 "Select a role to login to the AWS console.",
             ),
+            "tableConfig": {
+                "expandableRows": True,
+                "dataEndpoint": "/api/v2/eligible_roles",
+                "sortable": False,
+                "totalRows": 1000,
+                "rowsPerPage": 50,
+                "serverSideFiltering": False,
+                "columns": [
+                    {"placeholder": "Account Name", "key": "account_name", "type": "input"},
+                    {"placeholder": "Account ID", "key": "account_id", "type": "input"},
+                    {"placeholder": "Role Name", "key": "role_name", "type": "link"},
+                    {
+                        "placeholder": "AWS Console Sign-In",
+                        "key": "redirect_uri",
+                        "type": "button",
+                        "icon": "sign-in",
+                        "content": "Sign-In",
+                        "onClick": {"action": "redirect"},
+                    },
+                ],
+            }
         }
 
         table_configuration = config.get(

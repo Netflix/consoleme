@@ -1,8 +1,7 @@
 import React from "react";
 import { Dropdown, Menu, Image } from "semantic-ui-react";
 import { NavLink } from "react-router-dom";
-
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../auth/AuthProvider";
 
 const ConsoleMeHeader = () => {
   const { user } = useAuth();

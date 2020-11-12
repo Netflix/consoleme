@@ -1,88 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Header } from 'semantic-ui-react';
 import ConsoleMeDataTable from '../blocks/ConsoleMeDataTable';
+import { sendRequestCommon } from "../../helpers/utils";
+import ReactMarkdown from "react-markdown";
 
 const RequestTable = () => {
-  const config = {
-    expandableRows: true,
-    tableName: 'Requests',
-    tableDescription: 'View all IAM policy requests created through ConsoleMe',
-    dataEndpoint: '/api/v2/requests?markdown=true',
-    sortable: false,
-    totalRows: 1000,
-    rowsPerPage: 50,
-    serverSideFiltering: true,
-    columns: [
-      {
-        placeholder: 'Username',
-        key: 'username',
-        type: 'input',
-        style: {
-          width: '100px',
-        },
-      },
-      {
-        placeholder: 'Arn',
-        key: 'arn',
-        type: 'link',
-        style: {
-          whiteSpace: 'normal',
-          wordBreak: 'break-all',
-        },
-        width: 3,
-      },
-      {
-        placeholder: 'Request Time',
-        key: 'request_time',
-        type: 'daterange',
-      },
-      {
-        placeholder: 'Status',
-        key: 'status',
-        type: 'dropdown',
-        style: {
-          width: '90px',
-        },
-      },
-      {
-        placeholder: 'Request ID',
-        key: 'request_id',
-        type: 'link',
-        style: {
-          whiteSpace: 'normal',
-          wordBreak: 'break-all',
-        },
-        width: 2,
-      },
-      {
-        placeholder: 'Policy Name',
-        key: 'policy_name',
-        type: 'input',
-        style: {
-          width: '110px',
-        },
-      },
-      {
-        placeholder: 'Last Updated By',
-        key: 'updated_by',
-        type: 'input',
-        style: {
-          width: '110px',
-        },
-      },
-    ],
-  };
+  const [pageConfig, setPageConfig] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const data = await sendRequestCommon(null, "/api/v2/requests_page_config", "get");
+      setPageConfig(data);
+    })();
+  }, []);
+
+  if (!pageConfig) {
+    return null;
+  }
+
+  const { pageName, pageDescription, tableConfig } = pageConfig;
 
   return (
     <>
-      <Header as="h2">
-        Requests
-        <Header.Subheader>
-          View all IAM policy requests created through ConsoleMe
-        </Header.Subheader>
-      </Header>
+        <Header as="h1">
+          {pageName}
+          <Header.Subheader>
+            <ReactMarkdown
+                escapeHtml={false}
+                linkTarget="_blank"
+                source={pageDescription}
+            />
+          </Header.Subheader>
+        </Header>
       <ConsoleMeDataTable
-        config={config}
+        config={tableConfig}
       />
     </>
   );

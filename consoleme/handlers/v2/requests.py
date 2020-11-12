@@ -202,7 +202,7 @@ class RequestHandler(BaseAPIV2Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                "groups.can_bypass_contractor_restrictions", []
+                    "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -533,7 +533,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                "groups.can_bypass_contractor_restrictions", []
+                    "groups.can_bypass_contractor_restrictions", []
             ):
                 self.write_error(
                     403, message="Only FTEs are authorized to view this page."
@@ -610,7 +610,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                "groups.can_bypass_contractor_restrictions", []
+                    "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -656,6 +656,82 @@ class RequestDetailHandler(BaseAPIV2Handler):
         await self.finish()
         await cache_all_policy_requests()
         return
+
+
+class RequestsPageConfigHandler(BaseHandler):
+    async def get(self):
+        """
+        /requests_page_config
+        ---
+        get:
+            description: Retrieve Requests Page Configuration
+            responses:
+                200:
+                    description: Returns Requests Page Configuration
+        """
+        default_configuration = {
+            "pageName": "Requests",
+            "pageDescription": "View all IAM policy requests created through ConsoleMe",
+            "tableConfig": {
+                "expandableRows": True,
+                "dataEndpoint": "/api/v2/requests?markdown=true",
+                "sortable": False,
+                "totalRows": 1000,
+                "rowsPerPage": 50,
+                "serverSideFiltering": True,
+                "columns": [
+                    {
+                        "placeholder": "Username",
+                        "key": "username",
+                        "type": "input",
+                        "style": {"width": "100px"},
+                    },
+                    {
+                        "placeholder": "Arn",
+                        "key": "arn",
+                        "type": "link",
+                        "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
+                        "width": 3,
+                    },
+                    {
+                        "placeholder": "Request Time",
+                        "key": "request_time",
+                        "type": "daterange",
+                    },
+                    {
+                        "placeholder": "Status",
+                        "key": "status",
+                        "type": "dropdown",
+                        "style": {"width": "90px"},
+                    },
+                    {
+                        "placeholder": "Request ID",
+                        "key": "request_id",
+                        "type": "link",
+                        "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
+                        "width": 2,
+                    },
+                    {
+                        "placeholder": "Policy Name",
+                        "key": "policy_name",
+                        "type": "input",
+                        "style": {"width": "110px"},
+                    },
+                    {
+                        "placeholder": "Last Updated By",
+                        "key": "updated_by",
+                        "type": "input",
+                        "style": {"width": "110px"},
+                    },
+                ],
+            }
+        }
+
+        table_configuration = config.get(
+            "RequestsTableConfigHandler.configuration", default_configuration
+        )
+
+        self.write(table_configuration)
 
 
 class RequestsWebHandler(BaseHandler):

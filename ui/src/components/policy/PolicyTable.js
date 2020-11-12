@@ -1,79 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Header } from 'semantic-ui-react';
 import ConsoleMeDataTable from '../blocks/ConsoleMeDataTable';
+import { sendRequestCommon } from "../../helpers/utils";
+import ReactMarkdown from "react-markdown";
 
 const PolicyTable = () => {
-  const config = {
-    expandableRows: true,
-    tableName: 'Policies',
-    tableDescription: 'View all of the AWS Resources we know about.',
-    dataEndpoint: '/api/v2/policies?markdown=true',
-    sortable: false,
-    totalRows: 1000,
-    rowsPerPage: 50,
-    serverSideFiltering: true,
-    columns: [
-      {
-        placeholder: 'Account ID',
-        key: 'account_id',
-        type: 'input',
-        style: {
-          width: '110px',
-        },
-      },
-      {
-        placeholder: 'Account',
-        key: 'account_name',
-        type: 'input',
-        style: {
-          width: '90px',
-        },
-      },
-      {
-        placeholder: 'Resource',
-        key: 'arn',
-        type: 'link',
-        width: 6,
-        style: {
-          whiteSpace: 'normal',
-          wordBreak: 'break-all',
-        },
-      },
-      {
-        placeholder: 'Tech',
-        key: 'technology',
-        type: 'input',
-        style: {
-          width: '70px',
-        },
-      },
-      {
-        placeholder: 'Template',
-        key: 'templated',
-        type: 'input',
-        style: {
-          width: '100px',
-        },
-      },
-      {
-        placeholder: 'Errors',
-        key: 'errors',
-        color: 'red',
-        width: 1,
-      },
-    ],
-  };
+  const [pageConfig, setPageConfig] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const data = await sendRequestCommon(null, "/api/v2/policies_page_config", "get");
+      setPageConfig(data);
+    })();
+  }, []);
+
+  if (!pageConfig) {
+    return null;
+  }
+
+  const { pageName, pageDescription, tableConfig } = pageConfig;
 
   return (
     <>
-      <Header as="h2">
-        Policies
-        <Header.Subheader>
-          View all of the AWS Resources we know about.
-        </Header.Subheader>
-      </Header>
+        <Header as="h1">
+          {pageName}
+          <Header.Subheader>
+            <ReactMarkdown
+                escapeHtml={false}
+                linkTarget="_blank"
+                source={pageDescription}
+            />
+          </Header.Subheader>
+        </Header>
       <ConsoleMeDataTable
-        config={config}
+        config={tableConfig}
       />
     </>
   );

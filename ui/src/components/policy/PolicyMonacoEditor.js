@@ -8,7 +8,7 @@ import {
 } from "../../helpers/utils";
 import templateOptions from "./policyTemplates";
 import { usePolicyContext } from "./hooks/PolicyProvider";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/AuthProvider";
 
 monaco.languages.registerCompletionItemProvider("json", {
   triggerCharacters: getMonacoTriggerCharacters(),
