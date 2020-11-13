@@ -117,15 +117,17 @@ const Issues = () => {
         );
       });
 
-      const errorLink = s3?.error_url ? (
-        <>
-          (
-          <a href={s3.error_url} rel="noopener noreferrer" target="_blank">
-            Click here to see logs
-          </a>
-          )
-        </>
-      ) : null;
+      const errorLink = () => {
+        return s3?.error_url ? (
+          <>
+            (
+            <a href={s3.error_url} rel="noopener noreferrer" target="_blank">
+              Click here to see logs
+            </a>
+            )
+          </>
+        ) : null;
+      };
 
       return (
         <>
