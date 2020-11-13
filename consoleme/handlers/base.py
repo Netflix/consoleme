@@ -345,7 +345,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 await self.finish(log_data["message"])
                 raise
 
-        self.contractor = await auth.is_user_contractor(self.user)
+        self.contractor = config.config_plugin().is_contractor(self.user)
 
         if not refresh_cache:
             try:
