@@ -451,7 +451,7 @@ async def get_policy_request_uri(request):
 
 
 async def get_policy_request_uri_v2(extended_request: ExtendedRequestModel):
-    return f"{config.get('url')}/policies/request_v2/{extended_request.id}"
+    return f"{config.get('url')}/policies/request/{extended_request.id}"
 
 
 async def validate_policy_name(policy_name):
