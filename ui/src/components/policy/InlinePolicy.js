@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Accordion, Button, Header, Segment } from "semantic-ui-react";
 import { Link } from "react-router-dom";
 import useInlinePolicy from "./hooks/useInlinePolicy";
@@ -11,16 +11,17 @@ import { JustificationModal } from "./PolicyModals";
 const InlinePolicy = () => {
   const {
     arn,
-    activeIndex = [],
-    inlinePolicies = [],
     isNewPolicy = false,
-    setActiveIndex,
-    setIsNewPolicy,
+    inlinePolicies = [],
     addInlinePolicy,
     updateInlinePolicy,
     deleteInlinePolicy,
+    setIsNewPolicy,
     handleInlinePolicySubmit,
   } = useInlinePolicy();
+
+  const [activeIndex, setActiveIndex] = useState([]);
+  const [panels, setPanels] = useState([]);
 
   const toggleNewInlinePolicy = () => {
     setIsNewPolicy(true);
@@ -34,37 +35,53 @@ const InlinePolicy = () => {
     }
   };
 
-  const panels = inlinePolicies.map((policy) => {
-    return {
-      key: policy.PolicyName,
-      title: policy.PolicyName,
-      content: {
-        content: (
-          <PolicyMonacoEditor
-            context="inline_policy"
-            policy={policy}
-            deletePolicy={deleteInlinePolicy}
-            updatePolicy={updateInlinePolicy}
-          />
-        ),
-      },
-    };
-  });
-
-  if (isNewPolicy) {
-    panels.unshift({
-      key: "new_policy",
-      title: "New Policy",
-      content: {
-        content: (
-          <NewPolicyMonacoEditor
-            addPolicy={addInlinePolicy}
-            setIsNewPolicy={setIsNewPolicy}
-          />
-        ),
-      },
+  useEffect(() => {
+    if (!isNewPolicy) {
+      setPanels((panels) => {
+        return [...panels.filter((panel) => panel.key !== "new_policy")];
+      });
+      return;
+    }
+    setPanels((panels) => {
+      setActiveIndex([...Array(panels.length + 1).keys()]);
+      return [
+        {
+          key: "new_policy",
+          title: "New Policy",
+          content: {
+            content: (
+              <NewPolicyMonacoEditor
+                addPolicy={addInlinePolicy}
+                setIsNewPolicy={setIsNewPolicy}
+              />
+            ),
+          },
+        },
+        ...panels,
+      ];
     });
-  }
+  }, [isNewPolicy, addInlinePolicy, setIsNewPolicy]);
+
+  useEffect(() => {
+    const newPanels = inlinePolicies.map((policy) => {
+      return {
+        key: policy.PolicyName,
+        title: policy.PolicyName,
+        content: {
+          content: (
+            <PolicyMonacoEditor
+              context="inline_policy"
+              policy={policy}
+              deletePolicy={deleteInlinePolicy}
+              updatePolicy={updateInlinePolicy}
+            />
+          ),
+        },
+      };
+    });
+    setPanels(newPanels);
+    setActiveIndex([...Array(newPanels.length).keys()]);
+  }, [inlinePolicies, deleteInlinePolicy, updateInlinePolicy]);
 
   return (
     <>

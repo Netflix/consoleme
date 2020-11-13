@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import { usePolicyContext } from "./PolicyProvider";
 import { initialState, reducer } from "./inlinePolicyReducer";
 import { sendRequestV2 } from "../../../helpers/utils";
@@ -8,7 +8,7 @@ const useInlinePolicy = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    dispatch({ type: "SET_POLICIES", policies: resource.inline_policies })
+    dispatch({ type: "SET_POLICIES", policies: resource.inline_policies });
   }, [resource.inline_policies]);
 
   const handleInlinePolicySubmit = async ({
@@ -39,18 +39,24 @@ const useInlinePolicy = () => {
   return {
     ...state,
     arn: resource?.arn,
-    setActiveIndex: (activeIndex) =>
-      dispatch({ type: "SET_ACTIVE_INDEX", activeIndex }),
-    setIsNewPolicy: (isNewPolicy) =>
-      dispatch({ type: "SET_IS_NEW_POLICY", isNewPolicy }),
     setInlinePolicies: (policies) =>
       dispatch({ type: "SET_POLICIES", policies }),
-    addInlinePolicy: (policy) =>
-      dispatch({ type: "ADD_POLICY", policy }),
-    updateInlinePolicy: (policy) =>
-      dispatch({ type: "UPDATE_POLICY", policy }),
-    deleteInlinePolicy: (policy) =>
-      dispatch({ type: "DELETE_POLICY", policy }),
+    setIsNewPolicy: useCallback(
+      (isNewPolicy) => dispatch({ type: "SET_IS_NEW_POLICY", isNewPolicy }),
+      []
+    ),
+    addInlinePolicy: useCallback(
+      (policy) => dispatch({ type: "ADD_POLICY", policy }),
+      []
+    ),
+    updateInlinePolicy: useCallback(
+      (policy) => dispatch({ type: "UPDATE_POLICY", policy }),
+      []
+    ),
+    deleteInlinePolicy: useCallback(
+      (policy) => dispatch({ type: "DELETE_POLICY", policy }),
+      []
+    ),
     handleInlinePolicySubmit,
   };
 };

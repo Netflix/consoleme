@@ -185,13 +185,30 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const [policyDocument, setPolicyDocument] = useState(
     JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")
   );
+  const [error, setError] = useState("");
+  const [policyNameError, setpolicyNameError] = useState(false);
+  const policyNameRegex = /^[\w+=,.@-]+$/;
 
   const onEditChange = (value) => {
-    setPolicyDocument(JSON.stringify(JSON.parse(value), null, "\t"));
+    setPolicyDocument(value);
+  };
+
+  onLintError = (lintErrors) => {
+    if (lintErrors.length > 0) {
+      setError(`LintErrors: ${JSON.stringify(lintErrors)}`);
+    } else {
+      setError("");
+    }
   };
 
   const handleChangeNewPolicyName = (e) => {
-    setNewPolicyName(e.target.value);
+    const policyName = e.target.value;
+    if (policyName && !policyNameRegex.test(policyName)) {
+      setpolicyNameError(true);
+      return;
+    }
+    setpolicyNameError(false);
+    setNewPolicyName(policyName);
   };
 
   const handlePolicyAdminSave = () => {
@@ -211,7 +228,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   };
 
   const onTemplateChange = (e, { value }) => {
-    onEditChange(value);
+    setPolicyDocument(JSON.stringify(JSON.parse(value || ""), null, "\t"));
   };
 
   return (
@@ -221,6 +238,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
           <Form.Group widths="equal">
             <Form.Input
               id="inputNew"
+              error={policyNameError}
               label="Policy Name"
               placeholder="(Optional) Enter a Policy Name"
               onChange={handleChangeNewPolicyName}
@@ -262,6 +280,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
               icon="save"
               content="Save"
               onClick={handlePolicyAdminSave}
+              disabled={error || policyNameError || !policyDocument}
             />
             <Button.Or />
           </>
@@ -271,6 +290,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
           icon="send"
           content="Submit"
           onClick={handlePolicySubmit}
+          disabled={error || policyNameError || !policyDocument}
         />
         <Button.Or />
         <Button

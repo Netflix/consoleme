@@ -13,7 +13,9 @@ const ProtectedRoute = (props) => {
       return;
     }
     if (!user) {
-      login();
+      (async () => {
+        await login();
+      })();
     }
   }, [match]); // eslint-disable-line
 

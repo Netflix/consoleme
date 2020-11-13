@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Label, Icon, Image, Menu } from "semantic-ui-react";
-import { parseLocalStorageCache } from "../helpers/utils";
+import { parseLocalStorageCache, sendRequestCommon } from "../helpers/utils";
 import { NavLink } from "react-router-dom";
 
 const localStorageRecentRolesKey = "consoleMeLocalStorage";
@@ -11,8 +11,10 @@ const ConsoleMeSidebar = () => {
 
   useEffect(() => {
     (async () => {
-      const siteconfig = await fetch("/api/v1/siteconfig").then((res) =>
-        res.json()
+      const siteconfig = await sendRequestCommon(
+        null,
+        "/api/v1/siteconfig",
+        "get"
       );
       setSiteConfig(siteconfig);
     })();
