@@ -25,6 +25,7 @@ from celery.concurrency import asynpool
 from celery.schedules import crontab
 from celery.signals import (
     task_failure,
+    task_prerun,
     task_received,
     task_rejected,
     task_retry,
@@ -193,6 +194,29 @@ def get_celery_request_tags(**kwargs):
         if isinstance(exception, SoftTimeLimitExceeded):
             tags["timed_out"] = True
     return tags
+
+
+@task_prerun.connect
+def refresh_dynamic_config_in_worker(**kwargs):
+    tags = get_celery_request_tags(**kwargs)
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+    }
+
+    dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
+    if not dynamic_config:
+        log.error({**log_data, "error": "Unable to retrieve Dynamic Config from Redis"})
+        return
+    dynamic_config_j = json.loads(dynamic_config)
+    if config.CONFIG.config.get("dynamic_config", {}) != dynamic_config_j:
+        log.debug(
+            {
+                **log_data,
+                **tags,
+                "message": "Refreshing dynamic configuration on Celery Worker",
+            }
+        )
+        config.CONFIG.config["dynamic_config"] = dynamic_config_j
 
 
 @task_received.connect

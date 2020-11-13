@@ -11,6 +11,7 @@ from threading import Timer
 from typing import Any, Dict, List, Optional, Union
 
 import logmatic
+import ujson as json
 import yaml
 from asgiref.sync import async_to_sync
 from pytz import timezone
@@ -39,6 +40,16 @@ def dict_merge(dct: dict, merge_dct: dict):
     return dct
 
 
+def refresh_dynamic_config(ddb=None):
+    if not ddb:
+        # This function runs frequently. We provide the option to pass in a UserDynamoHandler
+        # so we don't need to import on every invocation
+        from consoleme.lib.dynamo import UserDynamoHandler
+
+        ddb = UserDynamoHandler()
+    return ddb.get_dynamic_config_dict()
+
+
 class Configuration(object):
     """Load YAML configuration files. YAML files can be extended to extend each other, to include common configuration
     values."""
@@ -52,12 +63,18 @@ class Configuration(object):
         """If enabled, we can load a configuration dynamically from Dynamo at a certain time interval. This reduces
         the need for code redeploys to make configuration changes"""
         from consoleme.lib.dynamo import UserDynamoHandler
+        from consoleme.lib.redis import RedisHandler
 
         ddb = UserDynamoHandler()
+        red = RedisHandler().redis_sync()
 
         while True:
-            dynamic_config = ddb.get_dynamic_config_dict()
+            dynamic_config = refresh_dynamic_config(ddb)
             if dynamic_config != self.config.get("dynamic_config"):
+                red.set(
+                    "DYNAMIC_CONFIG_CACHE",
+                    json.dumps(dynamic_config),
+                )
                 self.get_logger("config").debug(
                     {
                         "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -66,6 +83,7 @@ class Configuration(object):
                     }
                 )
                 self.config["dynamic_config"] = dynamic_config
+
             time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
 
     async def merge_extended_paths(self, extends, dir_path):
@@ -100,7 +118,7 @@ class Configuration(object):
         if extends:
             await self.merge_extended_paths(extends, dir_path)
 
-        if self.get("config.load_from_dynamo"):
+        if self.get("config.load_from_dynamo", True):
             Timer(0, self.load_config_from_dynamo, ()).start()
 
         if self.get("config.run_recurring_internal_tasks"):
