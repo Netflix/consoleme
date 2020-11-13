@@ -26,8 +26,6 @@ from consoleme.handlers.v1.policies import (
     AutocompleteHandler,
     PolicyReviewHandler,
     ResourceTypeAheadHandler,
-    SelfServiceHandler,
-    SelfServiceV2Handler,
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
@@ -49,7 +47,6 @@ from consoleme.handlers.v2.index import (
 from consoleme.handlers.v2.policies import (
     ManagedPoliciesHandler,
     PoliciesHandler,
-    PolicyReviewV2Handler,
     PoliciesPageConfigHandler,
 )
 from consoleme.handlers.v2.requests import (
@@ -112,7 +109,6 @@ def make_app(jwt_validator=None):
         (r"/api/v1/get_roles", GetRolesHandler),
         # Used to autocomplete s3:get to all matching permissions
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
-        (r"/api/v1/get_roles", GetRolesHandler),
         (r"/api/v1/siteconfig/?", SiteConfigHandler),
         (r"/api/v2/self_service_config/?", SelfServiceConfigHandler),
         (r"/api/v1/profile/?", UserProfileHandler),
@@ -141,16 +137,11 @@ def make_app(jwt_validator=None):
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
         (r"/api/v2/typeahead/resources", ResourceTypeAheadHandlerV2),
         (r"/api/v2/role_login/(.*)", RoleConsoleLoginHandler),
-        # (r"/config/?", DynamicConfigHandler),
         (r"/create_role/?", CreateRoleViewHandler),
         (r"/myheaders/?", HeaderHandler),
         (r"/policies/request_v1/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
-        (r"/policies/request_v2/([a-zA-Z0-9_-]+)", PolicyReviewV2Handler),
         (r"/policies/typeahead/?", ResourceTypeAheadHandler),
         (r"/saml/(.*)", SamlHandler),
-        (r"/self_service_v1", SelfServiceHandler),
-        (r"/self_service", SelfServiceV2Handler),
-        (r"/self_service/\d{12}/.+", SelfServiceV2Handler),
         (
             r"/challenge_validator/([a-zA-Z0-9_-]+)",
             ChallengeValidatorHandler,
