@@ -89,15 +89,19 @@ async def generate_and_store_credential_authorization_mapping() -> Dict[
 ]:
     authorization_mapping: Dict[user_or_group, RoleAuthorizations] = {}
 
-    if config.get("cloud_credential_authorization_mapping.role_tags.enabled"):
+    if config.get("cloud_credential_authorization_mapping.role_tags.enabled", True):
         authorization_mapping = await RoleTagAuthorizationMappingGenerator().generate_credential_authorization_mapping(
             authorization_mapping
         )
-    if config.get("cloud_credential_authorization_mapping.dynamic_config.enabled"):
+    if config.get(
+        "cloud_credential_authorization_mapping.dynamic_config.enabled", True
+    ):
         authorization_mapping = await DynamicConfigAuthorizationMappingGenerator().generate_credential_authorization_mapping(
             authorization_mapping
         )
-    if config.get("cloud_credential_authorization_mapping.internal_plugin.enabled"):
+    if config.get(
+        "cloud_credential_authorization_mapping.internal_plugin.enabled", False
+    ):
         authorization_mapping = await InternalPluginAuthorizationMappingGenerator().generate_credential_authorization_mapping(
             authorization_mapping
         )

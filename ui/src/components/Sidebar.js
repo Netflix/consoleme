@@ -1,24 +1,26 @@
 import React, { useEffect, useState } from "react";
-import PropTypes from "prop-types";
 import { Label, Icon, Image, Menu } from "semantic-ui-react";
-import { useApi } from "../auth/useApi";
+import { parseLocalStorageCache, sendRequestCommon } from "../helpers/utils";
+import { NavLink } from "react-router-dom";
 
-const LOGO_URL =
-  "/static/screenplay/assets/netflix-security-dark-bg-tight.5f1eba5edb.svg";
+const localStorageRecentRolesKey = "consoleMeLocalStorage";
 
-const ConsoleMeSidebar = (props) => {
-  const { loading, data, error } = useApi("/api/v1/siteconfig");
+const ConsoleMeSidebar = () => {
+  const [siteConfig, setSiteConfig] = useState({});
+  const recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
 
-  if (loading || !data) {
-    return null;
-  }
+  useEffect(() => {
+    (async () => {
+      const siteconfig = await sendRequestCommon(
+        null,
+        "/api/v1/siteconfig",
+        "get"
+      );
+      setSiteConfig(siteconfig);
+    })();
+  }, []);
 
-  const {
-    consoleme_logo,
-    documentation_url,
-    support_contact,
-    support_slack,
-  } = data;
+  const { documentation_url, support_contact, support_slack } = siteConfig;
 
   return (
     <Menu
@@ -34,13 +36,19 @@ const ConsoleMeSidebar = (props) => {
       }}
     >
       <Menu.Item>
-        <Label>{props.recentRoles.length}</Label>
+        <Label>{recentRoles.length}</Label>
         <Menu.Header>Recent Roles</Menu.Header>
         <Menu.Menu>
-          {props.recentRoles.map((role) => {
+          {recentRoles.map((role) => {
+            const roleName = role.split("/").pop();
             return (
-              <Menu.Item as="a" name={role} key={role}>
-                {role}
+              <Menu.Item
+                as={NavLink}
+                name={role}
+                key={role}
+                to={"/role/" + role}
+              >
+                {roleName}
               </Menu.Item>
             );
           })}
@@ -89,11 +97,11 @@ const ConsoleMeSidebar = (props) => {
         }}
       >
         <Menu.Item>
-          <Image size="medium" src="/static_ui/images/logos/quarantine/1.png" />
+          <Image size="medium" src="/static/ui/images/logos/quarantine/1.png" />
           <br />
           <Image
             size="medium"
-            src="/static_ui/images/netflix-security-dark-bg-tight.svg"
+            src="/static/ui/images/netflix-security-dark-bg-tight.svg"
           />
         </Menu.Item>
       </Menu.Menu>

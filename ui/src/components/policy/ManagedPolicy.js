@@ -13,7 +13,7 @@ import {
 import useManagedPolicy from "./hooks/useManagedPolicy";
 import { JustificationModal } from "./PolicyModals";
 import { sendRequestCommon } from "../../helpers/utils";
-import { useAuth } from "../../auth/AuthContext";
+import { useAuth } from "../../auth/AuthProvider";
 
 const ManagedPolicy = () => {
   const { user } = useAuth();

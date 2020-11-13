@@ -13,11 +13,7 @@ from sentry_sdk.integrations.tornado import TornadoIntegration
 import consoleme
 from consoleme.config import config
 from consoleme.handlers.auth import AuthHandler
-from consoleme.handlers.base import NoCacheStaticFileHandler
-from consoleme.handlers.v1.autologin import AutoLoginHandler
 from consoleme.handlers.v1.credentials import GetCredentialsHandler
-from consoleme.handlers.v1.dynamic_config import DynamicConfigHandler
-from consoleme.handlers.v1.errors import Consolme404Handler
 from consoleme.handlers.v1.headers import (
     ApiHeaderHandler,
     HeaderHandler,
@@ -28,12 +24,7 @@ from consoleme.handlers.v1.health import HealthHandler
 from consoleme.handlers.v1.policies import (
     ApiResourceTypeAheadHandler,
     AutocompleteHandler,
-    GetPoliciesHandler,
-    PolicyEditHandler,
     PolicyReviewHandler,
-    PolicyReviewSubmitHandler,
-    PolicyViewHandler,
-    ResourcePolicyEditHandler,
     ResourceTypeAheadHandler,
     SelfServiceHandler,
     SelfServiceV2Handler,
@@ -51,27 +42,27 @@ from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
 from consoleme.handlers.v2.generate_policy import GeneratePolicyHandler
 from consoleme.handlers.v2.index import (
-    EligibleRoleTableConfigHandler,
+    EligibleRoleHandler,
+    EligibleRolePageConfigHandler,
     FrontendHandler,
-    IndexHandler,
 )
 from consoleme.handlers.v2.policies import (
     ManagedPoliciesHandler,
     PoliciesHandler,
-    PoliciesTableConfigHandler,
     PolicyReviewV2Handler,
+    PoliciesPageConfigHandler,
 )
 from consoleme.handlers.v2.requests import (
     RequestDetailHandler,
     RequestHandler,
     RequestsHandler,
-    RequestsTableConfigHandler,
-    RequestsWebHandler,
+    RequestsPageConfigHandler,
 )
 from consoleme.handlers.v2.resources import ResourceDetailHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
+    RoleConsoleLoginHandler,
     RoleDetailAppHandler,
     RoleDetailHandler,
     RolesHandler,
@@ -103,34 +94,16 @@ def make_app(jwt_validator=None):
     path = pkg_resources.resource_filename("consoleme", "templates")
 
     oss_routes = [
-        (
-            r"/static_ui/(.*)",
-            NoCacheStaticFileHandler,
-            dict(
-                path=os.path.join(path, "dist"),
-            ),
-        ),
-        (
-            r"/ui/(.*)",
-            FrontendHandler,
-            dict(
-                path=os.path.join(path, "dist"),
-                default_filename="index.html",
-            ),
-        ),
-        (r"/", IndexHandler),
         (r"/auth", AuthHandler),
-        (r"/role/?", AutoLoginHandler),
-        (r"/role/(.*)", AutoLoginHandler),
         (r"/healthcheck", HealthHandler),
         (
             r"/static/(.*)",
-            NoCacheStaticFileHandler,
+            tornado.web.StaticFileHandler,
             dict(path=os.path.join(path, "static")),
         ),
         (
             r"/(favicon.ico)",
-            NoCacheStaticFileHandler,
+            tornado.web.StaticFileHandler,
             dict(path=os.path.join(path, "static")),
         ),
         # Generally, everything behind "/api" in a production instance is not protected by SSO.
@@ -146,15 +119,16 @@ def make_app(jwt_validator=None):
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/dynamic_config", DynamicConfigApiHandler),
+        (r"/api/v2/eligible_roles", EligibleRoleHandler),
+        (r"/api/v2/eligible_roles_page_config", EligibleRolePageConfigHandler),
+        (r"/api/v2/policies_page_config", PoliciesPageConfigHandler),
+        (r"/api/v2/requests_page_config", RequestsPageConfigHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
         (r"/api/v2/policies", PoliciesHandler),
-        (r"/api/v2/policies_table_config", PoliciesTableConfigHandler),
-        (r"/api/v2/role_table_config", EligibleRoleTableConfigHandler),
         (r"/api/v2/request", RequestHandler),
         (r"/api/v2/requests", RequestsHandler),
         (r"/api/v2/requests/([a-zA-Z0-9_-]+)", RequestDetailHandler),
-        (r"/api/v2/requests_table_config", RequestsTableConfigHandler),
         (r"/api/v2/roles/?", RolesHandler),
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
@@ -166,29 +140,17 @@ def make_app(jwt_validator=None):
         (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
         (r"/api/v2/typeahead/resources", ResourceTypeAheadHandlerV2),
-        (r"/config/?", DynamicConfigHandler),
+        (r"/api/v2/role_login/(.*)", RoleConsoleLoginHandler),
+        # (r"/config/?", DynamicConfigHandler),
         (r"/create_role/?", CreateRoleViewHandler),
         (r"/myheaders/?", HeaderHandler),
-        (r"/policies/?", PolicyViewHandler),
-        (
-            r"/policies/get_policies/?",
-            GetPoliciesHandler,
-        ),  # Used to search/filter for /policies page
-        (r"/policies/edit/(\d{12})/iamrole/(.*)", PolicyEditHandler),
-        # Properly routes S3, SQS, SNS policy requests
-        (
-            r"/policies/edit/(\d{12})/(s3|sqs|sns)(?:/([a-z\-1-9]+))?/(.*)",
-            ResourcePolicyEditHandler,
-        ),
-        (r"/policies/request/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
+        (r"/policies/request_v1/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
         (r"/policies/request_v2/([a-zA-Z0-9_-]+)", PolicyReviewV2Handler),
-        (r"/policies/submit_for_review", PolicyReviewSubmitHandler),
-        (r"/policies/typeahead", ResourceTypeAheadHandler),
+        (r"/policies/typeahead/?", ResourceTypeAheadHandler),
         (r"/saml/(.*)", SamlHandler),
         (r"/self_service_v1", SelfServiceHandler),
         (r"/self_service", SelfServiceV2Handler),
         (r"/self_service/\d{12}/.+", SelfServiceV2Handler),
-        (r"/requests", RequestsWebHandler),
         (
             r"/challenge_validator/([a-zA-Z0-9_-]+)",
             ChallengeValidatorHandler,
@@ -201,6 +163,12 @@ def make_app(jwt_validator=None):
         ),
         (r"/noauth/v1/challenge_generator/(.*)", ChallengeGeneratorHandler),
         (r"/noauth/v1/challenge_poller/([a-zA-Z0-9_-]+)", ChallengePollerHandler),
+        (r"/api/v2/.*", V2NotFoundHandler),
+        (
+            r"/(.*)",
+            FrontendHandler,
+            dict(path=os.path.join(path, "static/ui"), default_filename="index.html"),
+        ),
     ]
 
     # Prioritize internal routes before OSS routes so that OSS routes can be overrided if desired.
@@ -208,10 +176,6 @@ def make_app(jwt_validator=None):
         make_jwt_validator, jwt_validator
     )
     routes = internal_route_list + oss_routes
-
-    # Return a JSON 404 for unmatched /api/v2/ requests
-    routes.append((r"/api/v2/.*", V2NotFoundHandler))
-    routes.append((r".*", Consolme404Handler))
 
     app = tornado.web.Application(
         routes,

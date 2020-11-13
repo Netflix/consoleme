@@ -11,6 +11,7 @@ import redislite
 from mock import MagicMock, Mock, patch
 from mockredis import mock_strict_redis_client
 from moto import (
+    mock_config,
     mock_dynamodb2,
     mock_iam,
     mock_s3,
@@ -22,6 +23,7 @@ from moto import (
 from tornado.concurrent import Future
 
 # This must be set before loading ConsoleMe's configuration
+
 os.environ["CONFIG_LOCATION"] = "example_config/example_config_test.yaml"
 from consoleme.config import config  # noqa: E402
 
@@ -223,6 +225,13 @@ def iam(aws_credentials):
     """Mocked IAM Fixture."""
     with mock_iam():
         yield boto3.client("iam", region_name="us-east-1")
+
+
+@pytest.fixture(autouse=True, scope="session")
+def aws_config(aws_credentials):
+    """Mocked Config Fixture."""
+    with mock_config():
+        yield boto3.client("config", region_name="us-east-1")
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -537,6 +546,9 @@ def iam_sync_roles(iam):
     )
     iam.attach_role_policy(RoleName="cm_someuser_N", PolicyArn=policy_one)
 
+    iam.create_role(RoleName="rolename", AssumeRolePolicyDocument=assume_role_policy)
+    iam.attach_role_policy(RoleName="rolename", PolicyArn=policy_one)
+
     yield iam
 
 
@@ -697,6 +709,46 @@ def mock_async_http_client():
     yield p.start()
 
     p.stop()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def populate_caches(
+    redis,
+    user_iam_role,
+    iam_sync_roles,
+    dummy_users_data,
+    dummy_requests_data,
+    policy_requests_table,
+    iamrole_table,
+    create_default_resources,
+    s3,
+    sns,
+    sqs,
+    iam,
+    www_user,
+):
+    from asgiref.sync import async_to_sync
+
+    from consoleme.celery import celery_tasks as celery
+    from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+    from consoleme_default_plugins.plugins.celery_tasks import (
+        celery_tasks as default_celery_tasks,
+    )
+
+    celery.cache_cloud_account_mapping()
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
+    default_celery_tasks.cache_application_information()
+
+    for account_id in accounts_d.keys():
+        celery.cache_roles_for_account(account_id)
+        celery.cache_s3_buckets_for_account(account_id)
+        celery.cache_sns_topics_for_account(account_id)
+        celery.cache_sqs_queues_for_account(account_id)
+        celery.cache_managed_policies_for_account(account_id)
+        # celery.cache_resources_from_aws_config_for_account(account_id) # No select_resource_config in moto yet
+    celery.cache_policies_table_details()
+    celery.cache_policy_requests()
+    celery.cache_credential_authorization_mapping()
 
 
 class MockAioHttpResponse:

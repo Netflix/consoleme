@@ -13,6 +13,7 @@ from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
     MustBeFte,
     NoMatchingRequest,
+    ResourceNotFound,
     Unauthorized,
 )
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
@@ -25,6 +26,7 @@ from consoleme.lib.policies import (
     can_manage_policy_requests,
     can_move_back_to_pending_v2,
     can_update_cancel_requests_v2,
+    get_url_for_resource,
     should_auto_approve_policy_v2,
 )
 from consoleme.lib.requests import cache_all_policy_requests
@@ -200,7 +202,7 @@ class RequestHandler(BaseAPIV2Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                "groups.can_bypass_contractor_restrictions", []
+                    "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -449,13 +451,28 @@ class RequestsHandler(BaseAPIV2Handler):
         if markdown:
             requests_to_write = []
             for request in requests[0:limit]:
+                resource_name = request["arn"].split(":")[5]
+                if "/" in resource_name:
+                    resource_name = resource_name.split("/")[-1]
+                region = request["arn"].split(":")[3]
+                service_type = request["arn"].split(":")[2]
+                account_id = request["arn"].split(":")[4]
+                try:
+                    url = await get_url_for_resource(
+                        request["arn"],
+                        service_type,
+                        account_id,
+                        region,
+                        resource_name,
+                    )
+                except ResourceNotFound:
+                    url = None
                 # Convert request_id and role ARN to link
                 request[
                     "request_id"
                 ] = f"[{request['request_id']}](/policies/request/{request['request_id']})"
-                request[
-                    "arn"
-                ] = f"[{request['arn']}](/policies/edit/{request['arn'].split(':')[4]}/iamrole/{request['arn'].split('/')[-1]})"
+                if url:
+                    request["arn"] = f"[{request['arn']}]({url})"
                 requests_to_write.append(request)
         else:
             requests_to_write = requests[0:limit]
@@ -516,7 +533,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                "groups.can_bypass_contractor_restrictions", []
+                    "groups.can_bypass_contractor_restrictions", []
             ):
                 self.write_error(
                     403, message="Only FTEs are authorized to view this page."
@@ -593,7 +610,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                "groups.can_bypass_contractor_restrictions", []
+                    "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -641,71 +658,73 @@ class RequestDetailHandler(BaseAPIV2Handler):
         return
 
 
-class RequestsTableConfigHandler(BaseHandler):
+class RequestsPageConfigHandler(BaseHandler):
     async def get(self):
         """
-        /requests_table_config
+        /requests_page_config
         ---
         get:
-            description: Retrieve Requests Table Configuration
+            description: Retrieve Requests Page Configuration
             responses:
                 200:
-                    description: Returns Requests Table Configuration
+                    description: Returns Requests Page Configuration
         """
         default_configuration = {
-            "expandableRows": True,
-            "tableName": "Requests",
-            "tableDescription": "View all IAM policy requests created through ConsoleMe",
-            "dataEndpoint": "/api/v2/requests?markdown=true",
-            "sortable": False,
-            "totalRows": 1000,
-            "rowsPerPage": 50,
-            "serverSideFiltering": True,
-            "columns": [
-                {
-                    "placeholder": "Username",
-                    "key": "username",
-                    "type": "input",
-                    "style": {"width": "100px"},
-                },
-                {
-                    "placeholder": "Arn",
-                    "key": "arn",
-                    "type": "input",
-                    "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
-                    "width": 3,
-                },
-                {
-                    "placeholder": "Request Time",
-                    "key": "request_time",
-                    "type": "daterange",
-                },
-                {
-                    "placeholder": "Status",
-                    "key": "status",
-                    "type": "dropdown",
-                    "style": {"width": "90px"},
-                },
-                {
-                    "placeholder": "Request ID",
-                    "key": "request_id",
-                    "type": "input",
-                    "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
-                    "width": 2,
-                },
-                {
-                    "placeholder": "Policy Name",
-                    "key": "policy_name",
-                    "type": "input",
-                    "style": {"width": "110px"},
-                },
-                {
-                    "placeholder": "Last Updated By",
-                    "key": "updated_by",
-                    "type": "input",
-                    "style": {"width": "110px"},
-                },
-            ],
+            "pageName": "Requests",
+            "pageDescription": "View all IAM policy requests created through ConsoleMe",
+            "tableConfig": {
+                "expandableRows": True,
+                "dataEndpoint": "/api/v2/requests?markdown=true",
+                "sortable": False,
+                "totalRows": 1000,
+                "rowsPerPage": 50,
+                "serverSideFiltering": True,
+                "columns": [
+                    {
+                        "placeholder": "Username",
+                        "key": "username",
+                        "type": "input",
+                        "style": {"width": "100px"},
+                    },
+                    {
+                        "placeholder": "Arn",
+                        "key": "arn",
+                        "type": "link",
+                        "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
+                        "width": 3,
+                    },
+                    {
+                        "placeholder": "Request Time",
+                        "key": "request_time",
+                        "type": "daterange",
+                    },
+                    {
+                        "placeholder": "Status",
+                        "key": "status",
+                        "type": "dropdown",
+                        "style": {"width": "90px"},
+                    },
+                    {
+                        "placeholder": "Request ID",
+                        "key": "request_id",
+                        "type": "link",
+                        "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
+                        "width": 2,
+                    },
+                    {
+                        "placeholder": "Policy Name",
+                        "key": "policy_name",
+                        "type": "input",
+                        "style": {"width": "110px"},
+                    },
+                    {
+                        "placeholder": "Last Updated By",
+                        "key": "updated_by",
+                        "type": "input",
+                        "style": {"width": "110px"},
+                    },
+                ],
+            }
         }
 
         table_configuration = config.get(

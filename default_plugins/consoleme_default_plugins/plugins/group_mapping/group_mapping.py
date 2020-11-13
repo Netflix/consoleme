@@ -1,7 +1,9 @@
 """Group mapping plugin."""
+import sys
 import time
 from typing import List
 
+import sentry_sdk
 import simplejson as json
 from redis.exceptions import ConnectionError
 
@@ -48,6 +50,9 @@ class GroupMapping:
     async def filter_eligible_roles(query: str, obj: object) -> List:
         selected_roles: List = []
         for r in obj.eligible_roles:
+            if query.lower() == r.lower():
+                # Exact match. Only return the specific role
+                return [r]
             if query.lower() in r.lower():
                 selected_roles.append(r)
         return list(set(selected_roles))
@@ -166,12 +171,23 @@ class GroupMapping:
 
         friendly_names = await get_account_id_to_name_mapping()
         for r in role_arns:
-            account_id = r.split(":")[4]
-            account_friendlyname = friendly_names.get(account_id, "")
-            if account_friendlyname and isinstance(account_friendlyname, list):
-                account_ids[account_id] = account_friendlyname[0]
-            elif account_friendlyname and isinstance(account_friendlyname, str):
-                account_ids[account_id] = account_friendlyname
+            try:
+                account_id = r.split(":")[4]
+                account_friendlyname = friendly_names.get(account_id, "")
+                if account_friendlyname and isinstance(account_friendlyname, list):
+                    account_ids[account_id] = account_friendlyname[0]
+                elif account_friendlyname and isinstance(account_friendlyname, str):
+                    account_ids[account_id] = account_friendlyname
+            except Exception as e:
+                log.error(
+                    {
+                        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+                        "message": "Unable to parse role ARN",
+                        "role": r,
+                        "error": str(e),
+                    }
+                )
+                sentry_sdk.capture_exception()
         return account_ids
 
     async def get_account_mappings(self) -> dict:

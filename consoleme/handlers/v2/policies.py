@@ -49,6 +49,76 @@ class PolicyReviewV2Handler(BaseHandler):
         )
 
 
+class PoliciesPageConfigHandler(BaseHandler):
+    async def get(self):
+        """
+        /api/v2/policies_page_config
+        ---
+        get:
+            description: Retrieve Policies Page Configuration
+            responses:
+                200:
+                    description: Returns Policies Page Configuration
+        """
+        default_configuration = {
+            "pageName": "Policies",
+            "pageDescription": "View all of the AWS Resources we know about.",
+            "tableConfig": {
+                "expandableRows": True,
+                "dataEndpoint": "/api/v2/policies?markdown=true",
+                "sortable": False,
+                "totalRows": 1000,
+                "rowsPerPage": 50,
+                "serverSideFiltering": True,
+                "columns": [
+                    {
+                        "placeholder": "Account ID",
+                        "key": "account_id",
+                        "type": "input",
+                        "style": {"width": "110px"},
+                    },
+                    {
+                        "placeholder": "Account",
+                        "key": "account_name",
+                        "type": "input",
+                        "style": {"width": "90px"},
+                    },
+                    {
+                        "placeholder": "Resource",
+                        "key": "arn",
+                        "type": "link",
+                        "width": 6,
+                        "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
+                    },
+                    {
+                        "placeholder": "Tech",
+                        "key": "technology",
+                        "type": "input",
+                        "style": {"width": "70px"},
+                    },
+                    {
+                        "placeholder": "Template",
+                        "key": "templated",
+                        "type": "input",
+                        "style": {"width": "100px"},
+                    },
+                    {
+                        "placeholder": "Errors",
+                        "key": "errors",
+                        "color": "red",
+                        "width": 1,
+                    },
+                ],
+            },
+        }
+
+        table_configuration = config.get(
+            "PoliciesTableConfigHandler.configuration", default_configuration
+        )
+
+        self.write(table_configuration)
+
+
 class PoliciesHandler(BaseAPIV2Handler):
     """Handler for /api/v2/policies
 
@@ -112,7 +182,8 @@ class PoliciesHandler(BaseAPIV2Handler):
                     region,
                     resource_name,
                 )
-                policy["arn"] = f"[{policy['arn']}]({url})"
+                if url:
+                    policy["arn"] = f"[{policy['arn']}]({url})"
                 if not policy.get("templated"):
                     policy["templated"] = "N/A"
                 else:
@@ -124,69 +195,6 @@ class PoliciesHandler(BaseAPIV2Handler):
             policies_to_write = policies[0:limit]
         self.write(json.dumps(policies_to_write))
         return
-
-
-class PoliciesTableConfigHandler(BaseHandler):
-    async def get(self):
-        """
-        /api/v2/policies_table_config
-        ---
-        get:
-            description: Retrieve Policies Table Configuration
-            responses:
-                200:
-                    description: Returns Policies Table Configuration
-        """
-        default_configuration = {
-            "expandableRows": True,
-            "tableName": "Policies",
-            "tableDescription": "View all of the AWS Resources we know about.",
-            "dataEndpoint": "/api/v2/policies?markdown=true",
-            "sortable": False,
-            "totalRows": 1000,
-            "rowsPerPage": 50,
-            "serverSideFiltering": True,
-            "columns": [
-                {
-                    "placeholder": "Account ID",
-                    "key": "account_id",
-                    "type": "input",
-                    "style": {"width": "110px"},
-                },
-                {
-                    "placeholder": "Account",
-                    "key": "account_name",
-                    "type": "input",
-                    "style": {"width": "90px"},
-                },
-                {
-                    "placeholder": "Resource",
-                    "key": "arn",
-                    "type": "input",
-                    "width": 6,
-                    "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
-                },
-                {
-                    "placeholder": "Tech",
-                    "key": "technology",
-                    "type": "input",
-                    "style": {"width": "70px"},
-                },
-                {
-                    "placeholder": "Template",
-                    "key": "templated",
-                    "type": "input",
-                    "style": {"width": "100px"},
-                },
-                {"placeholder": "Errors", "key": "errors", "color": "red", "width": 1},
-            ],
-        }
-
-        table_configuration = config.get(
-            "PoliciesTableConfigHandler.configuration", default_configuration
-        )
-
-        self.write(table_configuration)
 
 
 class ManagedPoliciesHandler(BaseHandler):

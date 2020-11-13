@@ -1,31 +1,31 @@
 import React from "react";
 import { Dropdown, Menu, Image } from "semantic-ui-react";
 import { NavLink } from "react-router-dom";
-
-import { useAuth } from "../auth/AuthContext";
+import { useAuth } from "../auth/AuthProvider";
 
 const ConsoleMeHeader = () => {
-  const { user, login } = useAuth();
-
-  if (!user) {
-    login();
-    return null;
-  }
+  const { user } = useAuth();
 
   const generatePoliciesDropDown = () => {
+    const canCreateRoles = user?.authorization?.can_create_roles;
     if (user?.pages?.policies?.enabled === true) {
       return (
         <Dropdown text="Roles and Policies" pointing className="link item">
           <Dropdown.Menu>
-            <Dropdown.Item as={NavLink} to="/ui/policies">
+            <Dropdown.Item as={NavLink} to="/policies">
               Policies
             </Dropdown.Item>
-            <Dropdown.Item as={NavLink} to="/ui/selfservice">
+            <Dropdown.Item as={NavLink} to="/selfservice">
               Self Service Permissions
             </Dropdown.Item>
-            <Dropdown.Item as={NavLink} to="/ui/requests">
+            <Dropdown.Item as={NavLink} to="/requests">
               All Policy Requests
             </Dropdown.Item>
+            {canCreateRoles ? (
+              <Dropdown.Item as={NavLink} to="/create_role">
+                Create Role
+              </Dropdown.Item>
+            ) : null}
           </Dropdown.Menu>
         </Dropdown>
       );
@@ -38,7 +38,7 @@ const ConsoleMeHeader = () => {
       return (
         <Dropdown text="Advanced" pointing className="link item">
           <Dropdown.Menu>
-            <Dropdown.Item as={NavLink} to="/ui/config">
+            <Dropdown.Item as={NavLink} to="/config">
               Config
             </Dropdown.Item>
           </Dropdown.Menu>
@@ -49,7 +49,7 @@ const ConsoleMeHeader = () => {
   };
 
   const getAvatarImage = () => {
-    if (user.employee_photo_url) {
+    if (user?.employee_photo_url) {
       return (
         <Image
           alt={user.user}
@@ -81,17 +81,17 @@ const ConsoleMeHeader = () => {
           textTransform: "uppercase",
           width: "240px",
         }}
-        href="/ui/"
+        href="/"
       >
         <Image
           size="mini"
-          src="/static_ui/images/logo192.png"
+          src="/static/ui/images/logo192.png"
           style={{ marginRight: "1.5em" }}
         />
         ConsoleMe
       </Menu.Item>
       <Menu.Menu position="left">
-        <Menu.Item active={false} exact as={NavLink} name="roles" to="/ui/">
+        <Menu.Item active={false} exact as={NavLink} name="roles" to="/">
           AWS Console Roles
         </Menu.Item>
         {generatePoliciesDropDown()}

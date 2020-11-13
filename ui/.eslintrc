@@ -1,0 +1,28 @@
+{
+  "root": true,
+  "extends": [
+    "react-app",
+    "plugin:react-hooks/recommended"
+    //    "airbnb",
+    //    "prettier",
+    //    "prettier/react"
+  ],
+  "plugins": ["react-hooks"],
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "max-len": [2, 128, 4]
+    //    "prettier/prettier": "error",
+    //    "react/jsx-filename-extension": 0,
+    //    "react/prefer-stateless-function": 0,
+    //    "prefer-destructuring": 0,
+    //    "react/prop-types": 0,
+    //    "react/destructuring-assignment": 0,
+    //    "linebreak-style": 0,
+    //    "react/jsx-one-expression-per-line": 0,
+    //    "no-useless-concat": 0,
+    //    "prefer-template": 0,
+    //    "jsx-quotes": 0,
+    //    "array-callback-return": 0
+  }
+}

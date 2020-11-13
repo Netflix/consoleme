@@ -699,7 +699,33 @@ async def send_communications_new_comment(
     )
 
 
-async def get_url_for_resource(arn, resource_type, account_id, region, resource_name):
+async def get_resource_type_for_arn(arn: str) -> str:
+    return arn.split(":")[2]
+
+
+async def get_region_for_arn(arn: str) -> str:
+    # TODO: Provide region for S3 buckets and other organization resource types where it isn't known?
+    return arn.split(":")[3]
+
+
+async def get_resource_name_for_arn(arn: str) -> str:
+    resource_name = arn.split(":")[5]
+    if "/" in resource_name:
+        resource_name = resource_name.split("/")[-1]
+    return resource_name
+
+
+async def get_url_for_resource(
+    arn, resource_type=None, account_id=None, region=None, resource_name=None
+):
+    if not resource_type:
+        resource_type = await get_resource_type_for_arn(arn)
+    if not account_id:
+        account_id = await get_resource_account(arn)
+    if not region:
+        region = await get_region_for_arn(arn)
+    if not resource_name:
+        resource_name = await get_resource_name_for_arn(arn)
     url = ""
     if resource_type == "iam":
         resource_name = arn.split("/")[-1]

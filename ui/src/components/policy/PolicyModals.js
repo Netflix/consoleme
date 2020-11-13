@@ -79,12 +79,14 @@ export const JustificationModal = ({ handleSubmit }) => {
 
   const handleOk = () => {
     setMessage("");
+    setJustification("");
     setIsSuccess(false);
     setTogglePolicyModal(false);
   };
 
   const handleCancel = () => {
     setMessage("");
+    setJustification("");
     setIsSuccess(false);
     setTogglePolicyModal(false);
   };

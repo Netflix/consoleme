@@ -1,14 +1,19 @@
 import React from "react";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
-
 import AuthProvider from "./auth/AuthProvider";
+import ConsoleMeHeader from "./components/Header";
+import ConsoleMeSidebar from "./components/Sidebar";
 import ProtectedRoute from "./auth/ProtectedRoute";
-import ConsoleMeDataTable from "./components/ConsoleMeDataTable";
-import ConsoleMeSelfService from "./components/SelfService";
+import ConsoleMeSelectRoles from "./components/roles/SelectRoles";
+import ConsoleMePolicyTable from "./components/policy/PolicyTable";
+import ConsoleMeRequestTable from "./components/request/RequestTable";
+import ConsoleMeSelfService from "./components/selfservice/SelfService";
 import ConsoleMeDynamicConfig from "./components/DynamicConfig";
-import PolicyRequestReview from "./components/PolicyRequestsReview";
+import PolicyRequestReview from "./components/request/PolicyRequestsReview";
 import PolicyEditor from "./components/policy/PolicyEditor";
+import ConsoleLogin from "./components/ConsoleLogin";
 import ConsoleMeChallengeValidator from "./components/challenge/ConsoleMeChallengeValidator";
+import CreateCloneFeature from "./components/roles/CreateCloneFeature";
 
 const NoMatch = ({ location }) => (
   <h3>
@@ -20,61 +25,72 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ConsoleMeHeader />
+        <ConsoleMeSidebar />
         <Switch>
           <ProtectedRoute
             key="roles"
             exact
-            path="/ui/"
-            component={ConsoleMeDataTable}
-            configEndpoint={"/api/v2/role_table_config"}
+            path="/"
+            component={ConsoleMeSelectRoles}
           />
           <ProtectedRoute
             key="selfservice"
             exact
-            path="/ui/selfservice"
+            path="/selfservice"
             component={ConsoleMeSelfService}
           />
           <ProtectedRoute
             key="policies"
             exact
-            path="/ui/policies"
-            component={ConsoleMeDataTable}
-            configEndpoint={"/api/v2/policies_table_config"}
+            path="/policies"
+            component={ConsoleMePolicyTable}
           />
           <ProtectedRoute
             key="review"
             exact
-            path="/ui/policies/request/:requestID"
+            path="/policies/request/:requestID"
             component={PolicyRequestReview}
           />
           <ProtectedRoute
             key="requests"
             exact
-            path="/ui/requests"
-            component={ConsoleMeDataTable}
-            configEndpoint={"/api/v2/requests_table_config"}
+            path="/requests"
+            component={ConsoleMeRequestTable}
           />
           <ProtectedRoute
             key="iamrole_policy"
-            path="/ui/policies/edit/:accountID/:serviceType/:region/:resourceName"
+            path="/policies/edit/:accountID/:serviceType/:region/:resourceName"
             component={PolicyEditor}
           />
           <ProtectedRoute
             key="resource_policy"
-            path="/ui/policies/edit/:accountID/:serviceType/:resourceName"
+            path="/policies/edit/:accountID/:serviceType/:resourceName"
             component={PolicyEditor}
           />
           <ProtectedRoute
             key="config"
             exact
-            path="/ui/config"
+            path="/config"
             component={ConsoleMeDynamicConfig}
           />
           <ProtectedRoute
-            key="config"
+            key="role_query"
             exact
-            path="/ui/challenge_validator/:challengeToken"
+            path="/role/:roleQuery+"
+            component={ConsoleLogin}
+          />
+          <ProtectedRoute
+            key="challenge_validator"
+            exact
+            path="/challenge_validator/:challengeToken"
             component={ConsoleMeChallengeValidator}
+          />
+          <ProtectedRoute
+            key="create_role"
+            exact
+            path="/create_role"
+            component={CreateCloneFeature}
           />
           <Route component={NoMatch} />
         </Switch>

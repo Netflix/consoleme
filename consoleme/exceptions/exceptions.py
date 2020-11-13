@@ -369,6 +369,14 @@ class UnsupportedChangeType(BaseException):
         super().__init__(msg)
 
 
+class ResourceNotFound(BaseException):
+    """Resource Not Found"""
+
+    def __init__(self, msg=""):
+        stats.count("ResourceNotFound")
+        super().__init__(msg)
+
+
 class SilentException(BaseException):
     """
     Exception Traceback will not be printed (Useful for OIDC/SAML Redirects when we want Tornado to stop

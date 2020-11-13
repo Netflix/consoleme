@@ -388,7 +388,12 @@ export function sendProposedPolicy(command) {
   );
 }
 
-export const getResourceEndpoint = (accountID, serviceType, region, resourceName) => {
+export const getResourceEndpoint = (
+  accountID,
+  serviceType,
+  region,
+  resourceName
+) => {
   const endpoint = ((accountID, serviceType, region, resourceName) => {
     switch (serviceType) {
       case "iamrole": {
@@ -432,8 +437,9 @@ export const sendRequestV2 = async (requestV2) => {
         };
       } else {
         return {
+          // eslint-disable-next-line max-len
           message: `This request was created and partially successful: : [${request_id}](${request_url}). But the server reported some errors with the request: ${JSON.stringify(
-              response
+            response
           )}`,
           request_created,
           error: true,
@@ -442,7 +448,7 @@ export const sendRequestV2 = async (requestV2) => {
     }
     return {
       message: `Server reported an error with the request: ${JSON.stringify(
-          response
+        response
       )}`,
       request_created,
       error: true,
@@ -454,4 +460,34 @@ export const sendRequestV2 = async (requestV2) => {
       error: true,
     };
   }
+};
+
+export const parseLocalStorageCache = (key) => {
+  const value = window.localStorage.getItem(key);
+  if (value == null) {
+    return [];
+  }
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};
+
+export const setRecentRoles = (role) => {
+  const localStorageRecentRolesKey = "consoleMeLocalStorage";
+  let recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
+  if (recentRoles == null) {
+    recentRoles = [role];
+  } else {
+    const existingRoleLength = recentRoles.unshift(role);
+    recentRoles = [...new Set(recentRoles)];
+    if (existingRoleLength > 5) {
+      recentRoles = recentRoles.slice(0, 5);
+    }
+  }
+  window.localStorage.setItem(
+    localStorageRecentRolesKey,
+    JSON.stringify(recentRoles)
+  );
 };

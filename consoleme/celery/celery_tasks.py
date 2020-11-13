@@ -25,6 +25,7 @@ from celery.concurrency import asynpool
 from celery.schedules import crontab
 from celery.signals import (
     task_failure,
+    task_prerun,
     task_received,
     task_rejected,
     task_retry,
@@ -193,6 +194,29 @@ def get_celery_request_tags(**kwargs):
         if isinstance(exception, SoftTimeLimitExceeded):
             tags["timed_out"] = True
     return tags
+
+
+@task_prerun.connect
+def refresh_dynamic_config_in_worker(**kwargs):
+    tags = get_celery_request_tags(**kwargs)
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+    }
+
+    dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
+    if not dynamic_config:
+        log.error({**log_data, "error": "Unable to retrieve Dynamic Config from Redis"})
+        return
+    dynamic_config_j = json.loads(dynamic_config)
+    if config.CONFIG.config.get("dynamic_config", {}) != dynamic_config_j:
+        log.debug(
+            {
+                **log_data,
+                **tags,
+                "message": "Refreshing dynamic configuration on Celery Worker",
+            }
+        )
+        config.CONFIG.config["dynamic_config"] = dynamic_config_j
 
 
 @task_received.connect
@@ -1194,7 +1218,7 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     # Only query in active region, otherwise get data from DDB
     if config.region == config.get("celery.active_region") or config.get(
         "environment"
-    ) in ["dev"]:
+    ) in ["dev", "test"]:
         results = aws_config.query(
             config.get(
                 "cache_all_resources_from_aws_config.aws_config.all_resources_query",
@@ -1212,18 +1236,18 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
                 if redis_result_set.get(result["arn"]):
                     continue
                 redis_result_set[result["arn"]] = json.dumps(result)
+        if redis_result_set:
+            async_to_sync(store_json_results_in_redis_and_s3)(
+                redis_result_set,
+                redis_key=config.get(
+                    "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+                ),
+                redis_data_type="hash",
+                s3_bucket=s3_bucket,
+                s3_key=s3_key,
+            )
 
-        async_to_sync(store_json_results_in_redis_and_s3)(
-            redis_result_set,
-            redis_key=config.get(
-                "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
-            ),
-            redis_data_type="hash",
-            s3_bucket=s3_bucket,
-            s3_key=s3_key,
-        )
-
-        dynamo.write_resource_cache_data(results)
+            dynamo.write_resource_cache_data(results)
     else:
         redis_result_set = async_to_sync(retrieve_json_data_from_redis_or_s3)(
             s3_bucket=s3_bucket, s3_key=s3_key

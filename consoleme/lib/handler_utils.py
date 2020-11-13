@@ -17,6 +17,7 @@ ALL_ACCOUNTS = async_to_sync(get_account_id_to_name_mapping)(status=None)
 
 def format_role_name(arn: str, accounts: dict) -> str:
     """Given a role name, return what to display on the UI. This cleanly formats per-user roles."""
+
     role_name = arn.split("role/")[1]
     if not accounts:
         # Only fall back to ALL_ACCOUNTS if an accounts dict is not supplied

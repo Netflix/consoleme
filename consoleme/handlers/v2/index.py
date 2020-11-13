@@ -1,7 +1,7 @@
 from operator import itemgetter
 
-import ujson as json
 import tornado.web
+import ujson as json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
@@ -60,53 +60,7 @@ async def get_as_tags(name="main", extension=None, config=config, attrs=""):
     return tags
 
 
-class EligibleRoleTableConfigHandler(BaseHandler):
-    async def get(self):
-        """
-        /role_table_config
-        ---
-        get:
-            description: Retrieve Role Table Configuration
-            responses:
-                200:
-                    description: Returns Role Table Configuration
-        """
-        # TODO: Support getting CLI Credentials via web interface
-        default_configuration = {
-            "expandableRows": True,
-            "tableName": "Select a Role",
-            "tableDescription": config.get(
-                "role_select_page.table_description",
-                "Select a role to login to the AWS console.",
-            ),
-            "dataEndpoint": "/",
-            "sortable": False,
-            "totalRows": 1000,
-            "rowsPerPage": 50,
-            "serverSideFiltering": False,
-            "columns": [
-                {"placeholder": "Account Name", "key": "account_name", "type": "input"},
-                {"placeholder": "Account ID", "key": "account_id", "type": "input"},
-                {"placeholder": "Role Name", "key": "role_name", "type": "input"},
-                {
-                    "placeholder": "AWS Console Sign-In",
-                    "key": "redirect_uri",
-                    "type": "button",
-                    "icon": "sign-in",
-                    "content": "Sign-In",
-                    "onClick": {"action": "redirect"},
-                },
-            ],
-        }
-
-        table_configuration = config.get(
-            "role_table_config.table_configuration_override", default_configuration
-        )
-
-        self.write(table_configuration)
-
-
-class IndexHandler(BaseHandler):
+class EligibleRoleHandler(BaseHandler):
     async def get(self) -> None:
         """
         Get the index endpoint
@@ -174,14 +128,59 @@ class IndexHandler(BaseHandler):
         await self.finish()
 
 
+class EligibleRolePageConfigHandler(BaseHandler):
+    async def get(self):
+        """
+        /eligible_roles_page_config
+        ---
+        get:
+            description: Retrieve Role Page Configuration
+            responses:
+                200:
+                    description: Returns Role Page Configuration
+        """
+        page_configuration = {
+            "pageName": "Select a Role",
+            "pageDescription": config.get(
+                "role_select_page.table_description",
+                "Select a role to login to the AWS console.",
+            ),
+            "tableConfig": {
+                "expandableRows": True,
+                "dataEndpoint": "/api/v2/eligible_roles",
+                "sortable": False,
+                "totalRows": 1000,
+                "rowsPerPage": 50,
+                "serverSideFiltering": False,
+                "columns": [
+                    {"placeholder": "Account Name", "key": "account_name", "type": "input"},
+                    {"placeholder": "Account ID", "key": "account_id", "type": "input"},
+                    {"placeholder": "Role Name", "key": "role_name", "type": "link"},
+                    {
+                        "placeholder": "AWS Console Sign-In",
+                        "key": "redirect_uri",
+                        "type": "button",
+                        "icon": "sign-in",
+                        "content": "Sign-In",
+                        "onClick": {"action": "redirect"},
+                    },
+                ],
+            }
+        }
+
+        table_configuration = config.get(
+            "role_table_config.table_configuration_override", page_configuration
+        )
+
+        self.write(table_configuration)
+
+
 class FrontendHandler(tornado.web.StaticFileHandler):
     def validate_absolute_path(self, root, absolute_path):
         try:
             return super().validate_absolute_path(root, absolute_path)
         except tornado.web.HTTPError as exc:
-            if exc.status_code == 404 and \
-                    self.default_filename is not None:
-                absolute_path = self.get_absolute_path(
-                    self.root, self.default_filename)
+            if exc.status_code == 404 and self.default_filename is not None:
+                absolute_path = self.get_absolute_path(self.root, self.default_filename)
                 return super().validate_absolute_path(root, absolute_path)
             raise exc

@@ -1,5 +1,4 @@
 export const initialState = {
-  activeIndex: [],
   isNewPolicy: false,
   newPolicy: {
     PolicyName: "",
@@ -14,7 +13,6 @@ export const reducer = (state, action) => {
       if (action.policies) {
         return {
           ...state,
-          activeIndex: [...Array(action.policies.length).keys()],
           inlinePolicies: action.policies,
           isNewPolicy: false,
         };
@@ -26,11 +24,13 @@ export const reducer = (state, action) => {
     case "ADD_POLICY":
       return {
         ...state,
+        isNewPolicy: false,
         newPolicy: action.policy,
       };
     case "UPDATE_POLICY":
       return {
         ...state,
+        isNewPolicy: false,
         newPolicy: {
           ...action.policy,
           new: false,
@@ -39,6 +39,7 @@ export const reducer = (state, action) => {
     case "DELETE_POLICY":
       return {
         ...state,
+        isNewPolicy: false,
         newPolicy: {
           ...action.policy,
           action: "detach",
@@ -47,11 +48,6 @@ export const reducer = (state, action) => {
             deleted: true,
           },
         },
-      };
-    case "SET_ACTIVE_INDEX":
-      return {
-        ...state,
-        activeIndex: action.activeIndex,
       };
     case "SET_IS_NEW_POLICY":
       return {
