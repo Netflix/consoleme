@@ -83,7 +83,6 @@ class Configuration(object):
                     }
                 )
                 self.config["dynamic_config"] = dynamic_config
-
             time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
 
     async def merge_extended_paths(self, extends, dir_path):
