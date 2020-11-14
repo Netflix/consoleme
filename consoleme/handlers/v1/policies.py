@@ -1048,49 +1048,6 @@ class PolicyReviewHandler(BaseHandler):
         await cache_all_policy_requests()
 
 
-class SelfServiceHandler(BaseHandler):
-    async def get(self):
-        """
-        /self_service_v1
-        ---
-        get:
-            description: Entry point to Self Service IAM Wizard
-            responses:
-                200:
-                    description: Returns Self Service IAM Wizard
-        """
-
-        await self.render(
-            "self_service.html",
-            page_title="ConsoleMe - Self Service",
-            current_page="policies",
-            user=self.user,
-            user_groups=self.groups,
-            config=config,
-        )
-
-
-class SelfServiceV2Handler(BaseHandler):
-    async def get(self):
-        """
-        /self_service
-        ---
-        get:
-            description: Entry point to Self Service IAM Wizard
-            responses:
-                200:
-                    description: Returns Self Service IAM Wizard
-        """
-        await self.render(
-            "self_service_v2.html",
-            page_title="ConsoleMe - Self Service",
-            current_page="policies",
-            user=self.user,
-            user_groups=self.groups,
-            config=config,
-        )
-
-
 class AutocompleteHandler(BaseAPIV1Handler):
     async def get(self):
         """

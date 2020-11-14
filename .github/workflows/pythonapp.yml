@@ -27,9 +27,8 @@ jobs:
           pip3 install -r requirements-docs.txt
           pip3 install -e .
           pip3 install -e default_plugins
-          yarn --cwd consoleme-ui
-          yarn --cwd consoleme-ui install
-          CI=false yarn --cwd consoleme-ui start &
+          yarn --cwd ui
+          CI=false yarn --cwd ui start &
           pre-commit install
       - name: Run pre-commit
         run: |
