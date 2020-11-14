@@ -103,11 +103,9 @@ def make_app(jwt_validator=None):
             tornado.web.StaticFileHandler,
             dict(path=os.path.join(path, "static")),
         ),
-        # Generally, everything behind "/api" in a production instance is not protected by SSO.
-        # It should be behind mtls
         (r"/api/v1/get_credentials", GetCredentialsHandler),
         (r"/api/v1/get_roles", GetRolesHandler),
-        # Used to autocomplete s3:get to all matching permissions
+        # Used to autocomplete AWS permissions
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
         (r"/api/v1/siteconfig/?", SiteConfigHandler),
         (r"/api/v2/self_service_config/?", SelfServiceConfigHandler),
