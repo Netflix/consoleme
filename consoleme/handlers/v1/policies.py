@@ -692,9 +692,6 @@ class PolicyReviewSubmitHandler(BaseHandler):
 
 class PolicyReviewHandler(BaseHandler):
     async def get(self, request_id):
-
-        if not self.user:
-            return
         dynamo: UserDynamoHandler = UserDynamoHandler(self.user)
         requests: List[dict] = await dynamo.get_policy_requests(request_id=request_id)
 

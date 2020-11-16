@@ -272,7 +272,7 @@ def report_task_retry(**kwargs):
     """
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
-        "Message": "Celery Task Retry",
+        "message": "Celery Task Retry",
     }
 
     # Add traceback if exception info is in the kwargs
@@ -306,7 +306,7 @@ def report_failed_task(**kwargs):
     """
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
-        "Message": "Celery Task Failure",
+        "message": "Celery Task Failure",
     }
 
     # Add traceback if exception info is in the kwargs
@@ -338,7 +338,7 @@ def report_unknown_task(**kwargs):
     """
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
-        "Message": "Celery Task Unknown",
+        "message": "Celery Task Unknown",
     }
 
     error_tags = get_celery_request_tags(**kwargs)
@@ -365,7 +365,7 @@ def report_rejected_task(**kwargs):
     """
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
-        "Message": "Celery Task Rejected",
+        "message": "Celery Task Rejected",
     }
 
     error_tags = get_celery_request_tags(**kwargs)
@@ -392,7 +392,7 @@ def report_revoked_task(**kwargs):
     """
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
-        "Message": "Celery Task Revoked",
+        "message": "Celery Task Revoked",
     }
 
     error_tags = get_celery_request_tags(**kwargs)
