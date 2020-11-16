@@ -24,8 +24,8 @@ env_install:
 .PHONY: install
 install: clean
 	make env_install
-	yarn
-	node_modules/webpack/bin/webpack.js --progress
+	yarn --cwd ui
+	yarn --cwd ui build
 	make bootstrap
 
 .PHONY: bootstrap

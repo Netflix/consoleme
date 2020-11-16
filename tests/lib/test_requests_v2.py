@@ -1645,9 +1645,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         response = await parse_and_apply_policy_request_modification(
             extended_request,
             policy_request_model,
-            "consoleme_admins@example.com",
+            "user@example.com",
             [],
             last_updated,
+            approval_probe_approved=True,
         )
         self.assertEqual(0, response.errors)
         # Make sure change got updated in the request

@@ -21,8 +21,6 @@ RUN pip install argh
 # Install frontend
 RUN npm install yarn -g
 RUN yarn
-# Run Webpack to generate legacy Frontend / React files
-RUN ./node_modules/.bin/webpack
 
 # Install SPA frontend
 RUN yarn --cwd ui
