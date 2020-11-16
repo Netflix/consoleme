@@ -202,7 +202,7 @@ class RequestHandler(BaseAPIV2Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -468,9 +468,15 @@ class RequestsHandler(BaseAPIV2Handler):
                 except ResourceNotFound:
                     url = None
                 # Convert request_id and role ARN to link
-                request[
-                    "request_id"
-                ] = f"[{request['request_id']}](/policies/request/{request['request_id']})"
+                if request.get("version") == "2":
+                    request[
+                        "request_id"
+                    ] = f"[{request['request_id']}](/policies/request/{request['request_id']})"
+                # Legacy support for V1 requests. Pending removal.
+                else:
+                    request[
+                        "request_id"
+                    ] = f"[{request['request_id']}](/policies/request_v1/{request['request_id']})"
                 if url:
                     request["arn"] = f"[{request['arn']}]({url})"
                 requests_to_write.append(request)
@@ -533,7 +539,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 self.write_error(
                     403, message="Only FTEs are authorized to view this page."
@@ -610,7 +616,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
 
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
@@ -724,7 +730,7 @@ class RequestsPageConfigHandler(BaseHandler):
                         "style": {"width": "110px"},
                     },
                 ],
-            }
+            },
         }
 
         table_configuration = config.get(

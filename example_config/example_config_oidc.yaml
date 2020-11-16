@@ -11,6 +11,7 @@ auth:
   groups_header_name: group_header
   user_header_name: user_header
   set_auth_cookie: true
+  force_redirect_to_identity_provider: false
 
 get_user_by_oidc_settings:
   resource: consoleme-oidc

@@ -37,7 +37,7 @@ async def populate_oidc_config():
         token_endpoint = config.get("get_user_by_oidc_settings.token_endpoint")
         jwks_uri = config.get("get_user_by_oidc_settings.jwks_uri")
         if not (authorization_endpoint or token_endpoint or jwks_uri):
-            raise MissingConfigurationValue("Missing OAuth2 Configuration.")
+            raise MissingConfigurationValue("Missing OIDC Configuration.")
         oidc_config = {
             "authorization_endpoint": authorization_endpoint,
             "token_endpoint": token_endpoint,
@@ -46,7 +46,7 @@ async def populate_oidc_config():
     client_id = config.get("oidc_secrets.client_id")
     client_secret = config.get("oidc_secrets.secret")
     if not (client_id or client_secret):
-        raise MissingConfigurationValue("Missing OAuth2 Secrets")
+        raise MissingConfigurationValue("Missing OIDC Secrets")
     oidc_config["client_id"] = client_id
     oidc_config["client_secret"] = client_secret
     # Fetch jwks_uri for jwt validation
@@ -67,7 +67,7 @@ async def populate_oidc_config():
     return oidc_config
 
 
-async def authenticate_user_by_oauth2(request):
+async def authenticate_user_by_oidc(request):
     oidc_config = await populate_oidc_config()
 
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
@@ -80,8 +80,8 @@ async def authenticate_user_by_oauth2(request):
         protocol = "https"
     force_redirect = config.get("auth.force_redirect_to_identity_provider", True)
 
-    # The endpoint where we want our OAuth2 provider to redirect us back to perform auth
-    oauth2_redirect_uri = f"{protocol}://{request.request.host}/auth"
+    # The endpoint where we want our OIDC provider to redirect us back to perform auth
+    oidc_redirect_uri = f"{protocol}://{request.request.host}/auth"
 
     # The endpoint where the user wants to be sent after authentication. This will be stored in the state
     after_redirect_uri = request.request.arguments.get("redirect_url", [""])[0]
@@ -96,7 +96,7 @@ async def authenticate_user_by_oauth2(request):
         args = {"response_type": "code"}
         client_scope = config.get("oidc_secrets.client_scope")
         if request.request.uri is not None:
-            args["redirect_uri"] = oauth2_redirect_uri
+            args["redirect_uri"] = oidc_redirect_uri
         args["client_id"] = oidc_config["client_id"]
         if client_scope:
             args["scope"] = " ".join(client_scope)
@@ -145,7 +145,7 @@ async def authenticate_user_by_oauth2(request):
                 "Authorization": "Basic %s" % authorization_header_encoded,
                 "Accept": "application/json",
             },
-            body=f"grant_type={grant_type}&code={code}&redirect_uri={oauth2_redirect_uri}&scope={client_scope}",
+            body=f"grant_type={grant_type}&code={code}&redirect_uri={oidc_redirect_uri}&scope={client_scope}",
         )
 
         token_exchange_response_body_dict = json.loads(token_exchange_response.body)

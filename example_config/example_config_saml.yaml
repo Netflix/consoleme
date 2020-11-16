@@ -10,6 +10,7 @@ auth:
   groups_header_name: group_header
   user_header_name: user_header
   set_auth_cookie: true
+  force_redirect_to_identity_provider: false
 
 get_user_by_saml_settings:
   # On the provider, set ACS url to https://your_consoleme_url/saml/acs and saml audience to "https://your_consoleme_url/"

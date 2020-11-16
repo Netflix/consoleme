@@ -101,7 +101,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             log_data[
                 "message"
             ] = "You have more than one role matching your query. Please select one."
-            log.error(log_data)
+            log.debug(log_data)
             self.set_status(300)
             warning_message_arg = {
                 "warningMessage": base64.b64encode(log_data["message"].encode()).decode(
@@ -153,8 +153,8 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 account_id=account_id,
             )
         except Exception as e:
-            log_data["message"] = "Exception generating AWS console URL"
-            log_data["error"] = e
+            log_data["message"] = f"Exception generating AWS console URL: {str(e)}"
+            log_data["error"] = str(e)
             log.error(log_data, exc_info=True)
             stats.count("index.post.exception")
             self.set_status(403)
@@ -162,7 +162,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 {
                     "type": "error",
                     "message": log_data["message"],
-                    "error": log_data["error"],
+                    "error": str(log_data["error"]),
                 }
             )
             return
@@ -221,7 +221,8 @@ class RolesHandler(BaseAPIV2Handler):
         try:
             create_model = RoleCreationRequestModel.parse_raw(self.request.body)
         except ValidationError as e:
-            log_data["message"] = "Validation Exception"
+            log_data["message"] = f"Validation Exception: {str(e)}"
+            log_data["error"] = str(e)
             log.error(log_data, exc_info=True)
             stats.count(
                 f"{log_data['function']}.validation_exception", tags={"user": self.user}
@@ -233,7 +234,7 @@ class RolesHandler(BaseAPIV2Handler):
         try:
             results = await create_iam_role(create_model, self.user)
         except Exception as e:
-            log_data["message"] = "Exception creating role"
+            log_data["message"] = f"Exception creating role: {str(e)}"
             log_data["error"] = str(e)
             log_data["account_id"] = create_model.account_id
             log_data["role_name"] = create_model.role_name

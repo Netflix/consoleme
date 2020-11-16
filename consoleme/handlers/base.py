@@ -28,7 +28,7 @@ from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
 from consoleme.lib.auth import AuthenticationError
 from consoleme.lib.generic import render_404
 from consoleme.lib.jwt import generate_jwt_token, validate_and_return_jwt_token
-from consoleme.lib.oauth2 import authenticate_user_by_oauth2
+from consoleme.lib.oidc import authenticate_user_by_oidc
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.saml import authenticate_user_by_saml
@@ -53,7 +53,7 @@ class BaseJSONHandler(tornado.web.RequestHandler):
         super().__init__(*args, **kwargs)
 
     def check_xsrf_cookie(self):
-        # CSRF token is not needed since this is protected by raw OAuth2 tokens
+        # CSRF token is not needed since this is protected by raw OIDC tokens
         pass
 
     def options(self, *args):
@@ -299,10 +299,10 @@ class BaseHandler(tornado.web.RequestHandler):
 
         if not self.user:
             if config.get("auth.get_user_by_oidc"):
-                res = await authenticate_user_by_oauth2(self)
+                res = await authenticate_user_by_oidc(self)
                 if not res:
                     raise SilentException(
-                        "Unable to authenticate the user by OIDC/OAuth2. "
+                        "Unable to authenticate the user by OIDC. "
                         "Redirecting to authentication endpoint"
                     )
                 if res and isinstance(res, dict):
@@ -321,7 +321,7 @@ class BaseHandler(tornado.web.RequestHandler):
         if not self.user:
             try:
                 # Get user. Config options can specify getting username from headers or
-                # oauth, but custom plugins are also allowed to override this.
+                # OIDC, but custom plugins are also allowed to override this.
                 self.user = await auth.get_user(headers=self.request.headers)
                 if not self.user:
                     raise NoUserException(
