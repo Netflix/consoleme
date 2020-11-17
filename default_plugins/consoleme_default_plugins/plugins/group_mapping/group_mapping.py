@@ -134,36 +134,6 @@ class GroupMapping:
         # Override this with company-specific logic
         return authorization_mapping
 
-    async def get_eligible_roles_from_group_prefix(self, groups) -> list:
-        """Get eligible roles for user from group header prefix."""
-        return []
-
-    async def get_eligible_roles_from_config(self, user, groups, console_only):
-        """Get eligible roles from configuration."""
-        stats.count("get_eligible_roles_from_config")
-        roles = []
-        group_mapping = config.get("dynamic_config.group_mapping")
-
-        if not group_mapping:
-            return roles
-
-        # First check configuration for user-specific entries
-        eligible_roles = group_mapping.get(user, {}).get("roles", [])
-        roles.extend(eligible_roles)
-        if not console_only:
-            eligible_cli_roles = group_mapping.get(user, {}).get("cli_only_roles", [])
-            roles.extend(eligible_cli_roles)
-
-        # Check configuration for any allowances based on user's groups
-        for g in groups:
-            eligible_roles = group_mapping.get(g, {}).get("roles", [])
-            roles.extend(eligible_roles)
-            if not console_only:
-                eligible_cli_roles = group_mapping.get(g, {}).get("cli_only_roles", [])
-                roles.extend(eligible_cli_roles)
-
-        return roles
-
     async def get_eligible_accounts(self, role_arns):
         """Get eligible accounts for user."""
         stats.count("get_eligible_accounts")

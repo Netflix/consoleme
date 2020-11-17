@@ -34,7 +34,7 @@ class TestSiteLogin(AsyncHTTPTestCase):
                 "google_tracking_uri": None,
                 "documentation_url": None,
                 "support_contact": None,
-                "support_slack": None,
+                "support_chat_url": None,
                 "security_logo": None,
             },
         )

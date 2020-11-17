@@ -5,7 +5,11 @@ from typing import List
 import ujson as json
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import InvalidCertificateException, NoUserException
+from consoleme.exceptions.exceptions import (
+    InvalidCertificateException,
+    MissingConfigurationValue,
+    NoUserException,
+)
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -202,7 +206,13 @@ class Auth:
         return current_time - int(cert.get("notBefore"))
 
     async def validate_certificate(self, headers: dict):
-        for header in config.get("cli_auth.required_headers", [{}]):
+        cli_auth_required_headers = config.get("cli_auth.required_headers")
+        if not cli_auth_required_headers:
+            raise MissingConfigurationValue(
+                "You must specified the header key and expected value in order to validate a certificate for mutual "
+                "TLS authentication. Refer to the `cli_auth.required_headers` configuration"
+            )
+        for header in cli_auth_required_headers:
             for k, v in header.items():
                 if headers.get(k) != v:
                     stats.count("auth.validate_certificate.error")
@@ -223,7 +233,13 @@ class Auth:
         return False
 
     async def validate_and_return_api_caller(self, headers: dict):
-        for header in config.get("cli_auth.required_headers", [{}]):
+        cli_auth_required_headers = config.get("cli_auth.required_headers")
+        if not cli_auth_required_headers:
+            raise MissingConfigurationValue(
+                "You must specified the header key and expected value in order to validate a certificate for mutual "
+                "TLS authentication. Refer to the `cli_auth.required_headers` configuration"
+            )
+        for header in cli_auth_required_headers:
             for k, v in header.items():
                 if headers.get(k) != v:
                     raise Exception(

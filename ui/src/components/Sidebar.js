@@ -20,7 +20,7 @@ const ConsoleMeSidebar = () => {
     })();
   }, []);
 
-  const { documentation_url, support_contact, support_slack } = siteConfig;
+  const { documentation_url, support_contact, support_chat_url } = siteConfig;
 
   return (
     <Menu
@@ -80,7 +80,7 @@ const ConsoleMeSidebar = () => {
           <Menu.Item
             as="a"
             name="slack"
-            href={support_slack || "/"}
+            href={support_chat_url || "/"}
             rel="noopener noreferrer"
             target="_blank"
           >

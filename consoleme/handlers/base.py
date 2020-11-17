@@ -284,7 +284,7 @@ class BaseHandler(tornado.web.RequestHandler):
             # SAML flow. If user has a JWT signed by ConsoleMe, and SAML is enabled in configuration, user will go
             # through this flow.
 
-            if config.get("auth.get_user_by_saml"):
+            if config.get("auth.get_user_by_saml", False):
                 res = await authenticate_user_by_saml(self)
                 if not res:
                     if (
@@ -298,7 +298,7 @@ class BaseHandler(tornado.web.RequestHandler):
                     return
 
         if not self.user:
-            if config.get("auth.get_user_by_oidc"):
+            if config.get("auth.get_user_by_oidc", False):
                 res = await authenticate_user_by_oidc(self)
                 if not res:
                     raise SilentException(
@@ -310,7 +310,7 @@ class BaseHandler(tornado.web.RequestHandler):
                     self.groups = res.get("groups")
 
         if not self.user:
-            if config.get("auth.get_user_by_aws_alb_auth"):
+            if config.get("auth.get_user_by_aws_alb_auth", False):
                 res = await authenticate_user_by_alb_auth(self)
                 if not res:
                     raise Exception("Unable to authenticate the user by ALB Auth")

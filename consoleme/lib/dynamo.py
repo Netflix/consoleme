@@ -68,7 +68,7 @@ class BaseDynamoHandler:
                     "dynamodb",
                     service_type="resource",
                     account_number=config.get("aws.account_number"),
-                    session_name=config.get("application_name"),
+                    session_name=config.get("application_name", "consoleme"),
                     region=config.region,
                 )
             table = resource.Table(table_name)

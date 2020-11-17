@@ -142,8 +142,8 @@ class Configuration(object):
         if self.log:
             return self.log
         if not name:
-            name = self.get("application_name")
-        level_c = self.get("logging.level")
+            name = self.get("application_name", "consoleme")
+        level_c = self.get("logging.level", "debug")
         if level_c == "info":
             level = logging.INFO
         elif level_c == "critical":
@@ -158,7 +158,10 @@ class Configuration(object):
             # default
             level = logging.DEBUG
         filter_c = ContextFilter()
-        format_c = self.get("logging.format", "")
+        format_c = self.get(
+            "logging.format",
+            "%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s",
+        )
 
         logging.basicConfig(level=level, format=format_c)
         logger = logging.getLogger(name)
@@ -193,7 +196,9 @@ class Configuration(object):
             handler.setFormatter(logmatic.JsonFormatter())
             handler.setLevel(self.get("logging.stdout.level", "DEBUG"))
             logger.addHandler(handler)
-            logging_file = self.get("logging.file")
+            logging_file = self.get(
+                "logging.file", "~/.consoleme/consoleme_tornado.log"
+            )
             if logging_file:
                 if "~" in logging_file:
                     logging_file = os.path.expanduser(logging_file)

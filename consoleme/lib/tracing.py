@@ -94,7 +94,7 @@ class ConsoleMeTracer:
     async def configure_tracing(
         self, span_name, span_kind=SERVER, tags=None, annotations=None
     ) -> Optional[ConsoleMeTracerObject]:
-        if not config.get("tracing.enabled"):
+        if not config.get("tracing.enabled", False):
             return
 
         if not random() * 100 <= config.get("tracing.sample_rate", 0.1):  # nosec
@@ -143,7 +143,7 @@ class ConsoleMeTracer:
         )
 
     async def disable_tracing(self):
-        if not config.get("tracing.enabled"):
+        if not config.get("tracing.enabled", False):
             return
         self.log_data["message"] = "disabling tracing"
         log.debug(self.log_data)
@@ -165,7 +165,7 @@ class ConsoleMeTracer:
         # We iterate through the dictionary of spans in a safe manner
         # to avoid a "Dictionary changed size during iteration" error as other asynchronous
         # callers modify self.spans
-        if not config.get("tracing.enabled"):
+        if not config.get("tracing.enabled", False):
             return
         self.log_data["message"] = "finishing spans"
         log.debug(self.log_data)

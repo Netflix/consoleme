@@ -1,60 +1,58 @@
+# You'll need to tell ConsoleMe which configuration to use. You can do this by setting the CONFIG_LOCATION environment
+# variable to the full path of your configuration.
+# Example:
+# CONFIG_LOCATION=/home/username/.config/consoleme/development.yaml
+
+# You can "extend" configurations with other configurations. This will basically merge the two configurations. The
+# primary configuration file is the one that you've defined in your CONFIG_LOCATION environment variable. This is useful
+# when you have common configuration values across all of your deployments, but also some configuration values that are
+# specific to your deployment.
 extends:
   - example_config_base.yaml
   - example_secrets.yaml
 
 auth:
+  # These configuration settings tell ConsoleMe to look at plaintext header values to determine the user's identity and
+  # their groups. You'll need to change user_header_name/groups_header_name to the appropriate header names for your
+  # environment. To avoid client side header forgery, you should ensure ConsoleMe is fronted by Apache/Nginx. Your
+  # web server should drop sensitive headers so that users cannot forge them, authenticate the users, and pass down the
+  # plaintext headers for ConsoleMe to consume.
+  # The user header is your user identifier. Usually a username or an e-mail address.
+  # The groups header provides a comma separated list of groups that the user is a member of. Group headers cna be plain
+  # strings, or if you use something like Google groups, they can also be e-mail addresses.
+
+  # Example headers:
+  # user_header: curtis@example.com
+  # groups_header: group1,group2,group3
   get_groups_by_header: true
   get_user_by_header: true
-  get_user_by_oauth: false
-  get_user_by_saml: false
-  # TODO: Add caveat here that user must be safely authed.
   groups_header_name: group_header
   user_header_name: user_header
 
+# Development mode provides functionality to ease local development. You should only use this mode locally.
 development: true
 
-url: http://127.0.0.1:8081
+# This defines the URL that ConsoleMe is hosted at. Be sure to change this in your production environment.
+url: http://localhost:8081
 
+# These are the tornado settings. Set `debug` to false in production.
 tornado:
   debug: true
   port: 8081
-  xsrf: false
+  xsrf: true
 
-google:
-  service_key_file: example_config/test_google_secret.json
-
-duo:
-  lambda_arn: arn:aws:lambda:{}:123456789012:function:duo_lambda
-
-challenge:
-  expiration: 600
-
-celery_jobs:
-  cloudtrail_errors:
-    sleep_time: 0
-
-logging:
-  format: "%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s"
-  stdout_enabled: true
-  level: debug
-  elasticsearch:
-    level: DEBUG
-  file: ~/.consoleme/consoleme_tornado.log
-
-aws:
-  account_number: 123456789012
-  region: us-east-1
-
+# You'll need to configure SES if you want to send e-mails when a user submits a policy request. This is the e-mail that
+# ConsoleMe will attempt to send from.
 ses:
+  arn:
   consoleme:
     sender: consoleme_test@example.com
     name: Consoleme
-  accessui:
-    sender: access_ui_test@example.com
-    name: Access UI
 
+# You can define support contact information and custom documentation here. This information is displayed in ConsoleMe's
+# sidebar.
 support_contact: consoleme-support@example.com
-support_slack: https://www.example.com/slack/channel
+support_chat_url: https://www.example.com/slack/channel
 documentation_page: https://github.com/Netflix/consoleme/
 # You can add a custom Security logo here
 # security_logo: /path/to/your/security_logo.png
