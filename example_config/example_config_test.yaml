@@ -9,6 +9,11 @@ environment: test
 
 url: http://127.0.0.1:8081
 
+tornado:
+  debug: true
+  port: 8081
+  xsrf: false
+
 account_ids_to_name:
   "123456789012":
     - default_account
@@ -30,13 +35,6 @@ redis:
     us-west-2: null
     eu-west-1: null
   port: null
-tornado:
-  debug: true
-  port: 8081
-  xsrf: false
-
-google:
-  service_key_file: example_config/test_google_secret.json
 
 dynamic_config:
   group_mapping:
@@ -52,24 +50,6 @@ dynamic_config:
       roles:
         - arn:aws:iam::123456789012:role/roleA
         - arn:aws:iam::123456789012:role/roleB
-
-duo:
-  lambda_arn: arn:aws:lambda:{}:123456789012:function:duo_lambda
-
-challenge:
-  expiration: 600
-
-celery_jobs:
-  cloudtrail_errors:
-    sleep_time: 0
-
-logging:
-  format: "%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s"
-  stdout_enabled: true
-  level: debug
-  elasticsearch:
-    level: DEBUG
-  file: ~/.consoleme/consoleme_tornado.log
 
 aws:
   account_number: 123456789012

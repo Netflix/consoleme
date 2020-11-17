@@ -196,9 +196,7 @@ class Configuration(object):
             handler.setFormatter(logmatic.JsonFormatter())
             handler.setLevel(self.get("logging.stdout.level", "DEBUG"))
             logger.addHandler(handler)
-            logging_file = self.get(
-                "logging.file", "~/.consoleme/consoleme_tornado.log"
-            )
+            logging_file = self.get("logging.file")
             if logging_file:
                 if "~" in logging_file:
                     logging_file = os.path.expanduser(logging_file)

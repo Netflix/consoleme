@@ -34,25 +34,3 @@ development: true
 
 # This defines the URL that ConsoleMe is hosted at. Be sure to change this in your production environment.
 url: http://localhost:8081
-
-# These are the tornado settings. Set `debug` to false in production.
-tornado:
-  debug: true
-  port: 8081
-  xsrf: true
-
-# You'll need to configure SES if you want to send e-mails when a user submits a policy request. This is the e-mail that
-# ConsoleMe will attempt to send from.
-ses:
-  arn:
-  consoleme:
-    sender: consoleme_test@example.com
-    name: Consoleme
-
-# You can define support contact information and custom documentation here. This information is displayed in ConsoleMe's
-# sidebar.
-support_contact: consoleme-support@example.com
-support_chat_url: https://www.example.com/slack/channel
-documentation_page: https://github.com/Netflix/consoleme/
-# You can add a custom Security logo here
-# security_logo: /path/to/your/security_logo.png
