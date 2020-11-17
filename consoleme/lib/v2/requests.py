@@ -1428,6 +1428,7 @@ async def parse_and_apply_policy_request_modification(
     user: str,
     user_groups,
     last_updated,
+    approval_probe_approved=False,
 ) -> PolicyRequestModificationResponseModel:
     """
     Parses the policy request modification changes
@@ -1437,6 +1438,8 @@ async def parse_and_apply_policy_request_modification(
     :param policy_request_model: PolicyRequestModificationRequestModel
     :param user_groups:  user's groups
     :param last_updated:
+    :param approval_probe_approved: Whether this change was approved by an auto-approval probe. If not, user needs to be
+        authorized to make the change.
     :return PolicyRequestModificationResponseModel
     """
 
@@ -1467,7 +1470,12 @@ async def parse_and_apply_policy_request_modification(
         Command.reject_request,
     ]:
         can_manage_policy_request = await can_manage_policy_requests(user, user_groups)
-        if not can_manage_policy_request:
+        # Authorization required if the policy wasn't approved by an auto-approval probe.
+        should_apply_because_auto_approved = (
+            request_changes.command == Command.apply_change and approval_probe_approved
+        )
+
+        if not can_manage_policy_request and not should_apply_because_auto_approved:
             raise Unauthorized("You are not authorized to manage this request")
 
     if request_changes.command == Command.move_back_to_pending:
