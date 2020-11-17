@@ -2,7 +2,6 @@ import sys
 from typing import List
 
 import boto3
-import sentry_sdk
 from asgiref.sync import sync_to_async
 
 from consoleme.config import config
@@ -25,7 +24,6 @@ async def send_email(
 ) -> None:
     client = boto3.client("ses", region_name=region)
     sender = config.get(f"ses.{sending_app}.sender")
-
     log_data = {
         "to_user": to_addresses,
         "region": region,
@@ -39,10 +37,18 @@ async def send_email(
             {
                 **log_data,
                 "error": "Configuration value for `ses.arn` is not defined. Unable to send e-mail.",
-            },
-            exc_info=True,
+            }
         )
-        sentry_sdk.capture_exception()
+        return
+
+    if not sender:
+        log.error(
+            {
+                **log_data,
+                "error": f"Configuration value for `ses.{sending_app}.sender` is not defined. Unable to send e-mail.",
+            }
+        )
+        return
 
     if config.get("development") and config.get("ses.override_receivers_for_dev"):
         log_data["original_to_addresses"] = to_addresses

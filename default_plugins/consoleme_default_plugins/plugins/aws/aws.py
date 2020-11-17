@@ -479,21 +479,32 @@ class Aws:
         req_params = {
             "Action": "getSigninToken",
             "Session": bleach.clean(json.dumps(credentials_d)),
-            "DurationSeconds": config.get("aws.session_duration", 43200),
+            "DurationSeconds": config.get("aws.session_duration", 3600),
         }
 
         http_client = AsyncHTTPClient(force_instance=True)
 
-        url_with_params: str = url_concat(config.get("aws.federation_url"), req_params)
+        url_with_params: str = url_concat(
+            config.get(
+                "aws.federation_url", "https://signin.aws.amazon.com/federation"
+            ),
+            req_params,
+        )
         r = await http_client.fetch(url_with_params, ssl_options=ssl.SSLContext())
         token = json.loads(r.body)
 
         login_req_params = {
             "Action": "login",
             "Issuer": config.get("aws.issuer"),
-            "Destination": "{}".format(config.get("aws.console_url").format(region)),
+            "Destination": (
+                "{}".format(
+                    config.get(
+                        "aws.console_url", "https://{}.console.aws.amazon.com"
+                    ).format(region)
+                )
+            ),
             "SigninToken": bleach.clean(token.get("SigninToken")),
-            "SessionDuration": config.get("aws.session_duration", 43200),
+            "SessionDuration": config.get("aws.session_duration", 3600),
         }
 
         r2 = requests_sync.Request(

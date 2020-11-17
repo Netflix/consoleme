@@ -11,6 +11,7 @@ class SelfServiceConfigHandler(BaseAPIV2Handler):
             self.user, self.groups
         )
         self_service_iam_config: dict = config.get("self_service_iam")
+
         self.write(
             {
                 "admin_bypass_approval_enabled": admin_bypass_approval_enabled,

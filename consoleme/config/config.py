@@ -142,8 +142,8 @@ class Configuration(object):
         if self.log:
             return self.log
         if not name:
-            name = self.get("application_name")
-        level_c = self.get("logging.level")
+            name = self.get("application_name", "consoleme")
+        level_c = self.get("logging.level", "debug")
         if level_c == "info":
             level = logging.INFO
         elif level_c == "critical":
@@ -158,7 +158,10 @@ class Configuration(object):
             # default
             level = logging.DEBUG
         filter_c = ContextFilter()
-        format_c = self.get("logging.format", "")
+        format_c = self.get(
+            "logging.format",
+            "%(asctime)s - %(levelname)s - %(name)s - [%(filename)s:%(lineno)s - %(funcName)s() ] - %(message)s",
+        )
 
         logging.basicConfig(level=level, format=format_c)
         logger = logging.getLogger(name)

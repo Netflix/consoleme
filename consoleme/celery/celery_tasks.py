@@ -1022,7 +1022,7 @@ def cache_sns_topics_across_accounts() -> bool:
 def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     all_queues: set = set()
 
-    for region in config.get("celery.sync_regions"):
+    for region in config.get("celery.sync_regions", []):
         client = boto3_cached_conn(
             "sqs",
             account_number=account_id,
@@ -1070,7 +1070,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
 def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     # Make sure it is regional
     all_topics: set = set()
-    for region in config.get("celery.sync_regions"):
+    for region in config.get("celery.sync_regions", []):
         topics = list_topics(
             account_number=account_id,
             assume_role=config.get("policies.role_name"),

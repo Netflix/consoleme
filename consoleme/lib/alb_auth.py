@@ -34,13 +34,15 @@ async def authenticate_user_by_alb_auth(request):
     pub_key = req.text
     # Step 3: Get the payload
     payload = jwt.decode(encoded_auth_jwt, pub_key, algorithms=["ES256"])
-    email = payload.get(config.get("get_user_by_aws_alb_auth_settings.jwt_email_key"))
+    email = payload.get(
+        config.get("get_user_by_aws_alb_auth_settings.jwt_email_key", "email")
+    )
 
     # Step 4: Parse the Access Token
     # User has already passed ALB auth and successfully authenticated
     access_token_jwt = jwt.decode(encoded_claims_jwt, pub_key, verify=False)
     groups = access_token_jwt.get(
-        config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key")
+        config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key", "groups")
     )
     # Step 5: Verify the access token.
     validate_token(

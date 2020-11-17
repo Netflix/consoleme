@@ -32,9 +32,9 @@ class TestSiteLogin(AsyncHTTPTestCase):
             response_j,
             {
                 "google_tracking_uri": None,
-                "documentation_url": None,
-                "support_contact": None,
-                "support_slack": None,
+                "documentation_url": "https://github.com/Netflix/consoleme/",
+                "support_contact": "consoleme-support@example.com",
+                "support_chat_url": "https://www.example.com/slack/channel",
                 "security_logo": None,
             },
         )

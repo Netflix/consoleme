@@ -70,6 +70,9 @@ class GetCredentialsHandler(BaseMtlsHandler):
         log_data = {} if not log_data else log_data
         try:
             max_cert_age = await group_mapping.get_max_cert_age_for_role(role)
+            max_cert_age_message = config.get(
+                "errors.custom_max_cert_age_message", "Please refresh your certificate."
+            )
         except Exception as e:
             sentry_sdk.capture_exception()
             log_data["error"] = e
@@ -83,7 +86,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
                 raise CertTooOldException(
                     f"MTLS certificate is too old. The role you selected requires a max cert "
                     f"age of {max_cert_age} days. "
-                    f"{config.get('errors.custom_max_cert_age_message')}"
+                    f"{max_cert_age_message}"
                 )
         except CertTooOldException as e:
             log_data["message"] = "Unable to get credentials for user"
@@ -96,7 +99,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
             error = {
                 "code": "905",
                 "message": (
-                    f"MTLS certificate is too old. {config.get('errors.custom_max_cert_age_message')}. "
+                    f"MTLS certificate is too old. {max_cert_age_message}. "
                     f"Max cert age for {role} is {max_cert_age} days."
                 ),
                 "requested_role": role,

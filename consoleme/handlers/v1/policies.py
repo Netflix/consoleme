@@ -1263,7 +1263,7 @@ async def handle_resource_type_ahead_request(cls):
 
 class ApiResourceTypeAheadHandler(BaseMtlsHandler):
     async def get(self):
-        if self.requester["name"] not in config.get("api_auth.valid_entities"):
+        if self.requester["name"] not in config.get("api_auth.valid_entities", []):
             raise Exception("Call does not originate from a valid API caller")
         results = await handle_resource_type_ahead_request(self)
         self.write(json.dumps(results))

@@ -1,25 +1,27 @@
-access_requests:
-  default_approver: admin@example.com
-api_auth:
-  valid_entities:
-    - fake_api_entity
-auth_cookie_name: consoleme_auth
+# Enter your team's e-mail address here. This e-mail will be used as the default approvers of IAM policy requests
 application_admin: consoleme_admins@example.com
-application_name: consoleme
+
+# These are the tornado settings. Set `debug` to false in production.
+tornado:
+  debug: true
+  port: 8081
+  xsrf: true
+  xsrf_cookie_kwargs:
+    samesite: strict
 
 # ConsoleMe needs to know about your AWS accounts. ConsoleMe can retrieve a list of your accounts from the following
 # sources:
-# 1) Config (See the account_ids_to_name key below)
+# 1) Your local configuration file (See the account_ids_to_name key below)
 # 2) AWS Organizations (See the cache_accounts_from_aws_organizations key below)
 # 3) Swag ( https://github.com/Netflix-Skunkworks/swag-api) (See the retrieve_accounts_from_swag key below)
+# 4) Your current AWS credentials. If you do not configure any sources to retrieve information about your AWS accounts,
+#    ConsoleMe will use the current credentials and attempt to determine account information. If Celery tasks are ran,
+#    ConsoleMe will attempt to sync resources from this account.
 
 #account_ids_to_name:
-#  "123456789012":
-#    - default_account
-#  "123456789013":
-#    - prod
-#  "123456789014":
-#    - test
+#  "123456789012": default_account
+#  "123456789013": prod
+#  "123456789014": test
 
 #cache_accounts_from_aws_organizations:
 #  # This is the account ID of your AWS organizations master
@@ -32,15 +34,16 @@ application_name: consoleme
 #retrieve_accounts_from_swag:
 #  base_url: 'https://your_swag_url/'
 
-auth:
-  get_groups_by_header: true
-  get_user_by_header: true
-  get_user_by_oauth: false
-  get_user_by_saml: false
-  groups_header_name: group_header
-  user_header_name: user_header
-
-# This is where you would define the IAM role tags that dictate which users/groups are authorized to access the role.
+# The `cloud_credential_authorization_mapping` configuration is where you would define the IAM role tags that dictate
+# which users/groups are authorized to access the role. The tag keys are defined below.
+# The tag values should be set to a colon-delimited list of users or groups (Commas are not valid in tag values).
+# Users/groups defined in the `authorized_groups_tags` tag can retrieve credentials from ConsoleMe either via the CLI
+# or the web interface. Users/groups defined in the `authorized_groups_cli_only_tags` tag can only retreive credentials
+# via the CLI, and will not see the roles in ConsoleMe's UI. This is useful to keep the UI uncluttered.
+# Example IAM role tags:
+# consoleme-authorized=user1@example.com:group2@example.com
+# consoleme-owner-dl=appowner@example.com
+# consoleme-authorized-cli-only=group3@example.com
 cloud_credential_authorization_mapping:
   role_tags:
     enabled: true
@@ -51,46 +54,28 @@ cloud_credential_authorization_mapping:
       - consoleme-authorized-cli-only
 
 aws:
-  console_url: "https://{}.console.aws.amazon.com"
-  federation_url: "https://signin.aws.amazon.com/federation"
-  iamroles_dynamo_table: consoleme_iamroles_global
-  iamroles_redis_key: IAM_ROLE_CACHE
   issuer: YourCompany
-  requests_dynamo_table: consoleme_requests_global
-  session_duration: 43200
 
 celery:
-  active_region: us-west-2 # Some jobs should only run in one region.
+  # Some jobs should only run in one region. The `active_region` key should define your primary region.
+  active_region: us-west-2
   # celery.sync_regions specifies which regions to sync resources from, such as SQS queues and SNS topics
   sync_regions:
     - us-east-1
     - us-west-2
     - eu-west-1
-challenge:
-  token_expiration: 3600
+
+# If you want to retrieve credentials through mutual TLS, you'll need to use something fronting ConsoleMe to do the
+# certificate validation. It should pass down a "Success" header, and a header with the certificate. You'll need to
+# implement your own certificate parsing logic.
+# Refer to consoleme/default_plugins/consoleme_default_plugins/plugins/auth/auth.py
 cli_auth:
   certificate_header: certificate_header
   required_headers:
     - RequiredMTLSHeader: RequiredMTLSHeaderValue
 
-errors:
-  custom_max_cert_age_message: "Please refresh your certificate."
-get_eligible_roles:
-  from_config: true
-  from_prefix: false
-
-headers:
-  # The Google Groups features do not fully work in the OSS version of ConsoleMe. Please contact the developers if you
-  # need this feature.
-  group_access:
-    enabled: false
-  policies:
-    enabled: true
-  config:
-    enabled: true
-
-enable_self_service: true
-
+# This is where you can define groups that can modify ConsoleMe's dynamic configuration and administer
+# IAM/S3/SQS/SNS policies.
 groups:
   can_edit_config:
     - configeditors@example.com
@@ -98,64 +83,25 @@ groups:
     - consoleme_admins@example.com
 
 jwt:
-  groups_key: groups
   email_key: email
-  expiration_hours: 6
 
-# If desired, you can configure Google Analytics here
-# google_analytics:
-#    tracking_id: 12345
-
-#google:
-#  admin_scopes:
-#    - 'https://www.googleapis.com/auth/admin.directory.group'
-#  credential_subject:
-#    example.com: exampleapiuser@example.com
-#    example2.com: exampleapiuser@example2.com
-#group_mapping_config:
-#  recent_users_key: RECENT_USERS
-#  role_cache_expiration: 21600
-#  role_cache_redis_key: 'ROLE_CACHE_{}'
-#  update_frequency: 300
 #groups:
-#  attributes:
-#    boolean:
-#      - label: Requestable
-#        name: requestable
-#        sensitive: false
-#    list:
-#      - label: Secondary Approvers
-#        name: secondary_approvers
-#        placeholder: 'group1@example.com,group2@example.com'
-#        sensitive: false
-#      - label: Self-approval Groups
-#        name: self_approval_groups
-#        placeholder: 'group1@example.com,group2@example.com'
-#        sensitive: false
-#      - label: Emails to notify when users are added
-#        name: alert_on_changes
-#        placeholder: 'group1@example.com,group2@example.com'
-#        sensitive: false
-#      - label: Owners
-#        name: owner
-#        placeholder: 'group1@example.com,group2@example.com'
-#        sensitive: false
 #  can_admin:
 #    - admin@example.com
 #  can_admin_policies:
 #    - admin@example.com
 #  developement_notification_emails:
 #    - developer@example.com
-#  can_audit:
-#    - auditors@example.com
 #  can_edit_config:
 #    - configeditors@example.com
 #  can_edit_policies:
 #    - policyeditors@example.com
-#  can_edit_sensitive_attributes:
-#    - sensitiveattributeeditors@example.com
-#  require_bg_check:
-#    - sensitivegroup@example.com
+
+# You can define support contact information and custom documentation here. This information is displayed in ConsoleMe's
+# sidebar.
+support_contact: consoleme-support@example.com
+support_chat_url: https://www.example.com/slack/channel
+documentation_page: https://github.com/Netflix/consoleme/
 
 plugins:
   auth: default_auth
@@ -182,30 +128,6 @@ logging_levels:
   spectator.Registry: WARNING
   urllib3: ERROR
 
-# Warning: Tracing has performance implications. We recommend against 100% sample_rate in a production environment.
-# Enabling tracing in development will also override your ability to debug in your IDE. If you're
-# running in docker, be sure to start Zipkin at the same time as your other containers
-# ex: `docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml -f docker-compose-zipkin.yaml up`
-# To test, browse to Local ConsoleMe and confirm you see the trace in Zipkin at http://localhost:9411
-tracing:
-  application_name: consoleme
-  enabled: false # False by default, override in account-specific configuration
-  sample_rate: 100 # Percentage of requests
-  zipkin_address: http://consoleme_zipkin:9411/api/v2/spans
-  in_scope_function_calls:
-    - /consoleme/
-
-cache_all_resources_from_aws_config:
-  aws_config:
-    all_resources_query: select * where accountId = '{account_id}'
-  redis_key: ALL_RESOURCE_ARNS
-
-aws_config_cache:
-  redis_key: AWSCONFIG_RESOURCE_CACHE
-  # s3:
-  #  bucket: consoleme_bucket
-  #  file: aws_config_cache/cache_{account_id}_v1.json
-
 #policies:
 #  role_name: ConsoleMeRole
 
@@ -222,11 +144,8 @@ aws_config_cache:
 #        enum:
 #          - https://provider.example.com
 
-# Note: Do not put anything sensitive in the self_service_iam key. This may be exposed to the frontend UI
+# Note: Do not put anything sensitive in the self_service_iam key. This will be exposed to the frontend UI
 self_service_iam:
-  custom_header_message: |-
-    Welcome to the new and improved IAM Self-Service Wizard beta!
-    Please click [here](/self_service_v1) if you need to access the older version.
   permissions_map:
     s3:
       text: S3 Bucket
@@ -724,4 +643,6 @@ permission_templates:
 ses:
   support_reference: "Please contact us at consoleme@example.com if you have any questions or concerns."
   arn: "arn:aws:ses:us-east-1:123456789012:identity/example.com"
-  from_address_placeholder: fromaddress@example.com
+  consoleme:
+    name: ConsoleMe
+    sender: consoleme_test@example.com

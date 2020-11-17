@@ -35,8 +35,10 @@ class UserProfileHandler(BaseAPIV1Handler):
                 ),
             },
             "pages": {
-                "groups": {"enabled": config.get("headers.group_access.enabled", True)},
-                "users": {"enabled": config.get("headers.group_access.enabled", True)},
+                "groups": {
+                    "enabled": config.get("headers.group_access.enabled", False)
+                },
+                "users": {"enabled": config.get("headers.group_access.enabled", False)},
                 "policies": {
                     "enabled": config.get("headers.policies.enabled", True)
                     and not is_contractor
@@ -76,7 +78,7 @@ class SiteConfigHandler(BaseAPIV1Handler):
             "google_tracking_uri": config.get("google_analytics.tracking_url"),
             "documentation_url": config.get("documentation_page"),
             "support_contact": config.get("support_contact"),
-            "support_slack": config.get("support_slack"),
+            "support_chat_url": config.get("support_chat_url"),
             "security_logo": config.get("security_logo.url"),
         }
         self.set_header("Content-Type", "application/json")
