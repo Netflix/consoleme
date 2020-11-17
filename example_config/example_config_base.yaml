@@ -646,3 +646,6 @@ ses:
   consoleme:
     name: ConsoleMe
     sender: consoleme_test@example.com
+
+challenge_url:
+  enabled: true
