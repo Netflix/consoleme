@@ -364,6 +364,7 @@ class RequestHandler(BaseAPIV2Handler):
                         self.user,
                         self.groups,
                         int(time.time()),
+                        approval_probe_approved,
                     )
                 )
                 response.errors = policy_apply_response.errors
