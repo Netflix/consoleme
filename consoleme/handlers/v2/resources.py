@@ -6,6 +6,7 @@ import ujson as json
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MustBeFte
 from consoleme.handlers.base import BaseHandler
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.aws import fetch_resource_details
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import can_manage_policy_requests
@@ -72,12 +73,15 @@ class ResourceDetailHandler(BaseHandler):
         s3_errors = []
         if all_s3_errors:
             s3_errors = json.loads(all_s3_errors).get(arn, [])
+
+        account_ids_to_name = await get_account_id_to_name_mapping()
         # TODO(ccastrapel/psanders): Make a Swagger spec for this
         self.write(
             dict(
                 arn=arn,
                 resource_details=resource_details,
                 account_id=account_id,
+                account_name=account_ids_to_name.get(account_id, None),
                 read_only=read_only,
                 can_save_delete=can_save_delete,
                 s3_errors=s3_errors,
