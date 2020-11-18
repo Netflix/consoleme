@@ -91,10 +91,8 @@ nvm install 12.18.2
 nvm use 12.18.2
 node -e "console.log('Running Node.js ' + process.version)"
 npm install yarn -g
-yarn
-yarn install
-/apps/consoleme/node_modules/webpack/bin/webpack.js --progress
-cd ui; yarn; SKIP_PREFLIGHT_CHECK=true CI=false yarn run build:dev ; cd ..
+yarn --cwd ui
+yarn --cwd ui build
 
 # Since the setup ran as root, just chown it again so the consoleme user owns it
 chown -R consoleme:consoleme /apps/consoleme

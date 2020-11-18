@@ -10,7 +10,7 @@ tornado:
 challenge_url:
   enabled: true
 
-development: true
+development: false
 environment: prod
 
 logging:
@@ -20,13 +20,10 @@ logging:
   file: /logs/consoleme/consoleme_tornado.log
 
 account_ids_to_name:
-  "${current_account_id}":
-    - default_account
+  "${current_account_id}": default_account
 
 cache_cloud_accounts:
   from_aws_organizations: ${sync_accounts_from_organizations}
-  redis:
-    all_accounts_key: ALL_AWS_ACCOUNTS
 
 cache_accounts_from_aws_organizations:
   organizations_master_account_id: "${sync_accounts_from_organizations_master_account_id}"
@@ -55,7 +52,7 @@ cloud_credential_authorization_mapping:
   internal_plugin:
     enabled: false
 
-# You'll probably want to override FUNCTION to generate this data with your own business logic.
+# You'll probably want to override default_plugins logic to generate this data with your own business logic.
 application_settings:
   application_1:
     owner: consoleme_admins@example.com
@@ -87,4 +84,4 @@ dynamic_config:
 
 policies:
   role_name: ConsoleMeTarget
-# TODO: SAML / Oauth / TLS configuration / Secufre JWT / CLI Auth / Generic CloudTrail log support
+# TODO: SAML / Oauth / TLS configuration / Secure JWT / CLI Auth / Generic CloudTrail log support
