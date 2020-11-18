@@ -11,6 +11,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional, Union
 
 import boto3
+import sentry_sdk
 import simplejson as json
 import yaml
 from asgiref.sync import async_to_sync, sync_to_async
@@ -234,17 +235,22 @@ class UserDynamoHandler(BaseDynamoHandler):
             self.resource_cache_table, data, ["resourceId", "resourceType"]
         )
 
-    async def get_dynamic_config_yaml(self) -> str:
+    async def get_dynamic_config_yaml(self) -> bytes:
         """Retrieve dynamic configuration yaml."""
-        current_config = await sync_to_async(self.dynamic_config.get_item)(
-            Key={"id": "master"}
-        )
-        compressed_config = current_config.get("Item", {}).get("config", "")
+        c = b""
+
         try:
+            current_config = await sync_to_async(self.dynamic_config.get_item)(
+                Key={"id": "master"}
+            )
+            if not current_config:
+                return c
+            compressed_config = current_config.get("Item", {}).get("config", "")
+            if not compressed_config:
+                return c
             c = zlib.decompress(compressed_config.value)
         except Exception:  # noqa
-            # TODO: Backwards compatibility. Remove at a later date
-            c = compressed_config
+            sentry_sdk.capture_exception()
         return c
 
     def get_dynamic_config_dict(self) -> dict:

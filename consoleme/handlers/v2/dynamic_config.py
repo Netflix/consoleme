@@ -2,6 +2,7 @@ import json
 import sys
 from hashlib import sha256
 
+import sentry_sdk
 import tornado.escape
 import tornado.web
 
@@ -81,7 +82,7 @@ class DynamicConfigApiHandler(BaseHandler):
 
         data = tornado.escape.json_decode(self.request.body)
         try:
-            existing_sha256 = data["existing_sha256"]
+            existing_sha256 = data.get("existing_sha256")
             new_sha256 = sha256(data["new_config"].encode("utf-8")).hexdigest()
             if existing_sha256 == new_sha256:
                 raise Exception(
@@ -99,7 +100,8 @@ class DynamicConfigApiHandler(BaseHandler):
             await ddb.update_dynamic_config(data["new_config"], self.user)
         except Exception as e:
             result["status"] = "error"
-            result["error"] = e
+            result["error"] = f"There was an error processing your request: {e}"
+            sentry_sdk.capture_exception()
             self.write(json.dumps(result, cls=SetEncoder))
             await self.finish()
             return
