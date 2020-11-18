@@ -34,7 +34,7 @@ const PolicyEditor = () => {
         <Header as="h1" floated="left">
           Edit Policy for {`${resource.arn || ""}`}
         </Header>
-        {serviceType === "iamrole" && user?.authorization?.can_edit_policies ? (
+        {serviceType === "iamrole" && user?.authorization?.can_delete_roles ? (
           <Label
             as="a"
             attached="top right"
