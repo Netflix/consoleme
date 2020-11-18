@@ -139,11 +139,11 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             # User role must be defined as a user attribute
             if (
                 self.user_role_name
-                and "role/" in role
-                and role.split("role/")[1] == self.user_role_name
+                and "role/" in selected_role
+                and selected_role.split("role/")[1] == self.user_role_name
             ):
                 user_role = True
-                account_id = role.split("arn:aws:iam::")[1].split(":role")[0]
+                account_id = selected_role.split("arn:aws:iam::")[1].split(":role")[0]
 
             url = await aws.generate_url(
                 self.user,
