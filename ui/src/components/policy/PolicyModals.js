@@ -154,10 +154,31 @@ export const JustificationModal = ({ handleSubmit }) => {
 
 export const DeleteResourceModel = () => {
   const {
+    isSuccess = false,
     toggleDeleteRole = false,
     resource = {},
+    setIsSuccess,
     setToggleDeleteRole,
+    handleDeleteRole,
+    isPolicyEditorLoading,
+    setIsPolicyEditorLoading,
   } = usePolicyContext();
+
+  const [message, setMessage] = useState("");
+
+  const handleDeleteSubmit = async () => {
+    setIsPolicyEditorLoading(true);
+    const response = await handleDeleteRole();
+    setMessage(response.message);
+    setIsSuccess(response.status === "success");
+    setIsPolicyEditorLoading(false);
+  };
+
+  const handleOk = () => {
+    setMessage("");
+    setIsSuccess(false);
+    setToggleDeleteRole(false);
+  };
 
   return (
     <Modal
@@ -166,20 +187,39 @@ export const DeleteResourceModel = () => {
       open={toggleDeleteRole}
     >
       <Modal.Header>Deleting the role {resource.name}</Modal.Header>
-      <Modal.Content image>
+      <Modal.Content>
         <Modal.Description>
-          <p>Are you sure to delete this role?</p>
+          <Dimmer.Dimmable dimmed={isPolicyEditorLoading}>
+            <StatusMessage isSuccess={isSuccess} message={message} />
+            {!isSuccess && <p>Are you sure to delete this role?</p>}
+            <Dimmer active={isPolicyEditorLoading} inverted>
+              <Loader />
+            </Dimmer>
+          </Dimmer.Dimmable>
         </Modal.Description>
       </Modal.Content>
       <Modal.Actions>
-        <Button
-          content="Delete"
-          labelPosition="left"
-          icon="remove"
-          onClick={() => setToggleDeleteRole(false)}
-          negative
-        />
-        <Button onClick={() => setToggleDeleteRole(false)}>Cancel</Button>
+        {isSuccess ? (
+          <Button
+            content="Done"
+            labelPosition="left"
+            icon="arrow right"
+            onClick={handleOk}
+            positive
+            disabled={isPolicyEditorLoading}
+          />
+        ) : (
+          <>
+            <Button
+              content="Delete"
+              labelPosition="left"
+              icon="remove"
+              onClick={handleDeleteSubmit}
+              negative
+            />
+            <Button onClick={() => setToggleDeleteRole(false)}>Cancel</Button>
+          </>
+        )}
       </Modal.Actions>
     </Modal>
   );

@@ -14,12 +14,7 @@ import PolicyEditor from "./components/policy/PolicyEditor";
 import ConsoleLogin from "./components/ConsoleLogin";
 import ConsoleMeChallengeValidator from "./components/challenge/ConsoleMeChallengeValidator";
 import CreateCloneFeature from "./components/roles/CreateCloneFeature";
-
-const NoMatch = ({ location }) => (
-  <h3>
-    No match for <code>{location.pathname}</code>
-  </h3>
-);
+import NoMatch from "./components/NoMatch";
 
 function App() {
   return (

@@ -45,13 +45,22 @@ export const PolicyProvider = ({ children }) => {
 
       setIsPolicyEditorLoading(false);
     })();
-    }, [accountID, region, resourceName, serviceType, state.isSuccess]); //eslint-disable-line
+  }, [accountID, region, resourceName, serviceType, state.isSuccess]); //eslint-disable-line
 
   // Mostly used for Justification Modal
   const setModalWithAdminAutoApprove = (approve) =>
     dispatch({ type: "SET_ADMIN_AUTO_APPROVE", approve });
   const setTogglePolicyModal = (toggle) =>
     dispatch({ type: "TOGGLE_POLICY_MODAL", toggle });
+
+  const handleDeleteRole = async () => {
+    const { accountID, resourceName } = state.params;
+    return await sendRequestCommon(
+      null,
+      `/api/v2/roles/${accountID}/${resourceName}`,
+      "delete"
+    );
+  };
 
   // There are chances that same state and handler exists in other hooks
   return (
@@ -64,6 +73,7 @@ export const PolicyProvider = ({ children }) => {
         setIsSuccess,
         setTogglePolicyModal,
         setModalWithAdminAutoApprove,
+        handleDeleteRole,
       }}
     >
       {children}
