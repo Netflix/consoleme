@@ -70,7 +70,9 @@ class Configuration(object):
 
         while True:
             dynamic_config = refresh_dynamic_config(ddb)
-            if dynamic_config != self.config.get("dynamic_config"):
+            if dynamic_config and not dynamic_config != self.config.get(
+                "dynamic_config"
+            ):
                 red.set(
                     "DYNAMIC_CONFIG_CACHE",
                     json.dumps(dynamic_config),
