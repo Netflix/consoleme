@@ -66,6 +66,8 @@ class ConsoleMeRedis(redis.StrictRedis):
             try:
                 obj = s3.Object(s3_bucket, s3_folder + f"/{args[0]}")
                 result = obj.get()["Body"].read().decode("utf-8")
+            except s3.meta.client.exceptions.NoSuchKey:
+                pass
             except Exception as e:
                 function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
                 log.error(
@@ -259,6 +261,8 @@ class ConsoleMeRedis(redis.StrictRedis):
                 result = current.get(args[1])
                 if result:
                     self.hset(args[0], args[1], result)
+            except s3.meta.client.exceptions.NoSuchKey:
+                pass
             except Exception as e:
                 function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
                 log.error(
@@ -322,6 +326,8 @@ class ConsoleMeRedis(redis.StrictRedis):
                 result = json.loads(result_j)
                 if result:
                     self.hmset(args[0], result)
+            except s3.meta.client.exceptions.NoSuchKey:
+                pass
             except Exception as e:
                 function = f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
                 log.error(
