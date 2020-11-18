@@ -497,7 +497,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
         self.request_uuid = str(uuid.uuid4())
         self.auth_cookie_expiration = 0
         stats.timer("base_handler.incoming_request")
-        if config.get("auth.require_mtls", True):
+        if config.get("auth.require_mtls", False):
             try:
                 await auth.validate_certificate(self.request.headers)
             except InvalidCertificateException:
@@ -528,7 +528,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
                 self.write({"code": "400", "message": message})
                 await self.finish()
                 return
-        elif config.get("auth.require_jwt"):
+        elif config.get("auth.require_jwt", True):
             # Check to see if user has a valid auth cookie
             if config.get("auth_cookie_name", "consoleme_auth"):
                 auth_cookie = self.get_cookie(

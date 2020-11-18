@@ -323,7 +323,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
         log_data[
             "message"
         ] = "ARN type not supported for generating resource policy changes."
-        log.error(log_data)
+        log.debug(log_data)
         return extended_request
 
     resource_policy = {"Version": "2012-10-17", "Statement": []}
@@ -853,7 +853,7 @@ async def populate_old_policies(
         log_data[
             "message"
         ] = "ARN type not supported for generating resource policy changes."
-        log.error(log_data)
+        log.debug(log_data)
         return extended_request
 
     role_name = arn_parsed["resource_path"].split("/")[-1]
