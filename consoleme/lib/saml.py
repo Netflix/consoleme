@@ -61,7 +61,7 @@ async def authenticate_user_by_saml(request):
     log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
     saml_req = await prepare_tornado_request_for_saml(request.request)
     saml_auth = await init_saml_auth(saml_req)
-    force_redirect = config.get("auth.force_redirect_to_identity_provider", True)
+    force_redirect = config.get("auth.force_redirect_to_identity_provider", False)
     try:
         await sync_to_async(saml_auth.process_response)()
     except OneLogin_Saml2_Error as e:

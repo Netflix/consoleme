@@ -78,7 +78,7 @@ async def authenticate_user_by_oidc(request):
         # If we're behind a load balancer that terminates tls for us, request.request.protocol will be "http://" and our
         # oidc redirect will be invalid
         protocol = "https"
-    force_redirect = config.get("auth.force_redirect_to_identity_provider", True)
+    force_redirect = config.get("auth.force_redirect_to_identity_provider", False)
 
     # The endpoint where we want our OIDC provider to redirect us back to perform auth
     oidc_redirect_uri = f"{protocol}://{request.request.host}/auth"

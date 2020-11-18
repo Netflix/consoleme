@@ -5,7 +5,6 @@ extends:
 auth:
   get_user_by_oidc: true
   set_auth_cookie: true
-  force_redirect_to_identity_provider: false
 
 get_user_by_oidc_settings:
   resource: consoleme-oidc
