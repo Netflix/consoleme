@@ -116,6 +116,8 @@ class HeaderHandler(BaseHandler):
         response_html = []
 
         for k, v in dict(self.request.headers).items():
+            if k.lower() in map(str.lower, config.get("headers.sensitive_headers", [])):
+                continue
             response_html.append(
                 f"<p><strong>{xhtml_escape(k)}</strong>: {xhtml_escape(v)}</p>"
             )
@@ -141,5 +143,10 @@ class ApiHeaderHandler(BaseMtlsHandler):
         }
         log.debug(log_data)
         stats.count("apimyheaders.get")
+        response = {}
+        for k, v in dict(self.request.headers).items():
+            if k.lower() in map(str.lower, config.get("headers.sensitive_headers", [])):
+                continue
+            response[k] = v
 
-        self.write(dict(self.request.headers))
+        self.write(response)
