@@ -67,7 +67,7 @@ setup(
     zip_safe=False,
     install_requires=install_requires,
     setup_requires=["setupmeta"],
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     entry_points={
         "consoleme.plugins": [
             # Change the name of the entry point for your plugin here, and in your configuration

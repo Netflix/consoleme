@@ -26,14 +26,14 @@ Vagrant.configure("2") do |config|
     software-properties-common
     add-apt-repository ppa:deadsnakes/ppa
     apt-get --allow-unauthenticated update && apt-get --allow-unauthenticated install -y \
-    python3.7 \
+    python3.8 \
     apt-transport-https \
     ca-certificates \
     curl \
     gnupg-agent \
     python3-pip \
-    python3.7-venv \
-    libpython3.7 \
+    python3.8-venv \
+    libpython3.8 \
     git
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
     add-apt-repository \
@@ -42,7 +42,7 @@ Vagrant.configure("2") do |config|
       stable"
     apt-get update
     apt-get --allow-unauthenticated install -y docker-ce docker-ce-cli containerd.io
-    python3.7 -m venv /apps/env
+    python3.8 -m venv /apps/env
     /apps/env/bin/pip install --upgrade pip
     /apps/env/bin/pip install --upgrade pip-tools
     /apps/env/bin/pip install --upgrade setuptools

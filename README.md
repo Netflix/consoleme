@@ -67,7 +67,7 @@ By default, you're running ConsoleMe as an administrator with the local
 
 ## Build and Run Instructions
 
-ConsoleMe requires Python 3.7 or above. Crude installation instructions are below. This documentation is in dire need
+ConsoleMe requires Python 3.8 or above. Crude installation instructions are below. This documentation is in dire need
 of improvement.
 
 ### MacOS
@@ -143,7 +143,7 @@ make install
 python consoleme/__main__.py
 ```
 
-> ConsoleMe requires Python 3.7+. If your virtualenv was installed under Python2.x
+> ConsoleMe requires Python 3.8+. If your virtualenv was installed under Python2.x
 > this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing
 > virtualenv and creating a new one with Python 3: `python3 -m venv env`.
 > When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe
