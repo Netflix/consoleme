@@ -10,6 +10,7 @@ import {
 } from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
 import { usePolicyContext } from "./hooks/PolicyProvider";
+import { useHistory } from "react-router-dom";
 
 const StatusMessage = ({ message, isSuccess }) => {
   if (message && isSuccess) {
@@ -163,6 +164,7 @@ export const DeleteResourceModel = () => {
     isPolicyEditorLoading,
     setIsPolicyEditorLoading,
   } = usePolicyContext();
+  const history = useHistory();
 
   const [message, setMessage] = useState("");
 
@@ -178,6 +180,7 @@ export const DeleteResourceModel = () => {
     setMessage("");
     setIsSuccess(false);
     setToggleDeleteRole(false);
+    history.push("/policies");
   };
 
   return (
