@@ -36,6 +36,7 @@ class TestProfile(AsyncHTTPTestCase):
                 "authorization": {
                     "can_edit_policies": False,
                     "can_create_roles": False,
+                    "can_delete_roles": False,
                 },
                 "pages": {
                     "groups": {"enabled": False},

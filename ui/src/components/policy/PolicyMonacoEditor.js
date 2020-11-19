@@ -131,7 +131,7 @@ export const PolicyMonacoEditor = ({
         />
       </Segment>
       <Button.Group attached="bottom">
-        {user?.authorization?.can_edit_policies === true ? (
+        {user?.authorization?.can_edit_policies ? (
           <>
             <Button
               positive
@@ -273,7 +273,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
         />
       </Segment>
       <Button.Group attached="bottom">
-        {user?.authorization?.can_edit_policies === true ? (
+        {user?.authorization?.can_edit_policies ? (
           <>
             <Button
               positive

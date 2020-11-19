@@ -1,12 +1,21 @@
 import React from "react";
-import { Button, Dimmer, Header, Loader, Segment } from "semantic-ui-react";
+import {
+  Button,
+  Dimmer,
+  Header,
+  Label,
+  Loader,
+  Segment,
+} from "semantic-ui-react";
 import { PolicyProvider, usePolicyContext } from "./hooks/PolicyProvider";
 import IAMRolePolicy from "./IAMRolePolicy";
 import ResourcePolicy from "./ResourcePolicy";
 import ResourceDetail from "./ResourceDetail";
 import { DeleteResourceModel } from "./PolicyModals";
+import { useAuth } from "../../auth/AuthProvider";
 
 const PolicyEditor = () => {
+  const { user } = useAuth();
   const {
     isPolicyEditorLoading = true,
     params = {},
@@ -25,10 +34,15 @@ const PolicyEditor = () => {
         <Header as="h1" floated="left">
           Edit Policy for {`${resource.arn || ""}`}
         </Header>
-        {serviceType === "iamrole" ? (
-          <Button negative floated="right" onClick={onDeleteClick}>
+        {serviceType === "iamrole" && user?.authorization?.can_delete_roles ? (
+          <Label
+            as="a"
+            attached="top right"
+            color="red"
+            onClick={onDeleteClick}
+          >
             Delete
-          </Button>
+          </Label>
         ) : null}
       </>
       <ResourceDetail />

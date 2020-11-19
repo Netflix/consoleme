@@ -11,12 +11,12 @@ const ConsoleMeSidebar = () => {
 
   useEffect(() => {
     (async () => {
-      const siteconfig = await sendRequestCommon(
+      const response = await sendRequestCommon(
         null,
         "/api/v1/siteconfig",
         "get"
       );
-      setSiteConfig(siteconfig);
+      setSiteConfig(response);
     })();
   }, []);
 

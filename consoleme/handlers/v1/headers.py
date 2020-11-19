@@ -2,6 +2,7 @@ from tornado.escape import xhtml_escape
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV1Handler, BaseHandler, BaseMtlsHandler
+from consoleme.lib.aws import can_delete_roles
 from consoleme.lib.generic import get_random_security_logo, is_in_group
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import can_manage_policy_requests
@@ -33,6 +34,7 @@ class UserProfileHandler(BaseAPIV1Handler):
                 "can_create_roles": is_in_group(
                     self.user, self.groups, config.get("groups.can_create_roles", [])
                 ),
+                "can_delete_roles": await can_delete_roles(self.groups),
             },
             "pages": {
                 "groups": {

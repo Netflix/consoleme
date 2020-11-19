@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Form, Header, Segment } from "semantic-ui-react";
+import { Button, Form, Header, Label, Segment } from "semantic-ui-react";
 import usePolicyTag from "./hooks/usePolicyTag";
 import { JustificationModal } from "./PolicyModals";
 import { useAuth } from "../../auth/AuthProvider";
@@ -107,29 +107,19 @@ const Tags = () => {
 
   return (
     <>
-      <Segment
-        basic
-        clearing
-        style={{
-          padding: 0,
-        }}
-      >
-        <Header as="h2" floated="left">
-          Tags
-          <Header.Subheader>
-            You can add/edit/delete tags for this role from here.
-          </Header.Subheader>
-        </Header>
-        <Button.Group floated="right">
-          <Button positive onClick={onCreateTag}>
-            Create New Tag
-          </Button>
-        </Button.Group>
-      </Segment>
+      <Header as="h2">
+        Tags
+        <Header.Subheader>
+          You can add/edit/delete tags for this role from here.
+        </Header.Subheader>
+      </Header>
+      <Label as="a" attached="top right" color="green" onClick={onCreateTag}>
+        Create New Tag
+      </Label>
       <Form>
         {tagList}
         <Button.Group attached="bottom">
-          {user?.authorization?.can_edit_policies === true ? (
+          {user?.authorization?.can_edit_policies ? (
             <>
               <Form.Button
                 positive
