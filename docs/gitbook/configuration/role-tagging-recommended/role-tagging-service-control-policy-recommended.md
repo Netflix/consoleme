@@ -11,7 +11,7 @@ We highly recommend that you prevent unauthorized services from modifying sensit
     "Version": "2012-10-17",
     "Statement": [
         {
-            "Sid": "protectnflxtags",
+            "Sid": "protectmytags",
             "Effect": "Deny",
             "Action": [
                 "iam:CreateRole",
