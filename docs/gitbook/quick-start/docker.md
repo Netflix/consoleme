@@ -30,7 +30,7 @@ docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d
 After this is done, visit `http://localhost:3000`. You may notice the page is rather empty. One of the containers we started should be initializing your redis cache with your AWS account resources, so you may need to give it a moment. To follow along with resource caching, run the following docker command:
 
 ```text
-docker container logs -f consoleme-celery
+docker container logs -f consoleme_consoleme-celery_1
 ```
 
 By default, you're running ConsoleMe as an administrator, using the local [Docker development configuration](https://github.com/Netflix/consoleme/tree/cd6e5cd6fba4c8d5cf0b9474f58e6c34055d56c6/docs/gitbook/quick-start/example_config/example_config_docker_development.yaml)**.** This configuration does not implement authn/authz and is not intended to be used in a production environment.
