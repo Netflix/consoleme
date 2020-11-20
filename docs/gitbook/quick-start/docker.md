@@ -27,6 +27,19 @@ To start up ConsoleMe in docker, run the following command:
 docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d
 ```
 
+At this point you should the below command and verify you have 4 ConsoleMe related containers running.
+
+* consoleme-celery
+* consoleme
+* dynamodb-local
+* redis:alpine 
+
+```text
+docker ps
+```
+
+If you do not have 4 containers running, run the docker compose command again to ensure they are started.
+
 After this is done, visit `http://localhost:3000`. You may notice the page is rather empty. One of the containers we started should be initializing your redis cache with your AWS account resources, so you may need to give it a moment. To follow along with resource caching, run the following docker command:
 
 ```text
