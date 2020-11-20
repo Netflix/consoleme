@@ -34,7 +34,6 @@ from consoleme.handlers.v2.challenge import (
     ChallengePollerHandler,
     ChallengeValidatorHandler,
 )
-from consoleme.handlers.v2.create_role import CreateRoleViewHandler
 from consoleme.handlers.v2.dynamic_config import DynamicConfigApiHandler
 from consoleme.handlers.v2.errors import NotFoundHandler as V2NotFoundHandler
 from consoleme.handlers.v2.generate_changes import GenerateChangesHandler
@@ -135,7 +134,6 @@ def make_app(jwt_validator=None):
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
         (r"/api/v2/typeahead/resources", ResourceTypeAheadHandlerV2),
         (r"/api/v2/role_login/(.*)", RoleConsoleLoginHandler),
-        (r"/create_role/?", CreateRoleViewHandler),
         (r"/myheaders/?", HeaderHandler),
         (r"/policies/request_v1/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
         (r"/policies/typeahead/?", ResourceTypeAheadHandler),
