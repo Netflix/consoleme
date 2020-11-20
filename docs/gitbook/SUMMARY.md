@@ -6,7 +6,6 @@
   * [Docker](quick-start/docker.md)
   * [Local](quick-start/local-development.md)
 * [Prerequisites](prerequisites/README.md)
-  * [AWS Organizations \(Recommended\)](prerequisites/aws-organizations-recommended.md)
   * [Required IAM Permissions](prerequisites/required-iam-permissions/README.md)
     * [Central Account](prerequisites/required-iam-permissions/central-account-consolemeinstanceprofile.md)
     * [Spoke Accounts](prerequisites/required-iam-permissions/spoke-accounts-consoleme.md)
