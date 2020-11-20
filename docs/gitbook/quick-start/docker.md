@@ -1,4 +1,12 @@
-# Quick Start
+---
+description: >-
+  Provides instructions for getting ConsoleMe up and running locally through
+  Docker.
+---
+
+# Docker
+
+## Docker
 
 Docker-Compose is the quickest way to get ConsoleMe up and running locally for **testing** purposes. For **development**, we highly recommend setting up ConsoleMe locally with the instructions below this Quick Start. The Dockerfile is a great point of reference for the installation process. If you are going to deploy ConsoleMe in a production environment, we recommend deploying it to an isolated, locked-down AWS account.
 
@@ -14,7 +22,8 @@ To start up ConsoleMe in docker, run the following command:
 
 ```text
 # Ensure that you have valid AWS Credentials in your ~/.aws/credentials file under your `default` profile
-# before running this command
+# before running this command. This command will cache AWS resources for the
+# account.
 docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d
 ```
 

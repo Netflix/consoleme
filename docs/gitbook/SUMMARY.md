@@ -2,8 +2,9 @@
 
 * [About](README.md)
 * [Architecture Diagram](architecture.md)
-* [Quick Start](quick-start.md)
-* [Local Development](local-development.md)
+* [Quick Start](quick-start/README.md)
+  * [Docker](quick-start/docker.md)
+  * [Local](quick-start/local-development.md)
 * [Prerequisites](prerequisites/README.md)
   * [AWS Organizations \(Recommended\)](prerequisites/aws-organizations-recommended.md)
   * [Required IAM Permissions](prerequisites/required-iam-permissions/README.md)
