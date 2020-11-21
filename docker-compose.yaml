@@ -24,7 +24,8 @@ services:
       pip install argh watchdog;
       pip install -e /apps/consoleme/default_plugins;
       watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py &
-      yarn --cwd /apps/consoleme/ui/ start'
+      FORCE_COLOR=true yarn --cwd /apps/consoleme/ui/ start | cat'
+
     depends_on:
       - consoleme-redis
       - consoleme-dynamodb
