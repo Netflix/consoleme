@@ -4,7 +4,7 @@ description: Provides instructions for getting ConsoleMe up and running locally.
 
 # Local
 
-ConsoleMe requires Python 3.7 or above. Crude installation instructions are below. This documentation is in dire need of improvement.
+ConsoleMe requires Python 3.8 or above. Crude installation instructions are below. This documentation is in dire need of improvement.
 
 #### MacOS
 
@@ -65,7 +65,6 @@ make install
 #
 # pip install -r requirements.txt -r requirements-test.txt -e default_plugins -e .
 # yarn --cwd ui
-# node_modules/webpack/bin/webpack.js --progress
 # python scripts/initialize_dynamodb_oss.py
 # python scripts/initialize_redis_oss.py
 ```
@@ -83,7 +82,7 @@ yarn --cwd ui start
 # If you follow this step, you should be able to see the UI at http://localhost:3000
 ```
 
-> ConsoleMe requires Python 3.7+. If your virtualenv was installed under Python2.x this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing virtualenv and creating a new one with Python 3: `python3 -m venv env`. When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe Celery tasks to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists data on disk. This command will need to be run anytime you want to update your local cache.
+> ConsoleMe requires Python 3.8+. If your virtualenv was installed under Python2.x this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing virtualenv and creating a new one with Python 3: `python3 -m venv env`. When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe Celery tasks to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists data on disk. This command will need to be run anytime you want to update your local cache.
 
 #### Configure your browser
 

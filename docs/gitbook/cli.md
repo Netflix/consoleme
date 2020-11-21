@@ -1,4 +1,4 @@
-# Weep CLI
+# Getting Started with Weep
 
 {% hint style="warning" %}
 You must NOT have a `~/.aws/credentials` file when running --meta-data or your SDK will favor that FIRST. You should also not have environmental variables set for `AWS_ACCESS_KEY`. These checks will come in a future update. See the [AWS Credential Provider Chain](https://docs.aws.amazon.com/sdk-for-java/v1/developer-guide/credentials.html#credentials-default) for more details.
