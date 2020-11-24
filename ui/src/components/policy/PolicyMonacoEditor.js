@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Button, Form, Icon, Message, Segment } from "semantic-ui-react";
 import MonacoEditor from "react-monaco-editor";
-import * as monaco from "monaco-editor";
+import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import {
   getMonacoCompletions,
   getMonacoTriggerCharacters,

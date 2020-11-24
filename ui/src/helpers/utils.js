@@ -32,9 +32,12 @@ async function processResponseAndMaybeAuth(rawResponse) {
       resJson.type === "redirect" &&
       resJson.reason === "unauthenticated"
     ) {
-      const auth = await fetch(
-        "/auth?redirect_url=" + window.location.href
-      ).then((res) => res.json());
+      const auth = await fetch("/auth?redirect_url=" + window.location.href, {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          Accept: "application/json",
+        },
+      }).then((res) => res.json());
       // redirect to IDP for authentication.
       if (auth.type === "redirect") {
         window.location.href = auth.redirect_url;
@@ -61,6 +64,8 @@ export async function sendRequestCommon(
     headers: {
       "Content-type": "application/json",
       "X-Xsrftoken": xsrf,
+      "X-Requested-With": "XMLHttpRequest",
+      Accept: "application/json",
     },
     body: body,
   });

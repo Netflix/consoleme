@@ -36,5 +36,25 @@ class TestSiteLogin(AsyncHTTPTestCase):
                 "support_contact": "consoleme-support@example.com",
                 "support_chat_url": "https://www.example.com/slack/channel",
                 "security_logo": None,
+                "user_profile": {
+                    "user": "user@example.com",
+                    "is_contractor": False,
+                    "employee_photo_url": None,
+                    "employee_info_url": None,
+                    "authorization": {
+                        "can_edit_policies": False,
+                        "can_create_roles": False,
+                        "can_delete_roles": False,
+                    },
+                    "pages": {
+                        "groups": {"enabled": False},
+                        "users": {"enabled": False},
+                        "policies": {"enabled": True},
+                        "self_service": {"enabled": True},
+                        "api_health": {"enabled": False},
+                        "audit": {"enabled": False},
+                        "config": {"enabled": False},
+                    },
+                },
             },
         )

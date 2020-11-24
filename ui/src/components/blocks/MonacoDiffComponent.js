@@ -5,7 +5,7 @@ import {
   getMonacoCompletions,
   getMonacoTriggerCharacters,
 } from "../../helpers/utils";
-import * as monaco from "monaco-editor";
+import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 
 monaco.languages.registerCompletionItemProvider("json", {
   triggerCharacters: getMonacoTriggerCharacters(),
