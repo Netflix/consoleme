@@ -8,7 +8,7 @@ Weep supports the following operations:
 
 1\) **Emulating the ECS Credential Provider locally**. \(This provides a convenient way to get credentials on-demand, without needing networking rules. Each of your shells or IDEs can use a different role. Weep will cache these credentials and refresh them on demand\):
 
-{% embed url="https://www.youtube.com/watch?v=lNYgK-IBQgY" %}
+![](../../.gitbook/assets/ecs.svg)
 
 2\) **Emulating the EC2 Instance Metadata Service locally**:
 
