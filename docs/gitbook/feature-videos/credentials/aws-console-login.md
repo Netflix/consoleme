@@ -1,4 +1,16 @@
 # AWS Console Login
 
-![Five ways to log in to the AWS console](../../.gitbook/assets/5waystologin.gif)
+ConsoleMe offers a few different ways to log into the AWS Console:
+
+1\) Role selection screen
+
+2\) 5 most recent roles
+
+3\) Third-party integrations \(Alfred/Albert, Chat bot, custom browser search engine\)
+
+{% embed url="https://www.youtube.com/watch?v=gYlvNBGByqw" %}
+
+
+
+
 
