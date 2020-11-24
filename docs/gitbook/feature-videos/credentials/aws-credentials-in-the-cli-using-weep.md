@@ -12,7 +12,7 @@ Weep supports the following operations:
 
 2\) **Emulating the EC2 Instance Metadata Service locally**:
 
-{% embed url="https://www.youtube.com/watch?v=QfXDdUuFYmA" %}
+![](../../.gitbook/assets/weep_metadata.svg)
 
 3\) Invoking weep using the [credential\_process flow](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html). \(Note: We've seen this introduce performance issues for a large number of roles.\)
 
