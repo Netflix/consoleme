@@ -48,7 +48,7 @@ const AuthProvider = ({ children }) => {
       window.location.href = auth.redirect_url;
     }
     // User is now authenticated so retrieve user profile.
-    const user = await fetch("/api/v1/profile", {
+    const user = await fetch("/api/v1/siteconfig", {
       headers: {
         "X-Requested-With": "XMLHttpRequest",
         Accept: "application/json",
@@ -57,7 +57,7 @@ const AuthProvider = ({ children }) => {
     dispatch({
       type: "LOGIN",
       auth,
-      user,
+      user: user.user_profile,
     });
   };
 
