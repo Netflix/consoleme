@@ -137,11 +137,6 @@ def make_app(jwt_validator=None):
         (r"/policies/typeahead/?", ResourceTypeAheadHandler),
         (r"/saml/(.*)", SamlHandler),
         (
-            r"/challenge_validator/([a-zA-Z0-9_-]+)",
-            ChallengeValidatorHandler,
-            {"type": "web"},
-        ),
-        (
             r"/api/v2/challenge_validator/([a-zA-Z0-9_-]+)",
             ChallengeValidatorHandler,
             {"type": "api"},

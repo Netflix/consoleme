@@ -48,6 +48,6 @@ async def validate_and_return_jwt_token(auth_cookie):
             "iat": decoded_jwt.get("iat"),
             "exp": exp,
         }
-    except jwt.ExpiredSignatureError:
+    except (jwt.ExpiredSignatureError, jwt.InvalidSignatureError):
         # Force user to reauth.
         return False
