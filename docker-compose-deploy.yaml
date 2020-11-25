@@ -1,0 +1,24 @@
+version: "3"
+# Never use this in a production environment.
+services:
+  consoleme-deploy:
+    build: .
+    ports:
+      # Serve ConsoleMe's backend (Python Tornado) port, which is used to serve the frontend when built
+      - "8081:8081"
+    environment:
+      - SETUPTOOLS_USE_DISTUTILS=stdlib
+    # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
+    command: >
+      bash -c 'python consoleme/__main__.py'
+  consoleme-celery-deploy:
+    build: .
+    environment:
+      - SETUPTOOLS_USE_DISTUTILS=stdlib
+      - COLUMNS=80 # Needed for Celery: https://github.com/celery/celery/issues/5761
+    # Run Redis with ConsoleMe configuration
+    command: >
+      bash -c '
+      python scripts/initialize_dynamodb_oss.py;
+      python scripts/initialize_redis_oss.py --use_celery=true;
+      celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=8'
