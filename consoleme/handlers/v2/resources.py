@@ -85,6 +85,6 @@ class ResourceDetailHandler(BaseHandler):
                 read_only=read_only,
                 can_save_delete=can_save_delete,
                 s3_errors=s3_errors,
-                s3_query_url=s3_query_url,
+                error_url=s3_query_url,
             )
         )

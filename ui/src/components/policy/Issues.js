@@ -6,9 +6,10 @@ const Issues = () => {
   const { resource = {} } = usePolicyContext();
   let s3 = null;
   let cloudtrail = null;
-
+  let is_s3_resource = false;
   // This is where s3 errors stored for resource policy
   if (resource?.s3_errors) {
+    is_s3_resource = true;
     s3 = {
       errors: {
         s3_errors: resource.s3_errors,
@@ -94,6 +95,9 @@ const Issues = () => {
         <Table.Header>
           <Table.Row>
             <Table.HeaderCell>Error Call</Table.HeaderCell>
+            {is_s3_resource ? (
+              <Table.HeaderCell>Role ARN</Table.HeaderCell>
+            ) : null}
             <Table.HeaderCell>Count</Table.HeaderCell>
             <Table.HeaderCell>Bucket Name</Table.HeaderCell>
             <Table.HeaderCell>Bucket Prefix</Table.HeaderCell>
@@ -108,11 +112,12 @@ const Issues = () => {
         rows.push(
           <Table.Row negative>
             <Table.Cell>{error.error_call}</Table.Cell>
+            {is_s3_resource ? <Table.Cell>{error.role_arn}</Table.Cell> : null}
             <Table.Cell>{error.count}</Table.Cell>
             <Table.Cell>{error.bucket_name}</Table.Cell>
             <Table.Cell>{error.request_prefix}</Table.Cell>
-            <Table.Cell>{error.status_code}</Table.Cell>
             <Table.Cell>{error.status_text}</Table.Cell>
+            <Table.Cell>{error.status_code}</Table.Cell>
           </Table.Row>
         );
       });

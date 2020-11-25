@@ -89,14 +89,12 @@ async def get_s3_details_for_role(account_id: str, role_name: str) -> S3DetailsM
     for error in s3_errors_unformatted:
         s3_errors_formatted.append(
             S3Error(
-                count=error["count"],
-                bucket_name=error["bucket_name"],
-                request_prefix=error["request_prefix"],
-                error_call=error["operation"],
-                status_code=error[
-                    "error_status"
-                ],  # TODO: Fix the ambiguity with status_code and status_text
-                status_text=error["error_code"],
+                count=error.get("count", ""),
+                bucket_name=error.get("bucket_name", ""),
+                request_prefix=error.get("request_prefix", ""),
+                error_call=error.get("error_call", ""),
+                status_code=error.get("status_code", ""),
+                status_text=error.get("status_text", ""),
                 role_arn=arn,
             )
         )

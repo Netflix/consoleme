@@ -25,4 +25,4 @@ RUN pip install argh
 # Install SPA frontend
 RUN npm install yarn -g
 RUN yarn --cwd ui
-RUN yarn --cwd ui build
+RUN yarn --cwd ui build:dev
