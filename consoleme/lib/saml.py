@@ -10,6 +10,7 @@ from onelogin.saml2.idp_metadata_parser import OneLogin_Saml2_IdPMetadataParser
 from consoleme.config import config
 from consoleme.config.config import dict_merge
 from consoleme.exceptions.exceptions import WebAuthNError
+from consoleme.lib.generic import should_force_redirect
 
 if config.get("auth.get_user_by_saml"):
     from onelogin.saml2.auth import OneLogin_Saml2_Auth
@@ -61,7 +62,7 @@ async def authenticate_user_by_saml(request):
     log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
     saml_req = await prepare_tornado_request_for_saml(request.request)
     saml_auth = await init_saml_auth(saml_req)
-    force_redirect = config.get("auth.force_redirect_to_identity_provider", False)
+    force_redirect = await should_force_redirect(request.request)
     try:
         await sync_to_async(saml_auth.process_response)()
     except OneLogin_Saml2_Error as e:

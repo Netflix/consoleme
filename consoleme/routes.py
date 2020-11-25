@@ -18,7 +18,6 @@ from consoleme.handlers.v1.headers import (
     ApiHeaderHandler,
     HeaderHandler,
     SiteConfigHandler,
-    UserProfileHandler,
 )
 from consoleme.handlers.v1.health import HealthHandler
 from consoleme.handlers.v1.policies import (
@@ -108,7 +107,6 @@ def make_app(jwt_validator=None):
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
         (r"/api/v1/siteconfig/?", SiteConfigHandler),
         (r"/api/v2/self_service_config/?", SelfServiceConfigHandler),
-        (r"/api/v1/profile/?", UserProfileHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
         (r"/api/v2/dynamic_config", DynamicConfigApiHandler),
@@ -138,11 +136,6 @@ def make_app(jwt_validator=None):
         (r"/policies/request_v1/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
         (r"/policies/typeahead/?", ResourceTypeAheadHandler),
         (r"/saml/(.*)", SamlHandler),
-        (
-            r"/challenge_validator/([a-zA-Z0-9_-]+)",
-            ChallengeValidatorHandler,
-            {"type": "web"},
-        ),
         (
             r"/api/v2/challenge_validator/([a-zA-Z0-9_-]+)",
             ChallengeValidatorHandler,
