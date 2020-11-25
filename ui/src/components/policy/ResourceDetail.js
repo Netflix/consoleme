@@ -40,32 +40,20 @@ const ResourceDetail = () => {
               <Table.Cell>{name}</Table.Cell>
             </Table.Row>
           ) : null}
-          <Table.Row>
-            <Table.Cell>CloudTrail Events</Table.Cell>
-            <Table.Cell>
-              <a
-                href={
-                  (cloudtrail_details && cloudtrail_details.error_url) || ""
-                }
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                Link
-              </a>
-            </Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell>S3 Access Log</Table.Cell>
-            <Table.Cell>
-              <a
-                href={(s3_details && s3_details.error_url) || ""}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                Link
-              </a>
-            </Table.Cell>
-          </Table.Row>
+          {s3_details && s3_details.error_url ? (
+            <Table.Row>
+              <Table.Cell>S3 Access Log</Table.Cell>
+              <Table.Cell>
+                <a
+                  href={(s3_details && s3_details.error_url) || ""}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Link
+                </a>
+              </Table.Cell>
+            </Table.Row>
+          ) : null}
           {config_timeline_url ? (
             <Table.Row>
               <Table.Cell>Config Timeline</Table.Cell>

@@ -252,6 +252,17 @@ async def iterate_and_format_dict(d: Dict, replacements: Dict):
     return d
 
 
+async def should_force_redirect(req):
+    """
+    ConsoleMe should only force a 302 redirect for non-XHR requests
+    """
+    if req.headers.get("X-Requested-With", "") == "XMLHttpRequest":
+        return False
+    if req.headers.get("Accept") == "application/json":
+        return False
+    return True
+
+
 class Struct:
     def __init__(self, **entries):
         self.__dict__.update(entries)

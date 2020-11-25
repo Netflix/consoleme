@@ -1,8 +1,10 @@
 from typing import Optional
 
+import sentry_sdk
 from asgiref.sync import async_to_sync, sync_to_async
 
 from consoleme.config import config
+from consoleme.exceptions.exceptions import DataNotRetrievable
 from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.redis import RedisHandler
@@ -56,11 +58,15 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
         if not all_resource_arns:
             s3_bucket = config.get("aws_config_cache_combined.s3.bucket")
             s3_key = config.get("aws_config_cache_combined.s3.file")
-            all_resources = await retrieve_json_data_from_redis_or_s3(
-                s3_bucket=s3_bucket, s3_key=s3_key
-            )
-            all_resource_arns = all_resources.keys()
-            await sync_to_async(red.hset)(resource_redis_cache_key, all_resources)
+            try:
+                all_resources = await retrieve_json_data_from_redis_or_s3(
+                    s3_bucket=s3_bucket, s3_key=s3_key
+                )
+                all_resource_arns = all_resources.keys()
+                await sync_to_async(red.hset)(resource_redis_cache_key, all_resources)
+            except DataNotRetrievable:
+                sentry_sdk.capture_exception()
+                all_resource_arns = []
 
         matching = set()
         for arn in all_resource_arns:

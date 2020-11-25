@@ -208,7 +208,23 @@ class Configuration(object):
         return self.log
 
     def set_logging_levels(self):
-        for logger, level in self.get("logging_levels", {}).items():
+        default_logging_levels = {
+            "asyncio": "WARNING",
+            "boto3": "CRITICAL",
+            "boto": "CRITICAL",
+            "botocore": "CRITICAL",
+            "elasticsearch.trace": "ERROR",
+            "elasticsearch": "ERROR",
+            "nose": "CRITICAL",
+            "parso.python.diff": "WARNING",
+            "raven.base.client": "WARNING",
+            "role_protect_client": "WARNING",
+            "s3transfer": "CRITICAL",
+            "spectator.HttpClient": "WARNING",
+            "spectator.Registry": "WARNING",
+            "urllib3": "ERROR",
+        }
+        for logger, level in self.get("logging_levels", default_logging_levels).items():
             logging.getLogger(logger).setLevel(level)
 
 

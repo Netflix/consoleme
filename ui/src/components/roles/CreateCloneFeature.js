@@ -95,20 +95,18 @@ class CreateCloneFeature extends Component {
       const TYPEAHEAD_API =
         "/policies/typeahead?resource=" + searchType + "&search=" + value;
 
-      fetch(TYPEAHEAD_API).then((resp) => {
-        resp.json().then((source) => {
-          if (searchType === "account") {
-            this.setState({
-              isLoadingAccount: false,
-              resultsAccount: source.filter((result) => re.test(result.title)),
-            });
-          } else {
-            this.setState({
-              isLoading: false,
-              results: source.filter((result) => re.test(result.title)),
-            });
-          }
-        });
+      sendRequestCommon(null, TYPEAHEAD_API, "get").then((source) => {
+        if (searchType === "account") {
+          this.setState({
+            isLoadingAccount: false,
+            resultsAccount: source.filter((result) => re.test(result.title)),
+          });
+        } else {
+          this.setState({
+            isLoading: false,
+            results: source.filter((result) => re.test(result.title)),
+          });
+        }
       });
     }, 300);
   }

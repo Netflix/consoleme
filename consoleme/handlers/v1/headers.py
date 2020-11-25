@@ -11,10 +11,10 @@ stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
 
 
-class UserProfileHandler(BaseAPIV1Handler):
+class SiteConfigHandler(BaseAPIV1Handler):
     async def get(self):
         """
-        Provide information about the user profile for the frontend
+        Provide information about site configuration for the frontend
         :return:
         """
         is_contractor = config.config_plugin().is_contractor(self.user)
@@ -68,16 +68,7 @@ class UserProfileHandler(BaseAPIV1Handler):
                 },
             },
         }
-        self.set_header("Content-Type", "application/json")
-        self.write(user_profile)
 
-
-class SiteConfigHandler(BaseAPIV1Handler):
-    async def get(self):
-        """
-        Provide information about site configuration for the frontend
-        :return:
-        """
         site_config = {
             "consoleme_logo": await get_random_security_logo(),
             "google_tracking_uri": config.get("google_analytics.tracking_url"),
@@ -85,6 +76,7 @@ class SiteConfigHandler(BaseAPIV1Handler):
             "support_contact": config.get("support_contact"),
             "support_chat_url": config.get("support_chat_url"),
             "security_logo": config.get("security_logo.url"),
+            "user_profile": user_profile,
         }
         self.set_header("Content-Type", "application/json")
         self.write(site_config)

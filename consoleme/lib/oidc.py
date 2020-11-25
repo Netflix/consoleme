@@ -11,6 +11,7 @@ from tornado import httputil
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MissingConfigurationValue
+from consoleme.lib.generic import should_force_redirect
 from consoleme.lib.jwt import generate_jwt_token
 
 log = config.get_logger()
@@ -78,7 +79,7 @@ async def authenticate_user_by_oidc(request):
         # If we're behind a load balancer that terminates tls for us, request.request.protocol will be "http://" and our
         # oidc redirect will be invalid
         protocol = "https"
-    force_redirect = config.get("auth.force_redirect_to_identity_provider", False)
+    force_redirect = await should_force_redirect(request.request)
 
     # The endpoint where we want our OIDC provider to redirect us back to perform auth
     oidc_redirect_uri = f"{protocol}://{request.request.host}/auth"
