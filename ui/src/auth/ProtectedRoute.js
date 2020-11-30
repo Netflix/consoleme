@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "./AuthProviderDefault";
 import { Route, useRouteMatch } from "react-router-dom";
 import { Segment } from "semantic-ui-react";
 

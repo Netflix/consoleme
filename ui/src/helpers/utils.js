@@ -1,3 +1,5 @@
+import { sendRequestTarget } from "../auth/AuthProviderDefault";
+
 const ALPHABET =
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -22,54 +24,13 @@ export async function getCookie(name) {
   return r ? r[1] : undefined;
 }
 
-async function processResponseAndMaybeAuth(rawResponse) {
-  const response = await rawResponse;
-  let resJson;
-  try {
-    resJson = await response.json();
-    if (
-      response.status === 403 &&
-      resJson.type === "redirect" &&
-      resJson.reason === "unauthenticated"
-    ) {
-      const auth = await fetch("/auth?redirect_url=" + window.location.href, {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          Accept: "application/json",
-        },
-      }).then((res) => res.json());
-      // redirect to IDP for authentication.
-      if (auth.type === "redirect") {
-        window.location.href = auth.redirect_url;
-      }
-    }
-  } catch (e) {
-    resJson = response;
-  }
-  return resJson;
-}
-
 export async function sendRequestCommon(
   json,
   location = window.location.href,
   method = "post"
 ) {
   const xsrf = await getCookie("_xsrf");
-  let body = null;
-  if (json) {
-    body = JSON.stringify(json);
-  }
-  const rawResponse = await fetch(location, {
-    method: method,
-    headers: {
-      "Content-type": "application/json",
-      "X-Xsrftoken": xsrf,
-      "X-Requested-With": "XMLHttpRequest",
-      Accept: "application/json",
-    },
-    body: body,
-  });
-  return await processResponseAndMaybeAuth(rawResponse);
+  return await sendRequestTarget(json, location, method, xsrf);
 }
 
 export function PolicyTypeahead(value, callback, limit = 20) {
