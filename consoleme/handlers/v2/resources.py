@@ -7,9 +7,9 @@ from consoleme.config import config
 from consoleme.exceptions.exceptions import MustBeFte
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import fetch_resource_details
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.policies import can_manage_policy_requests
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
@@ -30,7 +30,7 @@ class ResourceDetailHandler(BaseHandler):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         read_only = False
 
-        can_save_delete = await can_manage_policy_requests(self.user, self.groups)
+        can_save_delete = (can_admin_policies(self.user, self.groups),)
 
         account_id_for_arn: str = account_id
         if resource_type == "s3":

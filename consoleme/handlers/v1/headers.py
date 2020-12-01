@@ -2,10 +2,14 @@ from tornado.escape import xhtml_escape
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV1Handler, BaseHandler, BaseMtlsHandler
-from consoleme.lib.aws import can_delete_roles
+from consoleme.lib.auth import (
+    can_admin_policies,
+    can_create_roles,
+    can_delete_roles,
+    can_edit_dynamic_config,
+)
 from consoleme.lib.generic import get_random_security_logo, is_in_group
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.policies import can_manage_policy_requests
 
 stats = get_plugin_by_name(config.get("plugins.metrics"))()
 log = config.get_logger()
@@ -28,13 +32,9 @@ class SiteConfigHandler(BaseAPIV1Handler):
                 self.user
             ),
             "authorization": {
-                "can_edit_policies": await can_manage_policy_requests(
-                    self.user, self.groups
-                ),
-                "can_create_roles": is_in_group(
-                    self.user, self.groups, config.get("groups.can_create_roles", [])
-                ),
-                "can_delete_roles": await can_delete_roles(self.groups),
+                "can_edit_policies": can_admin_policies(self.user, self.groups),
+                "can_create_roles": can_create_roles(self.user, self.groups),
+                "can_delete_roles": can_delete_roles(self.user, self.groups),
             },
             "pages": {
                 "groups": {
@@ -61,11 +61,7 @@ class SiteConfigHandler(BaseAPIV1Handler):
                         self.user, self.groups, config.get("groups.can_audit", [])
                     )
                 },
-                "config": {
-                    "enabled": is_in_group(
-                        self.user, self.groups, config.get("groups.can_edit_config", [])
-                    )
-                },
+                "config": {"enabled": can_edit_dynamic_config(self.user, self.groups)},
             },
         }
 

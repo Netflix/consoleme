@@ -43,7 +43,7 @@ class TestRolesHandler(AsyncHTTPTestCase):
     )
     @patch("consoleme.handlers.v2.roles.can_create_roles")
     def test_create_authorized_user(self, mock_can_create_roles):
-        mock_can_create_roles.return_value = create_future(True)
+        mock_can_create_roles.return_value = True
         input_body = {
             "account_id": "012345678901",
             "description": "This description should be added",
@@ -158,7 +158,7 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
             "message": "Error occurred deleting role: An error occurred (NoSuchEntity) when calling the GetRole "
             "operation: Role fake_account_admin not found",
         }
-        mock_can_delete_roles.return_value = create_future(True)
+        mock_can_delete_roles.return_value = True
         response = self.fetch(
             "/api/v2/roles/012345678901/fake_account_admin", method="DELETE"
         )
@@ -184,7 +184,7 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
             "account": account_id,
         }
 
-        mock_can_delete_roles.return_value = create_future(True)
+        mock_can_delete_roles.return_value = True
 
         res = self.fetch(f"/api/v2/roles/{account_id}/{role_name}", method="DELETE")
         self.assertEqual(res.code, 200)
@@ -226,14 +226,14 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
             "title": "Forbidden",
             "message": "App is unauthorized to delete a role",
         }
-        mock_can_delete_roles.return_value = create_future(False)
+        mock_can_delete_roles.return_value = False
         response = self.fetch(
             "/api/v2/mtls/roles/012345678901/fake_account_admin", method="DELETE"
         )
         self.assertEqual(response.code, 403)
         self.assertDictEqual(json.loads(response.body), expected)
 
-        mock_can_delete_roles.return_value = create_future(True)
+        mock_can_delete_roles.return_value = True
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "fake_account_admin2"
         account_id = "123456789012"
@@ -288,7 +288,7 @@ class TestRoleCloneHandler(AsyncHTTPTestCase):
     def test_clone_authorized_user(self, mock_can_create_roles):
         import boto3
 
-        mock_can_create_roles.return_value = create_future(True)
+        mock_can_create_roles.return_value = True
         input_body = {
             "dest_account_id": "012345678901",
             "dest_role_name": "testing_dest_role",

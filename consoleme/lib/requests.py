@@ -6,6 +6,7 @@ from asgiref.sync import sync_to_async
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import NoMatchingRequest
+from consoleme.lib.auth import can_admin_all
 from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
@@ -15,9 +16,8 @@ auth = get_plugin_by_name(config.get("plugins.auth"))()
 
 async def can_approve_reject_request(user, secondary_approvers, groups):
     # Allow admins to approve and reject all requests
-    for g in config.get("groups.can_admin"):
-        if g in groups or g == user:
-            return True
+    if can_admin_all(user, groups):
+        return True
 
     if secondary_approvers:
         for g in secondary_approvers:
@@ -32,9 +32,8 @@ async def can_cancel_request(current_user, requesting_user, groups):
         return True
 
     # Allow admins to cancel requests
-    for g in config.get("groups.can_admin"):
-        if g in groups or g == current_user:
-            return True
+    if can_admin_all(current_user, groups):
+        return True
 
     # Allow restricted admins to cancel requests
     for g in config.get("groups.can_admin_restricted"):
@@ -49,9 +48,8 @@ async def can_move_back_to_pending(current_user, request, groups):
     if request.get("last_updated", 0) < int(time.time()) - 86400:
         return False
     # Allow admins to return requests back to pending state
-    for g in config.get("groups.can_admin"):
-        if g in groups or g == current_user:
-            return True
+    if can_admin_all(current_user, groups):
+        return True
     return False
 
 

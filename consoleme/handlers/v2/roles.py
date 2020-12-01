@@ -9,14 +9,8 @@ from pydantic import ValidationError
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
-from consoleme.lib.aws import (
-    can_create_roles,
-    can_delete_roles,
-    can_delete_roles_app,
-    clone_iam_role,
-    create_iam_role,
-    delete_iam_role,
-)
+from consoleme.lib.auth import can_create_roles, can_delete_roles, can_delete_roles_app
+from consoleme.lib.aws import clone_iam_role, create_iam_role, delete_iam_role
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.roles import get_role_details
@@ -207,7 +201,7 @@ class RolesHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
             "ip": self.ip,
         }
-        can_create_role = await can_create_roles(self.groups, self.user)
+        can_create_role = can_create_roles(self.user, self.groups)
         if not can_create_role:
             stats.count(
                 f"{log_data['function']}.unauthorized",
@@ -369,7 +363,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
             "role": role_name,
         }
 
-        can_delete_role = await can_delete_roles(self.groups)
+        can_delete_role = can_delete_roles(self.user, self.groups)
         if not can_delete_role:
             stats.count(
                 f"{log_data['function']}.unauthorized",
@@ -448,7 +442,8 @@ class RoleDetailAppHandler(BaseMtlsHandler):
             return
 
         app_name = self.requester.get("name")
-        can_delete_role = await can_delete_roles_app(app_name)
+        can_delete_role = can_delete_roles_app(app_name)
+
         if not can_delete_role:
             stats.count(
                 f"{log_data['function']}.unauthorized",
@@ -510,7 +505,7 @@ class RoleCloneHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
             "ip": self.ip,
         }
-        can_create_role = await can_create_roles(self.groups, self.user)
+        can_create_role = can_create_roles(self.user, self.groups)
         if not can_create_role:
             stats.count(
                 f"{log_data['function']}.unauthorized",
