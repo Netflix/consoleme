@@ -14,6 +14,7 @@ from policy_sentry.util.actions import get_service_from_action
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter
+from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import (
     get_region_from_arn,
     get_resource_account,
@@ -219,9 +220,8 @@ async def can_move_back_to_pending(request, current_user, groups):
         if request.get("last_updated", 0) < int(time.time()) - 86400:
             return False
         # Allow admins to return requests back to pending state
-        for g in config.get("groups.can_admin_policies", []):
-            if g in groups or g == current_user:
-                return True
+        if can_admin_policies(current_user, groups):
+            return True
     return False
 
 
@@ -236,9 +236,8 @@ async def can_move_back_to_pending_v2(
         if last_updated < int(time.time()) - 86400:
             return False
         # Allow admins to return requests back to pending state
-        for g in config.get("groups.can_admin_policies", []):
-            if g in groups or g == current_user:
-                return True
+        if can_admin_policies(current_user, groups):
+            return True
     return False
 
 
@@ -248,9 +247,8 @@ async def can_update_requests(request, user, groups):
 
     # Allow admins to return requests back to pending state
     if not can_update:
-        for g in config.get("groups.can_admin_policies", []):
-            if g in groups or g == user:
-                return True
+        if can_admin_policies(user, groups):
+            return True
 
     return can_update
 
@@ -261,9 +259,8 @@ async def can_update_cancel_requests_v2(requester_username, user, groups):
 
     # Allow admins to update / cancel requests
     if not can_update:
-        for g in config.get("groups.can_admin_policies", []):
-            if g in groups or g == user:
-                return True
+        if can_admin_policies(user, groups):
+            return True
 
     return can_update
 
@@ -435,15 +432,6 @@ async def update_role_policy(events):
         return result
 
     return result
-
-
-async def can_manage_policy_requests(user, groups):
-    approval_groups = config.get("groups.can_admin_policies", [])
-
-    for g in approval_groups:
-        if g in groups or g == user:
-            return True
-    return False
 
 
 async def get_policy_request_uri(request):

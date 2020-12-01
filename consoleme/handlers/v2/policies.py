@@ -61,18 +61,6 @@ class PoliciesPageConfigHandler(BaseHandler):
                         "type": "input",
                         "style": {"width": "70px"},
                     },
-                    {
-                        "placeholder": "Template",
-                        "key": "templated",
-                        "type": "input",
-                        "style": {"width": "100px"},
-                    },
-                    {
-                        "placeholder": "Errors",
-                        "key": "errors",
-                        "color": "red",
-                        "width": 1,
-                    },
                 ],
             },
         }

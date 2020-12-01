@@ -20,6 +20,7 @@ from consoleme.exceptions.exceptions import (
     UnsupportedChangeType,
 )
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import (
     fetch_resource_details,
     generate_updated_resource_policy,
@@ -33,7 +34,6 @@ from consoleme.lib.change_request import generate_policy_name
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import (
-    can_manage_policy_requests,
     can_move_back_to_pending_v2,
     can_update_cancel_requests_v2,
     get_url_for_resource,
@@ -1469,7 +1469,7 @@ async def parse_and_apply_policy_request_modification(
         Command.approve_request,
         Command.reject_request,
     ]:
-        can_manage_policy_request = await can_manage_policy_requests(user, user_groups)
+        can_manage_policy_request = can_admin_policies(user, user_groups)
         # Authorization required if the policy wasn't approved by an auto-approval probe.
         should_apply_because_auto_approved = (
             request_changes.command == Command.apply_change and approval_probe_approved

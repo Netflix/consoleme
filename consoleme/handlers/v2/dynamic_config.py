@@ -8,8 +8,8 @@ import tornado.web
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
+from consoleme.lib.auth import can_edit_dynamic_config
 from consoleme.lib.dynamo import UserDynamoHandler
-from consoleme.lib.generic import is_in_group
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -35,9 +35,9 @@ class DynamicConfigApiHandler(BaseHandler):
         if not self.user:
             return
 
-        if not is_in_group(self.user, self.groups, config.get("application_admin")):
+        if not can_edit_dynamic_config(self.user, self.groups):
             raise tornado.web.HTTPError(
-                403, "Only the owner is authorized to view this page."
+                403, "Only application admins are authorized to view this page."
             )
 
         dynamic_config = await ddb.get_dynamic_config_yaml()
@@ -63,9 +63,9 @@ class DynamicConfigApiHandler(BaseHandler):
 
         if not self.user:
             return
-        if not is_in_group(self.user, self.groups, config.get("application_admin")):
+        if not can_edit_dynamic_config(self.user, self.groups):
             raise tornado.web.HTTPError(
-                403, "Only the owner is authorized to view this page."
+                403, "Only application admins are authorized to view this page."
             )
         existing_dynamic_config = await ddb.get_dynamic_config_yaml()
         if existing_dynamic_config:

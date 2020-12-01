@@ -547,32 +547,6 @@ async def fetch_role_details(account_id, role_name):
     return iam_role
 
 
-async def can_delete_roles(groups):
-    approval_groups = config.get("groups.can_delete_roles", [])
-    approval_groups.extend(config.get("groups.can_admin", []))
-    for g in approval_groups:
-        if g in groups:
-            return True
-    return False
-
-
-async def can_delete_roles_app(app_name):
-    if app_name in config.get("groups.can_delete_roles_apps", []):
-        return True
-    return False
-
-
-async def can_create_roles(groups, username):
-    approval_groups = config.get("groups.can_create_roles", [])
-    approval_groups.extend(config.get("groups.can_admin", []))
-    if username in approval_groups:
-        return True
-    for g in approval_groups:
-        if g in groups:
-            return True
-    return False
-
-
 async def create_iam_role(create_model: RoleCreationRequestModel, username):
     """
     Creates IAM role.
