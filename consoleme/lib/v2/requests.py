@@ -318,6 +318,9 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
 
     role_account_id = await get_resource_account(extended_request.arn)
     arn_parsed = parse_arn(extended_request.arn)
+    supported_resource_policies = config.get(
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+    )
 
     if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
         log_data[
@@ -330,6 +333,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
     resource_policy_sha = sha256(json.dumps(resource_policy).encode()).hexdigest()
     if not arn_parsed.get("resource_path") or not arn_parsed.get("service"):
         return extended_request
+
     primary_principal_resource_model = ResourceModel(
         arn=extended_request.arn,
         name=arn_parsed["resource_path"].split("/")[-1],
@@ -349,6 +353,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
                 if (
                     resource_account_id != role_account_id
                     and resource.resource_type != "iam"
+                    and resource.resource_type in supported_resource_policies
                 ):
                     # Cross account
                     auto_generated_resource_policy_changes.append(
