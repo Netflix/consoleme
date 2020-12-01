@@ -493,7 +493,7 @@ async def handle_resource_type_ahead_request(cls):
         topic = config.get("aws.iamroles_redis_key ", "IAM_ROLE_CACHE")
         role_name = True
     elif resource_type == "account":
-        topic = config.get("swag.redis_key", "SWAG_SETTINGSv2")
+        topic = None
         topic_is_hash = False
     elif resource_type == "app":
         topic = config.get("celery.apps_to_roles.redis_key", "APPS_TO_ROLES")
@@ -502,12 +502,12 @@ async def handle_resource_type_ahead_request(cls):
         cls.send_error(404, message=f"Invalid resource_type: {resource_type}")
         return
 
-    if not topic:
+    if not topic and resource_type != "account":
         raise InvalidRequestParameter("Invalid resource_type specified")
 
-    if topic_is_hash:
+    if topic and topic_is_hash:
         data = await redis_hgetall(topic)
-    else:
+    elif topic:
         data = await redis_get(topic)
 
     results: List[Dict] = []
@@ -516,11 +516,9 @@ async def handle_resource_type_ahead_request(cls):
 
     if resource_type == "account":
         account_and_id_list = []
-        if not data:
-            data = "{}"
-        accounts = json.loads(data)
-        for k, v in accounts.items():
-            account_and_id_list.append(f"{k} ({v})")
+        account_ids_to_names = await get_account_id_to_name_mapping()
+        for account_id, account_name in account_ids_to_names.items():
+            account_and_id_list.append(f"{account_name} ({account_id})")
         for account in account_and_id_list:
             if search_string.lower() in account.lower():
                 results.append({"title": account})
