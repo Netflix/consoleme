@@ -1103,27 +1103,31 @@ async def apply_non_iam_resource_tag_change(
 
         if resource_type == "s3":
             if change.tag_action in [TagAction.create, TagAction.update]:
-                resource_details["TagSet"].append(
-                    {"Key": change.key, "Value": change.value}
-                )
+                tag_key_preexists = False
+                resulting_tagset = []
+                for tag in resource_details["TagSet"]:
+                    # If we renamed a tag key, let's "skip" the tag with the original name
+                    if change.original_key and change.original_key != change.key:
+                        if tag.get("Key") == change.original_key:
+                            continue
+                    if change.key == tag["Key"]:
+                        tag_key_preexists = True
+                        # If we changed the value of an existing tag, let's record that
+                        resulting_tagset.append(
+                            {"Key": change.key, "Value": change.value}
+                        )
+                    else:
+                        # Leave original tag unmodified
+                        resulting_tagset.append(tag)
+
+                # Let's create the tag if it is a new one
+                if not tag_key_preexists:
+                    resulting_tagset.append({"Key": change.key, "Value": change.value})
 
                 await sync_to_async(client.put_bucket_tagging)(
                     Bucket=resource_name,
-                    Tagging={"TagSet": resource_details["TagSet"]},
+                    Tagging={"TagSet": resulting_tagset},
                 )
-
-                # Rename a tag key
-                resulting_tagset = []
-                if change.original_key and change.original_key != change.key:
-                    for tag in resource_details["TagSet"]:
-                        if tag.get("Key") != change.original_key:
-                            resulting_tagset.append(tag)
-
-                    resource_details["TagSet"] = resulting_tagset
-                    await sync_to_async(client.put_bucket_tagging)(
-                        Bucket=resource_name,
-                        Tagging={"TagSet": resource_details["TagSet"]},
-                    )
 
             elif change.tag_action == TagAction.delete:
                 resulting_tagset = []
