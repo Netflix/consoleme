@@ -44,8 +44,7 @@ BEFORE RUNNING THE COMMAND BELOW: We highly recommend that you put valid AWS cre
 [~/.aws/credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-where),
 using the default profile.
 
-The role you use should have the permissions outlined under the
-[ConsoleMeInstanceProfile configuration](#consolemepnstanceprofile-configuration) section. These credentials will be shared with the container, and when you start
+The role you use should have the permissions outlined under the `ConsoleMeInstanceProfile configuration` section below ([link](#consolemeinstanceprofile-configuration))
 the containers, it will attempt to populate your redis cache with live resources from your account. Please
 
 ```bash
