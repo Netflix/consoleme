@@ -1116,10 +1116,6 @@ async def apply_non_iam_resource_tag_change(
                         resulting_tagset.append(
                             {"Key": change.key, "Value": change.value}
                         )
-                        # await sync_to_async(client.put_bucket_tagging)(
-                        #     Bucket=resource_name,
-                        #     Tagging={"TagSet": resulting_tagset},
-                        # )
                     else:
                         # Leave original tag unmodified
                         resulting_tagset.append(tag)
