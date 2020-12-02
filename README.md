@@ -23,7 +23,7 @@ and report Celery metrics. We have tasks that perform the following:
 
 - Cache IAM roles, SQS queues, SNS topics, and S3 buckets to Redis/DDB
 - Report Celery Last Success Metrics (Used for alerting on failed tasks)
-- Cache Cloudtrail Errors by ARN (This requires an internal celery task to aggregate Cloutrail errors from your
+- Cache Cloudtrail Errors by ARN (This requires an internal celery task to aggregate Cloudtrail errors from your
   preferred source)
 
 Netflix's internal celery tasks handle a variety of additional requirements that you may
@@ -44,9 +44,7 @@ BEFORE RUNNING THE COMMAND BELOW: We highly recommend that you put valid AWS cre
 [~/.aws/credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-where),
 using the default profile.
 
-The role you use should have the permissions outlined under the
-[ConsoleMeInstanceProfile configuration](####ConsoleMeInstanceProfile configuration) section. These credentials will be shared with the container, and when you start
-the containers, it will attempt to populate your redis cache with live resources from your account. Please
+The role you use should have the permissions outlined under the `ConsoleMeInstanceProfile configuration` section below ([link](#consolemeinstanceprofile-configuration)). When you start the containers, it will attempt to populate your redis cache with live resources from your account. Please
 
 ```bash
 # Ensure that you have valid AWS Credentials in your ~/.aws/credentials file under your `default` profile
