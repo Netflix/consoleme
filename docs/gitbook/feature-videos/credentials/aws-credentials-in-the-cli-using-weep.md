@@ -26,3 +26,9 @@ Weep supports the following operations:
 
 ![](../../.gitbook/assets/weep_file%20%281%29.svg)
 
+6\) **Have weep perform nested assume-role calls on your behalf, and serve the assumed role credentials** \(The video below shows this flow for Weep's ECS credential provider mode. You can do this with most other modes as well\):
+
+![](../../.gitbook/assets/weep-ecs-assume-role.svg)
+
+
+
