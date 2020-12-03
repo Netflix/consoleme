@@ -12,7 +12,7 @@ import IAMRolePolicy from "./IAMRolePolicy";
 import ResourcePolicy from "./ResourcePolicy";
 import ResourceDetail from "./ResourceDetail";
 import { DeleteResourceModel } from "./PolicyModals";
-import { useAuth } from "../../auth/AuthProvider";
+import { useAuth } from "../../auth/AuthProviderDefault";
 
 const PolicyEditor = () => {
   const { user } = useAuth();

@@ -1,6 +1,6 @@
 import React from "react";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
-import AuthProvider from "./auth/AuthProvider";
+import { AuthProvider } from "./auth/AuthProviderDefault";
 import ConsoleMeHeader from "./components/Header";
 import ConsoleMeSidebar from "./components/Sidebar";
 import ProtectedRoute from "./auth/ProtectedRoute";
