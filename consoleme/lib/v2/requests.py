@@ -330,7 +330,9 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
         return extended_request
 
     resource_policy = {"Version": "2012-10-17", "Statement": []}
-    resource_policy_sha = sha256(json.dumps(resource_policy).encode()).hexdigest()
+    resource_policy_sha = sha256(
+        json.dumps(resource_policy, escape_forward_slashes=False).encode()
+    ).hexdigest()
     if not arn_parsed.get("resource_path") or not arn_parsed.get("service"):
         return extended_request
 
@@ -612,7 +614,9 @@ async def apply_changes_to_role(
                     await sync_to_async(iam_client.put_role_policy)(
                         RoleName=role_name,
                         PolicyName=change.policy_name,
-                        PolicyDocument=json.dumps(change.policy.policy_document),
+                        PolicyDocument=json.dumps(
+                            change.policy.policy_document, escape_forward_slashes=False
+                        ),
                     )
                     response.action_results.append(
                         ActionResult(
@@ -714,7 +718,9 @@ async def apply_changes_to_role(
             try:
                 await sync_to_async(iam_client.update_assume_role_policy)(
                     RoleName=role_name,
-                    PolicyDocument=json.dumps(change.policy.policy_document),
+                    PolicyDocument=json.dumps(
+                        change.policy.policy_document, escape_forward_slashes=False
+                    ),
                 )
                 response.action_results.append(
                     ActionResult(
@@ -874,7 +880,9 @@ async def populate_old_policies(
         if change.change_type == "assume_role_policy":
             change.old_policy = PolicyModel(
                 policy_sha256=sha256(
-                    json.dumps(role.assume_role_policy_document).encode()
+                    json.dumps(
+                        role.assume_role_policy_document, escape_forward_slashes=False
+                    ).encode()
                 ).hexdigest(),
                 policy_document=role.assume_role_policy_document,
             )
@@ -883,7 +891,10 @@ async def populate_old_policies(
                 if change.policy_name == existing_policy.get("PolicyName"):
                     change.old_policy = PolicyModel(
                         policy_sha256=sha256(
-                            json.dumps(existing_policy.get("PolicyDocument")).encode()
+                            json.dumps(
+                                existing_policy.get("PolicyDocument"),
+                                escape_forward_slashes=False,
+                            ).encode()
                         ).hexdigest(),
                         policy_document=existing_policy.get("PolicyDocument"),
                     )
@@ -935,7 +946,9 @@ async def populate_cross_account_resource_policy_for_change(
                 name=resource_name,
                 region=resource_region,
             )
-        old_policy_sha256 = sha256(json.dumps(old_policy).encode()).hexdigest()
+        old_policy_sha256 = sha256(
+            json.dumps(old_policy, escape_forward_slashes=False).encode()
+        ).hexdigest()
         if change.old_policy and old_policy_sha256 == change.old_policy.policy_sha256:
             # Old policy hasn't changed since last refresh of page, no need to generate resource policy again
             return
@@ -969,7 +982,9 @@ async def populate_cross_account_resource_policy_for_change(
             resource_arns=list(set(resource_arns)),
             actions=actions,
         )
-        new_policy_sha256 = sha256(json.dumps(new_policy).encode()).hexdigest()
+        new_policy_sha256 = sha256(
+            json.dumps(new_policy, escape_forward_slashes=False).encode()
+        ).hexdigest()
         change.policy = PolicyModel(
             policy_sha256=new_policy_sha256, policy_document=new_policy
         )
@@ -1283,13 +1298,18 @@ async def apply_resource_policy_change(
         )
         if resource_type == "s3":
             await sync_to_async(client.put_bucket_policy)(
-                Bucket=resource_name, Policy=json.dumps(change.policy.policy_document)
+                Bucket=resource_name,
+                Policy=json.dumps(
+                    change.policy.policy_document, escape_forward_slashes=False
+                ),
             )
         elif resource_type == "sns":
             await sync_to_async(client.set_topic_attributes)(
                 TopicArn=change.arn,
                 AttributeName="Policy",
-                AttributeValue=json.dumps(change.policy.policy_document),
+                AttributeValue=json.dumps(
+                    change.policy.policy_document, escape_forward_slashes=False
+                ),
             )
         elif resource_type == "sqs":
             queue_url: dict = await sync_to_async(client.get_queue_url)(
@@ -1297,7 +1317,11 @@ async def apply_resource_policy_change(
             )
             await sync_to_async(client.set_queue_attributes)(
                 QueueUrl=queue_url.get("QueueUrl"),
-                Attributes={"Policy": json.dumps(change.policy.policy_document)},
+                Attributes={
+                    "Policy": json.dumps(
+                        change.policy.policy_document, escape_forward_slashes=False
+                    )
+                },
             )
         response.action_results.append(
             ActionResult(

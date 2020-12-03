@@ -985,7 +985,8 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
                         }
                     ],
                     "Version": "2012-10-17",
-                }
+                },
+                escape_forward_slashes=False,
             ),
         )
         # Specify ID different from change -> No changes should happen
@@ -1036,7 +1037,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         client.put_role_policy(
             RoleName="test",
             PolicyName=existing_policy_name,
-            PolicyDocument=json.dumps(existing_policy_document),
+            PolicyDocument=json.dumps(
+                existing_policy_document, escape_forward_slashes=False
+            ),
         )
 
         inline_policy_change = {

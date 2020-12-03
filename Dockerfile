@@ -26,3 +26,6 @@ RUN pip install argh
 RUN npm install yarn -g
 RUN yarn --cwd ui
 RUN yarn --cwd ui build:dev
+CMD python /apps/consoleme/consoleme/__main__.py
+
+EXPOSE 8081
