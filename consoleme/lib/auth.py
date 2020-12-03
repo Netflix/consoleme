@@ -10,6 +10,7 @@ from cryptography.hazmat.backends.openssl.rsa import _RSAPublicKey
 
 from consoleme.config import config
 from consoleme.lib.crypto import Crypto
+from consoleme.lib.generic import is_in_group
 from consoleme.lib.plugins import get_plugin_by_name
 
 crypto = Crypto()
@@ -134,20 +135,73 @@ async def validate_auth_token(user, ip, token):
     return token_details
 
 
+def can_admin_all(user: str, user_groups: List[str]):
+    application_admin = config.get("application_admin")
+    if application_admin:
+        if user == application_admin or application_admin in user_groups:
+            return True
+    if is_in_group(user, user_groups, config.get("groups.can_admin", [])):
+        return True
+    return False
+
+
+def can_create_roles(
+    user: str,
+    user_groups: List[str],
+) -> bool:
+    if can_admin_all(user, user_groups):
+        return True
+    if is_in_group(user, user_groups, config.get("groups.can_create_roles", [])):
+        return True
+    return False
+
+
+def can_admin_policies(user: str, user_groups: List[str]) -> bool:
+    if can_admin_all(user, user_groups):
+        return True
+    if is_in_group(user, user_groups, config.get("groups.can_admin_policies", [])):
+        return True
+    return False
+
+
+def can_delete_roles_app(app_name):
+    if app_name in config.get("groups.can_delete_roles_apps", []):
+        return True
+    return False
+
+
+def can_delete_roles(
+    user: str,
+    user_groups: List[str],
+) -> bool:
+    if can_admin_all(user, user_groups):
+        return True
+    if is_in_group(user, user_groups, config.get("groups.can_delete_roles", [])):
+        return True
+    return False
+
+
+def can_edit_dynamic_config(
+    user: str,
+    user_groups: List[str],
+) -> bool:
+    if can_admin_all(user, user_groups):
+        return True
+    if is_in_group(user, user_groups, config.get("groups.can_edit_config", [])):
+        return True
+    return False
+
+
 def can_edit_attributes(
     user: str, user_groups: List[str], group_info: Optional[Any]
 ) -> bool:
-    for group in config.get("groups.can_admin", []):
-        if group in user_groups:
-            return True
+    if can_admin_all(user, user_groups):
+        return True
 
-    for group in config.get("groups.can_admin_restricted", []):
-        if group in user_groups:
-            return True
-
-    for group in config.get("groups.can_edit_attributes", []):
-        if group in user_groups:
-            return True
+    if is_in_group(user, user_groups, config.get("groups.can_admin_restricted", [])):
+        return True
+    if is_in_group(user, user_groups, config.get("groups.can_edit_attributes", [])):
+        return True
     return False
 
 
@@ -157,29 +211,27 @@ def can_modify_members(
     # No users can modify members on restricted groups
     if group_info and group_info.restricted:
         return False
-    for group in config.get("groups.can_admin", []):
-        if group in user_groups:
-            return True
 
-    for group in config.get("groups.can_admin_restricted", []):
-        if group in user_groups:
-            return True
+    if can_admin_all(user, user_groups):
+        return True
 
-    for group in config.get("groups.can_modify_members", []):
-        if group in user_groups:
-            return True
+    if is_in_group(user, user_groups, config.get("groups.can_admin_restricted", [])):
+        return True
 
+    if is_in_group(user, user_groups, config.get("groups.can_modify_members", [])):
+        return True
     return False
 
 
 def can_edit_sensitive_attributes(
     user: str, user_groups: List[str], group_info: Optional[Any]
 ) -> bool:
-    for group in config.get("groups.can_edit_sensitive_attributes", []):
-        if group in user_groups:
-            return True
-        if user == group:
-            return True
+    if can_admin_all(user, user_groups):
+        return True
+    if is_in_group(
+        user, user_groups, config.get("groups.can_edit_sensitive_attributes", [])
+    ):
+        return True
     return False
 
 

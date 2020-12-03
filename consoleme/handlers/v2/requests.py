@@ -17,13 +17,13 @@ from consoleme.exceptions.exceptions import (
     Unauthorized,
 )
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
+from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import get_resource_account
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.generic import filter_table, write_json_error
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import (
-    can_manage_policy_requests,
     can_move_back_to_pending_v2,
     can_update_cancel_requests_v2,
     get_url_for_resource,
@@ -235,8 +235,8 @@ class RequestHandler(BaseAPIV2Handler):
             # Request page to do this manually.
             if changes.admin_auto_approve:
                 # make sure user is allowed to use admin_auto_approve
-                can_manage_policy_request = await can_manage_policy_requests(
-                    self.user, self.groups
+                can_manage_policy_request = (
+                    can_admin_policies(self.user, self.groups),
                 )
                 if can_manage_policy_request:
                     extended_request.request_status = RequestStatus.approved
@@ -576,7 +576,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             updated_request = await dynamo.write_policy_request_v2(extended_request)
             last_updated = updated_request.get("last_updated")
 
-        can_approve_reject = await can_manage_policy_requests(self.user, self.groups)
+        can_approve_reject = (can_admin_policies(self.user, self.groups),)
         can_update_cancel = await can_update_cancel_requests_v2(
             extended_request.requester_email, self.user, self.groups
         )

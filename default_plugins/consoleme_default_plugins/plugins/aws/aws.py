@@ -559,10 +559,6 @@ class Aws:
         return
 
     @staticmethod
-    def get_account_ids_to_names():
-        return config.get("account_ids_to_name")
-
-    @staticmethod
     def handle_detected_role(role):
         pass
 

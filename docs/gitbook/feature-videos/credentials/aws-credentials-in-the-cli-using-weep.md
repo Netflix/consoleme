@@ -14,15 +14,21 @@ Weep supports the following operations:
 
 ![](../../.gitbook/assets/weep_metadata.svg)
 
-3\) Invoking weep using the [credential\_process flow](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html). \(Note: We've seen this introduce performance issues for a large number of roles.\)
+3\) **Invoking weep using the** [**credential\_process flow**](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html)**.** \(Note: We've seen this introduce performance issues for a large number of roles.\)
 
 ![](../../.gitbook/assets/weep_credential_provider.svg)
 
-4\) Exporting credentials as environment variables
+4\) **Exporting credentials as environment variables**
 
-![](../../.gitbook/assets/weep_env_variable.svg)
+![](../../.gitbook/assets/weep_env_variable%20%281%29.svg)
 
-5\) Exporting credentials to your ~/.aws/credentials file
+5\) **Exporting credentials to your ~/.aws/credentials file**
 
-![](../../.gitbook/assets/weep_file.svg)
+![](../../.gitbook/assets/weep_file%20%281%29.svg)
+
+6\) **Have weep perform nested assume-role calls on your behalf, and serve the assumed role credentials** \(The video below shows this flow for Weep's ECS credential provider mode. You can do this with most other modes as well\):
+
+![](../../.gitbook/assets/weep-ecs-assume-role.svg)
+
+
 

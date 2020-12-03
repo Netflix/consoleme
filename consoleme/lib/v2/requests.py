@@ -20,6 +20,7 @@ from consoleme.exceptions.exceptions import (
     UnsupportedChangeType,
 )
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import (
     fetch_resource_details,
     generate_updated_resource_policy,
@@ -33,7 +34,6 @@ from consoleme.lib.change_request import generate_policy_name
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import (
-    can_manage_policy_requests,
     can_move_back_to_pending_v2,
     can_update_cancel_requests_v2,
     get_url_for_resource,
@@ -318,6 +318,9 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
 
     role_account_id = await get_resource_account(extended_request.arn)
     arn_parsed = parse_arn(extended_request.arn)
+    supported_resource_policies = config.get(
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+    )
 
     if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
         log_data[
@@ -330,6 +333,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
     resource_policy_sha = sha256(json.dumps(resource_policy).encode()).hexdigest()
     if not arn_parsed.get("resource_path") or not arn_parsed.get("service"):
         return extended_request
+
     primary_principal_resource_model = ResourceModel(
         arn=extended_request.arn,
         name=arn_parsed["resource_path"].split("/")[-1],
@@ -349,6 +353,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
                 if (
                     resource_account_id != role_account_id
                     and resource.resource_type != "iam"
+                    and resource.resource_type in supported_resource_policies
                 ):
                     # Cross account
                     auto_generated_resource_policy_changes.append(
@@ -1098,27 +1103,31 @@ async def apply_non_iam_resource_tag_change(
 
         if resource_type == "s3":
             if change.tag_action in [TagAction.create, TagAction.update]:
-                resource_details["TagSet"].append(
-                    {"Key": change.key, "Value": change.value}
-                )
+                tag_key_preexists = False
+                resulting_tagset = []
+                for tag in resource_details["TagSet"]:
+                    # If we renamed a tag key, let's "skip" the tag with the original name
+                    if change.original_key and change.original_key != change.key:
+                        if tag.get("Key") == change.original_key:
+                            continue
+                    if change.key == tag["Key"]:
+                        tag_key_preexists = True
+                        # If we changed the value of an existing tag, let's record that
+                        resulting_tagset.append(
+                            {"Key": change.key, "Value": change.value}
+                        )
+                    else:
+                        # Leave original tag unmodified
+                        resulting_tagset.append(tag)
+
+                # Let's create the tag if it is a new one
+                if not tag_key_preexists:
+                    resulting_tagset.append({"Key": change.key, "Value": change.value})
 
                 await sync_to_async(client.put_bucket_tagging)(
                     Bucket=resource_name,
-                    Tagging={"TagSet": resource_details["TagSet"]},
+                    Tagging={"TagSet": resulting_tagset},
                 )
-
-                # Rename a tag key
-                resulting_tagset = []
-                if change.original_key and change.original_key != change.key:
-                    for tag in resource_details["TagSet"]:
-                        if tag.get("Key") != change.original_key:
-                            resulting_tagset.append(tag)
-
-                    resource_details["TagSet"] = resulting_tagset
-                    await sync_to_async(client.put_bucket_tagging)(
-                        Bucket=resource_name,
-                        Tagging={"TagSet": resource_details["TagSet"]},
-                    )
 
             elif change.tag_action == TagAction.delete:
                 resulting_tagset = []
@@ -1469,7 +1478,7 @@ async def parse_and_apply_policy_request_modification(
         Command.approve_request,
         Command.reject_request,
     ]:
-        can_manage_policy_request = await can_manage_policy_requests(user, user_groups)
+        can_manage_policy_request = can_admin_policies(user, user_groups)
         # Authorization required if the policy wasn't approved by an auto-approval probe.
         should_apply_because_auto_approved = (
             request_changes.command == Command.apply_change and approval_probe_approved

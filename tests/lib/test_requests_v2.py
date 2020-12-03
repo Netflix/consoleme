@@ -1570,10 +1570,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
     @patch("consoleme.lib.v2.requests.aws.fetch_iam_role")
     @patch("consoleme.lib.v2.requests.populate_old_policies")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
-    @patch("consoleme.lib.v2.requests.can_manage_policy_requests")
+    @patch("consoleme.lib.v2.requests.can_admin_policies")
     async def test_parse_and_apply_policy_request_modification_apply_change(
         self,
-        mock_can_manage_policy_requests,
+        can_admin_policies,
         mock_dynamo_write,
         mock_populate_old_policies,
         mock_fetch_iam_role,
@@ -1611,7 +1611,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_dynamo_write.return_value = create_future(None)
         mock_populate_old_policies.return_value = create_future(extended_request)
         mock_fetch_iam_role.return_value = create_future(None)
-        mock_can_manage_policy_requests.return_value = create_future(False)
+        can_admin_policies.return_value = False
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "test"
 
@@ -1626,7 +1626,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             )
             self.assertIn("Unauthorized", str(e))
 
-        mock_can_manage_policy_requests.return_value = create_future(True)
+        can_admin_policies.return_value = True
         # Trying to apply a non-existent change
         with pytest.raises(NoMatchingRequest) as e:
             await parse_and_apply_policy_request_modification(
@@ -1837,12 +1837,12 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
     @patch("consoleme.lib.v2.requests.aws.fetch_iam_role")
     @patch("consoleme.lib.v2.requests.populate_old_policies")
     @patch("consoleme.lib.dynamo.UserDynamoHandler.write_policy_request_v2")
-    @patch("consoleme.lib.v2.requests.can_manage_policy_requests")
+    @patch("consoleme.lib.v2.requests.can_admin_policies")
     @patch("consoleme.lib.v2.requests.can_update_cancel_requests_v2")
     async def test_parse_and_apply_policy_request_modification_approve_request(
         self,
         mock_can_update_cancel_requests_v2,
-        mock_can_manage_policy_requests,
+        can_admin_policies,
         mock_dynamo_write,
         mock_populate_old_policies,
         mock_fetch_iam_role,
@@ -1933,7 +1933,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_populate_old_policies.return_value = create_future(extended_request)
         mock_fetch_iam_role.return_value = create_future(None)
         mock_can_update_cancel_requests_v2.return_value = create_future(False)
-        mock_can_manage_policy_requests.return_value = create_future(False)
+        can_admin_policies.return_value = False
         mock_send_email.return_value = create_future(None)
         client = boto3.client("iam", region_name="us-east-1")
         role_name = "test"
@@ -1949,7 +1949,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             )
             self.assertIn("Unauthorized", str(e))
 
-        mock_can_manage_policy_requests.return_value = create_future(True)
+        can_admin_policies.return_value = True
         mock_can_update_cancel_requests_v2.return_value = create_future(True)
 
         # Authorized person updating the change
