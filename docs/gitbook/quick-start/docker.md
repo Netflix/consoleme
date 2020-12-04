@@ -16,7 +16,7 @@ Firstly, clone ConsoleMe locally in a directory of your choosing:
 git clone git@github.com:Netflix/consoleme.git ; cd consoleme
 ```
 
-**BEFORE RUNNING THE COMMAND BELOW**: We highly recommend that you put valid AWS credentials for your account in your `~/.aws/credentials` file under the `[default]` profile. The role you use should have the permissions outlined under `ConsoleMeInstanceProfile configuration` below. These credentials will be shared with the container, and when you run the second command to populate your Redis cache \(`make redis`\) command using docker exec, it will attempt to populate your redis cache with live resources from your account. This will only work if you have valid AWS credentials.
+**BEFORE RUNNING THE COMMAND BELOW**: We highly recommend that you put valid AWS credentials for your account in your [`~/.aws/credentials`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-where) file under the `[default]` profile. The role you use should have the permissions outlined under `ConsoleMeInstanceProfile configuration` below. These credentials will be shared with the container, and when you run the second command to populate your Redis cache \(`make redis`\) command using docker exec, it will attempt to populate your redis cache with live resources from your account. This will only work if you have valid AWS credentials.
 
 To start up ConsoleMe in docker, run the following command:
 
@@ -40,7 +40,7 @@ docker ps
 
 If you do not have 4 containers running, run the docker compose command again to ensure they are started.
 
-After this is done, visit `http://localhost:3000`. You may notice the page is rather empty. One of the containers we started should be initializing your redis cache with your AWS account resources, so you may need to give it a moment. To follow along with resource caching, run the following docker command:
+After this is done, visit `http://localhost:8081`. You may notice the page is rather empty. One of the containers we started should be initializing your redis cache with your AWS account resources, so you may need to give it a moment. To follow along with resource caching, run the following docker command:
 
 ```text
 docker container logs -f consoleme_consoleme-celery_1

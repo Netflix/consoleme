@@ -1,6 +1,6 @@
 # Account Syncing
 
-ConsoleMe will use the AWS credentials you provide to sync your accounts. We currently support syncing accounts from **AWS Organizations,** [**SWAG**](https://github.com/Netflix-Skunkworks/swag-api)**, Configuration,** and if none of these is configured, ConsoleMe will attempt to **Sync the current account.** 
+ConsoleMe will use the AWS credentials you provide to sync your accounts. We currently support syncing accounts from **AWS Organizations,** [**SWAG**](https://github.com/Netflix-Skunkworks/swag-api)**, local Configuration,** and if none of these is configured, ConsoleMe will attempt to **Sync the current account.** 
 
 ### **Sync Accounts from AWS Organizations**
 
