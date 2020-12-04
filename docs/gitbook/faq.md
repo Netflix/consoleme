@@ -34,3 +34,27 @@ To run tests in PyCharm, the clearly superior Python development environment, yo
 
 Run `make test` or `make testhtml` to run unit tests
 
+## How do I release a new version of ConsoleMe
+
+ConsoleMe uses [setupmeta](https://github.com/zsimic/setupmeta) for versioning, utilizing the [`devcommit` strategy](https://github.com/zsimic/setupmeta/blob/master/docs/versioning.rst#devcommit). This project adheres to [SemVer standards](https://semver.org/#summary) for major, minor, and patch versions. `setupmeta` diverges from SemVer slightly for development versions.
+
+When you're ready to release **patch** changes on `master`:
+
+```bash
+python setup.py version --bump minor --commit --push
+```
+
+When you're ready to release **minor** changes on `master`:
+
+```bash
+python setup.py version --bump minor --commit --push
+```
+
+When you're ready to release **major** changes on `master` \(rare, reserved for breaking changes\):
+
+```bash
+python setup.py version --bump major --commit --push
+```
+
+
+
