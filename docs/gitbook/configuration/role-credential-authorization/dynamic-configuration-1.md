@@ -1,4 +1,4 @@
-# Dynamic Configuration
+# Role Authorization through Dynamic Configuration
 
 ConsoleMe administrators can provide users/groups with authorization to retrieve AWS credentials through ConsoleMe's "Dynamic configuration" endpoint. Visit https://your.consoleme.url/config to make updates. Here is an example configuration:
 
