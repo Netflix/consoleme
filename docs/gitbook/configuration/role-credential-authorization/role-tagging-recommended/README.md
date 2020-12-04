@@ -1,4 +1,4 @@
-# Role Authorization by role tagging
+# Role Tags
 
 We highly recommend establishing a set of role tags that will help ConsoleMe determine which users are authorized to get credentials and/or console access. These would be defined in your configuration YAML  files \([examples](https://github.com/Netflix/consoleme/tree/master/example_config)\) under the `cloud_credential_authorization_mapping`  key. 
 
@@ -19,7 +19,7 @@ Once this is set up, you'd define the list of users / groups that are authorized
 
 Here's a role's tag set using the above configuration. This tag set would allow a group or user named `consoleme_admins` and one named `consoleme_users` to get access to this role by both the **CLI** and via ConsoleMe's **web interface.**  The users `usera@example.com` and `userb@example.com` would have access to this role's credentials via the CLI only.
 
-![](../../.gitbook/assets/image%20%281%29.png)
+![](../../../.gitbook/assets/image%20%281%29.png)
 
 Make sure that ConsoleMe and your administrative users are the only ones able to manipulate these tags. We recommend using an [SCP](role-tagging-service-control-policy-recommended.md) to restrict it. 
 
