@@ -41,6 +41,7 @@
 
 * [Getting Started with Weep](weep-cli/cli.md)
 * [AWS Credentials in the CLI using Weep](weep-cli/aws-credentials-in-the-cli-using-weep.md)
+* [Configuration](weep-cli/configuration.md)
 * [Commands](weep-cli/commands/README.md)
   * [List Eligible Roles](weep-cli/commands/list-eligible-roles.md)
   * [Credential Provider](weep-cli/commands/credential-provider.md)
