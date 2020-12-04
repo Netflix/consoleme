@@ -35,5 +35,13 @@ oidc_secrets:
     - openid
 ```
 
+## Steps
 
+1. Update ConsoleMe's configuration with your configuration parameters \(This is under `get_user_by_oidc_settings`\). [Example](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_oidc.yaml)
+2. Update ConsoleMe's configuration with your client ID, client secret, and scopes. \(This is under `oidc_secrets`\).[ Example](https://github.com/Netflix/consoleme/blob/master/example_config/example_secrets.yaml)
+3. Start ConsoleMe with your desired configuration, and test the flow:
+
+```bash
+CONFIG_LOCATION=example_config/example_config_oidc.yaml python consoleme/__main__.py
+```
 
