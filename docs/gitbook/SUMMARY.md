@@ -34,6 +34,20 @@
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
 * [FAQ](faq.md)
-* [Getting Started with Weep](cli.md)
 * [License](license.md)
+
+## Weep CLI
+
+* [Getting Started with Weep](weep-cli/cli.md)
+* [Commands](weep-cli/commands/README.md)
+  * [List Eligible Roles](weep-cli/commands/list-eligible-roles.md)
+  * [Credential Provider](weep-cli/commands/credential-provider.md)
+  * [Metadata Service](weep-cli/commands/metadata-service.md)
+  * [Credential Export](weep-cli/commands/credential-export.md)
+  * [Credential File](weep-cli/commands/credential-file.md)
+  * [Credential Process](weep-cli/commands/credential-process.md)
+* [Assuming Roles](weep-cli/assuming-roles.md)
+* [Advanced Configuration](weep-cli/advanced-configuration/README.md)
+  * [Routing for Metadata Service](weep-cli/advanced-configuration/routing-for-metadata-service.md)
+  * [Shell Completion](weep-cli/advanced-configuration/shell-completion.md)
 
