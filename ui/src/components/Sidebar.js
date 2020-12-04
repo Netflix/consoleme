@@ -65,7 +65,7 @@ const ConsoleMeSidebar = () => {
             target="_blank"
           >
             <Icon name="file" />
-            Documenation
+            Documentation
           </Menu.Item>
           <Menu.Item
             as="a"
