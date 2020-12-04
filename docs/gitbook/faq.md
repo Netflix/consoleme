@@ -25,5 +25,12 @@ If you make changes to [ConsoleMe's Swagger specification](https://github.com/Ne
 datamodel-codegen --input swagger.yaml --output consoleme/models.py
 ```
 
+## How do I debug the unit tests?
 
+To run tests in PyCharm, the clearly superior Python development environment, you need to update your Debug configuration to include the following environment variables to assist with debugging:
+
+* `CONFIG_LOCATION=example_config/example_config_test.yaml` \(Required\)
+* `ASYNC_TEST_TIMEOUT=3600` \(Optional for debugging the RESTful code without having to worry about timeouts\)
+
+Run `make test` or `make testhtml` to run unit tests
 
