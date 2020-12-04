@@ -15,7 +15,15 @@ We provide an example flow to generating an AMI based on ConsoleMe's default con
 3. Place your custom configuration in a file called `consoleme.yaml` in your ConsoleMe directory
 4. Run `make create_ami`from your ConsoleMe directory. This process will compress the current directory and create an Ubuntu AMI for ConsoleMe
 
+## How do I generate models from the Swagger specification?
 
+We use [datamodel-code-generator](https://github.com/koxudaxi/datamodel-code-generator) to generate Pydantic models for ConsoleMe.
+
+If you make changes to [ConsoleMe's Swagger specification](https://github.com/Netflix/consoleme/blob/master/swagger.yaml), you'll need to re-generate the [Pydantic Models file ](https://github.com/Netflix/consoleme/blob/master/consoleme/models.py)with the following command:
+
+```text
+datamodel-codegen --input swagger.yaml --output consoleme/models.py
+```
 
 
 
