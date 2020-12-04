@@ -66,6 +66,8 @@ get_user_by_saml_settings:
       wantNameIdEncrypted: false
 ```
 
+## Steps
+
 These are the general steps to follow when configuring ConsoleMe as a SAML service provider:
 
 1. Update ConsoleMe's configuration with your configuration parameters \(Shown above\)
