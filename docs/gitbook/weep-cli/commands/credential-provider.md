@@ -1,8 +1,12 @@
+---
+description: >-
+  Sourcing Credentials from Weep Automatically with the ECS Credential Provider
+  feature
+---
+
 # Credential Provider
 
-### Sourcing Credentials from Weep Automatically with the ECS Credential Provider feature
-
-Weep supports emulating the ECS credential provider to provide credentials to your AWS SDK. This is the recommended way to use Weep for the best experience.
+Weep supports emulating the [ECS credential provider](https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/EC2ContainerCredentialsProviderWrapper.html) to provide credentials to your AWS SDK. This is the recommended way to use Weep for the best experience.
 
 This solution can be minimally configured by setting the `AWS_CONTAINER_CREDENTIALS_FULL_URI` environment variable for your shell or process. There's no need for iptables or routing rules with this approach, and each different shell or process can use weep to request credentials for different roles. Weep will cache the credentials you request in-memory, and will refresh them on-demand when they are within 10 minutes of expiring.
 
