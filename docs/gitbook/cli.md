@@ -49,8 +49,6 @@ Roles:
 
 ### Sourcing Credentials from Weep Automatically with the ECS Credential Provider feature
 
-[Here’s a demo of ECS Credential Provider mode.](https://youtu.be/lNYgK-IBQgY)
-
 Weep supports emulating the ECS credential provider to provide credentials to your AWS SDK. This is the recommended way to use Weep for the best experience.
 
 This solution can be minimally configured by setting the `AWS_CONTAINER_CREDENTIALS_FULL_URI` environment variable for your shell or process. There's no need for iptables or routing rules with this approach, and each different shell or process can use weep to request credentials for different roles. Weep will cache the credentials you request in-memory, and will refresh them on-demand when they are within 10 minutes of expiring.
@@ -83,8 +81,6 @@ Configure this in your IDE for full effect.
 
 ### Start a metadata service hosting STS credentials for your role requested
 
-[Here’s a demo of metadata service mode.](https://youtu.be/4sK5JHwgjjg)
-
 !!! note You will need to set up routing. Instructions are below.
 
 ```bash
@@ -102,8 +98,6 @@ curl http://169.254.169.254/latest/meta-data/iam/security-credentials/coolApp
 ```
 
 ### Source Credentials from Weep automatically with Credential Process
-
-[Here’s a demo of credential process mode.](https://www.youtube.com/watch?v=4sK5JHwgjjg)
 
 Update your `~/.aws/config` file with information about the profile you want to configure, and the role you want weep to assume. Example:
 
