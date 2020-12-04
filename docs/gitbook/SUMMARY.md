@@ -32,6 +32,7 @@
   * [CLI Authentication](configuration/cli-authentication.md)
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
+* [FAQ](faq.md)
 * [Getting Started with Weep](cli.md)
 * [License](license.md)
 
