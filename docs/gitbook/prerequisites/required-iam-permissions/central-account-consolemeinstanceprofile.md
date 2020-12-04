@@ -1,6 +1,6 @@
 # Central Account
 
-Firstly, the ConsoleMe service needs its own user or role. Note that ConsoleMe has a lot of permissions. You should ensure that its privileges cannot be used outside of ConsoleMe, except by authorized administrators \(Likely, you\).
+The ConsoleMe service needs its own user or role. Note that ConsoleMe has a lot of permissions. You should ensure that its privileges cannot be used outside of ConsoleMe, except by authorized administrators \(Likely, you\).
 
 You can call this new role "ConsoleMeInstanceProfile". It will also need to assume whichever roles you want to allow it to assume in your environment. Here is a full-fledged policy you can use when deploying to production. For now, scoping down assume role rights for testing should be sufficient. Create an inline policy for your role with the following permissions if you never want to have to think about it again:
 
