@@ -56,5 +56,28 @@ When you're ready to release **major** changes on `master` \(rare, reserved for 
 python setup.py version --bump major --commit --push
 ```
 
+## How do I update ConsoleMe's Python dependencies?
 
+To update Python dependencies, run this command:
+
+```bash
+make up-reqs
+```
+
+> If you're using Python 3.8 and trying to run this command on Mac, you may need to run `PKG_CONFIG_PATH="/usr/local/opt/libxml2/lib/pkgconfig" make up-reqs` which forces pkgconfig to use brew's xmlsec instead of the MacOS xmlsec \(Details: [https://github.com/mehcode/python-xmlsec/issues/111](https://github.com/mehcode/python-xmlsec/issues/111)\)
+
+If an updated package causes an incompatibility issue, please identify the issue, pin the older version in ConsoleMe's [requirements.in](https://github.com/Netflix/consoleme/blob/master/requirements.in) file, and add a comment identifying the issue you encountered.
+
+## How can I run and debug my local DynamoDB container?
+
+Running `docker-compose -f docker-compose-dependencies.yaml up` in the root directory will enable local dynamodb and local redis. 
+
+To install a web interface to assist with managing local dynamodb, install dynamodb-admin with the following command, then just visit http://localhost:8001 to view the contents of your local DynamoDB.
+
+```bash
+npm install dynamodb-admin -g
+
+# You need to tell dynamodb-admin which port dynamodb-local is running on when running dynamodb-admin
+DYNAMO_ENDPOINT=http://localhost:8005 dynamodb-admin
+```
 
