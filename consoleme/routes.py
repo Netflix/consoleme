@@ -14,11 +14,7 @@ import consoleme
 from consoleme.config import config
 from consoleme.handlers.auth import AuthHandler
 from consoleme.handlers.v1.credentials import GetCredentialsHandler
-from consoleme.handlers.v1.headers import (
-    ApiHeaderHandler,
-    HeaderHandler,
-    SiteConfigHandler,
-)
+from consoleme.handlers.v1.headers import ApiHeaderHandler, HeaderHandler
 from consoleme.handlers.v1.health import HealthHandler
 from consoleme.handlers.v1.policies import (
     ApiResourceTypeAheadHandler,
@@ -64,6 +60,7 @@ from consoleme.handlers.v2.roles import (
 )
 from consoleme.handlers.v2.self_service import SelfServiceConfigHandler
 from consoleme.handlers.v2.typeahead import ResourceTypeAheadHandlerV2
+from consoleme.handlers.v2.user_profile import UserProfileHandler
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -105,7 +102,7 @@ def make_app(jwt_validator=None):
         (r"/api/v1/get_roles", GetRolesHandler),
         # Used to autocomplete AWS permissions
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
-        (r"/api/v1/siteconfig/?", SiteConfigHandler),
+        (r"/api/v2/user_profile/?", UserProfileHandler),
         (r"/api/v2/self_service_config/?", SelfServiceConfigHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
