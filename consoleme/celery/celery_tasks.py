@@ -10,7 +10,6 @@ command: celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG
 import json  # We use a separate SetEncoder here so we cannot use ujson
 import sys
 import time
-from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Dict, Tuple, Union
 
@@ -62,8 +61,7 @@ from consoleme.lib.git import store_iam_resources_in_git
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler
-from consoleme.lib.requests import cache_all_policy_requests, get_request_review_url
-from consoleme.lib.ses import send_group_modification_notification
+from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.timeout import Timeout
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
@@ -199,9 +197,7 @@ def get_celery_request_tags(**kwargs):
 @task_prerun.connect
 def refresh_dynamic_config_in_worker(**kwargs):
     tags = get_celery_request_tags(**kwargs)
-    log_data = {
-        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
-    }
+    log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
 
     dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
     if not dynamic_config:
@@ -402,129 +398,6 @@ def report_revoked_task(**kwargs):
     error_tags.pop("error", None)
     error_tags.pop("task_id", None)
     stats.timer("celery.revoked_task", tags=error_tags)
-
-
-@app.task(soft_time_limit=1800)
-def alert_on_group_changes() -> dict:
-    """
-    This function will send an email when entities are added to a google group that is opted in to alerts.
-
-    Google groups with an attribute set for 'alert_on_changes' will have memberships queried and cached. When
-    new users or groups are added to the group, this job will alert e-mails specified in the value of the
-    `alert_on_changes` attribute.
-    """
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
-
-    # Query for groups with "alert_on_changes" <list of emails> attribute
-    alert_groups = async_to_sync(auth.get_groups_with_attribute_name_value)(
-        "alert_on_changes", None
-    )
-
-    # Dict used to send bulk emails to alert recipients
-    # {recipient: {group_name: [users]}}
-    # Example:
-    # {
-    #   "coolpeople@netflix.com": {
-    #       "awesome_group@netflix.com": [{"name": "tswift@netflix.com", "type": "USER"}]
-    #   },
-    # }
-    group_changes = defaultdict(dict)
-
-    log_data = {
-        "function": function,
-        "message": "Alerting stakeholders on group changes",
-        "number_of_alert_groups": len(alert_groups),
-    }
-    log.debug(log_data)
-    # Query these groups for memberships
-    for group in alert_groups.keys():
-        log_data["group"] = group
-        group_info = async_to_sync(auth.get_group_info)(group)
-        if not group_info:
-            log_data["message"] = "No information found for group"
-            log.error(log_data)
-            stats.count(f"{function}.no_group_info", tags={"group": group})
-            continue
-        # Get redis memberships
-        past_members_set = False
-        group_members_key = (
-            f"{config.get('redis.group_members_key', 'GROUP_MEMBERS')}-{group}"
-        )
-        past_members = red.get(group_members_key)
-        if past_members:
-            past_members = ujson.loads(past_members)
-            past_members_set = True
-        else:
-            past_members = []
-
-        # Get group memberships
-        current_members = async_to_sync(auth.get_group_members)(group)
-
-        added_members = []
-        removed_members = []
-
-        # Find newly removed members
-        for past_member in past_members:
-            match = False
-            for current_member in current_members:
-                if past_member.get("name") == current_member.get("name"):
-                    match = True
-                    break
-            if not match:
-                removed_members.append(past_member)
-
-        # Find newly added members and their applicable Consoleme Access Request URLs
-        if past_members_set:
-            for current_member in current_members:
-                match = False
-                for past_member in past_members:
-                    if current_member.get("name") == past_member.get("name"):
-                        match = True
-                        break
-
-                if not match:
-                    username = current_member.get("name")
-                    dynamo = UserDynamoHandler(username)
-                    # If membership is different than before, check user's approved requests from the group
-                    dynamo_requests = dynamo.get_requests_by_user(
-                        username, group=group, status="approved"
-                    )
-                    if dynamo_requests and len(dynamo_requests) == 1:
-                        current_member["request_url"] = get_request_review_url(
-                            dynamo_requests[0]["request_id"]
-                        )
-                    added_members.append(current_member)
-
-        # Send an e-mail with membership changes only in the primary region
-        if (
-            config.region == config.get("celery.active_region")
-            and config.get("environment") == "prod"
-        ):
-            if added_members and current_members:
-                for recipient in group_info.alert_on_changes:
-                    group_changes[recipient][group] = added_members
-            elif added_members and not current_members:
-                log_data[
-                    "message"
-                ] = "No current members in this group. Not sending alert."
-                log_data["added_members"] = added_members
-                log_data["group_info.alert_on_changes"] = group_info.alert_on_changes
-                log.error(log_data)
-                stats.count(f"{function}.no_current_members", tags={"group": group})
-
-        # Log the added and removed members
-        log_data["added_members"] = json.dumps(added_members)
-        log_data["removed_members"] = json.dumps(removed_members)
-        if added_members or removed_members:
-            log.debug(log_data)
-        # Update redis cache
-        red.set(group_members_key, json.dumps(current_members))
-
-    for recipient, groups in group_changes.items():
-        async_to_sync(send_group_modification_notification)(groups, recipient)
-
-    stats.count("alert_on_group_changes.success")
-    return log_data
 
 
 @retry(
@@ -1463,11 +1336,6 @@ if config.get("development", False):
     schedule_5_minutes = dev_schedule
 
 schedule = {
-    "alert_on_group_changes": {
-        "task": "consoleme.celery.celery_tasks.alert_on_group_changes",
-        "options": {"expires": 600},
-        "schedule": schedule_30_minute,
-    },
     "cache_roles_across_accounts": {
         "task": "consoleme.celery.celery_tasks.cache_roles_across_accounts",
         "options": {"expires": 1000},
