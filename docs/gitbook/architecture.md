@@ -22,5 +22,24 @@ ConsoleMe makes use of several DynamoDB tables. If you plan to have a multi-regi
 
 ## Redis
 
+Redis is used to cache content for quick retrieval by the frontend. By default, this information is cached in the default redis logical database \(0\).
+
+Redis is also used by the Celery Beat scheduler and workers to negotiate and execute Celery tasks. By default, ConsoleMe will assign logical database 1 for this purpose.
+
+Here is a **non-exhaustive** list of the common redis keys and expected values that you might find in your redis cache:
+
+| Ke | Description |
+| :--- | :--- |
+| ALL\_POLICIES | A json listing of all roles and resources used for the `/policies` endpoint. |
+| CREDENTIAL\_AUTHORIZATION\_MAPPING\_V1 | A cache of your [credential authorization mapping](configuration/role-credential-authorization/) \(ie: Which users and groups are allowed to retrieve credentials for which roles\) |
+| AWSCONFIG\_RESOURCE\_CACHE | A [cache of the resources](configuration/resource-syncing.md) discovered by querying AWS Config |
+| SNS\_TOPICS | A list of SNS topics discovered by querying SNS across your accounts. |
+| ALL\_POLICY\_REQUESTS | A list of all historic policy requests used by the `/requests` endpoint |
+| ALL\_AWS\_ACCOUNTS | A list of all of your valid [AWS accounts](configuration/account-syncing.md) |
+| IAM\_MANAGED\_POLICIES | A list of all of your IAM managed policies. This is used to populate the managed policy typeahead in ConsoleMe's policy editor. |
+| IAM\_ROLE\_CACHE | A list of all of your IAM roles and their known state. This is used to quickly retrieve information about a role. |
+
 ## S3
+
+S3 can be used to 
 
