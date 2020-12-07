@@ -2,23 +2,21 @@ import React, { useEffect, useState } from "react";
 import { Label, Icon, Image, Menu } from "semantic-ui-react";
 import { parseLocalStorageCache, sendRequestCommon } from "../helpers/utils";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../auth/AuthProviderDefault";
 
 const localStorageRecentRolesKey = "consoleMeLocalStorage";
 
 const ConsoleMeSidebar = () => {
+  const { user } = useAuth();
   const [siteConfig, setSiteConfig] = useState({});
   const recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
 
   useEffect(() => {
-    (async () => {
-      const response = await sendRequestCommon(
-        null,
-        "/api/v1/siteconfig",
-        "get"
-      );
-      setSiteConfig(response);
-    })();
-  }, []);
+    if (!user?.site_config) {
+      return;
+    }
+    setSiteConfig(user.site_config);
+  }, [user]);
 
   const { documentation_url, support_contact, support_chat_url } = siteConfig;
 

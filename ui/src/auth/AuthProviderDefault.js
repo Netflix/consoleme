@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useReducer } from "react";
 
 const initialAuthState = {
-  auth: null, // contains authentication information such as JWT expiration time and backend current time
   user: null, // user profile data
 };
 
@@ -12,17 +11,15 @@ export const useAuth = () => useContext(AuthContext);
 const reducer = (state, action) => {
   switch (action.type) {
     case "LOGIN": {
-      const { user, auth } = action;
+      const { user } = action;
       return {
         ...state,
-        auth,
         user,
       };
     }
     case "LOGOUT": {
       return {
         ...state,
-        auth: null,
         user: null,
       };
     }
@@ -48,16 +45,11 @@ export const AuthProvider = ({ children }) => {
       window.location.href = auth.redirect_url;
     }
     // User is now authenticated so retrieve user profile.
-    const user = await fetch("/api/v1/siteconfig", {
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-        Accept: "application/json",
-      },
-    }).then((res) => res.json());
+    const xsrf = document.cookie.match("_xsrf=([^;]*)");
+    const user = await sendRequestTarget(null, "/api/v2/user_profile", "get", xsrf);
     dispatch({
       type: "LOGIN",
-      auth,
-      user: user.user_profile,
+      user,
     });
   };
 
@@ -101,6 +93,7 @@ export async function sendRequestTarget(
     body: body,
   });
   const response = await rawResponse;
+
   let resJson;
   try {
     resJson = await response.json();
@@ -123,5 +116,6 @@ export async function sendRequestTarget(
   } catch (e) {
     resJson = response;
   }
+
   return resJson;
 }
