@@ -18,7 +18,15 @@ const ConsoleMeSidebar = () => {
     setSiteConfig(user.site_config);
   }, [user]);
 
-  const { documentation_url, support_contact, support_chat_url } = siteConfig;
+  const {
+    consoleme_logo,
+    consoleme_url,
+    documentation_url,
+    security_logo,
+    security_url,
+    support_contact,
+    support_chat_url,
+  } = siteConfig;
 
   return (
     <Menu
@@ -95,12 +103,27 @@ const ConsoleMeSidebar = () => {
         }}
       >
         <Menu.Item>
-          <Image size="medium" src="/static/ui/images/logos/quarantine/1.png" />
+          <a
+            href={consoleme_url || ""}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <Image
+                size="medium"
+                src={consoleme_logo || ""}
+            />
+          </a>
           <br />
-          <Image
-            size="medium"
-            src="/static/ui/images/netflix-security-dark-bg-tight.svg"
-          />
+          <a
+            href={security_url || ""}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <Image
+              size="medium"
+              src={security_logo || ""}
+            />
+          </a>
         </Menu.Item>
       </Menu.Menu>
     </Menu>
