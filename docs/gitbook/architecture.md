@@ -41,5 +41,5 @@ Here is a **non-exhaustive** list of the common redis keys and expected values t
 
 ## S3
 
-S3 can be used to 
+Data typically stored to Redis can also be stored in S3. This is useful if you want to make use of this data outside of ConsoleMe, or if you want a way to quickly and easily restore data that isn't in Redis.
 
