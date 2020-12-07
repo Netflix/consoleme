@@ -1,7 +1,7 @@
 # Table of contents
 
 * [About](README.md)
-* [Architecture Diagram](architecture.md)
+* [Architecture](architecture.md)
 * [Features](feature-videos/README.md)
   * [Credentials](feature-videos/credentials/README.md)
     * [AWS Console Login](feature-videos/credentials/aws-console-login.md)
