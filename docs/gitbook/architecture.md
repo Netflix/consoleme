@@ -28,7 +28,7 @@ Redis is also used by the Celery Beat scheduler and workers to negotiate and exe
 
 Here is a **non-exhaustive** list of the common redis keys and expected values that you might find in your redis cache:
 
-| Ke | Description |
+| Key | Description |
 | :--- | :--- |
 | ALL\_POLICIES | A json listing of all roles and resources used for the `/policies` endpoint. |
 | CREDENTIAL\_AUTHORIZATION\_MAPPING\_V1 | A cache of your [credential authorization mapping](configuration/role-credential-authorization/) \(ie: Which users and groups are allowed to retrieve credentials for which roles\) |
