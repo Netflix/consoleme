@@ -5,6 +5,7 @@
 * [Features](feature-videos/README.md)
   * [Credentials](feature-videos/credentials/README.md)
     * [AWS Console Login](feature-videos/credentials/aws-console-login.md)
+    * [AWS Credential Broker](feature-videos/credentials/aws-credential-broker.md)
   * [Policy Management](feature-videos/policy-management/README.md)
     * [Policies View](feature-videos/policy-management/multi-account-policies-management.md)
     * [Policy Editor for IAM, SQS, SNS, and S3](feature-videos/policy-management/policy-editor-for-iam-sqs-sns-and-s3.md)
