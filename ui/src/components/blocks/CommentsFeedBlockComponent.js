@@ -91,7 +91,7 @@ class CommentsFeedBlockComponent extends Component {
               {comment.user && comment.user.photo_url ? (
                 <Comment.Avatar src={comment.user.photo_url} />
               ) : (
-                <Comment.Avatar src="/static/logos/sunglasses/1.png" />
+                <Comment.Avatar src="/static/images/logos/sunglasses/1.png" />
               )}
               <Comment.Content>
                 {comment.user && comment.user.details_url ? (

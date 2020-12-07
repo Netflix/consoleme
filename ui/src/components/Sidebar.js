@@ -97,11 +97,11 @@ const ConsoleMeSidebar = () => {
         }}
       >
         <Menu.Item>
-          <Image size="medium" src="/static/ui/images/logos/quarantine/1.png" />
+          <Image size="medium" src="/static/images/logos/quarantine/1.png" />
           <br />
           <Image
             size="medium"
-            src="/static/ui/images/netflix-security-dark-bg-tight.svg"
+            src="/static/images/netflix-security-dark-bg-tight.svg"
           />
         </Menu.Item>
       </Menu.Menu>
