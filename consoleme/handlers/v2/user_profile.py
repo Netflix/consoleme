@@ -21,8 +21,7 @@ class UserProfileHandler(BaseAPIV1Handler):
         """
         is_contractor = config.config_plugin().is_contractor(self.user)
         site_config = {
-            "consoleme_url": config.get("consoleme_logo.url"),
-            "consoleme_logo": config.get("consoleme_logo.image"),
+            "consoleme_logo": await get_random_security_logo(),
             "google_tracking_uri": config.get("google_analytics.tracking_url"),
             "documentation_url": config.get("documentation_page"),
             "support_contact": config.get("support_contact"),

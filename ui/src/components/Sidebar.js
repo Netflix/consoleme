@@ -20,7 +20,6 @@ const ConsoleMeSidebar = () => {
 
   const {
     consoleme_logo,
-    consoleme_url,
     documentation_url,
     security_logo,
     security_url,
@@ -103,15 +102,8 @@ const ConsoleMeSidebar = () => {
         }}
       >
         <Menu.Item>
-          <a
-            href={consoleme_url || ""}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Image
-                size="medium"
-                src={consoleme_logo || ""}
-            />
+          <a href={"/"} rel="noopener noreferrer" target="_blank">
+            <Image size="medium" src={consoleme_logo || ""} />
           </a>
           <br />
           <a
@@ -119,10 +111,7 @@ const ConsoleMeSidebar = () => {
             rel="noopener noreferrer"
             target="_blank"
           >
-            <Image
-              size="medium"
-              src={security_logo || ""}
-            />
+            <Image size="medium" src={security_logo || ""} />
           </a>
         </Menu.Item>
       </Menu.Menu>

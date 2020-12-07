@@ -26,12 +26,12 @@ class TestUserProfile(AsyncHTTPTestCase):
         response = self.fetch("/api/v2/user_profile", headers=headers)
         self.assertEqual(response.code, 200)
         response_j = json.loads(response.body)
+        consoleme_logo = response_j["site_config"].pop("consoleme_logo")
+        self.assertIn("/static/ui/images/logos/", consoleme_logo)
         self.assertEqual(
             response_j,
             {
                 "site_config": {
-                    "consoleme_url": None,
-                    "consoleme_logo": None,
                     "google_tracking_uri": None,
                     "documentation_url": "https://github.com/Netflix/consoleme/",
                     "support_contact": "consoleme-support@example.com",

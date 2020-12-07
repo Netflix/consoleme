@@ -11,6 +11,8 @@ import ujson as json
 from dateutil import parser
 from tornado.web import RequestHandler
 
+from consoleme.config import config
+
 
 def str2bool(v: Optional[Union[bool, str]]) -> bool:
     if not v:
@@ -179,6 +181,8 @@ def is_in_time_range(t, time_range):
 
 
 async def get_random_security_logo():
+    if config.get("consoleme_logo.image"):
+        return config.get("consoleme_logo.image")
     month = datetime.now().month
     summer = True if month in [6, 7, 8] else False
 
