@@ -1,4 +1,3 @@
-import os
 import random
 import re
 import string
@@ -9,7 +8,6 @@ from typing import Dict, List, Optional, Union
 import pandas as pd
 import ujson as json
 from dateutil import parser
-from tornado.web import RequestHandler
 
 
 def str2bool(v: Optional[Union[bool, str]]) -> bool:
@@ -121,22 +119,6 @@ def is_in_group(
         if group in user_groups or user == group:
             return True
     return False
-
-
-def render_404(handler: RequestHandler, config):
-    not_found_path = (
-        f"{os.path.dirname(os.path.realpath(__file__))}/../templates/static/404"
-    )
-
-    handler.render(
-        "error.html",
-        page_title="ConsoleMe - 404",
-        current_page="error",
-        user=handler.user,
-        random_404_image=random.choice(os.listdir(not_found_path)),  # nosec
-        user_groups=handler.groups,
-        config=config,
-    )
 
 
 async def write_json_error(message, obj):

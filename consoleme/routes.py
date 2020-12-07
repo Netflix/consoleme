@@ -23,7 +23,6 @@ from consoleme.handlers.v1.health import HealthHandler
 from consoleme.handlers.v1.policies import (
     ApiResourceTypeAheadHandler,
     AutocompleteHandler,
-    PolicyReviewHandler,
     ResourceTypeAheadHandler,
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
@@ -133,7 +132,6 @@ def make_app(jwt_validator=None):
         (r"/api/v2/typeahead/resources", ResourceTypeAheadHandlerV2),
         (r"/api/v2/role_login/(.*)", RoleConsoleLoginHandler),
         (r"/myheaders/?", HeaderHandler),
-        (r"/policies/request_v1/([a-zA-Z0-9_-]+)", PolicyReviewHandler),
         (r"/policies/typeahead/?", ResourceTypeAheadHandler),
         (r"/saml/(.*)", SamlHandler),
         (
