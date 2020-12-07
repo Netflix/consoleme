@@ -14,20 +14,18 @@ const NoMatch = ({ location }) => (
       as="h1"
       color="grey"
       style={{
-          fontSize: "74px"
+        fontSize: "74px",
       }}
       textAlign="center"
     >
       404
-      <Header.Subheader>
-        We were unable to console you!
-      </Header.Subheader>
+      <Header.Subheader>We were unable to console you!</Header.Subheader>
     </Header>
     <Image
       centered
       disabled
       size="medium"
-      src="/static/ui/images/logos/quarantine/1.png"
+      src="/static/images/logos/quarantine/1.png"
     />
   </Segment>
 );

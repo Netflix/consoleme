@@ -26,7 +26,6 @@ from consoleme.exceptions.exceptions import (
 )
 from consoleme.lib.alb_auth import authenticate_user_by_alb_auth
 from consoleme.lib.auth import AuthenticationError
-from consoleme.lib.generic import render_404
 from consoleme.lib.jwt import generate_jwt_token, validate_and_return_jwt_token
 from consoleme.lib.oidc import authenticate_user_by_oidc
 from consoleme.lib.plugins import get_plugin_by_name
@@ -126,18 +125,14 @@ class BaseHandler(tornado.web.RequestHandler):
                 self.write(line)
             self.finish()
         else:
-            if status_code == 404:
-                render_404(self, config)
-                return
-            else:
-                self.finish(
-                    "<html><title>%(code)d: %(message)s</title>"
-                    "<body>%(code)d: %(message)s</body></html>"
-                    % {
-                        "code": status_code,
-                        "message": f"{self._reason} - {config.get('errors.custom_website_error_message', '')}",
-                    }
-                )
+            self.finish(
+                "<html><title>%(code)d: %(message)s</title>"
+                "<body>%(code)d: %(message)s</body></html>"
+                % {
+                    "code": status_code,
+                    "message": f"{self._reason} - {config.get('errors.custom_website_error_message', '')}",
+                }
+            )
 
     def data_received(self, chunk):
         """Receives the data."""

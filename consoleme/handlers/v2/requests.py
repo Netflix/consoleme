@@ -739,25 +739,3 @@ class RequestsPageConfigHandler(BaseHandler):
         )
 
         self.write(table_configuration)
-
-
-class RequestsWebHandler(BaseHandler):
-    async def get(self):
-        """
-        /requests
-        ---
-        get:
-            description: Entry point to Requests view
-            responses:
-                200:
-                    description: Returns Requests view
-        """
-
-        await self.render(
-            "requests.html",
-            page_title="ConsoleMe - Requests",
-            current_page="requests",
-            user=self.user,
-            user_groups=self.groups,
-            config=config,
-        )
