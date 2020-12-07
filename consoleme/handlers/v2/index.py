@@ -1,11 +1,8 @@
-from operator import itemgetter
-
 import tornado.web
 import ujson as json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
-from consoleme.lib.handler_utils import format_role_name
 from consoleme.lib.loader import WebpackLoader
 from consoleme.lib.plugins import get_plugin_by_name
 
@@ -61,37 +58,6 @@ async def get_as_tags(name="main", extension=None, config=config, attrs=""):
 
 
 class EligibleRoleHandler(BaseHandler):
-    async def get(self) -> None:
-        """
-        Get the index endpoint
-        ---
-        description: Get the index endpoint.
-        responses:
-            200:
-                description: Index page
-        """
-
-        region = self.request.arguments.get("r", ["us-east-1"])[0]
-        redirect = self.request.arguments.get("redirect", [""])[0]
-
-        await self.render(
-            "index.html",
-            page_title="ConsoleMe - Console Access",
-            # bundles=await get_as_tags(name="main", config=config),
-            current_page="index",
-            user=self.user,
-            recent_roles=True,
-            eligible_roles=self.eligible_roles,
-            eligible_accounts=self.eligible_accounts,
-            itemgetter=itemgetter,
-            error=None,
-            region=region,
-            redirect=redirect,
-            format_role_name=format_role_name,
-            user_groups=self.groups,
-            config=config,
-        )
-
     async def post(self):
         """
         Post to the index endpoint. This will generate a list of roles the user is eligible to access on the console
@@ -153,7 +119,11 @@ class EligibleRolePageConfigHandler(BaseHandler):
                 "rowsPerPage": 50,
                 "serverSideFiltering": False,
                 "columns": [
-                    {"placeholder": "Account Name", "key": "account_name", "type": "input"},
+                    {
+                        "placeholder": "Account Name",
+                        "key": "account_name",
+                        "type": "input",
+                    },
                     {"placeholder": "Account ID", "key": "account_id", "type": "input"},
                     {"placeholder": "Role Name", "key": "role_name", "type": "link"},
                     {
@@ -165,7 +135,7 @@ class EligibleRolePageConfigHandler(BaseHandler):
                         "onClick": {"action": "redirect"},
                     },
                 ],
-            }
+            },
         }
 
         table_configuration = config.get(
