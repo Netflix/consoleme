@@ -36,6 +36,7 @@
   * [CLI Authentication](configuration/cli-authentication.md)
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
+* [Deployment Strategies](deployment-strategies.md)
 * [FAQ](faq.md)
 * [License](license.md)
 
