@@ -27,7 +27,7 @@ class TestUserProfile(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         response_j = json.loads(response.body)
         consoleme_logo = response_j["site_config"].pop("consoleme_logo")
-        self.assertIn("/static/images/logos/", consoleme_logo)
+        self.assertIn("/images/logos/", consoleme_logo)
         self.assertEqual(
             response_j,
             {

@@ -100,7 +100,7 @@ def make_app(jwt_validator=None):
         (
             r"/(favicon.ico)",
             tornado.web.StaticFileHandler,
-            dict(path=os.path.join(path, "static")),
+            dict(path=path),
         ),
         (r"/api/v1/get_credentials", GetCredentialsHandler),
         (r"/api/v1/get_roles", GetRolesHandler),

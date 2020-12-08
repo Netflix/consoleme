@@ -25,7 +25,7 @@ const NoMatch = () => (
       centered
       disabled
       size="medium"
-      src="/static/images/logos/quarantine/1.png"
+      src="/images/logos/quarantine/1.png"
     />
   </Segment>
 );
