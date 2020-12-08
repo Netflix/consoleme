@@ -27,7 +27,7 @@
     "semantic-ui-react": "^2.0.1"
   },
   "scripts": {
-    "start": "react-app-rewired start",
+    "start": "cp -a public/ ../consoleme/templates; react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test --env=jsdom",
     "eject": "react-scripts eject",
