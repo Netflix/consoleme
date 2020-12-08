@@ -27,13 +27,13 @@
     "semantic-ui-react": "^2.0.1"
   },
   "scripts": {
-    "start": "react-app-rewired start",
+    "start": "cp -a public/ ../consoleme/templates; react-app-rewired start",
     "build": "react-app-rewired build",
     "test": "react-app-rewired test --env=jsdom",
     "eject": "react-scripts eject",
-    "copy:dev": "cp -a build/ ../consoleme/templates/static/",
-    "clean:dev": "rm -rf build && rm -rf ../consoleme/templates/static/",
-    "build:dev": "yarn run clean:dev && yarn build && yarn run copy:dev",
+    "copy:prod": "cp -a build/ ../consoleme/templates",
+    "clean:prod": "rm -rf build && rm -rf ../consoleme/templates",
+    "build:prod": "yarn run clean:prod && yarn build && yarn run copy:prod",
     "lint": "prettier --check './src/**/*.{jsx,js}'",
     "lint:fix": "prettier --write './src/**/*.{jsx,js}'"
   },
@@ -67,6 +67,5 @@
   },
   "author": "infrasec",
   "license": "UNLICENSED",
-  "homepage": "static",
   "proxy": "http://localhost:8081"
 }

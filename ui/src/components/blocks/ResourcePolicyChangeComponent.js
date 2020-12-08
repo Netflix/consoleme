@@ -5,7 +5,6 @@ import {
   Divider,
   Grid,
   Header,
-  Icon,
   Loader,
   Message,
   Segment,

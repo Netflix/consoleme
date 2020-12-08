@@ -20,21 +20,21 @@ const SelectRoles = () => {
 
   const { pageName, pageDescription, tableConfig } = pageConfig;
   return (
-      <>
-        <Header as="h1">
-          {pageName}
-          <Header.Subheader>
-            <ReactMarkdown
-                escapeHtml={false}
-                linkTarget="_blank"
-                source={pageDescription}
-            />
-          </Header.Subheader>
-        </Header>
-        <ConsoleMeDataTable
-            config={tableConfig}
-        />
-      </>
+    <>
+      <Header as="h1">
+        {pageName}
+        <Header.Subheader>
+          <ReactMarkdown
+            escapeHtml={false}
+            linkTarget="_blank"
+            source={pageDescription}
+          />
+        </Header.Subheader>
+      </Header>
+      <ConsoleMeDataTable
+        config={tableConfig}
+      />
+    </>
   );
 };
 

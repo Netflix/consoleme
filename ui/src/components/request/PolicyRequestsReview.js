@@ -343,17 +343,6 @@ class PolicyRequestReview extends Component {
         </>
       ) : null;
 
-    const completeRequestButton = requestConfig.can_approve_reject ? (
-      <Grid.Column>
-        <Button
-          content="Mark Request as Approved"
-          positive
-          fluid
-          onClick={this.updateRequestStatus.bind(this, "approve_request")}
-        />
-      </Grid.Column>
-    ) : null;
-
     const rejectRequestButton = requestConfig.can_approve_reject ? (
       <Grid.Column>
         <Button

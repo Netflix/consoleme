@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Form, Header, Label, Segment } from "semantic-ui-react";
+import { Button, Form, Header, Label } from "semantic-ui-react";
 import usePolicyTag from "./hooks/usePolicyTag";
 import { JustificationModal } from "./PolicyModals";
 import { useAuth } from "../../auth/AuthProviderDefault";

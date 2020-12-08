@@ -66,7 +66,7 @@ class SelfServiceStep2 extends Component {
                     key === "service" ||
                     key === "condition"
                   ) {
-                    return;
+                    return null;
                   }
                   const inputConfig = _.find(inputs, { name: key });
                   return (
@@ -123,6 +123,7 @@ class SelfServiceStep2 extends Component {
                   <a
                     href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
                     target="_blank"
+                    rel="noopener noreferrer"
                   >
                     {role.arn}
                   </a>.&nbsp; You can also select multiple permissions.

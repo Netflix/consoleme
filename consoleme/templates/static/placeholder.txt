@@ -1,4 +1,0 @@
-If this directory is empty, you'll need to build the frontend UI code by running the following command in the root of
-this repository:
-
-yarn --cwd ui ; yarn --cwd ui build:dev

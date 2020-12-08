@@ -17,7 +17,11 @@ const ProtectedRoute = (props) => {
         await login();
       })();
     }
-  }, [match]); // eslint-disable-line
+  }, [match, user]); // eslint-disable-line
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <Segment

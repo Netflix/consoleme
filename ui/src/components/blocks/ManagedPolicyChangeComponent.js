@@ -3,7 +3,6 @@ import {
   Button,
   Grid,
   Header,
-  Icon,
   Message,
   Table,
   Segment,

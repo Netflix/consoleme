@@ -12,7 +12,6 @@ import {
   Search,
   Segment,
   Icon,
-  Radio,
   Feed,
 } from "semantic-ui-react";
 import { sendRequestCommon } from "../../helpers/utils";
@@ -461,6 +460,7 @@ class CreateCloneFeature extends Component {
         <a
           href={`/policies/edit/${dest_account_id}/iamrole/${dest_role_name}`}
           target="_blank"
+          rel="noopener noreferrer"
         >
           here
         </a>

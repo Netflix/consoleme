@@ -39,7 +39,7 @@ const ManagedPolicy = () => {
       );
       setAvailableManagedPolicies(result);
     })();
-  }, []);
+  }, [accountID]);
 
   const onManagePolicyChange = (e, { value }) => {
     addManagedPolicy(value);

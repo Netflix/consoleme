@@ -6,7 +6,7 @@ const ConsoleMeChallengeValidator = () => {
   const { challengeToken } = useParams();
   const [result, setResult] = useState("");
   useEffect(() => {
-    async function validateChallenge() {
+    (async () => {
       setResult(
         await sendRequestCommon(
           null,
@@ -14,9 +14,8 @@ const ConsoleMeChallengeValidator = () => {
           "get"
         )
       );
-    }
-    validateChallenge();
-  }, []);
+    })();
+  }, [challengeToken]);
 
   return <p>{result && result.message}</p>;
 };

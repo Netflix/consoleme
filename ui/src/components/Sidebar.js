@@ -1,26 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { Label, Icon, Image, Menu } from "semantic-ui-react";
-import { parseLocalStorageCache, sendRequestCommon } from "../helpers/utils";
+import { parseLocalStorageCache } from "../helpers/utils";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../auth/AuthProviderDefault";
 
 const localStorageRecentRolesKey = "consoleMeLocalStorage";
 
 const ConsoleMeSidebar = () => {
+  const { user } = useAuth();
   const [siteConfig, setSiteConfig] = useState({});
   const recentRoles = parseLocalStorageCache(localStorageRecentRolesKey);
 
   useEffect(() => {
-    (async () => {
-      const response = await sendRequestCommon(
-        null,
-        "/api/v1/siteconfig",
-        "get"
-      );
-      setSiteConfig(response);
-    })();
-  }, []);
+    if (!user?.site_config) {
+      return;
+    }
+    setSiteConfig(user.site_config);
+  }, [user]);
 
-  const { documentation_url, support_contact, support_chat_url } = siteConfig;
+  const {
+    consoleme_logo,
+    documentation_url,
+    security_logo,
+    security_url,
+    support_contact,
+    support_chat_url,
+  } = siteConfig;
 
   return (
     <Menu
@@ -97,12 +102,21 @@ const ConsoleMeSidebar = () => {
         }}
       >
         <Menu.Item>
-          <Image size="medium" src="/static/images/logos/quarantine/1.png" />
+          { consoleme_logo && (
+            <a href={"/"} rel="noopener noreferrer" target="_blank">
+              <Image size="medium" src={consoleme_logo} />
+            </a>
+          )}
           <br />
-          <Image
-            size="medium"
-            src="/static/images/netflix-security-dark-bg-tight.svg"
-          />
+          { security_logo && (
+            <a
+              href={security_url || "/"}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Image size="medium" src={security_logo} />
+            </a>
+          )}
         </Menu.Item>
       </Menu.Menu>
     </Menu>
