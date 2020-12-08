@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Label, Icon, Image, Menu } from "semantic-ui-react";
-import { parseLocalStorageCache, sendRequestCommon } from "../helpers/utils";
+import { parseLocalStorageCache } from "../helpers/utils";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthProviderDefault";
 
@@ -102,17 +102,21 @@ const ConsoleMeSidebar = () => {
         }}
       >
         <Menu.Item>
-          <a href={"/"} rel="noopener noreferrer" target="_blank">
-            <Image size="medium" src={consoleme_logo || ""} />
-          </a>
+          { consoleme_logo && (
+            <a href={"/"} rel="noopener noreferrer" target="_blank">
+              <Image size="medium" src={consoleme_logo} />
+            </a>
+          )}
           <br />
-          <a
-            href={security_url || ""}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Image size="medium" src={security_logo || ""} />
-          </a>
+          { security_logo && (
+            <a
+              href={security_url || "/"}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <Image size="medium" src={security_logo} />
+            </a>
+          )}
         </Menu.Item>
       </Menu.Menu>
     </Menu>

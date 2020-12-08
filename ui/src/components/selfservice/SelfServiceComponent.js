@@ -130,7 +130,7 @@ class SelfServiceComponent extends Component {
   }
 
   render() {
-    const { config, service, role } = this.props;
+    const { config, service } = this.props;
     const { description, text } = config.permissions_map[service];
 
     const { messages } = this.state;

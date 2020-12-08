@@ -80,7 +80,7 @@ export function getCompletions(editor, session, pos, prefix, callback) {
     return;
   }
 
-  const row = session.getDocument().getLine(pos.row).trim().replace(/\"/g, "");
+  const row = session.getDocument().getLine(pos.row).trim().replace(/"/g, "");
   if (action === true) {
     sendRequestCommon(
       null,
@@ -181,7 +181,7 @@ export async function getMonacoCompletions(model, position, monaco) {
 
 export function getMonacoTriggerCharacters() {
   const lowerCase = "abcdefghijklmnopqrstuvwxyz";
-  return (lowerCase + lowerCase.toUpperCase() + "0123456789" + "_-:").split("");
+  return (lowerCase + lowerCase.toUpperCase() + "0123456789_-:").split("");
 }
 
 export function sortAndStringifyNestedJSONObject(input = {}) {

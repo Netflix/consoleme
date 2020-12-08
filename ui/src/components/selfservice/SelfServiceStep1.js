@@ -171,7 +171,11 @@ class SelfServiceStep1 extends Component {
               </Header>
               <p>
                 For Help, please visit{" "}
-                <a href="http://go/selfserviceiamtldr" target="_blank">
+                <a
+                  href="http://go/selfserviceiamtldr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   go/selfserviceiamtldr
                 </a>
               </p>

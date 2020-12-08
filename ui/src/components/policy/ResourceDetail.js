@@ -10,7 +10,6 @@ const ResourceDetail = () => {
     account_id,
     account_name,
     arn,
-    cloudtrail_details,
     name,
     s3_details,
     templated,

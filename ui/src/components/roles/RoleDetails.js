@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React from "react";
 import { Header, Icon, List, Segment } from "semantic-ui-react";
 
 function RoleDetails(props) {
@@ -35,7 +35,11 @@ function RoleDetails(props) {
                 <List.Icon name="file code" />
                 <List.Content>
                   <List.Header>
-                    <a target="_blank" href={app.app_url}>
+                    <a
+                      target="_blank"
+                      href={app.app_url}
+                      rel="noopener noreferrer"
+                    >
                       {app.name}
                     </a>
                   </List.Header>
@@ -65,6 +69,7 @@ function RoleDetails(props) {
                 <List.Description>
                   <a
                     target="_blank"
+                    rel="noopener noreferrer"
                     href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
                   >
                     {role.arn}
@@ -114,7 +119,11 @@ function RoleDetails(props) {
                 <List.Header>Cloud Trails</List.Header>
                 <List.Description>
                   There are{" "}
-                  <a href={role.cloudtrail_details.error_url} target="_blank">
+                  <a
+                    href={role.cloudtrail_details.error_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     {role.cloudtrail_details.errors.cloudtrail_errors.length}
                   </a>{" "}
                   errors.
@@ -127,7 +136,11 @@ function RoleDetails(props) {
                 <List.Header>S3 Access Logs</List.Header>
                 <List.Description>
                   There are{" "}
-                  <a href={role.s3_details.error_url} target="_blank">
+                  <a
+                    href={role.s3_details.error_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     {role.s3_details.errors.s3_errors.length}
                   </a>{" "}
                   errors.

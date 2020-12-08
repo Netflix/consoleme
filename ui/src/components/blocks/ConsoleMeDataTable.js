@@ -440,10 +440,10 @@ class ConsoleMeDataTable extends Component {
     if (Object.keys(filters).length > 0) {
       filtered = data.filter((item) => {
         let isMatched = true;
-        Object.keys(filters).map((key) => {
+        Object.keys(filters).forEach((key) => {
           const filter = filters[key];
           if (!filter) {
-            return;
+            isMatched = false;
           }
           const re = new RegExp(filter, "g");
           if (item[key] && !re.test(item[key])) {

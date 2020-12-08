@@ -8,7 +8,6 @@ import {
   Grid,
   Header,
   Label,
-  Loader,
   Message,
   Tab,
   Table,
@@ -18,7 +17,6 @@ import AceEditor from "react-ace";
 import "brace";
 import ace from "brace";
 import {
-  generate_id,
   getCompletions,
   sendRequestCommon,
 } from "../../helpers/utils";
@@ -166,7 +164,7 @@ class SelfServiceStep3 extends Component {
                 key === "service" ||
                 key === "condition"
               ) {
-                return;
+                return null;
               }
               return (
                 <Label as="a">
@@ -309,7 +307,7 @@ class SelfServiceStep3 extends Component {
       statement,
     } = this.state;
 
-    const active = custom_statement != statement;
+    const active = custom_statement !== statement;
     const messagesToShow =
       messages.length > 0 ? (
         <Message negative>
@@ -373,6 +371,7 @@ class SelfServiceStep3 extends Component {
               <a
                 href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 {role.arn}
               </a>{" "}
@@ -433,7 +432,11 @@ class SelfServiceStep3 extends Component {
       <Message positive>
         <Message.Header>Your request was successful.</Message.Header>
         You can check your request status from{" "}
-        <a href={`/policies/request/${requestId}`} target="_blank">
+        <a
+          href={`/policies/request/${requestId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           here
         </a>
         .

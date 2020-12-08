@@ -1,6 +1,6 @@
-import { Header, Icon, Image, Segment } from "semantic-ui-react";
+import { Header, Image, Segment } from "semantic-ui-react";
 
-const NoMatch = ({ location }) => (
+const NoMatch = () => (
   <Segment
     basic
     style={{
