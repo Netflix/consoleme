@@ -1,4 +1,4 @@
-# AWS Credentials in the CLI using Weep
+# AWS Credentials in the CLI using Weep and ConsoleMe
 
 Weep is a CLI utility for getting AWS credentials from ConsoleMe, serving them to your AWS CLI or SDKs, and \(in many case\) caching/refreshing credentials automatically.
 
