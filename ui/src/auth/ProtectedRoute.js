@@ -29,7 +29,6 @@ const ProtectedRoute = (props) => {
       style={{
         marginTop: "72px",
         marginLeft: "240px",
-        overflowX: "auto"
       }}
     >
       <Route

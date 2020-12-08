@@ -7,54 +7,6 @@ ddb = boto3.client(
     "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name="us-east-1"
 )
 
-try:
-    ddb.create_table(
-        TableName="consoleme_users_global",
-        KeySchema=[{"AttributeName": "username", "KeyType": "HASH"}],  # Partition key
-        AttributeDefinitions=[{"AttributeName": "username", "AttributeType": "S"}],
-        ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
-    )
-except ClientError as e:
-    print(
-        "Unable to create table consoleme_users_global. Most likely it already exists and you can ignore this message. Error: {}".format(
-            e
-        )
-    )
-
-try:
-    ddb.create_table(
-        TableName="consoleme_requests_global",
-        KeySchema=[{"AttributeName": "request_id", "KeyType": "HASH"}],  # Partition key
-        AttributeDefinitions=[{"AttributeName": "request_id", "AttributeType": "S"}],
-        ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
-    )
-except ClientError as e:
-    print(
-        "Unable to create table consoleme_requests_global. Most likely it already exists and you can ignore this message. Error: {}".format(
-            e
-        )
-    )
-
-try:
-    ddb.create_table(
-        TableName="consoleme_audit_global",
-        KeySchema=[
-            {"AttributeName": "uuid", "KeyType": "HASH"},  # Partition key
-            {"AttributeName": "group", "KeyType": "RANGE"},  # Sort key
-        ],
-        AttributeDefinitions=[
-            {"AttributeName": "uuid", "AttributeType": "S"},
-            {"AttributeName": "group", "AttributeType": "S"},
-        ],
-        ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
-    )
-except ClientError as e:
-    print(
-        "Unable to create table consoleme_audit_global. Most likely it already exists and you can ignore this message. Error: {}".format(
-            e
-        )
-    )
-
 
 try:
     ddb.create_table(

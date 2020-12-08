@@ -142,7 +142,7 @@ def make_app(jwt_validator=None):
         (
             r"/(.*)",
             FrontendHandler,
-            dict(path=os.path.join(path, "static"), default_filename="index.html"),
+            dict(path=path, default_filename="index.html"),
         ),
     ]
 

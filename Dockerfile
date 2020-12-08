@@ -25,7 +25,7 @@ RUN pip install argh
 # Install SPA frontend
 RUN npm install yarn -g
 RUN yarn --cwd ui
-RUN yarn --cwd ui build:dev
+RUN yarn --cwd ui build:prod
 CMD python /apps/consoleme/consoleme/__main__.py
 
 EXPOSE 8081
