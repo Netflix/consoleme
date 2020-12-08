@@ -170,7 +170,7 @@ async def get_random_security_logo():
 
     dir = "sunglasses" if summer else "nosunglasses"
     file = f"{randint(1, 3)}.png"  # nosec
-    return f"/static/images/logos/{dir}/{file}"
+    return f"/images/logos/{dir}/{file}"
 
 
 async def generate_random_string(string_length=4):

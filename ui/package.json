@@ -31,8 +31,8 @@
     "build": "react-app-rewired build",
     "test": "react-app-rewired test --env=jsdom",
     "eject": "react-scripts eject",
-    "copy:prod": "mkdir -p ../consoleme/templates; cp -a build/ ../consoleme/templates/static/",
-    "clean:prod": "rm -rf build && rm -rf ../consoleme/templates/static/",
+    "copy:prod": "cp -a build/ ../consoleme/templates",
+    "clean:prod": "rm -rf build && rm -rf ../consoleme/templates",
     "build:prod": "yarn run clean:prod && yarn build && yarn run copy:prod",
     "lint": "prettier --check './src/**/*.{jsx,js}'",
     "lint:fix": "prettier --write './src/**/*.{jsx,js}'"

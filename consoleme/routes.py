@@ -93,6 +93,11 @@ def make_app(jwt_validator=None):
             dict(path=os.path.join(path, "static")),
         ),
         (
+            r"/images/(.*)",
+            tornado.web.StaticFileHandler,
+            dict(path=os.path.join(path, "images")),
+        ),
+        (
             r"/(favicon.ico)",
             tornado.web.StaticFileHandler,
             dict(path=os.path.join(path, "static")),
