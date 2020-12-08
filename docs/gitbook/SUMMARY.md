@@ -1,15 +1,17 @@
 # Table of contents
 
 * [About](README.md)
-* [Architecture Diagram](architecture.md)
+* [Architecture](architecture.md)
 * [Features](feature-videos/README.md)
   * [Credentials](feature-videos/credentials/README.md)
     * [AWS Console Login](feature-videos/credentials/aws-console-login.md)
+    * [AWS Credential Broker](feature-videos/credentials/aws-credential-broker.md)
   * [Policy Management](feature-videos/policy-management/README.md)
     * [Policies View](feature-videos/policy-management/multi-account-policies-management.md)
     * [Policy Editor for IAM, SQS, SNS, and S3](feature-videos/policy-management/policy-editor-for-iam-sqs-sns-and-s3.md)
     * [Self-Service IAM Wizard](feature-videos/policy-management/self-service-iam-wizard.md)
     * [Policy Request - Review Page](feature-videos/policy-management/policy-request-review-page.md)
+    * [Role Creation and Cloning](feature-videos/policy-management/role-creation-and-cloning.md)
 * [Quick Start](quick-start/README.md)
   * [Docker](quick-start/docker.md)
   * [Local](quick-start/local-development.md)
@@ -34,6 +36,7 @@
   * [CLI Authentication](configuration/cli-authentication.md)
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
+* [Deployment Strategies](deployment-strategies.md)
 * [FAQ](faq.md)
 * [License](license.md)
 
