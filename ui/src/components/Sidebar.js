@@ -1,10 +1,44 @@
 import React, { useEffect, useState } from "react";
-import { Label, Icon, Image, Menu } from "semantic-ui-react";
+import { Label, Header, Icon, Image, Menu } from "semantic-ui-react";
 import { parseLocalStorageCache } from "../helpers/utils";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthProviderDefault";
 
 const localStorageRecentRolesKey = "consoleMeLocalStorage";
+
+const listRecentRoles = (recentRoles) => {
+  const arnRegex = /^arn:aws:iam::(\d{12}):role\/(.+)$/;
+  return recentRoles.map((role) => {
+    const match = role.match(arnRegex);
+    if (!match) {
+      return null;
+    }
+    const [, accountNumber, roleName] = match;
+    return (
+      <Menu.Item as={NavLink} name={role} key={role} to={"/role/" + role}>
+        <Header
+          as="a"
+          color="yellow"
+          style={{
+            fontSize: "11px",
+          }}
+        >
+          <Header.Content>
+            {accountNumber}
+            <Header.Subheader
+              as="a"
+              style={{
+                fontSize: "11px",
+              }}
+            >
+              {roleName}
+            </Header.Subheader>
+          </Header.Content>
+        </Header>
+      </Menu.Item>
+    );
+  });
+};
 
 const ConsoleMeSidebar = () => {
   const { user } = useAuth();
@@ -43,21 +77,7 @@ const ConsoleMeSidebar = () => {
       <Menu.Item>
         <Label>{recentRoles.length}</Label>
         <Menu.Header>Recent Roles</Menu.Header>
-        <Menu.Menu>
-          {recentRoles.map((role) => {
-            const roleName = role.split("/").pop();
-            return (
-              <Menu.Item
-                as={NavLink}
-                name={role}
-                key={role}
-                to={"/role/" + role}
-              >
-                {roleName}
-              </Menu.Item>
-            );
-          })}
-        </Menu.Menu>
+        <Menu.Menu>{listRecentRoles(recentRoles)}</Menu.Menu>
       </Menu.Item>
       <Menu.Item>
         <Menu.Header>Help</Menu.Header>
@@ -102,13 +122,13 @@ const ConsoleMeSidebar = () => {
         }}
       >
         <Menu.Item>
-          { consoleme_logo && (
+          {consoleme_logo && (
             <a href={"/"} rel="noopener noreferrer" target="_blank">
               <Image size="medium" src={consoleme_logo} />
             </a>
           )}
           <br />
-          { security_logo && (
+          {security_logo && (
             <a
               href={security_url || "/"}
               rel="noopener noreferrer"

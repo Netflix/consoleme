@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { Icon, Message } from "semantic-ui-react";
-import { sendRequestCommon, setRecentRoles } from "../helpers/utils";
+import { delay, sendRequestCommon, setRecentRoles } from "../helpers/utils";
 
 const signOutUrl = "https://signin.aws.amazon.com/oauth?Action=logout";
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 const ConsoleLogin = () => {
   const { search } = useLocation();

@@ -46,7 +46,12 @@ export const AuthProvider = ({ children }) => {
     }
     // User is now authenticated so retrieve user profile.
     const xsrf = document.cookie.match("_xsrf=([^;]*)");
-    const user = await sendRequestTarget(null, "/api/v2/user_profile", "get", xsrf);
+    const user = await sendRequestTarget(
+      null,
+      "/api/v2/user_profile",
+      "get",
+      xsrf
+    );
     dispatch({
       type: "LOGIN",
       user,
@@ -76,7 +81,7 @@ export async function sendRequestTarget(
   json,
   location = window.location.href,
   method = "post",
-  xsrf,
+  xsrf
 ) {
   let body = null;
   if (json) {
