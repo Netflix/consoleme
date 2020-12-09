@@ -14,7 +14,9 @@ To create an image with Packer, run the following command in the ConsoleMe repos
 
 ConsoleMe has [example Terraform files ](https://github.com/Netflix/consoleme/tree/master/terraform)that can assist you with deploying ConsoleMe in a central account, and creating the roles that ConsoleMe needs in your spoke accounts. The central account configuration does not currently handle ACM \(for TLS certificates\), Route53, or load balancing. 
 
+## Deploy to ECS with a Docker Image
 
+ConsoleMe has an example [docker-compose deployment file ](https://github.com/Netflix/consoleme/blob/master/docker-compose-deploy.yaml) that you can use to generate a docker image with for ConsoleMe. You'll need to craft your own ConsoleMe configuration 
 
 
 
