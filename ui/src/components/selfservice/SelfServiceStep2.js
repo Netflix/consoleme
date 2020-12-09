@@ -126,7 +126,8 @@ class SelfServiceStep2 extends Component {
                     rel="noopener noreferrer"
                   >
                     {role.arn}
-                  </a>.&nbsp; You can also select multiple permissions.
+                  </a>
+                  .&nbsp; You can also select multiple permissions.
                 </Header.Subheader>
               </Header>
               <Form>

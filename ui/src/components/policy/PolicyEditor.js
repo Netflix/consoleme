@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  Dimmer,
-  Header,
-  Label,
-  Loader,
-  Segment,
-} from "semantic-ui-react";
+import { Dimmer, Header, Label, Loader, Segment } from "semantic-ui-react";
 import { PolicyProvider, usePolicyContext } from "./hooks/PolicyProvider";
 import IAMRolePolicy from "./IAMRolePolicy";
 import ResourcePolicy from "./ResourcePolicy";

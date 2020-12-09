@@ -457,3 +457,5 @@ export const setRecentRoles = (role) => {
     JSON.stringify(recentRoles)
   );
 };
+
+export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

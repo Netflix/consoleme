@@ -16,10 +16,7 @@ import {
 import AceEditor from "react-ace";
 import "brace";
 import ace from "brace";
-import {
-  getCompletions,
-  sendRequestCommon,
-} from "../../helpers/utils";
+import { getCompletions, sendRequestCommon } from "../../helpers/utils";
 import "brace/ext/language_tools";
 import "brace/theme/monokai";
 import "brace/mode/json";

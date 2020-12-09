@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Header } from 'semantic-ui-react';
-import ConsoleMeDataTable from '../blocks/ConsoleMeDataTable';
+import React, { useEffect, useState } from "react";
+import { Header } from "semantic-ui-react";
+import ConsoleMeDataTable from "../blocks/ConsoleMeDataTable";
 import { sendRequestCommon } from "../../helpers/utils";
 import ReactMarkdown from "react-markdown";
 
@@ -9,7 +9,11 @@ const SelectRoles = () => {
 
   useEffect(() => {
     (async () => {
-      const data = await sendRequestCommon(null, "/api/v2/eligible_roles_page_config", "get");
+      const data = await sendRequestCommon(
+        null,
+        "/api/v2/eligible_roles_page_config",
+        "get"
+      );
       setPageConfig(data);
     })();
   }, []);
@@ -31,9 +35,7 @@ const SelectRoles = () => {
           />
         </Header.Subheader>
       </Header>
-      <ConsoleMeDataTable
-        config={tableConfig}
-      />
+      <ConsoleMeDataTable config={tableConfig} />
     </>
   );
 };
