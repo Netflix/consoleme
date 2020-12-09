@@ -3,7 +3,7 @@
 
 # ConsoleMe
 
-Check out our [documentation](https://hawkins.gitbook.io/consoleme/) and our [feature videos](https://hawkins.gitbook.io/consoleme/feature-videos).
+Check out our [documentation](https://hawkins.gitbook.io/consoleme/) and [feature videos](https://hawkins.gitbook.io/consoleme/feature-videos).
 
 ConsoleMe strives to be a multi-account AWS swiss-army knife, making AWS easier for your end-users and cloud administrators.
 It is designed to consolidate the management of multiple accounts into a single web interface. It allows your end-users
