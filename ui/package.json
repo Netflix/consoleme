@@ -33,7 +33,7 @@
     "eject": "react-scripts eject",
     "copy:prod": "cp -a build/ ../consoleme/templates",
     "clean:prod": "rm -rf build && rm -rf ../consoleme/templates",
-    "build:prod": "yarn run clean:prod && yarn build && yarn run copy:prod",
+    "build:prod": "npm run clean:prod && npm run build && npm run copy:prod",
     "lint": "prettier --check './src/**/*.{jsx,js}'",
     "lint:fix": "prettier --write './src/**/*.{jsx,js}'"
   },

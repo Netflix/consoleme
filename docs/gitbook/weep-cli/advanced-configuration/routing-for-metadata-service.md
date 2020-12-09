@@ -1,6 +1,6 @@
 # Routing for Metadata Service
 
-We highly recommend you check out the ECS credential provider emulator capability instead of using this. But if needed, here are the steps:
+We highly recommend you check out the ECS credential provider emulator capability instead of using the Metadata service capability. But if needed, here are the steps:
 
 {% tabs %}
 {% tab title="Mac" %}
