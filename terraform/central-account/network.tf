@@ -14,9 +14,11 @@ module "network" {
   enable_dns_hostnames               = true
   enable_dns_support                 = true
   enable_s3_endpoint                 = true
+  enable_dynamodb_endpoint           = true
   tags                               = var.default_tags
-  public_subnet_tags                 = map("subnet-type", "public")
   create_vpc                         = true
   public_subnet_suffix               = "public-subnet"
   public_subnets                     = var.public_subnet_cidrs
+  private_subnet_suffix              = "private-subnet"
+  private_subnets                    = var.private_subnet_cidrs
 }
