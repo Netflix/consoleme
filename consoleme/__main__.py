@@ -17,7 +17,7 @@ from consoleme.routes import make_app
 
 logging.basicConfig(level=logging.DEBUG, format=config.get("logging.format"))
 logging.getLogger("urllib3.connectionpool").setLevel(logging.CRITICAL)
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 
 

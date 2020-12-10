@@ -12,11 +12,15 @@ from consoleme.lib.aws import fetch_resource_details
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+group_mapping = get_plugin_by_name(
+    config.get("plugins.group_mapping", "default_group_mapping")
+)()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+internal_policies = get_plugin_by_name(
+    config.get("plugins.internal_policies", "default_policies")
+)()
 
 
 class ResourceDetailHandler(BaseHandler):

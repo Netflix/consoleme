@@ -17,8 +17,8 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 
 log = config.get_logger("consoleme")
-aws = get_plugin_by_name(config.get("plugins.aws"))()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 credential_authz_mapping = CredentialAuthorizationMapping()
 
 # TODO: Docstrings should provide examples of the data that needs to be returned

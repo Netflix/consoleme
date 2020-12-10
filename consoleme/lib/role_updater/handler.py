@@ -11,7 +11,7 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.schemas import RoleUpdaterRequest
 
 log = config.get_logger()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 async def update_role(event):

@@ -7,9 +7,9 @@ from consoleme.lib.loader import WebpackLoader
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 # TODO, move followings to util file

@@ -12,7 +12,7 @@ from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger("consoleme")
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 @rate_limited()

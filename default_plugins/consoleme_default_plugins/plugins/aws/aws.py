@@ -31,7 +31,7 @@ from consoleme.lib.dynamo import IAMRoleDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 log = config.get_logger(__name__)
 
