@@ -51,7 +51,14 @@ variable "subnet_azs" {
 }
 
 variable "public_subnet_cidrs" {
-  description = "The CIDR block of the public subnet."
+  description = "The CIDR block of the subnet the load balancer will be placed in."
+  type        = list(string)
+  default     = ["10.1.1.128/28"]
+}
+
+
+variable "private_subnet_cidrs" {
+  description = "The CIDR block of the subnet the ConsoleMe server will be placed in."
   type        = list(string)
   default     = ["10.1.1.0/28"]
 }
@@ -60,6 +67,12 @@ variable "allowed_inbound_cidr_blocks" {
   description = "Allowed inbound CIDRs for the security group rules."
   default     = []
   type        = list(string)
+}
+
+variable "allow_internet_access" {
+  description = "Set to true to allow Internet access to the ConsoleMe server."
+  default     = false
+  type        = bool
 }
 
 # Compute
@@ -89,8 +102,8 @@ variable "ec2_ami_owner_filter" {
 }
 
 variable "ec2_ami_name_filter" {
-  description = "The name of the AMI to search for. Defaults to amzn2-ami-hvm-2.0.2019*-x86_64-ebs"
-  default     = "amzn2-ami-hvm-2.0.2019*-x86_64-ebs"
+  description = "The name of the AMI to search for. Defaults to amzn2-ami-hvm-2.0.2020*-x86_64-ebs" 
+  default     = "amzn2-ami-hvm-2.0.2020*-x86_64-ebs" # Need a release post Jan 2020 to support IMDSv2
   type        = string
 }
 
