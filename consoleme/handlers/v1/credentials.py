@@ -12,13 +12,15 @@ from consoleme.lib.crypto import Crypto
 from consoleme.lib.duo import duo_mfa_user
 from consoleme.lib.plugins import get_plugin_by_name
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 crypto = Crypto()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 internal_config = config.config_plugin
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+group_mapping = get_plugin_by_name(
+    config.get("plugins.group_mapping", "default_group_mapping")
+)()
 
 
 class CredentialsSchema(Schema):

@@ -43,7 +43,7 @@ POSSIBLE_STATUSES = config.get(
     ["pending", "approved", "rejected", "cancelled", "expired", "removed"],
 )
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger("consoleme")
 crypto = Crypto()
 red = RedisHandler().redis_sync()

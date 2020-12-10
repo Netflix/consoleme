@@ -14,7 +14,7 @@ from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger("consoleme")
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 class Group(object):

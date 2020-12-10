@@ -16,13 +16,17 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 crypto = Crypto()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
-internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+group_mapping = get_plugin_by_name(
+    config.get("plugins.group_mapping", "default_group_mapping")
+)()
+internal_policies = get_plugin_by_name(
+    config.get("plugins.internal_policies", "default_policies")
+)()
 
 
 class RoleConsoleLoginHandler(BaseAPIV2Handler):

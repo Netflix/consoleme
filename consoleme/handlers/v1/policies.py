@@ -12,9 +12,9 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import redis_get, redis_hgetall
 
 log = config.get_logger()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 
 
 class AutocompleteHandler(BaseAPIV1Handler):
