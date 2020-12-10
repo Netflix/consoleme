@@ -4,6 +4,7 @@ set -x
 export HOME=/root
 export EC2_REGION=${region}
 export CONFIG_LOCATION=${CONFIG_LOCATION}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # Filter out useless messages from logs
 # ---------------------------------------------------------------------------------------------------------------------
@@ -24,7 +25,9 @@ systemctl restart rsyslog
 
 # Install Docker
 sudo yum update -y
-yum -y install git python3 python3-pip  python3-devel
+yum -y erase python3
+sudo amazon-linux-extras enable python3.8 # consoleme requires 3.8
+yum -y install git python3.8 python38-pip python38-devel 
 yum -y install libcurl-devel
 yum -y install libxml2-devel xmlsec1-devel xmlsec1-openssl-devel libtool-ltdl-devel
 sudo yum install -y gcc-c++
@@ -35,7 +38,7 @@ sudo service docker start
 sudo usermod -a -G docker ec2-user
 
 mkdir -p /apps/consoleme
-mkdir /logs
+mkdir -p /logs/consoleme
 cd /apps/
 yum -y install unzip
 aws s3 cp s3://${bucket}/consoleme.tar.gz /apps/
@@ -53,22 +56,28 @@ useradd -r -s /bin/false flower
 usermod -aG flower flower
 mkdir -p /apps/flower
 chown -R flower:flower /apps/flower
-python3 -m venv /apps/flower/env --copies
+python3.8 -m venv /apps/flower/env --copies
 source /apps/flower/env/bin/activate
-pip install flower redis
+pip3.8 install flower redis
 
 # Set up a new Virtualenv in the Consoleme directory
-python3 -m venv /apps/consoleme/env
+python3.8 -m venv /apps/consoleme/env
 source /apps/consoleme/env/bin/activate
 chown -R consoleme:consoleme /apps/consoleme
 chown -R consoleme:consoleme /logs
 # Install it
 cd /apps/consoleme
-pip install xmlsec
+pip3.8 install xmlsec
 
+# Make uses "pip" and "python", assuming they are 3.8, but they actually point to python2 (because yum uses it)
+alias python=python3.8
+alias pip=pip3.8
 make env_install
 
 make dynamo
+unalias python
+unalias pip
+
 sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
 sudo yum-config-manager --enable epel
 yum -y install redis
@@ -120,7 +129,7 @@ Restart=always
 RestartSec=1
 User=consoleme
 Group=consoleme
-ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/consoleme/__main__.py
+ExecStart=/usr/bin/env python3.8 /apps/consoleme/consoleme/__main__.py
 
 [Install]
 WantedBy=multi-user.target
@@ -141,7 +150,7 @@ RestartSec=1
 WorkingDirectory=/apps/consoleme
 Environment=CONFIG_LOCATION=${CONFIG_LOCATION}
 Environment=EC2_REGION=${region}
-ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=15
+ExecStart=/usr/bin/env python3.8 /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=15
 
 [Install]
 WantedBy=multi-user.target
@@ -179,7 +188,7 @@ systemctl enable celery
 systemctl enable consoleme
 systemctl start consoleme
 
-python /apps/consoleme/scripts/initialize_redis_oss.py
+python3.8 /apps/consoleme/scripts/initialize_redis_oss.py
 
 echo "Running custom userdata script"
 ${custom_user_data_script}
