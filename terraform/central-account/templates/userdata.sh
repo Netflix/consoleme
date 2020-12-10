@@ -38,7 +38,7 @@ sudo service docker start
 sudo usermod -a -G docker ec2-user
 
 mkdir -p /apps/consoleme
-mkdir -p /logs/consoleme
+mkdir /logs
 cd /apps/
 yum -y install unzip
 aws s3 cp s3://${bucket}/consoleme.tar.gz /apps/
