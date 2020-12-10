@@ -14,26 +14,8 @@ resource "aws_security_group_rule" "internal_ingress_all_self" {
   cidr_blocks       = [var.vpc_cidr]
 }
 
-resource "aws_security_group_rule" "external_ingress_ssh" {
-  from_port         = 22
-  protocol          = "tcp"
-  security_group_id = aws_security_group.external.id
-  to_port           = 22
-  cidr_blocks       = var.allowed_inbound_cidr_blocks
-  type              = "ingress"
-}
-
-resource "aws_security_group_rule" "external_ingress_443" {
-  from_port         = 443
-  protocol          = "tcp"
-  security_group_id = aws_security_group.external.id
-  to_port           = 443
-  type              = "ingress"
-  cidr_blocks       = var.allowed_inbound_cidr_blocks
-}
-
 # HTTPS
-resource "aws_security_group_rule" "external_ingress_7473" {
+resource "aws_security_group_rule" "external_ingress_8081" {
   from_port         = 8081
   protocol          = "tcp"
   security_group_id = aws_security_group.external.id
