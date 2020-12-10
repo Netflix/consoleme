@@ -7,6 +7,9 @@ tornado:
   xsrf: true
   uvloop: false
 
+celery:
+  active_region: us-east-1
+
 challenge_url:
   enabled: true
 
