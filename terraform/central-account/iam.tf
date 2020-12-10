@@ -46,6 +46,12 @@ resource "aws_iam_role_policy" "consoleme_target" {
   policy = data.aws_iam_policy_document.ConsoleMeInstanceProfile.json
 }
 
+# Allow SSM
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.ConsoleMeInstanceProfile.id
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Trust Policy
