@@ -113,7 +113,7 @@ async def generate_and_store_credential_authorization_mapping() -> Dict[
     )
     s3_bucket = None
     s3_key = None
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get(
