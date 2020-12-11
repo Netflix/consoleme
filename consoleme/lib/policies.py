@@ -30,7 +30,7 @@ from consoleme.lib.ses import (
 from consoleme.models import ExtendedRequestModel, RequestStatus
 
 log = config.get_logger()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 async def invalid_characters_in_policy(policy_value):
@@ -531,7 +531,7 @@ def get_actions_for_resource(resource_arn: str, statement: Dict) -> List[str]:
 
 
 async def get_formatted_policy_changes(account_id, arn, request):
-    aws = get_plugin_by_name(config.get("plugins.aws"))()
+    aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
     existing_role: dict = await aws.fetch_iam_role(account_id, arn, force_refresh=True)
     policy_changes: list = json.loads(request.get("policy_changes"))
     formatted_policy_changes = []
@@ -636,7 +636,7 @@ async def get_formatted_policy_changes(account_id, arn, request):
 
 
 async def should_auto_approve_policy(events, user, user_groups):
-    aws = get_plugin_by_name(config.get("plugins.aws"))()
+    aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
     result = await aws.should_auto_approve_policy(events, user, user_groups)
     return result
 
@@ -648,7 +648,7 @@ async def should_auto_approve_policy_v2(
     This uses your fancy internal logic to determine if a request should be auto-approved or not. The default plugin
     set included in ConsoleMe OSS will return False.
     """
-    aws = get_plugin_by_name(config.get("plugins.aws"))()
+    aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
     return await aws.should_auto_approve_policy_v2(extended_request, user, user_groups)
 
 

@@ -10,7 +10,7 @@ from consoleme.lib.groups import get_group_url
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import ExtendedRequestModel, RequestStatus
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 
 

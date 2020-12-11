@@ -29,10 +29,10 @@ from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.groups import does_group_require_bg_check
 from consoleme.lib.plugins import get_plugin_by_name
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 log = config.get_logger()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 
 
 async def add_user_to_group_task(

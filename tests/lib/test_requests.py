@@ -9,7 +9,7 @@ from consoleme.exceptions.exceptions import NoMatchingRequest
 from consoleme.lib.plugins import get_plugin_by_name
 from tests.conftest import create_future
 
-auth = get_plugin_by_name(config.get("plugins.auth"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 
 Group = auth.Group
 

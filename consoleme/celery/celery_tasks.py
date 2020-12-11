@@ -105,12 +105,18 @@ if config.get("celery.purge"):
 
 log = config.get_logger()
 red = async_to_sync(RedisHandler().redis)()
-aws = get_plugin_by_name(config.get("plugins.aws"))
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
-internal_celery_tasks = get_plugin_by_name(config.get("plugins.internal_celery_tasks"))
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
-internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+group_mapping = get_plugin_by_name(
+    config.get("plugins.group_mapping", "default_group_mapping")
+)()
+internal_celery_tasks = get_plugin_by_name(
+    config.get("plugins.internal_celery_tasks", "default_celery_tasks")
+)
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
+internal_policies = get_plugin_by_name(
+    config.get("plugins.internal_policies", "default_policies")
+)()
 REDIS_IAM_COUNT = 1000
 
 

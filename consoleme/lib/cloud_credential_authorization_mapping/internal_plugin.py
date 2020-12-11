@@ -14,7 +14,9 @@ class InternalPluginAuthorizationMappingGenerator(CredentialAuthzMappingGenerato
         self, authorization_mapping: Dict[user_or_group, RoleAuthorizations]
     ) -> Dict[user_or_group, RoleAuthorizations]:
         """This will list accounts that meet the account attribute search criteria."""
-        group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
+        group_mapping = get_plugin_by_name(
+            config.get("plugins.group_mapping", "default_group_mapping")
+        )()
 
         # Generate mapping from internal plugin
         authorization_mapping = (

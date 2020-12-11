@@ -74,8 +74,8 @@ from consoleme.models import (
 )
 
 log = config.get_logger()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 
 
 async def generate_request_from_change_model_array(

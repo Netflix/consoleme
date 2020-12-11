@@ -63,7 +63,9 @@ from consoleme.handlers.v2.user_profile import UserProfileHandler
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
-internal_routes = get_plugin_by_name(config.get("plugins.internal_routes"))()
+internal_routes = get_plugin_by_name(
+    config.get("plugins.internal_routes", "default_internal_routes")
+)()
 
 log = config.get_logger()
 

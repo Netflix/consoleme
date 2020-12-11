@@ -34,9 +34,11 @@ from consoleme.lib.saml import authenticate_user_by_saml
 from consoleme.lib.tracing import ConsoleMeTracer
 
 log = config.get_logger()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+group_mapping = get_plugin_by_name(
+    config.get("plugins.group_mapping", "default_group_mapping")
+)()
 
 
 class BaseJSONHandler(tornado.web.RequestHandler):
