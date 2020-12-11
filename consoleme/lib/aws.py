@@ -32,8 +32,8 @@ ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
 
 log = config.get_logger(__name__)
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 @rate_limited()

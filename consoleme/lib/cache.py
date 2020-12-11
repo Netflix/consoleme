@@ -15,7 +15,7 @@ from consoleme.lib.redis import RedisHandler
 from consoleme.lib.s3_helpers import get_object, put_object
 
 red = RedisHandler().redis_sync()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 async def store_json_results_in_redis_and_s3(

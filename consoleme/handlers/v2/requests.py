@@ -47,9 +47,9 @@ from consoleme.models import (
     RequestStatus,
 )
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 
 
 class RequestHandler(BaseAPIV2Handler):

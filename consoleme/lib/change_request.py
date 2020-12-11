@@ -25,7 +25,9 @@ from consoleme.models import (
     Status,
 )
 
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
+group_mapping = get_plugin_by_name(
+    config.get("plugins.group_mapping", "default_group_mapping")
+)()
 ALL_ACCOUNTS = None
 
 

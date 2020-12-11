@@ -25,7 +25,7 @@ env_install:
 install: clean
 	make env_install
 	yarn --cwd ui
-	yarn --cwd ui build
+	yarn --cwd ui build:prod
 	make bootstrap
 
 .PHONY: bootstrap
@@ -67,6 +67,7 @@ clean:
 	rm -rf *.egg-info
 	rm -f celerybeat-schedule.db
 	rm -rf consoleme.tar.gz
+	rm -rf ui/.npmrc ui/.yarnrc
 	find $(project) tests -name "*.pyc" -delete
 	find . -name '*.pyc' -delete
 	find . -name '*.pyo' -delete
@@ -114,9 +115,10 @@ up-reqs: clean
 	pip install -r requirements-docs.txt
 	@echo "--> Done installing new dependencies"
 
-consoleme.tar.gz:
+consoleme.tar.gz: clean
 	# Tar contents of the current directory
-	tar --exclude='consoleme.tar.gz' --exclude='build*' --exclude='.tox/*' --exclude='env*' --exclude-from='.gitignore' --exclude='venv*' --exclude='node_modules*' --exclude='terraform/*' --exclude='.git/*' --exclude='.run/*' --exclude='debian*' --exclude='staging*' -czf consoleme.tar.gz .
+	touch consoleme.tar.gz
+	tar --exclude='consoleme.tar.gz' --exclude='build*' --exclude='.tox/*' --exclude='env*' --exclude-from='.gitignore' --exclude='venv*' --exclude='node_modules*' --exclude='terraform/*' --exclude='.git/*' --exclude='.run/*' --exclude='debian*' --exclude='staging*' --warning=no-file-changed -czf consoleme.tar.gz .
 
 .PHONY: create_ami
 create_ami: consoleme.tar.gz packer clean

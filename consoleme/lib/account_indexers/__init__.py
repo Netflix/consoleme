@@ -15,8 +15,8 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import CloudAccountModelArray
 
 log = config.get_logger(__name__)
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 async def cache_cloud_accounts() -> CloudAccountModelArray:
@@ -48,7 +48,7 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
 
     s3_bucket = None
     s3_key = None
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_cloud_accounts.s3.bucket")

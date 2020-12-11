@@ -28,6 +28,7 @@ jobs:
           pip3 install -e .
           pip3 install -e default_plugins
           yarn --cwd ui
+          yarn --cwd ui build:prod
           CI=false yarn --cwd ui start &
           pre-commit install
       - name: Run pre-commit

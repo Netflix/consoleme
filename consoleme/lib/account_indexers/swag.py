@@ -10,7 +10,7 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import CloudAccountModel, CloudAccountModelArray
 
 log = config.get_logger()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 async def retrieve_accounts_from_swag() -> CloudAccountModelArray:

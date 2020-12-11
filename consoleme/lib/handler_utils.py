@@ -6,8 +6,8 @@ from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.plugins import get_plugin_by_name
 
-aws = get_plugin_by_name(config.get("plugins.aws"))()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 
 # ALL ACCOUNTS is a dictionary of account ID to a list of account names (including aliases)
