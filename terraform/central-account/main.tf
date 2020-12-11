@@ -49,7 +49,7 @@ resource "aws_lb" "public-to-private-lb" {
   name               = "public-to-private-lb"
   internal           = var.allow_internet_access ? false : true
   load_balancer_type = "network" // Using a network LB for HTTPS traffic because we just want to forward packets internally, nothing more
-  subnets            = [module.network.private_subnets[0]]
+  subnets            = [module.network.public_subnets[0]]
 }
 
 resource "aws_lb_target_group" "consoleme-servers" {
