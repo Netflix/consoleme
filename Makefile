@@ -25,7 +25,7 @@ env_install:
 install: clean
 	make env_install
 	yarn --cwd ui
-	yarn --cwd ui build
+	yarn --cwd ui build:prod
 	make bootstrap
 
 .PHONY: bootstrap
