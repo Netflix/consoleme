@@ -395,7 +395,10 @@ class Aws:
                 )
 
                 credentials = await sync_to_async(client.assume_role)(
-                    RoleArn=role, RoleSessionName=user.lower(), Policy=policy
+                    RoleArn=role,
+                    RoleSessionName=user.lower(),
+                    Policy=policy,
+                    DurationSeconds=config.get("aws.session_duration", 3600),
                 )
                 credentials["Credentials"]["Expiration"] = int(
                     credentials["Credentials"]["Expiration"].timestamp()
@@ -422,7 +425,10 @@ class Aws:
                 )
 
                 credentials = await sync_to_async(client.assume_role)(
-                    RoleArn=role, RoleSessionName=user.lower(), Policy=policy
+                    RoleArn=role,
+                    RoleSessionName=user.lower(),
+                    Policy=policy,
+                    DurationSeconds=config.get("aws.session_duration", 3600),
                 )
                 credentials["Credentials"]["Expiration"] = int(
                     credentials["Credentials"]["Expiration"].timestamp()
@@ -430,7 +436,9 @@ class Aws:
                 return credentials
 
             credentials = await sync_to_async(client.assume_role)(
-                RoleArn=role, RoleSessionName=user.lower()
+                RoleArn=role,
+                RoleSessionName=user.lower(),
+                DurationSeconds=config.get("aws.session_duration", 3600),
             )
             credentials["Credentials"]["Expiration"] = int(
                 credentials["Credentials"]["Expiration"].timestamp()
