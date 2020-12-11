@@ -101,10 +101,11 @@ nvm use 12.18.2
 node -e "console.log('Running Node.js ' + process.version)"
 npm install yarn -g
 yarn --cwd ui
-yarn --cwd ui build
+yarn --cwd ui build:prod
 
 # Since the setup ran as root, just chown it again so the consoleme user owns it
 chown -R consoleme:consoleme /apps/consoleme
+chown -R consoleme:consoleme /logs/consoleme
 
 cat << EOF > /etc/environment
 EC2_REGION=${region}
@@ -129,7 +130,7 @@ Restart=always
 RestartSec=1
 User=consoleme
 Group=consoleme
-ExecStart=/usr/bin/env python3.8 /apps/consoleme/consoleme/__main__.py
+ExecStart=/usr/bin/env /apps/consoleme/env/bin/python3.8 /apps/consoleme/consoleme/__main__.py
 
 [Install]
 WantedBy=multi-user.target
@@ -150,7 +151,7 @@ RestartSec=1
 WorkingDirectory=/apps/consoleme
 Environment=CONFIG_LOCATION=${CONFIG_LOCATION}
 Environment=EC2_REGION=${region}
-ExecStart=/usr/bin/env python3.8 /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=15
+ExecStart=/usr/bin/env /apps/consoleme/env/bin/python3.8 /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=15
 
 [Install]
 WantedBy=multi-user.target
@@ -160,7 +161,6 @@ cat << EOF >> /root/.bashrc
 export CONFIG_LOCATION=${CONFIG_LOCATION}
 export EC2_REGION=${region}
 EOF
-
 
 cat << EOF > ${CONFIG_LOCATION}
 ${demo_config}
@@ -179,6 +179,11 @@ systemctl daemon-reload
 mkdir -p /home/consoleme
 chown consoleme:consoleme /home/consoleme/
 
+cat << EOF >> /home/consoleme/.bashrc
+export CONFIG_LOCATION=${CONFIG_LOCATION}
+export EC2_REGION=${region}
+EOF
+
 # Make sure it is listed
 systemctl list-unit-files | grep celery.service
 systemctl list-unit-files | grep consoleme.service
@@ -188,7 +193,7 @@ systemctl enable celery
 systemctl enable consoleme
 systemctl start consoleme
 
-python3.8 /apps/consoleme/scripts/initialize_redis_oss.py
+runuser -l consoleme -c "bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/initialize_redis_oss.py'"
 
 echo "Running custom userdata script"
 ${custom_user_data_script}

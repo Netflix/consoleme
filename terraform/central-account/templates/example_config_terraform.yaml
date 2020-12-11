@@ -84,4 +84,8 @@ dynamic_config:
 
 policies:
   role_name: ConsoleMeTarget
+
+celery:
+  active_region: ${region}
+
 # TODO: SAML / Oauth / TLS configuration / Secure JWT / CLI Auth / Generic CloudTrail log support
