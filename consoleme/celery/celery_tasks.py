@@ -452,7 +452,7 @@ def cache_audit_table_details() -> bool:
 
     s3_bucket = None
     s3_key = None
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_audit_table_details.s3.bucket")
@@ -630,7 +630,7 @@ def cache_policies_table_details() -> bool:
 
     s3_bucket = None
     s3_key = None
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_policies_table_details.s3.bucket")
@@ -654,7 +654,7 @@ def cache_roles_for_account(account_id: str) -> bool:
     dynamo = IAMRoleDynamoHandler()
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
     # Only query IAM and put data in Dynamo if we're in the active region
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         client = boto3_cached_conn(
@@ -747,7 +747,7 @@ def cache_roles_across_accounts() -> Dict:
 
     log_data = {"function": function, "cache_key": cache_key}
     num_accounts = 0
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         # First, get list of accounts
@@ -820,7 +820,7 @@ def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, 
     policy_key = config.get("redis.iam_managed_policies_key", "IAM_MANAGED_POLICIES")
     red.hset(policy_key, account_id, json.dumps(all_policies))
 
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
@@ -932,7 +932,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         tags={"account_id": account_id, "number_sqs_queues": len(all_queues)},
     )
 
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
@@ -972,7 +972,7 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         tags={"account_id": account_id, "number_sns_topics": len(all_topics)},
     )
 
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
@@ -1010,7 +1010,7 @@ def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         tags={"account_id": account_id, "number_sns_topics": len(buckets)},
     )
 
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
@@ -1038,7 +1038,7 @@ def _scan_redis_iam_cache(
 def clear_old_redis_iam_cache() -> bool:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     # Do not run if this is not in the active region:
-    if config.region != config.get("celery.active_region"):
+    if config.region != config.get("celery.active_region", config.region):
         return False
 
     # Need to loop over all items in the set:
@@ -1095,7 +1095,7 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     s3_key = config.get("aws_config_cache.s3.file", "").format(account_id=account_id)
     dynamo = UserDynamoHandler()
     # Only query in active region, otherwise get data from DDB
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         results = aws_config.query(
@@ -1179,9 +1179,9 @@ def cache_resources_from_aws_config_across_accounts() -> bool:
         # Cache all resource ARNs into a single file. Note: This runs synchronously with this task. This task triggers
         # resource collection on all accounts to happen asynchronously. That means when we store or delete data within
         # this task, we're always going to be caching the results from the previous task.
-        if config.region == config.get("celery.active_region") or config.get(
-            "environment"
-        ) in ["dev"]:
+        if config.region == config.get(
+            "celery.active_region", config.region
+        ) or config.get("environment") in ["dev"]:
             # Refresh all resources after deletion of expired entries
             all_resources = red.hgetall(resource_redis_cache_key)
             s3_bucket = config.get("aws_config_cache_combined.s3.bucket")
@@ -1206,9 +1206,9 @@ def get_iam_role_limit() -> dict:
         return {}
 
     success_message = "Not running - Inactive region"
-    if config.region == config.get("celery.active_region") and config.get(
-        "environment"
-    ) in ["prod", "dev"]:
+    if config.region == config.get(
+        "celery.active_region", config.region
+    ) and config.get("environment") in ["prod", "dev"]:
 
         @sts_conn("iam")
         def _get_delivery_channels(**kwargs) -> list:
