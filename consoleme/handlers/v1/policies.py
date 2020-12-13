@@ -50,7 +50,7 @@ class AutocompleteHandler(BaseAPIV1Handler):
             # We return known matching services in a format that the frontend expects to see them. We omit the wildcard
             # character returned by policyuniverse.
             services = sorted(
-                list(set(r.split(":")[0].replace("*", "") for r in results))
+                list({r.split(":")[0].replace("*", "") for r in results})
             )
             results = [{"title": service} for service in services]
         else:
