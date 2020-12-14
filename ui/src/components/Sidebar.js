@@ -19,9 +19,9 @@ const listRecentRoles = (recentRoles, user) => {
       <Menu.Item as={NavLink} name={role} key={role} to={"/role/" + role}>
         <Header
           as="a"
-          color="yellow"
+          color="blue"
           style={{
-            fontSize: "11px",
+            fontSize: "14px",
           }}
         >
           <Header.Content>
@@ -29,7 +29,7 @@ const listRecentRoles = (recentRoles, user) => {
             <Header.Subheader
               as="a"
               style={{
-                fontSize: "11px",
+                fontSize: "14px",
               }}
             >
               {roleName}
@@ -89,6 +89,9 @@ const ConsoleMeSidebar = () => {
             href={documentation_url || ""}
             rel="noopener noreferrer"
             target="_blank"
+            style={{
+              fontSize: "14px",
+            }}
           >
             <Icon name="file" />
             Documentation
@@ -99,6 +102,9 @@ const ConsoleMeSidebar = () => {
             href={support_contact ? "mailto:" + support_contact : "/"}
             rel="noopener noreferrer"
             target="_blank"
+            style={{
+              fontSize: "14px",
+            }}
           >
             <Icon name="send" />
             Email us
@@ -109,6 +115,9 @@ const ConsoleMeSidebar = () => {
             href={support_chat_url || "/"}
             rel="noopener noreferrer"
             target="_blank"
+            style={{
+              fontSize: "14px",
+            }}
           >
             <Icon name="slack" />
             Find us on Slack
