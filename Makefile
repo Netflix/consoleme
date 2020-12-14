@@ -118,7 +118,7 @@ up-reqs: clean
 consoleme.tar.gz: clean
 	# Tar contents of the current directory
 	touch consoleme.tar.gz
-	tar --exclude='consoleme.tar.gz' --exclude='build*' --exclude='.tox/*' --exclude='env*' --exclude-from='.gitignore' --exclude='venv*' --exclude='node_modules*' --exclude='terraform/*' --exclude='.git/*' --exclude='.run/*' --exclude='debian*' --exclude='staging*' --warning=no-file-changed -czf consoleme.tar.gz .
+	tar --exclude='consoleme.tar.gz' --exclude='build*' --exclude='.tox/*' --exclude='env*' --exclude-from='.gitignore' --exclude='venv*' --exclude='node_modules*' --exclude='terraform/*' --exclude='.git/*' --exclude='.run/*' --exclude='debian*' --exclude='staging*' -czf consoleme.tar.gz .
 
 .PHONY: create_ami
 create_ami: consoleme.tar.gz packer clean

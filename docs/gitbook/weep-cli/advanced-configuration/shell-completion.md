@@ -4,6 +4,7 @@ Weep can automatically generate shell completion scripts for Bash, Zsh, and Fish
 
 {% tabs %}
 {% tab title="Bash" %}
+
 ```bash
 source <(weep completion bash)
 ```
@@ -16,6 +17,7 @@ weep completion bash > /etc/bash_completion.d/weep
 # MacOS:
 weep completion bash > /usr/local/etc/bash_completion.d/weep
 ```
+
 {% endtab %}
 
 {% tab title="Zsh" %}
@@ -35,6 +37,7 @@ You will need to start a new shell for this setup to take effect.
 {% endtab %}
 
 {% tab title="Fish" %}
+
 ```bash
 weep completion fish | source
 ```
@@ -44,6 +47,6 @@ To load completions for each session, execute this command once:
 ```bash
 weep completion fish > ~/.config/fish/completions/weep.fish
 ```
+
 {% endtab %}
 {% endtabs %}
-

@@ -51,8 +51,7 @@ AWS SDKs appear to be analyzing your `~/.aws/config` file on each API call. This
 {% endhint %}
 
 ```bash
-# Please read the caveat above before running this command. The size of your ~/.aws/config file may negatively impact 
+# Please read the caveat above before running this command. The size of your ~/.aws/config file may negatively impact
 # the rate of your AWS API calls.
 weep generate_credential_process_config
 ```
-

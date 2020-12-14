@@ -27,4 +27,3 @@ AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:9091/ecs/consoleme_oss_1?ass
     "Arn": "arn:aws:sts::123456789012:assumed-role/andAnother/user@example.com"
 }
 ```
-

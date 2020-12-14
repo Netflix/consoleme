@@ -1,8 +1,8 @@
 # SAML \(Tested with Auth0\)
 
-ConsoleMe can directly authenticate users against an SAML identity provider. We have an example configuration [here](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_saml.yaml). 
+ConsoleMe can directly authenticate users against an SAML identity provider. We have an example configuration [here](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_saml.yaml).
 
-The settings that must be defined for the SAML flow to work are as follows. You will want to have multiple configurations for your development, test, and production environments with the appropriate URLs for each. 
+The settings that must be defined for the SAML flow to work are as follows. You will want to have multiple configurations for your development, test, and production environments with the appropriate URLs for each.
 
 ```text
 auth:
@@ -77,7 +77,7 @@ These are the general steps to follow when configuring ConsoleMe as a SAML servi
 
    as `sp.crt` and `sp.key`. \(You can generate a certificate and private key with the following command:
 
-   `openssl req -x509 -nodes -sha256 -days 3650 -newkey rsa:2048 -keyout sp.key -out sp.crt`\). The default configuration points here: [example\_config/saml\_example/certs/](https://github.com/Netflix/consoleme/tree/master/example_config/saml_example/certs)
+   `openssl req -x509 -nodes -sha256 -days 3650 -newkey rsa:2048 -keyout sp.key -out sp.crt`\). The default configuration points here: [example_config/saml_example/certs/](https://github.com/Netflix/consoleme/tree/master/example_config/saml_example/certs)
 
 3. Start ConsoleMe with your desired configuration, and test the flow:
 
@@ -87,11 +87,10 @@ CONFIG_LOCATION=example_config/example_config_saml.yaml python consoleme/__main_
 
 ## Important configuration variables
 
-`get_user_by_saml_settings.idp_metadata_url`: The URL of the SAML Metadata that ConsoleMe can load SAML configuration from. 
+`get_user_by_saml_settings.idp_metadata_url`: The URL of the SAML Metadata that ConsoleMe can load SAML configuration from.
 
 `get_user_by_saml_settings.saml_path`: Location of SAML settings used by the OneLoginSaml2 library - You'll need to configure the entity ID, IdP Binding urls, and ACS urls in this file
 
 `get_user_by_saml_settings.jwt`: After the user has authenticated, ConsoleMe will give them a jwt valid for the time specified in this configuration, along with the jwt attribute names for the user's email and groups.
 
 `get_user_by_saml_settings.attributes`: Specifies the attributes that we expect to see in the SAML response, including the user's username, groups, and e-mail address
-

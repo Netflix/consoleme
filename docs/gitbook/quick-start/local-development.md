@@ -43,7 +43,7 @@ docker-compose -f docker-compose-dependencies.yaml up -d
 
 **Get access to administrative credentials on your account**
 
-For an initial setup, we advise making an IAM user with sufficient privileges to allow ConsoleMe to sync your IAM roles, S3 buckets, SQS queues, SNS topics, and AWS Config data. Sections below outline the required permissions. See [this page](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) for configuring your user credentials. 
+For an initial setup, we advise making an IAM user with sufficient privileges to allow ConsoleMe to sync your IAM roles, S3 buckets, SQS queues, SNS topics, and AWS Config data. Sections below outline the required permissions. See [this page](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) for configuring your user credentials.
 
 {% hint style="info" %}
 After you have ConsoleMe set up, you should no longer need IAM user credentials. Please set a reminder to delete these when you're done with them.
@@ -91,4 +91,3 @@ For local, unauthenticated development, the default configuration \(`example_con
 #### Browse to ConsoleMe
 
 You should now be able to access the ConsoleMe web UI at [http://localhost:8081/](http://localhost:8081/) Success! 🎉
-

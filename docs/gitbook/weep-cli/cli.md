@@ -1,5 +1,5 @@
 ---
-description: 'Using Weep, the ConsoleMe CLI'
+description: "Using Weep, the ConsoleMe CLI"
 ---
 
 # Getting Started with Weep
@@ -10,7 +10,7 @@ Weep offers five methods to serve credentials:
 
 1. Local [ECS credential provider](https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/com/amazonaws/auth/EC2ContainerCredentialsProviderWrapper.html)
 2. Local [Meta-data service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/configuring-instance-metadata-service.html)
-3. Source credentials with [credential\_process](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html)
+3. Source credentials with [credential_process](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html)
 4. Export credentials to [environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
 5. Write credentials to [file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 
@@ -56,4 +56,3 @@ Flags:
 
 Use "weep [command] --help" for more information about a command.
 ```
-
