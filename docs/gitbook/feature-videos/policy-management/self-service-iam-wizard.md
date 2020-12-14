@@ -1,6 +1,6 @@
 # Self-Service IAM Wizard
 
-ConsoleMe's self-service wizard walks your users through the process of requesting the permissions they need, without needing to know the IAM JSON policy syntax. 
+ConsoleMe's self-service wizard walks your users through the process of requesting the permissions they need, without needing to know the IAM JSON policy syntax.
 
 Step one of the wizard asks the user to identify the name of their application or role requiring permissions. After choosing their role, we show them context about the role that they can confirm before proceeding to the next step.
 
@@ -13,6 +13,3 @@ Advanced users can choose to modify the JSON policy generated for their request,
 Here's a feature video:
 
 {% embed url="https://youtu.be/txnYP0BlITo" %}
-
-
-

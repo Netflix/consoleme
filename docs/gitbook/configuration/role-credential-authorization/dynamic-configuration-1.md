@@ -14,4 +14,3 @@ group_mapping:
 ```
 
 Read more about ConsoleMe's dynamic configuration [here](dynamic-configuration-1.md).
-

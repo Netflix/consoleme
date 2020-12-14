@@ -20,22 +20,28 @@ To automatically export the credentials, just modify your command to be evaluate
 
 {% tabs %}
 {% tab title="Bash" %}
+
 ```bash
 eval $(weep export test_account_user)
 ```
+
 {% endtab %}
 
 {% tab title="Zsh" %}
+
 ```bash
 eval $(weep export test_account_user)
 ```
+
 {% endtab %}
 
 {% tab title="Fish" %}
+
 ```bash
 
 eval (weep export test_account_user)
 ```
+
 {% endtab %}
 {% endtabs %}
 
@@ -44,4 +50,3 @@ Then you can verify that the credentials are set in your environment:
 ```bash
 env | grep AWS
 ```
-
