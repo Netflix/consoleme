@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthProviderDefault";
 
 const localStorageRecentRolesKey = "consoleMeLocalStorage";
 
-const listRecentRoles = (recentRoles) => {
+const listRecentRoles = (recentRoles, user) => {
   const arnRegex = /^arn:aws:iam::(\d{12}):role\/(.+)$/;
   return recentRoles.map((role) => {
     const match = role.match(arnRegex);
@@ -14,6 +14,7 @@ const listRecentRoles = (recentRoles) => {
       return null;
     }
     const [, accountNumber, roleName] = match;
+    const accountName = user?.accounts[accountNumber];
     return (
       <Menu.Item as={NavLink} name={role} key={role} to={"/role/" + role}>
         <Header
@@ -24,7 +25,7 @@ const listRecentRoles = (recentRoles) => {
           }}
         >
           <Header.Content>
-            {accountNumber}
+            {accountName ? accountName : accountNumber}
             <Header.Subheader
               as="a"
               style={{
@@ -77,7 +78,7 @@ const ConsoleMeSidebar = () => {
       <Menu.Item>
         <Label>{recentRoles.length}</Label>
         <Menu.Header>Recent Roles</Menu.Header>
-        <Menu.Menu>{listRecentRoles(recentRoles)}</Menu.Menu>
+        <Menu.Menu>{listRecentRoles(recentRoles, user)}</Menu.Menu>
       </Menu.Item>
       <Menu.Item>
         <Menu.Header>Help</Menu.Header>
