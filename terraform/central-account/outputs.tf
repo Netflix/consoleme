@@ -1,5 +1,5 @@
 output "public_fqdn" {
-  description = "The public address of the EC2 instance running the application."
+  description = "The public address of the load balancer running the application."
   value       = aws_lb.public-to-private-lb.dns_name
 }
 
