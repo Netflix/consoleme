@@ -1,5 +1,6 @@
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV1Handler
+from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.auth import (
     can_admin_policies,
     can_create_roles,
@@ -72,6 +73,7 @@ class UserProfileHandler(BaseAPIV1Handler):
                 },
                 "config": {"enabled": can_edit_dynamic_config(self.user, self.groups)},
             },
+            "accounts": await get_account_id_to_name_mapping(),
         }
 
         self.set_header("Content-Type", "application/json")
