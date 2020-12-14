@@ -44,16 +44,15 @@ variable "vpc_cidr" {
 
 }
 variable "subnet_azs" {
-  description = "Subnets will be created in these availability zones."
+  description = "Subnets will be created in these availability zones (need at least two for load balancer)."
   type        = list(string)
-  default     = ["us-east-1a"]
 
 }
 
 variable "public_subnet_cidrs" {
   description = "The CIDR block of the subnet the load balancer will be placed in."
   type        = list(string)
-  default     = ["10.1.1.128/28"]
+  default     = ["10.1.1.128/28", "10.1.1.144/28"] # LB requires at least two networks
 }
 
 
@@ -73,6 +72,11 @@ variable "allow_internet_access" {
   description = "Set to true to allow Internet access to the ConsoleMe server."
   default     = false
   type        = bool
+}
+
+variable "lb_port" {
+  description = "The port the load balancer will listen on."
+  default     = 8081
 }
 
 # Compute
@@ -180,4 +184,17 @@ variable "sync_accounts_from_organizations_role_to_assume" {
 variable "bucket_name_prefix" {
   description = "The name prefix of the S3 bucket that you want to upload the consoleme.tar.gz to, in the root of the bucket."
   type        = string
+}
+
+##### Other security-related aspects
+variable "lb-certificate-arn" {
+  description = "The certificate the load balancer will use (as it terminates HTTPS). If not provided, a self-signed certificate will be used."
+  type        = string
+  default     = ""
+}
+
+variable "lb-self-signed-cert-cn" {
+  description = "If a self-signed cert is to be created, what is the common name of it?"
+  type        = string
+  default     = "example.com"
 }

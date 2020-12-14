@@ -24,7 +24,7 @@ module "server" {
     http_tokens                 = "required"
   }
 
-  vpc_security_group_ids = [aws_security_group.external.id]
+  vpc_security_group_ids = [aws_security_group.server.id]
 
   tags = module.compute_label.tags
 }
@@ -39,39 +39,4 @@ module "kms_ebs" {
   enable_key_rotation     = true
   alias                   = var.kms_key_alias
   tags                    = module.compute_label.tags
-}
-
-/**
-  Creating a load balancer to "port forward" traffic from the Internet into the private instance.
-  This is just another means of security, so the server with the keys to the kingdom is not sitting on a public network.
-*/
-resource "aws_lb" "public-to-private-lb" {
-  name               = "public-to-private-lb"
-  internal           = var.allow_internet_access ? false : true
-  load_balancer_type = "network" // Using a network LB for HTTPS traffic because we just want to forward packets internally, nothing more
-  subnets            = [module.network.public_subnets[0]]
-}
-
-resource "aws_lb_target_group" "consoleme-servers" {
-  name     = "consoleme-servers"
-  port     = 8081
-  protocol = "TCP"
-  vpc_id   = module.network.vpc_id
-}
-
-resource "aws_lb_target_group_attachment" "test" {
-  target_group_arn = aws_lb_target_group.consoleme-servers.arn
-  target_id        = module.server.id[0]
-  port             = 8081
-}
-
-resource "aws_lb_listener" "public-8081" {
-  load_balancer_arn = aws_lb.public-to-private-lb.arn
-  port              = "8081"
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.consoleme-servers.arn
-  }
 }
