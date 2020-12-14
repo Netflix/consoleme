@@ -29,10 +29,10 @@ docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d
 
 At this point you should the below command and verify you have 4 ConsoleMe related containers running.
 
-* consoleme-celery
-* consoleme
-* dynamodb-local
-* redis:alpine 
+- consoleme-celery
+- consoleme
+- dynamodb-local
+- redis:alpine
 
 ```text
 docker ps
@@ -49,4 +49,3 @@ docker container logs -f consoleme_consoleme-celery_1
 By default, you're running ConsoleMe as an administrator, using the local [Docker development configuration](https://github.com/Netflix/consoleme/tree/cd6e5cd6fba4c8d5cf0b9474f58e6c34055d56c6/docs/gitbook/quick-start/example_config/example_config_docker_development.yaml)**.** This configuration does not implement authn/authz and is not intended to be used in a production environment.
 
 If successful, ConsoleMe should have been able to cache all of your resources. But you'll notice that you're unable to access any IAM roles with the default configuration. This is because we cannot generate an authorization mapping
-

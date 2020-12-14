@@ -1,6 +1,6 @@
 # OIDC/OAuth2 \(Tested with Okta\)
 
-ConsoleMe can directly authenticate users against an OIDC identity provider. We have an example configuration [here](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_oidc.yaml). 
+ConsoleMe can directly authenticate users against an OIDC identity provider. We have an example configuration [here](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_oidc.yaml).
 
 The settings that must be defined for the OIDC flow to work are as follows:
 
@@ -44,4 +44,3 @@ oidc_secrets:
 ```bash
 CONFIG_LOCATION=example_config/example_config_oidc.yaml python consoleme/__main__.py
 ```
-

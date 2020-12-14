@@ -9,4 +9,3 @@ Roles:
    arn:aws:iam::312345678901:role/admin
 ...
 ```
-
