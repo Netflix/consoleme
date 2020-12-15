@@ -163,7 +163,7 @@ class Auth:
                 },
                 exc_info=True,
             )
-        if config.get("auth.force_groups_lowercase", True):
+        if config.get("auth.force_groups_lowercase", False):
             groups = [x.lower() for x in groups]
         return list(set(groups))
 

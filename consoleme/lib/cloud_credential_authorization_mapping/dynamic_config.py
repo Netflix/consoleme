@@ -19,7 +19,7 @@ class DynamicConfigAuthorizationMappingGenerator(CredentialAuthzMappingGenerator
             return authorization_mapping
 
         for group, role_mapping in group_mapping_configuration.items():
-            if config.get("auth.force_groups_lowercase", True):
+            if config.get("auth.force_groups_lowercase", False):
                 group = group.lower()
             if not authorization_mapping.get(group):
                 authorization_mapping[group] = RoleAuthorizations.parse_obj(
