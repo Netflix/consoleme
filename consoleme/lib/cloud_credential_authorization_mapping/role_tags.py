@@ -54,6 +54,8 @@ class RoleTagAuthorizationMappingGenerator(CredentialAuthzMappingGenerator):
                 ):
                     splitted_groups = tag["Value"].split(":")
                     for group in splitted_groups:
+                        if config.get("auth.force_groups_lowercase", False):
+                            group = group.lower()
                         if not authorization_mapping.get(group):
                             authorization_mapping[group] = RoleAuthorizations.parse_obj(
                                 {
@@ -68,6 +70,8 @@ class RoleTagAuthorizationMappingGenerator(CredentialAuthzMappingGenerator):
                 ):
                     splitted_groups = tag["Value"].split(":")
                     for group in splitted_groups:
+                        if config.get("auth.force_groups_lowercase", False):
+                            group = group.lower()
                         if not authorization_mapping.get(group):
                             authorization_mapping[group] = RoleAuthorizations.parse_obj(
                                 {
