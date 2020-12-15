@@ -42,5 +42,6 @@ be interested in implementing. These include:
 
 - [Discord](https://discord.gg/nQVpNGGkYu)
 - [Docs](https://hawkins.gitbook.io/consoleme/)
+- [Weep (our CLI)](https://github.com/netflix/weep)
 - [Source Code](https://github.com/netflix/consoleme)
 - [Issue tracker](https://github.com/netflix/consoleme/issues)
