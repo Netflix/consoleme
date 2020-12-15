@@ -73,6 +73,7 @@ async def populate_oidc_config():
 
 
 async def authenticate_user_by_oidc(request):
+    email = None
     groups = []
     decoded_access_token = {}
     oidc_config = await populate_oidc_config()
@@ -178,6 +179,10 @@ async def authenticate_user_by_oidc(request):
                 algorithm=algorithm,
             )
 
+            email = decoded_id_token.get(
+                config.get("get_user_by_oidc_settings.jwt_email_key", "email")
+            )
+
             # For google auth, the access_token does not contain JWT-parsable claims.
             try:
                 header = jwt.get_unverified_header(access_token)
@@ -193,14 +198,25 @@ async def authenticate_user_by_oidc(request):
                     ),
                     algorithm=algorithm,
                 )
-            except DecodeError:
+            except DecodeError as e:
                 # Silently skip. This is usually due to a JWT that doesn't have JWT-parsable claims.
-                pass
+                log.debug(
+                    {
+                        **log_data,
+                        "message": (
+                            "Unable to derive user's groups from access_token. This is expected for some identity providers."
+                        ),
+                        "error": e,
+                        "user": email,
+                    }
+                )
+                log.debug(log_data, exc_info=True)
+                groups = []
         else:
             decoded_id_token = jwt.decode(id_token, verify=jwt_verify)
             decoded_access_token = jwt.decode(access_token, verify=jwt_verify)
 
-        email = decoded_id_token.get(
+        email = email or decoded_id_token.get(
             config.get("get_user_by_oidc_settings.jwt_email_key", "email")
         )
 

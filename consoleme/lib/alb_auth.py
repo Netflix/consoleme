@@ -1,5 +1,6 @@
 import base64
 import json
+import sys
 
 import jwt
 import requests
@@ -7,6 +8,8 @@ from okta_jwt.jwt import validate_token
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import UnableToAuthenticate
+
+log = config.get_logger()
 
 
 async def authenticate_user_by_alb_auth(request):
@@ -17,6 +20,8 @@ async def authenticate_user_by_alb_auth(request):
         "get_user_by_aws_alb_auth_settings.aws_alb_claims_header_name",
         "X-Amzn-Oidc-Accesstoken",
     )
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {"function": function}
     encoded_auth_jwt = request.request.headers.get(aws_alb_auth_header_name)
     encoded_claims_jwt = request.request.headers.get(aws_alb_claims_header_name)
     if not encoded_auth_jwt:
@@ -56,8 +61,19 @@ async def authenticate_user_by_alb_auth(request):
             access_token_jwt["aud"],
             access_token_jwt["cid"],
         )
-    except jwt.exceptions.DecodeError:
+    except jwt.exceptions.DecodeError as e:
         # Silently skip. This is usually due to a JWT that doesn't have JWT-parsable claims.
+        log.debug(
+            {
+                **log_data,
+                "message": (
+                    "Unable to derive user's groups from access_token. This is expected for some identity providers."
+                ),
+                "error": e,
+                "user": email,
+            }
+        )
+        log.debug(log_data, exc_info=True)
         groups = []
 
     return {"user": email, "groups": groups}
