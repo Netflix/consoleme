@@ -6,6 +6,7 @@ import requests
 from okta_jwt.jwt import validate_token
 
 from consoleme.config import config
+from consoleme.exceptions.exceptions import UnableToAuthenticate
 
 
 async def authenticate_user_by_alb_auth(request):
@@ -38,17 +39,25 @@ async def authenticate_user_by_alb_auth(request):
         config.get("get_user_by_aws_alb_auth_settings.jwt_email_key", "email")
     )
 
+    if not email:
+        raise UnableToAuthenticate("Unable to determine user from ID Token")
+
     # Step 4: Parse the Access Token
     # User has already passed ALB auth and successfully authenticated
-    access_token_jwt = jwt.decode(encoded_claims_jwt, pub_key, verify=False)
-    groups = access_token_jwt.get(
-        config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key", "groups")
-    )
-    # Step 5: Verify the access token.
-    validate_token(
-        encoded_claims_jwt,
-        access_token_jwt["iss"],
-        access_token_jwt["aud"],
-        access_token_jwt["cid"],
-    )
+    try:
+        access_token_jwt = jwt.decode(encoded_claims_jwt, pub_key, verify=False)
+        groups = access_token_jwt.get(
+            config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key", "groups")
+        )
+        # Step 5: Verify the access token.
+        validate_token(
+            encoded_claims_jwt,
+            access_token_jwt["iss"],
+            access_token_jwt["aud"],
+            access_token_jwt["cid"],
+        )
+    except jwt.exceptions.DecodeError:
+        # Silently skip. This is usually due to a JWT that doesn't have JWT-parsable claims.
+        groups = []
+
     return {"user": email, "groups": groups}

@@ -7,10 +7,14 @@ import pytz
 import tornado.httpclient
 import ujson as json
 from jwt.algorithms import RSAAlgorithm
+from jwt.exceptions import DecodeError
 from tornado import httputil
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import MissingConfigurationValue
+from consoleme.exceptions.exceptions import (
+    MissingConfigurationValue,
+    UnableToAuthenticate,
+)
 from consoleme.lib.generic import should_force_redirect
 from consoleme.lib.jwt import generate_jwt_token
 
@@ -69,8 +73,9 @@ async def populate_oidc_config():
 
 
 async def authenticate_user_by_oidc(request):
+    groups = []
+    decoded_access_token = {}
     oidc_config = await populate_oidc_config()
-
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     log_data = {"function": function}
     code = request.get_argument("code", None)
@@ -173,24 +178,36 @@ async def authenticate_user_by_oidc(request):
                 algorithm=algorithm,
             )
 
-            header = jwt.get_unverified_header(access_token)
-            key_id = header["kid"]
-            algorithm = header["alg"]
-            pub_key = oidc_config["jwt_keys"][key_id]
-            # This will raises errors if the audience isn't right or if the token is expired or has other errors.
-            decoded_access_token = jwt.decode(
-                access_token,
-                pub_key,
-                audience=config.get("get_user_by_oidc_settings.access_token_audience"),
-                algorithm=algorithm,
-            )
+            # For google auth, the access_token does not contain JWT-parsable claims.
+            try:
+                header = jwt.get_unverified_header(access_token)
+                key_id = header["kid"]
+                algorithm = header["alg"]
+                pub_key = oidc_config["jwt_keys"][key_id]
+                # This will raises errors if the audience isn't right or if the token is expired or has other errors.
+                decoded_access_token = jwt.decode(
+                    access_token,
+                    pub_key,
+                    audience=config.get(
+                        "get_user_by_oidc_settings.access_token_audience"
+                    ),
+                    algorithm=algorithm,
+                )
+            except DecodeError:
+                # Silently skip. This is usually due to a JWT that doesn't have JWT-parsable claims.
+                pass
         else:
             decoded_id_token = jwt.decode(id_token, verify=jwt_verify)
             decoded_access_token = jwt.decode(access_token, verify=jwt_verify)
+
         email = decoded_id_token.get(
             config.get("get_user_by_oidc_settings.jwt_email_key", "email")
         )
-        groups = decoded_access_token.get(
+
+        if not email:
+            raise UnableToAuthenticate("Unable to determine user from ID Token")
+
+        groups = groups or decoded_access_token.get(
             config.get("get_user_by_oidc_settings.jwt_groups_key", "groups")
         )
 
