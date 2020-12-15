@@ -62,7 +62,7 @@ async def authenticate_user_by_alb_auth(request):
             access_token_jwt["cid"],
         )
     except jwt.exceptions.DecodeError as e:
-        # Silently skip. This is usually due to a JWT that doesn't have JWT-parsable claims.
+        # This exception occurs when the access token is not JWT-parsable. It is expected with some IdPs.
         log.debug(
             {
                 **log_data,
