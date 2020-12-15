@@ -1,7 +1,7 @@
 
 /**
   Creating a load balancer to "port forward" traffic from the Internet into the private instance.
-  This does two things: 
+  This does two things:
     1. Keeps the ConsoleMe server on a private network.
     2. Enables the use of ALB Authentication.
 */
@@ -35,7 +35,7 @@ resource "aws_lb_listener" "public-8081" {
 
   default_action {
     type = "authenticate-oidc"
-  
+
     authenticate_oidc {
       authorization_endpoint  = var.lb-authentication-authorization-endpoint
       client_id               = var.lb-authentication-client-id

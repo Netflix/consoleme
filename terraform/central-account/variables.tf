@@ -106,7 +106,7 @@ variable "ec2_ami_owner_filter" {
 }
 
 variable "ec2_ami_name_filter" {
-  description = "The name of the AMI to search for. Defaults to amzn2-ami-hvm-2.0.2020*-x86_64-ebs" 
+  description = "The name of the AMI to search for. Defaults to amzn2-ami-hvm-2.0.2020*-x86_64-ebs"
   default     = "amzn2-ami-hvm-2.0.2020*-x86_64-ebs" # Need a release post Jan 2020 to support IMDSv2
   type        = string
 }

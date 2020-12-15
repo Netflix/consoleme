@@ -27,7 +27,7 @@ systemctl restart rsyslog
 sudo yum update -y
 yum -y erase python3
 sudo amazon-linux-extras enable python3.8 # consoleme requires 3.8
-yum -y install git python3.8 python38-pip python38-devel 
+yum -y install git python3.8 python38-pip python38-devel
 yum -y install libcurl-devel
 yum -y install libxml2-devel xmlsec1-devel xmlsec1-openssl-devel libtool-ltdl-devel
 sudo yum install -y gcc-c++

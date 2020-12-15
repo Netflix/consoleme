@@ -97,4 +97,4 @@ get_user_by_aws_alb_auth_settings:
   jwt_groups_key: groups
 
 jwt_secret: secret
-url: {user_facing_url}
+url: { user_facing_url }
