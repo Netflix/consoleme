@@ -12,7 +12,7 @@ Note that if you modify this consoleme.tar.gz file and then run Terraform again,
 
 - Download and install Terraform 0.13.4. I highly recommend [tfenv](https://github.com/tfutils/tfenv)
 
-- Create your `terraform.tfvars` file and insert the content shown below.
+- Create your `terraform.tfvars` file (see [terraform.tfvars.example](terraform.tfvars.example) for direction) and insert the content shown below.
 
 > **Important**: Then make sure that the bucket `my-bucket` is reflected in your `terraform.tfvars` file.
 
@@ -45,10 +45,12 @@ terraform apply -auto-approve
   and directly to the ConsoleMe server. The load balancer is internal-only by default. Change the allow_internet_access
   variable to true to allow access.
 
+- This server needs authentication to be used properly. In this Terraform example, we've opted to use ALB authentication. The ALB Authentication is set up as part of the Terraform, with variables provided in the `terraform.tfvars` you should create. ConsoleMe supports other methods of authentication, please see examples under [example_config](../example_config).
+
 - After deployment, you can wait for a few minutes and then visit the ConsoleMe dashboard
   at the URL included in the output.
 
-The public address of the load balancer is included in your output. You can then open up the demo environment at http://publiciaddressfromoutput:8081
+The public address of the load balancer is included in your output. You can then open up the demo environment at https://publiciaddressfromoutput:8081
 
 - Once you are done, destroy the infrastructure:
 

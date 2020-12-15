@@ -34,6 +34,21 @@ resource "aws_lb_listener" "public-8081" {
   certificate_arn   = (var.lb-certificate-arn == "" ? aws_acm_certificate.lb-self-signed[0].arn : var.lb-certificate-arn)
 
   default_action {
+    type = "authenticate-oidc"
+  
+    authenticate_oidc {
+      authorization_endpoint  = var.lb-authentication-authorization-endpoint
+      client_id               = var.lb-authentication-client-id
+      client_secret           = var.lb-authentication-client-secret
+      issuer                  = var.lb-authentication-issuer
+      token_endpoint          = var.lb-authentication-token-endpoint
+      user_info_endpoint      = var.lb-authentication-user-info-endpoint
+
+      scope                   = var.lb-authentication-scope
+    }
+  }
+
+  default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.consoleme-servers.arn
   }

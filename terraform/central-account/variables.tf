@@ -186,7 +186,7 @@ variable "bucket_name_prefix" {
   type        = string
 }
 
-##### Other security-related aspects
+# Other security-related aspects
 variable "lb-certificate-arn" {
   description = "The certificate the load balancer will use (as it terminates HTTPS). If not provided, a self-signed certificate will be used."
   type        = string
@@ -197,4 +197,32 @@ variable "lb-self-signed-cert-cn" {
   description = "If a self-signed cert is to be created, what is the common name of it?"
   type        = string
   default     = "example.com"
+}
+
+variable "lb-authentication-authorization-endpoint" {
+  description = "The authorization endpoint of the IdP you'd like to use in OIDC authentication."
+}
+
+variable "lb-authentication-client-id" {
+  description = "The client ID of the OIDC authenticator you'd like to use."
+}
+
+variable "lb-authentication-client-secret" {
+  description = "The client secret of the OIDC authenticator you'd like to use."
+}
+
+variable "lb-authentication-issuer" {
+  description = "The IdP issuer identifier you'd like to use in OIDC authentication."
+}
+
+variable "lb-authentication-token-endpoint" {
+  description = "The token endpoint for the IdP you'd like to use in OIDC authentication."
+}
+
+variable "lb-authentication-user-info-endpoint" {
+  description = "The user info endpoint for the IdP you'd like to use in OIDC authentication."
+}
+
+variable "lb-authentication-scope" {
+  description = "The scopes to request from the OIDC provider, usually email and groups."
 }
