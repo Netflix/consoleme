@@ -1,11 +1,15 @@
 import base64
 import json
+import sys
 
 import jwt
 import requests
 from okta_jwt.jwt import validate_token
 
 from consoleme.config import config
+from consoleme.exceptions.exceptions import UnableToAuthenticate
+
+log = config.get_logger()
 
 
 async def authenticate_user_by_alb_auth(request):
@@ -16,6 +20,8 @@ async def authenticate_user_by_alb_auth(request):
         "get_user_by_aws_alb_auth_settings.aws_alb_claims_header_name",
         "X-Amzn-Oidc-Accesstoken",
     )
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {"function": function}
     encoded_auth_jwt = request.request.headers.get(aws_alb_auth_header_name)
     encoded_claims_jwt = request.request.headers.get(aws_alb_claims_header_name)
     if not encoded_auth_jwt:
@@ -38,17 +44,36 @@ async def authenticate_user_by_alb_auth(request):
         config.get("get_user_by_aws_alb_auth_settings.jwt_email_key", "email")
     )
 
+    if not email:
+        raise UnableToAuthenticate("Unable to determine user from ID Token")
+
     # Step 4: Parse the Access Token
     # User has already passed ALB auth and successfully authenticated
-    access_token_jwt = jwt.decode(encoded_claims_jwt, pub_key, verify=False)
-    groups = access_token_jwt.get(
-        config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key", "groups")
-    )
-    # Step 5: Verify the access token.
-    validate_token(
-        encoded_claims_jwt,
-        access_token_jwt["iss"],
-        access_token_jwt["aud"],
-        access_token_jwt["cid"],
-    )
+    try:
+        access_token_jwt = jwt.decode(encoded_claims_jwt, pub_key, verify=False)
+        groups = access_token_jwt.get(
+            config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key", "groups")
+        )
+        # Step 5: Verify the access token.
+        validate_token(
+            encoded_claims_jwt,
+            access_token_jwt["iss"],
+            access_token_jwt["aud"],
+            access_token_jwt["cid"],
+        )
+    except jwt.exceptions.DecodeError as e:
+        # This exception occurs when the access token is not JWT-parsable. It is expected with some IdPs.
+        log.debug(
+            {
+                **log_data,
+                "message": (
+                    "Unable to derive user's groups from access_token. This is expected for some identity providers."
+                ),
+                "error": e,
+                "user": email,
+            }
+        )
+        log.debug(log_data, exc_info=True)
+        groups = []
+
     return {"user": email, "groups": groups}

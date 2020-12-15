@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthProviderDefault";
 
 const localStorageRecentRolesKey = "consoleMeLocalStorage";
 
-const listRecentRoles = (recentRoles) => {
+const listRecentRoles = (recentRoles, user) => {
   const arnRegex = /^arn:aws:iam::(\d{12}):role\/(.+)$/;
   return recentRoles.map((role) => {
     const match = role.match(arnRegex);
@@ -14,21 +14,22 @@ const listRecentRoles = (recentRoles) => {
       return null;
     }
     const [, accountNumber, roleName] = match;
+    const accountName = user?.accounts[accountNumber];
     return (
       <Menu.Item as={NavLink} name={role} key={role} to={"/role/" + role}>
         <Header
           as="a"
-          color="yellow"
+          color="blue"
           style={{
-            fontSize: "11px",
+            fontSize: "14px",
           }}
         >
           <Header.Content>
-            {accountNumber}
+            {accountName ? accountName : accountNumber}
             <Header.Subheader
               as="a"
               style={{
-                fontSize: "11px",
+                fontSize: "14px",
               }}
             >
               {roleName}
@@ -77,7 +78,7 @@ const ConsoleMeSidebar = () => {
       <Menu.Item>
         <Label>{recentRoles.length}</Label>
         <Menu.Header>Recent Roles</Menu.Header>
-        <Menu.Menu>{listRecentRoles(recentRoles)}</Menu.Menu>
+        <Menu.Menu>{listRecentRoles(recentRoles, user)}</Menu.Menu>
       </Menu.Item>
       <Menu.Item>
         <Menu.Header>Help</Menu.Header>
@@ -88,6 +89,9 @@ const ConsoleMeSidebar = () => {
             href={documentation_url || ""}
             rel="noopener noreferrer"
             target="_blank"
+            style={{
+              fontSize: "14px",
+            }}
           >
             <Icon name="file" />
             Documentation
@@ -98,6 +102,9 @@ const ConsoleMeSidebar = () => {
             href={support_contact ? "mailto:" + support_contact : "/"}
             rel="noopener noreferrer"
             target="_blank"
+            style={{
+              fontSize: "14px",
+            }}
           >
             <Icon name="send" />
             Email us
@@ -108,6 +115,9 @@ const ConsoleMeSidebar = () => {
             href={support_chat_url || "/"}
             rel="noopener noreferrer"
             target="_blank"
+            style={{
+              fontSize: "14px",
+            }}
           >
             <Icon name="slack" />
             Find us on Slack

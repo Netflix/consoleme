@@ -113,4 +113,3 @@ Configure the trust policy with the following settings \(Yes, you'll want to giv
   "Version": "2012-10-17"
 }
 ```
-

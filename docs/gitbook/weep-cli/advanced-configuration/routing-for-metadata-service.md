@@ -18,6 +18,7 @@ Alternatively to persist the settings above on a Mac, [download the plists](http
 launchctl load /Library/LaunchDaemons/com.user.weep.plist
 launchctl load /Library/LaunchDaemons/com.user.lo0-loopback.plist
 ```
+
 {% endtab %}
 
 {% tab title="Linux" %}
@@ -38,6 +39,6 @@ Enable the rules by running the following:
 ```text
 sudo /sbin/iptables-restore < <path_to_file>.txt
 ```
+
 {% endtab %}
 {% endtabs %}
-

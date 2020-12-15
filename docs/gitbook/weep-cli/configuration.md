@@ -2,9 +2,9 @@
 
 Weep searches for a configuration file in the following locations:
 
-* `./.weep.yaml`
-* `~/.weep.yaml`
-* `~/.config/weep/.weep.yaml`
+- `./.weep.yaml`
+- `~/.weep.yaml`
+- `~/.config/weep/.weep.yaml`
 
 You can also specify a config file as a CLI arg:
 
@@ -56,4 +56,3 @@ metadata:
     - path: latest/meta-data/local-hostname
       data: ip-127-0-0-1.us-west-2.compute.internal
 ```
-

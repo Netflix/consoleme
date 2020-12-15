@@ -39,6 +39,7 @@ be interested in implementing. These include:
 - Cache Google Groups, Users and Account Settings from internal services at Netflix
 
 ## Project resources
+
 - [Discord](https://discord.gg/nQVpNGGkYu)
 - [Docs](https://hawkins.gitbook.io/consoleme/)
 - [Source Code](https://github.com/netflix/consoleme)

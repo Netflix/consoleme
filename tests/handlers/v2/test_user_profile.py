@@ -57,5 +57,6 @@ class TestUserProfile(AsyncHTTPTestCase):
                     "audit": {"enabled": False},
                     "config": {"enabled": False},
                 },
+                "accounts": {"123456789012": "default_account"},
             },
         )

@@ -33,4 +33,4 @@ jobs:
           pre-commit install
       - name: Run pre-commit
         run: |
-          pre-commit run
+          pre-commit run -a
