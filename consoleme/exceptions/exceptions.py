@@ -377,6 +377,14 @@ class ResourceNotFound(BaseException):
         super().__init__(msg)
 
 
+class UnableToAuthenticate(BaseException):
+    """Unable to authenticate user or app"""
+
+    def __init__(self, msg=""):
+        stats.count("UnableToAuthenticate")
+        super().__init__(msg)
+
+
 class SilentException(BaseException):
     """
     Exception Traceback will not be printed (Useful for OIDC/SAML Redirects when we want Tornado to stop
