@@ -170,6 +170,10 @@ async def authenticate_user_by_oidc(request):
             header = jwt.get_unverified_header(id_token)
             key_id = header["kid"]
             algorithm = header["alg"]
+            if not algorithm:
+                raise UnableToAuthenticate(
+                    "ID Token header does not specify a signing algorithm."
+                )
             pub_key = oidc_config["jwt_keys"][key_id]
             # This will raises errors if the audience isn't right or if the token is expired or has other errors.
             decoded_id_token = jwt.decode(
@@ -188,6 +192,10 @@ async def authenticate_user_by_oidc(request):
                 header = jwt.get_unverified_header(access_token)
                 key_id = header["kid"]
                 algorithm = header["alg"]
+                if not algorithm:
+                    raise UnableToAuthenticate(
+                        "Access Token header does not specify a signing algorithm."
+                    )
                 pub_key = oidc_config["jwt_keys"][key_id]
                 # This will raises errors if the audience isn't right or if the token is expired or has other errors.
                 decoded_access_token = jwt.decode(
