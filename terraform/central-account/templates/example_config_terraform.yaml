@@ -84,4 +84,17 @@ dynamic_config:
 
 policies:
   role_name: ConsoleMeTarget
-# TODO: SAML / Oauth / TLS configuration / Secure JWT / CLI Auth / Generic CloudTrail log support
+
+celery:
+  active_region: ${region}
+
+auth:
+  get_user_by_aws_alb_auth: true
+  set_auth_cookie: true
+
+get_user_by_aws_alb_auth_settings:
+  jwt_email_key: sub
+  jwt_groups_key: groups
+
+jwt_secret: secret
+url: { user_facing_url }

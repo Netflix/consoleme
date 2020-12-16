@@ -44,14 +44,20 @@ variable "vpc_cidr" {
 
 }
 variable "subnet_azs" {
-  description = "Subnets will be created in these availability zones."
+  description = "Subnets will be created in these availability zones (need at least two for load balancer)."
   type        = list(string)
-  default     = ["us-east-1a"]
 
 }
 
 variable "public_subnet_cidrs" {
-  description = "The CIDR block of the public subnet."
+  description = "The CIDR block of the subnet the load balancer will be placed in."
+  type        = list(string)
+  default     = ["10.1.1.128/28", "10.1.1.144/28"] # LB requires at least two networks
+}
+
+
+variable "private_subnet_cidrs" {
+  description = "The CIDR block of the subnet the ConsoleMe server will be placed in."
   type        = list(string)
   default     = ["10.1.1.0/28"]
 }
@@ -60,6 +66,17 @@ variable "allowed_inbound_cidr_blocks" {
   description = "Allowed inbound CIDRs for the security group rules."
   default     = []
   type        = list(string)
+}
+
+variable "allow_internet_access" {
+  description = "Set to true to allow Internet access to the ConsoleMe server."
+  default     = false
+  type        = bool
+}
+
+variable "lb_port" {
+  description = "The port the load balancer will listen on."
+  default     = 443
 }
 
 # Compute
@@ -89,8 +106,8 @@ variable "ec2_ami_owner_filter" {
 }
 
 variable "ec2_ami_name_filter" {
-  description = "The name of the AMI to search for. Defaults to amzn2-ami-hvm-2.0.2019*-x86_64-ebs"
-  default     = "amzn2-ami-hvm-2.0.2019*-x86_64-ebs"
+  description = "The name of the AMI to search for. Defaults to amzn2-ami-hvm-2.0.2020*-x86_64-ebs"
+  default     = "amzn2-ami-hvm-2.0.2020*-x86_64-ebs" # Need a release post Jan 2020 to support IMDSv2
   type        = string
 }
 
@@ -167,4 +184,45 @@ variable "sync_accounts_from_organizations_role_to_assume" {
 variable "bucket_name_prefix" {
   description = "The name prefix of the S3 bucket that you want to upload the consoleme.tar.gz to, in the root of the bucket."
   type        = string
+}
+
+# Other security-related aspects
+variable "lb-certificate-arn" {
+  description = "The certificate the load balancer will use (as it terminates HTTPS). If not provided, a self-signed certificate will be used."
+  type        = string
+  default     = ""
+}
+
+variable "lb-self-signed-cert-cn" {
+  description = "If a self-signed cert is to be created, what is the common name of it?"
+  type        = string
+  default     = "example.com"
+}
+
+variable "lb-authentication-authorization-endpoint" {
+  description = "The authorization endpoint of the IdP you'd like to use in OIDC authentication."
+}
+
+variable "lb-authentication-client-id" {
+  description = "The client ID of the OIDC authenticator you'd like to use."
+}
+
+variable "lb-authentication-client-secret" {
+  description = "The client secret of the OIDC authenticator you'd like to use."
+}
+
+variable "lb-authentication-issuer" {
+  description = "The IdP issuer identifier you'd like to use in OIDC authentication."
+}
+
+variable "lb-authentication-token-endpoint" {
+  description = "The token endpoint for the IdP you'd like to use in OIDC authentication."
+}
+
+variable "lb-authentication-user-info-endpoint" {
+  description = "The user info endpoint for the IdP you'd like to use in OIDC authentication."
+}
+
+variable "lb-authentication-scope" {
+  description = "The scopes to request from the OIDC provider, usually email and groups."
 }

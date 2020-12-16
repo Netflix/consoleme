@@ -5,9 +5,28 @@ region              = "us-east-1"
 default_tags        = {}
 key_name            = "kinnaird"
 vpc_cidr            = "10.1.1.0/24"
-public_subnet_cidrs = ["10.1.1.0/28"]
-subnet_azs          = ["us-east-1a"]
+public_subnet_cidrs = ["10.1.1.128/28", "10.1.1.144/28"]
+private_subnet_cidrs = ["10.1.1.0/28"]
+subnet_azs          = ["us-east-1a", "us-east-1b"]
 
-allowed_inbound_cidr_blocks = []
+allowed_inbound_cidr_blocks = []  // NOTE: Do not open this up to 0.0.0.0/0. Restrict access to your IP address for the demo.
+allow_internet_access = false // Set this to true if you want to be able to access the server from the Internet.
+bucket_name_prefix = "your-name-prefix"
 
-bucket_name_prefix = "random-name-prefix"
+// Example for using ALB Auth with Google (you'll need to create an OpenID app)
+lb-authentication-authorization-endpoint = "https://accounts.google.com/o/oauth2/auth"
+lb-authentication-client-id = "<the-client-id-of-the-app>"
+lb-authentication-client-secret = "<the-client-secret-of-the-app>"
+lb-authentication-issuer = "https://accounts.google.com"
+lb-authentication-token-endpoint = "https://oauth2.googleapis.com/token"
+lb-authentication-user-info-endpoint = "https://www.googleapis.com/oauth2/v3/userinfo"
+lb-authentication-scope = "https://www.googleapis.com/auth/admin.directory.group.readonly email openid"
+
+// Example for using ALB Auth with Okta
+lb-authentication-authorization-endpoint = "https://dev-12345.okta.com/oauth2/default/v1/authorize"
+lb-authentication-client-id = "<the-client-id-of-the-app>"
+lb-authentication-client-secret = "<the-client-secret-of-the-app>"
+lb-authentication-issuer = "https://dev-12345.okta.com/oauth2/default"
+lb-authentication-token-endpoint = "https://dev-12345.okta.com/oauth2/default/v1/token"
+lb-authentication-user-info-endpoint = "https://dev-12345.okta.com/oauth2/default/v1/userinfo"
+lb-authentication-scope = "email openid groups"
