@@ -76,7 +76,7 @@ variable "allow_internet_access" {
 
 variable "lb_port" {
   description = "The port the load balancer will listen on."
-  default     = 8081
+  default     = 443
 }
 
 # Compute
