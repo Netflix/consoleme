@@ -24,7 +24,7 @@ services:
     # are displayed
     command: >
       bash -c '
-      scripts/retrieve_or_decode_configuration.py;
+      python scripts/retrieve_or_decode_configuration.py;
       pip install argh watchdog;
       pip install -e /apps/consoleme/default_plugins;
       watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py &
