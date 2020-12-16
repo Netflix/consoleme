@@ -1,5 +1,5 @@
 module "server" {
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-ec2-instance?ref=v2.12.0"
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-ec2-instance?ref=v2.16.0"
 
   name                        = module.compute_label.id
   instance_count              = 1
@@ -7,9 +7,9 @@ module "server" {
   instance_type               = var.instance_type
   key_name                    = var.key_name
   iam_instance_profile        = aws_iam_instance_profile.ConsoleMeInstanceProfile.name
-  subnet_id                   = module.network.public_subnets[0]
+  subnet_id                   = module.network.private_subnets[0]
   user_data                   = data.template_file.consoleme_userdata.rendered
-  associate_public_ip_address = true
+
   root_block_device = [
     {
       volume_type = "gp2"
@@ -18,11 +18,16 @@ module "server" {
       kms_key_id  = module.kms_ebs.key_arn
     }
   ]
-  vpc_security_group_ids = [aws_security_group.external.id]
+
+  metadata_options = {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+  }
+
+  vpc_security_group_ids = [aws_security_group.server.id]
 
   tags = module.compute_label.tags
 }
-
 
 module "kms_ebs" {
   source                  = "git::https://github.com/cloudposse/terraform-aws-kms-key.git?ref=0.7.0"
