@@ -37,7 +37,7 @@
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
 * [Deployment Strategies](deployment-strategies.md)
-* [Contributing to ConsoleMe and Weep](contributing-to-consoleme-and-weep.md)
+* [Contributing](contributing-to-consoleme-and-weep.md)
 * [FAQ](faq.md)
 * [License](license.md)
 

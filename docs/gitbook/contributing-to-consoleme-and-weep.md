@@ -1,4 +1,4 @@
-# Contributing to ConsoleMe and Weep
+# Contributing
 
 ## How to get started
 
