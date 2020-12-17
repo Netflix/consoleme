@@ -36,5 +36,5 @@ Netflix's internal celery tasks handle a variety of additional requirements that
 
 ## Contributing
 
-Check out our [Contributing guide](contributing-to-consoleme-and-weep.md) to see how you can get involved with ConsoleMe and Weep.
+Check out our [Contributing guide](contributing.md) to see how you can get involved with ConsoleMe and Weep.
 
