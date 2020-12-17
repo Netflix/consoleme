@@ -226,3 +226,7 @@ variable "lb-authentication-user-info-endpoint" {
 variable "lb-authentication-scope" {
   description = "The scopes to request from the OIDC provider, usually email and groups."
 }
+
+variable "application_admin" {
+  description = "The user or group that will have administrative access in ConsoleMe"
+}

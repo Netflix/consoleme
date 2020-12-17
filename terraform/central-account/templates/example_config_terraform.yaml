@@ -10,6 +10,8 @@ tornado:
 challenge_url:
   enabled: true
 
+# Enter your team's e-mail address here. This e-mail will be used as the default approvers of IAM policy requests
+application_admin: ${application_admin}
 development: false
 environment: prod
 
@@ -28,16 +30,6 @@ cache_cloud_accounts:
 cache_accounts_from_aws_organizations:
   organizations_master_account_id: "${sync_accounts_from_organizations_master_account_id}"
   organizations_master_role_to_assume: "${sync_accounts_from_organizations_role_to_assume}"
-
-# A development configuration can specify a specific user to impersonate locally.
-_development_user_override: consolemeadmin@example.com
-
-# A development configuration can specify specific groups to consider the user a member of locally.
-_development_groups_override:
-  - groupa@example.com
-  - groupb@example.com
-  - configeditors@example.com
-  - consoleme_admins@example.com
 
 cloud_credential_authorization_mapping:
   role_tags:
@@ -97,4 +89,4 @@ get_user_by_aws_alb_auth_settings:
   jwt_groups_key: groups
 
 jwt_secret: secret
-url: { user_facing_url }
+url: ${user_facing_url}

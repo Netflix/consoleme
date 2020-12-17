@@ -26,8 +26,9 @@ data "template_file" "consoleme_config" {
     sync_accounts_from_organizations                   = var.sync_accounts_from_organizations
     sync_accounts_from_organizations_master_account_id = var.sync_accounts_from_organizations_master_account_id != null ? var.sync_accounts_from_organizations_master_account_id : data.aws_caller_identity.current.account_id
     sync_accounts_from_organizations_role_to_assume    = var.sync_accounts_from_organizations_role_to_assume
+    application_admin                                  = var.application_admin
     region                                             = data.aws_region.current.name
-    user_facing_url                                    = "https://${aws_lb.public-to-private-lb.dns_name}:8081"
+    user_facing_url                                    = "https://${aws_lb.public-to-private-lb.dns_name}"
   }
 }
 
