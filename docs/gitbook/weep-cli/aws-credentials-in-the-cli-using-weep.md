@@ -14,7 +14,7 @@ Weep supports the following operations:
 
 ![](../.gitbook/assets/weep_metadata.svg)
 
-3\) **Invoking weep using the** [**credential_process flow**](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html)**.** \(Note: We've seen this introduce performance issues for a large number of roles.\)
+3\) **Invoking weep using the** [**credential\_process flow**](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sourcing-external.html)**.** \(Note: We've seen this introduce performance issues for a large number of roles.\)
 
 ![](../.gitbook/assets/weep_credential_provider.svg)
 
@@ -29,3 +29,4 @@ Weep supports the following operations:
 6\) **Have weep perform nested assume-role calls on your behalf, and serve the assumed role credentials** \(The video below shows this flow for Weep's ECS credential provider mode. You can do this with most other modes as well\):
 
 ![](../.gitbook/assets/weep-ecs-assume-role.svg)
+

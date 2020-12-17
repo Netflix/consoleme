@@ -67,4 +67,3 @@ Assume Role Policy Document:
 }
 ```
 
-####
