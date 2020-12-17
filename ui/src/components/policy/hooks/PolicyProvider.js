@@ -10,6 +10,7 @@ export const usePolicyContext = () => useContext(PolicyContext);
 export const PolicyProvider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { accountID, serviceType, region, resourceName } = useParams();
+  const { toggleRefreshRole = false } = usePolicyContext();
 
   // PolicyEditor States Handlers
   const setParams = (params) => dispatch({ type: "UPDATE_PARAMS", params });
@@ -19,6 +20,8 @@ export const PolicyProvider = ({ children }) => {
     dispatch({ type: "TOGGLE_LOADING", loading });
   const setToggleDeleteRole = (toggle) =>
     dispatch({ type: "TOGGLE_DELETE_ROLE", toggle });
+  const setToggleRefreshRole = (toggle) =>
+    dispatch({ type: "TOGGLE_REFRESH_ROLE", toggle });
   const setIsSuccess = (isSuccess) =>
     dispatch({ type: "SET_IS_SUCCESS", isSuccess });
 
@@ -36,16 +39,33 @@ export const PolicyProvider = ({ children }) => {
         resourceName
       );
 
+      // Set arguments to endpoint
+      let endpointArgs = "";
+
       // set loader to start fetching resource from the backend.
       setIsPolicyEditorLoading(true);
 
-      // retrive resource from the endpoint and set resource state
-      const resource = await sendRequestCommon(null, endpoint, "get");
+      if (toggleRefreshRole) {
+        endpointArgs = "?force_refresh=true";
+      }
+      // retrieve resource from the endpoint and set resource state
+      const resource = await sendRequestCommon(
+        null,
+        endpoint + endpointArgs,
+        "get"
+      );
       setResource(resource);
 
       setIsPolicyEditorLoading(false);
     })();
-  }, [accountID, region, resourceName, serviceType, state.isSuccess]); //eslint-disable-line
+  }, [
+    accountID,
+    region,
+    resourceName,
+    serviceType,
+    state.isSuccess,
+    toggleRefreshRole,
+  ]); //eslint-disable-line
 
   // Mostly used for Justification Modal
   const setModalWithAdminAutoApprove = (approve) =>
@@ -70,6 +90,7 @@ export const PolicyProvider = ({ children }) => {
         setResource,
         setIsPolicyEditorLoading,
         setToggleDeleteRole,
+        setToggleRefreshRole,
         setIsSuccess,
         setTogglePolicyModal,
         setModalWithAdminAutoApprove,

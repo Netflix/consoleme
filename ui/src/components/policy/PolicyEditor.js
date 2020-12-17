@@ -1,5 +1,13 @@
 import React from "react";
-import { Dimmer, Header, Label, Loader, Segment } from "semantic-ui-react";
+import {
+  Dimmer,
+  Header,
+  Icon,
+  Label,
+  Loader,
+  Popup,
+  Segment,
+} from "semantic-ui-react";
 import { PolicyProvider, usePolicyContext } from "./hooks/PolicyProvider";
 import IAMRolePolicy from "./IAMRolePolicy";
 import ResourcePolicy from "./ResourcePolicy";
@@ -14,10 +22,12 @@ const PolicyEditor = () => {
     params = {},
     resource = {},
     setToggleDeleteRole,
+    setToggleRefreshRole,
   } = usePolicyContext();
   const { serviceType = "iamrole" } = params;
 
   const onDeleteClick = () => setToggleDeleteRole(true);
+  const onRefreshClick = () => setToggleRefreshRole(true);
 
   const EditPolicy = serviceType === "iamrole" ? IAMRolePolicy : ResourcePolicy;
 
@@ -25,6 +35,11 @@ const PolicyEditor = () => {
     <Dimmer.Dimmable as={Segment} dimmed={isPolicyEditorLoading}>
       <>
         <Header as="h1" floated="left">
+          <Popup
+            content="Refresh this resource directly from the cloud"
+            trigger={<Icon name="refresh" onClick={onRefreshClick} />}
+            position="bottom left"
+          />
           Edit Policy for {`${resource.arn || ""}`}
         </Header>
         {serviceType === "iamrole" && user?.authorization?.can_delete_roles ? (
