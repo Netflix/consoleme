@@ -7,11 +7,7 @@ from deepdiff.model import PrettyOrderedSet
 
 class SetEncoder(json.JSONEncoder):
     def default(self, obj):
-        if (
-            isinstance(obj, frozenset)
-            or isinstance(obj, set)
-            or isinstance(obj, PrettyOrderedSet)
-        ):
+        if isinstance(obj, (frozenset, set, PrettyOrderedSet)):
             return list(obj)
         if isinstance(obj, Decimal):
             return float(obj)

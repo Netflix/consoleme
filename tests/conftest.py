@@ -155,8 +155,10 @@ class MockBaseMtlsHandler:
 
 class MockAuth:
     def __init__(
-        self, restricted=False, compliance_restricted=False, get_groups_val=[]
+        self, restricted=False, compliance_restricted=False, get_groups_val=None
     ):
+        if get_groups_val is None:
+            get_groups_val = []
         self.restricted = restricted
         self.compliance_restricted = compliance_restricted
         self.get_groups_val = get_groups_val
