@@ -29,7 +29,6 @@ export const PolicyProvider = ({ children }) => {
     (async () => {
       // store resource metadata from the url
       setParams({ accountID, region, resourceName, serviceType });
-
       // get the endpoint by corresponding service type e.g. s3, iamrole, sqs
       const endpoint = getResourceEndpoint(
         accountID,
@@ -37,26 +36,16 @@ export const PolicyProvider = ({ children }) => {
         region,
         resourceName
       );
-
-      // Set arguments to endpoint
-      let endpointArgs = "";
-
       // set loader to start fetching resource from the backend.
       setIsPolicyEditorLoading(true);
-
-      if (state.toggleRefreshRole) {
-        endpointArgs = "?force_refresh=true";
-      }
       // retrieve resource from the endpoint and set resource state
       const resource = await sendRequestCommon(
         null,
-        endpoint + endpointArgs,
+        endpoint,
         "get"
       );
       setResource(resource);
-
       setIsPolicyEditorLoading(false);
-      setToggleRefreshRole(false);
     })();
   }, [
     accountID,
@@ -64,8 +53,30 @@ export const PolicyProvider = ({ children }) => {
     resourceName,
     serviceType,
     state.isSuccess,
-    state.toggleRefreshRole,
   ]); //eslint-disable-line
+
+  useEffect(() => {
+    (async () => {
+      const endpoint = getResourceEndpoint(
+        accountID,
+        serviceType,
+        region,
+        resourceName
+      );
+      if (!state.toggleRefreshRole) {
+        return;
+      }
+      setIsPolicyEditorLoading(true);
+      const resource = await sendRequestCommon(
+        null,
+        `${endpoint}?force_refresh=true`,
+        "get"
+      );
+      setResource(resource);
+      setIsPolicyEditorLoading(false);
+      setToggleRefreshRole(false);
+    })()
+  }, [state.toggleRefreshRole]);  //eslint-disable-line
 
   // Mostly used for Justification Modal
   const setModalWithAdminAutoApprove = (approve) =>
