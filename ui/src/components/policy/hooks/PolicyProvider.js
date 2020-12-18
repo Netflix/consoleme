@@ -39,21 +39,11 @@ export const PolicyProvider = ({ children }) => {
       // set loader to start fetching resource from the backend.
       setIsPolicyEditorLoading(true);
       // retrieve resource from the endpoint and set resource state
-      const resource = await sendRequestCommon(
-        null,
-        endpoint,
-        "get"
-      );
+      const resource = await sendRequestCommon(null, endpoint, "get");
       setResource(resource);
       setIsPolicyEditorLoading(false);
     })();
-  }, [
-    accountID,
-    region,
-    resourceName,
-    serviceType,
-    state.isSuccess,
-  ]); //eslint-disable-line
+  }, [accountID, region, resourceName, serviceType, state.isSuccess]); //eslint-disable-line
 
   useEffect(() => {
     (async () => {
@@ -75,8 +65,8 @@ export const PolicyProvider = ({ children }) => {
       setResource(resource);
       setIsPolicyEditorLoading(false);
       setToggleRefreshRole(false);
-    })()
-  }, [state.toggleRefreshRole]);  //eslint-disable-line
+    })();
+  }, [state.toggleRefreshRole]); //eslint-disable-line
 
   // Mostly used for Justification Modal
   const setModalWithAdminAutoApprove = (approve) =>
