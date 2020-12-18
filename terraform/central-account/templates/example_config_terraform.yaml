@@ -47,13 +47,13 @@ cloud_credential_authorization_mapping:
 # You'll probably want to override default_plugins logic to generate this data with your own business logic.
 application_settings:
   application_1:
-    owner: consoleme_admins@example.com
+    owner: ${application_admin}
     owner_url: https://www.example.com/groupa@example.com
     app_url: https://www.example.com/ci_cd_pipeline/application_1
     roles:
       - ${demo_app_role_arn_1}
   application_2:
-    owner: groupb@example.com
+    owner: ${application_admin}
     owner_url: https://www.example.com/groupb@example.com
     app_url: https://www.example.com/ci_cd_pipeline/application_2
     roles:
@@ -63,13 +63,7 @@ dynamic_config:
   # You can set this key in http://YOUR_CONSOLEME_DOMAIN/config as a rudimentary way to allow groups to access
   # roles before you override get_eligible_roles with your own custom logic
   group_mapping:
-    groupa@example.com:
-      roles:
-        - ${demo_user_role_arn_1}
-    groupb@example.com:
-      roles:
-        - ${demo_user_role_arn_2}
-    consoleme_admins@example.com:
+    ${application_admin}:
       roles:
         - ${demo_user_role_arn_1}
         - ${demo_user_role_arn_2}
