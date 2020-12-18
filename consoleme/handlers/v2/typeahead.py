@@ -1,6 +1,7 @@
 from typing import Optional
 
 import sentry_sdk
+import ujson as json
 from asgiref.sync import async_to_sync, sync_to_async
 
 from consoleme.config import config
@@ -50,6 +51,13 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
         except TypeError:
             limit = 20
 
+        try:
+            ui_formatted: Optional[bool] = (
+                self.request.arguments.get("ui_formatted")[0].decode("utf-8").lower()
+            )
+        except TypeError:
+            ui_formatted = False
+
         resource_redis_cache_key = config.get(
             "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
         )
@@ -85,4 +93,7 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
                 # Oh, you want all the things do you?
                 matching.add(arn)
         arn_array = ArnArray.parse_obj((list(matching)))
-        self.write(arn_array.json())
+        if ui_formatted:
+            self.write(json.dumps([{"title": arn} for arn in arn_array.__root__]))
+        else:
+            self.write(arn_array.json())
