@@ -22,3 +22,4 @@ Here's a role's tag set using the above configuration. This tag set would allow 
 ![](../../../.gitbook/assets/image%20%281%29.png)
 
 Make sure that ConsoleMe and your administrative users are the only ones able to manipulate these tags. We recommend using an [SCP](role-tagging-service-control-policy-recommended.md) to restrict it.
+

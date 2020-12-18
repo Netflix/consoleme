@@ -44,3 +44,4 @@ oidc_secrets:
 ```bash
 CONFIG_LOCATION=example_config/example_config_oidc.yaml python consoleme/__main__.py
 ```
+

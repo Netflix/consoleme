@@ -10,4 +10,5 @@ ConsoleMe will naively attempt to auto-generate cross-account resource policies 
 
 The only difference between cancelling and rejecting a request is that users can cancel their own requests. Only cloud administrators can reject a request. Otherwise, both features are identical.
 
-{% embed url="https://www.youtube.com/watch?v=ayYAVJsifPs" %}
+{% embed url="https://www.youtube.com/watch?v=ayYAVJsifPs" caption="" %}
+

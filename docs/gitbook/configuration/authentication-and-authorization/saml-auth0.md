@@ -77,7 +77,7 @@ These are the general steps to follow when configuring ConsoleMe as a SAML servi
 
    as `sp.crt` and `sp.key`. \(You can generate a certificate and private key with the following command:
 
-   `openssl req -x509 -nodes -sha256 -days 3650 -newkey rsa:2048 -keyout sp.key -out sp.crt`\). The default configuration points here: [example_config/saml_example/certs/](https://github.com/Netflix/consoleme/tree/master/example_config/saml_example/certs)
+   `openssl req -x509 -nodes -sha256 -days 3650 -newkey rsa:2048 -keyout sp.key -out sp.crt`\). The default configuration points here: [example\_config/saml\_example/certs/](https://github.com/Netflix/consoleme/tree/master/example_config/saml_example/certs)
 
 3. Start ConsoleMe with your desired configuration, and test the flow:
 
@@ -94,3 +94,4 @@ CONFIG_LOCATION=example_config/example_config_saml.yaml python consoleme/__main_
 `get_user_by_saml_settings.jwt`: After the user has authenticated, ConsoleMe will give them a jwt valid for the time specified in this configuration, along with the jwt attribute names for the user's email and groups.
 
 `get_user_by_saml_settings.attributes`: Specifies the attributes that we expect to see in the SAML response, including the user's username, groups, and e-mail address
+
