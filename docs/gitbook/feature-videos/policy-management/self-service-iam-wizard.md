@@ -12,4 +12,5 @@ Advanced users can choose to modify the JSON policy generated for their request,
 
 Here's a feature video:
 
-{% embed url="https://youtu.be/txnYP0BlITo" %}
+{% embed url="https://youtu.be/txnYP0BlITo" caption="" %}
+

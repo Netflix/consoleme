@@ -1,6 +1,6 @@
 # Dynamic Configuration
 
-ConsoleMe's dynamic configuration endpoint \(https://your-consoleme-url/config\) allows **administrators** to make changes that will be loaded by all running ConsoleMe instances and Celery hosts in up to 60 seconds.
+ConsoleMe's dynamic configuration endpoint \([https://your-consoleme-url/config\](https://your-consoleme-url/config\)\) allows **administrators** to make changes that will be loaded by all running ConsoleMe instances and Celery hosts in up to 60 seconds.
 
 This configuration is stored as a compressed yaml file in DynamoDB. It is versioned, and tagged by the user who updated it last, when it was last updated, and a compressed form of the configuration.
 
@@ -8,7 +8,7 @@ The namespace of ConsoleMe's dynamic configuration is different than the static 
 
 ConsoleMe uses dynamic configuration to store the following:
 
-- In addition to using role tags, you can authorize a user or groups to access a role in Dynamic configuration. The code that processes this is defined [here](https://github.com/Netflix/consoleme/blob/master/consoleme/lib/cloud_credential_authorization_mapping/dynamic_config.py). An example configuration is below
+* In addition to using role tags, you can authorize a user or groups to access a role in Dynamic configuration. The code that processes this is defined [here](https://github.com/Netflix/consoleme/blob/master/consoleme/lib/cloud_credential_authorization_mapping/dynamic_config.py). An example configuration is below
 
 ```text
 group_mapping:
@@ -23,7 +23,7 @@ group_mapping:
       ....
 ```
 
-- We store IAM inline policy permission templates in dynamic configuration. This is where you can add templates that fit your organization's needs. Here's an example of what this looks like:
+* We store IAM inline policy permission templates in dynamic configuration. This is where you can add templates that fit your organization's needs. Here's an example of what this looks like:
 
 ```text
 permission_templates:
@@ -65,3 +65,4 @@ permission_templates:
             }
 ...
 ```
+

@@ -6,4 +6,5 @@ End-users can request permissions or tagging changes, and see context about the 
 
 Here's a video showing these features:
 
-{% embed url="https://youtu.be/aH5\_5ewpEcs" %}
+{% embed url="https://youtu.be/aH5\_5ewpEcs" caption="" %}
+
