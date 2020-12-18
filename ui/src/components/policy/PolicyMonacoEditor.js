@@ -182,7 +182,9 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const { setModalWithAdminAutoApprove } = usePolicyContext();
 
   const [newPolicyName, setNewPolicyName] = useState("");
-  const [templateOptions, setTemplateOptions] = useState([{ value: "{}" }]);
+  const [templateOptions, setTemplateOptions] = useState([
+    { key: "default", text: "", value: "{}" },
+  ]);
   const [templateDefaultKey, setTemplateDefaultKey] = useState(
     "Default Policy"
   );
@@ -209,7 +211,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
       );
       setTemplateDefaultKey(templateOptions[0].key);
     })();
-  }, []);
+  }, []); // eslint-disable-line
 
   onLintError = (lintErrors) => {
     if (lintErrors.length > 0) {
