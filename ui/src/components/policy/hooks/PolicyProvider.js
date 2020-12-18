@@ -10,7 +10,6 @@ export const usePolicyContext = () => useContext(PolicyContext);
 export const PolicyProvider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const { accountID, serviceType, region, resourceName } = useParams();
-  const { toggleRefreshRole = false } = usePolicyContext();
 
   // PolicyEditor States Handlers
   const setParams = (params) => dispatch({ type: "UPDATE_PARAMS", params });
@@ -45,7 +44,7 @@ export const PolicyProvider = ({ children }) => {
       // set loader to start fetching resource from the backend.
       setIsPolicyEditorLoading(true);
 
-      if (toggleRefreshRole) {
+      if (state.toggleRefreshRole) {
         endpointArgs = "?force_refresh=true";
       }
       // retrieve resource from the endpoint and set resource state
@@ -57,6 +56,7 @@ export const PolicyProvider = ({ children }) => {
       setResource(resource);
 
       setIsPolicyEditorLoading(false);
+      setToggleRefreshRole(false);
     })();
   }, [
     accountID,
@@ -64,7 +64,7 @@ export const PolicyProvider = ({ children }) => {
     resourceName,
     serviceType,
     state.isSuccess,
-    toggleRefreshRole,
+    state.toggleRefreshRole,
   ]); //eslint-disable-line
 
   // Mostly used for Justification Modal
