@@ -3,10 +3,10 @@
     This is useful for Docker / ECS.
 
     * If `CONSOLEME_CONFIG_B64` is defined, this script will decode the Base64 encoded string and save the configuration
-    file in the location specified by `CONSOLEME_CONFIG_LOCATION` (Defaults to: /etc/consoleme/config/config.yaml)
+    file in the location specified by `CONFIG_LOCATION` (Defaults to: /etc/consoleme/config/config.yaml)
 
     * If `CONSOLEME_CONFIG_S3` is defined, this script will download the configuration from S3, and store it in the
-    location specified by `CONSOLEME_CONFIG_LOCATION` (Defaults to: /etc/consoleme/config/config.yaml)
+    location specified by `CONFIG_LOCATION` (Defaults to: /etc/consoleme/config/config.yaml)
 
     Usage:
         You can Base64 encode ConsoleMe's configuration with the following command:
@@ -47,9 +47,7 @@ def make_directories(loc):
             raise
 
 
-save_location = os.environ.get(
-    "CONSOLEME_CONFIG_LOCATION", "/etc/consoleme/config/config.yaml"
-)
+save_location = os.environ.get("CONFIG_LOCATION", "/etc/consoleme/config/config.yaml")
 
 base64_config = os.environ.get("CONSOLEME_CONFIG_B64")
 s3_config_path = os.environ.get("CONSOLEME_CONFIG_S3")

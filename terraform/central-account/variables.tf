@@ -162,6 +162,16 @@ variable "CONFIG_LOCATION" {
   default     = "/apps/consoleme/example_config/example_config_terraform.yaml"
 }
 
+variable "CONSOLEME_CONFIG_S3" {
+  description = "(Optional) If set, ConsoleMe will attempt to pull down a configuration from the S3 location defined in this variable. Don't use this if you've set CONSOLEME_CONFIG_B64. Example value: s3://bucket/path/to/consoleme.yaml"
+  default = ""
+}
+
+variable "CONSOLEME_CONFIG_B64" {
+  description = "(Optional) If set, ConsoleMe will attempt to base64-decode this variable and store it as ConsoleMe's configuration. Don't use this if you've set CONSOLEME_CONFIG_S3. Example value: Output of base64 /path/to/your/consoleme/config.yaml"
+  default = ""
+}
+
 variable "sync_accounts_from_organizations" {
   description = "Sync accounts from AWS organizations?"
   default     = false

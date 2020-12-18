@@ -27,6 +27,8 @@ resource "aws_lb_target_group_attachment" "test" {
   port             = 8081
 }
 
+
+// Unauthenticated routes are used for the challenge authentication and credential retrieval flows on the command line.
 resource "aws_lb_listener_rule" "unauthenticated-routes-1" {
   listener_arn = aws_lb_listener.public-8081.arn
   priority     = 1

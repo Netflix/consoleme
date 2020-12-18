@@ -28,7 +28,7 @@ data "template_file" "consoleme_config" {
     sync_accounts_from_organizations_role_to_assume    = var.sync_accounts_from_organizations_role_to_assume
     application_admin                                  = var.application_admin
     region                                             = data.aws_region.current.name
-    user_facing_url                                    = "https://${aws_lb.public-to-private-lb.dns_name}"
+    user_facing_url                                    = "https://${aws_lb.public-to-private-lb.dns_name}:${var.lb_port}"
   }
 }
 
@@ -40,6 +40,8 @@ data "template_file" "consoleme_userdata" {
     demo_config             = data.template_file.consoleme_config.rendered
     region                  = data.aws_region.current.name
     CONFIG_LOCATION         = var.CONFIG_LOCATION
+    CONSOLEME_CONFIG_B64    = var.CONSOLEME_CONFIG_B64
+    CONSOLEME_CONFIG_S3     = var.CONSOLEME_CONFIG_S3
     custom_user_data_script = var.custom_user_data_script
   }
 }

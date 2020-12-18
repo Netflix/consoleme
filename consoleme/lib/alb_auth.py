@@ -4,6 +4,7 @@ import sys
 
 import jwt
 import requests
+from okta_jwt.exceptions import ExpiredSignatureError
 from okta_jwt.jwt import validate_token
 
 from consoleme.config import config
@@ -75,5 +76,19 @@ async def authenticate_user_by_alb_auth(request):
         )
         log.debug(log_data, exc_info=True)
         groups = []
+    except ExpiredSignatureError as e:
+        # This exception occurs when the access token has expired. Delete cookies associated with ALB Auth
+        # (AWSELBAuthSessionCookie-0)
+        log.debug(
+            {
+                **log_data,
+                "message": ("Access token has expired"),
+                "error": e,
+                "user": email,
+            }
+        )
+        log.debug(log_data, exc_info=True)
+        request.request.clear_cookie("AWSELBAuthSessionCookie-0")
+        request.redirect(request.request.uri)
 
     return {"user": email, "groups": groups}
