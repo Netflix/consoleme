@@ -19,6 +19,8 @@ export const PolicyProvider = ({ children }) => {
     dispatch({ type: "TOGGLE_LOADING", loading });
   const setToggleDeleteRole = (toggle) =>
     dispatch({ type: "TOGGLE_DELETE_ROLE", toggle });
+  const setToggleRefreshRole = (toggle) =>
+    dispatch({ type: "TOGGLE_REFRESH_ROLE", toggle });
   const setIsSuccess = (isSuccess) =>
     dispatch({ type: "SET_IS_SUCCESS", isSuccess });
 
@@ -27,7 +29,6 @@ export const PolicyProvider = ({ children }) => {
     (async () => {
       // store resource metadata from the url
       setParams({ accountID, region, resourceName, serviceType });
-
       // get the endpoint by corresponding service type e.g. s3, iamrole, sqs
       const endpoint = getResourceEndpoint(
         accountID,
@@ -35,17 +36,37 @@ export const PolicyProvider = ({ children }) => {
         region,
         resourceName
       );
-
       // set loader to start fetching resource from the backend.
       setIsPolicyEditorLoading(true);
-
-      // retrive resource from the endpoint and set resource state
+      // retrieve resource from the endpoint and set resource state
       const resource = await sendRequestCommon(null, endpoint, "get");
       setResource(resource);
-
       setIsPolicyEditorLoading(false);
     })();
   }, [accountID, region, resourceName, serviceType, state.isSuccess]); //eslint-disable-line
+
+  useEffect(() => {
+    (async () => {
+      const endpoint = getResourceEndpoint(
+        accountID,
+        serviceType,
+        region,
+        resourceName
+      );
+      if (!state.toggleRefreshRole) {
+        return;
+      }
+      setIsPolicyEditorLoading(true);
+      const resource = await sendRequestCommon(
+        null,
+        `${endpoint}?force_refresh=true`,
+        "get"
+      );
+      setResource(resource);
+      setIsPolicyEditorLoading(false);
+      setToggleRefreshRole(false);
+    })();
+  }, [state.toggleRefreshRole]); //eslint-disable-line
 
   // Mostly used for Justification Modal
   const setModalWithAdminAutoApprove = (approve) =>
@@ -70,6 +91,7 @@ export const PolicyProvider = ({ children }) => {
         setResource,
         setIsPolicyEditorLoading,
         setToggleDeleteRole,
+        setToggleRefreshRole,
         setIsSuccess,
         setTogglePolicyModal,
         setModalWithAdminAutoApprove,

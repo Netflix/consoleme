@@ -12,6 +12,7 @@ from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
 from consoleme.lib.auth import can_create_roles, can_delete_roles, can_delete_roles_app
 from consoleme.lib.aws import clone_iam_role, create_iam_role, delete_iam_role
 from consoleme.lib.crypto import Crypto
+from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
@@ -316,11 +317,16 @@ class RoleDetailHandler(BaseAPIV2Handler):
             tags={"user": self.user, "account_id": account_id, "role_name": role_name},
         )
         log.debug(log_data)
+        force_refresh = str2bool(
+            self.request.arguments.get("force_refresh", [False])[0]
+        )
 
         error = ""
 
         try:
-            role_details = await get_role_details(account_id, role_name, extended=True)
+            role_details = await get_role_details(
+                account_id, role_name, extended=True, force_refresh=force_refresh
+            )
         except Exception as e:
             sentry_sdk.capture_exception()
             log.error({**log_data, "error": e}, exc_info=True)
