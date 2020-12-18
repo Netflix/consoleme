@@ -190,8 +190,7 @@ export EC2_REGION=${region}
 EOF
 
 # Run script to decode and write a custom ConsoleMe configuration. This won't do anything unless CONSOLEME_CONFIG_B64 or CONSOLEME_CONFIG_S3 are defined.
-runuser -l consoleme -c "bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/retrieve_or_decode_configuration.py'"
-
+sudo -u consoleme bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/retrieve_or_decode_configuration.py'
 # Make sure it is listed
 systemctl list-unit-files | grep celery.service
 systemctl list-unit-files | grep consoleme.service
@@ -201,7 +200,7 @@ systemctl enable celery
 systemctl enable consoleme
 systemctl start consoleme
 
-runuser -l consoleme -c "bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/initialize_redis_oss.py'"
+sudo -u consoleme bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/initialize_redis_oss.py'
 
 echo "Running custom userdata script"
 ${custom_user_data_script}

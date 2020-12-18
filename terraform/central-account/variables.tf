@@ -168,7 +168,7 @@ variable "CONSOLEME_CONFIG_S3" {
 }
 
 variable "CONSOLEME_CONFIG_B64" {
-  description = "(Optional) If set, ConsoleMe will attempt to base64-decode this variable and store it as ConsoleMe's configuration. Don't use this if you've set CONSOLEME_CONFIG_S3. Example value: Output of base64 /path/to/your/consoleme/config.yaml"
+  description = "(Optional) If set, ConsoleMe will attempt to base64-decode this variable and store it as ConsoleMe's configuration. Don't use this if you've set CONSOLEME_CONFIG_S3. Example value: Output of base64 -w 0 /path/to/your/consoleme/config.yaml"
   default = ""
 }
 
