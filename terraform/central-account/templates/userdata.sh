@@ -4,7 +4,6 @@ set -x
 export HOME=/root
 export EC2_REGION=${region}
 export CONFIG_LOCATION=${CONFIG_LOCATION}
-export CONSOLEME_CONFIG_B64=${CONSOLEME_CONFIG_B64}
 export CONSOLEME_CONFIG_S3=${CONSOLEME_CONFIG_S3}
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -112,7 +111,6 @@ chown -R consoleme:consoleme /logs/consoleme
 cat << EOF > /etc/environment
 EC2_REGION=${region}
 CONFIG_LOCATION=${CONFIG_LOCATION}
-CONSOLEME_CONFIG_B64=${CONSOLEME_CONFIG_B64}
 CONSOLEME_CONFIG_S3=${CONSOLEME_CONFIG_S3}
 EOF
 
@@ -162,7 +160,6 @@ EOF
 
 cat << EOF >> /root/.bashrc
 export CONFIG_LOCATION=${CONFIG_LOCATION}
-export CONSOLEME_CONFIG_B64=${CONSOLEME_CONFIG_B64}
 export CONSOLEME_CONFIG_S3=${CONSOLEME_CONFIG_S3}
 export EC2_REGION=${region}
 EOF
@@ -189,7 +186,7 @@ export CONFIG_LOCATION=${CONFIG_LOCATION}
 export EC2_REGION=${region}
 EOF
 
-# Run script to decode and write a custom ConsoleMe configuration. This won't do anything unless CONSOLEME_CONFIG_B64 or CONSOLEME_CONFIG_S3 are defined.
+# Run script to decode and write a custom ConsoleMe configuration. This won't do anything unless CONSOLEME_CONFIG_S3 is defined.
 sudo -u consoleme bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/retrieve_or_decode_configuration.py'
 # Make sure it is listed
 systemctl list-unit-files | grep celery.service
