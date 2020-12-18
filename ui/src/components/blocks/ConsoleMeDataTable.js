@@ -431,6 +431,7 @@ class ConsoleMeDataTable extends Component {
       expandedRow: null,
       filteredData,
       loading: false,
+      activePage: 1,
     });
   }
 
