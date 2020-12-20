@@ -35,14 +35,16 @@ data "template_file" "consoleme_config" {
 data "template_file" "consoleme_userdata" {
   template = file("${path.module}/templates/userdata.sh")
   vars = {
-    bucket                  = aws_s3_bucket.consoleme_source_bucket.bucket
+    bucket                  = aws_s3_bucket.consoleme_files_bucket.bucket
     current_account_id      = data.aws_caller_identity.current.account_id
-    demo_config             = data.template_file.consoleme_config.rendered
     region                  = data.aws_region.current.name
-    CONFIG_LOCATION         = var.CONFIG_LOCATION
-    CONSOLEME_CONFIG_S3     = var.CONSOLEME_CONFIG_S3
+    CONFIG_LOCATION         = "/apps/consoleme/example_config/example_config_terraform.yaml"
+    CONSOLEME_CONFIG_S3     = format("s3://%s/%s", aws_s3_bucket.consoleme_files_bucket.id, aws_s3_bucket_object.consoleme_config.id)
     custom_user_data_script = var.custom_user_data_script
   }
 }
 
+output "s3location" {
+  value = format("s3://%s/%s", aws_s3_bucket.consoleme_files_bucket.id, aws_s3_bucket_object.consoleme_config.id)
+}
 
