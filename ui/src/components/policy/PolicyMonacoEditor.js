@@ -5,8 +5,8 @@ import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import {
   getMonacoCompletions,
   getMonacoTriggerCharacters,
+  sendRequestCommon,
 } from "../../helpers/utils";
-import templateOptions from "./policyTemplates";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import { useAuth } from "../../auth/AuthProviderDefault";
 
@@ -182,9 +182,14 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const { setModalWithAdminAutoApprove } = usePolicyContext();
 
   const [newPolicyName, setNewPolicyName] = useState("");
-  const [policyDocument, setPolicyDocument] = useState(
-    JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")
+  const [templateOptions, setTemplateOptions] = useState([
+    { key: "default", text: "", value: "{}" },
+  ]);
+  const [templateDefaultKey, setTemplateDefaultKey] = useState(
+    "Default Policy"
   );
+
+  const [policyDocument, setPolicyDocument] = useState("");
   const [error, setError] = useState("");
   const [policyNameError, setpolicyNameError] = useState(false);
   const policyNameRegex = /^[\w+=,.@-]+$/;
@@ -192,6 +197,21 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const onEditChange = (value) => {
     setPolicyDocument(value);
   };
+
+  useEffect(() => {
+    (async () => {
+      const data = await sendRequestCommon(
+        null,
+        "/api/v2/permission_templates/",
+        "get"
+      );
+      setTemplateOptions(data.permission_templates);
+      setPolicyDocument(
+        JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")
+      );
+      setTemplateDefaultKey(templateOptions[0].key);
+    })();
+  }, []); // eslint-disable-line
 
   onLintError = (lintErrors) => {
     if (lintErrors.length > 0) {
@@ -249,7 +269,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
               selection
               onChange={onTemplateChange}
               options={templateOptions}
-              defaultValue={templateOptions[0].key}
+              defaultValue={templateDefaultKey}
             />
           </Form.Group>
         </Form>
