@@ -44,8 +44,3 @@ data "template_file" "consoleme_userdata" {
     custom_user_data_script = var.custom_user_data_script
   }
 }
-
-output "s3location" {
-  value = format("s3://%s/%s", aws_s3_bucket.consoleme_files_bucket.id, aws_s3_bucket_object.consoleme_config.id)
-}
-
