@@ -157,16 +157,6 @@ variable "kms_key_alias" {
   default     = "alias/consoleme"
 }
 
-variable "CONSOLEME_CONFIG_S3" {
-  description = "(Optional) If set, ConsoleMe will attempt to pull down a configuration from the S3 location defined in this variable. Example value: s3://bucket/path/to/consoleme.yaml"
-  default = ""
-}
-
-variable "CONSOLEME_CONFIG_S3" {
-  description = "(Optional) If set, ConsoleMe will attempt to pull down a configuration from the S3 location defined in this variable. Example value: s3://bucket/path/to/consoleme.yaml"
-  default = ""
-}
-
 variable "sync_accounts_from_organizations" {
   description = "Sync accounts from AWS organizations?"
   default     = false
