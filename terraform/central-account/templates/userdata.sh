@@ -164,10 +164,6 @@ export CONSOLEME_CONFIG_S3=${CONSOLEME_CONFIG_S3}
 export EC2_REGION=${region}
 EOF
 
-cat << EOF > ${CONFIG_LOCATION}
-${demo_config}
-EOF
-
 # TODO: Remove this hacky way of removing the fake account ID... instead, stash the rendered template config in an S3 bucket and pull it from userdata
 grep -rl '123456789012' "${CONFIG_LOCATION}" | xargs sed -i "s/123456789012/${current_account_id}/g"
 # Change permissions on service file

@@ -5,8 +5,7 @@ resource "random_string" "omnipotence" {
   upper   = false
 }
 
-# We can remove this process after ConsoleMe is open sourced
-resource "aws_s3_bucket" "consoleme_source_bucket" {
+resource "aws_s3_bucket" "consoleme_files_bucket" {
   bucket = "${lower(var.bucket_name_prefix)}-${random_string.omnipotence.result}"
   acl    = "private"
 
@@ -23,11 +22,21 @@ resource "aws_s3_bucket" "consoleme_source_bucket" {
 }
 
 
+# We can remove this process after ConsoleMe is open sourced
 resource "aws_s3_bucket_object" "consoleme_zip" {
-  bucket = aws_s3_bucket.consoleme_source_bucket.bucket
+  bucket = aws_s3_bucket.consoleme_files_bucket.bucket
   key    = "consoleme.tar.gz"
 
   source = "${path.module}/consoleme.tar.gz"
 
   etag = md5(filebase64("${path.module}/consoleme.tar.gz"))
+}
+
+resource "aws_s3_bucket_object" "consoleme_config" {
+  bucket = aws_s3_bucket.consoleme_files_bucket.bucket
+  key    = "config.yaml"
+
+  content = data.template_file.consoleme_config.rendered
+
+  etag = md5(base64encode(data.template_file.consoleme_config.rendered))
 }
