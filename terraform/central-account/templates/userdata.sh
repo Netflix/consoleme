@@ -4,6 +4,7 @@ set -x
 export HOME=/root
 export EC2_REGION=${region}
 export CONFIG_LOCATION=${CONFIG_LOCATION}
+export CONSOLEME_CONFIG_S3=${CONSOLEME_CONFIG_S3}
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Filter out useless messages from logs
@@ -110,6 +111,7 @@ chown -R consoleme:consoleme /logs/consoleme
 cat << EOF > /etc/environment
 EC2_REGION=${region}
 CONFIG_LOCATION=${CONFIG_LOCATION}
+CONSOLEME_CONFIG_S3=${CONSOLEME_CONFIG_S3}
 EOF
 
 cat << EOF > /etc/systemd/system/consoleme.service
@@ -121,7 +123,6 @@ StartLimitBurst=5
 StartLimitIntervalSec=0
 
 [Service]
-#Environment=CONFIG_LOCATION=/apps/consoleme/docker/example_config_alb_auth.yaml
 Environment=EC2_REGION=${region}
 Environment=CONFIG_LOCATION=${CONFIG_LOCATION}
 WorkingDirectory=/apps/consoleme
@@ -159,6 +160,7 @@ EOF
 
 cat << EOF >> /root/.bashrc
 export CONFIG_LOCATION=${CONFIG_LOCATION}
+export CONSOLEME_CONFIG_S3=${CONSOLEME_CONFIG_S3}
 export EC2_REGION=${region}
 EOF
 
@@ -184,6 +186,8 @@ export CONFIG_LOCATION=${CONFIG_LOCATION}
 export EC2_REGION=${region}
 EOF
 
+# Run script to decode and write a custom ConsoleMe configuration. This won't do anything unless CONSOLEME_CONFIG_S3 is defined.
+sudo -u consoleme bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/retrieve_or_decode_configuration.py'
 # Make sure it is listed
 systemctl list-unit-files | grep celery.service
 systemctl list-unit-files | grep consoleme.service
@@ -193,7 +197,7 @@ systemctl enable celery
 systemctl enable consoleme
 systemctl start consoleme
 
-runuser -l consoleme -c "bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/initialize_redis_oss.py'"
+sudo -u consoleme bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/initialize_redis_oss.py'
 
 echo "Running custom userdata script"
 ${custom_user_data_script}

@@ -10,6 +10,8 @@ tornado:
 challenge_url:
   enabled: true
 
+# Enter your team's e-mail address here. This e-mail will be used as the default approvers of IAM policy requests
+application_admin: ${application_admin}
 development: false
 environment: prod
 
@@ -29,16 +31,6 @@ cache_accounts_from_aws_organizations:
   organizations_master_account_id: "${sync_accounts_from_organizations_master_account_id}"
   organizations_master_role_to_assume: "${sync_accounts_from_organizations_role_to_assume}"
 
-# A development configuration can specify a specific user to impersonate locally.
-_development_user_override: consolemeadmin@example.com
-
-# A development configuration can specify specific groups to consider the user a member of locally.
-_development_groups_override:
-  - groupa@example.com
-  - groupb@example.com
-  - configeditors@example.com
-  - consoleme_admins@example.com
-
 cloud_credential_authorization_mapping:
   role_tags:
     enabled: true
@@ -55,13 +47,13 @@ cloud_credential_authorization_mapping:
 # You'll probably want to override default_plugins logic to generate this data with your own business logic.
 application_settings:
   application_1:
-    owner: consoleme_admins@example.com
+    owner: ${application_admin}
     owner_url: https://www.example.com/groupa@example.com
     app_url: https://www.example.com/ci_cd_pipeline/application_1
     roles:
       - ${demo_app_role_arn_1}
   application_2:
-    owner: groupb@example.com
+    owner: ${application_admin}
     owner_url: https://www.example.com/groupb@example.com
     app_url: https://www.example.com/ci_cd_pipeline/application_2
     roles:
@@ -71,13 +63,7 @@ dynamic_config:
   # You can set this key in http://YOUR_CONSOLEME_DOMAIN/config as a rudimentary way to allow groups to access
   # roles before you override get_eligible_roles with your own custom logic
   group_mapping:
-    groupa@example.com:
-      roles:
-        - ${demo_user_role_arn_1}
-    groupb@example.com:
-      roles:
-        - ${demo_user_role_arn_2}
-    consoleme_admins@example.com:
+    ${application_admin}:
       roles:
         - ${demo_user_role_arn_1}
         - ${demo_user_role_arn_2}
@@ -97,4 +83,4 @@ get_user_by_aws_alb_auth_settings:
   jwt_groups_key: groups
 
 jwt_secret: secret
-url: { user_facing_url }
+url: ${user_facing_url}
