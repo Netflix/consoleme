@@ -8,6 +8,7 @@ vpc_cidr            = "10.1.1.0/24"
 public_subnet_cidrs = ["10.1.1.128/28", "10.1.1.144/28"]
 private_subnet_cidrs = ["10.1.1.0/28"]
 subnet_azs          = ["us-east-1a", "us-east-1b"]
+application_admin   = "teamemail@mycompany.com"
 
 allowed_inbound_cidr_blocks = []  // NOTE: Do not open this up to 0.0.0.0/0. Restrict access to your IP address for the demo.
 allow_internet_access = false // Set this to true if you want to be able to access the server from the Internet.
