@@ -28,6 +28,7 @@ data "template_file" "consoleme_config" {
     sync_accounts_from_organizations_role_to_assume    = var.sync_accounts_from_organizations_role_to_assume
     application_admin                                  = var.application_admin
     region                                             = data.aws_region.current.name
+    jwt_email_key                                      = var.lb-authentication-jwt-email-key
     user_facing_url                                    = "https://${aws_lb.public-to-private-lb.dns_name}:${var.lb_port}"
   }
 }

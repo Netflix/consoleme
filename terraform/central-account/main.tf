@@ -27,6 +27,8 @@ module "server" {
   vpc_security_group_ids = [aws_security_group.server.id]
 
   tags = module.compute_label.tags
+
+  depends_on = [aws_s3_bucket_object.consoleme_zip, aws_s3_bucket_object.consoleme_config]
 }
 
 module "kms_ebs" {
