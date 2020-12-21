@@ -6,17 +6,18 @@
 Check out our [documentation](https://hawkins.gitbook.io/consoleme/), [feature videos](https://hawkins.gitbook.io/consoleme/feature-videos), and [ReInvent Talk](https://virtual.awsevents.com/media/1_b8vc584c).
 
 ## Overview
-Engineers that support a large AWS environment know how time consuming it is to manage IAM permissions for end-users. They realize how powerful it would be to let users request permissions in plain English, without having to understand complex permissions syntax, and without having to synchronously interact with cloud administrators. 
+
+Engineers that support a large AWS environment know how time consuming it is to manage IAM permissions for end-users. They realize how powerful it would be to let users request permissions in plain English, without having to understand complex permissions syntax, and without having to synchronously interact with cloud administrators.
 
 They also realize that many solutions for managing AWS credentials are inflexible or insecure. It would be highly convenient if users relied on a single, centralized solution to get temporary, IP-restricted AWS credentials, and had a one-click way to access specific resources in the AWS console.
 
 These are some of the things we were thinking about when we created ConsoleMe. We wanted a solution that would save time and steps for our users and admins, with the following attributes:
 
-* Centralize non-machine access to AWS credentials
-* Encourage least-privilege access and AWS permissions
-* Provide a streamlined way to request AWS permissions
-* Increase consistency in how permissions are granted
-* Reduce operational burden and response time
+- Centralize non-machine access to AWS credentials
+- Encourage least-privilege access and AWS permissions
+- Provide a streamlined way to request AWS permissions
+- Increase consistency in how permissions are granted
+- Reduce operational burden and response time
 
 ConsoleMe strives to be a multi-account AWS swiss-army knife, making AWS easier for your end-users and cloud administrators.
 It is designed to consolidate the management of multiple accounts into a single web interface. It allows your end-users
