@@ -5,6 +5,7 @@ export const initialState = {
   isPolicyEditorLoading: true,
   resource: {},
   toggleDeleteRole: false,
+  toggleRefreshRole: false,
   isSuccess: false,
   togglePolicyModal: false,
 };
@@ -30,6 +31,11 @@ export const reducer = (state, action) => {
       return {
         ...state,
         toggleDeleteRole: action.toggle,
+      };
+    case "TOGGLE_REFRESH_ROLE":
+      return {
+        ...state,
+        toggleRefreshRole: action.toggle,
       };
     case "SET_IS_SUCCESS":
       return {

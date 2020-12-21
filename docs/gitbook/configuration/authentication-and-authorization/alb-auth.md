@@ -13,3 +13,4 @@ get_user_by_aws_alb_auth_settings:
   jwt_email_key: sub
   jwt_groups_key: groups
 ```
+

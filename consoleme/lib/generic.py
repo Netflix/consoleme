@@ -13,6 +13,8 @@ from consoleme.config import config
 
 
 def str2bool(v: Optional[Union[bool, str]]) -> bool:
+    if isinstance(v, bytes):
+        v = v.decode()
     if not v:
         return False
     if type(v) is bool and v is True:

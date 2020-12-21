@@ -26,6 +26,6 @@ RUN pip install argh
 RUN npm install yarn -g
 RUN yarn --cwd ui
 RUN yarn --cwd ui build:prod
-CMD python /apps/consoleme/consoleme/__main__.py
+CMD python scripts/retrieve_or_decode_configuration.py ; python /apps/consoleme/consoleme/__main__.py
 
 EXPOSE 8081

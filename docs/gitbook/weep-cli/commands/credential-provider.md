@@ -40,4 +40,3 @@ AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:9090/ecs/consoleme_oss_2 aws
 
 Configure this in your IDE for full effect.
 
-###

@@ -1,7 +1,0 @@
-version: "3"
-services:
-  consoleme_zipkin:
-    image: "openzipkin/zipkin"
-    container_name: consoleme_zipkin
-    ports:
-      - "9411:9411"

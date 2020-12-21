@@ -10,4 +10,5 @@ The policy table is configurable. At Netflix, we show the number of recent Cloud
 
 Here's a quick demo of the policies table in action:
 
-{% embed url="https://youtu.be/Rpp3b5lNXTc" %}
+{% embed url="https://youtu.be/Rpp3b5lNXTc" caption="" %}
+

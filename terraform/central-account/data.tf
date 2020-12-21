@@ -26,21 +26,21 @@ data "template_file" "consoleme_config" {
     sync_accounts_from_organizations                   = var.sync_accounts_from_organizations
     sync_accounts_from_organizations_master_account_id = var.sync_accounts_from_organizations_master_account_id != null ? var.sync_accounts_from_organizations_master_account_id : data.aws_caller_identity.current.account_id
     sync_accounts_from_organizations_role_to_assume    = var.sync_accounts_from_organizations_role_to_assume
+    application_admin                                  = var.application_admin
     region                                             = data.aws_region.current.name
-    user_facing_url                                    = "https://${aws_lb.public-to-private-lb.dns_name}:8081"
+    jwt_email_key                                      = var.lb-authentication-jwt-email-key
+    user_facing_url                                    = "https://${aws_lb.public-to-private-lb.dns_name}:${var.lb_port}"
   }
 }
 
 data "template_file" "consoleme_userdata" {
   template = file("${path.module}/templates/userdata.sh")
   vars = {
-    bucket                  = aws_s3_bucket.consoleme_source_bucket.bucket
+    bucket                  = aws_s3_bucket.consoleme_files_bucket.bucket
     current_account_id      = data.aws_caller_identity.current.account_id
-    demo_config             = data.template_file.consoleme_config.rendered
     region                  = data.aws_region.current.name
-    CONFIG_LOCATION         = var.CONFIG_LOCATION
+    CONFIG_LOCATION         = "/apps/consoleme/example_config/example_config_terraform.yaml"
+    CONSOLEME_CONFIG_S3     = format("s3://%s/%s", aws_s3_bucket.consoleme_files_bucket.id, aws_s3_bucket_object.consoleme_config.id)
     custom_user_data_script = var.custom_user_data_script
   }
 }
-
-
