@@ -134,7 +134,13 @@ const ConsoleMeSidebar = () => {
         <Menu.Item>
           {consoleme_logo && (
             <a href={"/"} rel="noopener noreferrer" target="_blank">
-              <Image size="medium" src={consoleme_logo} />
+              <Image
+                  style={{
+                    height: "250px",
+                    margin: "auto"
+                  }}
+                  src={consoleme_logo}
+              />
             </a>
           )}
           <br />
