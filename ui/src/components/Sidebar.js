@@ -135,11 +135,11 @@ const ConsoleMeSidebar = () => {
           {consoleme_logo && (
             <a href={"/"} rel="noopener noreferrer" target="_blank">
               <Image
-                  style={{
-                    height: "250px",
-                    margin: "auto"
-                  }}
-                  src={consoleme_logo}
+                style={{
+                  height: "250px",
+                  margin: "auto",
+                }}
+                src={consoleme_logo}
               />
             </a>
           )}
