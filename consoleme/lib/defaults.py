@@ -14,7 +14,7 @@ permissions_map:
         type: typeahead_input
         text: Bucket Name
         required: true
-        typeahead_endpoint: /policies/typeah    ead?resource=s3&show_full_arn_for_s3_buckets=true&search={query}
+        typeahead_endpoint: /policies/typeahead?resource=s3&show_full_arn_for_s3_buckets=true&search={query}
       - name: bucket_prefix
         type: text_input
         text: Prefix (Folder under S3 that you need access to).
