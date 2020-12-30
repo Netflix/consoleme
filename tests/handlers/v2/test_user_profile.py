@@ -18,6 +18,7 @@ class TestUserProfile(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     def test_profile(self):
+        self.maxDiff = None
         headers = {
             config.get("auth.user_header_name"): "user@example.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -49,6 +50,10 @@ class TestUserProfile(AsyncHTTPTestCase):
                     "can_delete_roles": False,
                 },
                 "pages": {
+                    "header": {
+                        "custom_header_message_title": "",
+                        "custom_header_message_text": "",
+                    },
                     "groups": {"enabled": False},
                     "users": {"enabled": False},
                     "policies": {"enabled": True},
