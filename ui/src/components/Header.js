@@ -51,12 +51,15 @@ const ConsoleMeHeader = () => {
   const getAvatarImage = () => {
     if (user?.employee_photo_url) {
       return (
-        <Image
-          alt={user.user}
-          avatar
-          src={user.employee_photo_url}
-          title={user.user}
-        />
+        <>
+          <Image
+            alt={user.user}
+            avatar
+            src={user.employee_photo_url}
+            title={user.user}
+          />
+          {user.user}
+        </>
       );
     } else if (user?.user) {
       return user.user;

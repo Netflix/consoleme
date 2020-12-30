@@ -41,7 +41,7 @@ class TestUserProfile(AsyncHTTPTestCase):
                 },
                 "user": "user@example.com",
                 "is_contractor": False,
-                "employee_photo_url": None,
+                "employee_photo_url": "https://www.gravatar.com/avatar/b58996c504c5638798eb6b511e6f49af?d=mp",
                 "employee_info_url": None,
                 "authorization": {
                     "can_edit_policies": False,
