@@ -1,4 +1,6 @@
+import hashlib
 import os
+import urllib.parse
 from typing import List
 
 
@@ -34,7 +36,24 @@ class Config:
 
     @staticmethod
     def get_employee_photo_url(user):
-        return None
+        from consoleme.config import config
+
+        # Try to get a custom employee photo url by formatting a string provided through configuration
+
+        custom_employee_photo_url = config.get(
+            "get_employee_photo_url.custom_employee_url", ""
+        ).format(user=user)
+        if custom_employee_photo_url:
+            return custom_employee_photo_url
+
+        # Fall back to Gravatar
+        gravatar_url = (
+            "https://www.gravatar.com/avatar/"
+            + hashlib.md5(user.lower().encode("utf-8")).hexdigest()
+            + "?"
+        )
+        gravatar_url += urllib.parse.urlencode({"d": "mp"})
+        return gravatar_url
 
     @staticmethod
     def get_employee_info_url(user):
