@@ -40,7 +40,7 @@ resource "aws_lb_listener_rule" "unauthenticated-routes-1" {
 
   condition {
     path_pattern {
-      values = ["/api/v1/get_credentials*", "/api/v1/get_roles*", "/noauth/v1/challenge_generator/*",
+      values = ["/api/v1/get_credentials?", "/api/v1/get_roles?", "/noauth/v1/challenge_generator/*",
       "/noauth/v1/challenge_poller/*", "/api/v2/mtls/roles/*"]
     }
   }
@@ -78,8 +78,7 @@ resource "aws_lb_listener" "public-8081" {
       issuer                 = var.lb-authentication-issuer
       token_endpoint         = var.lb-authentication-token-endpoint
       user_info_endpoint     = var.lb-authentication-user-info-endpoint
-
-      scope = var.lb-authentication-scope
+      scope                  = var.lb-authentication-scope
     }
   }
 
