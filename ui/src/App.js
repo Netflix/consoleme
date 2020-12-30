@@ -15,7 +15,6 @@ import ConsoleLogin from "./components/ConsoleLogin";
 import ConsoleMeChallengeValidator from "./components/challenge/ConsoleMeChallengeValidator";
 import CreateCloneFeature from "./components/roles/CreateCloneFeature";
 import NoMatch from "./components/NoMatch";
-import { Message } from "semantic-ui-react";
 
 function App() {
   return (
