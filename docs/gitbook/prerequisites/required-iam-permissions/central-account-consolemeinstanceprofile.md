@@ -13,7 +13,8 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
       "Action": [
         "cloudtrail:*",
         "cloudwatch:*",
-        "config:*",
+        "config:SelectResourceConfig",
+        "config:SelectAggregateResourceConfig",
         "dynamodb:batchgetitem",
         "dynamodb:batchwriteitem",
         "dynamodb:deleteitem",
@@ -51,39 +52,45 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
       "Resource": "arn:aws:ses:*:123456789:identity/your_identity.example.com"
     },
     {
-      "Action": [
-        "autoscaling:Describe*",
-        "cloudwatch:Get*",
-        "cloudwatch:List*",
-        "config:BatchGet*",
-        "config:List*",
-        "config:Select*",
-        "ec2:DescribeSubnets",
-        "ec2:describevpcendpoints",
-        "ec2:DescribeVpcs",
-        "iam:*",
-        "s3:GetBucketPolicy",
-        "s3:GetBucketTagging",
-        "s3:ListAllMyBuckets",
-        "s3:ListBucket",
-        "s3:PutBucketPolicy",
-        "s3:PutBucketTagging",
-        "sns:GetTopicAttributes",
-        "sns:ListTagsForResource",
-        "sns:ListTopics",
-        "sns:SetTopicAttributes",
-        "sns:TagResource",
-        "sns:UnTagResource",
-        "sqs:GetQueueAttributes",
-        "sqs:GetQueueUrl",
-        "sqs:ListQueues",
-        "sqs:ListQueueTags",
-        "sqs:SetQueueAttributes",
-        "sqs:TagQueue",
-        "sqs:UntagQueue"
+      "Statement": [
+        {
+          "Action": [
+            "autoscaling:Describe*",
+            "cloudwatch:Get*",
+            "cloudwatch:List*",
+            "config:BatchGet*",
+            "config:List*",
+            "config:Select*",
+            "ec2:DescribeSubnets",
+            "ec2:describevpcendpoints",
+            "ec2:DescribeVpcs",
+            "iam:ListAttachedRolePolicies",
+            
+            "s3:GetBucketPolicy",
+            "s3:GetBucketTagging",
+            "s3:ListAllMyBuckets",
+            "s3:ListBucket",
+            "s3:PutBucketPolicy",
+            "s3:PutBucketTagging",
+            "sns:GetTopicAttributes",
+            "sns:ListTagsForResource",
+            "sns:ListTopics",
+            "sns:SetTopicAttributes",
+            "sns:TagResource",
+            "sns:UnTagResource",
+            "sqs:GetQueueAttributes",
+            "sqs:GetQueueUrl",
+            "sqs:ListQueues",
+            "sqs:ListQueueTags",
+            "sqs:SetQueueAttributes",
+            "sqs:TagQueue",
+            "sqs:UntagQueue"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+        }
       ],
-      "Effect": "Allow",
-      "Resource": "*"
+      "Version": "2012-10-17"
     }
   ],
   "Version": "2012-10-17"

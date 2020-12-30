@@ -12,6 +12,7 @@
     * [Self-Service IAM Wizard](feature-videos/policy-management/self-service-iam-wizard.md)
     * [Policy Request - Review Page](feature-videos/policy-management/policy-request-review-page.md)
     * [Role Creation and Cloning](feature-videos/policy-management/role-creation-and-cloning.md)
+* [Demo](demo.md)
 * [Quick Start](quick-start/README.md)
   * [Docker](quick-start/docker.md)
   * [Local](quick-start/local-development.md)
