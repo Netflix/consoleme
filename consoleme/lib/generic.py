@@ -17,7 +17,7 @@ def str2bool(v: Optional[Union[bool, str]]) -> bool:
         v = v.decode()
     if not v:
         return False
-    if type(v) == bool and v is True:
+    if type(v) is bool and v is True:
         return True
     return v.lower() in ["true", "True"]
 

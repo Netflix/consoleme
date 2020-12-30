@@ -344,7 +344,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
         self.contractor = config.config_plugin().is_contractor(self.user)
 
-        if not refresh_cache:
+        if config.get("auth.cache_user_info_server_side") and refresh_cache:
             try:
                 cache_r = self.red.get(f"USER-{self.user}-CONSOLE-{console_only}")
             except redis.exceptions.ConnectionError:
@@ -405,7 +405,7 @@ class BaseHandler(tornado.web.RequestHandler):
             stats.count("Basehandler.authorization_flow.exception")
             log.error(log_data, exc_info=True)
             raise
-        if self.groups and config.get("dynamic_config.role_cache.cache_roles", True):
+        if config.get("auth.cache_user_info_server_side") and self.groups:
             try:
                 self.red.setex(
                     f"USER-{self.user}-CONSOLE-{console_only}",

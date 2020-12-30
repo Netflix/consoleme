@@ -58,6 +58,8 @@ const ConsoleMeHeader = () => {
           title={user.user}
         />
       );
+    } else if (user?.user) {
+      return user.user;
     }
     return null;
   };
