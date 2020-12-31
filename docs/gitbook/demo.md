@@ -25,7 +25,7 @@ Authenticate to [https://demo.consolemeoss.com](https://demo.consolemeoss.com), 
 3. Visit [https://demo.consolemeoss.com](https://demo.consolemeoss.com) and click "ConsoleMeUserRoleA" in the Recent Roles view on the top left of the page
 4. Visit [https://demo.consolemeoss.com/role/**usera**](https://demo.consolemeoss.com/role/usera) to log in to ConsoleMeUserRoleA directly. This works because you only have one eligible role matching the substring `usera`
 5. Visit [https://demo.consolemeoss.com/role/usera?r=**eu-west-1**](https://demo.consolemeoss.com/role/usera?r=eu-west-1)**.** You will be logged in to the  eu-west-1 region
-6. Visit [https://demo.consolemeoss.com/role/usera?**redirect=https://console.aws.amazon.com/dynamodb/home?region=us-east-1**](https://demo.consolemeoss.com/role/usera?redirect=https://console.aws.amazon.com/dynamodb/home?region=us-east-1) _\*\*_to be taken directly to the DynamoDB console in us-east-1. Try this for other services.
+6. Visit [https://demo.consolemeoss.com/role/usera?**redirect=https://console.aws.amazon.com/dynamodb/home?region=us-east-1**](https://demo.consolemeoss.com/role/usera?redirect=https://console.aws.amazon.com/dynamodb/home?region=us-east-1) to be taken directly to the DynamoDB console in us-east-1. Try this for other services.
 
 ### Use ConsoleMe's Policy View to be redirected to a specific resource in the AWS Console
 
