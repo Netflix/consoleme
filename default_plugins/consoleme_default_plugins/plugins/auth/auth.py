@@ -265,14 +265,14 @@ class Auth:
         :return:
         """
         return {
-            "domain": "example.com",
+            "domain": "",
             "userName": user,
             "name": {
-                "givenName": "First",
-                "familyName": "Last",
-                "fullName": "First Last",
+                "givenName": "",
+                "familyName": "",
+                "fullName": "",
             },
-            "primaryEmail": "user@example.com",
+            "primaryEmail": user,
         }
 
     async def get_group_info(self, group, members=True):
