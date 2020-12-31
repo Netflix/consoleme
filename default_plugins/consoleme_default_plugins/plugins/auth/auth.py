@@ -151,11 +151,15 @@ class Auth:
         self, user: str, headers=None, get_header_groups=False, only_direct=True
     ):
         """Get the user's groups."""
+        groups_to_add_for_all_users = config.get("auth.groups_to_add_for_all_users", [])
         groups = []
         if get_header_groups or config.get("auth.get_groups_by_header"):
             header_groups = await self.get_groups_by_header(headers)
             if header_groups:
                 groups.extend(header_groups)
+        if groups_to_add_for_all_users:
+            # Optionally consider ConsoleMe users a member of these additional groups
+            groups.extend(groups_to_add_for_all_users)
         if not groups:
             log.error(
                 {
@@ -261,14 +265,14 @@ class Auth:
         :return:
         """
         return {
-            "domain": "example.com",
+            "domain": "",
             "userName": user,
             "name": {
-                "givenName": "First",
-                "familyName": "Last",
-                "fullName": "First Last",
+                "givenName": "",
+                "familyName": "",
+                "fullName": "",
             },
-            "primaryEmail": "user@example.com",
+            "primaryEmail": user,
         }
 
     async def get_group_info(self, group, members=True):

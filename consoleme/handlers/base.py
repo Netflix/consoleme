@@ -230,6 +230,7 @@ class BaseHandler(tornado.web.RequestHandler):
         refresh_cache = (
             self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
         )
+        refreshed_user_roles_from_cache = False
 
         if not refresh_cache and config.get(
             "dynamic_config.role_cache.always_refresh_roles_cache", False
@@ -344,7 +345,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
         self.contractor = config.config_plugin().is_contractor(self.user)
 
-        if not refresh_cache:
+        if config.get("auth.cache_user_info_server_side", True) and not refresh_cache:
             try:
                 cache_r = self.red.get(f"USER-{self.user}-CONSOLE-{console_only}")
             except redis.exceptions.ConnectionError:
@@ -357,7 +358,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 self.eligible_roles = cache.get("eligible_roles")
                 self.eligible_accounts = cache.get("eligible_accounts")
                 self.user_role_name = cache.get("user_role_name")
-                return
+                refreshed_user_roles_from_cache = True
 
         try:
             if not self.groups:
@@ -374,8 +375,7 @@ class BaseHandler(tornado.web.RequestHandler):
             log_data["message"] = "No groups detected. Check configuration."
             log.error(log_data)
 
-        # Set User Role Name
-
+        # Set Per-User Role Name (This logic is not used in OSS deployment)
         if (
             config.get("user_roles.opt_in_group")
             and config.get("user_roles.opt_in_group") in self.groups
@@ -394,18 +394,24 @@ class BaseHandler(tornado.web.RequestHandler):
             log.error(log_data)
         log_data["eligible_roles"] = len(self.eligible_roles)
 
-        try:
-            self.eligible_accounts = await group_mapping.get_eligible_accounts(
-                self.eligible_roles
-            )
-            log_data["eligible_accounts"] = len(self.eligible_accounts)
-            log_data["message"] = "Successfully authorized user."
-            log.debug(log_data)
-        except Exception:
-            stats.count("Basehandler.authorization_flow.exception")
-            log.error(log_data, exc_info=True)
-            raise
-        if self.groups and config.get("dynamic_config.role_cache.cache_roles", True):
+        if not self.eligible_accounts:
+            try:
+                self.eligible_accounts = await group_mapping.get_eligible_accounts(
+                    self.eligible_roles
+                )
+                log_data["eligible_accounts"] = len(self.eligible_accounts)
+                log_data["message"] = "Successfully authorized user."
+                log.debug(log_data)
+            except Exception:
+                stats.count("Basehandler.authorization_flow.exception")
+                log.error(log_data, exc_info=True)
+                raise
+        if (
+            config.get("auth.cache_user_info_server_side", True)
+            and self.groups
+            # Only set role cache if we didn't retrieve user's existing roles from cache
+            and not refreshed_user_roles_from_cache
+        ):
             try:
                 self.red.setex(
                     f"USER-{self.user}-CONSOLE-{console_only}",

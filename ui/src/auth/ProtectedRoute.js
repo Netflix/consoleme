@@ -23,11 +23,20 @@ const ProtectedRoute = (props) => {
     return null;
   }
 
+  let marginTop = "72px";
+
+  if (
+    user?.pages?.header?.custom_header_message_title ||
+    user?.pages?.header?.custom_header_message_text
+  ) {
+    marginTop = "0px";
+  }
+
   return (
     <Segment
       basic
       style={{
-        marginTop: "72px",
+        marginTop: marginTop,
         marginLeft: "240px",
       }}
     >

@@ -177,22 +177,22 @@ class PolicyRequestReview extends Component {
               {new Date(extendedRequest.timestamp).toLocaleString()}
             </Table.Cell>
           </Table.Row>
-          <Table.Row>
-            <Table.Cell>Title</Table.Cell>
-            <Table.Cell>
-              {extendedInfo ? (
+          {extendedInfo?.customAttributes?.title ? (
+            <Table.Row>
+              <Table.Cell>Title</Table.Cell>
+              <Table.Cell>
                 <p>
                   {(extendedInfo.customAttributes &&
                     extendedInfo.customAttributes.title) ||
                     ""}
                 </p>
-              ) : null}
-            </Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell>Manager</Table.Cell>
-            <Table.Cell>
-              {extendedInfo ? (
+              </Table.Cell>
+            </Table.Row>
+          ) : null}
+          {extendedInfo?.customAttributes?.manager ? (
+            <Table.Row>
+              <Table.Cell>Manager</Table.Cell>
+              <Table.Cell>
                 <p>
                   {(extendedInfo.customAttributes &&
                     `${extendedInfo.customAttributes.manager} - `) ||
@@ -205,9 +205,9 @@ class PolicyRequestReview extends Component {
                     </a>
                   ) : null}
                 </p>
-              ) : null}
-            </Table.Cell>
-          </Table.Row>
+              </Table.Cell>
+            </Table.Row>
+          ) : null}
           <Table.Row>
             <Table.Cell>User Justification</Table.Cell>
             <Table.Cell>{extendedRequest.justification}</Table.Cell>
