@@ -1,31 +1,31 @@
 # Demo
 
-We provide a limited-functionality demo of ConsoleMe at [https://albauth.consolemeoss.com](https://albauth.consolemeoss.com) . If you would like access, please reach out to us on our [Discord channel](https://discord.com/invite/nQVpNGGkYu). 
+We provide a limited-functionality demo of ConsoleMe at [https://demo.consolemeoss.com](https://demo.consolemeoss.com) . If you would like access, please reach out to us on our [Discord channel](https://discord.com/invite/nQVpNGGkYu). 
 
 After signing in through Google OAuth, you'll be operating as an administrator but you'll be unable to write any changes. For example, you'll be unable to mutate permissions, submit policy requests, or modify dynamic configuration.
 
 You can receive credentials for a few roles after logging in. Note that these roles do not have any permissions. 
 
-You can also use these copies of Weep \([Win](https://albauth.consolemeoss.com/static/files/windows/weep.exe), [Linux](https://albauth.consolemeoss.com/static/files/linux/weep), [Mac](https://albauth.consolemeoss.com/static/files/darwin/weep)\) to request and serve credentials locally from the demo site. 
+You can also use these copies of Weep \([Win](https://demo.consolemeoss.com/static/files/windows/weep.exe), [Linux](https://demo.consolemeoss.com/static/files/linux/weep), [Mac](https://demo.consolemeoss.com/static/files/darwin/weep)\) to request and serve credentials locally from the demo site. 
 
 {% hint style="info" %}
-The versions of Weep provided above have an embedded configuration pointing to [https://albauth.consolemeoss.com](https://albauth.consolemeoss.com). 
+The versions of Weep provided above have an embedded configuration pointing to [https://demo.consolemeoss.com](https://demo.consolemeoss.com). 
 
 ConsoleMe users can compile Weep with a custom embedded configuration for their environment by following the guidance in [Weep's readme](https://github.com/Netflix/weep#embedded-configuration).
 {% endhint %}
 
 ## Exercises
 
-Authenticate to [https://albauth.consolemeoss.com](https://albauth.consolemeoss.com), and try the exercises below: 
+Authenticate to [https://demo.consolemeoss.com](https://demo.consolemeoss.com), and try the exercises below: 
 
 ### Use ConsoleMe to log into the AWS Console
 
-1. Visit [https://albauth.consolemeoss.com](https://albauth.consolemeoss.com)
+1. Visit [https://demo.consolemeoss.com](https://demo.consolemeoss.com)
 2. Click "**Sign-In**" next to ConsoleMeUserRoleA
-3. Visit [https://albauth.consolemeoss.com](https://albauth.consolemeoss.com) and click "ConsoleMeUserRoleA" in the Recent Roles view on the top left of the page
-4. Visit [https://albauth.consolemeoss.com/role/**usera**](https://albauth.consolemeoss.com/role/usera) to log in to ConsoleMeUserRoleA directly. This works because you only have one eligible role matching the substring `usera`
-5. Visit [https://albauth.consolemeoss.com/role/usera?r=**eu-west-1**](https://albauth.consolemeoss.com/role/usera?r=eu-west-1)**.** You will be logged in to the  eu-west-1 region
-6. Visit [https://albauth.consolemeoss.com/role/usera?**redirect=https://console.aws.amazon.com/dynamodb/home?region=us-east-1**](https://albauth.consolemeoss.com/role/usera?redirect=https://console.aws.amazon.com/dynamodb/home?region=us-east-1) ****to be taken directly to the DynamoDB console in us-east-1. Try this for other services.
+3. Visit [https://demo.consolemeoss.com](https://demo.consolemeoss.com) and click "ConsoleMeUserRoleA" in the Recent Roles view on the top left of the page
+4. Visit [https://demo.consolemeoss.com/role/**usera**](https://demo.consolemeoss.com/role/usera) to log in to ConsoleMeUserRoleA directly. This works because you only have one eligible role matching the substring `usera`
+5. Visit [https://demo.consolemeoss.com/role/usera?r=**eu-west-1**](https://demo.consolemeoss.com/role/usera?r=eu-west-1)**.** You will be logged in to the  eu-west-1 region
+6. Visit [https://demo.consolemeoss.com/role/usera?**redirect=https://console.aws.amazon.com/dynamodb/home?region=us-east-1**](https://demo.consolemeoss.com/role/usera?redirect=https://console.aws.amazon.com/dynamodb/home?region=us-east-1) ****to be taken directly to the DynamoDB console in us-east-1. Try this for other services.
 
 ### Use ConsoleMe's Policy View to be redirected to a specific resource in the AWS Console
 
@@ -98,7 +98,7 @@ ConsoleMe's inline policy templates can be customized to fit the needs of your u
 
 ### Download Weep. List your eligible roles, and use Weep to serve credentials locally
 
-1. Download Weep for your platform with an embedded configuration pointing to https://albauth.consolemeoss.com :  [Win](https://albauth.consolemeoss.com/static/files/windows/weep.exe), [Linux](https://albauth.consolemeoss.com/static/files/linux/weep), [Mac](https://albauth.consolemeoss.com/static/files/darwin/weep)
+1. Download Weep for your platform with an embedded configuration pointing to https://demo.consolemeoss.com :  [Win](https://demo.consolemeoss.com/static/files/windows/weep.exe), [Linux](https://demo.consolemeoss.com/static/files/linux/weep), [Mac](https://demo.consolemeoss.com/static/files/darwin/weep)
 2. Use Weep to list your eligible roles. You'll be required to authenticate to ConsoleMe the first time you do this.
 
 ```text
