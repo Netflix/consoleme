@@ -1,49 +1,42 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import { Form } from "semantic-ui-react";
 
-class TextInputBlockComponent extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      value: "",
-    };
-  }
+const TextInputBlockComponent = (props) => {
+  const initialState = {
+    value: "",
+  };
+  const [state, setState] = useState(initialState);
 
-  componentDidMount() {
-    const { defaultValue } = this.props;
+  useEffect(() => {
+    const { defaultValue } = props;
     this.setState({
       value: defaultValue || "",
     });
-  }
+  }, []);
 
-  handleTextInputChange(e) {
+  const handleTextInputChange = (e) => {
     const { value } = e.target;
-    this.setState(
-      {
-        value,
-      },
-      () => {
-        this.props.handleInputUpdate(value);
-      }
-    );
-  }
+    setState({
+      ...state,
+      value,
+    });
+    props.handleInputUpdate(value);
+  };
 
-  render() {
-    const { value } = this.state;
-    const { required, label } = this.props;
+  const { value } = state;
+  const { required, label } = props;
 
-    return (
-      <Form.Field required={required}>
-        <label>{label || "Enter Value"}</label>
-        <input
-          onChange={this.handleTextInputChange.bind(this)}
-          placeholder="Enter your value here"
-          value={value}
-          type="text"
-        />
-      </Form.Field>
-    );
-  }
-}
+  return (
+    <Form.Field required={required}>
+      <label>{label || "Enter Value"}</label>
+      <input
+        onChange={() => handleTextInputChange(this)}
+        placeholder="Enter your value here"
+        value={value}
+        type="text"
+      />
+    </Form.Field>
+  );
+};
 
 export default TextInputBlockComponent;

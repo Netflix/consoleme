@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import _ from "lodash";
 import {
@@ -28,99 +28,89 @@ const clone_default_selected_options = clone_options.map(
   (option) => option.value
 );
 
-class CreateCloneFeature extends Component {
-  state = {
-    isLoading: false,
-    isLoadingAccount: false,
-    results: [],
-    resultsAccount: [],
-    value: "",
-    source_role: null,
-    source_role_value: "",
-    dest_account_id: null,
-    dest_account_id_value: "",
-    dest_role_name: "",
-    searchType: "",
-    description: "",
-    messages: null,
-    requestSent: false,
-    requestResults: [],
-    isSubmitting: false,
-    roleCreated: false,
-    options: clone_default_selected_options,
-    copy_description: true,
-    feature_type: "create",
-  };
+const CreateCloneFeature = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingAccount, setIsLoadingAccount] = useState(false);
+  const [results, setResults] = useState([]);
+  const [resultsAccount, setResultsAccount] = useState([]);
+  const [value, setValue] = useState("");
+  const [source_role, setSource_role] = useState(null);
+  const [source_role_value, setSource_role_value] = useState("");
+  const [dest_account_id, setDest_account_id] = useState(null);
+  const [dest_account_id_value, setDest_account_id_value] = useState("");
+  const [dest_role_name, setDest_role_name] = useState("");
+  const [searchType, setSearchType] = useState("");
+  const [description, setDescription] = useState("");
+  const [messages, setMessages] = useState(null);
+  const [requestSent, setRequestSent] = useState(false);
+  const [requestResults, setRequestResults] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [roleCreated, setRoleCreated] = useState(false);
+  const [options, setOptions] = useState(clone_default_selected_options);
+  const [copy_description, setCopy_description] = useState(true);
+  const [feature_type, setFeature_type] = useState("create");
 
-  handleSearchChange(event, { name, value }) {
+  const [payload, setPayload] = useState(null);
+  const [url, setUrl] = useState("");
+
+  const handleSearchChange = (event, { name, value }) => {
+    let stype;
     if (name === "source_role") {
-      this.setState({
-        isLoading: true,
-        value,
-        source_role_value: value,
-        source_role: null,
-        searchType: "iam_arn",
-      });
+      setIsLoading(true);
+      setValue(value);
+      setSource_role_value(value);
+      setSource_role(null);
+      setSearchType("iam_arn");
+      stype = "iam_arn";
     } else {
-      this.setState({
-        isLoadingAccount: true,
-        value,
-        dest_account_id_value: value,
-        dest_account_id: null,
-        searchType: "account",
-      });
+      setIsLoadingAccount(true);
+      setValue(value);
+      setDest_account_id_value(value);
+      setDest_account_id(null);
+      setSearchType("account");
+      stype = "account";
     }
 
     setTimeout(() => {
-      const { value, searchType } = this.state;
       if (value.length < 1) {
-        return this.setState({
-          isLoading: false,
-          isLoadingAccount: false,
-          results: [],
-          value: "",
-          source_role: name === "source_role" ? null : this.state.source_role,
-          source_role_value:
-            name === "source_role" ? "" : this.state.source_role_value,
-          dest_account_id:
-            name === "source_role" ? this.state.dest_account_id : null,
-          dest_account_id_value:
-            name === "source_role" ? this.state.dest_account_id_value : "",
-        });
+        setIsLoading(false);
+        setIsLoadingAccount(false);
+        setResults([]);
+        setValue("");
+        setSource_role(name === "source_role" ? null : source_role);
+        setSource_role_value(name === "source_role" ? "" : source_role_value);
+        setDest_account_id(name === "source_role" ? dest_account_id : null);
+        setDest_account_id_value(
+          name === "source_role" ? dest_account_id_value : ""
+        );
+        return;
       }
-
       const re = new RegExp(_.escapeRegExp(value), "i");
 
       const TYPEAHEAD_API =
-        "/policies/typeahead?resource=" + searchType + "&search=" + value;
+        "/policies/typeahead?resource=" + stype + "&search=" + value;
 
       sendRequestCommon(null, TYPEAHEAD_API, "get").then((source) => {
-        if (searchType === "account") {
-          this.setState({
-            isLoadingAccount: false,
-            resultsAccount: source.filter((result) => re.test(result.title)),
-          });
+        if (stype === "account") {
+          setIsLoadingAccount(false);
+          setResultsAccount(source.filter((result) => re.test(result.title)));
         } else {
-          this.setState({
-            isLoading: false,
-            results: source.filter((result) => re.test(result.title)),
-          });
+          setIsLoading(false);
+          setResults(source.filter((result) => re.test(result.title)));
         }
       });
     }, 300);
-  }
+  };
 
-  handleSubmit() {
-    const { feature_type } = this.state;
+  const handleSubmit = () => {
     if (feature_type === "clone") {
-      this.handleCloneSubmit();
+      handleCloneSubmit();
     } else {
-      this.handleCreateSubmit();
+      handleCreateSubmit();
     }
-  }
+  };
 
-  handleCreateSubmit() {
-    const { dest_account_id, dest_role_name } = this.state;
+  const handleCreateSubmit = () => {
     const errors = [];
     if (!dest_account_id) {
       errors.push(
@@ -133,9 +123,7 @@ class CreateCloneFeature extends Component {
       );
     }
     if (errors.length > 0) {
-      return this.setState({
-        messages: errors,
-      });
+      setMessages(errors);
     }
     const payload = {
       account_id: dest_account_id.substring(
@@ -143,16 +131,13 @@ class CreateCloneFeature extends Component {
         dest_account_id.indexOf(")")
       ),
       role_name: dest_role_name,
-      description: this.state.description,
+      description: description,
     };
-    this.setState({
-      dest_account_id: payload.account_id,
-    });
-    this.submitRequest(payload, "/api/v2/roles");
-  }
+    setDest_account_id(payload.account_id);
+    submitRequest(payload, "/api/v2/roles");
+  };
 
-  handleCloneSubmit() {
-    const { source_role, dest_account_id, dest_role_name } = this.state;
+  const handleCloneSubmit = () => {
     const errors = [];
     if (!source_role) {
       errors.push("No source role provided, please select a source role");
@@ -168,18 +153,16 @@ class CreateCloneFeature extends Component {
       );
     }
     if (errors.length > 0) {
-      return this.setState({
-        messages: errors,
-      });
+      setMessages(errors);
     }
 
     const cloneOptions = {
-      assume_role_policy: this.state.options.includes("assume_role_policy"),
-      tags: this.state.options.includes("tags"),
-      copy_description: this.state.options.includes("copy_description"),
-      description: this.state.description,
-      inline_policies: this.state.options.includes("inline_policies"),
-      managed_policies: this.state.options.includes("managed_policies"),
+      assume_role_policy: options.includes("assume_role_policy"),
+      tags: options.includes("tags"),
+      copy_description: options.includes("copy_description"),
+      description: description,
+      inline_policies: options.includes("inline_policies"),
+      managed_policies: options.includes("managed_policies"),
     };
 
     const payload = {
@@ -192,298 +175,288 @@ class CreateCloneFeature extends Component {
       dest_role_name,
       options: cloneOptions,
     };
-    this.setState({
-      dest_account_id: payload.dest_account_id,
-    });
-    this.submitRequest(payload, "/api/v2/clone/role");
-  }
+    setDest_account_id(payload.dest_account_id);
+    submitRequest(payload, "/api/v2/clone/role");
+  };
 
-  submitRequest(payload, url) {
-    this.setState(
-      {
-        messages: null,
-        isSubmitting: true,
-      },
-      async () => {
-        const response = await sendRequestCommon(payload, url);
-        const messages = [];
-        let requestResults = [];
-        let requestSent = false;
-        let roleCreated = false;
-        if (response) {
-          requestSent = true;
-          if (!response.hasOwnProperty("role_created")) {
-            requestResults.push({
-              Status: "error",
-              message: response.message,
-            });
-          } else {
-            requestResults = response.action_results;
-            if (response.role_created === "true") {
-              roleCreated = true;
-            }
-          }
+  useEffect(async () => {
+    if (isSubmitting) {
+      const response = await sendRequestCommon(payload, url);
+      const messages = [];
+      let requestResults = [];
+      let requestSent = false;
+      let roleCreated = false;
+      if (response) {
+        requestSent = true;
+        if (!response.hasOwnProperty("role_created")) {
+          requestResults.push({
+            Status: "error",
+            message: response.message,
+          });
         } else {
-          messages.push("Failed to submit cloning request");
+          requestResults = response.action_results;
+          if (response.role_created === "true") {
+            roleCreated = true;
+          }
         }
-        this.setState({
-          isSubmitting: false,
-          messages,
-          requestSent,
-          requestResults,
-          roleCreated,
-        });
+      } else {
+        messages.push("Failed to submit cloning request");
       }
-    );
-  }
+      setIsSubmitting(false);
+      setMessages(messages);
+      setRequestSent(requestSent);
+      setRequestResults(requestResults);
+      setRoleCreated(roleCreated);
+    }
+  }, [isSubmitting]);
 
-  handleResultSelect(e, { name, value_name, result }) {
-    this.setState({
-      [value_name]: result.title,
-      [name]: result.title,
-      isLoading: false,
-    });
-  }
+  const submitRequest = (payload, url) => {
+    setPayload(payload);
+    setUrl(url);
+    setMessages(null);
+    setIsSubmitting(true);
+  };
 
-  handleDropdownChange(e, { value }) {
-    this.setState({
-      options: value,
-      copy_description: value.includes("copy_description"),
-    });
-  }
+  const handleResultSelect = (e, { name, value_name, result }) => {
+    if (name === "source_role" && value_name === "source_role_value") {
+      setSource_role(result.title);
+      setSource_role_value(result.title);
+    } else if (
+      name === "dest_account_id" &&
+      value_name === "dest_account_id_value"
+    ) {
+      setDest_account_id(result.title);
+      setDest_account_id_value(result.title);
+    }
+    setIsLoading(false);
+  };
 
-  handleChange = (e, { name, value }) => this.setState({ [name]: value });
+  const handleDropdownChange = (e, { value }) => {
+    setOptions(value);
+    setCopy_description(value.includes("copy_description"));
+  };
 
-  handleCheckChange = (e, { name, value }) => this.setState({ [name]: !value });
+  const handleChange = (e, { name, value }) => {
+    if (name === "feature_type") {
+      setFeature_type(value);
+    } else if (name === "dest_role_name") {
+      setDest_role_name(value);
+    } else if (name === "description") {
+      setDescription(value);
+    }
+  };
 
-  render() {
-    const {
-      isLoading,
-      isLoadingAccount,
-      results,
-      source_role_value,
-      dest_account_id_value,
-      dest_role_name,
-      resultsAccount,
-      description,
-      messages,
-      requestSent,
-      requestResults,
-      options,
-      isSubmitting,
-      roleCreated,
-      dest_account_id,
-      copy_description,
-      feature_type,
-    } = this.state;
-    const messagesToShow =
-      messages != null && messages.length > 0 ? (
-        <Message negative>
-          <Message.Header>There are some missing parameters</Message.Header>
-          <Message.List>
-            {messages.map((message) => (
-              <Message.Item>{message}</Message.Item>
-            ))}
-          </Message.List>
-        </Message>
-      ) : null;
+  const handleCheckChange = (e, { name, value }) => {
+    // setState({ ...state, [name]: !value });
+  };
 
-    const sourceRoleContent =
-      feature_type === "clone" ? (
-        <Grid.Column>
-          <Header size="medium">
-            Select source role
-            <Header.Subheader>
-              Please search for the role you want to clone.
-            </Header.Subheader>
-          </Header>
-          <Form>
-            <Form.Field required>
-              <label>Source Role</label>
-              <Search
-                loading={isLoading}
-                fluid
-                name="source_role"
-                value_name="source_role_value"
-                onResultSelect={this.handleResultSelect.bind(this)}
-                onSearchChange={_.debounce(
-                  this.handleSearchChange.bind(this),
-                  500,
-                  {
-                    leading: true,
-                  }
-                )}
-                results={results}
-                value={source_role_value}
-              />
-            </Form.Field>
-            <Form.Dropdown
-              placeholder="Options"
-              fluid
-              multiple
-              search
-              selection
-              options={clone_options}
-              defaultValue={options}
-              label="Attributes to clone"
-              onChange={this.handleDropdownChange.bind(this)}
-            />
-          </Form>
-        </Grid.Column>
-      ) : null;
-
-    const feature_selection = (
-      <Segment>
-        <Form>
-          <Form.Group inline>
-            <Form.Radio
-              label="Create blank role"
-              name="feature_type"
-              value="create"
-              checked={feature_type === "create"}
-              onChange={this.handleChange}
-            />
-            <Form.Radio
-              label="Clone from existing role"
-              name="feature_type"
-              value="clone"
-              checked={feature_type === "clone"}
-              onChange={this.handleChange}
-            />
-          </Form.Group>
-        </Form>
-      </Segment>
-    );
-
-    const preRequestContent = (
-      <Segment.Group vertical>
-        {feature_selection}
-        <Segment>
-          <Grid columns={2} divided>
-            <Grid.Row>
-              {sourceRoleContent}
-              <Grid.Column>
-                <Header size="medium">
-                  Role to be created
-                  <Header.Subheader>
-                    Please enter the destination account where you want the role
-                    and desired role name.
-                  </Header.Subheader>
-                </Header>
-                <Form>
-                  <Form.Field required>
-                    <label>Account ID</label>
-                    <Search
-                      loading={isLoadingAccount}
-                      name="dest_account_id"
-                      value_name="dest_account_id_value"
-                      onResultSelect={this.handleResultSelect.bind(this)}
-                      onSearchChange={_.debounce(
-                        this.handleSearchChange.bind(this),
-                        500,
-                        {
-                          leading: true,
-                        }
-                      )}
-                      results={resultsAccount}
-                      value={dest_account_id_value}
-                      fluid
-                    />
-                  </Form.Field>
-                  <Form.Input
-                    required
-                    fluid
-                    label="Role name"
-                    name="dest_role_name"
-                    value={dest_role_name}
-                    placeholder="Role name"
-                    onChange={this.handleChange}
-                  />
-                  <Form.Input
-                    required
-                    fluid
-                    name="description"
-                    value={description}
-                    placeholder="Optional description"
-                    onChange={this.handleChange}
-                    disabled={
-                      copy_description === true && feature_type === "clone"
-                    }
-                  />
-                </Form>
-              </Grid.Column>
-            </Grid.Row>
-          </Grid>
-        </Segment>
-        <Segment>
-          {messagesToShow}
-          <Button
-            content="Submit"
-            fluid
-            onClick={this.handleSubmit.bind(this)}
-            primary
-          />
-        </Segment>
-      </Segment.Group>
-    );
-
-    const postRequestContent =
-      requestResults.length > 0 ? (
-        <Segment>
-          <Feed>
-            {requestResults.map((result) => {
-              const iconLabel =
-                result.status === "success" ? (
-                  <Icon name="checkmark" color="teal" />
-                ) : (
-                  <Icon name="close" color="pink" />
-                );
-              const feedResult =
-                result.status === "success" ? "Success" : "Error";
-              return (
-                <Feed.Event>
-                  <Feed.Label>{iconLabel}</Feed.Label>
-                  <Feed.Content>
-                    <Feed.Date>{feedResult}</Feed.Date>
-                    <Feed.Summary>{result.message}</Feed.Summary>
-                  </Feed.Content>
-                </Feed.Event>
-              );
-            })}
-          </Feed>
-        </Segment>
-      ) : null;
-
-    const roleInfoLink = roleCreated ? (
-      <Message info>
-        The requested role has been created. You can view the role details{" "}
-        <a
-          href={`/policies/edit/${dest_account_id}/iamrole/${dest_role_name}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          here
-        </a>
-        .
+  const messagesToShow =
+    messages != null && messages.length > 0 ? (
+      <Message negative>
+        <Message.Header>There are some missing parameters</Message.Header>
+        <Message.List>
+          {messages.map((message) => (
+            <Message.Item>{message}</Message.Item>
+          ))}
+        </Message.List>
       </Message>
     ) : null;
 
-    const pageContent = requestSent ? postRequestContent : preRequestContent;
+  const sourceRoleContent =
+    feature_type === "clone" ? (
+      <Grid.Column>
+        <Header size="medium">
+          Select source role
+          <Header.Subheader>
+            Please search for the role you want to clone.
+          </Header.Subheader>
+        </Header>
+        <Form>
+          <Form.Field required>
+            <label>Source Role</label>
+            <Search
+              loading={isLoading}
+              fluid
+              name="source_role"
+              value_name="source_role_value"
+              onResultSelect={(e, data) => handleResultSelect(e, data)}
+              onSearchChange={_.debounce(
+                (e) => handleSearchChange(e, e.target),
+                500,
+                {
+                  leading: true,
+                }
+              )}
+              results={results}
+              value={source_role_value}
+            />
+          </Form.Field>
+          <Form.Dropdown
+            placeholder="Options"
+            fluid
+            multiple
+            search
+            selection
+            options={clone_options}
+            defaultValue={options}
+            label="Attributes to clone"
+            onChange={(e) => handleDropdownChange(e, e.target)}
+          />
+        </Form>
+      </Grid.Column>
+    ) : null;
 
-    return (
-      <>
-        <Dimmer active={isSubmitting} inverted>
-          <Loader />
-        </Dimmer>
-        <Segment>
-          <Header size="huge">Create a role</Header>
-        </Segment>
-        {roleInfoLink}
-        {pageContent}
-      </>
-    );
-  }
-}
+  const feature_selection = (
+    <Segment>
+      <Form>
+        <Form.Group inline>
+          <Form.Radio
+            label="Create blank role"
+            name="feature_type"
+            value="create"
+            checked={feature_type === "create"}
+            onChange={handleChange}
+          />
+          <Form.Radio
+            label="Clone from existing role"
+            name="feature_type"
+            value="clone"
+            checked={feature_type === "clone"}
+            onChange={handleChange}
+          />
+        </Form.Group>
+      </Form>
+    </Segment>
+  );
+
+  const preRequestContent = (
+    <Segment.Group vertical>
+      {feature_selection}
+      <Segment>
+        <Grid columns={2} divided>
+          <Grid.Row>
+            {sourceRoleContent}
+            <Grid.Column>
+              <Header size="medium">
+                Role to be created
+                <Header.Subheader>
+                  Please enter the destination account where you want the role
+                  and desired role name.
+                </Header.Subheader>
+              </Header>
+              <Form>
+                <Form.Field required>
+                  <label>Account ID</label>
+                  <Search
+                    loading={isLoadingAccount}
+                    name="dest_account_id"
+                    value_name="dest_account_id_value"
+                    onResultSelect={(e, data) => handleResultSelect(e, data)}
+                    onSearchChange={_.debounce(
+                      (e) => handleSearchChange(e, e.target),
+                      500,
+                      {
+                        leading: true,
+                      }
+                    )}
+                    results={resultsAccount}
+                    value={dest_account_id_value}
+                    fluid
+                  />
+                </Form.Field>
+                <Form.Input
+                  required
+                  fluid
+                  label="Role name"
+                  name="dest_role_name"
+                  value={dest_role_name}
+                  placeholder="Role name"
+                  onChange={handleChange}
+                />
+                <Form.Input
+                  required
+                  fluid
+                  name="description"
+                  value={description}
+                  placeholder="Optional description"
+                  onChange={handleChange}
+                  disabled={
+                    copy_description === true && feature_type === "clone"
+                  }
+                />
+              </Form>
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
+      </Segment>
+      <Segment>
+        {messagesToShow}
+        <Button
+          content="Submit"
+          fluid
+          onClick={() => handleSubmit(this)}
+          primary
+        />
+      </Segment>
+    </Segment.Group>
+  );
+
+  const postRequestContent =
+    requestResults.length > 0 ? (
+      <Segment>
+        <Feed>
+          {requestResults.map((result) => {
+            const iconLabel =
+              result.status === "success" ? (
+                <Icon name="checkmark" color="teal" />
+              ) : (
+                <Icon name="close" color="pink" />
+              );
+            const feedResult =
+              result.status === "success" ? "Success" : "Error";
+            return (
+              <Feed.Event>
+                <Feed.Label>{iconLabel}</Feed.Label>
+                <Feed.Content>
+                  <Feed.Date>{feedResult}</Feed.Date>
+                  <Feed.Summary>{result.message}</Feed.Summary>
+                </Feed.Content>
+              </Feed.Event>
+            );
+          })}
+        </Feed>
+      </Segment>
+    ) : null;
+
+  const roleInfoLink = roleCreated ? (
+    <Message info>
+      The requested role has been created. You can view the role details{" "}
+      <a
+        href={`/policies/edit/${dest_account_id}/iamrole/${dest_role_name}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        here
+      </a>
+      .
+    </Message>
+  ) : null;
+
+  const pageContent = requestSent ? postRequestContent : preRequestContent;
+
+  return (
+    <>
+      <Dimmer active={isSubmitting} inverted>
+        <Loader />
+      </Dimmer>
+      <Segment>
+        <Header size="huge">Create a role</Header>
+      </Segment>
+      {roleInfoLink}
+      {pageContent}
+    </>
+  );
+};
 
 export function renderCreateCloneWizard() {
   ReactDOM.render(

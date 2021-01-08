@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 import {
   Button,
   Comment,
@@ -11,152 +11,149 @@ import {
 } from "semantic-ui-react";
 import { sendRequestCommon } from "../../helpers/utils";
 
-class CommentsFeedBlockComponent extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      requestID: this.props.requestID,
-      isLoading: false,
-      commentText: "",
-      messages: [],
-    };
-    this.handleCommentChange = this.handleCommentChange.bind(this);
-    this.handleSubmitComment = this.handleSubmitComment.bind(this);
-    this.reloadDataFromBackend = props.reloadDataFromBackend;
-  }
+const CommentsFeedBlockComponent = (props) => {
+  const initialState = {
+    requestID: props.requestID,
+    isLoading: false,
+    commentText: "",
+    messages: [],
+  };
 
-  handleCommentChange(e) {
-    this.setState({
+  const [state, setState] = useState(initialState);
+
+  const reloadDataFromBackend = props.reloadDataFromBackend;
+
+  const handleCommentChange = (e) => {
+    setState({
+      ...state,
       commentText: e.target.value,
     });
-  }
+  };
 
-  handleSubmitComment() {
-    const { commentText, requestID } = this.state;
-    return this.setState(
-      {
-        isLoading: true,
-        messages: [],
-      },
-      async () => {
-        const request = {
-          modification_model: {
-            command: "add_comment",
-            comment_text: commentText,
-          },
-        };
-        const response = await sendRequestCommon(
-          request,
-          "/api/v2/requests/" + requestID,
-          "PUT"
-        );
-        if (response.status === 403 || response.status === 400) {
-          // Error occurred making the request
-          this.setState({
-            isLoading: false,
-            messages: [response.message],
-          });
-          return;
-        }
-        this.reloadDataFromBackend();
-        this.setState({
+  const handleSubmitComment = () => {
+    const { commentText, requestID } = state;
+    setState({
+      ...state,
+      isLoading: true,
+      messages: [],
+    });
+    const cb = async () => {
+      const request = {
+        modification_model: {
+          command: "add_comment",
+          comment_text: commentText,
+        },
+      };
+      const response = await sendRequestCommon(
+        request,
+        "/api/v2/requests/" + requestID,
+        "PUT"
+      );
+      if (response.status === 403 || response.status === 400) {
+        // Error occurred making the request
+        setState({
+          ...state,
           isLoading: false,
-          commentText: "",
-          messages: [],
+          messages: [response.message],
         });
+        return;
       }
-    );
-  }
+      reloadDataFromBackend();
+      setState({
+        ...state,
+        isLoading: false,
+        commentText: "",
+        messages: [],
+      });
+    };
+    cb();
+  };
 
-  render() {
-    const { commentText, isLoading, messages } = this.state;
-    const { comments } = this.props;
-    const messagesToShow =
-      messages != null && messages.length > 0 ? (
-        <Message negative>
-          <Message.Header>An error occurred</Message.Header>
-          <Message.List>
-            {messages.map((message) => (
-              <Message.Item>{message}</Message.Item>
-            ))}
-          </Message.List>
-        </Message>
-      ) : null;
-
-    const commentsContent =
-      comments && comments.length > 0 ? (
-        <Comment.Group>
-          {comments.map((comment) => (
-            <Comment>
-              {comment.user && comment.user.photo_url ? (
-                <Comment.Avatar src={comment.user.photo_url} />
-              ) : (
-                <Comment.Avatar src="/static/images/logos/sunglasses/1.png" />
-              )}
-              <Comment.Content>
-                {comment.user && comment.user.details_url ? (
-                  <Comment.Author as="a">
-                    <a
-                      href={comment.user.details_url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {comment.user_email}
-                    </a>
-                  </Comment.Author>
-                ) : (
-                  <Comment.Author as="text">
-                    {comment.user_email}
-                  </Comment.Author>
-                )}
-                <Comment.Metadata>
-                  <div>{new Date(comment.timestamp).toLocaleString()}</div>
-                </Comment.Metadata>
-                <Comment.Text>{comment.text}</Comment.Text>
-                <Comment.Actions>
-                  <Comment.Action>
-                    <Divider />
-                  </Comment.Action>
-                </Comment.Actions>
-              </Comment.Content>
-            </Comment>
+  const { commentText, isLoading, messages } = state;
+  const { comments } = props;
+  const messagesToShow =
+    messages != null && messages.length > 0 ? (
+      <Message negative>
+        <Message.Header>An error occurred</Message.Header>
+        <Message.List>
+          {messages.map((message) => (
+            <Message.Item>{message}</Message.Item>
           ))}
-        </Comment.Group>
-      ) : null;
+        </Message.List>
+      </Message>
+    ) : null;
 
-    const addCommentButton = (
-      <Button
-        content="Add comment"
-        primary
-        disabled={commentText === ""}
-        onClick={this.handleSubmitComment}
-      />
-    );
+  const commentsContent =
+    comments && comments.length > 0 ? (
+      <Comment.Group>
+        {comments.map((comment) => (
+          <Comment>
+            {comment.user && comment.user.photo_url ? (
+              <Comment.Avatar src={comment.user.photo_url} />
+            ) : (
+              <Comment.Avatar src="/static/images/logos/sunglasses/1.png" />
+            )}
+            <Comment.Content>
+              {comment.user && comment.user.details_url ? (
+                <Comment.Author as="a">
+                  <a
+                    href={comment.user.details_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {comment.user_email}
+                  </a>
+                </Comment.Author>
+              ) : (
+                <Comment.Author as="text">{comment.user_email}</Comment.Author>
+              )}
+              <Comment.Metadata>
+                <div>{new Date(comment.timestamp).toLocaleString()}</div>
+              </Comment.Metadata>
+              <Comment.Text>{comment.text}</Comment.Text>
+              <Comment.Actions>
+                <Comment.Action>
+                  <Divider />
+                </Comment.Action>
+              </Comment.Actions>
+            </Comment.Content>
+          </Comment>
+        ))}
+      </Comment.Group>
+    ) : null;
 
-    const commentInput = (
-      <Input
-        action={addCommentButton}
-        placeholder="Add a new comment..."
-        fluid
-        icon="comment"
-        iconPosition="left"
-        onChange={this.handleCommentChange}
-        loading={isLoading}
-        value={commentText}
-      />
-    );
+  const addCommentButton = (
+    <Button
+      content="Add comment"
+      primary
+      disabled={commentText === ""}
+      onClick={() => handleSubmitComment()}
+    />
+  );
 
-    return (
-      <Segment>
-        <Header size="medium">
-          Comments <Icon name="comments" />
-        </Header>
-        {commentsContent}
-        {messagesToShow}
-        {commentInput}
-      </Segment>
-    );
-  }
-}
+  const commentInput = (
+    <Input
+      action={addCommentButton}
+      placeholder="Add a new comment..."
+      fluid
+      icon="comment"
+      iconPosition="left"
+      onChange={(e) => handleCommentChange(e)}
+      loading={isLoading}
+      value={commentText}
+    />
+  );
+
+  return (
+    <Segment>
+      <Header size="medium">
+        Comments <Icon name="comments" />
+      </Header>
+      {commentsContent}
+      {messagesToShow}
+      {commentInput}
+    </Segment>
+  );
+};
 
 export default CommentsFeedBlockComponent;

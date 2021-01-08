@@ -1,41 +1,38 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 import { Form } from "semantic-ui-react";
 
-class DropDownBlockComponent extends Component {
-  state = {
+const DropDownBlockComponent = (props) => {
+  const initialState = {
     actions: [],
   };
 
-  handleActionChange(e, { value }) {
-    this.setState(
-      {
-        actions: value,
-      },
-      () => {
-        this.props.handleInputUpdate(value);
-      }
-    );
-  }
+  const [state, setState] = useState(initialState);
 
-  render() {
-    const { actions } = this.state;
-    const { defaultValue, options, required } = this.props;
+  const handleActionChange = (e, { value }) => {
+    setState({
+      ...state,
+      actions: value,
+    });
+    props.handleInputUpdate(value);
+  };
 
-    return (
-      <Form.Field required={required || false}>
-        <label>Select Desired Permissions</label>
-        <Form.Dropdown
-          defaultValue={defaultValue || ""}
-          multiple
-          onChange={this.handleActionChange.bind(this)}
-          options={options}
-          placeholder=""
-          selection
-          value={actions}
-        />
-      </Form.Field>
-    );
-  }
-}
+  const { actions } = state;
+  const { defaultValue, options, required } = props;
+
+  return (
+    <Form.Field required={required || false}>
+      <label>Select Desired Permissions</label>
+      <Form.Dropdown
+        defaultValue={defaultValue || ""}
+        multiple
+        onChange={() => handleActionChange(this)}
+        options={options}
+        placeholder=""
+        selection
+        value={actions}
+      />
+    </Form.Field>
+  );
+};
 
 export default DropDownBlockComponent;

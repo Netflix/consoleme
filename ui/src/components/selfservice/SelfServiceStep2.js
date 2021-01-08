@@ -1,5 +1,5 @@
 import _ from "lodash";
-import React, { Component } from "react";
+import React, { useState } from "react";
 import {
   Button,
   Divider,
@@ -17,40 +17,43 @@ import SelfServiceComponent from "./SelfServiceComponent";
 // TODO, move this to config file.
 const DEFAULT_AWS_SERVICE = "s3";
 
-class SelfServiceStep2 extends Component {
-  state = {
+const SelfServiceStep2 = (props) => {
+  const initialState = {
     service: DEFAULT_AWS_SERVICE,
   };
 
-  handleServiceTypeChange(e, { value }) {
-    this.setState({
+  const [state, setState] = useState(initialState);
+
+  const handleServiceTypeChange = (e, { value }) => {
+    setState({
+      ...state,
       service: value,
     });
-  }
+  };
 
-  handlePermissionAdd(permission) {
-    this.setState(
-      {
-        service: null,
-      },
-      () => {
-        const { permissions } = this.props;
-        permissions.push(permission);
-        this.props.handlePermissionsUpdate(permissions);
-      }
-    );
-  }
+  const handlePermissionAdd = (permission) => {
+    setState({
+      ...state,
+      service: null,
+    });
+    const cb = () => {
+      const { permissions } = props;
+      permissions.push(permission);
+      props.handlePermissionsUpdate(permissions);
+    };
+    cb();
+  };
 
-  handlePermissionRemove(target) {
-    const { permissions } = this.props;
+  const handlePermissionRemove = (target) => {
+    const { permissions } = props;
     _.remove(permissions, (permission) => _.isEqual(target, permission));
-    this.props.handlePermissionsUpdate(permissions);
-  }
+    props.handlePermissionsUpdate(permissions);
+  };
 
-  getPermissionItems() {
-    const { config, services } = this.props;
+  const getPermissionItems = () => {
+    const { config, services } = props;
 
-    return this.props.permissions.map((permission, idx) => {
+    return props.permissions.map((permission, idx) => {
       const found = _.find(services, { key: permission.service });
       const serviceName = found.text;
       const { inputs } = config.permissions_map[found.key];
@@ -83,7 +86,7 @@ class SelfServiceStep2 extends Component {
                 size="tiny"
                 color="red"
                 floated="right"
-                onClick={this.handlePermissionRemove.bind(this, permission)}
+                onClick={() => handlePermissionRemove(this, permission)}
               >
                 Remove
                 <Icon name="right close" />
@@ -106,66 +109,65 @@ class SelfServiceStep2 extends Component {
         </Item>
       );
     });
-  }
+  };
 
-  render() {
-    const { config, role, services } = this.props;
-    const { service } = this.state;
-    return (
-      <Segment>
-        <Grid columns={2} divided>
-          <Grid.Row>
-            <Grid.Column>
-              <Header>
-                Add Permission
-                <Header.Subheader>
-                  Please add permissions to your role&nbsp;
-                  <a
-                    href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {role.arn}
-                  </a>
-                  .&nbsp; You can also select multiple permissions.
-                </Header.Subheader>
-              </Header>
-              <Form>
-                <Form.Select
-                  value={service}
-                  label="Select Desired Permissions"
-                  onChange={this.handleServiceTypeChange.bind(this)}
-                  options={services}
-                  placeholder="Choose One"
-                  required
-                />
-              </Form>
-              <Divider />
-              {service != null ? (
-                <SelfServiceComponent
-                  key={service}
-                  config={config}
-                  role={role}
-                  service={service}
-                  updatePermission={this.handlePermissionAdd.bind(this)}
-                />
-              ) : null}
-            </Grid.Column>
-            <Grid.Column>
-              <Header>
-                Your Permissions
-                <Header.Subheader>
-                  The list of permission you have added in this request.
-                </Header.Subheader>
-              </Header>
-              <Item.Group divided>{this.getPermissionItems()}</Item.Group>
-              <Divider />
-            </Grid.Column>
-          </Grid.Row>
-        </Grid>
-      </Segment>
-    );
-  }
-}
+  const { config, role, services } = props;
+  const { service } = state;
+
+  return (
+    <Segment>
+      <Grid columns={2} divided>
+        <Grid.Row>
+          <Grid.Column>
+            <Header>
+              Add Permission
+              <Header.Subheader>
+                Please add permissions to your role&nbsp;
+                <a
+                  href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {role.arn}
+                </a>
+                .&nbsp; You can also select multiple permissions.
+              </Header.Subheader>
+            </Header>
+            <Form>
+              <Form.Select
+                value={service}
+                label="Select Desired Permissions"
+                onChange={() => handleServiceTypeChange()}
+                options={services}
+                placeholder="Choose One"
+                required
+              />
+            </Form>
+            <Divider />
+            {service != null ? (
+              <SelfServiceComponent
+                key={service}
+                config={config}
+                role={role}
+                service={service}
+                updatePermission={() => handlePermissionAdd()}
+              />
+            ) : null}
+          </Grid.Column>
+          <Grid.Column>
+            <Header>
+              Your Permissions
+              <Header.Subheader>
+                The list of permission you have added in this request.
+              </Header.Subheader>
+            </Header>
+            <Item.Group divided>{() => getPermissionItems()}</Item.Group>
+            <Divider />
+          </Grid.Column>
+        </Grid.Row>
+      </Grid>
+    </Segment>
+  );
+};
 
 export default SelfServiceStep2;

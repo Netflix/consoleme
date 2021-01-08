@@ -1,6 +1,6 @@
 import _ from "lodash";
 import qs from "qs";
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Button,
   Dimmer,
@@ -58,94 +58,87 @@ const initialState = {
   warningMessage: "",
 };
 
-class ConsoleMeDataTable extends Component {
-  constructor(props) {
-    super(props);
-    const { config } = props;
-    this.state = {
-      ...initialState,
-      tableConfig: config,
-    };
-    this.timer = null;
-    this.generateRows = this.generateRows.bind(this);
-    this.generateFilterFromQueryString = this.generateFilterFromQueryString.bind(
-      this
-    );
-    this.handleCellClick = this.handleCellClick.bind(this);
-    this.renderRedirect = this.renderRedirect.bind(this);
-    this.filterColumn = this.filterColumn.bind(this);
-    this.filterDateRangeTime = this.filterDateRangeTime.bind(this);
-    this.generateMessagesFromQueryString = this.generateMessagesFromQueryString.bind(
-      this
-    );
-  }
+const ConsoleMeDataTable = (props) => {
+  const { config } = props;
+  const initialStateN = {
+    ...initialState,
+    tableConfig: config,
+  };
+  const [state, setState] = useState(initialStateN);
 
-  async componentDidMount() {
-    const { tableConfig } = this.state;
+  let timer = null;
 
-    this.setState(
-      {
-        isLoading: true,
-      },
-      async () => {
-        let data = await sendRequestCommon(
-          {
-            limit: tableConfig.totalRows,
-          },
-          tableConfig.dataEndpoint
-        );
+  useEffect(async () => {
+    if (state.isLoading) {
+      let data = await sendRequestCommon(
+        {
+          limit: tableConfig.totalRows,
+        },
+        tableConfig.dataEndpoint
+      );
 
-        // This means it raised an exception from fetching data
-        if (data.status) {
-          data = [];
-        }
-
-        this.setState(
-          {
-            data,
-            filteredData: data,
-            isLoading: false,
-          },
-          async () => {
-            await this.generateFilterFromQueryString();
-            await this.generateMessagesFromQueryString();
-          }
-        );
+      // This means it raised an exception from fetching data
+      if (data.status) {
+        data = [];
       }
-    );
-  }
 
-  calculateColumnSize() {
-    const { tableConfig } = this.state;
+      setState({
+        ...state,
+        data,
+        filteredData: data,
+        isLoading: false,
+      });
+    } else {
+      const cb = async () => {
+        await generateFilterFromQueryString();
+        await generateMessagesFromQueryString();
+      };
+      cb();
+    }
+  }, [state.isLoading]);
+
+  useEffect(() => {
+    const { tableConfig } = state;
+    setState({
+      ...state,
+      isLoading: true,
+    });
+  }, []);
+
+  const calculateColumnSize = () => {
+    const { tableConfig } = state;
     return (
       (tableConfig.columns || []).length + (tableConfig.expandableRows ? 1 : 0)
     );
-  }
+  };
 
-  handleSort(clickedColumn) {
-    const { column, filteredData, direction } = this.state;
+  const handleSort = (clickedColumn) => {
+    const { column, filteredData, direction } = state;
 
     if (column !== clickedColumn) {
-      return this.setState({
+      return setState({
+        ...state,
         column: clickedColumn,
         filteredData: _.sortBy(filteredData, [clickedColumn]),
         direction: "ascending",
       });
     }
 
-    this.setState({
+    setState({
+      ...state,
       filteredData: filteredData.reverse(),
       direction: direction === "ascending" ? "descending" : "ascending",
     });
     return true;
-  }
+  };
 
-  handleRowExpansion(idx) {
-    const { expandedRow, filteredData, tableConfig, activePage } = this.state;
+  const handleRowExpansion = (idx) => {
+    const { expandedRow, filteredData, tableConfig, activePage } = state;
 
     // close expansion if there is any expanded row.
     if (expandedRow && expandedRow.index === idx + 1) {
-      this.setState({
+      setState({
+        ...state,
         expandedRow: null,
       });
     } else {
@@ -161,15 +154,16 @@ class ConsoleMeDataTable extends Component {
         index: idx + 1 - offset,
         data: expandNestedJson(filteredDataPaginated[idx - offset]),
       };
-      this.setState({
+      setState({
+        ...state,
         expandedRow: newExpandedRow,
       });
     }
     return true;
-  }
+  };
 
-  generateColumnOptions() {
-    const { data = [] } = this.state;
+  const generateColumnOptions = () => {
+    const { data = [] } = state;
     const columnOptionSet = {};
 
     // Iterate through our data
@@ -196,11 +190,11 @@ class ConsoleMeDataTable extends Component {
     }
 
     return columnOptions;
-  }
+  };
 
-  generateColumns() {
-    const { direction, tableConfig, filters } = this.state;
-    const columnOptions = this.generateColumnOptions();
+  const generateColumns = () => {
+    const { direction, tableConfig, filters } = state;
+    const columnOptions = generateColumnOptions();
     const columns = [];
 
     (tableConfig.columns || []).forEach((item) => {
@@ -220,7 +214,7 @@ class ConsoleMeDataTable extends Component {
               selection
               compact
               options={options}
-              onChange={this.filterColumn}
+              onChange={(e) => filterColumn(e, e.target)}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -236,7 +230,7 @@ class ConsoleMeDataTable extends Component {
               autoComplete="off"
               style={item.style}
               placeholder={item.placeholder}
-              onChange={this.filterColumn}
+              onChange={(e) => filterColumn(e, e.target)}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -252,7 +246,7 @@ class ConsoleMeDataTable extends Component {
               autoComplete="off"
               style={item.style}
               placeholder={item.placeholder}
-              onChange={this.filterColumn}
+              onChange={(e) => filterColumn(e, e.target)}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -266,7 +260,7 @@ class ConsoleMeDataTable extends Component {
             <SemanticDatepicker
               name={item.key}
               style={item.style}
-              onChange={this.filterDateRangeTime}
+              onChange={(e) => filterDateRangeTime(e, e.target)}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -326,7 +320,7 @@ class ConsoleMeDataTable extends Component {
           key={key}
           style={item.style}
           width={item.width}
-          onClick={() => this.handleSort(key)}
+          onClick={() => handleSort(key)}
           sorted={!["button"].includes(item.type) ? direction : null}
           textAlign={item.type === "button" ? "center" : null}
         >
@@ -342,25 +336,26 @@ class ConsoleMeDataTable extends Component {
         </Table.Row>
       </Table.Header>
     );
-  }
+  };
 
-  async generateMessagesFromQueryString() {
+  const generateMessagesFromQueryString = async () => {
     const parsedQueryString = qs.parse(window.location.search, {
       ignoreQueryPrefix: true,
     });
     if (parsedQueryString) {
       Object.keys(parsedQueryString).forEach((key) => {
         if (key === "warningMessage") {
-          this.setState({
+          setState({
+            ...state,
             warningMessage: atob(parsedQueryString[key]),
           });
         }
       });
     }
-  }
+  };
 
-  async generateFilterFromQueryString() {
-    const { tableConfig } = this.state;
+  const generateFilterFromQueryString = async () => {
+    const { tableConfig } = state;
     const parsedQueryString = qs.parse(window.location.search, {
       ignoreQueryPrefix: true,
     });
@@ -371,55 +366,57 @@ class ConsoleMeDataTable extends Component {
       });
     }
 
-    this.setState({
+    setState({
+      ...state,
       filters,
     });
 
     if (tableConfig.serverSideFiltering) {
-      await this.filterColumnServerSide({}, filters);
+      await filterColumnServerSide({}, filters);
     } else {
-      this.filterColumnClientSide({}, filters);
+      filterColumnClientSide({}, filters);
     }
-  }
+  };
 
-  async filterDateRangeTime(event, data) {
+  const filterDateRangeTime = async (event, data) => {
     // Convert epoch milliseconds to epoch seconds
     if (data.value && data.value[0] && data.value[1]) {
       const startTime = parseInt(data.value[0].getTime() / 1000, 10);
       const endTime = parseInt(data.value[1].getTime() / 1000, 10);
-      await this.filterColumn(_, {
+      await filterColumn(_, {
         name: data.name,
         value: [startTime, endTime],
       });
     }
-  }
+  };
 
-  async filterColumn(event, data) {
-    this.setState({ loading: true });
+  const filterColumn = async (event, data) => {
+    setState({ ...state, loading: true });
     const { name, value } = data;
-    const { tableConfig } = this.state;
+    const { tableConfig } = state;
 
-    const { filters } = this.state;
+    const { filters } = state;
     filters[name] = value;
-    this.setState({
+    setState({
+      ...state,
       filters,
     });
 
     if (tableConfig.serverSideFiltering) {
-      clearTimeout(this.timer);
-      this.timer = setTimeout(async () => {
-        await this.filterColumnServerSide({}, filters);
-      }, this.state.debounceWait);
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        await filterColumnServerSide({}, filters);
+      }, state.debounceWait);
     } else {
-      clearTimeout(this.timer);
-      this.timer = setTimeout(() => {
-        this.filterColumnClientSide(event, filters);
-      }, this.state.debounceWait);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        filterColumnClientSide(event, filters);
+      }, state.debounceWait);
     }
-  }
+  };
 
-  async filterColumnServerSide(event, filters) {
-    const { tableConfig } = this.state;
+  const filterColumnServerSide = async (event, filters) => {
+    const { tableConfig } = state;
     let filteredData = await sendRequestCommon(
       { filters },
       tableConfig.dataEndpoint
@@ -427,16 +424,17 @@ class ConsoleMeDataTable extends Component {
     if (filteredData.status) {
       filteredData = [];
     }
-    this.setState({
+    setState({
+      ...state,
       expandedRow: null,
       filteredData,
       loading: false,
       activePage: 1,
     });
-  }
+  };
 
-  filterColumnClientSide(event, filters) {
-    const { data } = this.state;
+  const filterColumnClientSide = (event, filters) => {
+    const { data } = state;
     let filtered = [];
     if (Object.keys(filters).length > 0) {
       filtered = data.filter((item) => {
@@ -457,28 +455,30 @@ class ConsoleMeDataTable extends Component {
       filtered = data;
     }
 
-    this.setState({
+    setState({
+      ...state,
       expandedRow: null,
       filteredData: filtered,
       loading: false,
       activePage: 1,
     });
-  }
+  };
 
-  handleCellClick(e, column, entry) {
+  const handleCellClick = (e, column, entry) => {
     // This function should appropriately handle a Cell Click given a desired
     // action by the column configuration
     if (column.onClick) {
       if (column.onClick.action === "redirect") {
-        this.setState({
+        setState({
+          ...state,
           redirect: entry[column.key] + window.location.search || "",
         });
       }
     }
-  }
+  };
 
-  generateRows() {
-    const { expandedRow, filteredData, tableConfig, activePage } = this.state;
+  const generateRows = () => {
+    const { expandedRow, filteredData, tableConfig, activePage } = state;
     const filteredDataPaginated = filteredData.slice(
       (activePage - 1) * tableConfig.rowsPerPage,
       activePage * tableConfig.rowsPerPage - 1
@@ -494,7 +494,7 @@ class ConsoleMeDataTable extends Component {
       if (expandedRow && expandedRow.index === ridx) {
         return (
           <Table.Row>
-            <Table.Cell collapsing colSpan={this.calculateColumnSize()}>
+            <Table.Cell collapsing colSpan={calculateColumnSize()}>
               <ReactJson
                 displayDataTypes={false}
                 displayObjectSize={false}
@@ -534,7 +534,7 @@ class ConsoleMeDataTable extends Component {
                 fluid
                 labelPosition="right"
                 icon={column.icon}
-                onClick={(e) => this.handleCellClick(e, column, entry)}
+                onClick={(e) => handleCellClick(e, column, entry)}
                 primary
                 size="mini"
               />
@@ -548,7 +548,7 @@ class ConsoleMeDataTable extends Component {
               style={column.style}
             >
               <Icon
-                onClick={(e) => this.handleCellClick(e, column, entry)}
+                onClick={(e) => handleCellClick(e, column, entry)}
                 link
                 name={column.icon}
               />
@@ -624,7 +624,7 @@ class ConsoleMeDataTable extends Component {
                     ? "caret down"
                     : "caret right"
                 }
-                onClick={() => this.handleRowExpansion(ridx)}
+                onClick={() => handleRowExpansion(ridx)}
               />
             </Table.Cell>
           )}
@@ -632,84 +632,80 @@ class ConsoleMeDataTable extends Component {
         </Table.Row>
       );
     });
-  }
+  };
 
-  renderRedirect() {
-    const { redirect } = this.state;
+  const renderRedirect = () => {
+    const { redirect } = state;
     if (redirect) {
       return <Redirect to={redirect} />;
     }
     return true;
-  }
+  };
 
-  render() {
-    const {
-      activePage,
-      filteredData,
-      isLoading,
-      redirect,
-      tableConfig,
-      warningMessage,
-    } = this.state;
-    const totalPages = parseInt(
-      filteredData.length / tableConfig.rowsPerPage,
-      10
-    );
-    const columns = this.generateColumns();
+  const {
+    activePage,
+    filteredData,
+    isLoading,
+    redirect,
+    tableConfig,
+    warningMessage,
+  } = state;
+  const totalPages = parseInt(
+    filteredData.length / tableConfig.rowsPerPage,
+    10
+  );
+  const columns = generateColumns();
 
-    if (isLoading) {
-      return (
-        <Segment basic>
-          <Dimmer active inverted size="large">
-            <Loader inverted content="Loading" />
-          </Dimmer>
-        </Segment>
-      );
-    }
-
-    // TODO (heewonk), revisit following redirection logic when moving to SPA again
-    if (redirect) {
-      return (
-        <BrowserRouter forceRefresh>{this.renderRedirect()}</BrowserRouter>
-      );
-    }
-
+  if (isLoading) {
     return (
-      <>
-        {warningMessage ? (
-          <Message warning>
-            <Message.Header>Oops! there was a problem</Message.Header>
-            <p>{warningMessage}</p>
-          </Message>
-        ) : null}
-        <Table collapsing sortable celled compact selectable striped>
-          {columns}
-          <Table.Body>{this.generateRows()}</Table.Body>
-          <Table.Footer>
-            <Table.Row>
-              <Table.HeaderCell collapsing colSpan={this.calculateColumnSize()}>
-                {totalPages > 0 ? (
-                  <Pagination
-                    floated="right"
-                    defaultActivePage={activePage}
-                    totalPages={totalPages}
-                    onPageChange={(event, data) => {
-                      this.setState({
-                        activePage: data.activePage,
-                        expandedRow: null,
-                      });
-                    }}
-                  />
-                ) : (
-                  ""
-                )}
-              </Table.HeaderCell>
-            </Table.Row>
-          </Table.Footer>
-        </Table>
-      </>
+      <Segment basic>
+        <Dimmer active inverted size="large">
+          <Loader inverted content="Loading" />
+        </Dimmer>
+      </Segment>
     );
   }
-}
+
+  // TODO (heewonk), revisit following redirection logic when moving to SPA again
+  if (redirect) {
+    return <BrowserRouter forceRefresh>{renderRedirect()}</BrowserRouter>;
+  }
+  return (
+    <>
+      {warningMessage ? (
+        <Message warning>
+          <Message.Header>Oops! there was a problem</Message.Header>
+          <p>{warningMessage}</p>
+        </Message>
+      ) : null}
+      <Table collapsing sortable celled compact selectable striped>
+        {columns}
+        <Table.Body>{generateRows()}</Table.Body>
+        <Table.Footer>
+          <Table.Row>
+            <Table.HeaderCell collapsing colSpan={calculateColumnSize()}>
+              {totalPages > 0 ? (
+                <Pagination
+                  floated="right"
+                  defaultActivePage={activePage}
+                  totalPages={totalPages}
+                  onPageChange={(event, data) => {
+                    setState({
+                      ...state,
+                      activePage: data.activePage,
+                      expandedRow: null,
+                    });
+                  }}
+                />
+              ) : (
+                ""
+              )}
+            </Table.HeaderCell>
+          </Table.Row>
+        </Table.Footer>
+      </Table>
+    </>
+  );
+};
 
 export default ConsoleMeDataTable;

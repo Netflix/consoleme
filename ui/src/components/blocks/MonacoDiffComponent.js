@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { MonacoDiffEditor } from "react-monaco-editor";
 import PropTypes from "prop-types";
 import {
@@ -14,28 +14,25 @@ monaco.languages.registerCompletionItemProvider("json", {
     return response;
   },
 });
-class MonacoDiffComponent extends React.Component {
-  constructor(props) {
-    super(props);
-    this.onLintError = props.onLintError;
-    this.onValueChange = props.onValueChange;
-    this.editorDidMount = this.editorDidMount.bind(this);
-    this.onChange = this.onChange.bind(this);
-    this.timer = null;
-    this.state = {
-      debounceWait: 300,
-      modifiedEditor: null,
-      triggerCharacters: getMonacoTriggerCharacters(),
-    };
-  }
+const MonacoDiffComponent = (props) => {
+  const onLintError = props.onLintError;
+  const onValueChange = props.onValueChange;
+  // this.editorDidMount = this.editorDidMount.bind(this);
+  // this.onChange = this.onChange.bind(this);
+  let timer = null;
 
-  onChange(newValue, e) {
-    this.onValueChange(newValue);
-  }
+  const [debounceWait, setDebounceWait] = useState(300);
+  const [modifiedEditor, setModifiedEditor] = useState(null);
+  const [triggerCharacters, setTriggerCharacters] = useState(
+    getMonacoTriggerCharacters()
+  );
 
-  editorDidMount(editor) {
+  const onChange = (newValue, e) => {
+    onValueChange(newValue);
+  };
+
+  const editorDidMount = (editor) => {
     editor.modifiedEditor.onDidChangeModelDecorations(() => {
-      const { modifiedEditor } = this.state;
       const model = modifiedEditor.getModel();
       if (model === null || model.getModeId() !== "json") {
         return;
@@ -44,49 +41,45 @@ class MonacoDiffComponent extends React.Component {
       const owner = model.getModeId();
       const uri = model.uri;
       const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
-      this.onLintError(
+      onLintError(
         markers.map(
           (marker) =>
             `Lint error on line ${marker.startLineNumber} columns ${marker.startColumn}-${marker.endColumn}: ${marker.message}`
         )
       );
     });
-    this.setState({
-      modifiedEditor: editor.modifiedEditor,
-    });
-  }
+    setModifiedEditor(editor.modifiedEditor);
+  };
 
-  render() {
-    const { oldValue, newValue, readOnly } = this.props;
-    const options = {
-      selectOnLineNumbers: true,
-      renderSideBySide: true,
-      enableSplitViewResizing: false,
-      quickSuggestions: true,
-      scrollbar: {
-        alwaysConsumeMouseWheel: false,
-      },
-      scrollBeyondLastLine: false,
-      automaticLayout: true,
-      readOnly,
-    };
-    return (
-      <MonacoDiffEditor
-        language="json"
-        width="100%"
-        height="500"
-        original={oldValue}
-        value={newValue}
-        editorWillMount={this.editorWillMount}
-        editorDidMount={this.editorDidMount}
-        options={options}
-        onChange={this.onChange}
-        theme="vs-dark"
-        alwaysConsumeMouseWheel={false}
-      />
-    );
-  }
-}
+  const { oldValue, newValue, readOnly } = props;
+  const options = {
+    selectOnLineNumbers: true,
+    renderSideBySide: true,
+    enableSplitViewResizing: false,
+    quickSuggestions: true,
+    scrollbar: {
+      alwaysConsumeMouseWheel: false,
+    },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    readOnly,
+  };
+  return (
+    <MonacoDiffEditor
+      language="json"
+      width="100%"
+      height="500"
+      original={oldValue}
+      value={newValue}
+      editorWillMount={this.editorWillMount}
+      editorDidMount={this.editorDidMount}
+      options={options}
+      onChange={(e) => onChange(e)}
+      theme="vs-dark"
+      alwaysConsumeMouseWheel={false}
+    />
+  );
+};
 
 // This component requires four props:
 // 1. oldValue = old value for the diff

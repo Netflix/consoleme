@@ -1,50 +1,43 @@
 import _ from "lodash";
-import React, { Component } from "react";
+import React, { useState } from "react";
 import { Form, Search } from "semantic-ui-react";
 import { sendRequestCommon } from "../../helpers/utils";
 
-class TypeaheadBlockComponent extends Component {
-  state = {
+const TypeaheadBlockComponent = (props) => {
+  const initialState = {
     isLoading: false,
     results: [],
     value: "",
   };
 
-  handleResultSelect(e, { result }) {
-    this.setState(
-      {
-        value: result.title,
-      },
-      () => {
-        this.props.handleInputUpdate(result.title);
-      }
-    );
-  }
+  const [state, setState] = useState(initialState);
 
-  handleSearchChange(e, { value }) {
-    const { typeahead } = this.props;
-    this.setState(
-      {
-        isLoading: true,
-        value,
-      },
-      () => {
-        this.props.handleInputUpdate(value);
-      }
-    );
+  const handleResultSelect = (e, { result }) => {
+    setState({
+      ...state,
+      value: result.title,
+    });
+    props.handleInputUpdate(result.title);
+  };
+
+  const handleSearchChange = (e, { value }) => {
+    const { typeahead } = props;
+    setState({
+      ...state,
+      isLoading: true,
+      value,
+    });
+    props.handleInputUpdate(value);
 
     setTimeout(() => {
-      if (this.state.value.length < 1) {
-        return this.setState(
-          {
-            isLoading: false,
-            results: [],
-            value: "",
-          },
-          () => {
-            this.props.handleInputUpdate("");
-          }
-        );
+      if (state.value.length < 1) {
+        setState({
+          ...state,
+          isLoading: false,
+          results: [],
+          value: "",
+        });
+        props.handleInputUpdate("");
       }
 
       const re = new RegExp(_.escapeRegExp(value), "i");
@@ -58,29 +51,27 @@ class TypeaheadBlockComponent extends Component {
         });
       });
     }, 300);
-  }
+  };
 
-  render() {
-    const { isLoading, results, value } = this.state;
-    const { defaultValue, required, label } = this.props;
+  const { isLoading, results, value } = state;
+  const { defaultValue, required, label } = props;
 
-    return (
-      <Form.Field required={required || false}>
-        <label>{label || "Enter Value"}</label>
-        <Search
-          fluid
-          defaultValue={defaultValue || ""}
-          loading={isLoading}
-          onResultSelect={this.handleResultSelect.bind(this)}
-          onSearchChange={_.debounce(this.handleSearchChange.bind(this), 500, {
-            leading: true,
-          })}
-          results={results}
-          value={value}
-        />
-      </Form.Field>
-    );
-  }
-}
+  return (
+    <Form.Field required={required || false}>
+      <label>{label || "Enter Value"}</label>
+      <Search
+        fluid
+        defaultValue={defaultValue || ""}
+        loading={isLoading}
+        onResultSelect={() => handleResultSelect(this)}
+        onSearchChange={_.debounce(() => handleSearchChange(this), 500, {
+          leading: true,
+        })}
+        results={results}
+        value={value}
+      />
+    </Form.Field>
+  );
+};
 
 export default TypeaheadBlockComponent;

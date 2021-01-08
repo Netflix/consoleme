@@ -1,5 +1,5 @@
 import qs from "qs";
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
 import { Button, Icon, Message, Segment, Step } from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
@@ -11,8 +11,8 @@ import { sendRequestCommon } from "../../helpers/utils";
 
 const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):role\/(.+\/)?(?<roleName>(.+))/;
 
-class SelfService extends Component {
-  state = {
+const SelfService = () => {
+  const initialState = {
     config: null,
     currStep: SelfServiceStepEnum.STEP1,
     messages: null,
@@ -22,13 +22,15 @@ class SelfService extends Component {
     admin_bypass_approval_enabled: false,
   };
 
-  async componentDidMount() {
+  const [state, setState] = useState(initialState);
+
+  useEffect(async () => {
     const config = await sendRequestCommon(
       null,
       "/api/v2/self_service_config",
       "get"
     );
-    const { services } = this.state;
+    const { services } = state;
     Object.keys(config.permissions_map).forEach((name) => {
       const service = config.permissions_map[name];
       services.push({
@@ -49,7 +51,8 @@ class SelfService extends Component {
       const match = arnRegex.exec(paramSearch.arn);
       const { accountId, roleName } = match.groups;
 
-      this.setState({
+      setState({
+        ...state,
         admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
         config,
         currStep: SelfServiceStepEnum.STEP2,
@@ -81,36 +84,39 @@ class SelfService extends Component {
         services,
       });
     } else {
-      this.setState({
+      setState({
+        ...state,
         config,
         services,
         admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
       });
     }
-  }
+  }, []);
 
-  handleStepClick(dir) {
-    const { currStep } = this.state;
+  const handleStepClick = (dir) => {
+    const { currStep } = state;
 
     let nextStep = null;
     switch (currStep) {
       case SelfServiceStepEnum.STEP1:
         // TODO, change dir to ENUM
-        if (dir === "next" && this.state.role != null) {
+        if (dir === "next" && state.role != null) {
           nextStep = SelfServiceStepEnum.STEP2;
         } else {
-          return this.setState({
+          return setState({
+            ...state,
             messages: "Please select a role from the list of applications.",
           });
         }
         break;
       case SelfServiceStepEnum.STEP2:
-        if (dir === "next" && this.state.permissions.length > 0) {
+        if (dir === "next" && state.permissions.length > 0) {
           nextStep = SelfServiceStepEnum.STEP3;
         } else if (dir === "previous") {
           nextStep = SelfServiceStepEnum.STEP1;
         } else {
-          return this.setState({
+          return setState({
+            ...state,
             messages: "Please add policy.",
           });
         }
@@ -121,26 +127,28 @@ class SelfService extends Component {
         }
         break;
       default:
-        return this.setState({
+        return setState({
+          ...state,
           messages: "Unknown Errors. Please reach out to #security-help",
         });
     }
 
-    this.setState({
+    setState({
+      ...state,
       currStep: nextStep,
       messages: null,
     });
-  }
+  };
 
-  handleRoleUpdate(role) {
-    this.setState({ role });
-  }
+  const handleRoleUpdate = (role) => {
+    setState({ ...state, role });
+  };
 
-  handlePermissionsUpdate(permissions) {
-    this.setState({ permissions });
-  }
+  const handlePermissionsUpdate = (permissions) => {
+    setState({ ...state, permissions });
+  };
 
-  getCurrentSelfServiceStep() {
+  const getCurrentSelfServiceStep = () => {
     const {
       admin_bypass_approval_enabled,
       config,
@@ -148,7 +156,7 @@ class SelfService extends Component {
       permissions,
       role,
       services,
-    } = this.state;
+    } = state;
 
     let SelfServiceStep = null;
     switch (currStep) {
@@ -157,7 +165,7 @@ class SelfService extends Component {
           <SelfServiceStep1
             config={config}
             role={role}
-            handleRoleUpdate={this.handleRoleUpdate.bind(this)}
+            handleRoleUpdate={() => handleRoleUpdate()}
           />
         );
         break;
@@ -168,7 +176,7 @@ class SelfService extends Component {
             role={role}
             services={services}
             permissions={permissions}
-            handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
+            handlePermissionsUpdate={() => handlePermissionsUpdate()}
           />
         );
         break;
@@ -188,82 +196,79 @@ class SelfService extends Component {
     }
 
     return SelfServiceStep;
-  }
+  };
 
-  render() {
-    const { currStep, messages } = this.state;
-    const SelfServiceStep = this.getCurrentSelfServiceStep();
-    const messagesToShow =
-      messages != null ? (
-        <Message negative>
-          <Message.Header>There are some missing parameters</Message.Header>
-          <p>{messages}</p>
-        </Message>
-      ) : null;
+  const { currStep, messages } = state;
+  const SelfServiceStep = getCurrentSelfServiceStep();
+  const messagesToShow =
+    messages != null ? (
+      <Message negative>
+        <Message.Header>There are some missing parameters</Message.Header>
+        <p>{messages}</p>
+      </Message>
+    ) : null;
 
-    const headerMessage =
-      this.state.config != null &&
-      this.state.config.custom_header_message != null ? (
-        <Message success>
-          <ReactMarkdown
-            linkTarget="_blank"
-            source={this.state.config.custom_header_message}
-          />
-        </Message>
-      ) : null;
+  const headerMessage =
+    state.config != null && state.config.custom_header_message != null ? (
+      <Message success>
+        <ReactMarkdown
+          linkTarget="_blank"
+          source={state.config.custom_header_message}
+        />
+      </Message>
+    ) : null;
 
-    return (
-      <Segment basic>
-        {headerMessage}
-        <Step.Group fluid>
-          <Step active={currStep === SelfServiceStepEnum.STEP1}>
-            <Icon name="search" />
-            <Step.Content>
-              <Step.Title>Step 1.</Step.Title>
-              <Step.Description>Search and Select Resource</Step.Description>
-            </Step.Content>
-          </Step>
-          <Step active={currStep === SelfServiceStepEnum.STEP2}>
-            <Icon name="search plus" />
-            <Step.Content>
-              <Step.Title>Step 2.</Step.Title>
-              <Step.Description>Provide Permission Details</Step.Description>
-            </Step.Content>
-          </Step>
-          <Step active={currStep === SelfServiceStepEnum.STEP3}>
-            <Icon name="handshake" />
-            <Step.Content>
-              <Step.Title>Step 3.</Step.Title>
-              <Step.Description>Review and Submit</Step.Description>
-            </Step.Content>
-          </Step>
-        </Step.Group>
-        {messagesToShow}
-        {SelfServiceStep}
-        {currStep !== SelfServiceStepEnum.STEP1 ? (
-          <Button
-            disabled={currStep === SelfServiceStepEnum.STEP1}
-            floated="left"
-            primary
-            onClick={this.handleStepClick.bind(this, "previous")}
-          >
-            Previous
-          </Button>
-        ) : null}
-        {currStep !== SelfServiceStepEnum.STEP3 ? (
-          <Button
-            disabled={currStep === SelfServiceStepEnum.STEP3}
-            floated="right"
-            primary
-            onClick={this.handleStepClick.bind(this, "next")}
-          >
-            Next
-          </Button>
-        ) : null}
-      </Segment>
-    );
-  }
-}
+  return (
+    <Segment basic>
+      {headerMessage}
+      <Step.Group fluid>
+        <Step active={currStep === SelfServiceStepEnum.STEP1}>
+          <Icon name="search" />
+          <Step.Content>
+            <Step.Title>Step 1.</Step.Title>
+            <Step.Description>Search and Select Resource</Step.Description>
+          </Step.Content>
+        </Step>
+        <Step active={currStep === SelfServiceStepEnum.STEP2}>
+          <Icon name="search plus" />
+          <Step.Content>
+            <Step.Title>Step 2.</Step.Title>
+            <Step.Description>Provide Permission Details</Step.Description>
+          </Step.Content>
+        </Step>
+        <Step active={currStep === SelfServiceStepEnum.STEP3}>
+          <Icon name="handshake" />
+          <Step.Content>
+            <Step.Title>Step 3.</Step.Title>
+            <Step.Description>Review and Submit</Step.Description>
+          </Step.Content>
+        </Step>
+      </Step.Group>
+      {messagesToShow}
+      {SelfServiceStep}
+      {currStep !== SelfServiceStepEnum.STEP1 ? (
+        <Button
+          disabled={currStep === SelfServiceStepEnum.STEP1}
+          floated="left"
+          primary
+          onClick={() => handleStepClick("previous")}
+        >
+          Previous
+        </Button>
+      ) : null}
+      {currStep !== SelfServiceStepEnum.STEP3 ? (
+        <Button
+          disabled={currStep === SelfServiceStepEnum.STEP3}
+          floated="right"
+          primary
+          onClick={() => handleStepClick("next")}
+        >
+          Next
+        </Button>
+      ) : null}
+    </Segment>
+  );
+};
 
 export function renderIAMSelfServiceWizard() {
   ReactDOM.render(

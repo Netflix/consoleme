@@ -1,34 +1,33 @@
 import _ from "lodash";
-import React, { Component } from "react";
+import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button, Form, Header, Message } from "semantic-ui-react";
 import DropDownBlockComponent from "../blocks/DropDownBlockComponent";
 import TextInputBlockComponent from "../blocks/TextInputBlockComponent";
 import TypeaheadBlockComponent from "../blocks/TypeaheadBlockComponent";
 
-class SelfServiceComponent extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      messages: [],
-      values: {},
-    };
-  }
+const SelfServiceComponent = (props) => {
+  const initialState = {
+    messages: [],
+    values: {},
+  };
+  const [state, setState] = useState(initialState);
 
-  handleInputUpdate(context, value) {
-    const { values } = this.state;
+  const handleInputUpdate = (context, value) => {
+    const { values } = state;
     const newValues = {
       ...values,
       [context]: _.isString(value) ? value.trim() : value,
     };
-    this.setState({
+    setState({
+      ...state,
       values: newValues,
     });
-  }
+  };
 
-  handleSubmit() {
-    const { config, role, service } = this.props;
-    const { values } = this.state;
+  const handleSubmit = () => {
+    const { config, role, service } = props;
+    const { values } = state;
     const { inputs, condition } = config.permissions_map[service];
 
     const default_values = { condition };
@@ -59,26 +58,19 @@ class SelfServiceComponent extends Component {
     }
 
     if (messages.length > 0) {
-      return this.setState({ messages });
+      return setState({ ...state, messages });
     }
 
     const permission = {
       service,
       ...result,
     };
-    return this.setState(
-      {
-        messages: [],
-        values: {},
-      },
-      () => {
-        this.props.updatePermission(permission);
-      }
-    );
-  }
+    setState(initialState);
+    props.updatePermission(permission);
+  };
 
-  buildInputBlocks() {
-    const { config, service, role } = this.props;
+  const buildInputBlocks = () => {
+    const { config, service, role } = props;
     const { action_map, inputs } = config.permissions_map[service];
     const options = action_map.map((action) => ({
       key: action.name,
@@ -97,7 +89,7 @@ class SelfServiceComponent extends Component {
           return (
             <TextInputBlockComponent
               defaultValue={defaultValue}
-              handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
+              handleInputUpdate={() => handleInputUpdate(this, input.name)}
               required={input.required || false}
               label={input.text}
             />
@@ -106,7 +98,7 @@ class SelfServiceComponent extends Component {
           return (
             <TypeaheadBlockComponent
               defaultValue={defaultValue}
-              handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
+              handleInputUpdate={() => handleInputUpdate(this, input.name)}
               required={input.required || false}
               typeahead={input.typeahead_endpoint}
               label={input.text}
@@ -120,51 +112,44 @@ class SelfServiceComponent extends Component {
     // DropDown Blocks for gathering Permission Actions for this Service.
     blocks.push(
       <DropDownBlockComponent
-        handleInputUpdate={this.handleInputUpdate.bind(this, "actions")}
+        handleInputUpdate={() => handleInputUpdate(this, "actions")}
         options={options}
         required
       />
     );
 
     return blocks;
-  }
+  };
 
-  render() {
-    const { config, service } = this.props;
-    const { description, text } = config.permissions_map[service];
+  const { config, service } = props;
+  const { description, text } = config.permissions_map[service];
 
-    const { messages } = this.state;
-    const messagesToShow =
-      messages.length > 0 ? (
-        <Message negative>
-          <Message.Header>There are some parameters missing.</Message.Header>
-          <Message.List>
-            {messages.map((message) => (
-              <Message.Item>{message}</Message.Item>
-            ))}
-          </Message.List>
-        </Message>
-      ) : null;
+  const { messages } = state;
+  const messagesToShow =
+    messages.length > 0 ? (
+      <Message negative>
+        <Message.Header>There are some parameters missing.</Message.Header>
+        <Message.List>
+          {messages.map((message) => (
+            <Message.Item>{message}</Message.Item>
+          ))}
+        </Message.List>
+      </Message>
+    ) : null;
 
-    const blocks = this.buildInputBlocks();
+  const blocks = buildInputBlocks();
 
-    return (
-      <Form>
-        <Header as="h3">{text}</Header>
-        <ReactMarkdown linkTarget="_blank" source={description} />
-        {blocks}
-        {messagesToShow}
-        <Button
-          fluid
-          onClick={this.handleSubmit.bind(this)}
-          primary
-          type="submit"
-        >
-          Add Permission
-        </Button>
-      </Form>
-    );
-  }
-}
+  return (
+    <Form>
+      <Header as="h3">{text}</Header>
+      <ReactMarkdown linkTarget="_blank" source={description} />
+      {blocks}
+      {messagesToShow}
+      <Button fluid onClick={() => handleSubmit()} primary type="submit">
+        Add Permission
+      </Button>
+    </Form>
+  );
+};
 
 export default SelfServiceComponent;
