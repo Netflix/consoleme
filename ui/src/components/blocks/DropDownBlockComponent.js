@@ -2,21 +2,13 @@ import React, { useState } from "react";
 import { Form } from "semantic-ui-react";
 
 const DropDownBlockComponent = (props) => {
-  const initialState = {
-    actions: [],
-  };
-
-  const [state, setState] = useState(initialState);
+  const [actions, setActions] = useState([]);
 
   const handleActionChange = (e, { value }) => {
-    setState({
-      ...state,
-      actions: value,
-    });
-    props.handleInputUpdate(value);
+    setActions(value);
+    props.handleInputUpdate(props.name, value);
   };
 
-  const { actions } = state;
   const { defaultValue, options, required } = props;
 
   return (
@@ -25,7 +17,7 @@ const DropDownBlockComponent = (props) => {
       <Form.Dropdown
         defaultValue={defaultValue || ""}
         multiple
-        onChange={() => handleActionChange(this)}
+        onChange={handleActionChange.bind(this)}
         options={options}
         placeholder=""
         selection

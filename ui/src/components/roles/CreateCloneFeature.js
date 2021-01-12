@@ -391,12 +391,7 @@ const CreateCloneFeature = () => {
       </Segment>
       <Segment>
         {messagesToShow}
-        <Button
-          content="Submit"
-          fluid
-          onClick={() => handleSubmit(this)}
-          primary
-        />
+        <Button content="Submit" fluid onClick={() => handleSubmit()} primary />
       </Segment>
     </Segment.Group>
   );

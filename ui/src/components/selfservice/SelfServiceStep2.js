@@ -18,24 +18,14 @@ import SelfServiceComponent from "./SelfServiceComponent";
 const DEFAULT_AWS_SERVICE = "s3";
 
 const SelfServiceStep2 = (props) => {
-  const initialState = {
-    service: DEFAULT_AWS_SERVICE,
-  };
-
-  const [state, setState] = useState(initialState);
+  const [service, setService] = useState(DEFAULT_AWS_SERVICE);
 
   const handleServiceTypeChange = (e, { value }) => {
-    setState({
-      ...state,
-      service: value,
-    });
+    setService(value);
   };
 
   const handlePermissionAdd = (permission) => {
-    setState({
-      ...state,
-      service: null,
-    });
+    setService(null);
     const cb = () => {
       const { permissions } = props;
       permissions.push(permission);
@@ -52,6 +42,7 @@ const SelfServiceStep2 = (props) => {
 
   const getPermissionItems = () => {
     const { config, services } = props;
+    // console.log(props.permissions);
 
     return props.permissions.map((permission, idx) => {
       const found = _.find(services, { key: permission.service });
@@ -86,7 +77,7 @@ const SelfServiceStep2 = (props) => {
                 size="tiny"
                 color="red"
                 floated="right"
-                onClick={() => handlePermissionRemove(this, permission)}
+                onClick={() => handlePermissionRemove(permission)}
               >
                 Remove
                 <Icon name="right close" />
@@ -112,7 +103,6 @@ const SelfServiceStep2 = (props) => {
   };
 
   const { config, role, services } = props;
-  const { service } = state;
 
   return (
     <Segment>
@@ -137,7 +127,7 @@ const SelfServiceStep2 = (props) => {
               <Form.Select
                 value={service}
                 label="Select Desired Permissions"
-                onChange={() => handleServiceTypeChange()}
+                onChange={handleServiceTypeChange.bind(this)}
                 options={services}
                 placeholder="Choose One"
                 required
@@ -150,7 +140,7 @@ const SelfServiceStep2 = (props) => {
                 config={config}
                 role={role}
                 service={service}
-                updatePermission={() => handlePermissionAdd()}
+                updatePermission={handlePermissionAdd}
               />
             ) : null}
           </Grid.Column>
@@ -161,7 +151,7 @@ const SelfServiceStep2 = (props) => {
                 The list of permission you have added in this request.
               </Header.Subheader>
             </Header>
-            <Item.Group divided>{() => getPermissionItems()}</Item.Group>
+            <Item.Group divided>{getPermissionItems()}</Item.Group>
             <Divider />
           </Grid.Column>
         </Grid.Row>

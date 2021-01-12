@@ -7,27 +7,21 @@ import TextInputBlockComponent from "../blocks/TextInputBlockComponent";
 import TypeaheadBlockComponent from "../blocks/TypeaheadBlockComponent";
 
 const SelfServiceComponent = (props) => {
-  const initialState = {
-    messages: [],
-    values: {},
-  };
-  const [state, setState] = useState(initialState);
+  const [messages, setMessages] = useState([]);
+  const [values, setValues] = useState({});
 
   const handleInputUpdate = (context, value) => {
-    const { values } = state;
+    // console.log(context);
+    // console.log(value);
     const newValues = {
       ...values,
       [context]: _.isString(value) ? value.trim() : value,
     };
-    setState({
-      ...state,
-      values: newValues,
-    });
+    setValues(newValues);
   };
 
   const handleSubmit = () => {
     const { config, role, service } = props;
-    const { values } = state;
     const { inputs, condition } = config.permissions_map[service];
 
     const default_values = { condition };
@@ -45,27 +39,29 @@ const SelfServiceComponent = (props) => {
     });
 
     // Exception Hanlding for inputs
-    const messages = [];
+    const messages_t = [];
     Object.keys(inputs).forEach((idx) => {
       const input = inputs[idx];
       if (!result[input.name]) {
-        messages.push(`No value is given for ${input.name}`);
+        messages_t.push(`No value is given for ${input.name}`);
       }
     });
 
     if (!("actions" in result)) {
-      messages.push("No actions are selected");
+      messages_t.push("No actions are selected");
     }
 
-    if (messages.length > 0) {
-      return setState({ ...state, messages });
+    if (messages_t.length > 0) {
+      setMessages(messages_t);
     }
 
     const permission = {
       service,
       ...result,
     };
-    setState(initialState);
+    setMessages([]);
+    setValues({});
+    // console.log(permission);
     props.updatePermission(permission);
   };
 
@@ -84,24 +80,27 @@ const SelfServiceComponent = (props) => {
       let defaultValue;
       defaultValue = input.default || "";
       defaultValue = defaultValue.replace("{account_id}", role.account_id);
+      // console.log(input)
       switch (input.type) {
         case "text_input":
           return (
             <TextInputBlockComponent
               defaultValue={defaultValue}
-              handleInputUpdate={() => handleInputUpdate(this, input.name)}
+              handleInputUpdate={handleInputUpdate}
               required={input.required || false}
               label={input.text}
+              name={input.name}
             />
           );
         case "typeahead_input":
           return (
             <TypeaheadBlockComponent
               defaultValue={defaultValue}
-              handleInputUpdate={() => handleInputUpdate(this, input.name)}
+              handleInputUpdate={handleInputUpdate}
               required={input.required || false}
               typeahead={input.typeahead_endpoint}
               label={input.text}
+              name={input.name}
             />
           );
         default:
@@ -112,9 +111,10 @@ const SelfServiceComponent = (props) => {
     // DropDown Blocks for gathering Permission Actions for this Service.
     blocks.push(
       <DropDownBlockComponent
-        handleInputUpdate={() => handleInputUpdate(this, "actions")}
+        handleInputUpdate={handleInputUpdate}
         options={options}
         required
+        name="actions"
       />
     );
 
@@ -124,7 +124,6 @@ const SelfServiceComponent = (props) => {
   const { config, service } = props;
   const { description, text } = config.permissions_map[service];
 
-  const { messages } = state;
   const messagesToShow =
     messages.length > 0 ? (
       <Message negative>

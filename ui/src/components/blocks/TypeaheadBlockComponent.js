@@ -4,39 +4,26 @@ import { Form, Search } from "semantic-ui-react";
 import { sendRequestCommon } from "../../helpers/utils";
 
 const TypeaheadBlockComponent = (props) => {
-  const initialState = {
-    isLoading: false,
-    results: [],
-    value: "",
-  };
-
-  const [state, setState] = useState(initialState);
+  const [isLoading, setIsLoading] = useState(false);
+  const [results, setResults] = useState([]);
+  const [value, setValue] = useState("");
 
   const handleResultSelect = (e, { result }) => {
-    setState({
-      ...state,
-      value: result.title,
-    });
-    props.handleInputUpdate(result.title);
+    setValue(result.title);
+    props.handleInputUpdate(props.name, result.title);
   };
 
   const handleSearchChange = (e, { value }) => {
     const { typeahead } = props;
-    setState({
-      ...state,
-      isLoading: true,
-      value,
-    });
-    props.handleInputUpdate(value);
+    setIsLoading(true);
+    setValue(value);
+    // props.handleInputUpdate(value);
 
     setTimeout(() => {
-      if (state.value.length < 1) {
-        setState({
-          ...state,
-          isLoading: false,
-          results: [],
-          value: "",
-        });
+      if (value.length < 1) {
+        setIsLoading(false);
+        setResults([]);
+        setValue("");
         props.handleInputUpdate("");
       }
 
@@ -45,15 +32,12 @@ const TypeaheadBlockComponent = (props) => {
 
       const TYPEAHEAD_API = typeahead.replace("{query}", value);
       sendRequestCommon(null, TYPEAHEAD_API, "get").then((source) => {
-        this.setState({
-          isLoading: false,
-          results: _.filter(source, isMatch),
-        });
+        setIsLoading(false);
+        setResults(_.filter(source, isMatch));
       });
     }, 300);
   };
 
-  const { isLoading, results, value } = state;
   const { defaultValue, required, label } = props;
 
   return (
@@ -63,10 +47,14 @@ const TypeaheadBlockComponent = (props) => {
         fluid
         defaultValue={defaultValue || ""}
         loading={isLoading}
-        onResultSelect={() => handleResultSelect(this)}
-        onSearchChange={_.debounce(() => handleSearchChange(this), 500, {
-          leading: true,
-        })}
+        onResultSelect={(e, data) => handleResultSelect(e, data)}
+        onSearchChange={_.debounce(
+          (e) => handleSearchChange(e, e.target),
+          500,
+          {
+            leading: true,
+          }
+        )}
         results={results}
         value={value}
       />

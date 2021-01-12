@@ -130,8 +130,8 @@ const SelfServiceStep3 = (props) => {
         showPrintMargin={false}
         ref={inlinePolicyEditorRef}
         tabSize={4}
-        onChange={() => handleJSONEditorChange()}
-        onValidate={() => handleJSONEditorValidation()}
+        onChange={handleJSONEditorChange.bind(this)}
+        onValidate={handleJSONEditorValidation.bind(this)}
         value={custom_statement}
         name="json_editor"
         editorProps={{
@@ -389,7 +389,7 @@ const SelfServiceStep3 = (props) => {
           <Header>Justification</Header>
           <Form>
             <TextArea
-              onChange={() => handleJustificationChange()}
+              onChange={(e) => handleJustificationChange(e)}
               placeholder="Your Justification"
               value={justification}
             />
@@ -413,7 +413,7 @@ const SelfServiceStep3 = (props) => {
             <Header>Justification</Header>
             <Form>
               <TextArea
-                onChange={() => handleJustificationChange()}
+                onChange={(e) => handleJustificationChange(e)}
                 placeholder="Your Justification"
                 value={justification}
               />

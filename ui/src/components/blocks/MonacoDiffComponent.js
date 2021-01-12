@@ -71,8 +71,8 @@ const MonacoDiffComponent = (props) => {
       height="500"
       original={oldValue}
       value={newValue}
-      editorWillMount={this.editorWillMount}
-      editorDidMount={this.editorDidMount}
+      // editorWillMount={editorWillMount}
+      // editorDidMount={editorDidMount}
       options={options}
       onChange={(e) => onChange(e)}
       theme="vs-dark"

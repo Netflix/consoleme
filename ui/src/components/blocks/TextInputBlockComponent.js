@@ -2,35 +2,26 @@ import React, { useState, useEffect } from "react";
 import { Form } from "semantic-ui-react";
 
 const TextInputBlockComponent = (props) => {
-  const initialState = {
-    value: "",
-  };
-  const [state, setState] = useState(initialState);
+  const [value, setValue] = useState("");
 
   useEffect(() => {
     const { defaultValue } = props;
-    this.setState({
-      value: defaultValue || "",
-    });
+    setValue(defaultValue || "");
   }, []);
 
   const handleTextInputChange = (e) => {
-    const { value } = e.target;
-    setState({
-      ...state,
-      value,
-    });
-    props.handleInputUpdate(value);
+    setValue(e.target.value);
+
+    props.handleInputUpdate(props.name, e.target.value);
   };
 
-  const { value } = state;
   const { required, label } = props;
 
   return (
     <Form.Field required={required}>
       <label>{label || "Enter Value"}</label>
       <input
-        onChange={() => handleTextInputChange(this)}
+        onChange={(e) => handleTextInputChange(e)}
         placeholder="Enter your value here"
         value={value}
         type="text"

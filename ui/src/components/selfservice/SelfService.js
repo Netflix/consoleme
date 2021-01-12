@@ -165,7 +165,7 @@ const SelfService = () => {
           <SelfServiceStep1
             config={config}
             role={role}
-            handleRoleUpdate={() => handleRoleUpdate()}
+            handleRoleUpdate={handleRoleUpdate}
           />
         );
         break;
@@ -176,7 +176,7 @@ const SelfService = () => {
             role={role}
             services={services}
             permissions={permissions}
-            handlePermissionsUpdate={() => handlePermissionsUpdate()}
+            handlePermissionsUpdate={handlePermissionsUpdate}
           />
         );
         break;
