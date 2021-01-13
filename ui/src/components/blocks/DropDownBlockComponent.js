@@ -17,7 +17,7 @@ const DropDownBlockComponent = (props) => {
       <Form.Dropdown
         defaultValue={defaultValue || ""}
         multiple
-        onChange={handleActionChange.bind(this)}
+        onChange={handleActionChange}
         options={options}
         placeholder=""
         selection

@@ -204,7 +204,7 @@ export function updateRequestStatus(
     ...state,
     isLoading: true,
   });
-  const cb = async () => {
+  const handleAsyncCall = async () => {
     const request = {
       modification_model: {
         command,
@@ -250,7 +250,7 @@ export function updateRequestStatus(
       }
     });
   };
-  cb();
+  handleAsyncCall();
 }
 
 export async function sendProposedPolicyWithHooks(
@@ -315,7 +315,7 @@ export function sendProposedPolicy(
     ...state,
     isLoading: true,
   });
-  const cb = async () => {
+  const handleAsyncCall = async () => {
     const request = {
       modification_model: {
         command,
@@ -365,7 +365,7 @@ export function sendProposedPolicy(
       }
     });
   };
-  cb();
+  handleAsyncCall();
 }
 
 export const getResourceEndpoint = (

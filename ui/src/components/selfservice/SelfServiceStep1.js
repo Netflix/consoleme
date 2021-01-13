@@ -42,15 +42,12 @@ const SelfServiceStep1 = (props) => {
     ).then((response) => {
       // if the given role doesn't exist.
       if (response.status === 404) {
-        // console.log(response.status, "if");
         props.handleRoleUpdate(null);
         setIsLoading(false);
         setIsRoleLoading(false);
         setMessages(response.messages);
       } else {
         const role = response;
-        // console.log(role);
-        // console.log(role.arn);
         props.handleRoleUpdate(role);
         setIsLoading(false);
         setIsRoleLoading(false);
@@ -141,7 +138,6 @@ const SelfServiceStep1 = (props) => {
   return (
     <Segment>
       {messagesToShow}
-      {/* {console.log(props)} */}
       <Grid columns={2} divided>
         <Grid.Row>
           <Grid.Column>

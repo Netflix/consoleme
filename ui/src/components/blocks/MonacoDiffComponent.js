@@ -17,8 +17,6 @@ monaco.languages.registerCompletionItemProvider("json", {
 const MonacoDiffComponent = (props) => {
   const onLintError = props.onLintError;
   const onValueChange = props.onValueChange;
-  // this.editorDidMount = this.editorDidMount.bind(this);
-  // this.onChange = this.onChange.bind(this);
   let timer = null;
 
   const [debounceWait, setDebounceWait] = useState(300);

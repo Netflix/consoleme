@@ -93,6 +93,12 @@ const SelfServiceStep3 = (props) => {
     });
   }, []);
 
+  useEffect(() => {
+    if (state.admin_auto_approve) {
+      handleSubmit();
+    }
+  }, [state.admin_auto_approve]);
+
   const handleJSONEditorValidation = (lintErrors) => {
     const { activeIndex } = state;
     const messages = [];
@@ -130,8 +136,8 @@ const SelfServiceStep3 = (props) => {
         showPrintMargin={false}
         ref={inlinePolicyEditorRef}
         tabSize={4}
-        onChange={handleJSONEditorChange.bind(this)}
-        onValidate={handleJSONEditorValidation.bind(this)}
+        onChange={handleJSONEditorChange}
+        onValidate={handleJSONEditorValidation}
         value={custom_statement}
         name="json_editor"
         editorProps={{
@@ -207,7 +213,6 @@ const SelfServiceStep3 = (props) => {
       ...state,
       admin_auto_approve: true,
     });
-    handleSubmit();
   };
 
   const handleSubmit = () => {
@@ -242,7 +247,7 @@ const SelfServiceStep3 = (props) => {
       ...state,
       isLoading: true,
     });
-    const cb = async () => {
+    const handleAsyncCall = async () => {
       const response = await sendRequestCommon(requestV2, "/api/v2/request");
 
       const messages = [];
@@ -270,7 +275,7 @@ const SelfServiceStep3 = (props) => {
         messages,
       });
     };
-    cb();
+    handleAsyncCall();
   };
 
   const handleJustificationChange = (e) => {

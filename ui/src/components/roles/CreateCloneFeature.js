@@ -246,10 +246,6 @@ const CreateCloneFeature = () => {
     }
   };
 
-  const handleCheckChange = (e, { name, value }) => {
-    // setState({ ...state, [name]: !value });
-  };
-
   const messagesToShow =
     messages != null && messages.length > 0 ? (
       <Message negative>

@@ -52,7 +52,7 @@ const AssumeRolePolicyChangeComponent = (props) => {
       ...state,
       isLoading: true,
     });
-    const cb = () => {
+    const handleAsyncCall = () => {
       const { change, config, requestReadOnly } = props;
       const oldPolicyDoc =
         change.old_policy && change.old_policy.policy_document
@@ -75,7 +75,7 @@ const AssumeRolePolicyChangeComponent = (props) => {
         isLoading: false,
       });
     };
-    cb();
+    handleAsyncCall();
   }, [props.change, props.requestReadOnly]);
 
   const onLintError = (lintErrors) => {

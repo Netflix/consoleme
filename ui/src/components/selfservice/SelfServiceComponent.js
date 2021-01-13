@@ -11,8 +11,6 @@ const SelfServiceComponent = (props) => {
   const [values, setValues] = useState({});
 
   const handleInputUpdate = (context, value) => {
-    // console.log(context);
-    // console.log(value);
     const newValues = {
       ...values,
       [context]: _.isString(value) ? value.trim() : value,
@@ -61,7 +59,6 @@ const SelfServiceComponent = (props) => {
     };
     setMessages([]);
     setValues({});
-    // console.log(permission);
     props.updatePermission(permission);
   };
 
@@ -80,7 +77,6 @@ const SelfServiceComponent = (props) => {
       let defaultValue;
       defaultValue = input.default || "";
       defaultValue = defaultValue.replace("{account_id}", role.account_id);
-      // console.log(input)
       switch (input.type) {
         case "text_input":
           return (

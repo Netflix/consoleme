@@ -89,11 +89,11 @@ const ConsoleMeDataTable = (props) => {
         isLoading: false,
       });
     } else {
-      const cb = async () => {
+      const handleAsyncCall = async () => {
         await generateFilterFromQueryString();
         await generateMessagesFromQueryString();
       };
-      cb();
+      handleAsyncCall();
     }
   }, [state.isLoading]);
 

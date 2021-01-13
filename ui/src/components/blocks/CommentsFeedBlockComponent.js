@@ -37,7 +37,7 @@ const CommentsFeedBlockComponent = (props) => {
       isLoading: true,
       messages: [],
     });
-    const cb = async () => {
+    const handleAsyncCall = async () => {
       const request = {
         modification_model: {
           command: "add_comment",
@@ -66,7 +66,7 @@ const CommentsFeedBlockComponent = (props) => {
         messages: [],
       });
     };
-    cb();
+    handleAsyncCall();
   };
 
   const { commentText, isLoading, messages } = state;

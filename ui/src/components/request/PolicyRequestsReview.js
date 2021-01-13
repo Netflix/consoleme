@@ -319,7 +319,7 @@ const PolicyRequestReview = (props) => {
                 change={change}
                 config={requestConfig}
                 requestReadOnly={requestReadOnly}
-                updateTag={this.updateTag}
+                updateTag
                 reloadDataFromBackend={() => reloadDataFromBackend()}
                 requestID={requestID}
               />

@@ -26,12 +26,12 @@ const SelfServiceStep2 = (props) => {
 
   const handlePermissionAdd = (permission) => {
     setService(null);
-    const cb = () => {
+    const callAfterStateChange = () => {
       const { permissions } = props;
       permissions.push(permission);
       props.handlePermissionsUpdate(permissions);
     };
-    cb();
+    callAfterStateChange();
   };
 
   const handlePermissionRemove = (target) => {
@@ -42,7 +42,6 @@ const SelfServiceStep2 = (props) => {
 
   const getPermissionItems = () => {
     const { config, services } = props;
-    // console.log(props.permissions);
 
     return props.permissions.map((permission, idx) => {
       const found = _.find(services, { key: permission.service });
@@ -127,7 +126,7 @@ const SelfServiceStep2 = (props) => {
               <Form.Select
                 value={service}
                 label="Select Desired Permissions"
-                onChange={handleServiceTypeChange.bind(this)}
+                onChange={handleServiceTypeChange}
                 options={services}
                 placeholder="Choose One"
                 required

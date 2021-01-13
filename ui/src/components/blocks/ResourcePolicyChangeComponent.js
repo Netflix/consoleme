@@ -52,7 +52,7 @@ const ResourcePolicyChangeComponent = (props) => {
       ...state,
       isLoading: true,
     });
-    const cb = () => {
+    const callAfterStateChange = () => {
       const { change, config, requestReadOnly } = props;
       const oldPolicyDoc =
         change.old_policy && change.old_policy.policy_document
@@ -75,7 +75,7 @@ const ResourcePolicyChangeComponent = (props) => {
         isLoading: false,
       });
     };
-    cb();
+    callAfterStateChange();
   }, [props.change, props.requestReadOnly]);
 
   const onLintError = (lintErrors) => {

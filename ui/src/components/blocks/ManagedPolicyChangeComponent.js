@@ -30,7 +30,7 @@ const ManagedPolicyChangeComponent = (props) => {
       ...state,
       isLoading: true,
     });
-    const cb = () => {
+    const callAfterStateChange = () => {
       const { change, config, requestReadOnly } = props;
       setState({
         ...state,
@@ -40,7 +40,7 @@ const ManagedPolicyChangeComponent = (props) => {
         isLoading: false,
       });
     };
-    cb();
+    callAfterStateChange();
   }, [props.change, props.requestReadOnly]);
 
   const onSubmitChange = () => {
