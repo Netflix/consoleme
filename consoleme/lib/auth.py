@@ -269,7 +269,7 @@ def mk_jwt_validator(
             )
         except jwt.InvalidSignatureError:
             raise AuthenticationError("Invalid Token Signature")
-        except jwt.ExpiredSignature:
+        except jwt.ExpiredSignatureError:
             raise AuthenticationError("Token Expired")
         except jwt.InvalidAudienceError:
             raise AuthenticationError("Invalid Token Audience")
