@@ -72,11 +72,6 @@ async def populate_oidc_config():
             oidc_config["jwt_keys"][key_id] = RSAAlgorithm.from_jwk(json.dumps(k))
         elif key_type == "EC":
             oidc_config["jwt_keys"][key_id] = ECAlgorithm.from_jwk(json.dumps(k))
-    # oidc_config["jwt_keys"] = {
-    #     k["kid"]: RSAAlgorithm.from_jwk(json.dumps(k))
-    #     for k in oidc_config["jwks_data"]["keys"]
-    # }
-
     return oidc_config
 
 
