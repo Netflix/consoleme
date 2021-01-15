@@ -1,5 +1,4 @@
 import _ from "lodash";
-import qs from "qs";
 import React, { useState, useEffect } from "react";
 import {
   Button,
@@ -66,10 +65,24 @@ const ConsoleMeDataTable = (props) => {
   };
   const [state, setState] = useState(initialStateN);
 
+  const {
+    activePage,
+    filteredData,
+    isLoading,
+    redirect,
+    tableConfig,
+    warningMessage,
+  } = state;
+
   let timer = null;
 
-  useEffect(async () => {
-    if (state.isLoading) {
+  useEffect(() => {
+    const { tableConfig } = state;
+    setState({
+      ...state,
+      isLoading: true,
+    });
+    const fetchData = async () => {
       let data = await sendRequestCommon(
         {
           limit: tableConfig.totalRows,
@@ -88,21 +101,9 @@ const ConsoleMeDataTable = (props) => {
         filteredData: data,
         isLoading: false,
       });
-    } else {
-      const handleAsyncCall = async () => {
-        await generateFilterFromQueryString();
-        await generateMessagesFromQueryString();
-      };
-      handleAsyncCall();
-    }
-  }, [state.isLoading]);
-
-  useEffect(() => {
-    const { tableConfig } = state;
-    setState({
-      ...state,
-      isLoading: true,
-    });
+    };
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const calculateColumnSize = () => {
@@ -201,7 +202,6 @@ const ConsoleMeDataTable = (props) => {
       const { key } = item;
       const options = columnOptions[item.key] || [];
       let columnCell = null;
-
       switch (item.type) {
         case "dropdown": {
           columnCell = (
@@ -214,7 +214,7 @@ const ConsoleMeDataTable = (props) => {
               selection
               compact
               options={options}
-              onChange={(e) => filterColumn(e, e.target)}
+              onChange={filterColumn}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -260,7 +260,7 @@ const ConsoleMeDataTable = (props) => {
             <SemanticDatepicker
               name={item.key}
               style={item.style}
-              onChange={(e) => filterDateRangeTime(e, e.target)}
+              onChange={filterDateRangeTime}
               onClick={(e) => {
                 e.stopPropagation();
               }}
@@ -336,46 +336,6 @@ const ConsoleMeDataTable = (props) => {
         </Table.Row>
       </Table.Header>
     );
-  };
-
-  const generateMessagesFromQueryString = async () => {
-    const parsedQueryString = qs.parse(window.location.search, {
-      ignoreQueryPrefix: true,
-    });
-    if (parsedQueryString) {
-      Object.keys(parsedQueryString).forEach((key) => {
-        if (key === "warningMessage") {
-          setState({
-            ...state,
-            warningMessage: atob(parsedQueryString[key]),
-          });
-        }
-      });
-    }
-  };
-
-  const generateFilterFromQueryString = async () => {
-    const { tableConfig } = state;
-    const parsedQueryString = qs.parse(window.location.search, {
-      ignoreQueryPrefix: true,
-    });
-    const filters = {};
-    if (parsedQueryString) {
-      Object.keys(parsedQueryString).forEach((key) => {
-        filters[key] = parsedQueryString[key];
-      });
-    }
-
-    setState({
-      ...state,
-      filters,
-    });
-
-    if (tableConfig.serverSideFiltering) {
-      await filterColumnServerSide({}, filters);
-    } else {
-      filterColumnClientSide({}, filters);
-    }
   };
 
   const filterDateRangeTime = async (event, data) => {
@@ -642,18 +602,11 @@ const ConsoleMeDataTable = (props) => {
     return true;
   };
 
-  const {
-    activePage,
-    filteredData,
-    isLoading,
-    redirect,
-    tableConfig,
-    warningMessage,
-  } = state;
   const totalPages = parseInt(
     filteredData.length / tableConfig.rowsPerPage,
     10
   );
+
   const columns = generateColumns();
 
   if (isLoading) {

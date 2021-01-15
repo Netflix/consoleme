@@ -16,11 +16,7 @@ import InlinePolicyChangeComponent from "../blocks/InlinePolicyChangeComponent";
 import ManagedPolicyChangeComponent from "../blocks/ManagedPolicyChangeComponent";
 import AssumeRolePolicyChangeComponent from "../blocks/AssumeRolePolicyChangeComponent";
 import ResourcePolicyChangeComponent from "../blocks/ResourcePolicyChangeComponent";
-import {
-  sendProposedPolicy,
-  sendRequestCommon,
-  updateRequestStatus,
-} from "../../helpers/utils";
+import { sendRequestCommon, updateRequestStatus } from "../../helpers/utils";
 import ResourceTagChangeComponent from "../blocks/ResourceTagChangeComponent";
 
 const PolicyRequestReview = (props) => {
@@ -37,12 +33,23 @@ const PolicyRequestReview = (props) => {
 
   const [state, setState] = useState(initialState);
 
+  const {
+    lastUpdated,
+    extendedRequest,
+    messages,
+    isSubmitting,
+    requestConfig,
+    loading,
+    requestID,
+  } = state;
+
   useEffect(() => {
     reloadDataFromBackend();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (state.loading) {
+    if (loading) {
       sendRequestCommon(null, `/api/v2/requests/${requestID}`, "get").then(
         (response) => {
           if (response.status === 404 || response.status === 500) {
@@ -64,7 +71,8 @@ const PolicyRequestReview = (props) => {
         }
       );
     }
-  }, [state.loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const updatePolicyDocument = (changeID, policyDocument) => {
     const { policyDocuments } = state;
@@ -76,22 +84,11 @@ const PolicyRequestReview = (props) => {
   };
 
   const reloadDataFromBackend = () => {
-    const { requestID } = state;
     setState({
       ...state,
       loading: true,
     });
   };
-
-  const {
-    lastUpdated,
-    extendedRequest,
-    messages,
-    isSubmitting,
-    requestConfig,
-    loading,
-    requestID,
-  } = state;
 
   // Checks whether extendedInfo is available for the requester or not, if it is, saves it as a variable
   const extendedInfo =

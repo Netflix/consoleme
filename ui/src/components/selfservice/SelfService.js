@@ -24,73 +24,77 @@ const SelfService = () => {
 
   const [state, setState] = useState(initialState);
 
-  useEffect(async () => {
-    const config = await sendRequestCommon(
-      null,
-      "/api/v2/self_service_config",
-      "get"
-    );
-    const { services } = state;
-    Object.keys(config.permissions_map).forEach((name) => {
-      const service = config.permissions_map[name];
-      services.push({
-        actions: service.action_map,
-        key: name,
-        text: service.text,
-        value: name,
+  useEffect(() => {
+    const asyncCall = async () => {
+      const config = await sendRequestCommon(
+        null,
+        "/api/v2/self_service_config",
+        "get"
+      );
+      const { services } = state;
+      Object.keys(config.permissions_map).forEach((name) => {
+        const service = config.permissions_map[name];
+        services.push({
+          actions: service.action_map,
+          key: name,
+          text: service.text,
+          value: name,
+        });
       });
-    });
 
-    // If Self Service page is redirected with account and role information
-    // TODO(heewonk), revisit following redirection once move to SPA
-    const paramSearch = qs.parse(window.location.search, {
-      ignoreQueryPrefix: true,
-    });
+      // If Self Service page is redirected with account and role information
+      // TODO(heewonk), revisit following redirection once move to SPA
+      const paramSearch = qs.parse(window.location.search, {
+        ignoreQueryPrefix: true,
+      });
 
-    if (arnRegex.test(paramSearch.arn)) {
-      const match = arnRegex.exec(paramSearch.arn);
-      const { accountId, roleName } = match.groups;
+      if (arnRegex.test(paramSearch.arn)) {
+        const match = arnRegex.exec(paramSearch.arn);
+        const { accountId, roleName } = match.groups;
 
-      setState({
-        ...state,
-        admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
-        config,
-        currStep: SelfServiceStepEnum.STEP2,
-        // TODO(heewonk), define the role type
-        role: {
-          account_id: accountId,
-          account_name: "",
-          apps: {
-            app_details: [],
-          },
-          arn: `arn:aws:iam::${accountId}:role/${roleName}`,
-          name: roleName,
-          owner: "",
-          tags: [],
-          templated: false,
-          cloudtrail_details: {
-            error_url: "",
-            errors: {
-              cloudtrail_errors: [],
+        setState({
+          ...state,
+          admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+          config,
+          currStep: SelfServiceStepEnum.STEP2,
+          // TODO(heewonk), define the role type
+          role: {
+            account_id: accountId,
+            account_name: "",
+            apps: {
+              app_details: [],
+            },
+            arn: `arn:aws:iam::${accountId}:role/${roleName}`,
+            name: roleName,
+            owner: "",
+            tags: [],
+            templated: false,
+            cloudtrail_details: {
+              error_url: "",
+              errors: {
+                cloudtrail_errors: [],
+              },
+            },
+            s3_details: {
+              error_url: "",
+              errors: {
+                s3_errors: [],
+              },
             },
           },
-          s3_details: {
-            error_url: "",
-            errors: {
-              s3_errors: [],
-            },
-          },
-        },
-        services,
-      });
-    } else {
-      setState({
-        ...state,
-        config,
-        services,
-        admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
-      });
-    }
+          services,
+        });
+      } else {
+        setState({
+          ...state,
+          config,
+          services,
+          admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+        });
+      }
+    };
+    asyncCall();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleStepClick = (dir) => {

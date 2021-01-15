@@ -27,6 +27,7 @@ const SelfServiceStep1 = (props) => {
     if (role) {
       fetchRoleDetail(role.arn);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchRoleDetail = (value) => {
@@ -69,6 +70,7 @@ const SelfServiceStep1 = (props) => {
     } else {
       props.handleRoleUpdate(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading]);
 
   useEffect(() => {
@@ -78,6 +80,7 @@ const SelfServiceStep1 = (props) => {
         fetchRoleDetail(value);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRoleLoading]);
 
   const handleSearchChange = (event, { value }) => {

@@ -7,6 +7,7 @@ const TextInputBlockComponent = (props) => {
   useEffect(() => {
     const { defaultValue } = props;
     setValue(defaultValue || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleTextInputChange = (e) => {

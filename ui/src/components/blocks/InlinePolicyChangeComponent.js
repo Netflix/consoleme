@@ -43,8 +43,20 @@ const InlinePolicyChangeComponent = (props) => {
 
   const [state, setState] = useState(initialState);
 
-  const updatePolicyDocument = props.updatePolicyDocument;
-  const reloadDataFromBackend = props.reloadDataFromBackend;
+  const {
+    oldStatement,
+    newStatement,
+    change,
+    config,
+    isError,
+    messages,
+    requestReadOnly,
+    lastSavedStatement,
+    isLoading,
+    buttonResponseMessage,
+  } = state;
+
+  const { updatePolicyDocument, reloadDataFromBackend } = props;
 
   useEffect(() => {
     setState({
@@ -52,7 +64,6 @@ const InlinePolicyChangeComponent = (props) => {
       isLoading: true,
     });
     const callAfterStateChange = () => {
-      const { change, config, requestReadOnly } = props;
       const oldPolicyDoc =
         change.old_policy && change.old_policy.policy_document
           ? change.old_policy.policy_document
@@ -75,7 +86,8 @@ const InlinePolicyChangeComponent = (props) => {
       });
     };
     callAfterStateChange();
-  }, [props.change, props.requestReadOnly]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [change, requestReadOnly]);
 
   const onLintError = (lintErrors) => {
     if (lintErrors) {
@@ -108,19 +120,6 @@ const InlinePolicyChangeComponent = (props) => {
   const onSubmitChange = () => {
     sendProposedPolicy(state, setState, reloadDataFromBackend, "apply_change");
   };
-
-  const {
-    oldStatement,
-    newStatement,
-    change,
-    config,
-    isError,
-    messages,
-    requestReadOnly,
-    lastSavedStatement,
-    isLoading,
-    buttonResponseMessage,
-  } = state;
 
   const newPolicy = change.new ? (
     <span style={{ color: "red" }}>- New Policy</span>

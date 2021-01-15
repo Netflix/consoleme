@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { MonacoDiffEditor } from "react-monaco-editor";
 import PropTypes from "prop-types";
 import {
@@ -17,13 +17,8 @@ monaco.languages.registerCompletionItemProvider("json", {
 const MonacoDiffComponent = (props) => {
   const onLintError = props.onLintError;
   const onValueChange = props.onValueChange;
-  let timer = null;
 
-  const [debounceWait, setDebounceWait] = useState(300);
   const [modifiedEditor, setModifiedEditor] = useState(null);
-  const [triggerCharacters, setTriggerCharacters] = useState(
-    getMonacoTriggerCharacters()
-  );
 
   const onChange = (newValue, e) => {
     onValueChange(newValue);
@@ -69,7 +64,7 @@ const MonacoDiffComponent = (props) => {
       height="500"
       original={oldValue}
       value={newValue}
-      // editorWillMount={editorWillMount}
+      // TODO(heewonk): editorDidMount isn't working with React Hooks because modifiedEditor is null
       // editorDidMount={editorDidMount}
       options={options}
       onChange={(e) => onChange(e)}

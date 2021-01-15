@@ -39,64 +39,69 @@ const SelfServiceStep3 = (props) => {
 
   const inlinePolicyEditorRef = React.createRef();
 
-  useEffect(async () => {
-    const langTools = ace.require("ace/ext/language_tools");
-    langTools.setCompleters([{ getCompletions }]);
-    const { role, permissions } = props;
-    const payload = {
-      changes: [],
-    };
-    payload.changes = permissions.map((permission) => {
-      const change = {
-        principal_arn: role.arn,
-        generator_type: permission.service,
-        action_groups: permission.actions,
-        condition: permission.condition,
-        effect: "Allow",
-        ...permission,
+  useEffect(() => {
+    const asyncCall = async () => {
+      const langTools = ace.require("ace/ext/language_tools");
+      langTools.setCompleters([{ getCompletions }]);
+      const { role, permissions } = props;
+      const payload = {
+        changes: [],
       };
-      delete change.service;
-      delete change.actions;
-      return change;
-    });
+      payload.changes = permissions.map((permission) => {
+        const change = {
+          principal_arn: role.arn,
+          generator_type: permission.service,
+          action_groups: permission.actions,
+          condition: permission.condition,
+          effect: "Allow",
+          ...permission,
+        };
+        delete change.service;
+        delete change.actions;
+        return change;
+      });
 
-    const response = await sendRequestCommon(
-      payload,
-      "/api/v2/generate_changes"
-    );
-    if (response.status != null && response.status === 400) {
+      const response = await sendRequestCommon(
+        payload,
+        "/api/v2/generate_changes"
+      );
+      if (response.status != null && response.status === 400) {
+        return setState({
+          ...state,
+          isError: true,
+          messages: [response.message],
+        });
+      }
+
+      if ("changes" in response && response.changes.length > 0) {
+        const statement = JSON.stringify(
+          response.changes[0].policy.policy_document,
+          null,
+          4
+        );
+        return setState({
+          ...state,
+          custom_statement: statement,
+          isError: false,
+          messages: [],
+          statement,
+        });
+      }
       return setState({
         ...state,
         isError: true,
-        messages: [response.message],
+        messages: ["Unknown Exception raised. Please reach out for support"],
       });
-    }
-
-    if ("changes" in response && response.changes.length > 0) {
-      const statement = JSON.stringify(
-        response.changes[0].policy.policy_document,
-        null,
-        4
-      );
-      return setState({
-        ...state,
-        custom_statement: statement,
-        isError: false,
-        messages: [],
-        statement,
-      });
-    }
-    return setState({
-      ...state,
-      isError: true,
-      messages: ["Unknown Exception raised. Please reach out for support"],
-    });
+    };
+    asyncCall();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (state.admin_auto_approve) {
       handleSubmit();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.admin_auto_approve]);
 
   const handleJSONEditorValidation = (lintErrors) => {
@@ -422,6 +427,7 @@ const SelfServiceStep3 = (props) => {
                 placeholder="Your Justification"
                 value={justification}
               />
+              <h1>{state.isError}</h1>
             </Form>
             <Divider />
             {messagesToShow}

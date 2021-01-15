@@ -33,13 +33,11 @@ const CreateCloneFeature = () => {
   const [isLoadingAccount, setIsLoadingAccount] = useState(false);
   const [results, setResults] = useState([]);
   const [resultsAccount, setResultsAccount] = useState([]);
-  const [value, setValue] = useState("");
   const [source_role, setSource_role] = useState(null);
   const [source_role_value, setSource_role_value] = useState("");
   const [dest_account_id, setDest_account_id] = useState(null);
   const [dest_account_id_value, setDest_account_id_value] = useState("");
   const [dest_role_name, setDest_role_name] = useState("");
-  const [searchType, setSearchType] = useState("");
   const [description, setDescription] = useState("");
   const [messages, setMessages] = useState(null);
   const [requestSent, setRequestSent] = useState(false);
@@ -57,17 +55,13 @@ const CreateCloneFeature = () => {
     let stype;
     if (name === "source_role") {
       setIsLoading(true);
-      setValue(value);
       setSource_role_value(value);
       setSource_role(null);
-      setSearchType("iam_arn");
       stype = "iam_arn";
     } else {
       setIsLoadingAccount(true);
-      setValue(value);
       setDest_account_id_value(value);
       setDest_account_id(null);
-      setSearchType("account");
       stype = "account";
     }
 
@@ -76,7 +70,6 @@ const CreateCloneFeature = () => {
         setIsLoading(false);
         setIsLoadingAccount(false);
         setResults([]);
-        setValue("");
         setSource_role(name === "source_role" ? null : source_role);
         setSource_role_value(name === "source_role" ? "" : source_role_value);
         setDest_account_id(name === "source_role" ? dest_account_id : null);
@@ -179,35 +172,39 @@ const CreateCloneFeature = () => {
     submitRequest(payload, "/api/v2/clone/role");
   };
 
-  useEffect(async () => {
+  useEffect(() => {
     if (isSubmitting) {
-      const response = await sendRequestCommon(payload, url);
-      const messages = [];
-      let requestResults = [];
-      let requestSent = false;
-      let roleCreated = false;
-      if (response) {
-        requestSent = true;
-        if (!response.hasOwnProperty("role_created")) {
-          requestResults.push({
-            Status: "error",
-            message: response.message,
-          });
-        } else {
-          requestResults = response.action_results;
-          if (response.role_created === "true") {
-            roleCreated = true;
+      const asyncCall = async () => {
+        const response = await sendRequestCommon(payload, url);
+        const messages = [];
+        let requestResults = [];
+        let requestSent = false;
+        let roleCreated = false;
+        if (response) {
+          requestSent = true;
+          if (!response.hasOwnProperty("role_created")) {
+            requestResults.push({
+              Status: "error",
+              message: response.message,
+            });
+          } else {
+            requestResults = response.action_results;
+            if (response.role_created === "true") {
+              roleCreated = true;
+            }
           }
+        } else {
+          messages.push("Failed to submit cloning request");
         }
-      } else {
-        messages.push("Failed to submit cloning request");
-      }
-      setIsSubmitting(false);
-      setMessages(messages);
-      setRequestSent(requestSent);
-      setRequestResults(requestResults);
-      setRoleCreated(roleCreated);
+        setIsSubmitting(false);
+        setMessages(messages);
+        setRequestSent(requestSent);
+        setRequestResults(requestResults);
+        setRoleCreated(roleCreated);
+      };
+      asyncCall();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSubmitting]);
 
   const submitRequest = (payload, url) => {
