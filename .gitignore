@@ -121,6 +121,7 @@ venv.bak/
 dynamodb-data/
 redis-data/
 node_modules/
+staging/
 **/node_modules/
 tmp/*
 tmp*
