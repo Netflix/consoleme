@@ -106,7 +106,7 @@ up-reqs: clean
 	pip install --upgrade pip-tools
 	pip install --upgrade setuptools
 	pip-compile --output-file requirements.txt requirements.in -U --no-emit-index-url
-	pip-compile --output-file requirements-test.txt requirements-test.in -U --no-emit-index-url
+	pip-compile --output-file requirements-test.txt requirements-test.in requirements.txt -U --no-emit-index-url
 	pip-compile --output-file requirements-docs.txt requirements-docs.in -U --no-emit-index-url
 	@echo "--> Done updating Python requirements"
 	@echo "--> Installing new dependencies"
