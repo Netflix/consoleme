@@ -123,3 +123,17 @@ except ClientError as e:
             e
         )
     )
+
+try:
+    ddb.create_table(
+        TableName="consoleme_users_global",
+        KeySchema=[{"AttributeName": "username", "KeyType": "HASH"}],  # Partition key
+        AttributeDefinitions=[{"AttributeName": "username", "AttributeType": "S"}],
+        ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+    )
+except ClientError as e:
+    print(
+        "Unable to create table consoleme_users_global. Most likely it already exists and you can ignore this message. Error: {}".format(
+            e
+        )
+    )
