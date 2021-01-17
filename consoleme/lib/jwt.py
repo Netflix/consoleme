@@ -37,7 +37,7 @@ async def validate_and_return_jwt_token(auth_cookie):
     if not jwt_secret:
         raise Exception(f"{config.get('jwt_secret')} configuration value is not set.")
     try:
-        decoded_jwt = jwt.decode(auth_cookie, jwt_secret, algorithm="HS256")
+        decoded_jwt = jwt.decode(auth_cookie, jwt_secret, algorithms="HS256")
         email = decoded_jwt.get(config.get("jwt.attributes.email", "email"))
         groups = decoded_jwt.get(config.get("jwt.attributes.groups", "groups"), [])
         exp = decoded_jwt.get("exp")
