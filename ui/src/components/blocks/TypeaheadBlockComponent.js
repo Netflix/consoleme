@@ -17,7 +17,7 @@ const TypeaheadBlockComponent = (props) => {
     const { typeahead } = props;
     setIsLoading(true);
     setValue(value);
-    // props.handleInputUpdate(value);
+    props.handleInputUpdate(props.name, value);
 
     setTimeout(() => {
       if (value.length < 1) {

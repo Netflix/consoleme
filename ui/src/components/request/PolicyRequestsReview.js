@@ -281,7 +281,7 @@ const PolicyRequestReview = (props) => {
                 change={change}
                 config={requestConfig}
                 requestReadOnly={requestReadOnly}
-                updatePolicyDocument={() => updatePolicyDocument()}
+                updatePolicyDocument={updatePolicyDocument}
                 reloadDataFromBackend={() => reloadDataFromBackend()}
                 requestID={requestID}
               />
@@ -304,7 +304,7 @@ const PolicyRequestReview = (props) => {
                 change={change}
                 config={requestConfig}
                 requestReadOnly={requestReadOnly}
-                updatePolicyDocument={() => updatePolicyDocument()}
+                updatePolicyDocument={updatePolicyDocument}
                 reloadDataFromBackend={() => reloadDataFromBackend()}
                 requestID={requestID}
               />
@@ -328,7 +328,7 @@ const PolicyRequestReview = (props) => {
                 change={change}
                 config={requestConfig}
                 requestReadOnly={requestReadOnly}
-                updatePolicyDocument={() => updatePolicyDocument()}
+                updatePolicyDocument={updatePolicyDocument}
                 reloadDataFromBackend={() => reloadDataFromBackend()}
                 requestID={requestID}
               />

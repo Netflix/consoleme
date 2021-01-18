@@ -18,7 +18,10 @@ const MonacoDiffComponent = (props) => {
   const onLintError = props.onLintError;
   const onValueChange = props.onValueChange;
 
+  // const [debounceWait, setDebounceWait] = useState(300);
+  // eslint-disable-next-line
   const [modifiedEditor, setModifiedEditor] = useState(null);
+  // const [triggerCharacters, setTriggerCharacters] = useState(getMonacoTriggerCharacters());
 
   const onChange = (newValue, e) => {
     onValueChange(newValue);
@@ -26,7 +29,7 @@ const MonacoDiffComponent = (props) => {
 
   const editorDidMount = (editor) => {
     editor.modifiedEditor.onDidChangeModelDecorations(() => {
-      const model = modifiedEditor.getModel();
+      const model = editor.modifiedEditor.getModel();
       if (model === null || model.getModeId() !== "json") {
         return;
       }
@@ -64,10 +67,9 @@ const MonacoDiffComponent = (props) => {
       height="500"
       original={oldValue}
       value={newValue}
-      // TODO(heewonk): editorDidMount isn't working with React Hooks because modifiedEditor is null
-      // editorDidMount={editorDidMount}
+      editorDidMount={editorDidMount}
       options={options}
-      onChange={(e) => onChange(e)}
+      onChange={onChange}
       theme="vs-dark"
       alwaysConsumeMouseWheel={false}
     />

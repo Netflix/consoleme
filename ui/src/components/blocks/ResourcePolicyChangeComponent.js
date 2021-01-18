@@ -304,8 +304,8 @@ const ResourcePolicyChangeComponent = (props) => {
               (!config.can_update_cancel && !config.can_approve_reject) ||
               changeReadOnly
             }
-            onLintError={() => onLintError()}
-            onValueChange={() => onValueChange()}
+            onLintError={onLintError}
+            onValueChange={onValueChange}
           />
         </Grid.Column>
       </Grid.Row>

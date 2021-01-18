@@ -27,43 +27,26 @@ const InlinePolicyChangeComponent = (props) => {
       : {};
   const new_Statement = sortAndStringifyNestedJSONObject(newPolicyDoc);
 
-  const initialState = {
-    newStatement: new_Statement,
-    lastSavedStatement: new_Statement,
-    isError: false,
-    messages: [],
-    buttonResponseMessage: [],
-    oldStatement: sortAndStringifyNestedJSONObject(oldPolicyDoc),
-    change: props.change,
-    config: props.config,
-    requestReadOnly: props.requestReadOnly,
-    requestID: props.requestID,
-    isLoading: false,
-  };
-
-  const [state, setState] = useState(initialState);
-
-  const {
-    oldStatement,
-    newStatement,
-    change,
-    config,
-    isError,
-    messages,
-    requestReadOnly,
-    lastSavedStatement,
-    isLoading,
-    buttonResponseMessage,
-  } = state;
+  const [newStatement, setNewStatement] = useState(new_Statement);
+  const [lastSavedStatement, setLastSavedStatement] = useState(new_Statement);
+  const [isError, setIsError] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [buttonResponseMessage, setButtonResponseMessage] = useState([]);
+  const [oldStatement, setOldStatement] = useState(
+    sortAndStringifyNestedJSONObject(oldPolicyDoc)
+  );
+  const [change, setChange] = useState(props.change);
+  const [config, setConfig] = useState(props.config);
+  const [requestReadOnly, setRequestReadOnly] = useState(props.requestReadOnly);
+  // eslint-disable-next-line
+  const [requestID, setRequestID] = useState(props.requestID);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { updatePolicyDocument, reloadDataFromBackend } = props;
 
   useEffect(() => {
-    setState({
-      ...state,
-      isLoading: true,
-    });
-    const callAfterStateChange = () => {
+    setIsLoading(true);
+    const cb = () => {
       const oldPolicyDoc =
         change.old_policy && change.old_policy.policy_document
           ? change.old_policy.policy_document
@@ -73,52 +56,47 @@ const InlinePolicyChangeComponent = (props) => {
         change.policy.policy_document && change.policy.policy_document
           ? change.policy.policy_document
           : {};
-      const newStatement = sortAndStringifyNestedJSONObject(newPolicyDoc);
-      setState({
-        ...state,
-        newStatement,
-        lastSavedStatement: newStatement,
-        oldStatement: sortAndStringifyNestedJSONObject(oldPolicyDoc),
-        change,
-        config,
-        requestReadOnly,
-        isLoading: false,
-      });
+      const new_Statement = sortAndStringifyNestedJSONObject(newPolicyDoc);
+      setNewStatement(new_Statement);
+      setLastSavedStatement(new_Statement);
+      setOldStatement(sortAndStringifyNestedJSONObject(oldPolicyDoc));
+      setChange(props.change);
+      setConfig(props.config);
+      setRequestReadOnly(props.requestReadOnly);
+      setIsLoading(false);
     };
-    callAfterStateChange();
+    cb();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [change, requestReadOnly]);
 
   const onLintError = (lintErrors) => {
     if (lintErrors) {
       if (lintErrors.length > 0) {
-        setState({
-          ...state,
-          messages: lintErrors,
-          isError: true,
-        });
+        setMessages(lintErrors);
+        setIsError(true);
       }
     } else {
-      setState({
-        ...state,
-        messages: [],
-        isError: false,
-      });
+      setMessages([]);
+      setIsError(false);
     }
   };
 
   const onValueChange = (newValue) => {
-    const { change } = state;
-    setState({
-      ...state,
-      newStatement: newValue,
-      buttonResponseMessage: [],
-    });
+    setNewStatement(newValue);
+    setButtonResponseMessage([]);
     updatePolicyDocument(change.id, newValue);
   };
 
   const onSubmitChange = () => {
-    sendProposedPolicy(state, setState, reloadDataFromBackend, "apply_change");
+    sendProposedPolicy(
+      change,
+      newStatement,
+      requestID,
+      setIsLoading,
+      setButtonResponseMessage,
+      reloadDataFromBackend,
+      "apply_change"
+    );
   };
 
   const newPolicy = change.new ? (
@@ -160,8 +138,11 @@ const InlinePolicyChangeComponent = (props) => {
           disabled={isError || noChangesDetected}
           onClick={() =>
             sendProposedPolicy(
-              state,
-              setState,
+              change,
+              newStatement,
+              requestID,
+              setIsLoading,
+              setButtonResponseMessage,
               reloadDataFromBackend,
               "update_change"
             )
@@ -182,8 +163,11 @@ const InlinePolicyChangeComponent = (props) => {
           disabled={isError}
           onClick={() =>
             sendProposedPolicy(
-              state,
-              setState,
+              change,
+              newStatement,
+              requestID,
+              setIsLoading,
+              setButtonResponseMessage,
               reloadDataFromBackend,
               "cancel_change"
             )
@@ -286,8 +270,8 @@ const InlinePolicyChangeComponent = (props) => {
               (!config.can_update_cancel && !config.can_approve_reject) ||
               changeReadOnly
             }
-            onLintError={() => onLintError()}
-            onValueChange={() => onValueChange()}
+            onLintError={onLintError}
+            onValueChange={onValueChange}
           />
         </Grid.Column>
       </Grid.Row>

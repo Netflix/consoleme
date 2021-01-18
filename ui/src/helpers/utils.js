@@ -305,16 +305,15 @@ export async function sendProposedPolicyWithHooks(
 }
 
 export function sendProposedPolicy(
-  state,
-  setState,
+  change,
+  newStatement,
+  requestID,
+  setIsLoading,
+  setButtonResponseMessage,
   reloadDataFromBackend,
   command
 ) {
-  const { change, newStatement, requestID } = state;
-  setState({
-    ...state,
-    isLoading: true,
-  });
+  setIsLoading(true);
   const handleAsyncCall = async () => {
     const request = {
       modification_model: {
@@ -336,31 +335,24 @@ export function sendProposedPolicy(
         response.status === 500
       ) {
         // Error occurred making the request
-        setState({
-          ...state,
-          isLoading: false,
-          buttonResponseMessage: [
-            {
-              status: "error",
-              message: response.message,
-            },
-          ],
-        });
+        setIsLoading(false);
+        setButtonResponseMessage([
+          {
+            status: "error",
+            message: response.message,
+          },
+        ]);
       } else {
         // Successful request
-        setState({
-          ...state,
-          isLoading: false,
-          buttonResponseMessage: response.action_results.reduce(
-            (resultsReduced, result) => {
-              if (result.visible === true) {
-                resultsReduced.push(result);
-              }
-              return resultsReduced;
-            },
-            []
-          ),
-        });
+        setIsLoading(false);
+        setButtonResponseMessage(
+          response.action_results.reduce((resultsReduced, result) => {
+            if (result.visible === true) {
+              resultsReduced.push(result);
+            }
+            return resultsReduced;
+          }, [])
+        );
         reloadDataFromBackend();
       }
     });
