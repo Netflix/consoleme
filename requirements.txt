@@ -82,7 +82,7 @@ cloudaux==1.9.0
     # via -r requirements.in
 contextlib2==0.6.0.post1
     # via schema
-datamodel-code-generator==0.6.20
+datamodel-code-generator==0.6.21
     # via -r requirements.in
 decorator==4.4.2
     # via
@@ -276,7 +276,7 @@ pydantic[email]==1.7.3
     #   datamodel-code-generator
 pygments==2.7.4
     # via ipython
-pyjwt==2.0.0
+pyjwt==2.0.1
     # via -r requirements.in
 pylint==2.6.0
     # via -r requirements.in
@@ -294,8 +294,10 @@ python-dateutil==2.8.1
     #   pandas
 python-jose==3.2.0
     # via okta-jwt
-python-json-logger==2.0.1
-    # via logmatic-python
+python-json-logger==0.1.11
+    # via
+    #   -r requirements.in
+    #   logmatic-python
 python3-saml==1.10.0
     # via -r requirements.in
 pytz==2020.5
