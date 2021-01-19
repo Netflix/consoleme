@@ -3,7 +3,7 @@
 
 # ConsoleMe
 
-Check out our [documentation](https://hawkins.gitbook.io/consoleme/), [feature videos](https://hawkins.gitbook.io/consoleme/feature-videos), and [ReInvent Talk](https://virtual.awsevents.com/media/1_b8vc584c).
+Check out our [quick start guide](https://hawkins.gitbook.io/consoleme/quick-start), [documentation](https://hawkins.gitbook.io/consoleme/), [feature videos](https://hawkins.gitbook.io/consoleme/feature-videos), and [ReInvent Talk](https://virtual.awsevents.com/media/1_b8vc584c).
 
 ## Overview
 
