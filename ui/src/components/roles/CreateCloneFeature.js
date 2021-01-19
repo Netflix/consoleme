@@ -117,6 +117,7 @@ const CreateCloneFeature = () => {
     }
     if (errors.length > 0) {
       setMessages(errors);
+      return;
     }
     const payload = {
       account_id: dest_account_id.substring(
@@ -147,6 +148,7 @@ const CreateCloneFeature = () => {
     }
     if (errors.length > 0) {
       setMessages(errors);
+      return;
     }
 
     const cloneOptions = {
