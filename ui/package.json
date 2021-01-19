@@ -1,7 +1,7 @@
 {
   "name": "ui",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "dependencies": {
     "@testing-library/jest-dom": "^5.11.9",
     "@testing-library/react": "^11.2.3",
@@ -66,6 +66,6 @@
     "prettier": "^2.2.1"
   },
   "author": "infrasec",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "proxy": "http://localhost:8081"
 }
