@@ -21,7 +21,6 @@ Users can access most of your cloud resources in the AWS Console with a [**singl
 Cloud administrators can configure ConsoleMe to authenticate users through [**ALB Authentication**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/alb-auth), [**OIDC/OAuth2**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/oidc-oauth2-okta), or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/saml-auth0).
 … And more. Check out our [docs](https://hawkins.gitbook.io/consoleme/) to get started.
 
-
 ## Project resources
 
 - [Discord](https://discord.gg/nQVpNGGkYu)
