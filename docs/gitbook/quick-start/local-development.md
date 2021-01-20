@@ -22,7 +22,11 @@ Ubuntu disco/19.04+, Debian buster/10+
 
 ```text
 # Additional dependencies
-apt-get install build-essential libxml2-dev libxmlsec1 libxmlsec1-dev libxmlsec1-openssl musl-dev libcurl4-nss-dev python3-dev -y
+sudo apt-get install build-essential libxml2-dev libxmlsec1 libxmlsec1-dev libxmlsec1-openssl musl-dev libcurl4-nss-dev python3-dev -y
+# Nodejs/Yarn (Frontend dependencies)
+curl -sL https://deb.nodesource.com/setup_14.x | sudo bash
+sudo apt-get install -y nodejs
+sudo npm install yarn -g
 ```
 
 **Clone the ConsoleMe repo**
