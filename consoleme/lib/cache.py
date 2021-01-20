@@ -29,6 +29,7 @@ async def store_json_results_in_redis_and_s3(
             ]
         ],
         str,
+        Dict[str, list],
     ],
     redis_key: str = None,
     redis_data_type: str = "str",
