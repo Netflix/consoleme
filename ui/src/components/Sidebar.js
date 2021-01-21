@@ -18,7 +18,6 @@ const listRecentRoles = (recentRoles, user) => {
     return (
       <Menu.Item as={NavLink} name={role} key={role} to={"/role/" + role}>
         <Header
-          as="a"
           color="blue"
           style={{
             fontSize: "14px",
@@ -27,9 +26,9 @@ const listRecentRoles = (recentRoles, user) => {
           <Header.Content>
             {accountName ? accountName : accountNumber}
             <Header.Subheader
-              as="a"
               style={{
                 fontSize: "14px",
+                color: "grey",
               }}
             >
               {roleName}

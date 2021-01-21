@@ -11,7 +11,6 @@ import {
 } from "semantic-ui-react";
 import RoleDetails from "../roles/RoleDetails";
 import "./SelfService.css";
-import { sendRequestCommon } from "../../helpers/utils";
 
 const ARN_REGEX = /^arn:aws:iam::(?<accountId>\d{12}):role\/(?<roleName>.+)$/;
 
@@ -40,30 +39,31 @@ class SelfServiceStep1 extends Component {
     } = ARN_REGEX.exec(value);
 
     roleName = roleName.split("/").splice(-1, 1)[0];
-    sendRequestCommon(
-      null,
-      `/api/v2/roles/${accountId}/${roleName}`,
-      "get"
-    ).then((response) => {
-      // if the given role doesn't exist.
-      if (response.status === 404) {
-        this.props.handleRoleUpdate(null);
-        this.setState({
-          isLoading: false,
-          isRoleLoading: false,
-          messages: [response.message],
-        });
-      } else {
-        const role = response;
-        this.props.handleRoleUpdate(role);
-        this.setState({
-          isLoading: false,
-          isRoleLoading: false,
-          value: role.arn,
-          messages: [],
-        });
-      }
-    });
+    this.props
+      .sendRequestCommon(null, `/api/v2/roles/${accountId}/${roleName}`, "get")
+      .then((response) => {
+        if (!response) {
+          return;
+        }
+        // if the given role doesn't exist.
+        if (response.status === 404) {
+          this.props.handleRoleUpdate(null);
+          this.setState({
+            isLoading: false,
+            isRoleLoading: false,
+            messages: [response.message],
+          });
+        } else {
+          const role = response;
+          this.props.handleRoleUpdate(role);
+          this.setState({
+            isLoading: false,
+            isRoleLoading: false,
+            value: role.arn,
+            messages: [],
+          });
+        }
+      });
   }
 
   handleSearchChange(event, { value }) {
@@ -104,23 +104,25 @@ class SelfServiceStep1 extends Component {
       const re = new RegExp(_.escapeRegExp(value), "i");
       const isMatch = (result) => re.test(result.title);
       const TYPEAHEAD_API = "/policies/typeahead?resource=app&search=" + value;
-      sendRequestCommon(null, TYPEAHEAD_API, "get").then((source) => {
-        const filteredResults = _.reduce(
-          source,
-          (memo, data, name) => {
-            const results = _.filter(data.results, isMatch);
-            if (results.length) {
-              memo[name] = { name, results };
-            }
-            return memo;
-          },
-          {}
-        );
-        this.setState({
-          isLoading: false,
-          results: filteredResults,
+      this.props
+        .sendRequestCommon(null, TYPEAHEAD_API, "get")
+        .then((source) => {
+          const filteredResults = _.reduce(
+            source,
+            (memo, data, name) => {
+              const results = _.filter(data.results, isMatch);
+              if (results.length) {
+                memo[name] = { name, results };
+              }
+              return memo;
+            },
+            {}
+          );
+          this.setState({
+            isLoading: false,
+            results: filteredResults,
+          });
         });
-      });
     }, 300);
   }
 

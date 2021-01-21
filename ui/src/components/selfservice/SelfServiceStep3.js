@@ -15,8 +15,6 @@ import {
 } from "semantic-ui-react";
 import AceEditor from "react-ace";
 import "brace";
-import ace from "brace";
-import { getCompletions, sendRequestCommon } from "../../helpers/utils";
 import "brace/ext/language_tools";
 import "brace/theme/monokai";
 import "brace/mode/json";
@@ -44,8 +42,6 @@ class SelfServiceStep3 extends Component {
   }
 
   async componentDidMount() {
-    const langTools = ace.require("ace/ext/language_tools");
-    langTools.setCompleters([{ getCompletions }]);
     const { role, permissions } = this.props;
     const payload = {
       changes: [],
@@ -64,7 +60,7 @@ class SelfServiceStep3 extends Component {
       return change;
     });
 
-    const response = await sendRequestCommon(
+    const response = await this.props.sendRequestCommon(
       payload,
       "/api/v2/generate_changes"
     );
@@ -244,7 +240,10 @@ class SelfServiceStep3 extends Component {
         isLoading: true,
       },
       async () => {
-        const response = await sendRequestCommon(requestV2, "/api/v2/request");
+        const response = await this.props.sendRequestCommon(
+          requestV2,
+          "/api/v2/request"
+        );
 
         const messages = [];
         if (response) {

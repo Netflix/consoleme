@@ -9,12 +9,13 @@ import {
   Loader,
   Dimmer,
 } from "semantic-ui-react";
-import { sendProposedPolicyWithHooks } from "../../helpers/utils";
+import { useAuth } from "../../auth/AuthProviderDefault";
 
 const ResourceTagChangeComponent = (props) => {
   const change = props.change;
   const [isLoading, setIsLoading] = useState(false);
   const [buttonResponseMessage, setButtonResponseMessage] = useState([]);
+  const { sendProposedPolicyWithHooks } = useAuth();
 
   const getTagActionSpan = () => {
     if (change.tag_action === "create") {

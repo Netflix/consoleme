@@ -1,13 +1,15 @@
 import React, { useContext, useEffect, useReducer } from "react";
 import { useParams } from "react-router-dom";
 import { initialState, reducer } from "./policyReducer";
-import { getResourceEndpoint, sendRequestCommon } from "../../../helpers/utils";
+import { getResourceEndpoint } from "../../../helpers/utils";
+import { useAuth } from "../../../auth/AuthProviderDefault";
 
 const PolicyContext = React.createContext(initialState);
 
 export const usePolicyContext = () => useContext(PolicyContext);
 
 export const PolicyProvider = ({ children }) => {
+  const { sendRequestCommon, sendRequestV2 } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { accountID, serviceType, region, resourceName } = useParams();
 
@@ -40,6 +42,9 @@ export const PolicyProvider = ({ children }) => {
       setIsPolicyEditorLoading(true);
       // retrieve resource from the endpoint and set resource state
       const resource = await sendRequestCommon(null, endpoint, "get");
+      if (!resource) {
+        return;
+      }
       setResource(resource);
       setIsPolicyEditorLoading(false);
     })();
@@ -62,6 +67,9 @@ export const PolicyProvider = ({ children }) => {
         `${endpoint}?force_refresh=true`,
         "get"
       );
+      if (!resource) {
+        return;
+      }
       setResource(resource);
       setIsPolicyEditorLoading(false);
       setToggleRefreshRole(false);
@@ -96,6 +104,7 @@ export const PolicyProvider = ({ children }) => {
         setTogglePolicyModal,
         setModalWithAdminAutoApprove,
         handleDeleteRole,
+        sendRequestV2,
       }}
     >
       {children}

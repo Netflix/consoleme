@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useReducer } from "react";
 import { usePolicyContext } from "./PolicyProvider";
 import { initialState, reducer } from "./inlinePolicyReducer";
-import { sendRequestV2 } from "../../../helpers/utils";
 
 const useInlinePolicy = () => {
-  const { resource = {} } = usePolicyContext();
+  const { resource = {}, sendRequestV2 } = usePolicyContext();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
