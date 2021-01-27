@@ -1,10 +1,13 @@
 import { useEffect, useReducer } from "react";
 import { initialState, reducer } from "./tagReducer";
 import { usePolicyContext } from "./PolicyProvider";
-import { sendRequestV2 } from "../../../helpers/utils";
 
 const usePolicyTag = () => {
-  const { resource = {}, setModalWithAdminAutoApprove } = usePolicyContext();
+  const {
+    resource = {},
+    setModalWithAdminAutoApprove,
+    sendRequestV2,
+  } = usePolicyContext();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const setTags = (tags) => dispatch({ type: "SET_TAGS", tags });

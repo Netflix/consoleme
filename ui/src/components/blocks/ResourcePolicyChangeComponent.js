@@ -10,10 +10,7 @@ import {
   Segment,
 } from "semantic-ui-react";
 import MonacoDiffComponent from "./MonacoDiffComponent";
-import {
-  sendProposedPolicy,
-  sortAndStringifyNestedJSONObject,
-} from "../../helpers/utils";
+import { sortAndStringifyNestedJSONObject } from "../../helpers/utils";
 
 class ResourcePolicyChangeComponent extends Component {
   constructor(props) {
@@ -47,7 +44,6 @@ class ResourcePolicyChangeComponent extends Component {
     this.onValueChange = this.onValueChange.bind(this);
     this.onSubmitChange = this.onSubmitChange.bind(this);
     this.onCancelChange = this.onCancelChange.bind(this);
-    this.sendProposedPolicy = sendProposedPolicy.bind(this);
     this.updatePolicyDocument = props.updatePolicyDocument;
     this.reloadDataFromBackend = props.reloadDataFromBackend;
   }
@@ -111,11 +107,19 @@ class ResourcePolicyChangeComponent extends Component {
   }
 
   onSubmitChange() {
-    this.sendProposedPolicy("apply_change");
+    const applyChange = this.props.sendProposedPolicy.bind(
+      this,
+      "apply_change"
+    );
+    applyChange();
   }
 
   onCancelChange() {
-    this.sendProposedPolicy("cancel_change");
+    const cancelChange = this.props.sendProposedPolicy.bind(
+      this,
+      "cancel_change"
+    );
+    cancelChange();
   }
 
   render() {
@@ -187,7 +191,7 @@ class ResourcePolicyChangeComponent extends Component {
             positive
             fluid
             disabled={isError || noChangesDetected}
-            onClick={sendProposedPolicy.bind(this, "update_change")}
+            onClick={this.props.sendProposedPolicy.bind(this, "update_change")}
           />
         </Grid.Column>
       ) : null;

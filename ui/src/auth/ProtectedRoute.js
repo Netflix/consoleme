@@ -4,7 +4,8 @@ import { Route, useRouteMatch } from "react-router-dom";
 import { Segment } from "semantic-ui-react";
 
 const ProtectedRoute = (props) => {
-  const { login, user } = useAuth();
+  const auth = useAuth();
+  const { login, user } = auth;
   const match = useRouteMatch(props);
   const { component: Component, ...rest } = props;
 
@@ -43,7 +44,7 @@ const ProtectedRoute = (props) => {
       <Route
         {...rest}
         render={(props) => {
-          return <Component {...props} {...rest} />;
+          return <Component {...props} {...rest} {...auth} />;
         }}
       />
     </Segment>

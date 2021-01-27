@@ -1,7 +1,6 @@
 import { useEffect, useReducer } from "react";
 import { initialState, reducer } from "./managedPolicyReducer";
 import { usePolicyContext } from "./PolicyProvider";
-import { sendRequestV2 } from "../../../helpers/utils";
 
 const useManagedPolicy = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -9,6 +8,7 @@ const useManagedPolicy = () => {
     params = {},
     resource = {},
     setModalWithAdminAutoApprove,
+    sendRequestV2,
   } = usePolicyContext();
 
   useEffect(() => {

@@ -110,6 +110,7 @@ class SelfServiceComponent extends Component {
               required={input.required || false}
               typeahead={input.typeahead_endpoint}
               label={input.text}
+              sendRequestCommon={this.props.sendRequestCommon}
             />
           );
         default:

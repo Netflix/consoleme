@@ -153,7 +153,7 @@ export const JustificationModal = ({ handleSubmit }) => {
   );
 };
 
-export const DeleteResourceModel = () => {
+export const DeleteResourceModal = () => {
   const {
     isSuccess = false,
     toggleDeleteRole = false,
