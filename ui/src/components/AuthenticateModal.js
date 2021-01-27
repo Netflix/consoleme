@@ -19,16 +19,11 @@ const AuthenticateModal = () => {
       <Modal.Header>Session Expired</Modal.Header>
       <Modal.Content>
         <Modal.Description>
-          You have been logged out. Please press the button to refresh you log
-          back.
+          Your authenticated session has expired. Please re-authenticate.
         </Modal.Description>
       </Modal.Content>
       <Modal.Actions>
-        <Button
-          content="Refresh and log me back in"
-          onClick={reloadPage}
-          negative
-        />
+        <Button content="Re-Authenticate" onClick={reloadPage} negative />
       </Modal.Actions>
     </Modal>
   );
