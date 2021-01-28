@@ -40,13 +40,13 @@ class TestRoleLoginApi(AsyncHTTPTestCase):
         }
 
         response = self.fetch("/api/v2/role_login/role", headers=headers)
-        self.assertEqual(response.code, 300)
+        self.assertEqual(response.code, 200)
         response_j = json.loads(response.body)
         self.assertEqual(
             response_j["message"],
             "You have more than one role matching your query. Please select one.",
         )
-        self.assertEqual(response_j["reason"], "error")
+        self.assertEqual(response_j["reason"], "multiple_roles")
         self.assertEqual(response_j["type"], "redirect")
         self.assertIn("/?arn=role&warningMessage=", response_j["redirect_url"])
 
