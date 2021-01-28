@@ -101,7 +101,6 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 "message"
             ] = "You have more than one role matching your query. Please select one."
             log.debug(log_data)
-            self.set_status(300)
             warning_message_arg = {
                 "warningMessage": base64.b64encode(log_data["message"].encode()).decode(
                     "utf-8"
@@ -117,7 +116,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 {
                     "type": "redirect",
                     "message": log_data["message"],
-                    "reason": "error",
+                    "reason": "multiple_roles",
                     "redirect_url": redirect_url.url,
                 }
             )
@@ -156,10 +155,9 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             log_data["error"] = str(e)
             log.error(log_data, exc_info=True)
             stats.count("index.post.exception")
-            self.set_status(403)
             self.write(
                 {
-                    "type": "error",
+                    "type": "console_url",
                     "message": log_data["message"],
                     "error": str(log_data["error"]),
                 }

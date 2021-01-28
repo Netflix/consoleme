@@ -124,14 +124,16 @@ export const AuthProvider = ({ children }) => {
         if (response.ok) {
           return response.json();
         } else {
-          throw new Error(response);
+          throw new Error(
+            `Status: ${response.status}, Reason: ${response.statusText}`
+          );
         }
       })
       .then((data) => {
         return data;
       })
       .catch((error) => {
-        console.error(`Exception Raised: ${error}`);
+        console.error(error);
         return null;
       });
   };

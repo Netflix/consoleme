@@ -21,6 +21,8 @@ import SemanticDatepicker from "react-semantic-ui-datepickers";
 import "react-semantic-ui-datepickers/dist/react-semantic-ui-datepickers.css";
 import { Link, Redirect, BrowserRouter } from "react-router-dom";
 
+const DEFAULT_ROWS_PER_PAGE = 50;
+
 const expandNestedJson = (data) => {
   Object.keys(data).forEach((key) => {
     try {
@@ -152,10 +154,11 @@ class ConsoleMeDataTable extends Component {
         expandedRow: null,
       });
     } else {
+      const rowsPerPage = tableConfig.rowsPerPage || DEFAULT_ROWS_PER_PAGE;
       // expand the row if a row is clicked.
       const filteredDataPaginated = filteredData.slice(
-        (activePage - 1) * tableConfig.rowsPerPage,
-        activePage * tableConfig.rowsPerPage - 1
+        (activePage - 1) * rowsPerPage,
+        activePage * rowsPerPage - 1
       );
 
       // get an offset if there is any expanded row and trying to expand row underneath
@@ -488,9 +491,11 @@ class ConsoleMeDataTable extends Component {
 
   generateRows() {
     const { expandedRow, filteredData, tableConfig, activePage } = this.state;
+
+    const rowsPerPage = tableConfig.rowsPerPage || DEFAULT_ROWS_PER_PAGE;
     const filteredDataPaginated = filteredData.slice(
-      (activePage - 1) * tableConfig.rowsPerPage,
-      activePage * tableConfig.rowsPerPage - 1
+      (activePage - 1) * rowsPerPage,
+      activePage * rowsPerPage - 1
     );
 
     if (expandedRow) {
@@ -660,10 +665,9 @@ class ConsoleMeDataTable extends Component {
       tableConfig,
       warningMessage,
     } = this.state;
-    const totalPages = parseInt(
-      filteredData.length / tableConfig.rowsPerPage,
-      10
-    );
+
+    const rowsPerPage = tableConfig.rowsPerPage || DEFAULT_ROWS_PER_PAGE;
+    const totalPages = parseInt(filteredData.length / rowsPerPage, 10);
     const columns = this.generateColumns();
 
     if (isLoading) {
