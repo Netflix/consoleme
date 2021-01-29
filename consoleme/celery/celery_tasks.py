@@ -1405,7 +1405,7 @@ schedule = {
     "cache_policy_requests": {
         "task": "consoleme.celery.celery_tasks.cache_policy_requests",
         "options": {"expires": 1000},
-        "schedule": schedule_1_hour,
+        "schedule": schedule_5_minutes,
     },
     "cache_cloud_account_mapping": {
         "task": "consoleme.celery.celery_tasks.cache_cloud_account_mapping",
