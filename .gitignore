@@ -131,7 +131,5 @@ tmp*
 webpack-stats.*.json
 package-lock.json
 **/package-lock.json
-yarn.lock
-**/yarn.lock
 .setupmeta.version
 consoleme/templates/*

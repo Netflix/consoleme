@@ -26,6 +26,9 @@
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-react": "^2.0.2"
   },
+  "resolutions": {
+    "**/monaco-editor": "0.21.3"
+  },
   "scripts": {
     "start": "cp -a public/ ../consoleme/templates; react-app-rewired start",
     "build": "react-app-rewired build",
