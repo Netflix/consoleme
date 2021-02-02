@@ -112,15 +112,22 @@ export async function getMonacoCompletions(model, position, monaco) {
       "/api/v1/policyuniverse/autocomplete?prefix=" + prefix,
       "get"
     );
+
+    if (!wordList) {
+      return { suggestions: defaultWordList };
+    }
+
     if (!prefixRange) {
       return { suggestions: defaultWordList };
     }
+
     const suggestedWordList = wordList.map((ea) => ({
       label: ea.permission,
       insertText: ea.permission,
       kind: monaco.languages.CompletionItemKind.Property,
       range: prefixRange.range,
     }));
+
     return { suggestions: suggestedWordList };
     // TODO: error handling other than returning empty list ?
   } else if (resource === true) {
@@ -129,6 +136,11 @@ export async function getMonacoCompletions(model, position, monaco) {
       "/api/v2/typeahead/resources?typeahead=" + prefix,
       "get"
     );
+
+    if (!wordList) {
+      return { suggestions: defaultWordList };
+    }
+
     const suggestedWordList = wordList.map((ea) => ({
       label: ea,
       insertText: ea,
