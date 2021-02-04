@@ -26,6 +26,11 @@ appdirs==1.4.4
     #   -r requirements.txt
     #   black
     #   virtualenv
+appnope==0.1.2
+    # via
+    #   -c requirements.txt
+    #   -r requirements.txt
+    #   ipython
 argcomplete==1.12.2
     # via
     #   -c requirements.txt
@@ -81,7 +86,7 @@ black==20.8b1
     #   -r requirements-test.in
     #   -r requirements.txt
     #   datamodel-code-generator
-bleach==3.2.1
+bleach==3.3.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
