@@ -42,34 +42,42 @@ export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialAuthState);
 
   const login = async () => {
-    // First check whether user is currently authenticated by using the backend auth endpoint.
-    const auth = await fetch("/auth?redirect_url=" + window.location.href, {
-      headers: {
-        "X-Requested-With": "XMLHttpRequest",
-        Accept: "application/json",
-      },
-    }).then((res) => res.json());
+    try {
+      // First check whether user is currently authenticated by using the backend auth endpoint.
+      const auth = await fetch("/auth?redirect_url=" + window.location.href, {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          Accept: "application/json",
+        },
+      }).then((res) => res.json());
 
-    // ConsoleMe backend returns a response containing a redirection to IDP for authentication.
-    if (
-      auth.status === 403 &&
-      auth.type === "redirect" &&
-      auth.reason === "unauthenticated"
-    ) {
-      window.location.href = auth.redirect_url;
-    } else if (auth.status === 401) {
-      // handle session expiration and 401 status returned for re-authentication
-      // Let's keep this for a while to figure out whether we are handling the session issue correctly.
-      console.log("SESSION EXPIRED:", auth);
+      // ConsoleMe backend returns a response containing a redirection to IDP for authentication.
+      if (
+        auth.status === 403 &&
+        auth.type === "redirect" &&
+        auth.reason === "unauthenticated"
+      ) {
+        window.location.href = auth.redirect_url;
+      } else if (auth.status === 401) {
+        // handle the session expiration if the response status is 401 for re-authentication
+        setIsSessionExpired(true);
+        return;
+      }
+
+      // User is now authenticated so retrieve user profile.
+      const user = await sendRequestCommon(null, "/api/v2/user_profile", "get");
+      dispatch({
+        type: "LOGIN",
+        user,
+      });
+    } catch (error) {
+      // If session expires, fetch will return the error page showing re-authentication is required and raise an
+      // exception from handling the html file instead of applitcation/json type.
+      // Toggle the re-authentication modal to login back users if it's using ALB type of authentication system.
+      console.error(error);
       setIsSessionExpired(true);
+      return;
     }
-
-    // User is now authenticated so retrieve user profile.
-    const user = await sendRequestCommon(null, "/api/v2/user_profile", "get");
-    dispatch({
-      type: "LOGIN",
-      user,
-    });
   };
 
   const logout = () => {
@@ -143,7 +151,10 @@ export const AuthProvider = ({ children }) => {
         return data;
       })
       .catch((error) => {
+        // fetch will raise an exception if it fetches an data that is not json such as html showing re-authentication
+        // is required. This is to handle such case where ALB type of authentication is being used.
         console.error(error);
+        setIsSessionExpired(true);
         return null;
       });
   };
