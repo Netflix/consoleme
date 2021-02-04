@@ -5,20 +5,28 @@ import { Segment } from "semantic-ui-react";
 
 const ProtectedRoute = (props) => {
   const auth = useAuth();
-  const { login, user } = auth;
+  const { login, user, isSessionExpired } = auth;
   const match = useRouteMatch(props);
   const { component: Component, ...rest } = props;
 
   useEffect(() => {
+    // make sure we only handle the registered routes
     if (!match) {
       return;
     }
+
+    // TODO(heewonk), This is a temporary way to prevent multiple logins when 401 type of access deny occurs.
+    // Revisit later to enable this logic only when ALB type of authentication is being used.
+    if (isSessionExpired) {
+      return;
+    }
+
     if (!user) {
       (async () => {
         await login();
       })();
     }
-  }, [match, user]); // eslint-disable-line
+  }, [match, user, isSessionExpired, login]);
 
   if (!user) {
     return null;
