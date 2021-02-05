@@ -52,11 +52,7 @@ export const AuthProvider = ({ children }) => {
       }).then((res) => res.json());
 
       // ConsoleMe backend returns a response containing a redirection to IDP for authentication.
-      if (
-        auth.status === 403 &&
-        auth.type === "redirect" &&
-        auth.reason === "unauthenticated"
-      ) {
+      if (auth.type === "redirect" && auth.reason === "unauthenticated") {
         window.location.href = auth.redirect_url;
       } else if (auth.status === 401) {
         // handle the session expiration if the response status is 401 for re-authentication
