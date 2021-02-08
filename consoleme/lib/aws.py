@@ -3,7 +3,7 @@ import sys
 import time
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pytz
 import sentry_sdk
@@ -1005,3 +1005,28 @@ def get_service_from_arn(arn):
     """Given an ARN string, return the service """
     result = parse_arn(arn)
     return result["service"]
+
+
+def get_enabled_regions_for_account(account_id: str) -> Set[str]:
+    """
+    Returns a list of regions enabled for an account based on an EC2 Describe Regions call. Can be overridden with a
+    global configuration of static regions (Configuration key: `celery.sync_regions`), or a configuration of specific
+    regions per account (Configuration key:  `get_enabled_regions_for_account.{account_id}`)
+    """
+    enabled_regions_for_account = config.get(
+        f"get_enabled_regions_for_account.{account_id}"
+    )
+    if enabled_regions_for_account:
+        return enabled_regions_for_account
+
+    celery_sync_regions = config.get("celery.sync_regions", [])
+    if celery_sync_regions:
+        return celery_sync_regions
+
+    client = boto3_cached_conn(
+        "ec2",
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        read_only=True,
+    )
+    return set(r["RegionName"] for r in client.describe_regions()["Regions"])

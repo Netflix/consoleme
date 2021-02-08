@@ -29,6 +29,10 @@ auth:
 celery:
   test_account_ids:
     - "123456789012"
+  sync_regions:
+    - us-east-1
+    - us-west-2
+    - eu-west-1
 redis:
   host:
     us-east-1: null

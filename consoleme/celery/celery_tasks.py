@@ -48,6 +48,7 @@ from consoleme.lib.account_indexers import (
     cache_cloud_accounts,
     get_account_id_to_name_mapping,
 )
+from consoleme.lib.aws import get_enabled_regions_for_account
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
@@ -65,7 +66,6 @@ from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.timeout import Timeout
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
-region = config.region
 default_retry_kwargs = {
     "autoretry_for": (Exception,),
     "retry_backoff": True,
@@ -90,8 +90,8 @@ class Celery(celery.Celery):
 
 app = Celery(
     "tasks",
-    broker=config.get(f"celery.broker.{region}", "redis://127.0.0.1:6379/1"),
-    backend=config.get(f"celery.backend.{region}", "redis://127.0.0.1:6379/2"),
+    broker=config.get(f"celery.broker.{config.region}", "redis://127.0.0.1:6379/1"),
+    backend=config.get(f"celery.backend.{config.region}", "redis://127.0.0.1:6379/2"),
 )
 
 app.conf.result_expires = config.get("celery.result_expires", 60)
@@ -662,6 +662,10 @@ def cache_roles_for_account(account_id: str) -> bool:
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
         paginator = client.get_paginator("get_account_authorization_details")
         response_iterator = paginator.paginate()
@@ -900,14 +904,18 @@ def cache_sns_topics_across_accounts() -> bool:
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     all_queues: set = set()
-
-    for region in config.get("celery.sync_regions", []):
+    enabled_regions = get_enabled_regions_for_account(account_id)
+    for region in enabled_regions:
         client = boto3_cached_conn(
             "sqs",
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=region,
             read_only=True,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
 
         paginator = client.get_paginator("list_queues")
@@ -949,7 +957,8 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
 def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     # Make sure it is regional
     all_topics: set = set()
-    for region in config.get("celery.sync_regions", []):
+    enabled_regions = get_enabled_regions_for_account(account_id)
+    for region in enabled_regions:
         topics = list_topics(
             account_number=account_id,
             assume_role=config.get("policies.role_name"),

@@ -59,11 +59,6 @@ aws:
 celery:
   # Some jobs should only run in one region. The `active_region` key should define your primary region.
   active_region: us-west-2
-  # celery.sync_regions specifies which regions to sync resources from, such as SQS queues and SNS topics
-  sync_regions:
-    - us-east-1
-    - us-west-2
-    - eu-west-1
 
 # If you want to retrieve credentials through mutual TLS, you'll need to use something fronting ConsoleMe to do the
 # certificate validation. It should pass down a "Success" header, and a header with the certificate. You'll need to
