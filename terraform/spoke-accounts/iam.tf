@@ -11,6 +11,7 @@ data "aws_iam_policy_document" "consoleme" {
             "config:BatchGet*",
             "config:List*",
             "config:Select*",
+            "ec2:describeregions",
             "ec2:DescribeSubnets",
             "ec2:describevpcendpoints",
             "ec2:DescribeVpcs",

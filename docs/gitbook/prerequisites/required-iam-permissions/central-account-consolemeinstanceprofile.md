@@ -65,7 +65,7 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
             "ec2:describevpcendpoints",
             "ec2:DescribeVpcs",
             "iam:ListAttachedRolePolicies",
-            
+            "ec2:describeregions",
             "s3:GetBucketPolicy",
             "s3:GetBucketTagging",
             "s3:ListAllMyBuckets",
