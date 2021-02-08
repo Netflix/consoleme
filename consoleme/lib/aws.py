@@ -1009,14 +1009,19 @@ def get_service_from_arn(arn):
 
 def get_enabled_regions_for_account(account_id: str) -> Set[str]:
     """
-    Returns enabled regions for an account via configuration if available. Otherwise, derives enabled regions from
-    an  ec2 describe_regions call.
+    Returns a list of regions enabled for an account based on an EC2 Describe Regions call. Can be overridden with a
+    global configuration of static regions (Configuration key: `celery.sync_regions`), or a configuration of specific
+    regions per account (Configuration key:  `get_enabled_regions_for_account.{account_id}`)
     """
     enabled_regions_for_account = config.get(
         f"get_enabled_regions_for_account.{account_id}"
     )
     if enabled_regions_for_account:
         return enabled_regions_for_account
+
+    celery_sync_regions = config.get("celery.sync_regions", [])
+    if celery_sync_regions:
+        return celery_sync_regions
 
     client = boto3_cached_conn(
         "ec2",
