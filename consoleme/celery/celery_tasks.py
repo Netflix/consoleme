@@ -964,6 +964,10 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
             assume_role=config.get("policies.role_name"),
             region=region,
             read_only=True,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
         for topic in topics:
             all_topics.add(topic["TopicArn"])

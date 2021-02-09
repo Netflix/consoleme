@@ -176,7 +176,7 @@ click==7.1.2
     #   click-repl
     #   policy-sentry
     #   presto-python-client
-cloudaux==1.9.1
+cloudaux==1.9.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
