@@ -309,6 +309,10 @@ async def update_resource_policy(
         region=region or config.region,
         session_name="ConsoleMe",
         arn_partition="aws",
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     resource = await sync_to_async(boto3_cached_conn)(
@@ -320,6 +324,10 @@ async def update_resource_policy(
         region=region or config.region,
         session_name="ConsoleMe",
         arn_partition="aws",
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     changes: bool = False
