@@ -401,6 +401,10 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             assume_role=config.get("policies.role_name"),
             region=config.region,
             Bucket=bucket_name,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
     except ClientError as e:
         if "NoSuchBucketPolicy" in str(e):
@@ -413,6 +417,10 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             assume_role=config.get("policies.role_name"),
             region=config.region,
             Bucket=bucket_name,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
     except ClientError as e:
         if "NoSuchTagSet" in str(e):
