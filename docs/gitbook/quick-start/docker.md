@@ -24,7 +24,9 @@ To start up ConsoleMe in docker, run the following command:
 # Ensure that you have valid AWS Credentials in your ~/.aws/credentials file under your `default` profile
 # before running this command. This command will cache AWS resources for the
 # account.
-docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d
+docker-compose -f docker-compose-dockerhub.yaml -f docker-compose-dependencies.yaml up -d
+# If you wish to build ConsoleMe instead of using a pre-build image, run this command:
+# docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d
 ```
 
 At this point you should the below command and verify you have 4 ConsoleMe related containers running.
