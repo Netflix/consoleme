@@ -588,7 +588,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
                 "response": self.responses,
             }
             with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
-                f.write(json.dumps(request_details))
+                f.write(json.dumps(request_details, reject_bytes=False))
         super(BaseMtlsHandler, self).on_finish()
 
 
