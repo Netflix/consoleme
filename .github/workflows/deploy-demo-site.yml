@@ -33,16 +33,8 @@ jobs:
           aws s3 cp s3://consolemeoss/consolemeoss_deploy/docker-compose-ecs.yaml .
           aws s3 cp s3://consolemeoss/consolemeoss_deploy/docker-compose-ecs-celery.yaml .
           aws s3 cp s3://consolemeoss/consolemeoss_deploy/ecs-params.yml .
-      - name: Deploy ECR image to ECS Fargate for ConsoleMe Web
+          aws s3 cp s3://consolemeoss/consolemeoss_deploy/deploy.sh .
+      - name: Deploy ConsoleMe demo site to ECS Fargate
         run: |-
-          ecs-cli compose -f docker-compose-ecs.yaml \
-          --cluster-config consoleme --ecs-params ecs-params.yml \
-          -p consoleme --task-role-arn arn:aws:iam::844240725092:role/ConsoleMeReadOnlyInstanceProfile \
-          --region us-east-1 service up --create-log-groups --timeout 10 \
-          --target-groups "targetGroupArn=arn:aws:elasticloadbalancing:us-east-1:844240725092:targetgroup/consoleme-fargate/ca6786a03594d813,containerPort=8081,containerName=consoleme-deploy"
-      - name: Deploy ECR image to ECS Fargate for ConsoleMe Celery
-        run: |-
-          ecs-cli compose -f docker-compose-ecs-celery.yaml \
-          --cluster-config consoleme-celery --ecs-params ecs-params.yml \
-          -p consoleme-celery --task-role-arn arn:aws:iam::844240725092:role/ConsoleMeInstanceProfile \
-          --region us-east-1 service up --create-log-groups --timeout 10
+          chmod +x deploy.sh
+          ./deploy.sh
