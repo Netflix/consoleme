@@ -40,8 +40,8 @@ jobs:
 
       - name: Setup ECS CLI
         run: |-
-          curl -Lo /usr/local/bin/ecs-cli https://amazon-ecs-cli.s3.amazonaws.com/ecs-cli-linux-amd64-latest
-          chmod +x /usr/local/bin/ecs-cli
+          curl -Lo ecs-cli https://amazon-ecs-cli.s3.amazonaws.com/ecs-cli-linux-amd64-latest
+          chmod +x ecs-cli
 
       - name: Configure AWS credentials for ConsoleMe demo account
         uses: aws-actions/configure-aws-credentials@v1
