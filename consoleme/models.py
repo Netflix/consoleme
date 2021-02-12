@@ -359,6 +359,10 @@ class ExtendedRoleModel(RoleModel):
     )
     templated: Optional[bool] = None
     template_link: Optional[str] = None
+    created_time: Optional[str] = None
+    updated_time: Optional[str] = None
+    last_used_time: Optional[str] = None
+    description: Optional[str] = None
 
 
 class UserModel(BaseModel):

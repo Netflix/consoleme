@@ -153,6 +153,9 @@ async def get_role_details(
             tags=role["policy"]["Tags"],
             templated=True if template else False,
             template_link=template,
+            created_time=role["policy"].get("CreateDate"),
+            last_used_time=role["policy"].get("RoleLastUsed", {}).get("LastUsedDate"),
+            description=role["policy"].get("Description"),
         )
     else:
         return RoleModel(
