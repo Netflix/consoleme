@@ -11,7 +11,12 @@ from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
 from cloudaux.aws.decorators import rate_limited
-from cloudaux.aws.s3 import get_bucket_policy, get_bucket_resource, get_bucket_tagging
+from cloudaux.aws.s3 import (
+    get_bucket_location,
+    get_bucket_policy,
+    get_bucket_resource,
+    get_bucket_tagging,
+)
 from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
@@ -387,6 +392,27 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
     return result
 
 
+async def get_bucket_location_with_fallback(
+    bucket_name: str, account_id: str, fallback_region: str = config.region
+) -> str:
+    try:
+        bucket_location_res = await sync_to_async(get_bucket_location)(
+            Bucket=bucket_name,
+            account_number=account_id,
+            assume_role=config.get("policies.role_name"),
+            region=config.region,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
+        )
+        bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
+    except ClientError:
+        bucket_location = fallback_region
+        sentry_sdk.capture_exception()
+    return bucket_location
+
+
 async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     """Fetch S3 Bucket and applicable policies
 
@@ -417,16 +443,16 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
         created_time_stamp = bucket_resource.creation_date
         if created_time_stamp:
             created_time = created_time_stamp.isoformat()
-    except ClientError as e:
-        if "NoSuchBucketPolicy" in str(e):
-            policy = {"Policy": "{}"}
-        else:
-            sentry_sdk.capture_exception()
+    except ClientError:
+        sentry_sdk.capture_exception()
     try:
+        bucket_location = await get_bucket_location_with_fallback(
+            bucket_name, account_id
+        )
         policy: Dict = await sync_to_async(get_bucket_policy)(
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
-            region=config.region,
+            region=bucket_location,
             Bucket=bucket_name,
             sts_client_kwargs=dict(
                 region_name=config.region,
@@ -442,7 +468,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
         tags: Dict = await sync_to_async(get_bucket_tagging)(
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
-            region=config.region,
+            region=bucket_location,
             Bucket=bucket_name,
             sts_client_kwargs=dict(
                 region_name=config.region,
