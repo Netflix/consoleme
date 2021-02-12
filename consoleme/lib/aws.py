@@ -314,6 +314,10 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=region,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     result: Dict = await sync_to_async(get_topic_attributes)(
@@ -321,6 +325,10 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
         assume_role=config.get("policies.role_name"),
         TopicArn=arn,
         region=region,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     tags: Dict = await sync_to_async(client.list_tags_for_resource)(ResourceArn=arn)
@@ -336,6 +344,10 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         assume_role=config.get("policies.role_name"),
         region=region,
         QueueName=resource_name,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     result: Dict = await sync_to_async(get_queue_attributes)(
@@ -344,6 +356,10 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         region=region,
         QueueUrl=queue_url,
         AttributeNames=["Policy", "QueueArn"],
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     tags: Dict = await sync_to_async(list_queue_tags)(
@@ -351,6 +367,10 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         assume_role=config.get("policies.role_name"),
         region=region,
         QueueUrl=queue_url,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
     result["TagSet"]: list = []
     result["QueueUrl"]: str = queue_url
@@ -381,6 +401,10 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             assume_role=config.get("policies.role_name"),
             region=config.region,
             Bucket=bucket_name,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
     except ClientError as e:
         if "NoSuchBucketPolicy" in str(e):
@@ -393,6 +417,10 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             assume_role=config.get("policies.role_name"),
             region=config.region,
             Bucket=bucket_name,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
     except ClientError as e:
         if "NoSuchTagSet" in str(e):

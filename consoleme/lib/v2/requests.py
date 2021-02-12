@@ -1102,6 +1102,10 @@ async def apply_non_iam_resource_tag_change(
             region=resource_region or config.region,
             session_name="ConsoleMe_apply_resource_tag_v2",
             arn_partition="aws",
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
 
         resource_details = await fetch_resource_details(
@@ -1295,6 +1299,10 @@ async def apply_resource_policy_change(
             region=resource_region or config.region,
             session_name="ConsoleMe_apply_resource_policy_v2",
             arn_partition="aws",
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
         if resource_type == "s3":
             await sync_to_async(client.put_bucket_policy)(
