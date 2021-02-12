@@ -18,6 +18,7 @@ import "brace";
 import "brace/ext/language_tools";
 import "brace/theme/monokai";
 import "brace/mode/json";
+import "ace-builds/src-noconflict/mode-terraform";
 
 class SelfServiceStep3 extends Component {
   constructor(props) {
@@ -33,9 +34,12 @@ class SelfServiceStep3 extends Component {
       requestId: null,
       statement: "",
       admin_bypass_approval_enabled: this.props.admin_bypass_approval_enabled,
+      export_to_terraform_enabled: this.props.export_to_terraform_enabled,
       admin_auto_approve: false,
+      policy_name: "",
     };
     this.inlinePolicyEditorRef = React.createRef();
+    this.terraformPolicyExporterRef = React.createRef();
     this.handleJustificationChange = this.handleJustificationChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
@@ -72,6 +76,7 @@ class SelfServiceStep3 extends Component {
     }
 
     if ("changes" in response && response.changes.length > 0) {
+      const policy_name = response.changes[0].policy_name;
       const statement = JSON.stringify(
         response.changes[0].policy.policy_document,
         null,
@@ -81,6 +86,7 @@ class SelfServiceStep3 extends Component {
         custom_statement: statement,
         isError: false,
         messages: [],
+        policy_name,
         statement,
       });
     }
@@ -135,6 +141,39 @@ class SelfServiceStep3 extends Component {
         setOptions={{
           enableBasicAutocompletion: true,
           enableLiveAutocompletion: true,
+          wrapBehavioursEnabled: true,
+          wrap: true,
+          useSoftTabs: true,
+        }}
+      />
+    );
+  }
+
+  buildTerraformAceExporter(custom_statement) {
+    const { policy_name } = this.state;
+    const terraform_statement = `
+resource "aws_iam_policy" "${policy_name}" {
+              name        = "${policy_name}"
+              path        = "/"
+              description = "Policy generated through ConsoleMe"
+              policy      =  <<EOF
+${custom_statement}
+EOF
+}`;
+    return (
+      <AceEditor
+        mode="terraform"
+        theme="monokai"
+        width="100%"
+        showPrintMargin={false}
+        ref={this.terraformPolicyExporterRef}
+        value={terraform_statement}
+        name="terraform_exporter"
+        readOnly={true}
+        editorProps={{
+          $blockScrolling: true,
+        }}
+        setOptions={{
           wrapBehavioursEnabled: true,
           wrap: true,
           useSoftTabs: true,
@@ -294,6 +333,7 @@ class SelfServiceStep3 extends Component {
     const {
       admin_bypass_approval_enabled,
       custom_statement,
+      export_to_terraform_enabled,
       isError,
       isLoading,
       isSuccess,
@@ -350,6 +390,37 @@ class SelfServiceStep3 extends Component {
         primary
       />
     );
+
+    const terraformExporterPane = export_to_terraform_enabled
+      ? {
+          menuItem: "Terraform Exporter",
+          render: () => {
+            const terraformExporter = this.buildTerraformAceExporter(
+              custom_statement
+            );
+            return (
+              <Tab.Pane loading={isLoading}>
+                <Header>Export Terraform permissions</Header>
+                <br />
+                {terraformExporter}
+                <Divider />
+                <Header>Justification</Header>
+                <Form>
+                  <TextArea
+                    onChange={this.handleJustificationChange}
+                    placeholder="Your Justification"
+                    value={justification}
+                  />
+                </Form>
+                <Divider />
+                {messagesToShow}
+                {submission_buttons}
+              </Tab.Pane>
+            );
+          },
+        }
+      : null;
+
     const panes = [
       {
         menuItem: "Review",
@@ -422,6 +493,7 @@ class SelfServiceStep3 extends Component {
           );
         },
       },
+      terraformExporterPane,
     ];
 
     const tabContent = isSuccess ? (

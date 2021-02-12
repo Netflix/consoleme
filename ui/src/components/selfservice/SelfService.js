@@ -21,6 +21,7 @@ class SelfService extends Component {
       role: null,
       services: [],
       admin_bypass_approval_enabled: false,
+      export_to_terraform_enabled: false,
     };
   }
 
@@ -56,6 +57,7 @@ class SelfService extends Component {
 
       this.setState({
         admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+        export_to_terraform_enabled: config.export_to_terraform_enabled,
         config,
         currStep: SelfServiceStepEnum.STEP2,
         // TODO(heewonk), define the role type
@@ -90,6 +92,7 @@ class SelfService extends Component {
         config,
         services,
         admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+        export_to_terraform_enabled: config.export_to_terraform_enabled,
       });
     }
   }
@@ -150,6 +153,7 @@ class SelfService extends Component {
       admin_bypass_approval_enabled,
       config,
       currStep,
+      export_to_terraform_enabled,
       permissions,
       role,
       services,
@@ -187,6 +191,7 @@ class SelfService extends Component {
             services={services}
             permissions={permissions}
             admin_bypass_approval_enabled={admin_bypass_approval_enabled}
+            export_to_terraform_enabled={export_to_terraform_enabled}
             {...this.props}
           />
         );
