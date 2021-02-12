@@ -15,6 +15,7 @@ from consoleme.models import (
     CloudTrailError,
     CloudTrailErrorArray,
     ExtendedRoleModel,
+    PermissionBoundary,
     RoleModel,
     S3DetailsModel,
     S3Error,
@@ -134,6 +135,16 @@ async def get_role_details(
         return None
     if extended:
         template = await get_role_template(arn)
+        permissions_boundary = None
+        if role["policy"].get("PermissionsBoundary"):
+            permissions_boundary = PermissionBoundary(
+                PermissionsBoundaryType=role["policy"]["PermissionsBoundary"].get(
+                    "PermissionsBoundaryType"
+                ),
+                PermissionsBoundaryArn=role["policy"]["PermissionsBoundary"].get(
+                    "PermissionsBoundaryArn"
+                ),
+            )
         return ExtendedRoleModel(
             name=role_name,
             account_id=account_id,
@@ -156,6 +167,7 @@ async def get_role_details(
             created_time=role["policy"].get("CreateDate"),
             last_used_time=role["policy"].get("RoleLastUsed", {}).get("LastUsedDate"),
             description=role["policy"].get("Description"),
+            permission_boundary=permissions_boundary,
         )
     else:
         return RoleModel(

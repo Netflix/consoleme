@@ -1144,6 +1144,15 @@ components:
               type: array
               items:
                 type: object # TODO: make managed_policies schema
+            permission_boundary:
+              type: object
+              properties:
+                PermissionsBoundaryType:
+                  type: string
+                  example: Policy
+                PermissionsBoundaryArn:
+                  type: string
+                  example: "arn:aws:iam::123456789012:policy/PermissionBoundary"
             tags:
               type: array
               items:

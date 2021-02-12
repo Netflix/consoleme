@@ -23,6 +23,23 @@ export const reducer = (state, action) => {
         actionType: "detach",
         managedPolicyArn: action.arn,
       };
+    case "SET_PERMISSION_BOUNDARY":
+      return {
+        ...state,
+        permissionBoundary: action.permission_boundary,
+      };
+    case "ADD_PERMISSION_BOUNDARY":
+      return {
+        ...state,
+        actionType: "attach",
+        managedPolicyArn: action.arn,
+      };
+    case "REMOVE_PERMISSION_BOUNDARY":
+      return {
+        ...state,
+        actionType: "detach",
+        managedPolicyArn: action.arn,
+      };
     default:
       throw new Error(`No such action type ${action.type} exist`);
   }

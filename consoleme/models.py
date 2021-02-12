@@ -346,6 +346,13 @@ class AppDetailsArray(BaseModel):
     app_details: Optional[List[AppDetailsModel]] = None
 
 
+class PermissionBoundary(BaseModel):
+    PermissionsBoundaryType: Optional[str] = Field(None, example="Policy")
+    PermissionsBoundaryArn: Optional[str] = Field(
+        None, example="arn:aws:iam::123456789012:policy/PermissionBoundary"
+    )
+
+
 class ExtendedRoleModel(RoleModel):
     inline_policies: List[Dict[str, Any]]
     assume_role_policy_document: Optional[Dict[str, Any]] = None
@@ -363,6 +370,7 @@ class ExtendedRoleModel(RoleModel):
     updated_time: Optional[str] = None
     last_used_time: Optional[str] = None
     description: Optional[str] = None
+    permission_boundary: Optional[PermissionBoundary] = None
 
 
 class UserModel(BaseModel):
