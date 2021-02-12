@@ -39,9 +39,9 @@ jobs:
           pip install awscli
 
       - name: Setup ECS CLI
-        uses: marocchino/setup-ecs-cli@v1
-        with:
-          version: "v1.18.0"
+        run: |-
+          curl -Lo /usr/local/bin/ecs-cli https://amazon-ecs-cli.s3.amazonaws.com/ecs-cli-linux-amd64-latest
+          chmod +x /usr/local/bin/ecs-cli
 
       - name: Configure AWS credentials for ConsoleMe demo account
         uses: aws-actions/configure-aws-credentials@v1
