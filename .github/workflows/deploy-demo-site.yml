@@ -1,0 +1,48 @@
+name: Deploy ConsoleMe demo site
+on:
+  push:
+    branches: master
+jobs:
+  deploy_consoleme_demo_site:
+    name: Deploy Demo Site
+    needs: [push_to_registry]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: Install AWS CLI
+        run: |-
+          pip install awscli
+
+      - name: Setup ECS CLI
+        uses: marocchino/setup-ecs-cli@v1
+        with:
+          version: "v1.18.0"
+
+      - name: Configure AWS credentials for ConsoleMe demo account
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.CONSOLEME_DEMO_USER_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CONSOLEME_DEMO_USER_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Copy configuration from S3
+        run: |-
+          aws s3 cp s3://consolemeoss/consolemeoss_deploy/docker-compose-ecs.yaml .
+          aws s3 cp s3://consolemeoss/consolemeoss_deploy/docker-compose-ecs-celery.yaml .
+          aws s3 cp s3://consolemeoss/consolemeoss_deploy/ecs-params.yml .
+      - name: Deploy ECR image to ECS Fargate for ConsoleMe Web
+        run: |-
+          ecs-cli compose -f docker-compose-ecs.yaml \
+          --cluster-config consoleme --ecs-params ecs-params.yml \
+          -p consoleme --task-role-arn arn:aws:iam::844240725092:role/ConsoleMeReadOnlyInstanceProfile \
+          --region us-east-1 service up --create-log-groups --timeout 10 \
+          --target-groups "targetGroupArn=arn:aws:elasticloadbalancing:us-east-1:844240725092:targetgroup/consoleme-fargate/ca6786a03594d813,containerPort=8081,containerName=consoleme-deploy"
+      - name: Deploy ECR image to ECS Fargate for ConsoleMe Celery
+        run: |-
+          ecs-cli compose -f docker-compose-ecs-celery.yaml \
+          --cluster-config consoleme-celery --ecs-params ecs-params.yml \
+          -p consoleme-celery --task-role-arn arn:aws:iam::844240725092:role/ConsoleMeInstanceProfile \
+          --region us-east-1 service up --create-log-groups --timeout 10
