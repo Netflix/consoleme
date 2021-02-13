@@ -7,8 +7,10 @@ import {
   Form,
   Grid,
   Header,
+  Icon,
   Label,
   Message,
+  Popup,
   Tab,
   Table,
   TextArea,
@@ -41,6 +43,17 @@ const terraform_exporter_options = {
   automaticLayout: true,
 };
 
+const convert_to_terraform = (policy_name, policy_statement) => {
+  return `resource "aws_iam_policy" "${policy_name}" {
+  name        = "${policy_name}"
+  path        = "/"
+  description = "Policy generated through ConsoleMe"
+  policy      =  <<EOF
+${policy_statement}
+EOF
+}`;
+};
+
 class SelfServiceStep3 extends Component {
   constructor(props) {
     super(props);
@@ -63,6 +76,9 @@ class SelfServiceStep3 extends Component {
     this.terraformPolicyExporterRef = React.createRef();
     this.onChange = this.onChange.bind(this);
     this.editorDidMount = this.editorDidMount.bind(this);
+    this.copy_terraform_to_clipboard = this.copy_terraform_to_clipboard.bind(
+      this
+    );
     this.handleJustificationChange = this.handleJustificationChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
@@ -157,24 +173,30 @@ class SelfServiceStep3 extends Component {
 
   buildTerraformMonacoExporter(custom_statement) {
     const { policy_name } = this.state;
-    const terraform_statement = `resource "aws_iam_policy" "${policy_name}" {
-  name        = "${policy_name}"
-  path        = "/"
-  description = "Policy generated through ConsoleMe"
-  policy      =  <<EOF
-${custom_statement}
-EOF
-}`;
+    const terraform_statement = convert_to_terraform(
+      policy_name,
+      custom_statement
+    );
     return (
       <MonacoEditor
         language="hcl"
         width="100%"
         height="500px"
         theme="vs-dark"
+        ref={this.terraformPolicyExporterRef}
         value={terraform_statement}
         options={terraform_exporter_options}
       />
     );
+  }
+
+  copy_terraform_to_clipboard() {
+    const { policy_name, custom_statement } = this.state;
+    const terraform_statement = convert_to_terraform(
+      policy_name,
+      custom_statement
+    );
+    navigator.clipboard.writeText(terraform_statement);
   }
 
   buildPermissionsTable() {
@@ -403,7 +425,19 @@ EOF
             );
             return (
               <Tab.Pane loading={isLoading}>
-                <Header>Export Terraform permissions</Header>
+                <Header>
+                  Export Terraform permissions
+                  <Popup
+                    content="Copy Terraform Statement"
+                    trigger={
+                      <Icon
+                        link
+                        name="copy"
+                        onClick={this.copy_terraform_to_clipboard}
+                      />
+                    }
+                  />
+                </Header>
                 <br />
                 {terraformExporter}
                 <Divider />
