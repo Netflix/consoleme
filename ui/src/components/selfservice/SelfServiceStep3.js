@@ -13,12 +13,33 @@ import {
   Table,
   TextArea,
 } from "semantic-ui-react";
-import AceEditor from "react-ace";
 import "brace";
 import "brace/ext/language_tools";
 import "brace/theme/monokai";
 import "brace/mode/json";
-import "ace-builds/src-noconflict/mode-terraform";
+import MonacoEditor from "react-monaco-editor";
+import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+
+const editor_options = {
+  selectOnLineNumbers: true,
+  readOnly: false,
+  quickSuggestions: true,
+  scrollbar: {
+    alwaysConsumeMouseWheel: false,
+  },
+  scrollBeyondLastLine: false,
+  automaticLayout: true,
+};
+
+const terraform_exporter_options = {
+  selectOnLineNumbers: true,
+  readOnly: true,
+  scrollbar: {
+    alwaysConsumeMouseWheel: false,
+  },
+  scrollBeyondLastLine: false,
+  automaticLayout: true,
+};
 
 class SelfServiceStep3 extends Component {
   constructor(props) {
@@ -40,6 +61,8 @@ class SelfServiceStep3 extends Component {
     };
     this.inlinePolicyEditorRef = React.createRef();
     this.terraformPolicyExporterRef = React.createRef();
+    this.onChange = this.onChange.bind(this);
+    this.editorDidMount = this.editorDidMount.bind(this);
     this.handleJustificationChange = this.handleJustificationChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
@@ -96,88 +119,60 @@ class SelfServiceStep3 extends Component {
     });
   }
 
-  handleJSONEditorValidation(lintErrors) {
-    const { activeIndex } = this.state;
-    const messages = [];
-    if (lintErrors.length > 0) {
-      for (let i = 0; i < lintErrors.length; i++) {
-        messages.push(
-          "Lint Error - Row: " +
-            lintErrors[i].row +
-            ", Column: " +
-            lintErrors[i].column +
-            ", Error: " +
-            lintErrors[i].text
-        );
+  editorDidMount(editor) {
+    editor.onDidChangeModelDecorations(() => {
+      const model = editor.getModel();
+
+      if (model === null || model.getModeId() !== "json") {
+        return;
       }
-      this.setState({
-        isError: true,
-        messages,
-      });
-    } else if (activeIndex === 1) {
-      this.setState({
-        isError: false,
-        messages: [],
-      });
-    }
+
+      const owner = model.getModeId();
+      const uri = model.uri;
+      const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
+      this.onLintError(
+        markers.map(
+          (marker) =>
+            `Lint error on line ${marker.startLineNumber} columns ${marker.startColumn}-${marker.endColumn}: ${marker.message}`
+        )
+      );
+    });
   }
 
-  buildAceEditor(custom_statement) {
+  buildMonacoEditor(custom_statement) {
     return (
-      <AceEditor
-        mode="json"
-        theme="monokai"
+      <MonacoEditor
+        height="500px"
+        language="json"
         width="100%"
-        showPrintMargin={false}
-        ref={this.inlinePolicyEditorRef}
-        tabSize={4}
-        onChange={this.handleJSONEditorChange.bind(this)}
-        onValidate={this.handleJSONEditorValidation.bind(this)}
+        theme="vs-dark"
         value={custom_statement}
-        name="json_editor"
-        editorProps={{
-          $blockScrolling: true,
-        }}
-        setOptions={{
-          enableBasicAutocompletion: true,
-          enableLiveAutocompletion: true,
-          wrapBehavioursEnabled: true,
-          wrap: true,
-          useSoftTabs: true,
-        }}
+        onChange={this.onChange}
+        options={editor_options}
+        editorDidMount={this.editorDidMount}
+        textAlign="center"
       />
     );
   }
 
-  buildTerraformAceExporter(custom_statement) {
+  buildTerraformMonacoExporter(custom_statement) {
     const { policy_name } = this.state;
-    const terraform_statement = `
-resource "aws_iam_policy" "${policy_name}" {
-              name        = "${policy_name}"
-              path        = "/"
-              description = "Policy generated through ConsoleMe"
-              policy      =  <<EOF
+    const terraform_statement = `resource "aws_iam_policy" "${policy_name}" {
+  name        = "${policy_name}"
+  path        = "/"
+  description = "Policy generated through ConsoleMe"
+  policy      =  <<EOF
 ${custom_statement}
 EOF
 }`;
     return (
-      <AceEditor
-        mode="terraform"
-        theme="monokai"
+      <MonacoEditor
+        language="hcl"
         width="100%"
-        showPrintMargin={false}
-        ref={this.terraformPolicyExporterRef}
+        height="500px"
+        theme="vs-dark"
         value={terraform_statement}
-        name="terraform_exporter"
-        readOnly={true}
-        editorProps={{
-          $blockScrolling: true,
-        }}
-        setOptions={{
-          wrapBehavioursEnabled: true,
-          wrap: true,
-          useSoftTabs: true,
-        }}
+        options={terraform_exporter_options}
       />
     );
   }
@@ -316,17 +311,25 @@ EOF
     });
   }
 
-  handleJSONEditorChange(custom_statement) {
-    const editor = this.inlinePolicyEditorRef.current.editor;
-    if (editor.completer && editor.completer.popup) {
-      const popup = editor.completer.popup;
-      popup.container.style.width = "600px";
-      popup.resize();
-    }
+  onChange(newValue, e) {
     this.setState({
-      custom_statement,
+      custom_statement: newValue,
     });
   }
+
+  onLintError = (lintErrors) => {
+    if (lintErrors.length > 0) {
+      this.setState({
+        messages: lintErrors,
+        isError: true,
+      });
+    } else {
+      this.setState({
+        messages: [],
+        isError: false,
+      });
+    }
+  };
 
   render() {
     const { role } = this.props;
@@ -395,7 +398,7 @@ EOF
       ? {
           menuItem: "Terraform Exporter",
           render: () => {
-            const terraformExporter = this.buildTerraformAceExporter(
+            const terraformExporter = this.buildTerraformMonacoExporter(
               custom_statement
             );
             return (
@@ -471,7 +474,7 @@ EOF
       {
         menuItem: "JSON Editor",
         render: () => {
-          const jsonEditor = this.buildAceEditor(custom_statement);
+          const jsonEditor = this.buildMonacoEditor(custom_statement);
           return (
             <Tab.Pane loading={isLoading}>
               <Header>Edit your permissions in JSON format.</Header>

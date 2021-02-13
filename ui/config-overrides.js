@@ -13,7 +13,7 @@ module.exports = function override(config, env) {
       }
     ),
     new MonacoWebpackPlugin({
-      languages: ["yaml", "json"],
+      languages: ["yaml", "json", "hcl"],
     }),
   ];
   return config;

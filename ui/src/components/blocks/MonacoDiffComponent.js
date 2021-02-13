@@ -1,19 +1,18 @@
 import React from "react";
 import { MonacoDiffEditor } from "react-monaco-editor";
 import PropTypes from "prop-types";
-import {
-  getMonacoCompletions,
-  getMonacoTriggerCharacters,
-} from "../../helpers/utils";
+import { getMonacoTriggerCharacters } from "../../helpers/utils";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 
-monaco.languages.registerCompletionItemProvider("json", {
-  triggerCharacters: getMonacoTriggerCharacters(),
-  async provideCompletionItems(model, position) {
-    const response = await getMonacoCompletions(model, position, monaco);
-    return response;
-  },
-});
+// This is a global setting, no need to do this multiple times - right now PolicyMonacoEditor.js already sets it
+// Setting it multiple times will result in duplicate results and requests made to the backend
+// monaco.languages.registerCompletionItemProvider("json", {
+//   triggerCharacters: getMonacoTriggerCharacters(),
+//   async provideCompletionItems(model, position) {
+//     const response = await getMonacoCompletions(model, position, monaco);
+//     return response;
+//   },
+// });
 class MonacoDiffComponent extends React.Component {
   constructor(props) {
     super(props);
