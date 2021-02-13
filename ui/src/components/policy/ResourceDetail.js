@@ -64,6 +64,12 @@ const ResourceDetail = () => {
               </Table.Cell>
             </Table.Row>
           ) : null}
+          {resource?.resource_details?.QueueUrl ? (
+            <Table.Row>
+              <Table.Cell>Queue Url</Table.Cell>
+              <Table.Cell>{resource.resource_details.QueueUrl}</Table.Cell>
+            </Table.Row>
+          ) : null}
           {config_timeline_url ? (
             <Table.Row>
               <Table.Cell>Config Timeline</Table.Cell>
