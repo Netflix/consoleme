@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Publish Docker image and Deploy Demo Site
 on:
   push:
     branches: master
@@ -24,3 +24,40 @@ jobs:
           tags: consoleme/consoleme:latest
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
+  deploy_consoleme_demo_site:
+    name: Deploy Demo Site
+    needs: [push_to_registry]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: Install AWS CLI
+        run: |-
+          pip install awscli
+
+      - name: Setup ECS CLI
+        run: |-
+          mkdir -p "$HOME/tools/ecs-cli"
+          curl -Lo "$HOME/tools/ecs-cli/ecs-cli" https://amazon-ecs-cli.s3.amazonaws.com/ecs-cli-linux-amd64-latest
+          chmod +x "$HOME/tools/ecs-cli/ecs-cli"
+          echo "$HOME/tools/ecs-cli" >> $GITHUB_PATH
+
+      - name: Configure AWS credentials for ConsoleMe demo account
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.CONSOLEME_DEMO_USER_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CONSOLEME_DEMO_USER_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Copy configuration from S3
+        run: |-
+          aws s3 cp s3://consolemeoss/consolemeoss_deploy/docker-compose-ecs.yaml .
+          aws s3 cp s3://consolemeoss/consolemeoss_deploy/docker-compose-ecs-celery.yaml .
+          aws s3 cp s3://consolemeoss/consolemeoss_deploy/ecs-params.yml .
+          aws s3 cp s3://consolemeoss/consolemeoss_deploy/deploy.sh .
+      - name: Deploy ConsoleMe demo site to ECS Fargate
+        run: |-
+          chmod +x deploy.sh
+          ./deploy.sh

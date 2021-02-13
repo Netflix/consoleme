@@ -15,7 +15,12 @@ const ResourceDetail = () => {
     templated,
     template_link,
     config_timeline_url,
+    resource_details,
+    last_used_time,
+    description,
   } = resource;
+
+  const created_time = resource.created_time || resource_details?.created_time;
 
   return (
     <>
@@ -37,6 +42,12 @@ const ResourceDetail = () => {
             <Table.Row>
               <Table.Cell>Resource name</Table.Cell>
               <Table.Cell>{name}</Table.Cell>
+            </Table.Row>
+          ) : null}
+          {description ? (
+            <Table.Row>
+              <Table.Cell collapsing>Description</Table.Cell>
+              <Table.Cell>{description}</Table.Cell>
             </Table.Row>
           ) : null}
           {s3_details && s3_details.error_url ? (
@@ -67,14 +78,24 @@ const ResourceDetail = () => {
               </Table.Cell>
             </Table.Row>
           ) : null}
-          <Table.Row>
-            <Table.Cell collapsing>Created on</Table.Cell>
-            <Table.Cell>09/24/2020, 07:50:00 AM</Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell collapsing>Last updated</Table.Cell>
-            <Table.Cell>10/10/2020, 11:48:38 PM</Table.Cell>
-          </Table.Row>
+          {created_time ? (
+            <Table.Row>
+              <Table.Cell collapsing>Created on</Table.Cell>
+              <Table.Cell>{created_time}</Table.Cell>
+            </Table.Row>
+          ) : null}
+          {last_used_time ? (
+            <Table.Row>
+              <Table.Cell collapsing>Last Used on</Table.Cell>
+              <Table.Cell>{last_used_time}</Table.Cell>
+            </Table.Row>
+          ) : null}
+          {resource_details?.updated_time ? (
+            <Table.Row>
+              <Table.Cell collapsing>Last Updated</Table.Cell>
+              <Table.Cell>{resource_details.updated_time}</Table.Cell>
+            </Table.Row>
+          ) : null}
           <Table.Row>
             <Table.Cell collapsing>Templated</Table.Cell>
             <Table.Cell>
