@@ -12,6 +12,9 @@ class SelfServiceConfigHandler(BaseAPIV2Handler):
 
     async def get(self):
         admin_bypass_approval_enabled: bool = can_admin_policies(self.user, self.groups)
+        export_to_terraform_enabled: bool = config.get(
+            "export_to_terraform_enabled", False
+        )
         self_service_iam_config: dict = config.get(
             "self_service_iam", SELF_SERVICE_IAM_DEFAULTS
         )
@@ -19,6 +22,7 @@ class SelfServiceConfigHandler(BaseAPIV2Handler):
         self.write(
             {
                 "admin_bypass_approval_enabled": admin_bypass_approval_enabled,
+                "export_to_terraform_enabled": export_to_terraform_enabled,
                 **self_service_iam_config,
             }
         )
