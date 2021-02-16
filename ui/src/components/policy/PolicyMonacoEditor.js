@@ -159,7 +159,8 @@ export const PolicyMonacoEditor = ({
         />
         {
           // Show delete button for inline policies only
-          context === "inline_policy" ? (
+          context === "inline_policy" &&
+          user?.authorization?.can_edit_policies ? (
             <>
               <Button.Or />
               <Button
