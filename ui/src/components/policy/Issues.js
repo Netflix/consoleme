@@ -153,10 +153,9 @@ const Issues = () => {
     return (
       <>
         <Header as="h2">
-          No S3 Errors
+          No errors
           <Header.Subheader>
-            We didn&apos;t find any recent S3 errors associated with this
-            resource.
+            We didn&apos;t find any recent errors associated with this resource.
           </Header.Subheader>
         </Header>
       </>
