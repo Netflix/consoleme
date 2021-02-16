@@ -916,7 +916,7 @@ async def get_aws_config_history_url_for_resource(
     account_id, resource_id, technology, region="us-east-1"
 ):
     encoded_redirect = urllib.parse.quote_plus(
-        f"https://{region}.console.aws.amazon.com/config/home?#/timeline/{technology}/{resource_id}/configuration"
+        f"https://{region}.console.aws.amazon.com/config/home?#/resources/timeline/{technology}/{resource_id}/configuration"
     )
 
     url = f"/role/{account_id}?redirect={encoded_redirect}"
