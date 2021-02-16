@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
       });
     } catch (error) {
       // If session expires, fetch will return the error page showing re-authentication is required and raise an
-      // exception from handling the html file instead of applitcation/json type.
+      // exception from handling the html file instead of application/json type.
       // Toggle the re-authentication modal to login back users if it's using ALB type of authentication system.
       console.error(error);
       setIsSessionExpired(true);
