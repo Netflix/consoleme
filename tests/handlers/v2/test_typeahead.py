@@ -2,7 +2,6 @@ import ujson as json
 from mock import patch
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.config import config
 from tests.conftest import MockBaseHandler
 
 
@@ -17,6 +16,8 @@ class TestTypeAheadHandler(AsyncHTTPTestCase):
         MockBaseHandler.authorization_flow,
     )
     def test_typeahead_get(self):
+        from consoleme.config import config
+
         headers = {
             config.get("auth.user_header_name"): "user@github.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",

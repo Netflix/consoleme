@@ -4,11 +4,8 @@ import jwt
 from tornado.testing import AsyncHTTPTestCase
 from tornado.web import Application
 
-from consoleme.lib.auth import mk_jwt_validator
-
 TEST_SECRET = "SECRET"
 TEST_ALG = ["HS256"]
-TEST_VALIDATOR = mk_jwt_validator(TEST_SECRET, {"alg": {"enum": TEST_ALG}}, {})
 
 
 class TestBaseJSONHandler(AsyncHTTPTestCase):
@@ -21,6 +18,11 @@ class TestBaseJSONHandler(AsyncHTTPTestCase):
 
         class JSONHandlerExample(BaseJSONHandler):
             def __init__(self, *args, **kwargs):
+                from consoleme.lib.auth import mk_jwt_validator
+
+                TEST_VALIDATOR = mk_jwt_validator(
+                    TEST_SECRET, {"alg": {"enum": TEST_ALG}}, {}
+                )
                 kwargs["jwt_validator"] = TEST_VALIDATOR
                 super().__init__(*args, **kwargs)
 
@@ -35,6 +37,11 @@ class TestBaseJSONHandler(AsyncHTTPTestCase):
             allowed_methods = ["GET", "PUT"]
 
             def __init__(self, *args, **kwargs):
+                from consoleme.lib.auth import mk_jwt_validator
+
+                TEST_VALIDATOR = mk_jwt_validator(
+                    TEST_SECRET, {"alg": {"enum": TEST_ALG}}, {}
+                )
                 kwargs["jwt_validator"] = TEST_VALIDATOR
                 super().__init__(*args, **kwargs)
 

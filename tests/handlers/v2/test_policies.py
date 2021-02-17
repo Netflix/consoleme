@@ -5,8 +5,6 @@ import sys
 import ujson as json
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.config import config
-
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(APP_ROOT, ".."))
 
@@ -18,6 +16,8 @@ class TestPoliciesApi(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     def test_policies_api(self):
+        from consoleme.config import config
+
         headers = {
             config.get("auth.user_header_name"): "user@example.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",

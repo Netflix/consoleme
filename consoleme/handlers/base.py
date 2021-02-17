@@ -317,7 +317,7 @@ class BaseHandler(tornado.web.RequestHandler):
                     self.groups = res.get("groups")
 
         if not self.user:
-            # Username/Password authnetication flow
+            # Username/Password authn flow
             if config.get("auth.get_user_by_password", False):
                 after_redirect_uri = self.request.arguments.get("redirect_url", [""])[0]
                 if after_redirect_uri and isinstance(after_redirect_uri, bytes):

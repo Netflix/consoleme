@@ -19,7 +19,6 @@ from asgiref.sync import async_to_sync, sync_to_async
 from boto3.dynamodb.types import Binary  # noqa
 from cloudaux import get_iso_string
 from cloudaux.aws.sts import boto3_cached_conn as boto3_cached_conn
-from datamodel_code_generator import BaseModel
 from retrying import retry
 from tenacity import Retrying, stop_after_attempt, wait_fixed
 
@@ -109,6 +108,8 @@ class BaseDynamoHandler:
         elif isinstance(obj, list):
             return [self._data_from_dynamo_replace(elem) for elem in obj]
         else:
+            if isinstance(obj, Binary):
+                obj = obj.value
             if str(obj) == DYNAMO_EMPTY_STRING:
                 obj = ""
             elif isinstance(obj, Decimal):
@@ -571,6 +572,7 @@ class UserDynamoHandler(BaseDynamoHandler):
         """
         # Remove old signature if it exists
         user_entry.pop("signature", None)
+        user_entry = self._data_from_dynamo_replace(user_entry)
         json_request = json.dumps(user_entry, sort_keys=True, use_decimal=True)
         sig = crypto.sign(json_request)
         user_entry["signature"] = sig
@@ -585,7 +587,7 @@ class UserDynamoHandler(BaseDynamoHandler):
             "user_email": login_attempt.username,
             "after_redirect_uri": login_attempt.after_redirect_uri,
         }
-        user_entry = sync_to_async(self.users_table.query)(
+        user_entry = await sync_to_async(self.users_table.query)(
             KeyConditionExpression="username = :un",
             ExpressionAttributeValues={":un": login_attempt.username},
         )
@@ -594,21 +596,25 @@ class UserDynamoHandler(BaseDynamoHandler):
         if user_entry and "Items" in user_entry and len(user_entry["Items"]) == 1:
             user = user_entry["Items"][0]
         if not user:
-            raise DataNotRetrievable(f"Unable to find user: {login_attempt.username}")
+            error = f"Unable to find user: {login_attempt.username}"
+            log.error({**log_data, "message": error})
+            return AuthenticationResponse(authenticated=False, errors=[error])
 
         if not user.get("password"):
             error = "User exists, but doesn't have a password stored in the database"
             log.error({**log_data, "message": error})
-            return AuthenticationResponse.parse_obj(authenticated=False, errors=[error])
+            return AuthenticationResponse(authenticated=False, errors=[error])
 
         password_hash_matches = bcrypt.checkpw(
-            login_attempt.password.encode("utf-8"), user["password"]
+            login_attempt.password.encode("utf-8"), user["password"].value
         )
         if not password_hash_matches:
             error = "Password does not match"
             log.error({**log_data, "message": error})
-            return AuthenticationResponse.parse_obj(authenticated=False, errors=[error])
-        return AuthenticationResponse.parse_obj(authenticated=True)
+            return AuthenticationResponse(authenticated=False, errors=[error])
+        return AuthenticationResponse(
+            authenticated=True, username=user["username"], groups=user["groups"]
+        )
 
     def create_user(
         self,
@@ -657,8 +663,8 @@ class UserDynamoHandler(BaseDynamoHandler):
 
         user = None
 
-        if user_ddb and "Items" in user_ddb and len(user_ddb["Items"] == 1):
-            user = user_ddb["Items"]
+        if user_ddb and "Items" in user_ddb and len(user_ddb["Items"]) == 1:
+            user = user_ddb["Items"][0]
 
         if not user:
             raise DataNotRetrievable(f"Unable to find user: {user_email}")

@@ -25,7 +25,6 @@ from tornado.concurrent import Future
 # This must be set before loading ConsoleMe's configuration
 
 os.environ["CONFIG_LOCATION"] = "example_config/example_config_test.yaml"
-from consoleme.config import config  # noqa: E402
 
 MOCK_ROLE = {
     "arn": "arn:aws:iam::123456789012:role/FakeRole",
@@ -270,6 +269,7 @@ def sns(aws_credentials):
 def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
     from asgiref.sync import async_to_sync
 
+    from consoleme.config import config
     from consoleme.lib.cache import store_json_results_in_redis_and_s3
 
     global all_roles

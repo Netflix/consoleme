@@ -7,11 +7,6 @@ import ujson as json
 from mock import patch
 from pydantic import ValidationError
 
-from consoleme.exceptions.exceptions import (
-    InvalidRequestParameter,
-    NoMatchingRequest,
-    Unauthorized,
-)
 from consoleme.models import (
     Action,
     Action1,
@@ -104,6 +99,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         await delete_iam_role("123456789012", role_name, "consoleme-unit-test")
 
     async def test_validate_inline_policy_change(self):
+        from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_inline_policy_change
 
         role = ExtendedRoleModel(
@@ -251,6 +247,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_validate_managed_policy_change(self):
+        from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_managed_policy_change
 
         role = ExtendedRoleModel(
@@ -325,6 +322,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_validate_assume_role_policy_change(self):
+        from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_assume_role_policy_change
 
         role = ExtendedRoleModel(
@@ -1535,6 +1533,8 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_dynamo_write.return_value = create_future(None)
 
         # Trying to update while not being authorized
+        from consoleme.exceptions.exceptions import Unauthorized
+
         with pytest.raises(Unauthorized) as e:
             await parse_and_apply_policy_request_modification(
                 extended_request,
@@ -1546,6 +1546,8 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Unauthorized", str(e))
 
         # Trying to update a non-existent change
+        from consoleme.exceptions.exceptions import NoMatchingRequest
+
         with pytest.raises(NoMatchingRequest) as e:
             await parse_and_apply_policy_request_modification(
                 extended_request,
@@ -1581,6 +1583,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_populate_old_policies,
         mock_fetch_iam_role,
     ):
+        from consoleme.exceptions.exceptions import NoMatchingRequest, Unauthorized
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
         )
@@ -1679,6 +1682,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
     async def test_parse_and_apply_policy_request_modification_cancel_request(
         self, mock_dynamo_write, mock_send_email
     ):
+        from consoleme.exceptions.exceptions import (
+            InvalidRequestParameter,
+            Unauthorized,
+        )
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
         )
@@ -1746,6 +1753,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
     async def test_parse_and_apply_policy_request_modification_reject_and_move_back_to_pending_request(
         self, mock_dynamo_write, mock_move_back_to_pending, mock_send_email
     ):
+        from consoleme.exceptions.exceptions import (
+            InvalidRequestParameter,
+            Unauthorized,
+        )
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
         )
@@ -1854,6 +1865,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         from asgiref.sync import sync_to_async
         from cloudaux.aws.sts import boto3_cached_conn
 
+        from consoleme.exceptions.exceptions import Unauthorized
         from consoleme.lib.redis import RedisHandler
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,

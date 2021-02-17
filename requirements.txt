@@ -82,7 +82,7 @@ cloudaux==1.9.2
     # via -r requirements.in
 contextlib2==0.6.0.post1
     # via schema
-datamodel-code-generator==0.6.21
+datamodel-code-generator==0.8.0
     # via -r requirements.in
 decorator==4.4.2
     # via
@@ -231,6 +231,8 @@ pandas==0.25.3
     # via -r requirements.in
 parso==0.8.1
     # via jedi
+password-strength==0.0.3.post2
+    # via -r requirements.in
 pathspec==0.8.1
     # via black
 pexpect==4.8.0
@@ -371,6 +373,7 @@ six==1.15.0
     #   okta-jwt
     #   openapi-spec-validator
     #   orderedmultidict
+    #   password-strength
     #   prance
     #   presto-python-client
     #   protobuf
