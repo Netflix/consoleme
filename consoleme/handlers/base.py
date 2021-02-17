@@ -317,6 +317,25 @@ class BaseHandler(tornado.web.RequestHandler):
                     self.groups = res.get("groups")
 
         if not self.user:
+            # Username/Password authnetication flow
+            if config.get("auth.get_user_by_password", False):
+                after_redirect_uri = self.request.arguments.get("redirect_url", [""])[0]
+                if after_redirect_uri and isinstance(after_redirect_uri, bytes):
+                    after_redirect_uri = after_redirect_uri.decode("utf-8")
+                self.write(
+                    {
+                        "type": "redirect",
+                        "redirect_url": f"/login?redirect_after_auth={after_redirect_uri}",
+                        "reason": "unauthenticated",
+                        "message": "User is not authenticated. Redirect to authenticate",
+                    }
+                )
+                await self.finish()
+                raise SilentException(
+                    "Redirecting user to authenticate by username/password."
+                )
+
+        if not self.user:
             try:
                 # Get user. Config options can specify getting username from headers or
                 # OIDC, but custom plugins are also allowed to override this.

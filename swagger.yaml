@@ -1417,3 +1417,38 @@ components:
               visible:
                 type: boolean
                 default: true
+    AuthenticationResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+    UserAuthenticationModel:
+      type: object
+      properties:
+        action:
+          type: string
+          enum:
+            - create
+            - update
+            - delete
+        username:
+          type: string
+        password:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+    LoginAttemptModel:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        after_redirect_uri:
+          type: string
