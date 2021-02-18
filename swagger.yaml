@@ -1458,6 +1458,16 @@ components:
           type: string
         after_redirect_uri:
           type: string
+    RegistrationAttemptModel:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
     WebResponse:
       type: object
       properties:

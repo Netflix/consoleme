@@ -632,7 +632,7 @@ class UserDynamoHandler(BaseDynamoHandler):
             "requests": [],
             "groups": groups,
         }
-        # TODO: Check password complexity requirements
+
         if password:
             pw = bytes(password, "utf-8")
             salt = bcrypt.gensalt()
@@ -703,6 +703,25 @@ class UserDynamoHandler(BaseDynamoHandler):
             error = f"Unable to delete user: {user_entry}: {str(e)}"
             log.error(error, exc_info=True)
             raise Exception(error)
+
+    async def get_user(
+        self, user_email: str
+    ) -> Optional[Dict[str, Union[Decimal, List[str], Binary, str]]]:
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
+        log_data = {"function": function, "user_email": user_email}
+
+        log.debug(log_data)
+
+        user = self.users_table.query(
+            KeyConditionExpression="username = :un",
+            ExpressionAttributeValues={":un": user_email},
+        )
+
+        if user and "Items" in user and len(user["Items"]) == 1:
+            return user["Items"][0]
+        return None
 
     def get_or_create_user(
         self, user_email: str

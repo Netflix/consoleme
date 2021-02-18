@@ -3,17 +3,19 @@ from datetime import datetime, timedelta
 
 import pytz
 import tornado.web
+from email_validator import validate_email
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import UnauthorizedToAccess, UnsupportedChangeType
 from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.auth import can_admin_all
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.jwt import generate_jwt_token
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.web import handle_generic_error_response
 from consoleme.models import (
     AuthenticationResponse,
     LoginAttemptModel,
+    RegistrationAttemptModel,
     UserAuthenticationModel,
     WebResponse,
 )
@@ -22,9 +24,72 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 
 
+class UserRegistrationHandler(tornado.web.RequestHandler):
+    def initialize(self):
+        self.ddb = UserDynamoHandler()
+
+    async def post(self):
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "message": "Attempting to register user",
+            "user-agent": self.request.headers.get("User-Agent"),
+        }
+
+        generic_error_message: str = "User registration failed"
+        # Fail if getting users by password is not enabled
+        if not config.get("auth.get_user_by_password"):
+            errors = [
+                "Expected configuration `auth.get_user_by_password`, but it is not enabled."
+            ]
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "not_configured", log_data
+            )
+            return
+        # Fail if user registration not allowed
+        if not config.get("auth.allow_user_registration"):
+            errors = [
+                "Expected configuration `auth.allow_user_registration`, but it is not enabled."
+            ]
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "not_configured", log_data
+            )
+            return
+
+        registration_attempt = RegistrationAttemptModel.parse_raw(self.request.body)
+        log_data["username"] = registration_attempt.username
+        # Fail if username not valid email address
+        if not validate_email(registration_attempt.username):
+            errors = ["Username must be a valid e-mail address."]
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "invalid_request", log_data
+            )
+            return
+        # Fail if user already exists
+        if await self.ddb.get_user(registration_attempt.username):
+            errors = ["User already exists"]
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "invalid_request", log_data
+            )
+            return
+
+        await self.ddb.create_user(
+            registration_attempt.username, registration_attempt.password
+        )
+
+        res = WebResponse(
+            status="success",
+            status_code=200,
+            message=f"Successfully created user {registration_attempt.username}.",
+        )
+        self.write(res.json())
+
+
 class LoginHandler(tornado.web.RequestHandler):
     def initialize(self):
         self.ddb = UserDynamoHandler()
+
+    def set_default_headers(self) -> None:
+        self.set_header("Content-Type", "application/json")
 
     async def post(self):
         log_data = {
@@ -32,33 +97,23 @@ class LoginHandler(tornado.web.RequestHandler):
             "message": "Attempting to authenticate User",
             "user-agent": self.request.headers.get("User-Agent"),
         }
-        self.set_header("Content-Type", "application/json")
+        generic_error_message = "Authentication failed"
         if not config.get("auth.get_user_by_password"):
             errors = [
                 "Expected configuration `auth.get_user_by_password`, but it is not enabled."
             ]
-            log.error(
-                {**log_data, "message": "Authentication failed", "errors": errors}
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "not_configured", log_data
             )
-            res = WebResponse(
-                status="error", status_code=403, errors=errors, reason="not_configured"
-            )
-            self.set_status(403)
-            self.write(res.json())
             return
         # Auth cookie must be set to use password authentication.
         if not config.get("auth.set_auth_cookie"):
             errors = [
                 "Expected configuration `auth.set_auth_cookie`, but it is not enabled."
             ]
-            log.error(
-                {**log_data, "message": "Authentication failed", "errors": errors}
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "not_configured", log_data
             )
-            res = WebResponse(
-                status="error", status_code=403, errors=errors, reason="not_configured"
-            )
-            self.set_status(403)
-            self.write(res.json())
             return
 
         login_attempt = LoginAttemptModel.parse_raw(self.request.body)
@@ -68,21 +123,14 @@ class LoginHandler(tornado.web.RequestHandler):
             await self.ddb.authenticate_user(login_attempt)
         )
         if not authenticated_response.authenticated:
-            log.error(
-                {
-                    **log_data,
-                    "message": "Authentication failed",
-                    "errors": authenticated_response.errors,
-                }
+            await handle_generic_error_response(
+                self,
+                generic_error_message,
+                authenticated_response.errors,
+                403,
+                "authentication_failure",
+                log_data,
             )
-            res = WebResponse(
-                status="error",
-                status_code=403,
-                errors=authenticated_response.errors,
-                reason="authentication_failure",
-            )
-            self.set_status(403)
-            self.write(res.json())
             return
         # Make and set jwt for user
         expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
@@ -127,18 +175,14 @@ class UserManagementHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
             "ip": self.ip,
         }
+        generic_error_message = "Unable to create/update user"
         log.debug(log_data)
         # Checks authz levels of current user
         if not can_admin_all(self.user, self.groups):
-            error = ["User is not authorized to access this endpoint."]
-            res = WebResponse(
-                status="error",
-                status_code=403,
-                errors=error,
-                reason="authorization_failure",
+            errors = ["User is not authorized to access this endpoint."]
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "unauthorized", log_data
             )
-            self.set_status(403)
-            self.write(res.json())
             return
         request = UserAuthenticationModel.parse_raw(self.request.body)
         log_data["requested_user"] = request.username
@@ -185,15 +229,10 @@ class UserManagementHandler(BaseAPIV2Handler):
             self.write(res.json())
             return
         else:
-            error = ["Change type is not supported by this endpoint."]
-            res = WebResponse(
-                status="error",
-                status_code=403,
-                errors=error,
-                reason="authorization_failure",
+            errors = ["Change type is not supported by this endpoint."]
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "invalid_request", log_data
             )
-            self.set_status(403)
-            self.write(res.json())
             return
 
     async def delete(self):
@@ -205,29 +244,25 @@ class UserManagementHandler(BaseAPIV2Handler):
             "request_id": self.request_uuid,
             "ip": self.ip,
         }
+        generic_error_message = "Unable to delete user"
         log.debug(log_data)
         # Checks authz levels of current user
         if not can_admin_all(self.user, self.groups):
-            log.error(
-                {
-                    **log_data,
-                    "message": "User is not authorized to access this endpoint.",
-                }
+            errors = ["User is not authorized to access this endpoint."]
+
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "unauthorized", log_data
             )
-            raise UnauthorizedToAccess("You not authorized to administer users.")
+            return
 
         request = UserAuthenticationModel.parse_raw(self.request.body)
         log_data["requested_user"] = request.username
         if request.action.value != "delete":
-            log.error(
-                {
-                    **log_data,
-                    "message": "Change type is not supported by this endpoint.",
-                }
+            errors = ["Change type is not supported by this endpoint."]
+            await handle_generic_error_response(
+                self, generic_error_message, errors, 403, "invalid_request", log_data
             )
-            raise UnsupportedChangeType(
-                "Change type is not supported by this endpoint."
-            )
+            return
 
         self.ddb.delete_user(
             request.username,
