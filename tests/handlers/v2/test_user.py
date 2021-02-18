@@ -4,6 +4,68 @@ from asgiref.sync import async_to_sync
 from tornado.testing import AsyncHTTPTestCase
 
 
+class TestUserRegistrationApi(AsyncHTTPTestCase):
+    def get_app(self):
+        from consoleme.config import config
+
+        config.CONFIG.config["auth"]["get_user_by_password"] = True
+        config.CONFIG.config["auth"]["allow_user_registration"] = True
+        from consoleme.routes import make_app
+
+        return make_app(jwt_validator=lambda x: {})
+
+    def tearDown(self) -> None:
+        from consoleme.config import config
+
+        config.CONFIG.config["auth"]["get_user_by_password"] = False
+        config.CONFIG.config["auth"]["allow_user_registration"] = False
+
+    def test_register_user(self):
+        body = json.dumps(
+            {
+                "username": "testuser5",
+                "password": "testuser5password",
+            }
+        )
+        response = self.fetch("/api/v2/user_registration", method="POST", body=body)
+        self.assertEqual(response.code, 403)
+        self.assertEqual(
+            json.loads(response.body),
+            {
+                "status": "error",
+                "reason": "invalid_request",
+                "redirect_url": None,
+                "status_code": 403,
+                "message": None,
+                "errors": [
+                    "The email address is not valid. It must have exactly one @-sign."
+                ],
+                "data": None,
+            },
+        )
+
+        body = json.dumps(
+            {
+                "username": "testuser5@example.com",
+                "password": "testuser5password",
+            }
+        )
+        response = self.fetch("/api/v2/user_registration", method="POST", body=body)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(
+            json.loads(response.body),
+            {
+                "status": "success",
+                "reason": None,
+                "redirect_url": None,
+                "status_code": 200,
+                "message": "Successfully created user testuser5@example.com.",
+                "errors": None,
+                "data": None,
+            },
+        )
+
+
 class TestLoginApi(AsyncHTTPTestCase):
     def get_app(self):
         from consoleme.config import config

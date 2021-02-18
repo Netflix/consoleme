@@ -130,7 +130,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
         (r"/api/v2/login", LoginHandler),
         (r"/api/v2/user", UserManagementHandler),
-        (r"/api/v2/register_user", UserRegistrationHandler),
+        (r"/api/v2/user_registration", UserRegistrationHandler),
         (r"/api/v2/policies", PoliciesHandler),
         (r"/api/v2/request", RequestHandler),
         (r"/api/v2/requests", RequestsHandler),

@@ -2,6 +2,7 @@ import sys
 from datetime import datetime, timedelta
 
 import pytz
+import sentry_sdk
 import tornado.web
 from email_validator import validate_email
 
@@ -58,10 +59,22 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
         registration_attempt = RegistrationAttemptModel.parse_raw(self.request.body)
         log_data["username"] = registration_attempt.username
         # Fail if username not valid email address
-        if not validate_email(registration_attempt.username):
-            errors = ["Username must be a valid e-mail address."]
+        try:
+            if not validate_email(registration_attempt.username):
+                errors = ["Username must be a valid e-mail address."]
+                await handle_generic_error_response(
+                    self,
+                    generic_error_message,
+                    errors,
+                    403,
+                    "invalid_request",
+                    log_data,
+                )
+                return
+        except Exception as e:
+            sentry_sdk.capture_exception()
             await handle_generic_error_response(
-                self, generic_error_message, errors, 403, "invalid_request", log_data
+                self, generic_error_message, [str(e)], 403, "invalid_request", log_data
             )
             return
         # Fail if user already exists
@@ -72,7 +85,7 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
             )
             return
 
-        await self.ddb.create_user(
+        self.ddb.create_user(
             registration_attempt.username, registration_attempt.password
         )
 
