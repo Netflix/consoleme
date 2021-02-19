@@ -26,6 +26,8 @@ attrs==20.3.0
     #   jsonschema
 backcall==0.2.0
     # via ipython
+bcrypt==3.2.0
+    # via -r requirements.in
 beautifulsoup4==4.9.3
     # via policy-sentry
 billiard==3.6.3.0
@@ -57,7 +59,9 @@ certifi==2020.12.5
     #   requests
     #   sentry-sdk
 cffi==1.14.4
-    # via google-crc32c
+    # via
+    #   bcrypt
+    #   google-crc32c
 chardet==3.0.4
     # via
     #   aiohttp
@@ -356,6 +360,7 @@ six==1.15.0
     # via
     #   -r requirements.in
     #   astroid
+    #   bcrypt
     #   bleach
     #   click-repl
     #   cloudaux
