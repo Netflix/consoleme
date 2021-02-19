@@ -294,3 +294,27 @@ class TestUserApi(AsyncHTTPTestCase):
                 "data": None,
             },
         )
+
+        # Delete the user
+
+        body = json.dumps(
+            {
+                "action": "delete",
+                "username": "testuser3",
+            }
+        )
+
+        response = self.fetch("/api/v2/user", headers=headers, method="POST", body=body)
+        self.assertEqual(response.code, 200)
+        self.assertEqual(
+            json.loads(response.body),
+            {
+                "status": "success",
+                "reason": None,
+                "redirect_url": None,
+                "status_code": 200,
+                "message": "Successfully deleted user testuser3.",
+                "errors": None,
+                "data": None,
+            },
+        )

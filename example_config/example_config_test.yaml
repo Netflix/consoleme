@@ -25,6 +25,8 @@ auth:
   user_header_name: user_header
   require_mtls: true
   require_jwt: false
+  password_policy:
+    strength: null
 
 celery:
   test_account_ids:

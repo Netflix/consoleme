@@ -11,6 +11,7 @@ from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.auth import can_admin_all
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.jwt import generate_jwt_token
+from consoleme.lib.password import check_password_stength
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.web import handle_generic_error_response
 from consoleme.models import (
@@ -26,10 +27,21 @@ log = config.get_logger()
 
 
 class UserRegistrationHandler(tornado.web.RequestHandler):
+    """
+    Allows user registration if it is configured.
+    """
+
     def initialize(self):
         self.ddb = UserDynamoHandler()
 
     async def post(self):
+        # TODO: validate username is email address
+        # TODO: What happens when someone registers a user with a group e-mail?
+        # Do we need to send verification emails?
+        # Clean pluggable auth interface?
+        # Even if you check groups, there's a risk of someone squatting on this as well. Post validation check if group
+        # was newly created on each login.
+
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "message": "Attempting to register user",
@@ -85,6 +97,21 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
             )
             return
 
+        # Fails if password is not strong enough.
+        password_strength_errors = await check_password_stength(
+            registration_attempt.password
+        )
+        if password_strength_errors:
+            await handle_generic_error_response(
+                self,
+                password_strength_errors["message"],
+                password_strength_errors["errors"],
+                403,
+                "weak_password",
+                log_data,
+            )
+            return
+
         self.ddb.create_user(
             registration_attempt.username, registration_attempt.password
         )
@@ -98,6 +125,10 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
 
 
 class LoginHandler(tornado.web.RequestHandler):
+    """
+    Handles user log-in flow if password authentication is enabled.
+    """
+
     def initialize(self):
         self.ddb = UserDynamoHandler()
 
@@ -176,6 +207,10 @@ class LoginHandler(tornado.web.RequestHandler):
 
 
 class UserManagementHandler(BaseAPIV2Handler):
+    """
+    Handles creating and updating users. Only authorized users are allowed to access this endpoint.
+    """
+
     def initialize(self):
         self.ddb = UserDynamoHandler()
 
@@ -208,6 +243,20 @@ class UserManagementHandler(BaseAPIV2Handler):
                     "requested_groups": request.groups,
                 }
             )
+
+            # Fails if password is not strong enough.
+            password_strength_errors = await check_password_stength(request.password)
+            if password_strength_errors:
+                await handle_generic_error_response(
+                    self,
+                    password_strength_errors["message"],
+                    password_strength_errors["errors"],
+                    403,
+                    "weak_password",
+                    log_data,
+                )
+                return
+
             self.ddb.create_user(
                 request.username,
                 request.password,
@@ -229,6 +278,22 @@ class UserManagementHandler(BaseAPIV2Handler):
                     "requested_groups": request.groups,
                 }
             )
+
+            if request.password:
+                # Fails if password is not strong enough.
+                password_strength_errors = await check_password_stength(
+                    request.password
+                )
+                if password_strength_errors:
+                    await handle_generic_error_response(
+                        self,
+                        password_strength_errors["message"],
+                        password_strength_errors["errors"],
+                        403,
+                        "weak_password",
+                        log_data,
+                    )
+                    return
             self.ddb.update_user(
                 request.username,
                 request.password,
@@ -241,44 +306,27 @@ class UserManagementHandler(BaseAPIV2Handler):
             )
             self.write(res.json())
             return
+        elif request.action.value == "delete":
+            log.debug(
+                {
+                    **log_data,
+                    "message": "Deleting user",
+                    "requested_user": request.username,
+                }
+            )
+            self.ddb.delete_user(
+                request.username,
+            )
+            res = WebResponse(
+                status="success",
+                status_code=200,
+                message=f"Successfully deleted user {request.username}.",
+            )
+            self.write(res.json())
+            return
         else:
             errors = ["Change type is not supported by this endpoint."]
             await handle_generic_error_response(
                 self, generic_error_message, errors, 403, "invalid_request", log_data
             )
             return
-
-    async def delete(self):
-        log_data = {
-            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
-            "user": self.user,
-            "message": "Create/Update User",
-            "user-agent": self.request.headers.get("User-Agent"),
-            "request_id": self.request_uuid,
-            "ip": self.ip,
-        }
-        generic_error_message = "Unable to delete user"
-        log.debug(log_data)
-        # Checks authz levels of current user
-        if not can_admin_all(self.user, self.groups):
-            errors = ["User is not authorized to access this endpoint."]
-
-            await handle_generic_error_response(
-                self, generic_error_message, errors, 403, "unauthorized", log_data
-            )
-            return
-
-        request = UserAuthenticationModel.parse_raw(self.request.body)
-        log_data["requested_user"] = request.username
-        if request.action.value != "delete":
-            errors = ["Change type is not supported by this endpoint."]
-            await handle_generic_error_response(
-                self, generic_error_message, errors, 403, "invalid_request", log_data
-            )
-            return
-
-        self.ddb.delete_user(
-            request.username,
-        )
-
-        log.debug({**log_data, "message": "User successfully deleted"})

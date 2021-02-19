@@ -698,7 +698,7 @@ class UserDynamoHandler(BaseDynamoHandler):
         log.debug(log_data)
         user_entry = {"username": user_email}
         try:
-            self.users_table.delete_item(Item=self._data_to_dynamo_replace(user_entry))
+            self.users_table.delete_item(Key=self._data_to_dynamo_replace(user_entry))
         except Exception as e:
             error = f"Unable to delete user: {user_entry}: {str(e)}"
             log.error(error, exc_info=True)
