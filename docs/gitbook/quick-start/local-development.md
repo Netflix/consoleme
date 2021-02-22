@@ -4,7 +4,7 @@ description: Provides instructions for getting ConsoleMe up and running locally.
 
 # Local
 
-ConsoleMe requires Python 3.8 or above. Crude installation instructions are below. This documentation is in dire need of improvement.
+ConsoleMe requires Python 3.8 or above. Install [**git**](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), [**docker**](https://docs.docker.com/get-docker/), and [**docker-compose**](https://docs.docker.com/compose/install/) ****on your system, consider following [Docker's post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/), then clone ConsoleMe locally in a directory of your choosing via HTTP or SSH:
 
 ## MacOS
 
