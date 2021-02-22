@@ -69,6 +69,7 @@ make install
 #
 # pip install -r requirements.txt -r requirements-test.txt -e default_plugins -e .
 # yarn --cwd ui
+# yarn --cwd ui build:prod
 # python scripts/initialize_dynamodb_oss.py
 # python scripts/initialize_redis_oss.py
 ```
