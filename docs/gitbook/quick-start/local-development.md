@@ -79,6 +79,7 @@ make install
 ```text
 # Run ConsoleMe
 python consoleme/__main__.py
+# You should be able to visit Consoleme's Web UI at http://localhost:8081
 ```
 
 ```text
@@ -87,7 +88,7 @@ yarn --cwd ui start
 # If you follow this step, you should be able to see the UI at http://localhost:3000
 ```
 
-> ConsoleMe requires Python 3.8+. If your virtualenv was installed under Python2.x this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing virtualenv and creating a new one with Python 3: `python3 -m venv env`. When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe Celery tasks to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists data on disk. This command will need to be run anytime you want to update your local cache.
+> ConsoleMe requires Python 3.8+. If your virtualenv was installed under Python2.x this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing virtualenv and creating a new one with Python 3: `python3 -m venv env`. When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe Celery tasks to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists data on disk. This command will need to be run anytime you want to update your local cache. In a production environment, you'd be running Celery, which has scheduled tasks that would update your resource cache automatically.
 
 ## Configure your browser
 
@@ -95,5 +96,7 @@ For local, unauthenticated development, the default configuration \(`example_con
 
 ## Browse to ConsoleMe
 
-You should now be able to access the ConsoleMe web UI at [http://localhost:8081/](http://localhost:8081/) Success! 🎉
+You should now be able to access the ConsoleMe web UI at [http://localhost:8081/](http://localhost:8081/) \(Or http://localhost:3000 if you ran `yarn start`.  
+
+You'll notice that you're unable to access any IAM roles with the default configuration. You'll need to follow the guidance under [Role Credential Authorization](../configuration/role-credential-authorization/) to grant access to role credentials to your users and/or the groups they are members of. 
 
