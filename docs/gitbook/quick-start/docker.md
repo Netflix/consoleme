@@ -10,13 +10,17 @@ description: >-
 
 Docker-Compose is the quickest way to get ConsoleMe up and running locally for **testing** purposes. For **development**, we highly recommend setting up ConsoleMe locally with the instructions below this Quick Start. The Dockerfile is a great point of reference for the installation process. If you are going to deploy ConsoleMe in a production environment, we recommend deploying it to an isolated, locked-down AWS account.
 
-Firstly, clone ConsoleMe locally in a directory of your choosing:
+Firstly, install [**git**](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), [**docker**](https://docs.docker.com/get-docker/), and [**docker-compose**](https://docs.docker.com/compose/install/) ****on your system, consider following [Docker's post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/), then clone ConsoleMe locally in a directory of your choosing via HTTP or SSH:
 
 ```text
+git clone https://github.com/Netflix/consoleme.git ; cd consoleme
+
+# OR # 
+
 git clone git@github.com:Netflix/consoleme.git ; cd consoleme
 ```
 
-**BEFORE RUNNING THE COMMAND BELOW**: We highly recommend that you put valid AWS credentials for your account in your [`~/.aws/credentials`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-where) file under the `[default]` profile. The role you use should have the permissions outlined under `ConsoleMeInstanceProfile configuration` below. These credentials will be shared with the container, and when you run the second command to populate your Redis cache \(`make redis`\) command using docker exec, it will attempt to populate your redis cache with live resources from your account. This will only work if you have valid AWS credentials.
+**BEFORE RUNNING THE COMMAND BELOW**: We highly recommend that you put valid AWS credentials for your account in your `~/.aws/credentials` file under the `[default]` profile \([Instructions](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-where)\). The role you use should have the permissions outlined under [Central Account IAM Permissions](../prerequisites/required-iam-permissions/central-account-consolemeinstanceprofile.md). These credentials will be shared with the container, and when you run the second command to populate your Redis cache \(`make redis`\) command using docker exec, the command will attempt to populate your redis cache with live resources from your account. This will only work if you have valid AWS credentials.
 
 To start up ConsoleMe in docker, run the following command:
 
