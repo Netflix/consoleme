@@ -66,5 +66,5 @@ If successful, ConsoleMe should have been able to cache all of your resources. B
 
 At this point, you'll want to configure ConsoleMe to suit your needs. Read up on [ConsoleMe’s yaml configuration.](../configuration/) ConsoleMe can be configured to [authenticate your users via SAML, OIDC, header authentication, or it can bypass authentication altogether](../configuration/authentication-and-authorization/).  
 
-To get started, copy [this configuration](https://gist.github.com/castrapel/888cd106d12523a5445bf6f3cf9c810b). Read through the configuration and change the values to suit your environment. 
+To get started, copy [this configuration](https://gist.github.com/castrapel/888cd106d12523a5445bf6f3cf9c810b). Read through the configuration and change the values to suit your environment. Then, set the `CONFIG_LOCATION` environment variable to the full path of your configuration file, or copy the configuration to one of the locations ConsoleMe will load from \(described [here](https://app.gitbook.com/@hawkins/s/consoleme/~/drafts/-MUCSXyHqSfyDOwV-0Mc/configuration)\).
 
