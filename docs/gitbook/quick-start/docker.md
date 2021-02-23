@@ -62,3 +62,9 @@ By default, you're running ConsoleMe as an administrator, using the local [Docke
 
 If successful, ConsoleMe should have been able to cache all of your resources. But you'll notice that you're unable to access any IAM roles with the default configuration. You'll need to follow the guidance under [Role Credential Authorization](../configuration/role-credential-authorization/) to grant access to role credentials to your users and/or the groups they are members of.
 
+## Create your Configuration
+
+At this point, you'll want to configure ConsoleMe to suit your needs. Read up on [ConsoleMe’s yaml configuration.](../configuration/) ConsoleMe can be configured to [authenticate your users via SAML, OIDC, header authentication, or it can bypass authentication altogether](../configuration/authentication-and-authorization/).  
+
+To get started, copy [this configuration](https://gist.github.com/castrapel/888cd106d12523a5445bf6f3cf9c810b). Read through the configuration and change the values to suit your environment. 
+
