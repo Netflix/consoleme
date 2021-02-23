@@ -672,7 +672,6 @@ class UserDynamoHandler(BaseDynamoHandler):
         timestamp = int(time.time())
 
         if password:
-            # TODO: Check password complexity requirements
             pw = bytes(password, "utf-8")
             salt = bcrypt.gensalt()
             user["password"] = bcrypt.hashpw(pw, salt)

@@ -26,7 +26,7 @@ async def check_password_stength(
     tested_pass = policy.password(password)
     errors = tested_pass.test()
     # Convert errors to string so they can be json encoded later
-    errors = [str(e) for e in errors]
+    errors: List[str] = [str(e) for e in errors]
 
     if errors:
         return {"message": "Password doesn't have enough entropy.", "errors": errors}

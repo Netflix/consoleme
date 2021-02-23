@@ -35,12 +35,11 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
         self.ddb = UserDynamoHandler()
 
     async def post(self):
-        # TODO: validate username is email address
         # TODO: What happens when someone registers a user with a group e-mail?
         # Do we need to send verification emails?
         # Clean pluggable auth interface?
         # Even if you check groups, there's a risk of someone squatting on this as well. Post validation check if group
-        # was newly created on each login.
+        # exists same as username for each login?
 
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
