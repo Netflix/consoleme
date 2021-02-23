@@ -36,7 +36,7 @@ async def get_config_timeline_url_for_role(role, account_id):
     resource_id = role.get("resourceId")
     if resource_id:
         config_history_url = await get_aws_config_history_url_for_resource(
-            account_id, resource_id, "AWS::IAM::Role"
+            account_id, resource_id, role["arn"], "AWS::IAM::Role"
         )
         return config_history_url
 

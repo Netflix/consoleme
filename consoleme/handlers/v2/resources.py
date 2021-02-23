@@ -90,5 +90,6 @@ class ResourceDetailHandler(BaseHandler):
                 can_save_delete=can_save_delete,
                 s3_errors=s3_errors,
                 error_url=s3_query_url,
+                config_timeline_url=resource_details.get("config_timeline_url"),
             )
         )
