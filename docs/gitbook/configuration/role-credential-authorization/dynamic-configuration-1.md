@@ -12,5 +12,6 @@ group_mapping:
     roles:
       - arn:aws:iam::123456789012:role/roleA
 ```
+
 Read more about ConsoleMe's dynamic configuration [here](../dynamic-configuration.md).
 

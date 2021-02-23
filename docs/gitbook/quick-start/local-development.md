@@ -4,7 +4,7 @@ description: Provides instructions for getting ConsoleMe up and running locally.
 
 # Local
 
-ConsoleMe requires Python 3.8 or above. Crude installation instructions are below. This documentation is in dire need of improvement.
+ConsoleMe requires Python 3.8 or above. Install [**git**](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), [**docker**](https://docs.docker.com/get-docker/), and [**docker-compose**](https://docs.docker.com/compose/install/) ****on your system, consider following [Docker's post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/), then clone ConsoleMe locally in a directory of your choosing via HTTP or SSH:
 
 ## MacOS
 
@@ -69,6 +69,7 @@ make install
 #
 # pip install -r requirements.txt -r requirements-test.txt -e default_plugins -e .
 # yarn --cwd ui
+# yarn --cwd ui build:prod
 # python scripts/initialize_dynamodb_oss.py
 # python scripts/initialize_redis_oss.py
 ```
@@ -78,21 +79,28 @@ make install
 ```text
 # Run ConsoleMe
 python consoleme/__main__.py
+# You should be able to visit Consoleme's Web UI at http://localhost:8081
 ```
 
 ```text
 # (Optional) Run ConsoleMe's UI through Yarn for local UI development
-yarn --cwd ui start
+cd ui ; yarn start
 # If you follow this step, you should be able to see the UI at http://localhost:3000
 ```
 
-> ConsoleMe requires Python 3.8+. If your virtualenv was installed under Python2.x this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing virtualenv and creating a new one with Python 3: `python3 -m venv env`. When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe Celery tasks to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists data on disk. This command will need to be run anytime you want to update your local cache.
+> ConsoleMe requires Python 3.8+. If your virtualenv was installed under Python2.x this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing virtualenv and creating a new one with Python 3: `python3 -m venv env`. When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe Celery tasks to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists data on disk. This command will need to be run anytime you want to update your local cache. In a production environment, you'd be running Celery, which has scheduled tasks that would update your resource cache automatically.
 
-## Configure your browser
-
-For local, unauthenticated development, the default configuration \(`example_config/example_config_development.yaml)` will override the user you are authenticated as for development.
+For local, unauthenticated development, the default configuration \([`example_config/example_config_development.yaml`](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_development.yaml) \) will override the user you are authenticated as for development.
 
 ## Browse to ConsoleMe
 
-You should now be able to access the ConsoleMe web UI at [http://localhost:8081/](http://localhost:8081/) Success! 🎉
+You should now be able to access the ConsoleMe web UI at [http://localhost:8081/](http://localhost:8081/) \(Or http://localhost:3000 if you ran `cd ui ; yarn start`\).  
+
+You'll notice that you're unable to access any IAM roles with the default configuration. You'll need to follow the guidance under [Role Credential Authorization](../configuration/role-credential-authorization/) to grant access to role credentials to your users and/or the groups they are members of. 
+
+## Create your Configuration
+
+At this point, you'll want to configure ConsoleMe to suit your needs. Read up on [ConsoleMe’s yaml configuration.](../configuration/) ConsoleMe can be configured to [authenticate your users via SAML, OIDC, header authentication, or it can bypass authentication altogether](../configuration/authentication-and-authorization/).  
+
+To get started, copy [this configuration](https://gist.github.com/castrapel/888cd106d12523a5445bf6f3cf9c810b). Read through the configuration and change the values to suit your environment. Then, set the `CONFIG_LOCATION` environment variable to the full path of your configuration file, or copy the configuration to one of the locations ConsoleMe will load from \(described [here](https://app.gitbook.com/@hawkins/s/consoleme/~/drafts/-MUCSXyHqSfyDOwV-0Mc/configuration)\).
 
