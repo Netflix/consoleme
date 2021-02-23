@@ -313,6 +313,8 @@ async def fetch_assume_role_policy(role_arn: str) -> Optional[Dict]:
 
 
 async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> dict:
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
     arn: str = f"arn:aws:sns:{region}:{account_id}:{resource_name}"
     client = await sync_to_async(boto3_cached_conn)(
         "sns",
@@ -340,10 +342,20 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
     result["TagSet"] = tags["Tags"]
     if not isinstance(result["Policy"], dict):
         result["Policy"] = json.loads(result["Policy"])
+
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        arn,
+        resource_name,
+        "AWS::SNS::Topic",
+        region=region,
+    )
     return result
 
 
 async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> dict:
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
     queue_url: str = await sync_to_async(get_queue_url)(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
@@ -389,6 +401,18 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         result["updated_time"] = datetime.utcfromtimestamp(
             int(result["LastModifiedTimestamp"])
         ).isoformat()
+    # Unfortunately, the queue_url we get from our `get_queue_url` call above doesn't match the ID of the queue in
+    # AWS Config, so we must hack our own.
+    queue_url_manual = (
+        f"https://sqs.{region}.amazonaws.com/{account_id}/{resource_name}"
+    )
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        queue_url_manual,
+        resource_name,
+        "AWS::SQS::Queue",
+        region=region,
+    )
     return result
 
 
@@ -421,6 +445,8 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     :return:
     """
 
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
     log_data: Dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "bucket_name": bucket_name,
@@ -428,6 +454,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     }
     log.debug(log_data)
     created_time = None
+    bucket_location = "us-east-1"
 
     try:
         bucket_resource = await sync_to_async(get_bucket_resource)(
@@ -482,6 +509,13 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             raise
 
     result: Dict = {**policy, **tags, "created_time": created_time}
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        bucket_name,
+        bucket_name,
+        "AWS::S3::Bucket",
+        region=bucket_location,
+    )
     result["Policy"] = json.loads(result["Policy"])
 
     return result
