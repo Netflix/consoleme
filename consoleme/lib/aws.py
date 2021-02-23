@@ -346,6 +346,7 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
     result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
         account_id,
         arn,
+        resource_name,
         "AWS::SNS::Topic",
         region=region,
     )
@@ -400,10 +401,15 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         result["updated_time"] = datetime.utcfromtimestamp(
             int(result["LastModifiedTimestamp"])
         ).isoformat()
-
+    # Unfortunately, the queue_url we get from our `get_queue_url` call above doesn't match the ID of the queue in
+    # AWS Config, so we must hack our own.
+    queue_url_manual = (
+        f"https://sqs.{region}.amazonaws.com/{account_id}/{resource_name}"
+    )
     result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
         account_id,
-        queue_url,
+        queue_url_manual,
+        resource_name,
         "AWS::SQS::Queue",
         region=region,
     )
@@ -505,6 +511,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     result: Dict = {**policy, **tags, "created_time": created_time}
     result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
         account_id,
+        bucket_name,
         bucket_name,
         "AWS::S3::Bucket",
         region=bucket_location,

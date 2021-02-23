@@ -531,7 +531,7 @@ def cache_policies_table_details() -> bool:
                 "errors": error_count,
                 "config_history_url": async_to_sync(
                     get_aws_config_history_url_for_resource
-                )(account_id, resource_id, "AWS::IAM::Role"),
+                )(account_id, resource_id, arn, "AWS::IAM::Role"),
             }
         )
     s3_bucket_key: str = config.get("redis.s3_bucket_key", "S3_BUCKETS")

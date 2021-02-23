@@ -917,14 +917,16 @@ async def get_url_for_resource(
 
 
 async def get_aws_config_history_url_for_resource(
-    account_id, resource_id, technology, region="us-east-1"
+    account_id, resource_id, resource_name, technology, region="us-east-1"
 ):
     if config.get("get_aws_config_history_url_for_resource.generate_conglomo_url"):
         return await get_conglomo_url_for_resource(
             account_id, resource_id, technology, region
         )
+
     encoded_redirect = urllib.parse.quote_plus(
-        f"https://{region}.console.aws.amazon.com/config/home?#/resources/timeline/{technology}/{resource_id}/configuration"
+        f"https://{region}.console.aws.amazon.com/config/home?#/resources/timeline?"
+        f"resourceId={resource_id}&resourceName={resource_name}&resourceType={technology}"
     )
 
     url = f"/role/{account_id}?redirect={encoded_redirect}"
