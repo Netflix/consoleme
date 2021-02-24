@@ -150,11 +150,15 @@ logging_levels:
 #permission_templates:
 #   Reference the default values provided in consoleme/lib/defaults.py as PERMISSION_TEMPLATE_DEFAULTS
 
+# SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+# administrators and requesters about policy requests applicable to them.
 ses:
   support_reference: "Please contact us at consoleme@example.com if you have any questions or concerns."
   arn: "arn:aws:ses:us-east-1:123456789012:identity/example.com"
   consoleme:
     name: ConsoleMe
     sender: consoleme_test@example.com
+
+# Challenge URL authentication is used to authenticate users from CLI clients (like Weep).
 challenge_url:
   enabled: true
