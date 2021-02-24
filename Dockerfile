@@ -8,7 +8,7 @@ WORKDIR /apps/consoleme
 ENV NODE_OPTIONS="--max-old-space-size=20000"
 ENV SETUPTOOLS_USE_DISTUTILS=stdlib
 # Install dependencies
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash
 RUN apt-get clean
 RUN apt-get update
 RUN apt-get install build-essential libxml2-dev libxmlsec1-dev libxmlsec1-openssl musl-dev libcurl4-nss-dev python3-dev nodejs -y

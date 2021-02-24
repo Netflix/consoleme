@@ -18,6 +18,7 @@ class TestUserProfile(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     def test_profile(self):
+        self.maxDiff = None
         headers = {
             config.get("auth.user_header_name"): "user@example.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -41,7 +42,7 @@ class TestUserProfile(AsyncHTTPTestCase):
                 },
                 "user": "user@example.com",
                 "is_contractor": False,
-                "employee_photo_url": None,
+                "employee_photo_url": "https://www.gravatar.com/avatar/b58996c504c5638798eb6b511e6f49af?d=mp",
                 "employee_info_url": None,
                 "authorization": {
                     "can_edit_policies": False,
@@ -49,6 +50,10 @@ class TestUserProfile(AsyncHTTPTestCase):
                     "can_delete_roles": False,
                 },
                 "pages": {
+                    "header": {
+                        "custom_header_message_title": "",
+                        "custom_header_message_text": "",
+                    },
                     "groups": {"enabled": False},
                     "users": {"enabled": False},
                     "policies": {"enabled": True},

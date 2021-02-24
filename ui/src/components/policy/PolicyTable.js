@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Header } from "semantic-ui-react";
 import ConsoleMeDataTable from "../blocks/ConsoleMeDataTable";
-import { sendRequestCommon } from "../../helpers/utils";
 import ReactMarkdown from "react-markdown";
+import { useAuth } from "../../auth/AuthProviderDefault";
 
 const PolicyTable = () => {
+  const auth = useAuth();
+  const { sendRequestCommon } = auth;
   const [pageConfig, setPageConfig] = useState(null);
 
   useEffect(() => {
@@ -14,9 +16,12 @@ const PolicyTable = () => {
         "/api/v2/policies_page_config",
         "get"
       );
+      if (!data) {
+        return;
+      }
       setPageConfig(data);
     })();
-  }, []);
+  }, [sendRequestCommon]);
 
   if (!pageConfig) {
     return null;
@@ -36,7 +41,7 @@ const PolicyTable = () => {
           />
         </Header.Subheader>
       </Header>
-      <ConsoleMeDataTable config={tableConfig} />
+      <ConsoleMeDataTable config={tableConfig} {...auth} />
     </>
   );
 };

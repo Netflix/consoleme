@@ -12,7 +12,7 @@ import { PolicyProvider, usePolicyContext } from "./hooks/PolicyProvider";
 import IAMRolePolicy from "./IAMRolePolicy";
 import ResourcePolicy from "./ResourcePolicy";
 import ResourceDetail from "./ResourceDetail";
-import { DeleteResourceModel } from "./PolicyModals";
+import { DeleteResourceModal } from "./PolicyModals";
 import { useAuth } from "../../auth/AuthProviderDefault";
 
 const PolicyEditor = () => {
@@ -55,7 +55,7 @@ const PolicyEditor = () => {
       </>
       <ResourceDetail />
       <EditPolicy />
-      <DeleteResourceModel />
+      <DeleteResourceModal />
       <Dimmer active={isPolicyEditorLoading} inverted>
         <Loader />
       </Dimmer>

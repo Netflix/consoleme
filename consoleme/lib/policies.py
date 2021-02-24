@@ -1,3 +1,4 @@
+import base64
 import re
 import sys
 import time
@@ -13,7 +14,10 @@ from deepdiff import DeepDiff
 from policy_sentry.util.actions import get_service_from_action
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import InvalidRequestParameter
+from consoleme.exceptions.exceptions import (
+    InvalidRequestParameter,
+    MissingConfigurationValue,
+)
 from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import (
     get_region_from_arn,
@@ -309,6 +313,10 @@ async def update_resource_policy(
         region=region or config.region,
         session_name="ConsoleMe",
         arn_partition="aws",
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     resource = await sync_to_async(boto3_cached_conn)(
@@ -320,6 +328,10 @@ async def update_resource_policy(
         region=region or config.region,
         session_name="ConsoleMe",
         arn_partition="aws",
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     changes: bool = False
@@ -905,11 +917,31 @@ async def get_url_for_resource(
 
 
 async def get_aws_config_history_url_for_resource(
-    account_id, resource_id, technology, region="us-east-1"
+    account_id, resource_id, resource_name, technology, region="us-east-1"
 ):
+    if config.get("get_aws_config_history_url_for_resource.generate_conglomo_url"):
+        return await get_conglomo_url_for_resource(
+            account_id, resource_id, technology, region
+        )
+
     encoded_redirect = urllib.parse.quote_plus(
-        f"https://{region}.console.aws.amazon.com/config/home?#/timeline/{technology}/{resource_id}/configuration"
+        f"https://{region}.console.aws.amazon.com/config/home?#/resources/timeline?"
+        f"resourceId={resource_id}&resourceName={resource_name}&resourceType={technology}"
     )
 
     url = f"/role/{account_id}?redirect={encoded_redirect}"
     return url
+
+
+async def get_conglomo_url_for_resource(
+    account_id, resource_id, technology, region="global"
+):
+    conglomo_url = config.get("get_aws_config_history_url_for_resource.conglomo_url")
+    if not conglomo_url:
+        raise MissingConfigurationValue(
+            "Unable to find conglomo URL in configuration: `get_aws_config_history_url_for_resource.conglomo_url`"
+        )
+    encoded_resource_id = base64.urlsafe_b64encode(resource_id.encode("utf-8")).decode(
+        "utf-8"
+    )
+    return f"{conglomo_url}/resource/{account_id}/{region}/{technology}/{encoded_resource_id}"

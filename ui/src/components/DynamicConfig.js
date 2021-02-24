@@ -9,12 +9,13 @@ import {
   Message,
   Divider,
 } from "semantic-ui-react";
-import { sendRequestCommon } from "../helpers/utils";
+import { useAuth } from "../auth/AuthProviderDefault";
 
 function ConsoleMeDynamicConfig() {
   const [config, setConfig] = useState("");
   const [configSha256, setConfigSha256] = useState("");
   const [statusMessage, setStatusMessage] = useState(null);
+  const { sendRequestCommon } = useAuth();
 
   useEffect(() => {
     async function fetchDynamicConfig() {
@@ -23,11 +24,14 @@ function ConsoleMeDynamicConfig() {
         "/api/v2/dynamic_config",
         "get"
       );
+      if (!resJson) {
+        return;
+      }
       setConfigSha256(resJson.sha256);
       setConfig(resJson.dynamicConfig);
     }
     fetchDynamicConfig();
-  }, []);
+  }, [sendRequestCommon]);
 
   const updateConfig = async () => {
     const res = await sendRequestCommon(

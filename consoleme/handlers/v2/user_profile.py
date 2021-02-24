@@ -47,6 +47,14 @@ class UserProfileHandler(BaseAPIV1Handler):
                 "can_delete_roles": can_delete_roles(self.user, self.groups),
             },
             "pages": {
+                "header": {
+                    "custom_header_message_title": config.get(
+                        "headers.custom_header_message.title", ""
+                    ),
+                    "custom_header_message_text": config.get(
+                        "headers.custom_header_message.text", ""
+                    ),
+                },
                 "groups": {
                     "enabled": config.get("headers.group_access.enabled", False)
                 },

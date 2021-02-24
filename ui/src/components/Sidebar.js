@@ -18,7 +18,6 @@ const listRecentRoles = (recentRoles, user) => {
     return (
       <Menu.Item as={NavLink} name={role} key={role} to={"/role/" + role}>
         <Header
-          as="a"
           color="blue"
           style={{
             fontSize: "14px",
@@ -27,9 +26,9 @@ const listRecentRoles = (recentRoles, user) => {
           <Header.Content>
             {accountName ? accountName : accountNumber}
             <Header.Subheader
-              as="a"
               style={{
                 fontSize: "14px",
+                color: "grey",
               }}
             >
               {roleName}
@@ -134,7 +133,13 @@ const ConsoleMeSidebar = () => {
         <Menu.Item>
           {consoleme_logo && (
             <a href={"/"} rel="noopener noreferrer" target="_blank">
-              <Image size="medium" src={consoleme_logo} />
+              <Image
+                style={{
+                  height: "250px",
+                  margin: "auto",
+                }}
+                src={consoleme_logo}
+              />
             </a>
           )}
           <br />

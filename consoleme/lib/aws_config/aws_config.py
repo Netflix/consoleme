@@ -54,6 +54,10 @@ def query(
                 account_number=account_id,
                 assume_role=config.get("policies.role_name"),
                 region=region,
+                sts_client_kwargs=dict(
+                    region_name=config.region,
+                    endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                ),
             )
             response = config_client.select_resource_config(Expression=query, Limit=100)
             for r in response.get("Results", []):

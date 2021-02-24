@@ -24,6 +24,7 @@ from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import (
     fetch_resource_details,
     generate_updated_resource_policy,
+    get_bucket_location_with_fallback,
     get_region_from_arn,
     get_resource_account,
     get_resource_from_arn,
@@ -1061,6 +1062,10 @@ async def apply_non_iam_resource_tag_change(
     resource_account = resource_arn_parsed["account"]
     if not resource_account:
         resource_account = await get_resource_account(change.principal_arn)
+    if resource_type == "s3" and not resource_region:
+        resource_region = await get_bucket_location_with_fallback(
+            resource_name, resource_account
+        )
 
     if not resource_account:
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
@@ -1102,6 +1107,10 @@ async def apply_non_iam_resource_tag_change(
             region=resource_region or config.region,
             session_name="ConsoleMe_apply_resource_tag_v2",
             arn_partition="aws",
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
 
         resource_details = await fetch_resource_details(
@@ -1254,6 +1263,10 @@ async def apply_resource_policy_change(
     resource_account = resource_arn_parsed["account"]
     if not resource_account:
         resource_account = await get_resource_account(change.arn)
+    if resource_type == "s3" and not resource_region:
+        resource_region = await get_bucket_location_with_fallback(
+            resource_name, resource_account
+        )
 
     if not resource_account:
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
@@ -1295,6 +1308,10 @@ async def apply_resource_policy_change(
             region=resource_region or config.region,
             session_name="ConsoleMe_apply_resource_policy_v2",
             arn_partition="aws",
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
         if resource_type == "s3":
             await sync_to_async(client.put_bucket_policy)(

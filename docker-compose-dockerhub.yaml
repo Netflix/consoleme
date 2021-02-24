@@ -1,0 +1,59 @@
+version: "3"
+# Never use this in a production environment.
+services:
+  consoleme:
+    image: "consoleme/consoleme"
+    ports:
+      - "3000:3000"
+    tty: true
+    stdin_open: true
+    volumes:
+      - ~/.aws:/root/.aws:cached
+      - ~/.ssh:/root/.ssh:cached
+      - ~/.config/consoleme:/etc/consoleme/
+    environment:
+      - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_docker_development.yaml
+      - SETUPTOOLS_USE_DISTUTILS=stdlib
+    # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
+    # We're running `FORCE_COLOR=true yarn --cwd /apps/consoleme/ui/ start | cat` instead of
+    # `yarn --cwd /apps/consoleme/ui/ start`  to prevent Yarn from clearing the console, as this affects how docker logs
+    # are displayed
+    command: >
+      bash -c '
+      python scripts/retrieve_or_decode_configuration.py;
+      pip install argh watchdog;
+      pip install -e /apps/consoleme/default_plugins;
+      watchmedo auto-restart --recursive --pattern="*.py;*.yaml" --directory="." python consoleme/__main__.py &
+      FORCE_COLOR=true yarn --cwd /apps/consoleme/ui/ start | cat'
+    depends_on:
+      - consoleme-redis
+      - consoleme-dynamodb
+    links:
+      - consoleme-redis
+      - consoleme-dynamodb
+  consoleme-celery:
+    image: "consoleme/consoleme"
+    tty: true
+    stdin_open: true
+    volumes:
+      - ~/.aws:/root/.aws:cached
+      - ~/.ssh:/root/.ssh:cached
+      - ~/.config/consoleme:/etc/consoleme/
+    environment:
+      - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_docker_development.yaml
+      - SETUPTOOLS_USE_DISTUTILS=stdlib
+      - COLUMNS=80 # Needed for Celery: https://github.com/celery/celery/issues/5761
+    # Run Redis with ConsoleMe configuration
+    command: >
+      bash -c '
+      python scripts/retrieve_or_decode_configuration.py;
+      python scripts/initialize_dynamodb_oss.py;
+      python scripts/initialize_redis_oss.py --use_celery=true;
+      celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=8
+      '
+    depends_on:
+      - consoleme-redis
+      - consoleme-dynamodb
+    links:
+      - consoleme-redis
+      - consoleme-dynamodb

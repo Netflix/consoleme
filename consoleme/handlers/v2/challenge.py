@@ -235,7 +235,7 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
                     "status": challenge["status"],
                     "cookie_name": config.get("auth_cookie_name", "consoleme_auth"),
                     "expiration": int(jwt_expiration.timestamp()),
-                    "encoded_jwt": encoded_jwt.decode("utf-8"),
+                    "encoded_jwt": encoded_jwt,
                     "user": challenge["user"],
                 }
             )

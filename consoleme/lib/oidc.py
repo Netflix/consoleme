@@ -6,7 +6,7 @@ import jwt
 import pytz
 import tornado.httpclient
 import ujson as json
-from jwt.algorithms import RSAAlgorithm
+from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 from jwt.exceptions import DecodeError
 from tornado import httputil
 
@@ -64,11 +64,14 @@ async def populate_oidc_config():
         },
     )
     oidc_config["jwks_data"] = json.loads(res.body)
-    oidc_config["jwt_keys"] = {
-        k["kid"]: RSAAlgorithm.from_jwk(json.dumps(k))
-        for k in oidc_config["jwks_data"]["keys"]
-    }
-
+    oidc_config["jwt_keys"] = {}
+    for k in oidc_config["jwks_data"]["keys"]:
+        key_type = k["kty"]
+        key_id = k["kid"]
+        if key_type == "RSA":
+            oidc_config["jwt_keys"][key_id] = RSAAlgorithm.from_jwk(json.dumps(k))
+        elif key_type == "EC":
+            oidc_config["jwt_keys"][key_id] = ECAlgorithm.from_jwk(json.dumps(k))
     return oidc_config
 
 
@@ -165,7 +168,7 @@ async def authenticate_user_by_oidc(request):
                 "get_user_by_oidc_settings.access_token_response_key", "access_token"
             )
         )
-        jwt_verify = config.get("get_user_by_oidc_settings.jwt_verify")
+        jwt_verify = config.get("get_user_by_oidc_settings.jwt_verify", True)
         if jwt_verify:
             header = jwt.get_unverified_header(id_token)
             key_id = header["kid"]
@@ -180,7 +183,7 @@ async def authenticate_user_by_oidc(request):
                 id_token,
                 pub_key,
                 audience=oidc_config["client_id"],
-                algorithm=algorithm,
+                algorithms=algorithm,
             )
 
             email = decoded_id_token.get(
@@ -204,9 +207,9 @@ async def authenticate_user_by_oidc(request):
                     audience=config.get(
                         "get_user_by_oidc_settings.access_token_audience"
                     ),
-                    algorithm=algorithm,
+                    algorithms=algorithm,
                 )
-            except DecodeError as e:
+            except (DecodeError, KeyError) as e:
                 # This exception occurs when the access token is not JWT-parsable. It is expected with some IdPs.
                 log.debug(
                     {

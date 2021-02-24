@@ -1157,6 +1157,18 @@ components:
             template_link:
               type: string
               readOnly: true
+            created_time:
+              type: string
+              readOnly: true
+            updated_time:
+              type: string
+              readOnly: true
+            last_used_time:
+              type: string
+              readOnly: true
+            description:
+              type: string
+              readOnly: true
     UserModel:
       type: object
       readOnly: true

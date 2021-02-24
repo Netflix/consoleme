@@ -5,7 +5,6 @@ import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import {
   getMonacoCompletions,
   getMonacoTriggerCharacters,
-  sendRequestCommon,
 } from "../../helpers/utils";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import { useAuth } from "../../auth/AuthProviderDefault";
@@ -160,7 +159,8 @@ export const PolicyMonacoEditor = ({
         />
         {
           // Show delete button for inline policies only
-          context === "inline_policy" ? (
+          context === "inline_policy" &&
+          user?.authorization?.can_edit_policies ? (
             <>
               <Button.Or />
               <Button
@@ -178,7 +178,7 @@ export const PolicyMonacoEditor = ({
 };
 
 export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
-  const { user } = useAuth();
+  const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
 
   const [newPolicyName, setNewPolicyName] = useState("");
@@ -205,6 +205,9 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
         "/api/v2/permission_templates/",
         "get"
       );
+      if (!data) {
+        return;
+      }
       setTemplateOptions(data.permission_templates);
       setPolicyDocument(
         JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")

@@ -15,6 +15,7 @@ data "aws_iam_policy_document" "ConsoleMeInstanceProfile" {
       "cloudwatch:*",
       "config:*",
       "dynamodb:*",
+      "ec2:describeregions",
       "iam:list*",
       "sns:*",
       "sqs:*",

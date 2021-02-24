@@ -36,7 +36,7 @@ async def get_config_timeline_url_for_role(role, account_id):
     resource_id = role.get("resourceId")
     if resource_id:
         config_history_url = await get_aws_config_history_url_for_resource(
-            account_id, resource_id, "AWS::IAM::Role"
+            account_id, resource_id, role["arn"], "AWS::IAM::Role"
         )
         return config_history_url
 
@@ -153,6 +153,9 @@ async def get_role_details(
             tags=role["policy"]["Tags"],
             templated=True if template else False,
             template_link=template,
+            created_time=role["policy"].get("CreateDate"),
+            last_used_time=role["policy"].get("RoleLastUsed", {}).get("LastUsedDate"),
+            description=role["policy"].get("Description"),
         )
     else:
         return RoleModel(

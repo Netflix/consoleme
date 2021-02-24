@@ -361,7 +361,11 @@ class Aws:
             "message": "Generating credentials",
         }
         session = boto3.Session()
-        client = session.client("sts", region_name=config.region)
+        client = session.client(
+            "sts",
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        )
 
         ip_restrictions = config.get("aws.ip_restrictions")
         stats.count("aws.get_credentials", tags={"role": role, "user": user})

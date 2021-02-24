@@ -9,7 +9,6 @@ import {
   Loader,
   Dimmer,
 } from "semantic-ui-react";
-import { sendProposedPolicy } from "../../helpers/utils";
 
 class ManagedPolicyChangeComponent extends Component {
   constructor(props) {
@@ -24,7 +23,6 @@ class ManagedPolicyChangeComponent extends Component {
       requestReadOnly: this.props.requestReadOnly,
     };
 
-    this.sendProposedPolicy = sendProposedPolicy.bind(this);
     this.onSubmitChange = this.onSubmitChange.bind(this);
     this.onCancelChange = this.onCancelChange.bind(this);
     this.reloadDataFromBackend = props.reloadDataFromBackend;
@@ -53,11 +51,19 @@ class ManagedPolicyChangeComponent extends Component {
   }
 
   onSubmitChange() {
-    this.sendProposedPolicy("apply_change");
+    const applyChange = this.props.sendProposedPolicy.bind(
+      this,
+      "apply_change"
+    );
+    applyChange();
   }
 
   onCancelChange() {
-    this.sendProposedPolicy("cancel_change");
+    const cancelChange = this.props.sendProposedPolicy.bind(
+      this,
+      "cancel_change"
+    );
+    cancelChange();
   }
 
   render() {

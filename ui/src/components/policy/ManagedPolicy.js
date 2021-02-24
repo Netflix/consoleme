@@ -12,11 +12,10 @@ import {
 } from "semantic-ui-react";
 import useManagedPolicy from "./hooks/useManagedPolicy";
 import { JustificationModal } from "./PolicyModals";
-import { sendRequestCommon } from "../../helpers/utils";
 import { useAuth } from "../../auth/AuthProviderDefault";
 
 const ManagedPolicy = () => {
-  const { user } = useAuth();
+  const { user, sendRequestCommon } = useAuth();
   const {
     accountID = "",
     managedPolicies = [],
@@ -37,9 +36,12 @@ const ManagedPolicy = () => {
         `/api/v2/managed_policies/${accountID}`,
         "get"
       );
+      if (!result) {
+        return;
+      }
       setAvailableManagedPolicies(result);
     })();
-  }, [accountID]);
+  }, [accountID, sendRequestCommon]);
 
   const onManagePolicyChange = (e, { value }) => {
     addManagedPolicy(value);

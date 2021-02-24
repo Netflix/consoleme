@@ -17,6 +17,7 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
         "config:BatchGet*",
         "config:List*",
         "config:Select*",
+        "ec2:describeregions",
         "ec2:DescribeSubnets",
         "ec2:describevpcendpoints",
         "ec2:DescribeVpcs",

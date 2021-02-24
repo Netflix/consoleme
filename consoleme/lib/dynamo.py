@@ -73,8 +73,8 @@ class BaseDynamoHandler:
                     region=config.region,
                 )
             table = resource.Table(table_name)
-        except Exception:
-            log.error({"function": function}, exc_info=True)
+        except Exception as e:
+            log.error({"function": function, "error": e}, exc_info=True)
             stats.count(f"{function}.exception")
             return None
         else:
@@ -332,11 +332,12 @@ class UserDynamoHandler(BaseDynamoHandler):
             await sync_to_async(self.api_health_roles_table.put_item)(
                 Item=self._data_to_dynamo_replace(request)
             )
-        except Exception:
+        except Exception as e:
             error: dict = {
                 "function": function,
                 "message": "Unable to update api_health_info request",
                 "request": request,
+                "error": str(e),
             }
             log.error(error, exc_info=True)
             raise Exception(error)
@@ -411,8 +412,8 @@ class UserDynamoHandler(BaseDynamoHandler):
                 await sync_to_async(self.policy_requests_table.put_item)(
                     Item=self._data_to_dynamo_replace(new_request)
                 )
-            except Exception:
-                error = f"Unable to add new policy request: {new_request}"
+            except Exception as e:
+                error = f"Unable to add new policy request: {new_request}: {str(e)}"
                 log.error(error, exc_info=True)
                 raise Exception(error)
         else:
@@ -475,8 +476,8 @@ class UserDynamoHandler(BaseDynamoHandler):
             await sync_to_async(self.policy_requests_table.put_item)(
                 Item=self._data_to_dynamo_replace(updated_request)
             )
-        except Exception:
-            error = f"Unable to add updated policy request: {updated_request}"
+        except Exception as e:
+            error = f"Unable to add updated policy request: {updated_request}: {str(e)}"
             log.error(error, exc_info=True)
             raise Exception(error)
 
@@ -581,8 +582,8 @@ class UserDynamoHandler(BaseDynamoHandler):
         )
         try:
             self.users_table.put_item(Item=self._data_to_dynamo_replace(user_entry))
-        except Exception:
-            error = f"Unable to add user submission: {user_entry}"
+        except Exception as e:
+            error = f"Unable to add user submission: {user_entry}: {str(e)}"
             log.error(error, exc_info=True)
             raise Exception(error)
         return user_entry
@@ -725,8 +726,11 @@ class UserDynamoHandler(BaseDynamoHandler):
                 )
         try:
             self.requests_table.put_item(Item=self._data_to_dynamo_replace(new_request))
-        except Exception:
-            error = {"error": "Unable to add user request", "request": new_request}
+        except Exception as e:
+            error = {
+                "error": f"Unable to add user request: {str(e)}",
+                "request": new_request,
+            }
             log.error(error, exc_info=True)
             raise Exception(error)
 
@@ -838,8 +842,8 @@ class UserDynamoHandler(BaseDynamoHandler):
                         self.requests_table.put_item(
                             Item=self._data_to_dynamo_replace(request)
                         )
-                    except Exception:
-                        error = f"Unable to add user request: {request}"
+                    except Exception as e:
+                        error = f"Unable to add user request: {request}: {str(e)}"
                         log.error(error, exc_info=True)
                         raise Exception(error)
                     updated = True
@@ -890,8 +894,8 @@ class UserDynamoHandler(BaseDynamoHandler):
             modified_request = request
             try:
                 self.requests_table.put_item(Item=self._data_to_dynamo_replace(request))
-            except Exception:
-                error = f"Unable to add user request: {request}"
+            except Exception as e:
+                error = f"Unable to add user request: {request} : {str(e)}"
                 log.error(error, exc_info=True)
                 raise Exception(error)
         return modified_request
@@ -1000,11 +1004,12 @@ class IAMRoleDynamoHandler(BaseDynamoHandler):
             # Unfortunately, DDB does not support batch updates :(... So, we need to update each item individually :/
             self._update_role_table_value(role_ddb)
 
-        except Exception:
+        except Exception as e:
             log_data = {
                 "message": "Error syncing Account's IAM roles to DynamoDB",
                 "account_id": role_ddb["accountId"],
                 "role_ddb": role_ddb,
+                "error": str(e),
             }
             log.error(log_data, exc_info=True)
             raise

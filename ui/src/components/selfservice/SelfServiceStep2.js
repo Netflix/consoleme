@@ -18,9 +18,12 @@ import SelfServiceComponent from "./SelfServiceComponent";
 const DEFAULT_AWS_SERVICE = "s3";
 
 class SelfServiceStep2 extends Component {
-  state = {
-    service: DEFAULT_AWS_SERVICE,
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      service: DEFAULT_AWS_SERVICE,
+    };
+  }
 
   handleServiceTypeChange(e, { value }) {
     this.setState({
@@ -148,6 +151,7 @@ class SelfServiceStep2 extends Component {
                   role={role}
                   service={service}
                   updatePermission={this.handlePermissionAdd.bind(this)}
+                  {...this.props}
                 />
               ) : null}
             </Grid.Column>

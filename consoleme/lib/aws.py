@@ -3,7 +3,7 @@ import sys
 import time
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pytz
 import sentry_sdk
@@ -11,7 +11,12 @@ from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
 from cloudaux import CloudAux
 from cloudaux.aws.decorators import rate_limited
-from cloudaux.aws.s3 import get_bucket_policy, get_bucket_tagging
+from cloudaux.aws.s3 import (
+    get_bucket_location,
+    get_bucket_policy,
+    get_bucket_resource,
+    get_bucket_tagging,
+)
 from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
@@ -308,12 +313,18 @@ async def fetch_assume_role_policy(role_arn: str) -> Optional[Dict]:
 
 
 async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> dict:
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
     arn: str = f"arn:aws:sns:{region}:{account_id}:{resource_name}"
     client = await sync_to_async(boto3_cached_conn)(
         "sns",
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=region,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     result: Dict = await sync_to_async(get_topic_attributes)(
@@ -321,21 +332,39 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
         assume_role=config.get("policies.role_name"),
         TopicArn=arn,
         region=region,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     tags: Dict = await sync_to_async(client.list_tags_for_resource)(ResourceArn=arn)
     result["TagSet"] = tags["Tags"]
     if not isinstance(result["Policy"], dict):
         result["Policy"] = json.loads(result["Policy"])
+
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        arn,
+        resource_name,
+        "AWS::SNS::Topic",
+        region=region,
+    )
     return result
 
 
 async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> dict:
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
     queue_url: str = await sync_to_async(get_queue_url)(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=region,
         QueueName=resource_name,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     result: Dict = await sync_to_async(get_queue_attributes)(
@@ -343,7 +372,11 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         assume_role=config.get("policies.role_name"),
         region=region,
         QueueUrl=queue_url,
-        AttributeNames=["Policy", "QueueArn"],
+        AttributeNames=["All"],
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
 
     tags: Dict = await sync_to_async(list_queue_tags)(
@@ -351,13 +384,57 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         assume_role=config.get("policies.role_name"),
         region=region,
         QueueUrl=queue_url,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
     )
     result["TagSet"]: list = []
     result["QueueUrl"]: str = queue_url
     if tags:
         result["TagSet"] = [{"Key": k, "Value": v} for k, v in tags.items()]
-
+    if result.get("CreatedTimestamp"):
+        result["created_time"] = datetime.utcfromtimestamp(
+            int(result["CreatedTimestamp"])
+        ).isoformat()
+    if result.get("LastModifiedTimestamp"):
+        result["updated_time"] = datetime.utcfromtimestamp(
+            int(result["LastModifiedTimestamp"])
+        ).isoformat()
+    # Unfortunately, the queue_url we get from our `get_queue_url` call above doesn't match the ID of the queue in
+    # AWS Config, so we must hack our own.
+    queue_url_manual = (
+        f"https://sqs.{region}.amazonaws.com/{account_id}/{resource_name}"
+    )
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        queue_url_manual,
+        resource_name,
+        "AWS::SQS::Queue",
+        region=region,
+    )
     return result
+
+
+async def get_bucket_location_with_fallback(
+    bucket_name: str, account_id: str, fallback_region: str = config.region
+) -> str:
+    try:
+        bucket_location_res = await sync_to_async(get_bucket_location)(
+            Bucket=bucket_name,
+            account_number=account_id,
+            assume_role=config.get("policies.role_name"),
+            region=config.region,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
+        )
+        bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
+    except ClientError:
+        bucket_location = fallback_region
+        sentry_sdk.capture_exception()
+    return bucket_location
 
 
 async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
@@ -368,19 +445,46 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     :return:
     """
 
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
     log_data: Dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "bucket_name": bucket_name,
         "account_id": account_id,
     }
     log.debug(log_data)
+    created_time = None
+    bucket_location = "us-east-1"
 
     try:
-        policy: Dict = await sync_to_async(get_bucket_policy)(
+        bucket_resource = await sync_to_async(get_bucket_resource)(
+            bucket_name,
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
+        )
+        created_time_stamp = bucket_resource.creation_date
+        if created_time_stamp:
+            created_time = created_time_stamp.isoformat()
+    except ClientError:
+        sentry_sdk.capture_exception()
+    try:
+        bucket_location = await get_bucket_location_with_fallback(
+            bucket_name, account_id
+        )
+        policy: Dict = await sync_to_async(get_bucket_policy)(
+            account_number=account_id,
+            assume_role=config.get("policies.role_name"),
+            region=bucket_location,
             Bucket=bucket_name,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
     except ClientError as e:
         if "NoSuchBucketPolicy" in str(e):
@@ -391,8 +495,12 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
         tags: Dict = await sync_to_async(get_bucket_tagging)(
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
-            region=config.region,
+            region=bucket_location,
             Bucket=bucket_name,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
         )
     except ClientError as e:
         if "NoSuchTagSet" in str(e):
@@ -400,7 +508,14 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
         else:
             raise
 
-    result: Dict = {**policy, **tags}
+    result: Dict = {**policy, **tags, "created_time": created_time}
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        bucket_name,
+        bucket_name,
+        "AWS::S3::Bucket",
+        region=bucket_location,
+    )
     result["Policy"] = json.loads(result["Policy"])
 
     return result
@@ -1005,3 +1120,28 @@ def get_service_from_arn(arn):
     """Given an ARN string, return the service """
     result = parse_arn(arn)
     return result["service"]
+
+
+def get_enabled_regions_for_account(account_id: str) -> Set[str]:
+    """
+    Returns a list of regions enabled for an account based on an EC2 Describe Regions call. Can be overridden with a
+    global configuration of static regions (Configuration key: `celery.sync_regions`), or a configuration of specific
+    regions per account (Configuration key:  `get_enabled_regions_for_account.{account_id}`)
+    """
+    enabled_regions_for_account = config.get(
+        f"get_enabled_regions_for_account.{account_id}"
+    )
+    if enabled_regions_for_account:
+        return enabled_regions_for_account
+
+    celery_sync_regions = config.get("celery.sync_regions", [])
+    if celery_sync_regions:
+        return celery_sync_regions
+
+    client = boto3_cached_conn(
+        "ec2",
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        read_only=True,
+    )
+    return set(r["RegionName"] for r in client.describe_regions()["Regions"])

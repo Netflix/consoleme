@@ -1,10 +1,9 @@
 import { useEffect, useReducer } from "react";
 import { initialState, reducer } from "./resourcePolicyReducer";
 import { usePolicyContext } from "./PolicyProvider";
-import { sendRequestV2 } from "../../../helpers/utils";
 
 const useResourcePolicy = () => {
-  const { resource = {} } = usePolicyContext();
+  const { resource = {}, sendRequestV2 } = usePolicyContext();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
