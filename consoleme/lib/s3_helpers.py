@@ -113,7 +113,7 @@ def map_operation_to_api(operation, default):
         "REST.PUT.PART": "s3:PutObject",
         "REST.PUT.PUBLIC_ACCESS_BLOCK": "s3:PutBucketPublicAccessBlock",
     }
-    api_call = operations_map.get(operation, None)
+    api_call = operations_map.get(operation)
     if api_call is None:
         stats.count(f"{function}.error")
         log.error(
