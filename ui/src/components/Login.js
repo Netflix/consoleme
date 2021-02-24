@@ -12,7 +12,6 @@ import {
 import { useHistory } from "react-router-dom";
 import qs from "qs";
 
-const signInWithSSO = () => {};
 const LoginForm = () => {
   const [pageConfig, setPageConfig] = useState(null);
   const [userName, setUserName] = useState(null);
@@ -57,6 +56,20 @@ const LoginForm = () => {
     setPassword(e.target.value);
   };
 
+  const signInWithSSO = async () => {
+    const resp = await fetch("/auth?use_sso=true&redirect_url=" + redirectUrl, {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        Accept: "application/json",
+      },
+    });
+    const respJson = await resp.json();
+    console.log(respJson);
+    if (respJson.type === "redirect") {
+      window.location.href = respJson.redirect_url;
+    }
+  };
+
   const signInWithPassword = async () => {
     const res = await fetch("/api/v2/login", {
       method: "POST",
@@ -76,7 +89,7 @@ const LoginForm = () => {
     if (res.status === 200) {
       const resJson = await res.json();
       const urlPath = new URL(resJson.redirect_url);
-      history.push(urlPath.pathname);
+      history.push(urlPath.pathname + urlPath.search);
     } else if (res.status === 403) {
       let resJson = "";
       try {
