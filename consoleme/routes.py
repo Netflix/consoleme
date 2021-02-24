@@ -63,6 +63,7 @@ from consoleme.handlers.v2.self_service import (
 )
 from consoleme.handlers.v2.typeahead import ResourceTypeAheadHandlerV2
 from consoleme.handlers.v2.user import (
+    LoginConfigurationHandler,
     LoginHandler,
     UserManagementHandler,
     UserRegistrationHandler,
@@ -129,6 +130,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
         (r"/api/v2/login", LoginHandler),
+        (r"/api/v2/login_configuration", LoginConfigurationHandler),
         (r"/api/v2/user", UserManagementHandler),
         (r"/api/v2/user_registration", UserRegistrationHandler),
         (r"/api/v2/policies", PoliciesHandler),

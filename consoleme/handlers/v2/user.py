@@ -123,6 +123,32 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
         self.write(res.json())
 
 
+class LoginConfigurationHandler(tornado.web.RequestHandler):
+    def get(self):
+        # TODO: Reuse auth.password_login configuration, whatever it's called
+        default_configuration = {
+            "enabled": config.get("LoginConfigurationHandler.enabled", True),
+            "page_title": config.get(
+                "LoginConfigurationHandler.page_title",
+                "Welcome to ConsoleMe - Please Sign-In",
+            ),
+            "allow_password_login": config.get(
+                "LoginConfigurationHandler.allow_password_login", True
+            ),
+            "allow_sso_login": config.get(
+                "LoginConfigurationHandler.allow_sso_login", True
+            ),
+            "allow_sign_up": config.get(
+                "LoginConfigurationHandler.allow_sign_up", False
+            ),
+            "custom_message": "",
+        }
+        login_configuration = config.get(
+            "LoginConfigurationHandler.login_configuration", default_configuration
+        )
+        self.write(login_configuration)
+
+
 class LoginHandler(tornado.web.RequestHandler):
     """
     Handles user log-in flow if password authentication is enabled.
@@ -130,6 +156,9 @@ class LoginHandler(tornado.web.RequestHandler):
 
     def initialize(self):
         self.ddb = UserDynamoHandler()
+
+    def check_xsrf_cookie(self):
+        pass
 
     def set_default_headers(self) -> None:
         self.set_header("Content-Type", "application/json")

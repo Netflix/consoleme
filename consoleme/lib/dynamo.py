@@ -593,17 +593,19 @@ class UserDynamoHandler(BaseDynamoHandler):
         )
         user = None
 
+        generic_error = ["User doesn't exist, or password is incorrect."]
+
         if user_entry and "Items" in user_entry and len(user_entry["Items"]) == 1:
             user = user_entry["Items"][0]
         if not user:
             error = f"Unable to find user: {login_attempt.username}"
             log.error({**log_data, "message": error})
-            return AuthenticationResponse(authenticated=False, errors=[error])
+            return AuthenticationResponse(authenticated=False, errors=generic_error)
 
         if not user.get("password"):
             error = "User exists, but doesn't have a password stored in the database"
             log.error({**log_data, "message": error})
-            return AuthenticationResponse(authenticated=False, errors=[error])
+            return AuthenticationResponse(authenticated=False, errors=generic_error)
 
         password_hash_matches = bcrypt.checkpw(
             login_attempt.password.encode("utf-8"), user["password"].value
@@ -611,7 +613,7 @@ class UserDynamoHandler(BaseDynamoHandler):
         if not password_hash_matches:
             error = "Password does not match"
             log.error({**log_data, "message": error})
-            return AuthenticationResponse(authenticated=False, errors=[error])
+            return AuthenticationResponse(authenticated=False, errors=generic_error)
         return AuthenticationResponse(
             authenticated=True, username=user["username"], groups=user["groups"]
         )
