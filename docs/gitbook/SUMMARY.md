@@ -31,6 +31,7 @@
     * [Role Tags](configuration/role-credential-authorization/role-tagging-recommended/README.md)
       * [Role Tagging Service Control Policy \(Recommended\)](configuration/role-credential-authorization/role-tagging-recommended/role-tagging-service-control-policy-recommended.md)
     * [Role Authorization through Dynamic Configuration](configuration/role-credential-authorization/dynamic-configuration-1.md)
+    * [Custom Authorization \(Internal Plugin\)](configuration/role-credential-authorization/custom-authorization-internal-plugin.md)
   * [Account Syncing](configuration/account-syncing.md)
   * [Dynamic Configuration](configuration/dynamic-configuration.md)
   * [AWS Resource Syncing](configuration/resource-syncing.md)
