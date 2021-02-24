@@ -65,7 +65,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                     "user": self.user,
                     "role": role,
                     "authorized": False,
-                    "redirect": True if redirect else False,
+                    "redirect": bool(redirect),
                 },
             )
             log_data[
@@ -82,7 +82,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 "user": self.user,
                 "role": role,
                 "authorized": True,
-                "redirect": True if redirect else False,
+                "redirect": bool(redirect),
             },
         )
 
@@ -94,7 +94,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                     "user": self.user,
                     "role": role,
                     "authorized": False,
-                    "redirect": True if redirect else False,
+                    "redirect": bool(redirect),
                 },
             )
             log_data[
