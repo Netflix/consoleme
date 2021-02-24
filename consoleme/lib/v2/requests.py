@@ -1021,7 +1021,7 @@ async def populate_cross_account_resource_policies(
             )
         )
     concurrent_tasks_results = await asyncio.gather(*concurrent_tasks)
-    resource_policies_changed = True if any(concurrent_tasks_results) else False
+    resource_policies_changed = bool(any(concurrent_tasks_results))
 
     log_data["message"] = "Done populating cross account resource policies"
     log_data["request"] = extended_request.dict()

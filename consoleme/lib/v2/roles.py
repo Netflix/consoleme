@@ -151,7 +151,7 @@ async def get_role_details(
             apps=await get_app_details_for_role(arn),
             managed_policies=role["policy"]["AttachedManagedPolicies"],
             tags=role["policy"]["Tags"],
-            templated=True if template else False,
+            templated=bool(template),
             template_link=template,
             created_time=role["policy"].get("CreateDate"),
             last_used_time=role["policy"].get("RoleLastUsed", {}).get("LastUsedDate"),
