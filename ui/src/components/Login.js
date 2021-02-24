@@ -24,7 +24,6 @@ const LoginForm = () => {
   });
 
   const history = useHistory();
-  // TODO, pull login config and render login page based on it.
   useEffect(() => {
     (async () => {
       if (parsedQueryString) {
@@ -76,7 +75,8 @@ const LoginForm = () => {
 
     if (res.status === 200) {
       const resJson = await res.json();
-      history.push(resJson.redirect_url);
+      const urlPath = new URL(resJson.redirect_url);
+      history.push(urlPath.pathname);
     } else if (res.status === 403) {
       let resJson = "";
       try {
@@ -87,8 +87,6 @@ const LoginForm = () => {
       }
       setErrorMessage(resJson);
     }
-
-    // TODO: Show authentication errors here if non 200 response
   };
 
   return (

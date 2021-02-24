@@ -322,6 +322,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 after_redirect_uri = self.request.arguments.get("redirect_url", [""])[0]
                 if after_redirect_uri and isinstance(after_redirect_uri, bytes):
                     after_redirect_uri = after_redirect_uri.decode("utf-8")
+                self.set_status(403)
                 self.write(
                     {
                         "type": "redirect",

@@ -96,7 +96,7 @@ class TestLoginApi(AsyncHTTPTestCase):
                 "redirect_url": None,
                 "status_code": 403,
                 "message": None,
-                "errors": ["Unable to find user: fakeuser"],
+                "errors": ["User doesn't exist, or password is incorrect."],
                 "data": None,
             },
         )
@@ -115,7 +115,7 @@ class TestLoginApi(AsyncHTTPTestCase):
             json.loads(response.body),
             {
                 "data": None,
-                "errors": ["Password does not match"],
+                "errors": ["User doesn't exist, or password is incorrect."],
                 "message": None,
                 "reason": "authentication_failure",
                 "redirect_url": None,
@@ -220,7 +220,7 @@ class TestUserApi(AsyncHTTPTestCase):
             should_fail.dict(),
             {
                 "authenticated": False,
-                "errors": ["Password does not match"],
+                "errors": ["User doesn't exist, or password is incorrect."],
                 "username": None,
                 "groups": None,
             },
