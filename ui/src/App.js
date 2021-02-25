@@ -84,12 +84,7 @@ function App() {
           path="/create_role"
           component={CreateCloneFeature}
         />
-        <Route
-            key="login"
-            exact
-            path="/login"
-            component={Login}
-        />
+        <Route key="login" exact path="/login" component={Login} />
         <Route component={NoMatch} />
       </Switch>
       <AuthenticateModal />

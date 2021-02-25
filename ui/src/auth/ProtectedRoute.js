@@ -37,31 +37,31 @@ const ProtectedRoute = (props) => {
   let marginTop = "72px";
 
   if (
-      user?.pages?.header?.custom_header_message_title ||
-      user?.pages?.header?.custom_header_message_text
+    user?.pages?.header?.custom_header_message_title ||
+    user?.pages?.header?.custom_header_message_text
   ) {
     marginTop = "0px";
   }
 
   return (
-      <>
-        <ConsoleMeHeader />
-        <ConsoleMeSidebar />
-        <Segment
-            basic
-            style={{
-              marginTop: marginTop,
-              marginLeft: "240px",
-            }}
-        >
-          <Route
-              {...rest}
-              render={(props) => {
-                return <Component {...props} {...rest} {...auth} />;
-              }}
-          />
-        </Segment>
-      </>
+    <>
+      <ConsoleMeHeader />
+      <ConsoleMeSidebar />
+      <Segment
+        basic
+        style={{
+          marginTop: marginTop,
+          marginLeft: "240px",
+        }}
+      >
+        <Route
+          {...rest}
+          render={(props) => {
+            return <Component {...props} {...rest} {...auth} />;
+          }}
+        />
+      </Segment>
+    </>
   );
 };
 
