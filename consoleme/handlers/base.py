@@ -245,6 +245,8 @@ class BaseHandler(tornado.web.RequestHandler):
             and "state" in self.request.query_arguments
         ):
             return True
+        if self.request.path == "/saml/acs":
+            return True
         return False
 
     async def authorization_flow(
