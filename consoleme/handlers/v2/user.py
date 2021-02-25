@@ -1,3 +1,4 @@
+import asyncio
 import sys
 from datetime import datetime, timedelta
 
@@ -195,6 +196,8 @@ class LoginHandler(tornado.web.RequestHandler):
             await self.ddb.authenticate_user(login_attempt)
         )
         if not authenticated_response.authenticated:
+            # Wait 1 second to protect from single-host brute-force
+            await asyncio.sleep(1)
             await handle_generic_error_response(
                 self,
                 generic_error_message,

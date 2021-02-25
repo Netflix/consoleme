@@ -96,7 +96,10 @@ class TestLoginApi(AsyncHTTPTestCase):
                 "redirect_url": None,
                 "status_code": 403,
                 "message": None,
-                "errors": ["User doesn't exist, or password is incorrect."],
+                "errors": [
+                    "User doesn't exist, or password is incorrect. ",
+                    "Your next authentication failure will result in a 1 second wait. This wait time will expire after 60 seconds of no authentication failures.",
+                ],
                 "data": None,
             },
         )
@@ -114,13 +117,16 @@ class TestLoginApi(AsyncHTTPTestCase):
         self.assertEqual(
             json.loads(response.body),
             {
-                "data": None,
-                "errors": ["User doesn't exist, or password is incorrect."],
-                "message": None,
+                "status": "error",
                 "reason": "authentication_failure",
                 "redirect_url": None,
-                "status": "error",
                 "status_code": 403,
+                "message": None,
+                "errors": [
+                    "User doesn't exist, or password is incorrect. ",
+                    "Your next authentication failure will result in a 1 second wait. This wait time will expire after 60 seconds of no authentication failures.",
+                ],
+                "data": None,
             },
         )
 
@@ -220,7 +226,11 @@ class TestUserApi(AsyncHTTPTestCase):
             should_fail.dict(),
             {
                 "authenticated": False,
-                "errors": ["User doesn't exist, or password is incorrect."],
+                "errors": [
+                    "User doesn't exist, or password is incorrect. ",
+                    "Your next authentication failure will result in a 1 second wait. "
+                    "This wait time will expire after 60 seconds of no authentication failures.",
+                ],
                 "username": None,
                 "groups": None,
             },

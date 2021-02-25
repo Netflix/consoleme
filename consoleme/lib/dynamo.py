@@ -30,6 +30,7 @@ from consoleme.exceptions.exceptions import (
     PendingRequestAlreadyExists,
 )
 from consoleme.lib.crypto import Crypto
+from consoleme.lib.password import wait_after_authentication_failure
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.models import AuthenticationResponse, ExtendedRequestModel
@@ -593,27 +594,42 @@ class UserDynamoHandler(BaseDynamoHandler):
         )
         user = None
 
-        generic_error = ["User doesn't exist, or password is incorrect."]
+        generic_error = ["User doesn't exist, or password is incorrect. "]
 
         if user_entry and "Items" in user_entry and len(user_entry["Items"]) == 1:
             user = user_entry["Items"][0]
         if not user:
+            delay_error = await wait_after_authentication_failure(
+                login_attempt.username
+            )
             error = f"Unable to find user: {login_attempt.username}"
-            log.error({**log_data, "message": error})
-            return AuthenticationResponse(authenticated=False, errors=generic_error)
+            log.error({**log_data, "message": error + delay_error})
+            return AuthenticationResponse(
+                authenticated=False, errors=generic_error + [delay_error]
+            )
 
         if not user.get("password"):
+            delay_error = await wait_after_authentication_failure(
+                login_attempt.username
+            )
             error = "User exists, but doesn't have a password stored in the database"
-            log.error({**log_data, "message": error})
-            return AuthenticationResponse(authenticated=False, errors=generic_error)
+            log.error({**log_data, "message": error + delay_error})
+            return AuthenticationResponse(
+                authenticated=False, errors=generic_error + [delay_error]
+            )
 
         password_hash_matches = bcrypt.checkpw(
             login_attempt.password.encode("utf-8"), user["password"].value
         )
         if not password_hash_matches:
-            error = "Password does not match"
-            log.error({**log_data, "message": error})
-            return AuthenticationResponse(authenticated=False, errors=generic_error)
+            delay_error = await wait_after_authentication_failure(
+                login_attempt.username
+            )
+            error = "Password does not match. "
+            log.error({**log_data, "message": error + delay_error})
+            return AuthenticationResponse(
+                authenticated=False, errors=generic_error + [delay_error]
+            )
         return AuthenticationResponse(
             authenticated=True, username=user["username"], groups=user["groups"]
         )
