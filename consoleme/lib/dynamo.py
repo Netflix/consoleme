@@ -19,18 +19,23 @@ from asgiref.sync import async_to_sync, sync_to_async
 from boto3.dynamodb.types import Binary  # noqa
 from cloudaux import get_iso_string
 from cloudaux.aws.sts import boto3_cached_conn as boto3_cached_conn
+from cryptography.fernet import Fernet
 from retrying import retry
 from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     DataNotRetrievable,
+    MissingConfigurationValue,
     NoExistingRequest,
     NoMatchingRequest,
     PendingRequestAlreadyExists,
 )
 from consoleme.lib.crypto import Crypto
-from consoleme.lib.password import wait_after_authentication_failure
+from consoleme.lib.password import (
+    generate_totp_secret,
+    wait_after_authentication_failure,
+)
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
 from consoleme.models import AuthenticationResponse, ExtendedRequestModel
@@ -698,6 +703,49 @@ class UserDynamoHandler(BaseDynamoHandler):
             user["groups"] = groups
         user["last_updated"] = timestamp
 
+        user_entry = self.sign_request(user)
+        try:
+            self.users_table.put_item(Item=self._data_to_dynamo_replace(user_entry))
+        except Exception as e:
+            error = f"Unable to add user submission: {user_entry}: {str(e)}"
+            log.error(error, exc_info=True)
+            raise Exception(error)
+        return user_entry
+
+    def verify_user_totp(self, user_email, code):
+        pass
+
+    def verify_user_totp_token_secret(self, user_email, code):
+        # set user["totp_secret_verified"] = True
+        pass
+
+    async def set_user_totp_token(self, user_email):
+        totp_secret_encryption_key = config.get("secrets.totp.encryption_key")
+        if not totp_secret_encryption_key:
+            raise MissingConfigurationValue(
+                "Configuration for `totp.encryption_key` doesn't exist. "
+                "It is required so that we can encrypt your TOTP secrets."
+            )
+
+        user_ddb = self.users_table.query(
+            KeyConditionExpression="username = :un",
+            ExpressionAttributeValues={":un": user_email},
+        )
+
+        user = None
+
+        if user_ddb and "Items" in user_ddb and len(user_ddb["Items"]) == 1:
+            user = user_ddb["Items"][0]
+
+        if not user:
+            raise DataNotRetrievable(f"Unable to find user: {user_email}")
+
+        totp_secret = await generate_totp_secret(self.user)
+        totp_secret_encoded = totp_secret["totp_secret"].encode()
+        f = Fernet(totp_secret_encryption_key)
+        encrypted_totp_secret = f.encrypt(totp_secret_encoded)
+        user["totp_secret"] = encrypted_totp_secret
+        user["totp_secret_verified"] = False
         user_entry = self.sign_request(user)
         try:
             self.users_table.put_item(Item=self._data_to_dynamo_replace(user_entry))

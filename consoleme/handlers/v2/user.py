@@ -361,3 +361,17 @@ class UserManagementHandler(BaseAPIV2Handler):
                 self, generic_error_message, errors, 403, "invalid_request", log_data
             )
             return
+
+
+class UserTotpHandler(BaseAPIV2Handler):
+    """
+    Handles addition and removal of user TOTP tokens
+    """
+
+    async def get(self):
+        # Get User TOTP token info. Doesn't return secret
+        pass
+
+    async def post(self):
+        # Request a TOTP
+        pass

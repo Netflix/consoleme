@@ -52,3 +52,6 @@ class Crypto:
             stats.count("verify.bad_sig")
             log.error("Bad signature", exc_info=True)
             return False
+
+    def encrypt(self, s) -> bytes:
+        return self.signing_key.encrypt(str.encode(s), encoding="base64")
