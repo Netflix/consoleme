@@ -340,6 +340,10 @@ async def _minimize_iam_policy_statements(
             # Check to see if policy statements are identical except for Resources,
             # then except for Actions, and merge if possible
             for element in ["Resource", "Action"]:
+                # Force the value of a Resource/Action into a list
+                inline_iam_policy_statement[element] = list(
+                    inline_iam_policy_statement[element]
+                )
                 diff = DeepDiff(
                     inline_iam_policy_statement,
                     inline_iam_policy_statement_to_compare,

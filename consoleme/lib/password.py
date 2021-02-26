@@ -1,6 +1,7 @@
 import asyncio
 from typing import Dict, List, Optional, Union
 
+import pyotp
 from password_strength import PasswordPolicy
 
 from consoleme.config import config
@@ -25,6 +26,22 @@ async def wait_after_authentication_failure(user) -> str:
         f"Your next authentication failure will result in a {next_delay} second wait. "
         f"This wait time will expire after {redix_key_expiration} seconds of no authentication failures."
     )
+
+
+async def generate_totp_secret(user) -> Dict[str, str]:
+    totp_secret = pyotp.random_base32()
+    totp_uri = pyotp.totp.TOTP(totp_secret).provisioning_uri(
+        name=user, issuer_name="ConsoleMe"
+    )
+    return {
+        "totp_secret": totp_secret,
+        "totp_uri": totp_uri,
+    }
+
+
+async def verify_totp_code(code, secret) -> bool:
+    totp = pyotp.TOTP(secret)
+    return totp.verify(code)
 
 
 async def check_password_stength(
