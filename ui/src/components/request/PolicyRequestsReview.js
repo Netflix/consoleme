@@ -30,6 +30,7 @@ class PolicyRequestReview extends Component {
       lastUpdated: null,
       requestConfig: {},
       policyDocuments: {},
+      template: null,
     };
     this.reloadDataFromBackend = this.reloadDataFromBackend.bind(this);
     this.updatePolicyDocument = this.updatePolicyDocument.bind(this);
@@ -178,12 +179,18 @@ class PolicyRequestReview extends Component {
                 messages: [response.message],
               });
             } else {
-              const { request, request_config, last_updated } = response;
+              const {
+                request,
+                request_config,
+                last_updated,
+                template,
+              } = response;
               this.setState({
                 extendedRequest: JSON.parse(request),
                 requestConfig: request_config,
                 lastUpdated: last_updated,
                 loading: false,
+                template: template,
               });
             }
           });
@@ -200,6 +207,7 @@ class PolicyRequestReview extends Component {
       requestConfig,
       loading,
       requestID,
+      template,
     } = this.state;
 
     // Checks whether extendedInfo is available for the requester or not, if it is, saves it as a variable
@@ -382,6 +390,19 @@ class PolicyRequestReview extends Component {
       extendedRequest.request_status === "rejected" ||
       extendedRequest.request_status === "cancelled";
 
+    const templateContent = template ? (
+      <Message negative>
+        <Message.Header>Templated Resource</Message.Header>
+        <p>
+          This is a templated resource. Any changes you make here may be
+          overwritten by the template. You may view the template{" "}
+          <a href={template} rel="noopener noreferrer" target="_blank">
+            here
+          </a>
+        </p>
+      </Message>
+    ) : null;
+
     const changesContent =
       extendedRequest.changes &&
       extendedRequest.changes.changes &&
@@ -515,6 +536,7 @@ class PolicyRequestReview extends Component {
         <>
           <Header size="huge">Request Review for: {extendedRequest.arn}</Header>
           {requestDetails}
+          {templateContent}
           {descriptionContent}
           {changesContent}
           {commentsContent}

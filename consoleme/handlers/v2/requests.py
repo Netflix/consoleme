@@ -565,6 +565,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             populate_cross_account_resource_policies(extended_request, self.user),
         )
         extended_request = concurrent_results[0]
+
         populate_cross_account_resource_policies_result = concurrent_results[1]
 
         if populate_cross_account_resource_policies_result["changed"]:
@@ -591,10 +592,19 @@ class RequestDetailHandler(BaseAPIV2Handler):
             "can_move_back_to_pending": can_move_back_to_pending,
         }
 
+        template = None
+        # Force a refresh of the role in Redis/DDB
+        arn_parsed = parse_arn(extended_request.arn)
+        if arn_parsed["service"] == "iam" and arn_parsed["resource"] == "role":
+            iam_role = await aws.fetch_iam_role(
+                arn_parsed["account"], extended_request.arn
+            )
+            template = iam_role.get("templated")
         response = {
             "request": extended_request.json(),
             "last_updated": last_updated,
             "request_config": request_specific_config,
+            "template": template,
         }
 
         self.write(response)
