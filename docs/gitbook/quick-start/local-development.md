@@ -34,6 +34,9 @@ sudo npm install yarn -g
 Clone ConsoleMe locally in a directory of your choosing:
 
 ```text
+# If you have a fork, you'll want to clone it instead
+git clone https://github.com/Netflix/consoleme.git ; cd consoleme
+# OR # 
 git clone git@github.com:Netflix/consoleme.git ; cd consoleme
 ```
 

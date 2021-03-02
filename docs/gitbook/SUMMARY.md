@@ -39,10 +39,12 @@
   * [Sending email through SES](configuration/ses.md)
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
+* [Development Guide](development-guide.md)
 * [Deployment Strategies](deployment-strategies.md)
 * [Contributing](contributing.md)
 * [FAQ](faq.md)
 * [License](license.md)
+* [Security](security.md)
 
 ## Weep CLI
 
