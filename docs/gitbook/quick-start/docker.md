@@ -13,10 +13,10 @@ Docker-Compose is the quickest way to get ConsoleMe up and running locally for *
 Firstly, install [**git**](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), [**docker**](https://docs.docker.com/get-docker/), and [**docker-compose**](https://docs.docker.com/compose/install/) ****on your system, consider following [Docker's post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/), then clone ConsoleMe locally in a directory of your choosing via HTTP or SSH:
 
 ```text
+# If you have a fork, you'll want to clone it instead
+
 git clone https://github.com/Netflix/consoleme.git ; cd consoleme
-
 # OR # 
-
 git clone git@github.com:Netflix/consoleme.git ; cd consoleme
 ```
 
