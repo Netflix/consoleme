@@ -19,7 +19,7 @@ from consoleme.models import (
     AuthenticationResponse,
     LoginAttemptModel,
     RegistrationAttemptModel,
-    UserAuthenticationModel,
+    UserManagementModel,
     WebResponse,
 )
 
@@ -254,9 +254,9 @@ class UserManagementHandler(BaseAPIV2Handler):
                 self, generic_error_message, errors, 403, "unauthorized", log_data
             )
             return
-        request = UserAuthenticationModel.parse_raw(self.request.body)
+        request = UserManagementModel.parse_raw(self.request.body)
         log_data["requested_user"] = request.username
-        if request.action.value == "create":
+        if request.user_management_action.value == "create":
             log.debug(
                 {
                     **log_data,
@@ -291,7 +291,7 @@ class UserManagementHandler(BaseAPIV2Handler):
             )
             self.write(res.json())
             return
-        elif request.action.value == "update":
+        elif request.user_management_action.value == "update":
             log.debug(
                 {
                     **log_data,
@@ -328,7 +328,7 @@ class UserManagementHandler(BaseAPIV2Handler):
             )
             self.write(res.json())
             return
-        elif request.action.value == "delete":
+        elif request.user_management_action.value == "delete":
             log.debug(
                 {
                     **log_data,

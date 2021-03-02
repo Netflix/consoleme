@@ -498,14 +498,14 @@ class AuthenticationResponse(BaseModel):
     groups: Optional[List[str]] = None
 
 
-class Action2(Enum):
+class UserManagementAction(Enum):
     create = "create"
     update = "update"
     delete = "delete"
 
 
-class UserAuthenticationModel(BaseModel):
-    action: Optional[Action2] = None
+class UserManagementModel(BaseModel):
+    user_management_action: Optional[UserManagementAction] = None
     username: Optional[str] = None
     password: Optional[str] = None
     groups: Optional[List[str]] = None
@@ -518,8 +518,8 @@ class LoginAttemptModel(BaseModel):
 
 
 class RegistrationAttemptModel(BaseModel):
-    username: Optional[str] = None
-    password: Optional[str] = None
+    username: str = None
+    password: str = None
 
 
 class Status2(Enum):

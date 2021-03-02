@@ -63,7 +63,6 @@ const LoginForm = () => {
       },
     });
     const respJson = await resp.json();
-    console.log(respJson);
     if (respJson.type === "redirect") {
       window.location.href = respJson.redirect_url;
     }

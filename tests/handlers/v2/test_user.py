@@ -176,7 +176,7 @@ class TestUserApi(AsyncHTTPTestCase):
 
         body = json.dumps(
             {
-                "action": "create",
+                "user_management_action": "create",
                 "username": "testuser3",
                 "password": "testuser3password",
                 "groups": ["group1", "group2", "group3"],
@@ -239,7 +239,7 @@ class TestUserApi(AsyncHTTPTestCase):
         # Update password
         body = json.dumps(
             {
-                "action": "update",
+                "user_management_action": "update",
                 "username": "testuser3",
                 "password": "testuser3newpassword",
             }
@@ -262,7 +262,7 @@ class TestUserApi(AsyncHTTPTestCase):
         # Update groups
         body = json.dumps(
             {
-                "action": "update",
+                "user_management_action": "update",
                 "username": "testuser3",
                 "groups": ["group1", "group2", "group3", "newgroup"],
             }
@@ -284,7 +284,7 @@ class TestUserApi(AsyncHTTPTestCase):
         # Update groups and password AT THE SAME TIME!!1
         body = json.dumps(
             {
-                "action": "update",
+                "user_management_action": "update",
                 "username": "testuser3",
                 "password": "testuser3newpassword2",
                 "groups": ["group1", "group2", "group3", "newgroup", "newgroup2"],
@@ -309,7 +309,7 @@ class TestUserApi(AsyncHTTPTestCase):
 
         body = json.dumps(
             {
-                "action": "delete",
+                "user_management_action": "delete",
                 "username": "testuser3",
             }
         )

@@ -1432,10 +1432,10 @@ components:
           type: array
           items:
             type: string
-    UserAuthenticationModel:
+    UserManagementModel:
       type: object
       properties:
-        action:
+        user_management_action:
           type: string
           enum:
             - create
