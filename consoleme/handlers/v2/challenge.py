@@ -30,16 +30,19 @@ class ChallengeGeneratorHandler(tornado.web.RequestHandler):
     The ChallengeUrlGenerator endpoint must be unauthenticated because the CLI client will be requesting URLs
     """
 
+    def get_request_ip(self):
+        if config.get("auth.remote_ip.use_xforwarded_for"):
+            return self.request.headers.get(
+                "X-Forwarded-For", self.request.remote_ip
+            ).split(",")[0]
+        return self.request.remote_ip
+
     async def get(self, user):
         if not config.get("challenge_url.enabled", False):
             raise MissingConfigurationValue(
                 "Challenge URL Authentication is not enabled in ConsoleMe's configuration"
             )
-        ip = self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
-            ","
-        )
-        if isinstance(ip, list):
-            ip = ip[0]
+        ip = self.get_request_ip()
 
         token = str(uuid.uuid4())
         entry = {
@@ -90,17 +93,12 @@ class ChallengeValidatorHandler(BaseHandler):
             raise MissingConfigurationValue(
                 "Challenge URL Authentication is not enabled in ConsoleMe's configuration"
             )
-        ip = self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
-            ","
-        )
-        if isinstance(ip, list):
-            ip = ip[0]
         log_data = {
             "user": self.user,
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "requested_challenge_token": requested_challenge_token,
             "message": "Incoming request",
-            "ip": ip,
+            "ip": self.ip,
         }
         log.debug(log_data)
 
@@ -162,17 +160,13 @@ class ChallengeValidatorHandler(BaseHandler):
                 "Challenge URL Authentication is not enabled in ConsoleMe's configuration"
             )
         data = tornado.escape.json_decode(self.request.body)
-        ip = self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
-            ","
-        )
-        if isinstance(ip, list):
-            ip = ip[0]
+
         log_data = {
             "user": self.user,
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "requested_challenge_token": requested_challenge_token,
             "message": "Incoming request",
-            "ip": ip,
+            "ip": self.ip,
         }
         log.debug(log_data)
 

@@ -113,6 +113,13 @@ class BaseJSONHandler(tornado.web.RequestHandler):
 class BaseHandler(tornado.web.RequestHandler):
     """Default BaseHandler."""
 
+    def get_request_ip(self):
+        if config.get("auth.remote_ip.use_xforwarded_for"):
+            return self.request.headers.get(
+                "X-Forwarded-For", self.request.remote_ip
+            ).split(",")[0]
+        return self.request.remote_ip
+
     def log_exception(self, *args, **kwargs):
         if args[0].__name__ == "SilentException":
             pass
@@ -177,11 +184,7 @@ class BaseHandler(tornado.web.RequestHandler):
             "http.host": config.hostname,
             "http.method": self.request.method.upper(),
             "http.path": self.request.path,
-            "ca": self.request.headers.get(
-                "X-Forwarded-For", self.request.remote_ip
-            ).split(",")[
-                0
-            ],  # Client IP
+            "ca": self.get_request_ip(),  # Client IP
             "http.url": self.request.full_url(),
         }
         tracer = await self.tracer.configure_tracing(
@@ -269,9 +272,7 @@ class BaseHandler(tornado.web.RequestHandler):
             refresh_cache = True
 
         self.red = await RedisHandler().redis()
-        self.ip = self.request.headers.get(
-            "X-Forwarded-For", self.request.remote_ip
-        ).split(",")[0]
+        self.ip = self.get_request_ip()
         self.user = user
         self.groups = None
         self.user_role_name = None
@@ -613,9 +614,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
             raise MissingConfigurationValue("Unsupported authentication scheme.")
         if not hasattr(self, "requester"):
             raise tornado.web.HTTPError(403, "Unable to authenticate user.")
-        self.ip = self.request.headers.get(
-            "X-Forwarded-For", self.request.remote_ip
-        ).split(",")[0]
+        self.ip = self.get_request_ip()
         await self.configure_tracing()
 
     def write(self, chunk: Union[str, bytes, dict]) -> None:
