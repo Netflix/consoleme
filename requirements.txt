@@ -286,8 +286,6 @@ pyjwt==2.0.1
     # via -r requirements.in
 pylint==2.6.0
     # via -r requirements.in
-pyotp==2.6.0
-    # via -r requirements.in
 pyparsing==2.4.7
     # via
     #   httplib2

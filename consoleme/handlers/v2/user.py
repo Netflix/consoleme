@@ -36,11 +36,7 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
         self.ddb = UserDynamoHandler()
 
     async def post(self):
-        # TODO: What happens when someone registers a user with a group e-mail?
-        # Do we need to send verification emails?
-        # Clean pluggable auth interface?
-        # Even if you check groups, there's a risk of someone squatting on this as well. Post validation check if group
-        # exists same as username for each login?
+        # TODO: Send verification e-mail to proposed user
 
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -126,22 +122,17 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
 
 class LoginConfigurationHandler(tornado.web.RequestHandler):
     def get(self):
-        # TODO: Reuse auth.password_login configuration, whatever it's called
         default_configuration = {
-            "enabled": config.get("LoginConfigurationHandler.enabled", True),
+            "enabled": config.get("auth.get_user_by_password"),
             "page_title": config.get(
                 "LoginConfigurationHandler.page_title",
                 "Welcome to ConsoleMe - Please Sign-In",
             ),
-            "allow_password_login": config.get(
-                "LoginConfigurationHandler.allow_password_login", True
-            ),
+            "allow_password_login": config.get("auth.get_user_by_password", True),
             "allow_sso_login": config.get(
                 "LoginConfigurationHandler.allow_sso_login", True
             ),
-            "allow_sign_up": config.get(
-                "LoginConfigurationHandler.allow_sign_up", False
-            ),
+            "allow_sign_up": config.get("auth.allow_user_registrationp", False),
             "custom_message": "",
         }
         login_configuration = config.get(
@@ -361,17 +352,3 @@ class UserManagementHandler(BaseAPIV2Handler):
                 self, generic_error_message, errors, 403, "invalid_request", log_data
             )
             return
-
-
-class UserTotpHandler(BaseAPIV2Handler):
-    """
-    Handles addition and removal of user TOTP tokens
-    """
-
-    async def get(self):
-        # Get User TOTP token info. Doesn't return secret
-        pass
-
-    async def post(self):
-        # Request a TOTP
-        pass
