@@ -1,11 +1,12 @@
 import ujson as json
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.config import config
-
 
 class TestNotFoundHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.config import config
+
+        self.config = config
         from consoleme.routes import make_app
 
         return make_app(jwt_validator=lambda x: {})
@@ -13,8 +14,8 @@ class TestNotFoundHandler(AsyncHTTPTestCase):
     def test_get(self):
         expected = {"status": 404, "title": "Not Found", "message": "Not Found"}
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/api/v2/route_does_not_exist", method="GET", headers=headers
@@ -25,8 +26,8 @@ class TestNotFoundHandler(AsyncHTTPTestCase):
     def test_put(self):
         expected = {"status": 404, "title": "Not Found", "message": "Not Found"}
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/api/v2/route_does_not_exist", method="PUT", headers=headers, body="{}"
@@ -37,8 +38,8 @@ class TestNotFoundHandler(AsyncHTTPTestCase):
     def test_post(self):
         expected = {"status": 404, "title": "Not Found", "message": "Not Found"}
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/api/v2/route_does_not_exist", method="POST", headers=headers, body="{}"
@@ -49,8 +50,8 @@ class TestNotFoundHandler(AsyncHTTPTestCase):
     def test_patch(self):
         expected = {"status": 404, "title": "Not Found", "message": "Not Found"}
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/api/v2/route_does_not_exist", method="PATCH", headers=headers, body="{}"
@@ -61,8 +62,8 @@ class TestNotFoundHandler(AsyncHTTPTestCase):
     def test_delete(self):
         expected = {"status": 404, "title": "Not Found", "message": "Not Found"}
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/api/v2/route_does_not_exist", method="DELETE", headers=headers

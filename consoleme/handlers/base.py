@@ -220,6 +220,35 @@ class BaseHandler(tornado.web.RequestHandler):
                 f.write(json.dumps(request_details, reject_bytes=False))
         super(BaseHandler, self).on_finish()
 
+    async def attempt_sso_authn(self) -> bool:
+        """
+        ConsoleMe's configuration allows authenticating users by user/password, SSO, or both.
+        This function helps determine how ConsoleMe should authenticate a user. If user/password login is allowed,
+        users will be redirected to ConsoleMe's login page (/login). If SSO is also allowed, the Login page will present
+        a button allowing the user to sign in with SSO.
+
+        If user/password login is enabled, we don't want to give users the extra step of having to visit the login page,
+        so we just authenticate them through SSO directly.
+         allow authenticating users by a combination of user/password and SSO. In this case, we need to tell
+        Returns: boolean
+        """
+        if not config.get("auth.get_user_by_password", False):
+            return True
+
+        # force_use_sso indicates the user's intent to authenticate via SSO
+        force_use_sso = self.request.arguments.get("use_sso", [False])[0]
+        if force_use_sso:
+            return True
+        # It's a redirect from an SSO provider. Let it hit the SSO functionality
+        if (
+            "code" in self.request.query_arguments
+            and "state" in self.request.query_arguments
+        ):
+            return True
+        if self.request.path == "/saml/acs":
+            return True
+        return False
+
     async def authorization_flow(
         self, user: str = None, console_only: bool = True, refresh_cache: bool = False
     ) -> None:
@@ -230,6 +259,8 @@ class BaseHandler(tornado.web.RequestHandler):
         refresh_cache = (
             self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
         )
+        attempt_sso_authn = await self.attempt_sso_authn()
+
         refreshed_user_roles_from_cache = False
 
         if not refresh_cache and config.get(
@@ -282,7 +313,7 @@ class BaseHandler(tornado.web.RequestHandler):
             # SAML flow. If user has a JWT signed by ConsoleMe, and SAML is enabled in configuration, user will go
             # through this flow.
 
-            if config.get("auth.get_user_by_saml", False):
+            if config.get("auth.get_user_by_saml", False) and attempt_sso_authn:
                 res = await authenticate_user_by_saml(self)
                 if not res:
                     if (
@@ -296,7 +327,7 @@ class BaseHandler(tornado.web.RequestHandler):
                     return
 
         if not self.user:
-            if config.get("auth.get_user_by_oidc", False):
+            if config.get("auth.get_user_by_oidc", False) and attempt_sso_authn:
                 res = await authenticate_user_by_oidc(self)
                 if not res:
                     raise SilentException(
@@ -315,6 +346,26 @@ class BaseHandler(tornado.web.RequestHandler):
                 if res and isinstance(res, dict):
                     self.user = res.get("user")
                     self.groups = res.get("groups")
+
+        if not self.user:
+            # Username/Password authn flow
+            if config.get("auth.get_user_by_password", False):
+                after_redirect_uri = self.request.arguments.get("redirect_url", [""])[0]
+                if after_redirect_uri and isinstance(after_redirect_uri, bytes):
+                    after_redirect_uri = after_redirect_uri.decode("utf-8")
+                self.set_status(403)
+                self.write(
+                    {
+                        "type": "redirect",
+                        "redirect_url": f"/login?redirect_after_auth={after_redirect_uri}",
+                        "reason": "unauthenticated",
+                        "message": "User is not authenticated. Redirect to authenticate",
+                    }
+                )
+                await self.finish()
+                raise SilentException(
+                    "Redirecting user to authenticate by username/password."
+                )
 
         if not self.user:
             try:

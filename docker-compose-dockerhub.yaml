@@ -5,6 +5,7 @@ services:
     image: "consoleme/consoleme"
     ports:
       - "3000:3000"
+      - "8081:8081"
     tty: true
     stdin_open: true
     volumes:

@@ -2,11 +2,13 @@ import ujson as json
 from deepdiff import DeepDiff
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.config import config
-
 
 class TestRequestsHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.config import config
+
+        self.config = config
+
         from consoleme.routes import make_app
 
         return make_app(jwt_validator=lambda x: {})
@@ -14,8 +16,8 @@ class TestRequestsHandler(AsyncHTTPTestCase):
     def test_get(self):
         # Method not allowed
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch("/api/v2/requests", method="GET", headers=headers)
         self.assertEqual(response.code, 405)
@@ -39,13 +41,13 @@ class TestRequestsHandler(AsyncHTTPTestCase):
         # Mocked by fakeredis
         red = RedisHandler().redis_sync()
         red.set(
-            config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS"),
+            self.config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS"),
             json.dumps(mock_request_data),
         )
 
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/api/v2/requests", method="POST", headers=headers, body="{}"
@@ -65,13 +67,13 @@ class TestRequestsHandler(AsyncHTTPTestCase):
         # Mocked by fakeredis
         red = RedisHandler().redis_sync()
         red.set(
-            config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS"),
+            self.config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS"),
             json.dumps(mock_request_data),
         )
 
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/api/v2/requests",
@@ -93,13 +95,13 @@ class TestRequestsHandler(AsyncHTTPTestCase):
         # Mocked by fakeredis
         red = RedisHandler().redis_sync()
         red.set(
-            config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS"),
+            self.config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS"),
             json.dumps(mock_request_data),
         )
 
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/api/v2/requests",

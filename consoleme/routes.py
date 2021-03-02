@@ -62,6 +62,12 @@ from consoleme.handlers.v2.self_service import (
     SelfServiceConfigHandler,
 )
 from consoleme.handlers.v2.typeahead import ResourceTypeAheadHandlerV2
+from consoleme.handlers.v2.user import (
+    LoginConfigurationHandler,
+    LoginHandler,
+    UserManagementHandler,
+    UserRegistrationHandler,
+)
 from consoleme.handlers.v2.user_profile import UserProfileHandler
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
@@ -123,6 +129,10 @@ def make_app(jwt_validator=None):
         (r"/api/v2/requests_page_config", RequestsPageConfigHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
+        (r"/api/v2/login", LoginHandler),
+        (r"/api/v2/login_configuration", LoginConfigurationHandler),
+        (r"/api/v2/user", UserManagementHandler),
+        (r"/api/v2/user_registration", UserRegistrationHandler),
         (r"/api/v2/policies", PoliciesHandler),
         (r"/api/v2/request", RequestHandler),
         (r"/api/v2/requests", RequestsHandler),

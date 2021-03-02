@@ -10,6 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Union
 
+import bcrypt
 import boto3
 import sentry_sdk
 import simplejson as json
@@ -23,14 +24,16 @@ from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
+    DataNotRetrievable,
     NoExistingRequest,
     NoMatchingRequest,
     PendingRequestAlreadyExists,
 )
 from consoleme.lib.crypto import Crypto
+from consoleme.lib.password import wait_after_authentication_failure
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
-from consoleme.models import ExtendedRequestModel
+from consoleme.models import AuthenticationResponse, ExtendedRequestModel
 
 DYNAMO_EMPTY_STRING = "---DYNAMO-EMPTY-STRING---"
 
@@ -106,6 +109,8 @@ class BaseDynamoHandler:
         elif isinstance(obj, list):
             return [self._data_from_dynamo_replace(elem) for elem in obj]
         else:
+            if isinstance(obj, Binary):
+                obj = obj.value
             if str(obj) == DYNAMO_EMPTY_STRING:
                 obj = ""
             elif isinstance(obj, Decimal):
@@ -566,20 +571,92 @@ class UserDynamoHandler(BaseDynamoHandler):
         :param user_entry:
         :return:
         """
-        try:
-            user_entry.pop("signature")
-        except KeyError:
-            pass
+        # Remove old signature if it exists
+        user_entry.pop("signature", None)
+        user_entry = self._data_from_dynamo_replace(user_entry)
         json_request = json.dumps(user_entry, sort_keys=True, use_decimal=True)
         sig = crypto.sign(json_request)
         user_entry["signature"] = sig
         return user_entry
 
-    def create_user(self, user_email):
-        timestamp = int(time.time())
-        user_entry = self.sign_request(
-            {"last_updated": timestamp, "username": user_email, "requests": []}
+    async def authenticate_user(self, login_attempt) -> AuthenticationResponse:
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
         )
+        log_data = {
+            "function": function,
+            "user_email": login_attempt.username,
+            "after_redirect_uri": login_attempt.after_redirect_uri,
+        }
+        user_entry = await sync_to_async(self.users_table.query)(
+            KeyConditionExpression="username = :un",
+            ExpressionAttributeValues={":un": login_attempt.username},
+        )
+        user = None
+
+        generic_error = ["User doesn't exist, or password is incorrect. "]
+
+        if user_entry and "Items" in user_entry and len(user_entry["Items"]) == 1:
+            user = user_entry["Items"][0]
+        if not user:
+            delay_error = await wait_after_authentication_failure(
+                login_attempt.username
+            )
+            error = f"Unable to find user: {login_attempt.username}"
+            log.error({**log_data, "message": error + delay_error})
+            return AuthenticationResponse(
+                authenticated=False, errors=generic_error + [delay_error]
+            )
+
+        if not user.get("password"):
+            delay_error = await wait_after_authentication_failure(
+                login_attempt.username
+            )
+            error = "User exists, but doesn't have a password stored in the database"
+            log.error({**log_data, "message": error + delay_error})
+            return AuthenticationResponse(
+                authenticated=False, errors=generic_error + [delay_error]
+            )
+
+        password_hash_matches = bcrypt.checkpw(
+            login_attempt.password.encode("utf-8"), user["password"].value
+        )
+        if not password_hash_matches:
+            delay_error = await wait_after_authentication_failure(
+                login_attempt.username
+            )
+            error = "Password does not match. "
+            log.error({**log_data, "message": error + delay_error})
+            return AuthenticationResponse(
+                authenticated=False, errors=generic_error + [delay_error]
+            )
+        return AuthenticationResponse(
+            authenticated=True, username=user["username"], groups=user["groups"]
+        )
+
+    def create_user(
+        self,
+        user_email,
+        password: Optional[str] = None,
+        groups: Optional[List[str]] = None,
+    ):
+        if not groups:
+            groups = []
+        timestamp = int(time.time())
+        unsigned_user_entry = {
+            "created": timestamp,
+            "last_updated": timestamp,
+            "username": user_email,
+            "requests": [],
+            "groups": groups,
+        }
+
+        if password:
+            pw = bytes(password, "utf-8")
+            salt = bcrypt.gensalt()
+            unsigned_user_entry["password"] = bcrypt.hashpw(pw, salt)
+
+        user_entry = self.sign_request(unsigned_user_entry)
         try:
             self.users_table.put_item(Item=self._data_to_dynamo_replace(user_entry))
         except Exception as e:
@@ -587,6 +664,81 @@ class UserDynamoHandler(BaseDynamoHandler):
             log.error(error, exc_info=True)
             raise Exception(error)
         return user_entry
+
+    def update_user(
+        self,
+        user_email,
+        password: Optional[str] = None,
+        groups: Optional[List[str]] = None,
+    ):
+        if not groups:
+            groups = []
+
+        user_ddb = self.users_table.query(
+            KeyConditionExpression="username = :un",
+            ExpressionAttributeValues={":un": user_email},
+        )
+
+        user = None
+
+        if user_ddb and "Items" in user_ddb and len(user_ddb["Items"]) == 1:
+            user = user_ddb["Items"][0]
+
+        if not user:
+            raise DataNotRetrievable(f"Unable to find user: {user_email}")
+
+        timestamp = int(time.time())
+
+        if password:
+            pw = bytes(password, "utf-8")
+            salt = bcrypt.gensalt()
+            user["password"] = bcrypt.hashpw(pw, salt)
+
+        if groups:
+            user["groups"] = groups
+        user["last_updated"] = timestamp
+
+        user_entry = self.sign_request(user)
+        try:
+            self.users_table.put_item(Item=self._data_to_dynamo_replace(user_entry))
+        except Exception as e:
+            error = f"Unable to add user submission: {user_entry}: {str(e)}"
+            log.error(error, exc_info=True)
+            raise Exception(error)
+        return user_entry
+
+    def delete_user(self, user_email):
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
+        log_data = {"function": function, "user_email": user_email}
+        log.debug(log_data)
+        user_entry = {"username": user_email}
+        try:
+            self.users_table.delete_item(Key=self._data_to_dynamo_replace(user_entry))
+        except Exception as e:
+            error = f"Unable to delete user: {user_entry}: {str(e)}"
+            log.error(error, exc_info=True)
+            raise Exception(error)
+
+    async def get_user(
+        self, user_email: str
+    ) -> Optional[Dict[str, Union[Decimal, List[str], Binary, str]]]:
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
+        log_data = {"function": function, "user_email": user_email}
+
+        log.debug(log_data)
+
+        user = self.users_table.query(
+            KeyConditionExpression="username = :un",
+            ExpressionAttributeValues={":un": user_email},
+        )
+
+        if user and "Items" in user and len(user["Items"]) == 1:
+            return user["Items"][0]
+        return None
 
     def get_or_create_user(
         self, user_email: str

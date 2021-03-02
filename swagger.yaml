@@ -1417,3 +1417,81 @@ components:
               visible:
                 type: boolean
                 default: true
+    AuthenticationResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+        username:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+    UserManagementModel:
+      type: object
+      properties:
+        user_management_action:
+          type: string
+          enum:
+            - create
+            - update
+            - delete
+        username:
+          type: string
+        password:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+    LoginAttemptModel:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        after_redirect_uri:
+          type: string
+    RegistrationAttemptModel:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    WebResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+            - error
+            - redirect
+        reason:
+          type: string
+          example:
+            - authenticated_redirect
+            - authentication_failure
+            - not_configured
+        redirect_url:
+          type: string
+        status_code:
+          type: integer
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+        data:
+          type: object

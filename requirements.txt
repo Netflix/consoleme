@@ -26,6 +26,8 @@ attrs==20.3.0
     #   jsonschema
 backcall==0.2.0
     # via ipython
+bcrypt==3.2.0
+    # via -r requirements.in
 beautifulsoup4==4.9.3
     # via policy-sentry
 billiard==3.6.3.0
@@ -57,7 +59,9 @@ certifi==2020.12.5
     #   requests
     #   sentry-sdk
 cffi==1.14.4
-    # via google-crc32c
+    # via
+    #   bcrypt
+    #   google-crc32c
 chardet==3.0.4
     # via
     #   aiohttp
@@ -82,7 +86,7 @@ cloudaux==1.9.2
     # via -r requirements.in
 contextlib2==0.6.0.post1
     # via schema
-datamodel-code-generator==0.6.21
+datamodel-code-generator==0.8.0
     # via -r requirements.in
 decorator==4.4.2
     # via
@@ -231,6 +235,8 @@ pandas==0.25.3
     # via -r requirements.in
 parso==0.8.1
     # via jedi
+password-strength==0.0.3.post2
+    # via -r requirements.in
 pathspec==0.8.1
     # via black
 pexpect==4.8.0
@@ -354,6 +360,7 @@ six==1.15.0
     # via
     #   -r requirements.in
     #   astroid
+    #   bcrypt
     #   bleach
     #   click-repl
     #   cloudaux
@@ -371,6 +378,7 @@ six==1.15.0
     #   okta-jwt
     #   openapi-spec-validator
     #   orderedmultidict
+    #   password-strength
     #   prance
     #   presto-python-client
     #   protobuf

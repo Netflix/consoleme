@@ -1,8 +1,6 @@
 import React from "react";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProviderDefault";
-import ConsoleMeHeader from "./components/Header";
-import ConsoleMeSidebar from "./components/Sidebar";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import ConsoleMeSelectRoles from "./components/roles/SelectRoles";
 import ConsoleMePolicyTable from "./components/policy/PolicyTable";
@@ -14,14 +12,13 @@ import PolicyEditor from "./components/policy/PolicyEditor";
 import ConsoleLogin from "./components/ConsoleLogin";
 import ConsoleMeChallengeValidator from "./components/challenge/ConsoleMeChallengeValidator";
 import CreateCloneFeature from "./components/roles/CreateCloneFeature";
+import Login from "./components/Login";
 import NoMatch from "./components/NoMatch";
 import AuthenticateModal from "./components/AuthenticateModal";
 
 function App() {
   return (
     <BrowserRouter>
-      <ConsoleMeHeader />
-      <ConsoleMeSidebar />
       <Switch>
         <ProtectedRoute
           key="roles"
@@ -87,6 +84,7 @@ function App() {
           path="/create_role"
           component={CreateCloneFeature}
         />
+        <Route key="login" exact path="/login" component={Login} />
         <Route component={NoMatch} />
       </Switch>
       <AuthenticateModal />

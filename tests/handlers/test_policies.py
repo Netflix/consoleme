@@ -6,7 +6,6 @@ import ujson as json
 from mock import MagicMock, patch
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.config import config
 from tests.conftest import MockBaseHandler, MockRedisHandler, create_future
 
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -38,6 +37,8 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     @patch("consoleme.handlers.base.auth")
     @patch("consoleme.handlers.v1.policies.redis_hgetall")
     def test_resource_typeahead(self, mock_redis_hgetall, mock_auth):
+        from consoleme.config import config
+
         mock_auth.validate_certificate.return_value = create_future(True)
         mock_auth.extract_user_from_certificate.return_value = create_future(
             {"name": "user@example.com"}
