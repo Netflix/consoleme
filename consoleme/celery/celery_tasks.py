@@ -500,7 +500,6 @@ def cache_policies_table_details() -> bool:
 
     if cloudtrail_errors_j:
         cloudtrail_errors = json.loads(cloudtrail_errors_j)
-    del cloudtrail_errors_j
 
     s3_error_topic = config.get("redis.s3_errors", "S3_ERRORS")
     all_s3_errors = red.get(s3_error_topic)

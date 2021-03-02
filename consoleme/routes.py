@@ -155,7 +155,6 @@ def make_app(jwt_validator=None):
         (
             r"/api/v2/challenge_validator/([a-zA-Z0-9_-]+)",
             ChallengeValidatorHandler,
-            {"type": "api"},
         ),
         (r"/noauth/v1/challenge_generator/(.*)", ChallengeGeneratorHandler),
         (r"/noauth/v1/challenge_poller/([a-zA-Z0-9_-]+)", ChallengePollerHandler),

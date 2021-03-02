@@ -496,7 +496,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 expires=expiration,
                 secure=config.get(
                     "auth.cookie.secure",
-                    True if "https://" in config.get("url") else False,
+                    "https://" in config.get("url"),
                 ),
                 httponly=config.get("auth.cookie.httponly", True),
                 samesite=config.get("auth.cookie.samesite", True),

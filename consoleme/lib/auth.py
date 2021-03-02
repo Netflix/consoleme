@@ -320,7 +320,6 @@ def mk_jwks_validator(
                 break
         if isinstance(result, Exception):
             raise result
-        else:
-            return result
+        return result
 
     return validate_jwt

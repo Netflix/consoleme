@@ -18,7 +18,7 @@ import yaml
 from asgiref.sync import async_to_sync, sync_to_async
 from boto3.dynamodb.types import Binary  # noqa
 from cloudaux import get_iso_string
-from cloudaux.aws.sts import boto3_cached_conn as boto3_cached_conn
+from cloudaux.aws.sts import boto3_cached_conn
 from retrying import retry
 from tenacity import Retrying, stop_after_attempt, wait_fixed
 

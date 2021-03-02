@@ -247,7 +247,7 @@ async def can_move_back_to_pending_v2(
 
 async def can_update_requests(request, user, groups):
     # Users can update their own requests
-    can_update = True if user in request["username"] else False
+    can_update = user in request["username"]
 
     # Allow admins to return requests back to pending state
     if not can_update:
@@ -259,7 +259,7 @@ async def can_update_requests(request, user, groups):
 
 async def can_update_cancel_requests_v2(requester_username, user, groups):
     # Users can update their own requests
-    can_update = True if user == requester_username else False
+    can_update = user == requester_username
 
     # Allow admins to update / cancel requests
     if not can_update:
@@ -640,7 +640,7 @@ async def get_formatted_policy_changes(account_id, arn, request):
                         "name": "ResourcePolicy",
                         "old": existing_policy_document,
                         "new": new_policy_document,
-                        "new_policy": False if existing_policy_document else True,
+                        "new_policy": not existing_policy_document,
                         "diff": diff,
                     }
                 )

@@ -1144,4 +1144,4 @@ def get_enabled_regions_for_account(account_id: str) -> Set[str]:
         assume_role=config.get("policies.role_name"),
         read_only=True,
     )
-    return set(r["RegionName"] for r in client.describe_regions()["Regions"])
+    return {r["RegionName"] for r in client.describe_regions()["Regions"]}

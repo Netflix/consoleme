@@ -168,7 +168,7 @@ async def get_random_security_logo():
     if config.get("consoleme_logo.image"):
         return config.get("consoleme_logo.image")
     month = datetime.now().month
-    summer = True if month in [6, 7, 8] else False
+    summer = month in [6, 7, 8]
 
     dir = "sunglasses" if summer else "nosunglasses"
     file = f"{randint(1, 3)}.png"  # nosec
