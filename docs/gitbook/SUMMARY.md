@@ -44,6 +44,7 @@
 * [Contributing](contributing.md)
 * [FAQ](faq.md)
 * [License](license.md)
+* [Security](security.md)
 
 ## Weep CLI
 
