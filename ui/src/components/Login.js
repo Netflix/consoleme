@@ -4,7 +4,6 @@ import {
   Form,
   Grid,
   Header,
-  Icon,
   Image,
   Message,
   Segment,
@@ -43,7 +42,7 @@ const LoginForm = () => {
       }
       setPageConfig(await res.json());
     })();
-  }, []);
+  }, []); // eslint-disable-line
   if (!pageConfig) {
     return null;
   }
@@ -175,7 +174,7 @@ const LoginForm = () => {
           ) : null}
           {pageConfig?.allow_sign_up ? (
             <Message attached="bottom">
-              New to us? <a href="#">Sign Up</a>
+              New to us? <a href="/signup">Sign Up</a>
             </Message>
           ) : null}
         </Grid.Column>
