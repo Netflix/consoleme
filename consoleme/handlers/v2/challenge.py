@@ -31,10 +31,9 @@ class ChallengeGeneratorHandler(tornado.web.RequestHandler):
     """
 
     def get_request_ip(self):
-        if config.get("auth.remote_ip.use_xforwarded_for"):
-            return self.request.headers.get(
-                "X-Forwarded-For", self.request.remote_ip
-            ).split(",")[0]
+        trusted_remote_ip_header = config.get("auth.remote_ip.trusted_remote_ip_header")
+        if trusted_remote_ip_header:
+            return self.request.headers[trusted_remote_ip_header].split(",")[0]
         return self.request.remote_ip
 
     async def get(self, user):
