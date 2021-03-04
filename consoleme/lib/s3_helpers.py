@@ -76,6 +76,7 @@ def map_operation_to_api(operation, default):
         "REST.GET.BUCKETVERSIONS": "s3:GetBucketVersioning",
         "REST.GET.CORS": "s3:GetBucketCORS",
         "REST.GET.ENCRYPTION": "s3:GetEncryptionConfiguration",
+        "REST.GET.INTELLIGENT_TIERING": "REST.GET.INTELLIGENT_TIERING",
         "REST.GET.INVENTORY": "s3:GetInventoryConfiguration",
         "REST.GET.LIFECYCLE": "s3:GetLifecycleConfiguration",
         "REST.GET.LOCATION": "s3:GetBucketLocation",

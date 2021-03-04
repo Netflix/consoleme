@@ -647,7 +647,7 @@ def cache_policies_table_details() -> bool:
     return True
 
 
-@app.task(name="cache_roles_for_account", soft_time_limit=2700, **default_retry_kwargs)
+@app.task(soft_time_limit=2700, **default_retry_kwargs)
 def cache_roles_for_account(account_id: str) -> bool:
     # Get the DynamoDB handler:
     dynamo = IAMRoleDynamoHandler()
