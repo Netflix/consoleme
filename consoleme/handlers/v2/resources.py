@@ -1,11 +1,12 @@
 import sys
 from datetime import datetime, timedelta
 
+import sentry_sdk
 import ujson as json
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MustBeFte
-from consoleme.handlers.base import BaseHandler
+from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import fetch_resource_details
@@ -23,7 +24,7 @@ internal_policies = get_plugin_by_name(
 )()
 
 
-class ResourceDetailHandler(BaseHandler):
+class ResourceDetailHandler(BaseAPIV2Handler):
     async def get(self, account_id, resource_type, region=None, resource_name=None):
         if not self.user:
             return
@@ -57,9 +58,27 @@ class ResourceDetailHandler(BaseHandler):
 
         log.debug(log_data)
 
-        resource_details = await fetch_resource_details(
-            account_id, resource_type, resource_name, region
-        )
+        error = ""
+
+        try:
+            resource_details = await fetch_resource_details(
+                account_id, resource_type, resource_name, region
+            )
+        except Exception as e:
+            sentry_sdk.capture_exception()
+            log.error({**log_data, "error": e}, exc_info=True)
+            resource_details = None
+            error = e
+
+        if not resource_details:
+            self.send_error(
+                404,
+                message=(
+                    f"Unable to retrieve the specified {resource_type} resource: "
+                    f"{account_id}/{resource_name}/{region}. {error}",
+                ),
+            )
+            return
 
         # TODO: Get S3 errors for s3 buckets only, else CT errors
         yesterday = (datetime.today() - timedelta(days=1)).strftime("%Y%m%d")

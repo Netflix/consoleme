@@ -1,10 +1,12 @@
 import React from "react";
 import {
   Dimmer,
+  Grid,
   Header,
   Icon,
   Label,
   Loader,
+  Message,
   Popup,
   Segment,
 } from "semantic-ui-react";
@@ -29,11 +31,34 @@ const PolicyEditor = () => {
   const onDeleteClick = () => setToggleDeleteRole(true);
   const onRefreshClick = () => setToggleRefreshRole(true);
 
+  const resourceError = () => {
+    if (resource.status) {
+      let errorMessage = "";
+      try {
+        errorMessage = JSON.stringify(resource);
+      } catch {
+        errorMessage = resource;
+      }
+
+      return (
+        <Grid padded>
+          <Grid.Column width={15}>
+            <Message negative>
+              <Message.Header>An unexpected error has occurred</Message.Header>
+              <p>{errorMessage}</p>
+            </Message>
+          </Grid.Column>
+        </Grid>
+      );
+    }
+  };
+
   const EditPolicy = serviceType === "iamrole" ? IAMRolePolicy : ResourcePolicy;
 
   return (
     <Dimmer.Dimmable as={Segment} dimmed={isPolicyEditorLoading}>
       <>
+        {resourceError()}
         <Header as="h1" floated="left">
           <Popup
             content="Refresh this resource directly from the cloud"
