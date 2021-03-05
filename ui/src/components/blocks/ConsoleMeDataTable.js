@@ -392,7 +392,7 @@ class ConsoleMeDataTable extends Component {
     // Convert epoch milliseconds to epoch seconds
     if (data.value) {
       let startTime = 0;
-      let endTime = 999999999999999;
+      let endTime = Number.MAX_SAFE_INTEGER;
       if (data.value.length > 0) {
         startTime = parseInt(data.value[0].getTime() / 1000, 10);
       }
