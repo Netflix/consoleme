@@ -415,7 +415,8 @@ class RequestsHandler(BaseAPIV2Handler):
         s3_key = config.get("cache_policy_requests.s3.file")
         arguments = json.loads(self.request.body)
         filters = arguments.get("filters")
-        sort = arguments.get("sort")
+        # TODO: Add server-side sorting
+        # sort = arguments.get("sort")
         limit = arguments.get("limit", 1000)
         tags = {"user": self.user}
         stats.count("RequestsHandler.post", tags=tags)
@@ -432,11 +433,7 @@ class RequestsHandler(BaseAPIV2Handler):
         requests = await retrieve_json_data_from_redis_or_s3(
             cache_key, s3_bucket=s3_bucket, s3_key=s3_key
         )
-        if not sort:
-            # Default sort of requests is by request_time descending.
-            requests = sorted(
-                requests, key=lambda i: i.get("request_time", 0), reverse=True
-            )
+
         if filters:
             try:
                 with Timeout(seconds=5):
@@ -693,7 +690,7 @@ class RequestsPageConfigHandler(BaseHandler):
                 "expandableRows": True,
                 "dataEndpoint": "/api/v2/requests?markdown=true",
                 "sortable": False,
-                "totalRows": 1000,
+                "totalRows": 200,
                 "rowsPerPage": 50,
                 "serverSideFiltering": True,
                 "columns": [
@@ -727,18 +724,6 @@ class RequestsPageConfigHandler(BaseHandler):
                         "type": "link",
                         "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
                         "width": 2,
-                    },
-                    {
-                        "placeholder": "Policy Name",
-                        "key": "policy_name",
-                        "type": "input",
-                        "style": {"width": "110px"},
-                    },
-                    {
-                        "placeholder": "Last Updated By",
-                        "key": "updated_by",
-                        "type": "input",
-                        "style": {"width": "110px"},
                     },
                 ],
             },
