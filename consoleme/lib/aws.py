@@ -26,6 +26,7 @@ from policy_sentry.util.arns import get_account_from_arn, parse_arn
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     BackgroundCheckNotPassedException,
+    InvalidInvocationArgument,
     MissingConfigurationValue,
 )
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
@@ -315,6 +316,12 @@ async def fetch_assume_role_policy(role_arn: str) -> Optional[Dict]:
 async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> dict:
     from consoleme.lib.policies import get_aws_config_history_url_for_resource
 
+    regions = await get_enabled_regions_for_account(account_id)
+    if region not in regions:
+        raise InvalidInvocationArgument(
+            f"Region '{region}' is not valid region on account '{account_id}'."
+        )
+
     arn: str = f"arn:aws:sns:{region}:{account_id}:{resource_name}"
     client = await sync_to_async(boto3_cached_conn)(
         "sns",
@@ -355,6 +362,12 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
 
 async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> dict:
     from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
+    regions = await get_enabled_regions_for_account(account_id)
+    if region not in regions:
+        raise InvalidInvocationArgument(
+            f"Region '{region}' is not valid region on account '{account_id}'."
+        )
 
     queue_url: str = await sync_to_async(get_queue_url)(
         account_number=account_id,
@@ -1122,7 +1135,7 @@ def get_service_from_arn(arn):
     return result["service"]
 
 
-def get_enabled_regions_for_account(account_id: str) -> Set[str]:
+async def get_enabled_regions_for_account(account_id: str) -> Set[str]:
     """
     Returns a list of regions enabled for an account based on an EC2 Describe Regions call. Can be overridden with a
     global configuration of static regions (Configuration key: `celery.sync_regions`), or a configuration of specific
@@ -1138,10 +1151,12 @@ def get_enabled_regions_for_account(account_id: str) -> Set[str]:
     if celery_sync_regions:
         return celery_sync_regions
 
-    client = boto3_cached_conn(
+    client = await sync_to_async(boto3_cached_conn)(
         "ec2",
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         read_only=True,
     )
-    return {r["RegionName"] for r in client.describe_regions()["Regions"]}
+
+    regions = await sync_to_async(client.describe_regions)()
+    return {r["RegionName"] for r in regions["Regions"]}

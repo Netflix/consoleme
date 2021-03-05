@@ -2,7 +2,7 @@
 description: Write to your ~/.aws/credentials file
 ---
 
-# Credential File
+# File
 
 Weep can write credentials to the [AWS shared credential](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) file in your home directory. The AWS CLI and SDKs will refer to this file and use the credentials for a specified profile \(or `default` if none is specified\).
 

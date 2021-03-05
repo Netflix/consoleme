@@ -135,9 +135,9 @@ export const AuthProvider = ({ children }) => {
           setIsSessionExpired(true);
         }
 
-        if (response.ok) {
+        try {
           return response.json();
-        } else {
+        } catch {
           throw new Error(
             `Status: ${response.status}, Reason: ${response.statusText}`
           );

@@ -903,7 +903,7 @@ def cache_sns_topics_across_accounts() -> bool:
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     all_queues: set = set()
-    enabled_regions = get_enabled_regions_for_account(account_id)
+    enabled_regions = async_to_sync(get_enabled_regions_for_account)(account_id)
     for region in enabled_regions:
         client = boto3_cached_conn(
             "sqs",
@@ -956,7 +956,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
 def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     # Make sure it is regional
     all_topics: set = set()
-    enabled_regions = get_enabled_regions_for_account(account_id)
+    enabled_regions = async_to_sync(get_enabled_regions_for_account)(account_id)
     for region in enabled_regions:
         topics = list_topics(
             account_number=account_id,
