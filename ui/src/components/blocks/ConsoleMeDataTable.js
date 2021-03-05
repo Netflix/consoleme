@@ -466,9 +466,6 @@ class ConsoleMeDataTable extends Component {
         let isMatched = true;
         Object.keys(filters).forEach((key) => {
           const filter = filters[key];
-          if (!filter) {
-            isMatched = false;
-          }
           const re = new RegExp(filter, "g");
           if (item[key] && !re.test(item[key])) {
             isMatched = false;
