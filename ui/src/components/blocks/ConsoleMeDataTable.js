@@ -381,7 +381,7 @@ class ConsoleMeDataTable extends Component {
       filters,
     });
 
-    if (tableConfig.serverSideFiltering) {
+    if (tableConfig.serverSideFiltering && Object.keys(filters).length > 0) {
       await this.filterColumnServerSide({}, filters);
     } else {
       this.filterColumnClientSide({}, filters);
@@ -390,12 +390,23 @@ class ConsoleMeDataTable extends Component {
 
   async filterDateRangeTime(event, data) {
     // Convert epoch milliseconds to epoch seconds
-    if (data.value && data.value[0] && data.value[1]) {
-      const startTime = parseInt(data.value[0].getTime() / 1000, 10);
-      const endTime = parseInt(data.value[1].getTime() / 1000, 10);
+    if (data.value) {
+      let startTime = 0;
+      let endTime = 999999999999999;
+      if (data.value.length > 0) {
+        startTime = parseInt(data.value[0].getTime() / 1000, 10);
+      }
+      if (data.value.length > 1) {
+        endTime = parseInt(data.value[1].getTime() / 1000, 10);
+      }
       await this.filterColumn(_, {
         name: data.name,
         value: [startTime, endTime],
+      });
+    } else {
+      await this.filterColumn(_, {
+        name: data.name,
+        value: [],
       });
     }
   }
