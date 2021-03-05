@@ -329,7 +329,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
             sentry_sdk.capture_exception()
             log.error({**log_data, "error": e}, exc_info=True)
             role_details = None
-            error = e
+            error = str(e)
 
         if not role_details:
             self.send_error(
