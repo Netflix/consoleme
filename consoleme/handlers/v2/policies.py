@@ -1,4 +1,6 @@
 import ujson as json
+from parliament import analyze_policy_string, enhance_finding
+import tornado.escape
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MustBeFte
@@ -149,6 +151,30 @@ class PoliciesHandler(BaseAPIV2Handler):
         self.write(json.dumps(policies_to_write))
         return
 
+class CheckPoliciesHandler(BaseAPIV2Handler):
+    async def post(self):
+        """
+        POST /api/v2/policies/check
+        """
+        policy = tornado.escape.json_decode(self.request.body)
+        analyzed_policy = analyze_policy_string(policy)
+        findings = analyzed_policy.findings
+
+        enhanced_findings = []
+
+        for finding in findings:
+            enhanced_finding = enhance_finding(finding)
+            enhanced_findings.append({
+                'issue': enhanced_finding.issue,
+                'detail': enhanced_finding.detail,
+                'location': enhanced_finding.location,
+                'severity': enhanced_finding.severity,
+                'title': enhanced_finding.title,
+                'description': enhanced_finding.description,
+            })
+
+        self.write(json.dumps(enhanced_findings))
+        return
 
 class ManagedPoliciesHandler(BaseHandler):
     async def get(self, account_id):

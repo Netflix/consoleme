@@ -40,6 +40,7 @@ from consoleme.handlers.v2.index import (
 from consoleme.handlers.v2.policies import (
     ManagedPoliciesHandler,
     PoliciesHandler,
+    CheckPoliciesHandler,
     PoliciesPageConfigHandler,
 )
 from consoleme.handlers.v2.requests import (
@@ -122,6 +123,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/permission_templates/?", PermissionTemplatesHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
+        (r"/api/v2/policies/check", CheckPoliciesHandler),
         (r"/api/v2/dynamic_config", DynamicConfigApiHandler),
         (r"/api/v2/eligible_roles", EligibleRoleHandler),
         (r"/api/v2/eligible_roles_page_config", EligibleRolePageConfigHandler),
