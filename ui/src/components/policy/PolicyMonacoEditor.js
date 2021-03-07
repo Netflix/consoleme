@@ -26,6 +26,43 @@ const editorOptions = {
   automaticLayout: true,
 };
 
+const INFO_ERRORS = ["MUTE", "INFO", "LOW"];
+const WARNING_ERRORS = ["MEDIUM"];
+const CRITICAL_ERRORS = ["HIGH", "CRITICAL"];
+
+const LintingErrors = ({ policyErrors }) => (
+  <Message>
+    <Message.Header>Errors</Message.Header>
+    {policyErrors.map((policyError) => (
+      <Message
+        info={INFO_ERRORS.includes(policyError.severity)}
+        warning={WARNING_ERRORS.includes(policyError.severity)}
+        error={CRITICAL_ERRORS.includes(policyError.severity)}
+      >
+        <Message.Header style={{ marginBottom: "5px" }}>
+          {policyError.severity}{" "}
+          {policyError.location &&
+            policyError.location.line &&
+            `- line ${policyError.location.line}`}
+        </Message.Header>
+        {policyError.title} <br />
+        {policyError.detail && (
+          <>
+            <b>Detail:</b> {policyError.detail}
+            <br />
+          </>
+        )}
+        {policyError.description && (
+          <>
+            <b>Description:</b> {policyError.description}
+            <br />
+          </>
+        )}
+      </Message>
+    ))}
+  </Message>
+);
+
 // Stub lint error callback, will be setup later
 let onLintError = () => {};
 
@@ -54,8 +91,9 @@ export const PolicyMonacoEditor = ({
   updatePolicy,
   deletePolicy,
 }) => {
-  const { user } = useAuth();
+  const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
+  const [policyErrors, setPolicyErrors] = useState([]);
 
   const policyDocumentOriginal = JSON.stringify(
     policy.PolicyDocument,
@@ -105,6 +143,17 @@ export const PolicyMonacoEditor = ({
     setModalWithAdminAutoApprove(true);
   };
 
+  const handlePolicyCheck = async () => {
+    const errors = await sendRequestCommon(
+      policyDocument,
+      "/api/v2/policies/check",
+      "post"
+    );
+    if (errors) {
+      setPolicyErrors(errors);
+    }
+  };
+
   return (
     <>
       <Message warning attached="top">
@@ -115,7 +164,8 @@ export const PolicyMonacoEditor = ({
         attached
         style={{
           border: 0,
-          padding: 0,
+          paddingRight: 0,
+          paddingLeft: 0,
         }}
       >
         <MonacoEditor
@@ -129,7 +179,16 @@ export const PolicyMonacoEditor = ({
           textAlign="center"
         />
       </Segment>
+      {!!policyErrors.length && <LintingErrors policyErrors={policyErrors} />}
       <Button.Group attached="bottom">
+        <Button
+          positive
+          icon="check"
+          content="Check"
+          onClick={handlePolicyCheck}
+          disabled={error || !policyDocument}
+        />
+        <Button.Or />
         {user?.authorization?.can_edit_policies ? (
           <>
             <Button
@@ -180,6 +239,7 @@ export const PolicyMonacoEditor = ({
 export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
+  const [policyErrors, setPolicyErrors] = useState([]);
 
   const [newPolicyName, setNewPolicyName] = useState("");
   const [templateOptions, setTemplateOptions] = useState([
@@ -242,6 +302,17 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
     setModalWithAdminAutoApprove(true);
   };
 
+  const handlePolicyCheck = async () => {
+    const errors = await sendRequestCommon(
+      policyDocument,
+      "/api/v2/policies/check",
+      "post"
+    );
+    if (errors) {
+      setPolicyErrors(errors);
+    }
+  };
+
   const handlePolicySubmit = () => {
     addPolicy({
       PolicyName: newPolicyName,
@@ -281,7 +352,8 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
         attached
         style={{
           border: 0,
-          padding: 0,
+          paddingRight: 0,
+          paddingLeft: 0,
         }}
       >
         <MonacoEditor
@@ -295,7 +367,16 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
           textAlign="center"
         />
       </Segment>
+      {!!policyErrors.length && <LintingErrors policyErrors={policyErrors} />}
       <Button.Group attached="bottom">
+        <Button
+          positive
+          icon="check"
+          content="Check"
+          onClick={handlePolicyCheck}
+          disabled={error || policyNameError || !policyDocument}
+        />
+        <Button.Or />
         {user?.authorization?.can_edit_policies ? (
           <>
             <Button
