@@ -12,6 +12,8 @@ amqp==5.0.2
     # via kombu
 appdirs==1.4.4
     # via black
+appnope==0.1.2
+    # via ipython
 argcomplete==1.12.2
     # via datamodel-code-generator
 asgiref==3.3.1
@@ -40,6 +42,7 @@ boto3==1.16.56
     # via
     #   -r requirements.in
     #   cloudaux
+    #   parliament
 boto==2.49.0
     # via cloudaux
 botocore==1.19.56
@@ -188,8 +191,11 @@ jmespath==0.10.0
     #   -r requirements.in
     #   boto3
     #   botocore
+    #   parliament
 joblib==1.0.0
     # via cloudaux
+json-cfg==0.4.2
+    # via parliament
 jsonschema==3.2.0
     # via
     #   -r requirements.in
@@ -198,6 +204,8 @@ kombu==5.0.2
     # via
     #   -r requirements.in
     #   celery
+kwonly-args==1.0.10
+    # via json-cfg
 lazy-object-proxy==1.4.3
     # via astroid
 logmatic-python==0.1.7
@@ -232,6 +240,8 @@ orderedmultidict==1.0.1
 packaging==20.8
     # via bleach
 pandas==0.25.3
+    # via -r requirements.in
+parliament==1.3.1
     # via -r requirements.in
 parso==0.8.1
     # via jedi
@@ -317,6 +327,7 @@ pytz==2020.5
 pyyaml==5.3.1
     # via
     #   openapi-spec-validator
+    #   parliament
     #   policy-sentry
     #   prance
 redis==3.5.3
