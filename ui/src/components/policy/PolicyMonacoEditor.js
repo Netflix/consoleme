@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Button, Form, Icon, Message, Segment } from "semantic-ui-react";
 import MonacoEditor from "react-monaco-editor";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
@@ -8,6 +8,7 @@ import {
 } from "../../helpers/utils";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import { useAuth } from "../../auth/AuthProviderDefault";
+import "./PolicyMonacoEditor.css";
 
 monaco.languages.registerCompletionItemProvider("json", {
   triggerCharacters: getMonacoTriggerCharacters(),
@@ -30,11 +31,21 @@ const INFO_ERRORS = ["MUTE", "INFO", "LOW"];
 const WARNING_ERRORS = ["MEDIUM"];
 const CRITICAL_ERRORS = ["HIGH", "CRITICAL"];
 
+const lintingErrorMapping = {
+  MUTE: "infoError",
+  INFO: "infoError",
+  LOW: "infoError",
+  MEDIUM: "warningError",
+  HIGH: "criticalError",
+  CRITICAL: "criticalError",
+};
+
 const LintingErrors = ({ policyErrors }) => (
   <Message>
     <Message.Header>Errors</Message.Header>
-    {policyErrors.map((policyError) => (
+    {policyErrors.map((policyError, index) => (
       <Message
+        key={index}
         info={INFO_ERRORS.includes(policyError.severity)}
         warning={WARNING_ERRORS.includes(policyError.severity)}
         error={CRITICAL_ERRORS.includes(policyError.severity)}
@@ -105,6 +116,7 @@ export const PolicyMonacoEditor = ({
 
   useEffect(() => {
     setPolicyDocument(policyDocumentOriginal);
+    setPolicyErrors([]);
   }, [policyDocumentOriginal]);
 
   const onEditChange = (value) => {
@@ -240,6 +252,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
   const [policyErrors, setPolicyErrors] = useState([]);
+  const editorRef = useRef();
 
   const [newPolicyName, setNewPolicyName] = useState("");
   const [templateOptions, setTemplateOptions] = useState([
@@ -255,7 +268,20 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const policyNameRegex = /^[\w+=,.@-]+$/;
 
   const onEditChange = (value) => {
+    clearEditorDecorations();
     setPolicyDocument(value);
+  };
+
+  const clearEditorDecorations = () => {
+    editorRef.current.editor
+      .getModel()
+      .getAllDecorations()
+      .filter((el) =>
+        ["criticalError", "warningError", "infoError"].includes(
+          el.options.className
+        )
+      )
+      .map((el) => el.reset());
   };
 
   useEffect(() => {
@@ -310,6 +336,31 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
     );
     if (errors) {
       setPolicyErrors(errors);
+
+      // Clear all existing decorations otherwise they will add up
+      clearEditorDecorations();
+
+      editorRef.current.editor.deltaDecorations(
+        [],
+        errors
+          .filter((error) => error.location && error.location.line)
+          .map((error) => ({
+            range: new monaco.Range(
+              error.location.line,
+              1,
+              error.location.line,
+              100
+            ),
+            options: {
+              isWholeLine: true,
+              className: lintingErrorMapping[error.severity],
+              marginClassName: "warningIcon",
+              hoverMessage: {
+                value: error.detail,
+              },
+            },
+          }))
+      );
     }
   };
 
@@ -322,6 +373,8 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   };
 
   const onTemplateChange = (e, { value }) => {
+    clearEditorDecorations();
+    setPolicyErrors([]);
     setPolicyDocument(JSON.stringify(JSON.parse(value || ""), null, "\t"));
   };
 
@@ -357,6 +410,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
         }}
       >
         <MonacoEditor
+          ref={editorRef}
           height="540px"
           language="json"
           theme="vs-dark"
