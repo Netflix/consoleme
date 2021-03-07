@@ -105,6 +105,7 @@ export const PolicyMonacoEditor = ({
   const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
   const [policyErrors, setPolicyErrors] = useState([]);
+  const [hasBeenChecked, setChecked] = useState(false);
 
   const policyDocumentOriginal = JSON.stringify(
     policy.PolicyDocument,
@@ -162,6 +163,7 @@ export const PolicyMonacoEditor = ({
       "post"
     );
     if (errors) {
+      setChecked(true);
       setPolicyErrors(errors);
     }
   };
@@ -192,6 +194,9 @@ export const PolicyMonacoEditor = ({
         />
       </Segment>
       {!!policyErrors.length && <LintingErrors policyErrors={policyErrors} />}
+      {policyErrors.length === 0 && hasBeenChecked && (
+        <Message positive>No errors</Message>
+      )}
       <Button.Group attached="bottom">
         <Button
           positive
@@ -252,6 +257,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
   const [policyErrors, setPolicyErrors] = useState([]);
+  const [hasBeenChecked, setChecked] = useState(false);
   const editorRef = useRef();
 
   const [newPolicyName, setNewPolicyName] = useState("");
@@ -335,6 +341,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
       "post"
     );
     if (errors) {
+      setChecked(true);
       setPolicyErrors(errors);
 
       // Clear all existing decorations otherwise they will add up
@@ -422,6 +429,9 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
         />
       </Segment>
       {!!policyErrors.length && <LintingErrors policyErrors={policyErrors} />}
+      {policyErrors.length === 0 && hasBeenChecked && (
+        <Message positive>No errors</Message>
+      )}
       <Button.Group attached="bottom">
         <Button
           positive
