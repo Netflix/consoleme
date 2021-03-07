@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Header } from "semantic-ui-react";
-import ConsoleMeDataTable from "../blocks/ConsoleMeDataTable";
+import ConsoleMeDataTable from "../blocks/datatable/DataTableComponent";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "../../auth/AuthProviderDefault";
 
