@@ -74,6 +74,42 @@ const LintingErrors = ({ policyErrors }) => (
   </Message>
 );
 
+const clearEditorDecorations = ({ editor }) => {
+  editor
+    .getModel()
+    .getAllDecorations()
+    .filter((el) =>
+      ["criticalError", "warningError", "infoError"].includes(
+        el.options.className
+      )
+    )
+    .map((el) => el.reset());
+};
+
+const addEditorDecorations = ({ editor, errors }) => {
+  editor.deltaDecorations(
+    [],
+    errors
+      .filter((error) => error.location && error.location.line)
+      .map((error) => ({
+        range: new monaco.Range(
+          error.location.line,
+          1,
+          error.location.line,
+          100
+        ),
+        options: {
+          isWholeLine: true,
+          className: lintingErrorMapping[error.severity],
+          marginClassName: "warningIcon",
+          hoverMessage: {
+            value: error.detail,
+          },
+        },
+      }))
+  );
+};
+
 // Stub lint error callback, will be setup later
 let onLintError = () => {};
 
@@ -106,6 +142,7 @@ export const PolicyMonacoEditor = ({
   const { setModalWithAdminAutoApprove } = usePolicyContext();
   const [policyErrors, setPolicyErrors] = useState([]);
   const [hasBeenChecked, setChecked] = useState(false);
+  const editorRef = useRef();
 
   const policyDocumentOriginal = JSON.stringify(
     policy.PolicyDocument,
@@ -121,6 +158,7 @@ export const PolicyMonacoEditor = ({
   }, [policyDocumentOriginal]);
 
   const onEditChange = (value) => {
+    clearEditorDecorations({ editor: editorRef.current.editor });
     setPolicyDocument(value);
   };
 
@@ -165,6 +203,10 @@ export const PolicyMonacoEditor = ({
     if (errors) {
       setChecked(true);
       setPolicyErrors(errors);
+
+      // Clear all existing decorations otherwise they will add up
+      clearEditorDecorations({ editor: editorRef.current.editor });
+      addEditorDecorations({ editor: editorRef.current.editor, errors });
     }
   };
 
@@ -183,6 +225,7 @@ export const PolicyMonacoEditor = ({
         }}
       >
         <MonacoEditor
+          ref={editorRef}
           height="540px"
           language="json"
           theme="vs-dark"
@@ -257,7 +300,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
   const [policyErrors, setPolicyErrors] = useState([]);
-  const [hasBeenChecked, setChecked] = useState(false);
+  const [hasBeenChecked, setHasBeenChecked] = useState(false);
   const editorRef = useRef();
 
   const [newPolicyName, setNewPolicyName] = useState("");
@@ -274,20 +317,8 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const policyNameRegex = /^[\w+=,.@-]+$/;
 
   const onEditChange = (value) => {
-    clearEditorDecorations();
+    clearEditorDecorations({ editor: editorRef.current.editor });
     setPolicyDocument(value);
-  };
-
-  const clearEditorDecorations = () => {
-    editorRef.current.editor
-      .getModel()
-      .getAllDecorations()
-      .filter((el) =>
-        ["criticalError", "warningError", "infoError"].includes(
-          el.options.className
-        )
-      )
-      .map((el) => el.reset());
   };
 
   useEffect(() => {
@@ -341,33 +372,12 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
       "post"
     );
     if (errors) {
-      setChecked(true);
+      setHasBeenChecked(true);
       setPolicyErrors(errors);
 
       // Clear all existing decorations otherwise they will add up
-      clearEditorDecorations();
-
-      editorRef.current.editor.deltaDecorations(
-        [],
-        errors
-          .filter((error) => error.location && error.location.line)
-          .map((error) => ({
-            range: new monaco.Range(
-              error.location.line,
-              1,
-              error.location.line,
-              100
-            ),
-            options: {
-              isWholeLine: true,
-              className: lintingErrorMapping[error.severity],
-              marginClassName: "warningIcon",
-              hoverMessage: {
-                value: error.detail,
-              },
-            },
-          }))
-      );
+      clearEditorDecorations({ editor: editorRef.current.editor });
+      addEditorDecorations({ editor: editorRef.current.editor, errors });
     }
   };
 
@@ -380,8 +390,9 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   };
 
   const onTemplateChange = (e, { value }) => {
-    clearEditorDecorations();
+    clearEditorDecorations({ editor: editorRef.current.editor });
     setPolicyErrors([]);
+    setHasBeenChecked(false);
     setPolicyDocument(JSON.stringify(JSON.parse(value || ""), null, "\t"));
   };
 
