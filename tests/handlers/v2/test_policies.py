@@ -53,7 +53,6 @@ class TestPoliciesApi(AsyncHTTPTestCase):
         )
         self.assertEqual(response.code, 200)
         response_j = json.loads(response.body)
-        print(response_j)
         self.assertEqual(len(response_j), 1)
         first_error = response_j[0]
         self.assertEqual(first_error["issue"], "RESOURCE_MISMATCH")
