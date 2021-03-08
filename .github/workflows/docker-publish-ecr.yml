@@ -6,6 +6,7 @@ jobs:
   ecr_public:
     runs-on: ubuntu-latest
     name: ECR public action
+    if: github.repository == 'Netflix/consoleme'
     steps:
       - name: Set up Python 3.8
         uses: actions/setup-python@v1

@@ -5,6 +5,7 @@ on:
 jobs:
   push_to_registry:
     name: Push Docker image to Docker Hub
+    if: github.repository == 'Netflix/consoleme'
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
@@ -26,6 +27,7 @@ jobs:
         run: echo ${{ steps.docker_build.outputs.digest }}
   deploy_consoleme_demo_site:
     name: Deploy Demo Site
+    if: github.repository == 'Netflix/consoleme'
     needs: [push_to_registry]
     runs-on: ubuntu-latest
     steps:
