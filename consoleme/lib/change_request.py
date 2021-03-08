@@ -334,12 +334,30 @@ async def _minimize_iam_policy_statements(
 
     for i in range(len(inline_iam_policy_statements)):
         inline_iam_policy_statement = inline_iam_policy_statements[i]
+        if i in exclude_ids:
+            # We've already combined this policy with another. Ignore it.
+            continue
         for j in range(i + 1, len(inline_iam_policy_statements)):
+            if j in exclude_ids:
+                # We've already combined this policy with another. Ignore it.
+                continue
             inline_iam_policy_statement_to_compare = inline_iam_policy_statements[j]
 
-            # Check to see if policy statements are identical except for Resources,
-            # then except for Actions, and merge if possible
-            for element in ["Resource", "Action"]:
+            # Check to see if policy statements are identical except for a given element. Merge the policies
+            # if possible.
+            for element in [
+                "Resource",
+                "Action",
+                "NotAction",
+                "NotResource",
+                "NotPrincipal",
+            ]:
+                if not (
+                    inline_iam_policy_statement.get(element)
+                    or inline_iam_policy_statement_to_compare.get(element)
+                ):
+                    # This function won't handle `Condition`.
+                    continue
                 diff = DeepDiff(
                     inline_iam_policy_statement,
                     inline_iam_policy_statement_to_compare,

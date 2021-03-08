@@ -129,7 +129,9 @@ async def cache_all_policy_requests(
     requests_to_cache = []
     for request in requests:
         requests_to_cache.append(request)
-
+    requests_to_cache = sorted(
+        requests_to_cache, key=lambda i: i.get("request_time", 0), reverse=True
+    )
     await store_json_results_in_redis_and_s3(
         requests_to_cache, redis_key, s3_bucket=s3_bucket, s3_key=s3_key
     )
