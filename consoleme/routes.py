@@ -38,9 +38,9 @@ from consoleme.handlers.v2.index import (
     FrontendHandler,
 )
 from consoleme.handlers.v2.policies import (
+    CheckPoliciesHandler,
     ManagedPoliciesHandler,
     PoliciesHandler,
-    CheckPoliciesHandler,
     PoliciesPageConfigHandler,
 )
 from consoleme.handlers.v2.requests import (

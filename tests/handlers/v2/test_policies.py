@@ -57,5 +57,7 @@ class TestPoliciesApi(AsyncHTTPTestCase):
         self.assertEqual(len(response_j), 1)
         first_error = response_j[0]
         self.assertEqual(first_error["issue"], "RESOURCE_MISMATCH")
-        self.assertEqual(first_error["title"], "No resources match for the given action")
+        self.assertEqual(
+            first_error["title"], "No resources match for the given action"
+        )
         self.assertEqual(first_error["severity"], "MEDIUM")

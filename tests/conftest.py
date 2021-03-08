@@ -666,6 +666,7 @@ def redis(session_mocker):
     )
     return True
 
+
 class MockParliament:
     def __init__(self, return_value=None):
         self.return_value = return_value
@@ -676,12 +677,12 @@ class MockParliament:
 
 
 class Finding:
-    issue = ''
-    detail = ''
+    issue = ""
+    detail = ""
     location = {}
-    severity = ''
-    title = ''
-    description = ''
+    severity = ""
+    title = ""
+    description = ""
 
     def __init__(
         self,
@@ -691,7 +692,7 @@ class Finding:
         severity,
         title,
         description,
-        ):
+    ):
         self.issue = issue
         self.detail = detail
         self.location = location
@@ -700,28 +701,38 @@ class Finding:
         self.description = description
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def parliament(session_mocker):
-    session_mocker.patch('parliament.analyze_policy_string',
-                         return_value=MockParliament(return_value=[{
-        'issue': 'RESOURCE_MISMATCH',
-        'title': 'No resources match for the given action',
-        'severity': 'MEDIUM',
-        'description': '',
-        'detail': [{'action': 's3:GetObject',
-                   'required_format': 'arn:*:s3:::*/*'}],
-        'location': {'line': 3, 'column': 18, 'filepath': 'test.json'},
-        }]))
+    session_mocker.patch(
+        "parliament.analyze_policy_string",
+        return_value=MockParliament(
+            return_value=[
+                {
+                    "issue": "RESOURCE_MISMATCH",
+                    "title": "No resources match for the given action",
+                    "severity": "MEDIUM",
+                    "description": "",
+                    "detail": [
+                        {"action": "s3:GetObject", "required_format": "arn:*:s3:::*/*"}
+                    ],
+                    "location": {"line": 3, "column": 18, "filepath": "test.json"},
+                }
+            ]
+        ),
+    )
 
-    session_mocker.patch('parliament.enhance_finding',
-                         return_value=Finding(
-        issue='RESOURCE_MISMATCH',
-        title='No resources match for the given action',
-        severity='MEDIUM',
-        description='',
-        detail='',
-        location={},
-        ))
+    session_mocker.patch(
+        "parliament.enhance_finding",
+        return_value=Finding(
+            issue="RESOURCE_MISMATCH",
+            title="No resources match for the given action",
+            severity="MEDIUM",
+            description="",
+            detail="",
+            location={},
+        ),
+    )
+
 
 @pytest.fixture(scope="session")
 def user_iam_role(iamrole_table, www_user):
@@ -768,20 +779,44 @@ def mock_async_http_client():
 
     p.stop()
 
+
 @pytest.fixture(scope="session")
-def mock_async_http_client():
+def mock_parliament():
     p = patch("parliament")
 
-    p.return_value.analyze_policy_string.return_value = Mock(json.dumps(
-            {"issue": "RESOURCE_MISMATCH", "title": "No resources match for the given action", "severity": "MEDIUM", "description": "", "detail": [{"action": "s3:GetObject", "required_format": "arn:*:s3:::*/*"}], "location": {"line": 3, "column": 18, "filepath": "test.json"}}
-        ))
-    p.return_value.enhance_finding.return_value = Mock(json.dumps(
-            {"issue": "RESOURCE_MISMATCH", "title": "No resources match for the given action", "severity": "MEDIUM", "description": "", "detail": [{"action": "s3:GetObject", "required_format": "arn:*:s3:::*/*"}], "location": {"line": 3, "column": 18, "filepath": "test.json"}}
-        ))
+    p.return_value.analyze_policy_string.return_value = Mock(
+        json.dumps(
+            {
+                "issue": "RESOURCE_MISMATCH",
+                "title": "No resources match for the given action",
+                "severity": "MEDIUM",
+                "description": "",
+                "detail": [
+                    {"action": "s3:GetObject", "required_format": "arn:*:s3:::*/*"}
+                ],
+                "location": {"line": 3, "column": 18, "filepath": "test.json"},
+            }
+        )
+    )
+    p.return_value.enhance_finding.return_value = Mock(
+        json.dumps(
+            {
+                "issue": "RESOURCE_MISMATCH",
+                "title": "No resources match for the given action",
+                "severity": "MEDIUM",
+                "description": "",
+                "detail": [
+                    {"action": "s3:GetObject", "required_format": "arn:*:s3:::*/*"}
+                ],
+                "location": {"line": 3, "column": 18, "filepath": "test.json"},
+            }
+        )
+    )
 
     yield p.start()
 
     p.stop()
+
 
 @pytest.fixture(autouse=True, scope="session")
 def populate_caches(
@@ -798,7 +833,7 @@ def populate_caches(
     sqs,
     iam,
     www_user,
-    parliament
+    parliament,
 ):
     from asgiref.sync import async_to_sync
 
