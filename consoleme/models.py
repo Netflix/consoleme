@@ -415,17 +415,12 @@ class RoleCreationRequestModel(BaseModel):
     instance_profile: Optional[bool] = True
 
 
-class ActionResult1(BaseModel):
-    status: Optional[str] = None
-    message: Optional[str] = None
-
-
 class RequestCreationResponse(BaseModel):
     errors: Optional[int] = None
     request_created: Optional[bool] = None
     request_id: Optional[str] = None
     request_url: Optional[str] = None
-    action_results: Optional[List[ActionResult1]] = None
+    action_results: Optional[List[ActionResult]] = None
 
 
 class Command(Enum):
@@ -490,15 +485,9 @@ class PolicyRequestModificationRequestModel(BaseModel):
     ]
 
 
-class ActionResult2(BaseModel):
-    status: Optional[str] = None
-    message: Optional[str] = None
-    visible: Optional[bool] = True
-
-
 class PolicyRequestModificationResponseModel(BaseModel):
     errors: Optional[int] = None
-    action_results: Optional[List[ActionResult2]] = None
+    action_results: Optional[List[ActionResult]] = None
 
 
 class AuthenticationResponse(BaseModel):
