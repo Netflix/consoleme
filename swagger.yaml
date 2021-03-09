@@ -20,6 +20,8 @@ tags:
     description: Policy Request endpoints
   - name: privileged
     description: Endpoints requiring elevated permissions
+  - name: policies
+    description: Policies endpoints
 paths:
   /request:
     post:
@@ -307,6 +309,24 @@ paths:
           description: OK
         default:
           $ref: "#/components/responses/DefaultErrorResponse"
+  /policies/check:
+    post:
+      summary: check a policy document
+      tags:
+        - policies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyCheckModel"
 components:
   responses:
     DefaultErrorResponse:
@@ -1495,3 +1515,20 @@ components:
             type: string
         data:
           type: object
+    PolicyCheckModel:
+      type: array
+      items:
+        type: object
+        properties:
+          issue:
+            type: string
+          detail:
+            type: string
+          location:
+            type: string
+          severity:
+            type: string
+          title:
+            type: string
+          description:
+            type: string

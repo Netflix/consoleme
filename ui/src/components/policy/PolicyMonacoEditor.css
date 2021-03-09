@@ -1,0 +1,21 @@
+.infoError {
+  background: rgba(33, 133, 208, 0.4);
+}
+
+.warningError {
+  background: rgba(203, 174, 172, 0.4);
+}
+
+.criticalError {
+  background: rgba(255, 101, 80, 0.4);
+}
+
+.warningIcon {
+  display: block;
+  background-image: url("../../assets/icons/warning.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  padding: 2px;
+  background-origin: content-box;
+  background-position: bottom 0 right 4px;
+}

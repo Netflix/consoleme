@@ -30,6 +30,7 @@ const AssumeRolePolicy = () => {
           context="assume_role_policy"
           policy={assumeRolePolicy}
           updatePolicy={setAssumeRolePolicy}
+          enableLinting={false}
         />
       </Segment>
       <JustificationModal handleSubmit={handleAssumeRolePolicySubmit} />

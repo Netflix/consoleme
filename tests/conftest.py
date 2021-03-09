@@ -667,6 +667,73 @@ def redis(session_mocker):
     return True
 
 
+class MockParliament:
+    def __init__(self, return_value=None):
+        self.return_value = return_value
+
+    @property
+    def findings(self):
+        return self.return_value
+
+
+class Finding:
+    issue = ""
+    detail = ""
+    location = {}
+    severity = ""
+    title = ""
+    description = ""
+
+    def __init__(
+        self,
+        issue,
+        detail,
+        location,
+        severity,
+        title,
+        description,
+    ):
+        self.issue = issue
+        self.detail = detail
+        self.location = location
+        self.severity = severity
+        self.title = title
+        self.description = description
+
+
+@pytest.fixture(scope="session")
+def parliament(session_mocker):
+    session_mocker.patch(
+        "parliament.analyze_policy_string",
+        return_value=MockParliament(
+            return_value=[
+                {
+                    "issue": "RESOURCE_MISMATCH",
+                    "title": "No resources match for the given action",
+                    "severity": "MEDIUM",
+                    "description": "",
+                    "detail": [
+                        {"action": "s3:GetObject", "required_format": "arn:*:s3:::*/*"}
+                    ],
+                    "location": {"line": 3, "column": 18, "filepath": "test.json"},
+                }
+            ]
+        ),
+    )
+
+    session_mocker.patch(
+        "parliament.enhance_finding",
+        return_value=Finding(
+            issue="RESOURCE_MISMATCH",
+            title="No resources match for the given action",
+            severity="MEDIUM",
+            description="",
+            detail="",
+            location={},
+        ),
+    )
+
+
 @pytest.fixture(scope="session")
 def user_iam_role(iamrole_table, www_user):
     from consoleme.lib.dynamo import IAMRoleDynamoHandler
@@ -728,6 +795,7 @@ def populate_caches(
     sqs,
     iam,
     www_user,
+    parliament,
 ):
     from asgiref.sync import async_to_sync
 
