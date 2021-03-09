@@ -117,18 +117,20 @@ export const PolicyMonacoEditor = ({
 
   const policyCheck = useCallback(
     async (policy) => {
-      const errors = await sendRequestCommon(
-        policy,
-        "/api/v2/policies/check",
-        "post"
-      );
-      if (errors) {
-        // Clear all existing decorations otherwise they will add up
-        clearEditorDecorations({ editor: editorRef.current.editor });
-        addEditorDecorations({ editor: editorRef.current.editor, errors });
+      if (context === "inline_policy") {
+        const errors = await sendRequestCommon(
+          policy,
+          "/api/v2/policies/check",
+          "post"
+        );
+        if (errors) {
+          // Clear all existing decorations otherwise they will add up
+          clearEditorDecorations({ editor: editorRef.current.editor });
+          addEditorDecorations({ editor: editorRef.current.editor, errors });
+        }
       }
     },
-    [sendRequestCommon]
+    [sendRequestCommon, context]
   );
 
   useEffect(() => {
