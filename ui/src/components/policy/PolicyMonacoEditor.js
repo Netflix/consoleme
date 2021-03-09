@@ -130,7 +130,7 @@ export const PolicyMonacoEditor = ({
         }
       }
     },
-    [sendRequestCommon]
+    [sendRequestCommon, context]
   );
 
   useEffect(() => {
