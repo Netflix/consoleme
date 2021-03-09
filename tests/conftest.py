@@ -780,44 +780,6 @@ def mock_async_http_client():
     p.stop()
 
 
-@pytest.fixture(scope="session")
-def mock_parliament():
-    p = patch("parliament")
-
-    p.return_value.analyze_policy_string.return_value = Mock(
-        json.dumps(
-            {
-                "issue": "RESOURCE_MISMATCH",
-                "title": "No resources match for the given action",
-                "severity": "MEDIUM",
-                "description": "",
-                "detail": [
-                    {"action": "s3:GetObject", "required_format": "arn:*:s3:::*/*"}
-                ],
-                "location": {"line": 3, "column": 18, "filepath": "test.json"},
-            }
-        )
-    )
-    p.return_value.enhance_finding.return_value = Mock(
-        json.dumps(
-            {
-                "issue": "RESOURCE_MISMATCH",
-                "title": "No resources match for the given action",
-                "severity": "MEDIUM",
-                "description": "",
-                "detail": [
-                    {"action": "s3:GetObject", "required_format": "arn:*:s3:::*/*"}
-                ],
-                "location": {"line": 3, "column": 18, "filepath": "test.json"},
-            }
-        )
-    )
-
-    yield p.start()
-
-    p.stop()
-
-
 @pytest.fixture(autouse=True, scope="session")
 def populate_caches(
     redis,
