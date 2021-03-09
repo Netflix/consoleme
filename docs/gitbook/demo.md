@@ -1,6 +1,6 @@
 # Demo
 
-We provide a limited-functionality demo of ConsoleMe at [https://demo.consolemeoss.com](https://demo.consolemeoss.com) . If you would like access, please reach out to us on our [Discord channel](https://discord.com/invite/nQVpNGGkYu).
+We provide a limited-functionality demo of ConsoleMe at [https://demo.consolemeoss.com](https://demo.consolemeoss.com).
 
 After signing in through Google OAuth, you'll be operating as an administrator but you'll be unable to write any changes. For example, you'll be unable to mutate permissions, submit policy requests, or modify dynamic configuration.
 
