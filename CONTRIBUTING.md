@@ -45,7 +45,7 @@ Since your fork is a copy of the repository, you have to keep it in sync with ou
 # From the consoleme repository root, check out your master branch
 git checkout master
 # Add a remote called upstream
-git remote add upstream git@github.com:your_username/consoleme.git
+git remote add upstream git@github.com:Netflix/consoleme.git
 # Pull changes from upstream
 git pull upstream master
 # Push changes to your fork
