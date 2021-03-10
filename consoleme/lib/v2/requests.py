@@ -975,8 +975,12 @@ async def populate_cross_account_resource_policy_for_change(
                 ):
                     # Find the specific statement within the inline policy associated with this resource
                     if change.arn in statement.get("Resource"):
-                        actions.extend(statement.get("Action", []))
-                        resource_arns.extend(statement.get("Resource", []))
+                        for action in statement.get("Action", []):
+                            if action.startswith(f"{resource_type}:"):
+                                actions.append(action)
+                        for resource in statement.get("Resource"):
+                            if change.arn in resource:
+                                resource_arns.append(resource)
         new_policy = await generate_updated_resource_policy(
             existing=old_policy,
             principal_arn=extended_request.arn,
