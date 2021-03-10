@@ -369,7 +369,7 @@ async def raise_if_restricted(user: str, group_info: Any) -> None:
         "user": user,
         "group": group_info.name,
         "restricted": group_info.restricted,
-        "compliance_retricted": group_info.compliance_restricted,
+        "compliance_restricted": group_info.compliance_restricted,
     }
     log.debug(log_data)
     if group_info.restricted:
