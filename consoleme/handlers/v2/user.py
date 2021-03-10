@@ -12,7 +12,7 @@ from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.auth import can_admin_all
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.jwt import generate_jwt_token
-from consoleme.lib.password import check_password_stength
+from consoleme.lib.password import check_password_strength
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.web import handle_generic_error_response
 from consoleme.models import (
@@ -94,7 +94,7 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
             return
 
         # Fails if password is not strong enough.
-        password_strength_errors = await check_password_stength(
+        password_strength_errors = await check_password_strength(
             registration_attempt.password
         )
         if password_strength_errors:
@@ -267,7 +267,7 @@ class UserManagementHandler(BaseAPIV2Handler):
             )
 
             # Fails if password is not strong enough.
-            password_strength_errors = await check_password_stength(request.password)
+            password_strength_errors = await check_password_strength(request.password)
             if password_strength_errors:
                 await handle_generic_error_response(
                     self,
@@ -303,7 +303,7 @@ class UserManagementHandler(BaseAPIV2Handler):
 
             if request.password:
                 # Fails if password is not strong enough.
-                password_strength_errors = await check_password_stength(
+                password_strength_errors = await check_password_strength(
                     request.password
                 )
                 if password_strength_errors:

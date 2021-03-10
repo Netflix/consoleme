@@ -27,7 +27,7 @@ async def wait_after_authentication_failure(user) -> str:
     )
 
 
-async def check_password_stength(
+async def check_password_strength(
     password,
 ) -> Optional[Union[Dict[str, str], Dict[str, List[str]]]]:
     password_policy_args = {
