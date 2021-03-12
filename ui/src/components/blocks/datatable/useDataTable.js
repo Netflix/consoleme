@@ -132,7 +132,8 @@ const useDataTable = (config) => {
         return;
       }
       let data = await sendRequestCommon({ limit: totalRows }, dataEndpoint);
-      if (_.isEmpty(data)) {
+
+      if (!Array.isArray(data)) {
         return;
       }
       // This means it raised an exception from fetching data
