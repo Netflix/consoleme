@@ -50,6 +50,18 @@ Your output should resemble the following screenshot:
 
 If you do not have 4 containers running, run the docker compose command again to ensure they are started.
 
+{% hint style="warning" %}
+If your container crashes after starting, make sure that you have sufficient resources in Docker. On Mac, configure Docker Desktop to provide at least 4GB RAM, 2 CPUs, 2GB of swap, and at least 25GB for storage. 
+
+On Linux, you may need to increase your inotify settings on your Docker host:
+
+`echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf`
+
+`sudo sysctl -p`
+
+If the containers are still not starting, please open a GitHub issue and paste your container logs.
+{% endhint %}
+
 After this is done, wait a bit for the containers to fully start. Run `docker logs <container_id>` to check progress and observe errors from the running ConsoleMe containers.
 
   `http://localhost:3000`. You may notice the page is rather empty. One of the containers we started should be initializing your redis cache with your AWS account resources, so you may need to give it a moment. To follow along with resource caching, run the following docker command:
