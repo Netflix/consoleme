@@ -116,6 +116,7 @@ const useDataTable = (config) => {
   }, [config]);
 
   // TODO, Try consolidate this data fetching useEffect with the server/client side filtering useEffect.
+  // This useEffect handles the initial data fetching from the backend to set data state
   useEffect(() => {
     (async (tableConfig) => {
       const {
@@ -123,30 +124,34 @@ const useDataTable = (config) => {
         serverSideFiltering = true,
         totalRows = 1000,
       } = tableConfig;
+
+      // This means the tableConfig is not loaded and where to fetch the backend data is unknown
       if (_.isEmpty(dataEndpoint)) {
         return;
       }
+
       // If query string exist and this is a server side filtering then let the filter useEffect
       // fetch the filtered data instead of fetching data from this useEffect.
       if (!_.isEmpty(window.location.search) && serverSideFiltering) {
         return;
       }
+
       let data = await sendRequestCommon({ limit: totalRows }, dataEndpoint);
 
-      if (!Array.isArray(data)) {
-        return;
-      }
       // This means it raised an exception from fetching data
-      if (data.status) {
+      if (data && data.status != null) {
         data = [];
       }
+
       dispatch({
         type: "SET_DATA",
-        data,
+        data: data || [],
       });
     })(tableConfig);
   }, [tableConfig, sendRequestCommon]);
 
+  // This useEffect handles the filtering from the url search query. Depends on how the table
+  // is configured, it will either apply the filter from the backend or do the filtering from client side.
   useEffect(() => {
     (async (data, tableConfig) => {
       const { dataEndpoint = "", serverSideFiltering = true } = tableConfig;
@@ -178,9 +183,12 @@ const useDataTable = (config) => {
         type: "SET_FILTERS",
         filters,
       });
+
+      // Filtering is done at the backend and the filtered data is assigned to the state.
       if (serverSideFiltering && Object.keys(filters).length > 0) {
         await filterColumnServerSide(filters);
       } else {
+        // This is the client side filtering on the already loaded data.
         filterColumnClientSide(filters);
       }
     })(data, tableConfig);
