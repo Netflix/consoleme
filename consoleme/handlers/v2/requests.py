@@ -8,6 +8,7 @@ import ujson as json
 from policy_sentry.util.arns import parse_arn
 from pydantic import ValidationError
 
+from consoleme.celery_tasks.celery_tasks import app as celery_app
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
@@ -60,10 +61,12 @@ class RequestHandler(BaseAPIV2Handler):
     allowed_methods = ["POST"]
 
     def on_finish(self) -> None:
-        from consoleme.celery_tasks.celery_tasks import app
-
-        app.send_task("consoleme.celery_tasks.celery_tasks.cache_policy_requests")
-        app.send_task(
+        if self.request.method != "POST":
+            return
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_policy_requests"
+        )
+        celery_app.send_task(
             "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping"
         )
 
@@ -499,10 +502,12 @@ class RequestDetailHandler(BaseAPIV2Handler):
     allowed_methods = ["GET", "PUT"]
 
     def on_finish(self) -> None:
-        from consoleme.celery_tasks.celery_tasks import app
-
-        app.send_task("consoleme.celery_tasks.celery_tasks.cache_policy_requests")
-        app.send_task(
+        if self.request.method != "PUT":
+            return
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_policy_requests"
+        )
+        celery_app.send_task(
             "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping"
         )
 
