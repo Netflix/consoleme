@@ -29,7 +29,6 @@ from consoleme.lib.policies import (
     get_url_for_resource,
     should_auto_approve_policy_v2,
 )
-from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.timeout import Timeout
 from consoleme.lib.v2.requests import (
     generate_request_from_change_model_array,
@@ -59,6 +58,14 @@ class RequestHandler(BaseAPIV2Handler):
     """
 
     allowed_methods = ["POST"]
+
+    def on_finish(self) -> None:
+        from consoleme.celery_tasks.celery_tasks import app
+
+        app.send_task("consoleme.celery_tasks.celery_tasks.cache_policy_requests")
+        app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping"
+        )
 
     async def post(self):
         """
@@ -390,7 +397,6 @@ class RequestHandler(BaseAPIV2Handler):
         )
         self.write(response.json())
         await self.finish()
-        await cache_all_policy_requests()
         return
 
 
@@ -491,6 +497,14 @@ class RequestDetailHandler(BaseAPIV2Handler):
     """
 
     allowed_methods = ["GET", "PUT"]
+
+    def on_finish(self) -> None:
+        from consoleme.celery_tasks.celery_tasks import app
+
+        app.send_task("consoleme.celery_tasks.celery_tasks.cache_policy_requests")
+        app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping"
+        )
 
     async def _get_extended_request(self, request_id, log_data):
         dynamo = UserDynamoHandler(self.user)
@@ -668,7 +682,6 @@ class RequestDetailHandler(BaseAPIV2Handler):
             return
         self.write(response.json())
         await self.finish()
-        await cache_all_policy_requests()
         return
 
 

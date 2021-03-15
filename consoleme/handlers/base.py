@@ -466,7 +466,7 @@ class BaseHandler(tornado.web.RequestHandler):
             try:
                 self.red.setex(
                     f"USER-{self.user}-CONSOLE-{console_only}",
-                    config.get("dynamic_config.role_cache.cache_expiration", 500),
+                    config.get("dynamic_config.role_cache.cache_expiration", 60),
                     json.dumps(
                         {
                             "groups": self.groups,

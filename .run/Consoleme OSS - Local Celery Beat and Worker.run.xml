@@ -26,7 +26,7 @@
       </ENTRIES>
     </EXTENSION>
     <option name="SCRIPT_NAME" value="celery" />
-    <option name="PARAMETERS" value="-A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=8" />
+    <option name="PARAMETERS" value="-A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=8" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="true" />
     <option name="MODULE_MODE" value="true" />
