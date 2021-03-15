@@ -11,7 +11,7 @@ sys.path.append(os.path.join(APP_ROOT, ".."))
 
 class TestCelerySync(TestCase):
     def setUp(self):
-        from consoleme.celery import celery_tasks as celery
+        from consoleme.celery_tasks import celery_tasks as celery
 
         self.celery = celery
 
@@ -73,7 +73,7 @@ class TestCelerySync(TestCase):
         self.assertEqual(
             res,
             {
-                "function": "consoleme.celery.celery_tasks.cache_roles_across_accounts",
+                "function": "consoleme.celery_tasks.celery_tasks.cache_roles_across_accounts",
                 "cache_key": "test_cache_roles_for_account",
                 "num_roles": 0,
                 "num_accounts": 1,

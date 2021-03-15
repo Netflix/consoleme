@@ -4,9 +4,11 @@ when invoked. Please add internal-only celery tasks to the celery_tasks plugin.
 
 When ran in development mode (CONFIG_LOCATION=<location of development.yaml configuration file. To run both the celery
 beat scheduler and a worker simultaneously, and to have jobs kick off starting at the next minute, run the following
-command: celery -A consoleme.celery.celery_tasks worker --loglevel=info -l DEBUG -B
+command: celery -A consoleme.celery_tasks.celery_tasks worker --loglevel=info -l DEBUG -B
 
 """
+from __future__ import absolute_import
+
 import json  # We use a separate SetEncoder here so we cannot use ujson
 import sys
 import time
@@ -104,7 +106,7 @@ if config.get("celery.purge"):
         app.control.purge()
 
 log = config.get_logger()
-red = async_to_sync(RedisHandler().redis)()
+red = RedisHandler().redis_sync()
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))
 auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 group_mapping = get_plugin_by_name(
@@ -1355,77 +1357,77 @@ if config.get("development", False):
 
 schedule = {
     "cache_roles_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_roles_across_accounts",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_roles_across_accounts",
         "options": {"expires": 1000},
         "schedule": schedule_45_minute,
     },
     "clear_old_redis_iam_cache": {
-        "task": "consoleme.celery.celery_tasks.clear_old_redis_iam_cache",
+        "task": "consoleme.celery_tasks.celery_tasks.clear_old_redis_iam_cache",
         "options": {"expires": 180},
         "schedule": schedule_6_hours,
     },
     "cache_policies_table_details": {
-        "task": "consoleme.celery.celery_tasks.cache_policies_table_details",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_policies_table_details",
         "options": {"expires": 1000},
         "schedule": schedule_30_minute,
     },
     "report_celery_last_success_metrics": {
-        "task": "consoleme.celery.celery_tasks.report_celery_last_success_metrics",
+        "task": "consoleme.celery_tasks.celery_tasks.report_celery_last_success_metrics",
         "options": {"expires": 60},
         "schedule": schedule_minute,
     },
     "cache_managed_policies_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_managed_policies_across_accounts",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_managed_policies_across_accounts",
         "options": {"expires": 1000},
         "schedule": schedule_45_minute,
     },
     "cache_s3_buckets_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_s3_buckets_across_accounts",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_s3_buckets_across_accounts",
         "options": {"expires": 300},
         "schedule": schedule_45_minute,
     },
     "cache_sqs_queues_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_sqs_queues_across_accounts",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_sqs_queues_across_accounts",
         "options": {"expires": 300},
         "schedule": schedule_45_minute,
     },
     "cache_sns_topics_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_sns_topics_across_accounts",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_sns_topics_across_accounts",
         "options": {"expires": 300},
         "schedule": schedule_45_minute,
     },
     "cache_audit_table_details": {
-        "task": "consoleme.celery.celery_tasks.cache_audit_table_details",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_audit_table_details",
         "options": {"expires": 300},
         "schedule": schedule_5_minutes,
     },
     "get_iam_role_limit": {
-        "task": "consoleme.celery.celery_tasks.get_iam_role_limit",
+        "task": "consoleme.celery_tasks.celery_tasks.get_iam_role_limit",
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
     },
     "cache_cloudtrail_errors_by_arn": {
-        "task": "consoleme.celery.celery_tasks.cache_cloudtrail_errors_by_arn",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_errors_by_arn",
         "options": {"expires": 300},
         "schedule": schedule_1_hour,
     },
     "cache_resources_from_aws_config_across_accounts": {
-        "task": "consoleme.celery.celery_tasks.cache_resources_from_aws_config_across_accounts",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_resources_from_aws_config_across_accounts",
         "options": {"expires": 300},
         "schedule": schedule_1_hour,
     },
     "cache_policy_requests": {
-        "task": "consoleme.celery.celery_tasks.cache_policy_requests",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_policy_requests",
         "options": {"expires": 1000},
         "schedule": schedule_5_minutes,
     },
     "cache_cloud_account_mapping": {
-        "task": "consoleme.celery.celery_tasks.cache_cloud_account_mapping",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_cloud_account_mapping",
         "options": {"expires": 1000},
         "schedule": schedule_1_hour,
     },
     "cache_credential_authorization_mapping": {
-        "task": "consoleme.celery.celery_tasks.cache_credential_authorization_mapping",
+        "task": "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping",
         "options": {"expires": 1000},
         "schedule": schedule_5_minutes,
     },

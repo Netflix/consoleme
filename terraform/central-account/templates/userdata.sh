@@ -152,7 +152,7 @@ RestartSec=1
 WorkingDirectory=/apps/consoleme
 Environment=CONFIG_LOCATION=${CONFIG_LOCATION}
 Environment=EC2_REGION=${region}
-ExecStart=/usr/bin/env /apps/consoleme/env/bin/python3.8 /apps/consoleme/env/bin/celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=15
+ExecStart=/usr/bin/env /apps/consoleme/env/bin/python3.8 /apps/consoleme/env/bin/celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=15
 
 [Install]
 WantedBy=multi-user.target

@@ -4,7 +4,7 @@ import unittest
 class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
-        from consoleme.celery.celery_tasks import (
+        from consoleme.celery_tasks.celery_tasks import (
             cache_roles_across_accounts,
             cache_roles_for_account,
         )

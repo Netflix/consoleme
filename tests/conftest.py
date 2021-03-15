@@ -286,7 +286,7 @@ def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
             s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
         )
         return
-    from consoleme.celery.celery_tasks import cache_roles_for_account
+    from consoleme.celery_tasks.celery_tasks import cache_roles_for_account
     from consoleme.lib.account_indexers import get_account_id_to_name_mapping
     from consoleme.lib.redis import RedisHandler
 
@@ -760,7 +760,7 @@ def mock_exception_stats():
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_celery_stats(mock_exception_stats):
-    p = patch("consoleme.celery.celery_tasks.stats")
+    p = patch("consoleme.celery_tasks.celery_tasks.stats")
 
     yield p.start()
 
@@ -799,7 +799,7 @@ def populate_caches(
 ):
     from asgiref.sync import async_to_sync
 
-    from consoleme.celery import celery_tasks as celery
+    from consoleme.celery_tasks import celery_tasks as celery
     from consoleme.lib.account_indexers import get_account_id_to_name_mapping
     from consoleme_default_plugins.plugins.celery_tasks import (
         celery_tasks as default_celery_tasks,

@@ -50,7 +50,7 @@ services:
       python scripts/retrieve_or_decode_configuration.py;
       python scripts/initialize_dynamodb_oss.py;
       python scripts/initialize_redis_oss.py --use_celery=true;
-      celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=8
+      celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=8
       '
     depends_on:
       - consoleme-redis

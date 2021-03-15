@@ -2,7 +2,7 @@ import argparse
 
 from asgiref.sync import async_to_sync
 
-from consoleme.celery import celery_tasks as celery
+from consoleme.celery_tasks import celery_tasks as celery
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme_default_plugins.plugins.celery_tasks import (
     celery_tasks as default_celery_tasks,
@@ -32,7 +32,7 @@ args = parser.parse_args()
 if args.use_celery:
     # Initialize Redis locally. If use_celery is set to `True`, you must be running a celery beat and worker. You can
     # run this locally with the following command:
-    # `celery -A consoleme.celery.celery_tasks worker -l DEBUG -B -E --concurrency=8`
+    # `celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=8`
 
     celery.cache_roles_across_accounts()
     celery.cache_s3_buckets_across_accounts()
