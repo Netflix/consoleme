@@ -444,6 +444,10 @@ async def get_bucket_location_with_fallback(
             ),
         )
         bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
+        if bucket_location == "EU":
+            bucket_location = "eu-west-1"
+        if bucket_location == "US":
+            bucket_location = "us-east-1"
     except ClientError:
         bucket_location = fallback_region
         sentry_sdk.capture_exception()
