@@ -168,7 +168,7 @@ def make_app(jwt_validator=None):
         ),
     ]
 
-    # Prioritize internal routes before OSS routes so that OSS routes can be overrided if desired.
+    # Prioritize internal routes before OSS routes so that OSS routes can be overridden if desired.
     internal_route_list = internal_routes.get_internal_routes(
         make_jwt_validator, jwt_validator
     )
