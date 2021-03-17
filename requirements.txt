@@ -4,21 +4,19 @@
 #
 #    pip-compile --no-emit-index-url --output-file=requirements.txt requirements.in
 #
-aiohttp==3.7.3
+aiohttp==3.7.4.post0
     # via aiozipkin
 aiozipkin==1.0.0
     # via -r requirements.in
-amqp==5.0.2
+amqp==5.0.5
     # via kombu
 appdirs==1.4.4
     # via black
-appnope==0.1.2
-    # via ipython
 argcomplete==1.12.2
     # via datamodel-code-generator
 asgiref==3.3.1
     # via -r requirements.in
-astroid==2.4.2
+astroid==2.5.1
     # via pylint
 async-timeout==3.0.1
     # via aiohttp
@@ -38,19 +36,19 @@ black==20.8b1
     # via datamodel-code-generator
 bleach==3.3.0
     # via -r requirements.in
-boto3==1.16.56
+boto3==1.17.29
     # via
     #   -r requirements.in
     #   cloudaux
     #   parliament
 boto==2.49.0
     # via cloudaux
-botocore==1.19.56
+botocore==1.20.29
     # via
     #   boto3
     #   cloudaux
     #   s3transfer
-cachetools==4.2.0
+cachetools==4.2.1
     # via google-auth
 cchardet==2.1.7
     # via -r requirements.in
@@ -61,11 +59,11 @@ certifi==2020.12.5
     #   elasticsearch
     #   requests
     #   sentry-sdk
-cffi==1.14.4
+cffi==1.14.5
     # via
     #   bcrypt
     #   google-crc32c
-chardet==3.0.4
+chardet==4.0.0
     # via
     #   aiohttp
     #   prance
@@ -89,13 +87,13 @@ cloudaux==1.9.2
     # via -r requirements.in
 contextlib2==0.6.0.post1
     # via schema
-datamodel-code-generator==0.8.0
+datamodel-code-generator==0.9.2
     # via -r requirements.in
 decorator==4.4.2
     # via
     #   ipython
     #   retry
-deepdiff==5.2.2
+deepdiff==5.2.3
     # via -r requirements.in
 defusedxml==0.6.0
     # via
@@ -110,7 +108,7 @@ ed25519==1.5
     # via -r requirements.in
 elasticsearch-dsl==7.3.0
     # via -r requirements.in
-elasticsearch==7.10.1
+elasticsearch==7.11.0
     # via
     #   -r requirements.in
     #   elasticsearch-dsl
@@ -124,33 +122,34 @@ genson==1.2.2
     # via datamodel-code-generator
 gitdb==4.0.5
     # via gitpython
-gitpython==3.1.12
+gitpython==3.1.14
     # via -r requirements.in
-google-api-core==1.25.0
+google-api-core==1.26.1
     # via
     #   google-api-python-client
     #   google-cloud-core
-google-api-python-client==1.12.8
+google-api-python-client==2.0.2
     # via -r requirements.in
-google-auth-httplib2==0.0.4
+google-auth-httplib2==0.1.0
     # via
     #   -r requirements.in
     #   google-api-python-client
-google-auth==1.24.0
+google-auth==1.28.0
     # via
     #   google-api-core
     #   google-api-python-client
     #   google-auth-httplib2
+    #   google-cloud-core
     #   google-cloud-storage
-google-cloud-core==1.5.0
+google-cloud-core==1.6.0
     # via google-cloud-storage
-google-cloud-storage==1.35.0
+google-cloud-storage==1.36.2
     # via -r requirements.in
-google-crc32c==1.1.1
+google-crc32c==1.1.2
     # via google-resumable-media
 google-resumable-media==1.2.0
     # via google-cloud-storage
-googleapis-common-protos==1.52.0
+googleapis-common-protos==1.53.0
     # via google-api-core
 gunicorn==20.0.4
     # via -r requirements.in
@@ -172,11 +171,12 @@ inflection==0.5.1
     # via cloudaux
 ipython-genutils==0.2.0
     # via traitlets
-ipython==7.19.0
+ipython==7.21.0
     # via -r requirements.in
 isodate==0.6.0
     # via
     #   -r requirements.in
+    #   openapi-schema-validator
     #   python3-saml
 isort==5.7.0
     # via
@@ -184,7 +184,7 @@ isort==5.7.0
     #   pylint
 jedi==0.18.0
     # via ipython
-jinja2==2.11.2
+jinja2==2.11.3
     # via datamodel-code-generator
 jmespath==0.10.0
     # via
@@ -192,13 +192,14 @@ jmespath==0.10.0
     #   boto3
     #   botocore
     #   parliament
-joblib==1.0.0
+joblib==1.0.1
     # via cloudaux
 json-cfg==0.4.2
     # via parliament
 jsonschema==3.2.0
     # via
     #   -r requirements.in
+    #   openapi-schema-validator
     #   openapi-spec-validator
 kombu==5.0.2
     # via
@@ -206,7 +207,7 @@ kombu==5.0.2
     #   celery
 kwonly-args==1.0.10
     # via json-cfg
-lazy-object-proxy==1.4.3
+lazy-object-proxy==1.5.2
     # via astroid
 logmatic-python==0.1.7
     # via -r requirements.in
@@ -227,21 +228,25 @@ multidict==5.1.0
     #   yarl
 mypy-extensions==0.4.3
     # via black
-numpy==1.19.5
+numpy==1.20.1
     # via pandas
 okta-jwt==1.3.5
     # via -r requirements.in
-openapi-spec-validator==0.2.9
+openapi-schema-validator==0.1.4
+    # via openapi-spec-validator
+openapi-spec-validator==0.2.10
     # via datamodel-code-generator
 ordered-set==4.0.2
     # via deepdiff
 orderedmultidict==1.0.1
     # via furl
-packaging==20.8
-    # via bleach
+packaging==20.9
+    # via
+    #   bleach
+    #   google-api-core
 pandas==0.25.3
     # via -r requirements.in
-parliament==1.3.1
+parliament==1.4.0
     # via -r requirements.in
 parso==0.8.1
     # via jedi
@@ -253,21 +258,21 @@ pexpect==4.8.0
     # via ipython
 pickleshare==0.7.5
     # via ipython
-pkgconfig==1.5.1
+pkgconfig==1.5.2
     # via -r requirements.in
-policy-sentry==0.11.3
+policy-sentry==0.11.5
     # via -r requirements.in
 policyuniverse==1.3.3.20210223
     # via -r requirements.in
-prance==0.20.0
+prance==0.20.2
     # via datamodel-code-generator
 presto-python-client==0.7.0
     # via -r requirements.in
-prompt-toolkit==3.0.10
+prompt-toolkit==3.0.17
     # via
     #   click-repl
     #   ipython
-protobuf==3.14.0
+protobuf==3.15.6
     # via
     #   google-api-core
     #   googleapis-common-protos
@@ -286,15 +291,15 @@ pycparser==2.20
     # via cffi
 pycurl==7.43.0.6
     # via -r requirements.in
-pydantic[email]==1.7.3
+pydantic[email]==1.8.1
     # via
     #   -r requirements.in
     #   datamodel-code-generator
-pygments==2.7.4
+pygments==2.8.1
     # via ipython
 pyjwt==2.0.1
     # via -r requirements.in
-pylint==2.6.0
+pylint==2.7.2
     # via -r requirements.in
 pyparsing==2.4.7
     # via
@@ -302,7 +307,7 @@ pyparsing==2.4.7
     #   packaging
 pyrsistent==0.17.3
     # via jsonschema
-pysnooper==0.4.2
+pysnooper==0.4.3
     # via datamodel-code-generator
 python-dateutil==2.8.1
     # via
@@ -316,15 +321,15 @@ python-json-logger==0.1.11
     # via
     #   -r requirements.in
     #   logmatic-python
-python3-saml==1.10.0
+python3-saml==1.10.1
     # via -r requirements.in
-pytz==2020.5
+pytz==2021.1
     # via
     #   -r requirements.in
     #   celery
     #   google-api-core
     #   pandas
-pyyaml==5.3.1
+pyyaml==5.4.1
     # via
     #   openapi-spec-validator
     #   parliament
@@ -349,17 +354,17 @@ retry==0.9.2
     # via -r requirements.in
 retrying==1.3.3
     # via -r requirements.in
-rsa==4.7
+rsa==4.7.2
     # via
     #   google-auth
     #   python-jose
 ruamel.yaml.clib==0.2.2
     # via ruamel.yaml
-ruamel.yaml==0.16.12
+ruamel.yaml==0.16.13
     # via -r requirements.in
 s3transfer==0.3.4
     # via boto3
-schema==0.7.2
+schema==0.7.4
     # via policy-sentry
 semver==2.13.0
     # via prance
@@ -370,7 +375,6 @@ simplejson==3.17.2
 six==1.15.0
     # via
     #   -r requirements.in
-    #   astroid
     #   bcrypt
     #   bleach
     #   click-repl
@@ -387,6 +391,7 @@ six==1.15.0
     #   isodate
     #   jsonschema
     #   okta-jwt
+    #   openapi-schema-validator
     #   openapi-spec-validator
     #   orderedmultidict
     #   password-strength
@@ -397,11 +402,11 @@ six==1.15.0
     #   python-jose
     #   retrying
     #   tenacity
-smmap==3.0.4
+smmap==3.0.5
     # via gitdb
-soupsieve==2.1
+soupsieve==2.2
     # via beautifulsoup4
-tenacity==6.3.1
+tenacity==7.0.0
     # via -r requirements.in
 toml==0.10.2
     # via
@@ -418,17 +423,18 @@ typing-extensions==3.7.4.3
     # via
     #   aiohttp
     #   black
-ujson==4.0.1
+    #   pydantic
+ujson==4.0.2
     # via -r requirements.in
 uritemplate==3.0.1
     # via google-api-python-client
-urllib3==1.26.2
+urllib3==1.26.4
     # via
     #   botocore
     #   elasticsearch
     #   requests
     #   sentry-sdk
-uvloop==0.14.0
+uvloop==0.15.2
     # via -r requirements.in
 validate-email==1.3
     # via -r requirements.in

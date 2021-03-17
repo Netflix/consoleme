@@ -4,7 +4,7 @@
 #
 #    pip-compile --no-emit-index-url --output-file=requirements-test.txt requirements-test.in requirements.txt
 #
-aiohttp==3.7.3
+aiohttp==3.7.4.post0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -13,7 +13,7 @@ aiozipkin==1.0.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-amqp==5.0.2
+amqp==5.0.5
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -35,7 +35,7 @@ asgiref==3.3.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-astroid==2.4.2
+astroid==2.5.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -54,10 +54,6 @@ attrs==20.3.0
     #   aiohttp
     #   jsonschema
     #   pytest
-aws-sam-translator==1.33.0
-    # via cfn-lint
-aws-xray-sdk==2.6.0
-    # via moto
 backcall==0.2.0
     # via
     #   -c requirements.txt
@@ -65,6 +61,10 @@ backcall==0.2.0
     #   ipython
 bandit==1.7.0
     # via -r requirements-test.in
+bcrypt==3.2.0
+    # via
+    #   -c requirements.txt
+    #   -r requirements.txt
 beautifulsoup4==4.9.3
     # via
     #   -c requirements.txt
@@ -86,29 +86,27 @@ bleach==3.3.0
     #   -c requirements.txt
     #   -r requirements.txt
     #   readme-renderer
-boto3==1.16.56
+boto3==1.17.29
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-    #   aws-sam-translator
     #   cloudaux
     #   moto
+    #   parliament
 boto==2.49.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   cloudaux
-    #   moto
-botocore==1.19.56
+botocore==1.20.29
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-    #   aws-xray-sdk
     #   boto3
     #   cloudaux
     #   moto
     #   s3transfer
-cachetools==4.2.0
+cachetools==4.2.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -128,17 +126,16 @@ certifi==2020.12.5
     #   elasticsearch
     #   requests
     #   sentry-sdk
-cffi==1.14.4
+cffi==1.14.5
     # via
     #   -c requirements.txt
     #   -r requirements.txt
+    #   bcrypt
     #   cryptography
     #   google-crc32c
 cfgv==3.2.0
     # via pre-commit
-cfn-lint==0.44.3
-    # via moto
-chardet==3.0.4
+chardet==4.0.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -180,16 +177,13 @@ contextlib2==0.6.0.post1
     #   -c requirements.txt
     #   -r requirements.txt
     #   schema
-coverage==5.3.1
+coverage==5.5
     # via
     #   -r requirements-test.in
     #   pytest-cov
-cryptography==3.4.4
-    # via
-    #   moto
-    #   python-jose
-    #   sshpubkeys
-datamodel-code-generator==0.8.0
+cryptography==3.4.6
+    # via moto
+datamodel-code-generator==0.9.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -198,9 +192,8 @@ decorator==4.4.2
     #   -c requirements.txt
     #   -r requirements.txt
     #   ipython
-    #   networkx
     #   retry
-deepdiff==5.2.2
+deepdiff==5.2.3
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -217,17 +210,13 @@ dnspython==2.1.0
     #   -c requirements.txt
     #   -r requirements.txt
     #   email-validator
-docker==4.4.1
-    # via moto
 docutils==0.16
     # via readme-renderer
 ecdsa==0.14.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-    #   moto
     #   python-jose
-    #   sshpubkeys
 ed25519==1.5
     # via
     #   -c requirements.txt
@@ -236,7 +225,7 @@ elasticsearch-dsl==7.3.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-elasticsearch==7.10.1
+elasticsearch==7.11.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -246,7 +235,7 @@ email-validator==1.1.2
     #   -c requirements.txt
     #   -r requirements.txt
     #   pydantic
-execnet==1.7.1
+execnet==1.8.0
     # via pytest-xdist
 filelock==3.0.12
     # via
@@ -261,7 +250,7 @@ flake8-docstrings==1.5.0
     # via -r requirements-test.in
 flake8-import-order==0.18.1
     # via -r requirements-test.in
-flake8==3.8.4
+flake8==3.9.0
     # via
     #   -r requirements-test.in
     #   flake8-docstrings
@@ -269,8 +258,6 @@ furl==2.1.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-future==0.18.2
-    # via aws-xray-sdk
 genson==1.2.2
     # via
     #   -c requirements.txt
@@ -281,44 +268,45 @@ gitdb==4.0.5
     #   -c requirements.txt
     #   -r requirements.txt
     #   gitpython
-gitpython==3.1.12
+gitpython==3.1.14
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   bandit
-google-api-core==1.25.0
+google-api-core==1.26.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   google-api-python-client
     #   google-cloud-core
-google-api-python-client==1.12.8
+google-api-python-client==2.0.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-google-auth-httplib2==0.0.4
+google-auth-httplib2==0.1.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   google-api-python-client
-google-auth==1.24.0
+google-auth==1.28.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   google-api-core
     #   google-api-python-client
     #   google-auth-httplib2
+    #   google-cloud-core
     #   google-cloud-storage
-google-cloud-core==1.5.0
+google-cloud-core==1.6.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   google-cloud-storage
-google-cloud-storage==1.35.0
+google-cloud-storage==1.36.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-google-crc32c==1.1.1
+google-crc32c==1.1.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -328,7 +316,7 @@ google-resumable-media==1.2.0
     #   -c requirements.txt
     #   -r requirements.txt
     #   google-cloud-storage
-googleapis-common-protos==1.52.0
+googleapis-common-protos==1.53.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -347,14 +335,13 @@ httplib2==0.19.0
     #   -r requirements.txt
     #   google-api-python-client
     #   google-auth-httplib2
-identify==1.5.13
+identify==2.1.3
     # via pre-commit
 idna==2.10
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   email-validator
-    #   moto
     #   requests
     #   yarl
 inflect==4.1.1
@@ -374,7 +361,7 @@ ipython-genutils==0.2.0
     #   -c requirements.txt
     #   -r requirements.txt
     #   traitlets
-ipython==7.19.0
+ipython==7.21.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -382,6 +369,7 @@ isodate==0.6.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
+    #   openapi-schema-validator
     #   python3-saml
 isort==5.7.0
     # via
@@ -394,7 +382,7 @@ jedi==0.18.0
     #   -c requirements.txt
     #   -r requirements.txt
     #   ipython
-jinja2==2.11.2
+jinja2==2.11.3
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -406,34 +394,34 @@ jmespath==0.10.0
     #   -r requirements.txt
     #   boto3
     #   botocore
-joblib==1.0.0
+    #   parliament
+joblib==1.0.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   cloudaux
-jsondiff==1.2.0
-    # via moto
-jsonpatch==1.28
-    # via cfn-lint
-jsonpickle==1.5.0
-    # via aws-xray-sdk
-jsonpointer==2.0
-    # via jsonpatch
+json-cfg==0.4.2
+    # via
+    #   -c requirements.txt
+    #   -r requirements.txt
+    #   parliament
 jsonschema==3.2.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-    #   aws-sam-translator
-    #   cfn-lint
+    #   openapi-schema-validator
     #   openapi-spec-validator
-junit-xml==1.9
-    # via cfn-lint
 kombu==5.0.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   celery
-lazy-object-proxy==1.4.3
+kwonly-args==1.0.10
+    # via
+    #   -c requirements.txt
+    #   -r requirements.txt
+    #   json-cfg
+lazy-object-proxy==1.5.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -470,9 +458,9 @@ mock==3.0.5
     #   moto
 mockredispy==2.9.3
     # via -r requirements-test.in
-more-itertools==8.6.0
+more-itertools==8.7.0
     # via moto
-moto==1.3.16
+moto==2.0.2
     # via -r requirements-test.in
 multidict==5.1.0
     # via
@@ -486,13 +474,11 @@ mypy-extensions==0.4.3
     #   -r requirements.txt
     #   black
     #   mypy
-mypy==0.790
+mypy==0.812
     # via -r requirements-test.in
-networkx==2.5
-    # via cfn-lint
 nodeenv==1.5.0
     # via pre-commit
-numpy==1.19.5
+numpy==1.20.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -501,7 +487,12 @@ okta-jwt==1.3.5
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-openapi-spec-validator==0.2.9
+openapi-schema-validator==0.1.4
+    # via
+    #   -c requirements.txt
+    #   -r requirements.txt
+    #   openapi-spec-validator
+openapi-spec-validator==0.2.10
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -516,14 +507,19 @@ orderedmultidict==1.0.1
     #   -c requirements.txt
     #   -r requirements.txt
     #   furl
-packaging==20.8
+packaging==20.9
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   bleach
+    #   google-api-core
     #   pytest
     #   tox
 pandas==0.25.3
+    # via
+    #   -c requirements.txt
+    #   -r requirements.txt
+parliament==1.4.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -532,6 +528,10 @@ parso==0.8.1
     #   -c requirements.txt
     #   -r requirements.txt
     #   jedi
+password-strength==0.0.3.post2
+    # via
+    #   -c requirements.txt
+    #   -r requirements.txt
 pathspec==0.8.1
     # via
     #   -c requirements.txt
@@ -549,9 +549,9 @@ pickleshare==0.7.5
     #   -c requirements.txt
     #   -r requirements.txt
     #   ipython
-pillow==8.1.0
+pillow==8.1.2
     # via -r requirements-test.in
-pkgconfig==1.5.1
+pkgconfig==1.5.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -559,7 +559,7 @@ pluggy==0.13.1
     # via
     #   pytest
     #   tox
-policy-sentry==0.11.3
+policy-sentry==0.11.5
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -567,24 +567,24 @@ policyuniverse==1.3.3.20210223
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-prance==0.20.0
+prance==0.20.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   datamodel-code-generator
-pre-commit==2.9.3
+pre-commit==2.11.1
     # via -r requirements-test.in
 presto-python-client==0.7.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-prompt-toolkit==3.0.10
+prompt-toolkit==3.0.17
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   click-repl
     #   ipython
-protobuf==3.14.0
+protobuf==3.15.6
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -617,7 +617,7 @@ pyasn1==0.4.8
     #   pyasn1-modules
     #   python-jose
     #   rsa
-pycodestyle==2.6.0
+pycodestyle==2.7.0
     # via
     #   flake8
     #   flake8-import-order
@@ -630,16 +630,16 @@ pycurl==7.43.0.6
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-pydantic[email]==1.7.3
+pydantic[email]==1.8.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   datamodel-code-generator
 pydocstyle==5.1.1
     # via flake8-docstrings
-pyflakes==2.2.0
+pyflakes==2.3.0
     # via flake8
-pygments==2.7.4
+pygments==2.8.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -649,7 +649,7 @@ pyjwt==2.0.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-pylint==2.6.0
+pylint==2.7.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -664,14 +664,14 @@ pyrsistent==0.17.3
     #   -c requirements.txt
     #   -r requirements.txt
     #   jsonschema
-pysnooper==0.4.2
+pysnooper==0.4.3
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   datamodel-code-generator
 pytest-asyncio==0.14.0
     # via -r requirements-test.in
-pytest-cov==2.11.0
+pytest-cov==2.11.1
     # via -r requirements-test.in
 pytest-forked==1.3.0
     # via pytest-xdist
@@ -685,9 +685,9 @@ pytest-timeout==1.4.2
     # via -r requirements-test.in
 pytest-tornado==0.8.1
     # via -r requirements-test.in
-pytest-xdist==2.2.0
+pytest-xdist==2.2.1
     # via -r requirements-test.in
-pytest==6.2.1
+pytest==6.2.2
     # via
     #   -r requirements-test.in
     #   pytest-asyncio
@@ -707,22 +707,21 @@ python-dateutil==2.8.1
     #   elasticsearch-dsl
     #   moto
     #   pandas
-python-jose[cryptography]==3.2.0
+python-jose==3.2.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-    #   moto
     #   okta-jwt
 python-json-logger==0.1.11
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   logmatic-python
-python3-saml==1.10.0
+python3-saml==1.10.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-pytz==2020.5
+pytz==2021.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -730,18 +729,17 @@ pytz==2020.5
     #   google-api-core
     #   moto
     #   pandas
-pyyaml==5.3.1
+pyyaml==5.4.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   bandit
-    #   cfn-lint
-    #   moto
     #   openapi-spec-validator
+    #   parliament
     #   policy-sentry
     #   prance
     #   pre-commit
-readme-renderer==28.0
+readme-renderer==29.0
     # via -r requirements-test.in
 redis==3.5.3
     # via
@@ -749,7 +747,7 @@ redis==3.5.3
     #   -r requirements.txt
     #   celery
     #   redislite
-redislite==5.0.165407
+redislite==6.0.674960
     # via -r requirements-test.in
 regex==2020.11.13
     # via
@@ -760,7 +758,6 @@ requests==2.25.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-    #   docker
     #   google-api-core
     #   google-cloud-storage
     #   moto
@@ -769,7 +766,7 @@ requests==2.25.1
     #   prance
     #   presto-python-client
     #   responses
-responses==0.12.1
+responses==0.13.0
     # via moto
 retry==0.9.2
     # via
@@ -779,7 +776,7 @@ retrying==1.3.3
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-rsa==4.7
+rsa==4.7.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -790,7 +787,7 @@ ruamel.yaml.clib==0.2.2
     #   -c requirements.txt
     #   -r requirements.txt
     #   ruamel.yaml
-ruamel.yaml==0.16.12
+ruamel.yaml==0.16.13
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -799,7 +796,7 @@ s3transfer==0.3.4
     #   -c requirements.txt
     #   -r requirements.txt
     #   boto3
-schema==0.7.2
+schema==0.7.4
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -823,14 +820,11 @@ six==1.15.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-    #   astroid
-    #   aws-sam-translator
     #   bandit
+    #   bcrypt
     #   bleach
-    #   cfn-lint
     #   click-repl
     #   cloudaux
-    #   docker
     #   ecdsa
     #   elasticsearch-dsl
     #   furl
@@ -842,12 +836,13 @@ six==1.15.0
     #   google-resumable-media
     #   isodate
     #   jsonschema
-    #   junit-xml
     #   mock
     #   moto
     #   okta-jwt
+    #   openapi-schema-validator
     #   openapi-spec-validator
     #   orderedmultidict
+    #   password-strength
     #   prance
     #   presto-python-client
     #   protobuf
@@ -859,24 +854,21 @@ six==1.15.0
     #   tenacity
     #   tox
     #   virtualenv
-    #   websocket-client
-smmap==3.0.4
+smmap==3.0.5
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   gitdb
-snowballstemmer==2.0.0
+snowballstemmer==2.1.0
     # via pydocstyle
-soupsieve==2.1
+soupsieve==2.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
     #   beautifulsoup4
-sshpubkeys==3.1.0
-    # via moto
 stevedore==3.3.0
     # via bandit
-tenacity==6.3.1
+tenacity==7.0.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -896,7 +888,7 @@ tornado==6.1
     #   -r requirements-test.in
     #   -r requirements.txt
     #   pytest-tornado
-tox==3.21.1
+tox==3.23.0
     # via -r requirements-test.in
 traitlets==5.0.5
     # via
@@ -916,7 +908,8 @@ typing-extensions==3.7.4.3
     #   aiohttp
     #   black
     #   mypy
-ujson==4.0.1
+    #   pydantic
+ujson==4.0.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -925,7 +918,7 @@ uritemplate==3.0.1
     #   -c requirements.txt
     #   -r requirements.txt
     #   google-api-python-client
-urllib3==1.26.2
+urllib3==1.26.4
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -935,7 +928,7 @@ urllib3==1.26.2
     #   responses
     #   selenium
     #   sentry-sdk
-uvloop==0.14.0
+uvloop==0.15.2
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -949,7 +942,7 @@ vine==5.0.0
     #   -r requirements.txt
     #   amqp
     #   celery
-virtualenv==20.3.1
+virtualenv==20.4.3
     # via
     #   pre-commit
     #   tox
@@ -963,8 +956,6 @@ webencodings==0.5.1
     #   -c requirements.txt
     #   -r requirements.txt
     #   bleach
-websocket-client==0.57.0
-    # via docker
 werkzeug==1.0.1
     # via moto
 wrapt==1.12.1
@@ -972,7 +963,6 @@ wrapt==1.12.1
     #   -c requirements.txt
     #   -r requirements.txt
     #   astroid
-    #   aws-xray-sdk
 xmlsec==1.3.9
     # via
     #   -c requirements.txt
@@ -985,7 +975,7 @@ yarl==1.6.3
     #   -c requirements.txt
     #   -r requirements.txt
     #   aiohttp
-zipp==3.4.0
+zipp==3.4.1
     # via moto
 
 # The following packages are considered to be unsafe in a requirements file:

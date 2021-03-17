@@ -11,15 +11,13 @@ click==7.1.2
     #   mkdocs
     #   nltk
 future==0.18.2
-    # via
-    #   -c requirements-test.txt
-    #   lunr
-jinja2==2.11.2
+    # via lunr
+jinja2==2.11.3
     # via
     #   -c requirements-test.txt
     #   -c requirements.txt
     #   mkdocs
-joblib==1.0.0
+joblib==1.0.1
     # via
     #   -c requirements-test.txt
     #   -c requirements.txt
@@ -28,7 +26,7 @@ livereload==2.6.3
     # via mkdocs
 lunr[languages]==0.5.8
     # via mkdocs
-markdown==3.3.3
+markdown==3.3.4
     # via
     #   mkdocs
     #   mkdocs-material
@@ -40,7 +38,7 @@ markupsafe==1.1.1
     #   jinja2
 mkdocs-material-extensions==1.0.1
     # via mkdocs-material
-mkdocs-material==6.2.5
+mkdocs-material==7.0.6
     # via
     #   -r requirements-docs.in
     #   mkdocs-material-extensions
@@ -50,14 +48,14 @@ mkdocs==1.1.2
     #   mkdocs-material
 nltk==3.5
     # via lunr
-pygments==2.7.4
+pygments==2.8.1
     # via
     #   -c requirements-test.txt
     #   -c requirements.txt
     #   mkdocs-material
-pymdown-extensions==8.1
+pymdown-extensions==8.1.1
     # via mkdocs-material
-pyyaml==5.3.1
+pyyaml==5.4.1
     # via
     #   -c requirements-test.txt
     #   -c requirements.txt
@@ -80,5 +78,5 @@ tornado==6.1
     #   -c requirements.txt
     #   livereload
     #   mkdocs
-tqdm==4.56.0
+tqdm==4.59.0
     # via nltk
