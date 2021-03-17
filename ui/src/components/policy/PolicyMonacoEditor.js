@@ -63,7 +63,7 @@ const addEditorDecorations = ({ editor, errors }) => {
       ),
       options: {
         isWholeLine: false,
-        className: lintingErrorMapping[error.severity],
+        className: lintingErrorMapping[error.severity] || "infoError",
         marginClassName: "warningIcon",
         hoverMessage: {
           value: `[${error.severity}] ${error.title} - ${error.detail} - ${error.description}`,
@@ -123,7 +123,7 @@ export const PolicyMonacoEditor = ({
           "/api/v2/policies/check",
           "post"
         );
-        if (errors) {
+        if (errors && typeof errors == "object" && editorRef.current) {
           // Clear all existing decorations otherwise they will add up
           clearEditorDecorations({ editor: editorRef.current.editor });
           addEditorDecorations({ editor: editorRef.current.editor, errors });
@@ -292,7 +292,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
         "/api/v2/policies/check",
         "post"
       );
-      if (errors) {
+      if (errors && typeof errors == "object" && editorRef.current) {
         // Clear all existing decorations otherwise they will add up
         clearEditorDecorations({ editor: editorRef.current.editor });
         addEditorDecorations({ editor: editorRef.current.editor, errors });

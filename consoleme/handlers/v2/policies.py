@@ -1,11 +1,15 @@
+import sys
+
 import tornado.escape
 import ujson as json
-from parliament import analyze_policy_string, enhance_finding
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MustBeFte
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
-from consoleme.lib.aws import get_all_iam_managed_policies_for_account
+from consoleme.lib.aws import (
+    get_all_iam_managed_policies_for_account,
+    validate_iam_policy,
+)
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.generic import filter_table
 from consoleme.lib.plugins import get_plugin_by_name
@@ -158,25 +162,17 @@ class CheckPoliciesHandler(BaseAPIV2Handler):
         POST /api/v2/policies/check
         """
         policy = tornado.escape.json_decode(self.request.body)
-        analyzed_policy = analyze_policy_string(policy)
-        findings = analyzed_policy.findings
-
-        enhanced_findings = []
-
-        for finding in findings:
-            enhanced_finding = enhance_finding(finding)
-            enhanced_findings.append(
-                {
-                    "issue": enhanced_finding.issue,
-                    "detail": enhanced_finding.detail,
-                    "location": enhanced_finding.location,
-                    "severity": enhanced_finding.severity,
-                    "title": enhanced_finding.title,
-                    "description": enhanced_finding.description,
-                }
-            )
-
-        self.write(json.dumps(enhanced_findings))
+        if isinstance(policy, dict):
+            policy = json.dumps(policy)
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user": self.user,
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "policy": policy,
+        }
+        findings = await validate_iam_policy(policy, log_data)
+        self.write(json.dumps(findings))
         return
 
 
