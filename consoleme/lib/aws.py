@@ -1164,3 +1164,30 @@ async def get_enabled_regions_for_account(account_id: str) -> Set[str]:
 
     regions = await sync_to_async(client.describe_regions)()
     return {r["RegionName"] for r in regions["Regions"]}
+
+
+def sanitize_session_tags(metadata):
+    import re
+
+    if not metadata:
+        return []
+    # Warning: Principal tags can be overridden by session tags. We strongly recommend you prepend user-supplied session
+    # tags with a string and signify that these tags should not be used for authorization. We're doing this for you by
+    # default here.
+    prepend_string = config.get(
+        "sanitize_session_tags.prepend_tag", "session-untrusted-"
+    )
+    final_tags = []
+    max_key_length = 128 - len(prepend_string)  # Tag keys have a length limit of 128
+    for k, v in metadata.items():
+        tag_key = ""
+        tag_value = ""
+        for char in k[:max_key_length]:
+            if re.match(r"^([a-zA-Z0-9\s_\./\=+\-])$", char):
+                tag_key += char
+        for char in v[:256]:
+            if re.match(r"^([a-zA-Z0-9\s_\./\=+\-])$", char):
+                tag_value += char
+        if tag_key and tag_value:
+            final_tags.append({"Key": prepend_string + tag_key, "Value": tag_value})
+    return final_tags
