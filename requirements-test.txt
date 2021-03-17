@@ -714,7 +714,7 @@ python-jose==3.2.0
     #   -c requirements.txt
     #   -r requirements.txt
     #   okta-jwt
-python-json-logger==2.0.1
+python-json-logger==0.1.11
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -769,7 +769,7 @@ requests==2.25.1
     #   prance
     #   presto-python-client
     #   responses
-responses==0.13.0
+responses==0.13.1
     # via moto
 retry==0.9.2
     # via
