@@ -1,8 +1,10 @@
+import sys
+
 import boto3
 import sentry_sdk
 import tornado.escape
 import ujson as json
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 from parliament import analyze_policy_string, enhance_finding
 
 from consoleme.config import config
@@ -182,7 +184,7 @@ class CheckPoliciesHandler(BaseAPIV2Handler):
             client = boto3.client("accessanalyzer", region_name=config.region)
             access_analyzer_response = client.validate_policy(
                 policyDocument=policy,
-                policyType="IDENTITY_POLICY",  # Only identity policies are supported currently
+                policyType="IDENTITY_POLICY",  # ConsoleMe only supports identity policy analysis currently
             )
             for finding in access_analyzer_response.get("findings", []):
                 for location in finding.get("locations", []):
@@ -204,7 +206,18 @@ class CheckPoliciesHandler(BaseAPIV2Handler):
                             "description": finding.get("findingDetails"),
                         }
                     )
-        except ClientError:
+        except (ParamValidationError, ClientError) as e:
+            log.error(
+                {
+                    "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+                    "user": self.user,
+                    "message": "Error retrieving Access Analyzer data",
+                    "error": str(e),
+                    "user-agent": self.request.headers.get("User-Agent"),
+                    "request_id": self.request_uuid,
+                    "policy": policy,
+                }
+            )
             sentry_sdk.capture_exception()
 
         self.write(json.dumps(enhanced_findings))
