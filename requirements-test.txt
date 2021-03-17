@@ -210,6 +210,8 @@ dnspython==2.1.0
     #   -c requirements.txt
     #   -r requirements.txt
     #   email-validator
+docker==4.4.4
+    # via -r requirements-test.in
 docutils==0.16
     # via readme-renderer
 ecdsa==0.14.1
@@ -515,7 +517,7 @@ packaging==20.9
     #   google-api-core
     #   pytest
     #   tox
-pandas==0.25.3
+pandas==1.2.3
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -712,7 +714,7 @@ python-jose==3.2.0
     #   -c requirements.txt
     #   -r requirements.txt
     #   okta-jwt
-python-json-logger==0.1.11
+python-json-logger==2.0.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -758,6 +760,7 @@ requests==2.25.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt
+    #   docker
     #   google-api-core
     #   google-cloud-storage
     #   moto
@@ -808,7 +811,7 @@ semver==2.13.0
     #   -c requirements.txt
     #   -r requirements.txt
     #   prance
-sentry-sdk==0.16.1
+sentry-sdk==1.0.0
     # via
     #   -c requirements.txt
     #   -r requirements.txt
@@ -825,6 +828,7 @@ six==1.15.0
     #   bleach
     #   click-repl
     #   cloudaux
+    #   docker
     #   ecdsa
     #   elasticsearch-dsl
     #   furl
@@ -854,6 +858,7 @@ six==1.15.0
     #   tenacity
     #   tox
     #   virtualenv
+    #   websocket-client
 smmap==3.0.5
     # via
     #   -c requirements.txt
@@ -956,6 +961,8 @@ webencodings==0.5.1
     #   -c requirements.txt
     #   -r requirements.txt
     #   bleach
+websocket-client==0.58.0
+    # via docker
 werkzeug==1.0.1
     # via moto
 wrapt==1.12.1

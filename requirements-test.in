@@ -3,6 +3,7 @@ asynctest
 bandit
 black
 coverage
+docker # Required by moto
 flake8
 flake8-docstrings
 flake8-import-order

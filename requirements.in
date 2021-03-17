@@ -29,7 +29,7 @@ marshmallow
 logmatic-python
 lxml
 okta_jwt
-pandas<1 #  Internal plugin depends on Pandas < 1
+pandas
 parliament
 password_strength
 pkgconfig
@@ -41,7 +41,7 @@ pydantic
 pyjwt
 pylint
 python-dateutil
-python-json-logger==0.1.11 # Needed until this is merged and new version created: https://github.com/madzak/python-json-logger/pull/113
+python-json-logger
 python3-saml
 pytz
 redis
@@ -49,7 +49,7 @@ requests
 retry
 retrying
 ruamel.yaml
-sentry-sdk==0.16.1 # Internal plugin depends on a library which depends on this version of sentry_sdk
+sentry-sdk
 simplejson
 six
 tenacity
