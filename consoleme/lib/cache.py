@@ -3,6 +3,8 @@ import sys
 import time
 from typing import Any, Dict, List, Optional, Union
 
+from asgiref.sync import sync_to_async
+
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     DataNotRetrievable,
@@ -135,7 +137,7 @@ async def retrieve_json_data_from_redis_or_s3(
     # Fall back to S3 if there's no data
     if not data and s3_bucket and s3_key:
         s3_object = get_object(Bucket=s3_bucket, Key=s3_key)
-        s3_object_content = s3_object["Body"].read()
+        s3_object_content = await sync_to_async(s3_object["Body"].read)()
         data_object = json.loads(s3_object_content, object_hook=json_object_hook)
         data = data_object["data"]
 

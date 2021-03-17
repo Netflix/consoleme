@@ -39,6 +39,7 @@ class TestPoliciesApi(AsyncHTTPTestCase):
         headers = {
             config.get("auth.user_header_name"): "user@example.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            "Content-type": "application/json",
         }
         body = """{
             "Version": "2012-10-17",
@@ -48,6 +49,7 @@ class TestPoliciesApi(AsyncHTTPTestCase):
                 "Resource": ["arn:aws:s3:::bucket1"]
             }
         }"""
+
         response = self.fetch(
             "/api/v2/policies/check", headers=headers, method="POST", body=body
         )
