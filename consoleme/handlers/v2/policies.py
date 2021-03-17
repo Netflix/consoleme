@@ -1,5 +1,8 @@
+import boto3
+import sentry_sdk
 import tornado.escape
 import ujson as json
+from botocore.exceptions import ClientError
 from parliament import analyze_policy_string, enhance_finding
 
 from consoleme.config import config
@@ -168,13 +171,41 @@ class CheckPoliciesHandler(BaseAPIV2Handler):
             enhanced_findings.append(
                 {
                     "issue": enhanced_finding.issue,
-                    "detail": enhanced_finding.detail,
+                    "detail": json.dumps(enhanced_finding.detail),
                     "location": enhanced_finding.location,
                     "severity": enhanced_finding.severity,
                     "title": enhanced_finding.title,
                     "description": enhanced_finding.description,
                 }
             )
+        try:
+            client = boto3.client("accessanalyzer", region_name=config.region)
+            access_analyzer_response = client.validate_policy(
+                policyDocument=policy,
+                policyType="IDENTITY_POLICY",  # Only identity policies are supported currently
+            )
+            for finding in access_analyzer_response.get("findings", []):
+                for location in finding.get("locations", []):
+                    enhanced_findings.append(
+                        {
+                            "issue": finding.get("issueCode"),
+                            "detail": None,
+                            "location": {
+                                "line": location.get("span", {})
+                                .get("start", {})
+                                .get("line"),
+                                "column": location.get("span", {})
+                                .get("start", {})
+                                .get("column"),
+                                "filepath": None,
+                            },
+                            "severity": finding.get("findingType"),
+                            "title": finding.get("issueCode"),
+                            "description": finding.get("findingDetails"),
+                        }
+                    )
+        except ClientError:
+            sentry_sdk.capture_exception()
 
         self.write(json.dumps(enhanced_findings))
         return
