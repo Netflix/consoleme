@@ -317,7 +317,7 @@ python-dateutil==2.8.1
     #   pandas
 python-jose==3.2.0
     # via okta-jwt
-python-json-logger==2.0.1
+python-json-logger==0.1.11
     # via
     #   -r requirements.in
     #   logmatic-python
