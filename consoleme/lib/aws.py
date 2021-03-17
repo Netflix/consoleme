@@ -5,10 +5,11 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+import boto3
 import pytz
 import sentry_sdk
 from asgiref.sync import sync_to_async
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 from cloudaux import CloudAux
 from cloudaux.aws.decorators import rate_limited
 from cloudaux.aws.s3 import (
@@ -21,6 +22,7 @@ from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
+from parliament import analyze_policy_string, enhance_finding
 from policy_sentry.util.arns import get_account_from_arn, parse_arn
 
 from consoleme.config import config
@@ -1191,3 +1193,79 @@ def sanitize_session_tags(metadata):
         if tag_key and tag_value:
             final_tags.append({"Key": prepend_string + tag_key, "Value": tag_value})
     return final_tags
+
+
+async def access_analyzer_validate_policy(
+    policy: str, log_data, policy_type: str = "IDENTITY_POLICY"
+) -> List[Dict[str, Any]]:
+    try:
+        enhanced_findings = []
+        client = await sync_to_async(boto3.client)(
+            "accessanalyzer", region_name=config.region
+        )
+        access_analyzer_response = await sync_to_async(client.validate_policy)(
+            policyDocument=policy,
+            policyType=policy_type,  # ConsoleMe only supports identity policy analysis currently
+        )
+        for finding in access_analyzer_response.get("findings", []):
+            for location in finding.get("locations", []):
+                enhanced_findings.append(
+                    {
+                        "issue": finding.get("issueCode"),
+                        "detail": "",
+                        "location": {
+                            "line": location.get("span", {})
+                            .get("start", {})
+                            .get("line"),
+                            "column": location.get("span", {})
+                            .get("start", {})
+                            .get("column"),
+                            "filepath": None,
+                        },
+                        "severity": finding.get("findingType"),
+                        "title": finding.get("issueCode"),
+                        "description": finding.get("findingDetails"),
+                    }
+                )
+        return enhanced_findings
+    except (ParamValidationError, ClientError) as e:
+        log.error(
+            {
+                **log_data,
+                "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+                "message": "Error retrieving Access Analyzer data",
+                "policy": policy,
+                "error": str(e),
+            }
+        )
+        sentry_sdk.capture_exception()
+        return []
+
+
+async def parliament_validate_iam_policy(policy: str) -> List[Dict[str, Any]]:
+    analyzed_policy = await sync_to_async(analyze_policy_string)(policy)
+    findings = analyzed_policy.findings
+
+    enhanced_findings = []
+
+    for finding in findings:
+        enhanced_finding = await sync_to_async(enhance_finding)(finding)
+        enhanced_findings.append(
+            {
+                "issue": enhanced_finding.issue,
+                "detail": json.dumps(enhanced_finding.detail),
+                "location": enhanced_finding.location,
+                "severity": enhanced_finding.severity,
+                "title": enhanced_finding.title,
+                "description": enhanced_finding.description,
+            }
+        )
+    return enhanced_findings
+
+
+async def validate_iam_policy(policy: str, log_data: Dict):
+    parliament_findings: List = await parliament_validate_iam_policy(policy)
+    access_analyzer_findings: List = await access_analyzer_validate_policy(
+        policy, log_data, policy_type="IDENTITY_POLICY"
+    )
+    return parliament_findings + access_analyzer_findings

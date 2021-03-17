@@ -11,6 +11,7 @@ data "aws_iam_policy_document" "ConsoleMeInstanceProfile" {
     effect    = "Allow"
     resources = ["*"]
     actions = [
+      "access-analyzer:*",
       "cloudtrail:*",
       "cloudwatch:*",
       "config:*",
