@@ -1,7 +1,10 @@
+import sys
 from typing import List, Optional
 
 import boto3
+import sentry_sdk
 import ujson as json
+from botocore.exceptions import ClientError
 from cloudaux.aws.sts import boto3_cached_conn
 
 from consoleme.config import config
@@ -59,14 +62,30 @@ def query(
                     endpoint_url=f"https://sts.{config.region}.amazonaws.com",
                 ),
             )
-            response = config_client.select_resource_config(Expression=query, Limit=100)
-            for r in response.get("Results", []):
-                resources.append(json.loads(r))
-            # Query Config for a specific account in all regions we care about
-            while response.get("NextToken"):
+            try:
                 response = config_client.select_resource_config(
-                    Expression=query, Limit=100, NextToken=response["NextToken"]
+                    Expression=query, Limit=100
                 )
                 for r in response.get("Results", []):
                     resources.append(json.loads(r))
+                # Query Config for a specific account in all regions we care about
+                while response.get("NextToken"):
+                    response = config_client.select_resource_config(
+                        Expression=query, Limit=100, NextToken=response["NextToken"]
+                    )
+                    for r in response.get("Results", []):
+                        resources.append(json.loads(r))
+            except ClientError as e:
+                log.error(
+                    {
+                        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+                        "message": "Failed to query AWS Config",
+                        "query": query,
+                        "use_aggregator": use_aggregator,
+                        "account_id": account_id,
+                        "region": region,
+                        "error": str(e),
+                    }
+                )
+                sentry_sdk.capture_exception()
         return resources
