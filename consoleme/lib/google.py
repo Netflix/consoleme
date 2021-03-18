@@ -326,8 +326,10 @@ async def raise_if_requires_bgcheck_and_no_bgcheck(user: str, group_info: Any) -
     if user_info.passed_background_check:
         return True
     raise BackgroundCheckNotPassedException(
-        f"User {user} has not passed background check. "
-        f"Group {group_info.name} requires a background check. Please contact Nerds"
+        config.get(
+            "google.background_check_fail_message",
+            "User {user} has not passed background check Group {group_name} requires a background check.",
+        ).format(user=user, group_name=group_info.name)
     )
 
 
@@ -353,8 +355,10 @@ async def raise_if_not_same_domain(user: str, group_info: Any) -> None:
 
     if user.split("@")[1] != group_info.name.split("@")[1]:
         raise DifferentUserGroupDomainException(
-            f"Unable to add user to a group that is in a different domain. "
-            f"Please contact #nerds for assistance. User: {user}. Group: {group_info.name}"
+            config.get(
+                "google.different_domain_fail_message",
+                "Unable to add user to a group that is in a different domain. User: {user}. Group: {group_name}",
+            ).format(user=user, group_name=group_info.name)
         )
 
 
@@ -391,9 +395,10 @@ async def raise_if_bulk_add_disabled_and_no_request(
     stats.count(function)
     log_data = {"function": function, "group": group_info.name, "request": str(request)}
     log.debug(log_data)
-    error = (
-        "Group has attribute to prevent manually adding users to it. Users must manually request "
-        "access to this group. Please contact Nerds in #nerds if this is not the expected behavior."
+    error = config.get(
+        "google.bulk_add_disabled_fail_message",
+        "Group {group_name} has an attribute to prevent manually adding users to it. "
+        "Users must manually request access to it".format(group_name=group_info.name),
     )
     if not group_info.prevent_bulk_add:
         return True
