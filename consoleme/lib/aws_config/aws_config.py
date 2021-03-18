@@ -85,7 +85,8 @@ def query(
                         "account_id": account_id,
                         "region": region,
                         "error": str(e),
-                    }
+                    },
+                    exc_info=True,
                 )
                 sentry_sdk.capture_exception()
         return resources
