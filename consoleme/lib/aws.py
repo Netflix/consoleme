@@ -703,6 +703,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
     }
     log.info(log_data)
 
+    # TODO: Include some sane defaults here
     default_trust_policy = config.get("user_role_creator.default_trust_policy")
     if default_trust_policy is None:
         raise MissingConfigurationValue(

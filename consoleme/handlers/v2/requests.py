@@ -134,7 +134,7 @@ class RequestHandler(BaseAPIV2Handler):
                   "policy_document": {
                     "Statement": [
                       {
-                        "Action": "sts:AssumeRole",
+                        "Action": ["sts:AssumeRole", "sts:TagSession"],
                         "Effect": "Allow",
                         "Principal": {
                           "AWS": "arn:aws:iam::123456789012:role/consolemeInstanceProfile"

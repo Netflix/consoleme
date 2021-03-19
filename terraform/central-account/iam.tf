@@ -72,7 +72,7 @@ data "aws_iam_policy_document" "ConsoleMe_trust_policy" {
 
   //  statement {
   //    sid     = "AssumeRoleSelf"
-  //    actions = ["sts:AssumeRole"]
+  //    actions = ["sts:AssumeRole", "sts:TagSession"]
   //    effect  = "Allow"
   //    principals {
   //      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.ConsoleMe_instance_profile_name}"]
