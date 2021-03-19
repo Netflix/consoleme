@@ -446,7 +446,7 @@ def _add_role_to_redis(redis_key: str, role_entry: dict) -> None:
         raise
 
 
-@app.task(soft_time_limit=180)
+@app.task(soft_time_limit=360)
 def cache_audit_table_details() -> bool:
     d = UserDynamoHandler("consoleme")
     entries = async_to_sync(d.get_all_audit_logs)()
