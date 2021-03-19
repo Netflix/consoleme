@@ -359,7 +359,10 @@ class Aws:
             "user": user,
             "role": role,
             "enforce_ip_restrictions": enforce_ip_restrictions,
+            "user_role": user_role,
+            "account_id": account_id,
             "custom_ip_restrictions": custom_ip_restrictions,
+            "session_tags": session_tags,
             "message": "Generating credentials",
         }
         if not session_tags:

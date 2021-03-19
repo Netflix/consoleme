@@ -1182,6 +1182,8 @@ def sanitize_session_tags(metadata):
     final_tags = []
     max_key_length = 128 - len(prepend_string)  # Tag keys have a length limit of 128
     for k, v in metadata.items():
+        k = str(k)
+        v = str(v)
         tag_key = ""
         tag_value = ""
         for char in k[:max_key_length]:
