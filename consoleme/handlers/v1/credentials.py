@@ -8,6 +8,7 @@ from marshmallow import Schema, ValidationError, fields, validates_schema
 from consoleme.config import config
 from consoleme.exceptions.exceptions import CertTooOldException
 from consoleme.handlers.base import BaseMtlsHandler
+from consoleme.lib.aws import sanitize_session_tags
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.duo import duo_mfa_user
 from consoleme.lib.plugins import get_plugin_by_name
@@ -30,6 +31,9 @@ class CredentialsSchema(Schema):
     console_only = fields.Boolean(default=False, missing=False)
     no_ip_restrictions = fields.Boolean(default=False, missing=False)
     custom_ip_restrictions = fields.List(fields.Str(), required=False)
+    metadata = fields.Dict(
+        keys=fields.Str(), values=fields.Function(lambda obj: str(obj)), required=False
+    )
 
     @validates_schema
     def validate_minimum(self, data, *args, **kwargs):
@@ -261,6 +265,8 @@ class GetCredentialsHandler(BaseMtlsHandler):
             await self.finish()
             return
 
+        session_tags = sanitize_session_tags(request.get("metadata"))
+
         credentials = await aws.get_credentials(
             app_name,
             requested_role,
@@ -268,6 +274,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
             user_role=False,
             account_id=None,
             custom_ip_restrictions=request.get("custom_ip_restrictions"),
+            session_tags=session_tags,
         )
         self.set_header("Content-Type", "application/json")
         credentials.pop("ResponseMetadata", None)
@@ -279,6 +286,7 @@ class GetCredentialsHandler(BaseMtlsHandler):
         return
 
     async def get_credentials_user_flow(self, user_email, request, log_data):
+        log_data["request"] = json.dumps(request)
         log_data["user"] = user_email
 
         await self.authorization_flow(
@@ -295,6 +303,8 @@ class GetCredentialsHandler(BaseMtlsHandler):
         matching_roles = await group_mapping.filter_eligible_roles(requested_role, self)
 
         log_data["matching_roles"] = matching_roles
+
+        credentials = None
 
         if len(matching_roles) == 0:
             stats.count(
@@ -388,12 +398,15 @@ class GetCredentialsHandler(BaseMtlsHandler):
                         matching_roles[0].split("arn:aws:iam::")[1].split(":role")[0]
                     )
 
+                session_tags = sanitize_session_tags(request.get("metadata"))
+
                 credentials = await aws.get_credentials(
                     self.user,
                     matching_roles[0],
                     enforce_ip_restrictions=enforce_ip_restrictions,
                     user_role=user_role,
                     account_id=account_id,
+                    session_tags=session_tags,
                 )
             except Exception as e:
                 log_data["message"] = "Unable to get credentials for user"

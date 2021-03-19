@@ -51,7 +51,7 @@ MOCK_ROLE = {
                     "Principal": {
                         "AWS": "arn:aws:iam::123456789012:role/ConsoleMeInstanceProfile"
                     },
-                    "Action": "sts:AssumeRole",
+                    "Action": ["sts:AssumeRole", "sts:TagSession"],
                 },
             ],
         },
@@ -480,7 +480,7 @@ def iam_sync_roles(iam):
                     "Principal": {
                         "AWS": "arn:aws:iam::123456789012:role/ConsoleMeInstanceProfile"
                     },
-                    "Action": "sts:AssumeRole",
+                    "Action": ["sts:AssumeRole", "sts:TagSession"],
                 }
             ],
         }
@@ -584,7 +584,7 @@ def www_user():
                     "Principal": {
                         "AWS": "arn:aws:iam::123456789012:role/consoleme"
                     },
-                    "Action": "sts:AssumeRole"
+                    "Action": ["sts:AssumeRole", "sts:TagSession"]
                 }
             ]
         },

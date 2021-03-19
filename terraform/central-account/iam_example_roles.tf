@@ -36,8 +36,7 @@ resource "aws_iam_role_policy" "consoleme_app_role_policy2" {
 data "aws_iam_policy_document" "consoleme_user_trust_policy" {
   statement {
     sid = "ConsoleMeCanAssumeAllRoles"
-    actions = [
-    "sts:AssumeRole"]
+    actions = ["sts:AssumeRole", "sts:TagSession"]
     effect = "Allow"
     principals {
       identifiers = [

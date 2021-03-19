@@ -124,7 +124,7 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
                     "Principal": {"AWS": "arn:aws:iam::123456789012:role/testRole"},
                 }
             ],
-            "Action": "sts:AssumeRole",
+            "Action": ["sts:AssumeRole", "sts:TagSession"],
         }
         async_to_sync(self.handler.update_assume_role_document)(
             client, role_name, policy

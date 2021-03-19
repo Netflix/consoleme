@@ -108,7 +108,7 @@ Configure the trust policy with the following settings \(Yes, you'll want to giv
       }
     },
     {
-      "Action": "sts:AssumeRole",
+      "Action": ["sts:AssumeRole", "sts:TagSession"],
       "Effect": "Allow",
       "Principal": {
         "AWS": "arn:aws:iam::1243456789012:role/consolemeInstanceProfile"

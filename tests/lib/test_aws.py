@@ -113,3 +113,48 @@ class TestAwsLib(TestCase):
             result,
             f"Test case failed: " f"{aws_config_resources_test_case['description']}",
         )
+
+    def test_sanitize_session_tags(self):
+        from consoleme.lib.aws import sanitize_session_tags
+
+        test_cases = [
+            {
+                "input": {
+                    "hostname": "linux",
+                    "username": "user",
+                    "weep_version": "",
+                    "weep_method": "export",
+                },
+                "expected": [
+                    {"Key": "session-untrusted-hostname", "Value": "linux"},
+                    {"Key": "session-untrusted-username", "Value": "user"},
+                    {"Key": "session-untrusted-weep_method", "Value": "export"},
+                ],
+            },
+            {
+                "input": {
+                    "hostname!@#$%^&*()_+-=": "linux!@#$%^&*()_+-=",
+                    "username!@#$%^&*()_+-=": "user!@#$%^&*()_+-=",
+                    "weep_version": "!@#$%^&*()_+-=",
+                    "weep_method": "export!@#$%^&*()_+-=",
+                },
+                "expected": [
+                    {"Key": "session-untrusted-hostname_+-=", "Value": "linux_+-="},
+                    {"Key": "session-untrusted-username_+-=", "Value": "user_+-="},
+                    {"Key": "session-untrusted-weep_version", "Value": "_+-="},
+                    {"Key": "session-untrusted-weep_method", "Value": "export_+-="},
+                ],
+            },
+            {
+                "input": {"a" * 999: "a" * 999},
+                "expected": [
+                    {"Key": "session-untrusted-" + "a" * 110, "Value": "a" * 256}
+                ],
+            },
+            {"input": None, "expected": []},
+        ]
+
+        for test_case in test_cases:
+            self.assertEqual(
+                sanitize_session_tags(test_case["input"]), test_case["expected"]
+            )
