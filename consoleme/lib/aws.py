@@ -703,7 +703,19 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
     }
     log.info(log_data)
 
-    default_trust_policy = config.get("user_role_creator.default_trust_policy")
+    default_trust_policy = config.get(
+        "user_role_creator.default_trust_policy",
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "ec2.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        },
+    )
     if default_trust_policy is None:
         raise MissingConfigurationValue(
             "Missing Default Assume Role Policy Configuration"
