@@ -41,7 +41,15 @@ group_mapping = get_plugin_by_name(
 )()
 
 
-class BaseJSONHandler(tornado.web.RequestHandler):
+class TornadoRequestHandler(tornado.web.RequestHandler):
+    def get_request_ip(self):
+        trusted_remote_ip_header = config.get("auth.remote_ip.trusted_remote_ip_header")
+        if trusted_remote_ip_header:
+            return self.request.headers[trusted_remote_ip_header].split(",")[0]
+        return self.request.remote_ip
+
+
+class BaseJSONHandler(TornadoRequestHandler):
     # These methods are returned in OPTIONS requests.
     # Default methods can be overridden by setting this variable in child classes.
     allowed_methods = ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]
@@ -110,14 +118,8 @@ class BaseJSONHandler(tornado.web.RequestHandler):
             return tkn
 
 
-class BaseHandler(tornado.web.RequestHandler):
+class BaseHandler(TornadoRequestHandler):
     """Default BaseHandler."""
-
-    def get_request_ip(self):
-        trusted_remote_ip_header = config.get("auth.remote_ip.trusted_remote_ip_header")
-        if trusted_remote_ip_header:
-            return self.request.headers[trusted_remote_ip_header].split(",")[0]
-        return self.request.remote_ip
 
     def log_exception(self, *args, **kwargs):
         if args[0].__name__ == "SilentException":

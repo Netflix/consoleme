@@ -4,11 +4,10 @@ from datetime import datetime, timedelta
 
 import pytz
 import sentry_sdk
-import tornado.web
 from email_validator import validate_email
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseAPIV2Handler
+from consoleme.handlers.base import BaseAPIV2Handler, TornadoRequestHandler
 from consoleme.lib.auth import can_admin_all
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.jwt import generate_jwt_token
@@ -27,7 +26,7 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 
 
-class UserRegistrationHandler(tornado.web.RequestHandler):
+class UserRegistrationHandler(TornadoRequestHandler):
     """
     Allows user registration if it is configured.
     """
@@ -120,7 +119,7 @@ class UserRegistrationHandler(tornado.web.RequestHandler):
         self.write(res.json())
 
 
-class LoginConfigurationHandler(tornado.web.RequestHandler):
+class LoginConfigurationHandler(TornadoRequestHandler):
     def get(self):
         default_configuration = {
             "enabled": config.get("auth.get_user_by_password"),
@@ -141,7 +140,7 @@ class LoginConfigurationHandler(tornado.web.RequestHandler):
         self.write(login_configuration)
 
 
-class LoginHandler(tornado.web.RequestHandler):
+class LoginHandler(TornadoRequestHandler):
     """
     Handles user log-in flow if password authentication is enabled.
     """

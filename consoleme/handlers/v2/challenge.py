@@ -4,13 +4,12 @@ from datetime import datetime, timedelta
 
 import pytz
 import tornado.escape
-import tornado.web
 import ujson as json
 from asgiref.sync import async_to_sync
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MissingConfigurationValue
-from consoleme.handlers.base import BaseHandler
+from consoleme.handlers.base import BaseHandler, TornadoRequestHandler
 from consoleme.lib.challenge import delete_expired_challenges, retrieve_user_challenge
 from consoleme.lib.jwt import generate_jwt_token
 from consoleme.lib.redis import RedisHandler
@@ -19,7 +18,7 @@ log = config.get_logger()
 red = async_to_sync(RedisHandler().redis)()
 
 
-class ChallengeGeneratorHandler(tornado.web.RequestHandler):
+class ChallengeGeneratorHandler(TornadoRequestHandler):
     """
     Challenge URLs are an alternative to mutual TLS for authenticating CLI clients of ConsoleMe.
 
@@ -128,6 +127,25 @@ class ChallengeValidatorHandler(BaseHandler):
             self.write({"message": message})
             return
 
+        request_ip = self.get_request_ip()
+
+        # By default, the challenge URL requester IP must match the URL the challenge was created with. In some cases
+        # (i.e. IPv4 vs IPv6), the challenge may have been created with an IPv4 address, and the authenticated browser
+        # verification request may originate from an IPv6 one, or visa versa, in which case this configuration may
+        # need to be explicitly set to False.
+        if config.get(
+            "challenge_url.request_ip_must_match_challenge_creation_ip", True
+        ):
+            if request_ip != valid_user_challenge.get("ip"):
+                log.error(
+                    {
+                        **log_data,
+                        "request_ip": request_ip,
+                        "challenge_ip": valid_user_challenge.get("ip"),
+                        "message": "Request IP doesn't match challenge IP",
+                    }
+                )
+
         valid_user_challenge["visited"] = True
         valid_user_challenge["nonce"] = str(uuid.uuid4())
         red.hset(
@@ -199,6 +217,31 @@ class ChallengeValidatorHandler(BaseHandler):
             self.write({"message": message})
             return
 
+        request_ip = self.get_request_ip()
+
+        # By default, the challenge URL requester IP must match the URL the challenge was created with. In some cases
+        # (i.e. IPv4 vs IPv6), the challenge may have been created with an IPv4 address, and the authenticated browser
+        # verification request may originate from an IPv6 one, or visa versa, in which case this configuration may
+        # need to be explicitly set to False.
+        if config.get(
+            "challenge_url.request_ip_must_match_challenge_creation_ip", True
+        ):
+            if request_ip != valid_user_challenge.get("ip"):
+                log.error(
+                    {
+                        **log_data,
+                        "request_ip": request_ip,
+                        "challenge_ip": valid_user_challenge.get("ip"),
+                        "message": "Request IP doesn't match challenge IP",
+                    }
+                )
+                self.write(
+                    {
+                        "message": "Your originating IP doesn't match the IP the challenge was created with."
+                    }
+                )
+                return
+
         valid_user_challenge["status"] = "success"
         valid_user_challenge["user"] = self.user
         valid_user_challenge["groups"] = self.groups
@@ -211,7 +254,7 @@ class ChallengeValidatorHandler(BaseHandler):
         self.write({"message": message})
 
 
-class ChallengePollerHandler(tornado.web.RequestHandler):
+class ChallengePollerHandler(TornadoRequestHandler):
     """
     This endpoint is an unauthenticated endpoint that the client uses to poll for successful challenge completion.
     If the challenge has been completed successfully, and the IP of the endpoint matches the IP used to generate the
@@ -241,6 +284,12 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
                 requested_challenge_token,
             )
             self.write({"status": "expired"})
+            return
+
+        ip = self.get_request_ip()
+
+        if ip != challenge.get("ip"):
+            self.write({"status": "unauthorized"})
             return
 
         # Generate a jwt if user authentication was successful
