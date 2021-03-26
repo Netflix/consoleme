@@ -145,6 +145,12 @@ class ChallengeValidatorHandler(BaseHandler):
                         "message": "Request IP doesn't match challenge IP",
                     }
                 )
+                self.write(
+                    {
+                        "message": "Your originating IP doesn't match the IP the challenge was created with."
+                    }
+                )
+                return
 
         valid_user_challenge["visited"] = True
         valid_user_challenge["nonce"] = str(uuid.uuid4())
