@@ -26,6 +26,7 @@ weep ecs_credential_provider
 ```
 
 And in a second shell:
+
 ```bash
 export AWS_CONTAINER_CREDENTIALS_FULL_URI=http://localhost:9091/ecs/consoleme_oss_1?assume=arn:aws:iam::123456789012:role/otherRole,arn:aws:iam::123456789012:role/andAnother
 

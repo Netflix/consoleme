@@ -4,7 +4,7 @@ description: Provides instructions for getting ConsoleMe up and running locally.
 
 # Local
 
-ConsoleMe requires Python 3.8 or above. Install [**git**](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), [**docker**](https://docs.docker.com/get-docker/), and [**docker-compose**](https://docs.docker.com/compose/install/) ****on your system, consider following [Docker's post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/), then clone ConsoleMe locally in a directory of your choosing via HTTP or SSH:
+ConsoleMe requires Python 3.8 or above. Install [**git**](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), [**docker**](https://docs.docker.com/get-docker/), and [**docker-compose**](https://docs.docker.com/compose/install/) _\*\*_on your system, consider following [Docker's post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/), then clone ConsoleMe locally in a directory of your choosing via HTTP or SSH:
 
 ## MacOS
 
@@ -97,13 +97,13 @@ For local, unauthenticated development, the default configuration \([`example_co
 
 ## Browse to ConsoleMe
 
-You should now be able to access the ConsoleMe web UI at [http://localhost:8081/](http://localhost:8081/) \(Or http://localhost:3000 if you ran `cd ui ; yarn start`\).  
+You should now be able to access the ConsoleMe web UI at [http://localhost:8081/](http://localhost:8081/) \(Or [http://localhost:3000](http://localhost:3000) if you ran `cd ui ; yarn start`\).
 
-You'll notice that you're unable to access any IAM roles with the default configuration. You'll need to follow the guidance under [Role Credential Authorization](../configuration/role-credential-authorization/) to grant access to role credentials to your users and/or the groups they are members of. 
+You'll notice that you're unable to access any IAM roles with the default configuration. You'll need to follow the guidance under [Role Credential Authorization](../configuration/role-credential-authorization/) to grant access to role credentials to your users and/or the groups they are members of.
 
 ## Create your Configuration
 
-At this point, you'll want to configure ConsoleMe to suit your needs. Read up on [ConsoleMe’s yaml configuration.](../configuration/) ConsoleMe can be configured to [authenticate your users via SAML, OIDC, header authentication, or it can bypass authentication altogether](../configuration/authentication-and-authorization/).  
+At this point, you'll want to configure ConsoleMe to suit your needs. Read up on [ConsoleMe’s yaml configuration.](../configuration/) ConsoleMe can be configured to [authenticate your users via SAML, OIDC, header authentication, or it can bypass authentication altogether](../configuration/authentication-and-authorization/).
 
 To get started, copy [this configuration](https://gist.github.com/castrapel/888cd106d12523a5445bf6f3cf9c810b). Read through the configuration and change the values to suit your environment. Then, set the `CONFIG_LOCATION` environment variable to the full path of your configuration file, or copy the configuration to one of the locations ConsoleMe will load from \(described [here](https://app.gitbook.com/@hawkins/s/consoleme/~/drafts/-MUCSXyHqSfyDOwV-0Mc/configuration)\).
 
