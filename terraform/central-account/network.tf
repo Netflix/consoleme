@@ -1,5 +1,5 @@
 module "network" {
-  source = "github.com/terraform-aws-modules/terraform-aws-vpc?ref=v2.7.0"
+  source = "github.com/terraform-aws-modules/terraform-aws-vpc?ref=v2.77.0"
 
   name = module.network_label.id
   cidr = var.vpc_cidr
