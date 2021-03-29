@@ -446,25 +446,6 @@ def _add_role_to_redis(redis_key: str, role_entry: dict) -> None:
         raise
 
 
-@app.task(soft_time_limit=360)
-def cache_audit_table_details() -> bool:
-    d = UserDynamoHandler("consoleme")
-    entries = async_to_sync(d.get_all_audit_logs)()
-    topic = config.get("redis.audit_log_key", "CM_AUDIT_LOGS")
-
-    s3_bucket = None
-    s3_key = None
-    if config.region == config.get("celery.active_region", config.region) or config.get(
-        "environment"
-    ) in ["dev", "test"]:
-        s3_bucket = config.get("cache_audit_table_details.s3.bucket")
-        s3_key = config.get("cache_audit_table_details.s3.file")
-    async_to_sync(store_json_results_in_redis_and_s3)(
-        entries, topic, s3_bucket=s3_bucket, s3_key=s3_key
-    )
-    return True
-
-
 @app.task(soft_time_limit=3600)
 def cache_cloudtrail_errors_by_arn() -> Dict:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
@@ -1395,11 +1376,6 @@ schedule = {
         "task": "consoleme.celery_tasks.celery_tasks.cache_sns_topics_across_accounts",
         "options": {"expires": 300},
         "schedule": schedule_45_minute,
-    },
-    "cache_audit_table_details": {
-        "task": "consoleme.celery_tasks.celery_tasks.cache_audit_table_details",
-        "options": {"expires": 300},
-        "schedule": schedule_5_minutes,
     },
     "get_iam_role_limit": {
         "task": "consoleme.celery_tasks.celery_tasks.get_iam_role_limit",
