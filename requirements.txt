@@ -211,7 +211,7 @@ lazy-object-proxy==1.5.2
     # via astroid
 logmatic-python==0.1.7
     # via -r requirements.in
-lxml==4.6.2
+lxml==4.6.3
     # via
     #   -r requirements.in
     #   python3-saml
