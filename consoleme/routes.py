@@ -37,6 +37,7 @@ from consoleme.handlers.v2.index import (
     EligibleRolePageConfigHandler,
     FrontendHandler,
 )
+from consoleme.handlers.v2.logout import LogOutHandler
 from consoleme.handlers.v2.policies import (
     CheckPoliciesHandler,
     ManagedPoliciesHandler,
@@ -133,6 +134,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
         (r"/api/v2/login", LoginHandler),
         (r"/api/v2/login_configuration", LoginConfigurationHandler),
+        (r"/api/v2/logout", LogOutHandler),
         (r"/api/v2/user", UserManagementHandler),
         (r"/api/v2/user_registration", UserRegistrationHandler),
         (r"/api/v2/policies", PoliciesHandler),

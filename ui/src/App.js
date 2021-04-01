@@ -13,6 +13,7 @@ import ConsoleLogin from "./components/ConsoleLogin";
 import ConsoleMeChallengeValidator from "./components/challenge/ConsoleMeChallengeValidator";
 import CreateCloneFeature from "./components/roles/CreateCloneFeature";
 import Login from "./components/Login";
+import Logout from "./components/Logout";
 import NoMatch from "./components/NoMatch";
 import AuthenticateModal from "./components/AuthenticateModal";
 
@@ -84,6 +85,7 @@ function App() {
           path="/create_role"
           component={CreateCloneFeature}
         />
+        <ProtectedRoute key="logout" exact path="/logout" component={Logout} />
         <Route key="login" exact path="/login" component={Login} />
         <Route component={NoMatch} />
       </Switch>
