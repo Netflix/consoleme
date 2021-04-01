@@ -1,8 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { delay, setRecentRoles } from "../helpers/utils";
 import { useAuth } from "../auth/AuthProviderDefault";
 import { Icon, Message } from "semantic-ui-react";
-import LoginForm from "./Login";
 
 const Logout = () => {
   const { sendRequestCommon } = useAuth();
