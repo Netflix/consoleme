@@ -49,7 +49,7 @@ from consoleme.handlers.v2.requests import (
     RequestsHandler,
     RequestsPageConfigHandler,
 )
-from consoleme.handlers.v2.resources import ResourceDetailHandler
+from consoleme.handlers.v2.resources import ResourceDetailHandler, GetResourceURLHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
@@ -116,6 +116,7 @@ def make_app(jwt_validator=None):
         ),
         (r"/api/v1/get_credentials", GetCredentialsHandler),
         (r"/api/v1/get_roles", GetRolesHandler),
+        (r"/api/v2/get_resource_url", GetResourceURLHandler),
         # Used to autocomplete AWS permissions
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
         (r"/api/v2/user_profile/?", UserProfileHandler),

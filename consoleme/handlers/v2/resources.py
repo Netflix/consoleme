@@ -3,14 +3,16 @@ from datetime import datetime, timedelta
 
 import sentry_sdk
 import ujson as json
+from policy_sentry.util.arns import parse_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MustBeFte
-from consoleme.handlers.base import BaseAPIV2Handler
+from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import fetch_resource_details
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.policies import get_url_for_resource
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
@@ -112,3 +114,55 @@ class ResourceDetailHandler(BaseAPIV2Handler):
                 config_timeline_url=resource_details.get("config_timeline_url"),
             )
         )
+
+
+class GetResourceURLHandler(BaseMtlsHandler):
+    """consoleme CLI resource URL handler. Parameters accepted: arn."""
+
+    def check_xsrf_cookie(self):
+        pass
+
+    def initialize(self):
+        self.user: str = None
+        self.eligible_roles: list = []
+
+    async def get(self):
+        """
+        /api/v2/get_resource_url - Endpoint used to get list of roles. Used by weep.
+        ---
+        get:
+            description: Get the resource URL for ConsoleMe, given an ARN
+            responses:
+                200:
+                    description: Present user with list of eligible roles.
+                400:
+                    description: Malformed Request
+                403:
+                    description: Forbidden
+        """
+        self.user: str = self.requester["email"]
+        arn: str = self.get_argument("arn", None)
+        if not arn:
+            self.write_error(400, message="arn is a required parameter")
+            return
+
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user": self.user,
+            "arn": arn,
+            "message": "Generating URL for resource",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+        log.debug(log_data)
+        stats.count("GetResourceURL.get", tags={"user": self.user})
+        try:
+            # parse_arn will raise an exception on invalid arns
+            parse_arn(arn)
+            resource_url = await get_url_for_resource(arn)
+        except Exception as e:
+            self.write_error(400, message=str(e))
+            return
+
+        self.write({"url": resource_url})
+        await self.finish()
