@@ -49,7 +49,7 @@ from consoleme.handlers.v2.requests import (
     RequestsHandler,
     RequestsPageConfigHandler,
 )
-from consoleme.handlers.v2.resources import ResourceDetailHandler, GetResourceURLHandler
+from consoleme.handlers.v2.resources import GetResourceURLHandler, ResourceDetailHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
