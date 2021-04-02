@@ -21,3 +21,6 @@ dynamodb_server: http://localhost:8005
 
 # Whether to show terraform exporter tab or not
 export_to_terraform_enabled: true
+# To turn off IP restrictions for challenge URL when developing Weep and ConsoleMe concurrently
+#challenge_url:
+#  request_ip_must_match_challenge_creation_ip: false
