@@ -128,13 +128,13 @@ class GetResourceURLHandler(BaseMtlsHandler):
 
     async def get(self):
         """
-        /api/v2/get_resource_url - Endpoint used to get list of roles. Used by weep.
+        /api/v2/get_resource_url - Endpoint used to get an URL from an ARN
         ---
         get:
             description: Get the resource URL for ConsoleMe, given an ARN
             responses:
                 200:
-                    description: Present user with list of eligible roles.
+                    description: Returns a URL generated from the ARN in JSON form
                 400:
                     description: Malformed Request
                 403:
