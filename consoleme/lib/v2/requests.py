@@ -16,6 +16,7 @@ from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
     NoMatchingRequest,
+    ResourceNotFound,
     Unauthorized,
     UnsupportedChangeType,
 )
@@ -178,13 +179,17 @@ async def generate_request_from_change_model_array(
     arn_type = arn_parsed["service"]
     arn_name = arn_parsed["resource"]
     arn_region = arn_parsed["region"]
-    arn_url = await get_url_for_resource(
-        arn=primary_principal_arn,
-        resource_type=arn_type,
-        account_id=account_id,
-        region=arn_region,
-        resource_name=arn_name,
-    )
+    try:
+        arn_url = await get_url_for_resource(
+            arn=primary_principal_arn,
+            resource_type=arn_type,
+            account_id=account_id,
+            region=arn_region,
+            resource_name=arn_name,
+        )
+    except ResourceNotFound:
+        # should never reach this case...
+        arn_url = ""
 
     # Only one assume role policy change allowed per request
     if len(assume_role_policy_changes) > 1:

@@ -4,7 +4,7 @@ import tornado.escape
 import ujson as json
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import MustBeFte
+from consoleme.exceptions.exceptions import MustBeFte, ResourceNotFound
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
 from consoleme.lib.aws import (
     get_all_iam_managed_policies_for_account,
@@ -134,13 +134,16 @@ class PoliciesHandler(BaseAPIV2Handler):
                 if "/" in resource_name:
                     resource_name = resource_name.split("/")[-1]
                 region = policy["arn"].split(":")[3]
-                url = await get_url_for_resource(
-                    policy["arn"],
-                    policy["technology"],
-                    policy["account_id"],
-                    region,
-                    resource_name,
-                )
+                try:
+                    url = await get_url_for_resource(
+                        policy["arn"],
+                        policy["technology"],
+                        policy["account_id"],
+                        region,
+                        resource_name,
+                    )
+                except ResourceNotFound:
+                    url = ""
                 if url:
                     policy["arn"] = f"[{policy['arn']}]({url})"
                 if not policy.get("templated"):

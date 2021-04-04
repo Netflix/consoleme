@@ -17,6 +17,7 @@ from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
     MissingConfigurationValue,
+    ResourceNotFound,
 )
 from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import (
@@ -740,6 +741,10 @@ async def get_url_for_resource(
         resource_name = await get_resource_name_for_arn(arn)
     if not resource_sub_type:
         resource_sub_type = await get_resource_sub_type_for_arn(arn)
+
+    # If account id is not found
+    if not account_id:
+        raise ResourceNotFound("The account for the given ARN could not be determined")
     url = ""
     if resource_type == "iam" and resource_sub_type == "role":
         resource_name = arn.split("/")[-1]
