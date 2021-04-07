@@ -1359,8 +1359,21 @@ async def apply_resource_policy_change(
         "policies.supported_resource_types_for_policy_application",
         ["s3", "sqs", "sns"],
     )
+    sts_resource_policy_supported = config.get(
+        "policies.sts_resource_policy_supported", True
+    )
 
-    if not change.supported or resource_type not in supported_resource_types:
+    if (
+        not change.supported
+        or (
+            change.change_type == "resource_policy"
+            and resource_type not in supported_resource_types
+        )
+        or (
+            change.change_type == "sts_resource_policy"
+            and not sts_resource_policy_supported
+        )
+    ):
         log_data["message"] = "Resource change not supported"
         log.warn(log_data)
         response.errors += 1
@@ -1422,7 +1435,8 @@ async def apply_resource_policy_change(
                     change.policy.policy_document, escape_forward_slashes=False
                 ),
             )
-            # TODO: force refresh the role?
+            # force refresh the role for which we just changed the assume role policy doc
+            await aws.fetch_iam_role(resource_account, change.arn, force_refresh=True)
         response.action_results.append(
             ActionResult(
                 status="success",
@@ -1721,7 +1735,10 @@ async def parse_and_apply_policy_request_modification(
                 specific_change.policy.policy_document = (
                     apply_change_model.policy_document
                 )
-            if specific_change.change_type == "resource_policy":
+            if (
+                specific_change.change_type == "resource_policy"
+                or specific_change.change_type == "sts_resource_policy"
+            ):
                 response = await apply_resource_policy_change(
                     extended_request, specific_change, response, user
                 )
