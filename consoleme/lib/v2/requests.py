@@ -116,8 +116,7 @@ async def generate_request_from_change_model_array(
     extended_request_uuid = str(uuid.uuid4())
     incremental_change_id = 0
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application",
-        ["s3", "sqs", "sns"],
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
 
     for change in change_models.changes:
@@ -326,8 +325,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
     role_account_id = await get_resource_account(extended_request.arn)
     arn_parsed = parse_arn(extended_request.arn)
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application",
-        ["s3", "sqs", "sns"],
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
 
     if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
@@ -948,8 +946,7 @@ async def populate_cross_account_resource_policy_for_change(
 ):
     resource_policies_changed = False
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application",
-        ["s3", "sqs", "sns"],
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
     sts_resource_policy_supported = config.get(
         "policies.sts_resource_policy_supported", True
@@ -1356,8 +1353,7 @@ async def apply_resource_policy_change(
         return response
 
     supported_resource_types = config.get(
-        "policies.supported_resource_types_for_policy_application",
-        ["s3", "sqs", "sns"],
+        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
     sts_resource_policy_supported = config.get(
         "policies.sts_resource_policy_supported", True
