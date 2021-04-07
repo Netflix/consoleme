@@ -116,7 +116,8 @@ async def generate_request_from_change_model_array(
     extended_request_uuid = str(uuid.uuid4())
     incremental_change_id = 0
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+        "policies.supported_resource_types_for_policy_application",
+        ["s3", "sqs", "sns", "iam"],
     )
 
     for change in change_models.changes:
@@ -325,7 +326,8 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
     role_account_id = await get_resource_account(extended_request.arn)
     arn_parsed = parse_arn(extended_request.arn)
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+        "policies.supported_resource_types_for_policy_application",
+        ["s3", "sqs", "sns", "iam"],
     )
 
     if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
@@ -360,7 +362,6 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
                 resource_account_id = await get_resource_account(resource.arn)
                 if (
                     resource_account_id != role_account_id
-                    and resource.resource_type != "iam"
                     and resource.resource_type in supported_resource_policies
                 ):
                     # Cross account
@@ -917,7 +918,8 @@ async def populate_cross_account_resource_policy_for_change(
 ):
     resource_policies_changed = False
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+        "policies.supported_resource_types_for_policy_application",
+        ["s3", "sqs", "sns", "iam"],
     )
     default_policy = {"Version": "2012-10-17", "Statement": []}
     if change.status == Status.applied:
@@ -946,12 +948,23 @@ async def populate_cross_account_resource_policy_for_change(
             log_data["resource_arn"] = change.arn
             log.warning(log_data)
         else:
-            old_policy = await get_resource_policy(
-                account=resource_account,
-                resource_type=resource_type,
-                name=resource_name,
-                region=resource_region,
-            )
+            # if resource_type is iam, then old policy is the assume role policy document
+            if resource_type == "iam":
+                role_name = resource_arn_parsed["resource_path"].split("/")[-1]
+                role = await get_role_details(
+                    resource_account,
+                    role_name=role_name,
+                    extended=True,
+                    force_refresh=True,
+                )
+                old_policy = role.assume_role_policy_document
+            else:
+                old_policy = await get_resource_policy(
+                    account=resource_account,
+                    resource_type=resource_type,
+                    name=resource_name,
+                    region=resource_region,
+                )
         old_policy_sha256 = sha256(
             json.dumps(old_policy, escape_forward_slashes=False).encode()
         ).hexdigest()
@@ -981,7 +994,9 @@ async def populate_cross_account_resource_policy_for_change(
                     # Find the specific statement within the inline policy associated with this resource
                     if change.arn in statement.get("Resource"):
                         for action in statement.get("Action", []):
-                            if action.startswith(f"{resource_type}:"):
+                            if action.startswith(f"{resource_type}:") or (
+                                resource_type == "iam" and action.startswith("sts")
+                            ):
                                 actions.append(action)
                         for resource in statement.get("Resource"):
                             if change.arn in resource:
@@ -991,6 +1006,8 @@ async def populate_cross_account_resource_policy_for_change(
             principal_arn=extended_request.arn,
             resource_arns=list(set(resource_arns)),
             actions=actions,
+            # since iam assume role policy documents can't include resources
+            include_resources=resource_type != "iam",
         )
         new_policy_sha256 = sha256(
             json.dumps(new_policy, escape_forward_slashes=False).encode()
@@ -1292,7 +1309,8 @@ async def apply_resource_policy_change(
         return response
 
     supported_resource_types = config.get(
-        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+        "policies.supported_resource_types_for_policy_application",
+        ["s3", "sqs", "sns", "iam"],
     )
 
     if not change.supported or resource_type not in supported_resource_types:
@@ -1349,6 +1367,15 @@ async def apply_resource_policy_change(
                     )
                 },
             )
+        elif resource_type == "iam":
+            role_name = resource_arn_parsed["resource_path"].split("/")[-1]
+            await sync_to_async(client.update_assume_role_policy)(
+                RoleName=role_name,
+                PolicyDocument=json.dumps(
+                    change.policy.policy_document, escape_forward_slashes=False
+                ),
+            )
+            # TODO: force refresh the role?
         response.action_results.append(
             ActionResult(
                 status="success",
