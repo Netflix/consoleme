@@ -22,6 +22,8 @@ tags:
     description: Endpoints requiring elevated permissions
   - name: policies
     description: Policies endpoints
+  - name: apps
+    description: Endpoints used by apps (such as weep)
 paths:
   /request:
     post:
@@ -327,6 +329,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PolicyCheckModel"
+  /get_resource_url:
+    get:
+      summary: get a resource URL from an ARN
+      tags:
+        - apps
+      parameters:
+        - in: query
+          name: arn
+          schema:
+            type: string
+          description: The AWS ARN to get the resource URL for
+      responses:
+        "200":
+          description: OK - the URL was successfully generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
+        "404":
+          description: Missing or Malformed data, please check errors for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
 components:
   responses:
     DefaultErrorResponse:
