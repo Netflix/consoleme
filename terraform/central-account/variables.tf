@@ -230,3 +230,8 @@ variable "lb-authentication-scope" {
 variable "application_admin" {
   description = "The user or group that will have administrative access in ConsoleMe"
 }
+
+variable "user_facing_url" {
+  type    = string
+  default = ""
+}
