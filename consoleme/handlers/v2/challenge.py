@@ -147,7 +147,13 @@ class ChallengeValidatorHandler(BaseHandler):
                 )
                 self.write(
                     {
-                        "message": "Your originating IP doesn't match the IP the challenge was created with."
+                        "message": (
+                            "Your originating IP doesn't match the IP the challenge was created with. "
+                            "If you are developing locally, this is probably because your CLI (Weep) made an IPv6 "
+                            "request, and your web browser made an IPv4 request. Or visa-versa. If this is the case, "
+                            "set the local configuration for "
+                            "**challenge_url.request_ip_must_match_challenge_creation_ip** to **false**."
+                        )
                     }
                 )
                 return

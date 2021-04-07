@@ -121,9 +121,6 @@ class ResourceDetailHandler(BaseAPIV2Handler):
 class GetResourceURLHandler(BaseMtlsHandler):
     """consoleme CLI resource URL handler. Parameters accepted: arn."""
 
-    def check_xsrf_cookie(self):
-        pass
-
     def initialize(self):
         self.user: str = None
         self.eligible_roles: list = []
