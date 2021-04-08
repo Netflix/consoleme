@@ -50,9 +50,15 @@ class LogOutHandler(BaseHandler):
             )
             return
         self.clear_cookie(cookie_name)
+
+        extra_auth_cookies: list = config.get("auth.extra_auth_cookies", [])
+        for cookie in extra_auth_cookies:
+            self.clear_cookie(cookie)
+
+        redirect_url=config.get("auth.logout_redirect_url", "/")
         res = WebResponse(
             status="redirect",
-            redirect_url="/",
+            redirect_url=redirect_url,
             status_code=200,
             reason="logout_redirect",
             message="User has successfully logged out. Redirecting to landing page",
