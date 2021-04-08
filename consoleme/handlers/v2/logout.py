@@ -55,7 +55,7 @@ class LogOutHandler(BaseHandler):
         for cookie in extra_auth_cookies:
             self.clear_cookie(cookie)
 
-        redirect_url=config.get("auth.logout_redirect_url", "/")
+        redirect_url: str = config.get("auth.logout_redirect_url", "/")
         res = WebResponse(
             status="redirect",
             redirect_url=redirect_url,
