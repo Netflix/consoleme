@@ -41,7 +41,7 @@ resource "aws_lb_listener_rule" "unauthenticated-routes-1" {
   condition {
     path_pattern {
       values = ["/api/v1/get_credentials*", "/api/v1/get_roles*", "/noauth/v1/challenge_generator/*",
-      "/noauth/v1/challenge_poller/*", "/api/v2/mtls/roles/*", "/api/v2/get_resource_url*"]
+      "/noauth/v1/challenge_poller/*", "/api/v2/mtls/roles/*"]
     }
   }
 }
@@ -57,7 +57,7 @@ resource "aws_lb_listener_rule" "unauthenticated-routes-2" {
 
   condition {
     path_pattern {
-      values = ["/api/v1/myheaders/?"]
+      values = ["/api/v1/myheaders/?", "/api/v2/get_resource_url*"]
     }
   }
 }
