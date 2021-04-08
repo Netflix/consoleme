@@ -51,7 +51,9 @@ Your output should resemble the following screenshot:
 If you do not have 4 containers running, run the docker compose command again to ensure they are started.
 
 {% hint style="warning" %}
-If your container crashes after starting, make sure that you have sufficient resources in Docker. On Mac, configure Docker Desktop to provide at least 4GB RAM, 2 CPUs, 2GB of swap, and at least 25GB for storage. 
+If your container crashes after starting, if you see a white screen when trying to load the ConsoleMe web UI, or if you see an "inotify watch limit reached" error in your docker logs, make sure that you have sufficient resources in Docker.
+
+On Mac, configure Docker Desktop to provide at least 4GB RAM, 2 CPUs, 2GB of swap, and at least 25GB for storage. 
 
 On Linux, you may need to increase your inotify settings on your Docker host:
 
