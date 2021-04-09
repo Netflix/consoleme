@@ -49,6 +49,7 @@ class TestUserProfile(AsyncHTTPTestCase):
                     "can_create_roles": False,
                     "can_delete_roles": False,
                 },
+                "can_logout": False,
                 "pages": {
                     "header": {
                         "custom_header_message_title": "",
