@@ -30,6 +30,7 @@ data "template_file" "consoleme_config" {
     region                                             = data.aws_region.current.name
     jwt_email_key                                      = var.lb-authentication-jwt-email-key
     user_facing_url                                    = var.user_facing_url == "" ? "https://${aws_lb.public-to-private-lb.dns_name}:${var.lb_port}" : var.user_facing_url
+    logout_url                                         = var.logout_url
   }
 }
 
