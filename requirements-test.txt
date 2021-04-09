@@ -432,7 +432,7 @@ logmatic-python==0.1.7
     # via
     #   -c requirements.txt
     #   -r requirements.txt
-lxml==4.6.2
+lxml==4.6.3
     # via
     #   -c requirements.txt
     #   -r requirements.txt
