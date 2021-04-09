@@ -50,22 +50,30 @@ const ConsoleMeHeader = () => {
   };
 
   const getAvatarImage = () => {
-    if (user?.employee_photo_url) {
-      return (
-        <>
-          <Image
-            alt={user.user}
-            avatar
-            src={user.employee_photo_url}
-            title={user.user}
-          />
-          {user.user}
-        </>
-      );
-    } else if (user?.user) {
-      return user.user;
-    }
-    return null;
+    const dropdownOptions = [
+      {
+        key: user.user,
+        text: user.user,
+        value: user.user,
+        image: { avatar: true, src: user?.employee_photo_url },
+      },
+    ];
+    return (
+      <Dropdown
+        inline
+        options={dropdownOptions}
+        defaultValue={dropdownOptions[0].value}
+        icon={null}
+      >
+        <Dropdown.Menu>
+          {user?.can_logout ? (
+            <Dropdown.Item as={NavLink} to="/logout">
+              Logout
+            </Dropdown.Item>
+          ) : null}
+        </Dropdown.Menu>
+      </Dropdown>
+    );
   };
 
   const headerMessage = () => {

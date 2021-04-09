@@ -75,7 +75,10 @@ celery:
   active_region: ${region}
 
 auth:
+  logout_redirect_url: "${logout_url}"
   get_user_by_aws_alb_auth: true
+  extra_auth_cookies:
+    - AWSELBAuthSessionCookie-0
   set_auth_cookie: true
 
 get_user_by_aws_alb_auth_settings:
