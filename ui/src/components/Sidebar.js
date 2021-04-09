@@ -68,92 +68,99 @@ const ConsoleMeSidebar = () => {
       inverted
       vertical
       style={{
-        paddingTop: "10px",
+        paddingTop: "82px",
         width: "240px",
-        marginTop: "72px",
-        minHeight: "700px",
+        zIndex: "100",
       }}
     >
-      <Menu.Item>
-        <Label>{recentRoles.length}</Label>
-        <Menu.Header>Recent Roles</Menu.Header>
-        <Menu.Menu>{listRecentRoles(recentRoles, user)}</Menu.Menu>
-      </Menu.Item>
-      <Menu.Item>
-        <Menu.Header>Help</Menu.Header>
-        <Menu.Menu>
-          <Menu.Item
-            as="a"
-            name="documentation"
-            href={documentation_url || ""}
-            rel="noopener noreferrer"
-            target="_blank"
-            style={{
-              fontSize: "14px",
-            }}
-          >
-            <Icon name="file" />
-            Documentation
-          </Menu.Item>
-          <Menu.Item
-            as="a"
-            name="email"
-            href={support_contact ? "mailto:" + support_contact : "/"}
-            rel="noopener noreferrer"
-            target="_blank"
-            style={{
-              fontSize: "14px",
-            }}
-          >
-            <Icon name="send" />
-            Email us
-          </Menu.Item>
-          <Menu.Item
-            as="a"
-            name="slack"
-            href={support_chat_url || "/"}
-            rel="noopener noreferrer"
-            target="_blank"
-            style={{
-              fontSize: "14px",
-            }}
-          >
-            <Icon name="slack" />
-            Find us on Slack
-          </Menu.Item>
-        </Menu.Menu>
-      </Menu.Item>
-      <Menu.Menu
+      <div
         style={{
-          position: "absolute",
-          bottom: "70px",
-          left: "0",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          justifyContent: "space-between",
+          overflowY: "auto",
         }}
       >
-        <Menu.Item>
-          {consoleme_logo && (
-            <a href={"/"} rel="noopener noreferrer" target="_blank">
-              <Image
+        <div>
+          <Menu.Item>
+            <Label>{recentRoles.length}</Label>
+            <Menu.Header>Recent Roles</Menu.Header>
+            <Menu.Menu>{listRecentRoles(recentRoles, user)}</Menu.Menu>
+          </Menu.Item>
+          <Menu.Item>
+            <Menu.Header>Help</Menu.Header>
+            <Menu.Menu>
+              <Menu.Item
+                as="a"
+                name="documentation"
+                href={documentation_url || ""}
+                rel="noopener noreferrer"
+                target="_blank"
                 style={{
-                  height: "250px",
-                  margin: "auto",
+                  fontSize: "14px",
                 }}
-                src={consoleme_logo}
-              />
-            </a>
-          )}
-          <br />
-          {security_logo && (
-            <a
-              href={security_url || "/"}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Image size="medium" src={security_logo} />
-            </a>
-          )}
-        </Menu.Item>
-      </Menu.Menu>
+              >
+                <Icon name="file" />
+                Documentation
+              </Menu.Item>
+              <Menu.Item
+                as="a"
+                name="email"
+                href={support_contact ? "mailto:" + support_contact : "/"}
+                rel="noopener noreferrer"
+                target="_blank"
+                style={{
+                  fontSize: "14px",
+                }}
+              >
+                <Icon name="send" />
+                Email us
+              </Menu.Item>
+              <Menu.Item
+                as="a"
+                name="slack"
+                href={support_chat_url || "/"}
+                rel="noopener noreferrer"
+                target="_blank"
+                style={{
+                  fontSize: "14px",
+                }}
+              >
+                <Icon name="slack" />
+                Find us on Slack
+              </Menu.Item>
+            </Menu.Menu>
+          </Menu.Item>
+        </div>
+        <div>
+          <Menu.Menu>
+            <Menu.Item>
+              {consoleme_logo && (
+                <a href={"/"} rel="noopener noreferrer" target="_blank">
+                  <Image
+                    style={{
+                      height: "250px",
+                      margin: "auto",
+                    }}
+                    src={consoleme_logo}
+                  />
+                </a>
+              )}
+              <br />
+              {security_logo && (
+                <a
+                  href={security_url || "/"}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <Image size="medium" src={security_logo} />
+                </a>
+              )}
+            </Menu.Item>
+          </Menu.Menu>
+        </div>
+      </div>
     </Menu>
   );
 };
