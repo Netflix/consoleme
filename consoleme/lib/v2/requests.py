@@ -953,6 +953,7 @@ async def populate_cross_account_resource_policy_for_change(
     sts_resource_policy_supported = config.get(
         "policies.sts_resource_policy_supported", True
     )
+    all_accounts = await get_account_id_to_name_mapping(status=None)
     default_policy = {"Version": "2012-10-17", "Statement": []}
     if change.status == Status.applied:
         # Skip any changes that have already been applied so we don't overwrite any historical records
@@ -985,6 +986,15 @@ async def populate_cross_account_resource_policy_for_change(
             change.supported = False
             old_policy = default_policy
             log_data["message"] = "Resource account couldn't be determined"
+            log_data["resource_arn"] = change.arn
+            log.warning(log_data)
+        elif resource_account not in all_accounts.keys():
+            # if we see the resource account, but it is not an account that we own
+            change.supported = False
+            old_policy = default_policy
+            log_data[
+                "message"
+            ] = "Resource account doesn't belong to organization's accounts"
             log_data["resource_arn"] = change.arn
             log.warning(log_data)
         else:
