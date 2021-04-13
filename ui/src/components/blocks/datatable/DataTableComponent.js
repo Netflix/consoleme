@@ -102,18 +102,36 @@ const DataTableComponent = ({ config }) => {
               collapsing
               colSpan={calculateColumnSize(tableConfig)}
             >
-              {totalPages > 0 ? (
-                <Pagination
-                  floated="right"
-                  activePage={activePage}
-                  totalPages={totalPages}
-                  onPageChange={(event, data) => {
-                    setActivePage(data.activePage);
-                  }}
-                />
-              ) : (
-                ""
-              )}
+              <div
+                style={{
+                  alignItems: "center",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginRight: "1em",
+                }}
+              >
+                <div>
+                  {data.length !== filteredData.length ? (
+                    <>
+                      {filteredData.length.toLocaleString()} Results (Filtered
+                      from {data.length.toLocaleString()})
+                    </>
+                  ) : (
+                    <>{data.length.toLocaleString()} Results</>
+                  )}
+                </div>
+                {totalPages > 0 ? (
+                  <Pagination
+                    activePage={activePage}
+                    totalPages={totalPages}
+                    onPageChange={(event, data) => {
+                      setActivePage(data.activePage);
+                    }}
+                  />
+                ) : (
+                  ""
+                )}
+              </div>
             </Table.HeaderCell>
           </Table.Row>
         </Table.Footer>
