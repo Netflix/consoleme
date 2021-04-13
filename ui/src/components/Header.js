@@ -84,6 +84,12 @@ const ConsoleMeHeader = () => {
       const headerTitle =
         user?.pages?.header?.custom_header_message_title || "";
       const headerText = user?.pages?.header?.custom_header_message_text || "";
+      if (user?.pages?.header?.custom_header_message_route) {
+        const re = new RegExp(user.pages.header.custom_header_message_route);
+        if (!re.test(window.location.pathname)) {
+          return null;
+        }
+      }
       return (
         <Message
           warning

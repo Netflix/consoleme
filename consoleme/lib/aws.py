@@ -21,6 +21,7 @@ from cloudaux.aws.s3 import (
 from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
+from dateutil.parser import parse
 from deepdiff import DeepDiff
 from parliament import analyze_policy_string, enhance_finding
 from policy_sentry.util.arns import get_account_from_arn, parse_arn
@@ -1111,7 +1112,8 @@ def role_newer_than_x_days(role: Dict, days: int) -> bool:
     :param days: number of days
     :return:
     """
-
+    if isinstance(role.get("CreateDate"), str):
+        role["CreateDate"] = parse(role.get("CreateDate"))
     role_age = datetime.now(tz=pytz.utc) - role.get("CreateDate")
     if role_age.days < days:
         return True
