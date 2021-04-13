@@ -40,7 +40,16 @@ const ProtectedRoute = (props) => {
     user?.pages?.header?.custom_header_message_title ||
     user?.pages?.header?.custom_header_message_text
   ) {
-    marginTop = "0px";
+    let matchesRoute = true;
+    if (user?.pages?.header?.custom_header_message_route) {
+      const re = new RegExp(user.pages.header.custom_header_message_route);
+      if (!re.test(window.location.pathname)) {
+        matchesRoute = false;
+      }
+    }
+    if (matchesRoute) {
+      marginTop = "0px";
+    }
   }
 
   return (
