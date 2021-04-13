@@ -233,6 +233,7 @@ class Status1(Enum):
     deleted = "deleted"
     created = "created"
     suspended = "suspended"
+    deprecated = "deprecated"
 
 
 class Type(Enum):

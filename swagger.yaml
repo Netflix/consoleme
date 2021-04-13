@@ -966,6 +966,7 @@ components:
             - deleted
             - created
             - suspended
+            - deprecated
         type:
           type: string
           enum:
