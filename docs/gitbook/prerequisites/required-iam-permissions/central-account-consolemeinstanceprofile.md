@@ -11,7 +11,7 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
   "Statement": [
     {
       "Action": [
-        "access-analyzer:*"
+        "access-analyzer:*",
         "cloudtrail:*",
         "cloudwatch:*",
         "config:SelectResourceConfig",
