@@ -80,6 +80,8 @@ auth:
   extra_auth_cookies:
     - AWSELBAuthSessionCookie-0
   set_auth_cookie: true
+  remote_ip:
+    trusted_remote_ip_header: X-Forwarded-For
 
 get_user_by_aws_alb_auth_settings:
   jwt_email_key: sub
