@@ -25,6 +25,8 @@ const DataTableComponent = ({ config }) => {
     expandedRow = null,
     filteredData = [],
     filters = {},
+    totalCount = 0,
+    filteredCount = 0,
     isLoading = true,
     redirect = false,
     tableConfig = {},
@@ -77,6 +79,8 @@ const DataTableComponent = ({ config }) => {
         <DataTableColumnsComponent
           column={column}
           data={data}
+          totalCount={totalCount}
+          filteredCount={filteredCount}
           direction={direction}
           filters={filters}
           filterColumn={filterColumn}
@@ -111,13 +115,13 @@ const DataTableComponent = ({ config }) => {
                 }}
               >
                 <div>
-                  {data.length !== filteredData.length ? (
+                  {filteredCount !== totalCount ? (
                     <>
-                      {filteredData.length.toLocaleString()} Results (Filtered
-                      from {data.length.toLocaleString()})
+                      {filteredCount.toLocaleString()} Results (Filtered from{" "}
+                      {totalCount.toLocaleString()})
                     </>
                   ) : (
-                    <>{data.length.toLocaleString()} Results</>
+                    <>{filteredCount.toLocaleString()} Results</>
                   )}
                 </div>
                 {totalPages > 0 ? (
