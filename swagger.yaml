@@ -1542,6 +1542,21 @@ components:
             type: string
         data:
           type: object
+    DataTableResponse:
+      type: object
+      required:
+        - totalCount
+        - filteredCount
+        - data
+      properties:
+        totalCount:
+          type: integer
+        filteredCount:
+          type: integer
+        data:
+          type: array
+          items:
+            type: object
     PolicyCheckModel:
       type: array
       items:

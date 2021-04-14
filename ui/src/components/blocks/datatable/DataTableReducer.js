@@ -34,8 +34,10 @@ export const reducer = (state, action) => {
     case "SET_DATA": {
       return {
         ...state,
-        data: action.data,
-        filteredData: action.data,
+        data: action.data.data,
+        filteredData: action.data.data,
+        totalCount: action.data.totalCount,
+        filteredCount: action.data.filteredCount,
         isLoading: false,
       };
     }
@@ -55,7 +57,9 @@ export const reducer = (state, action) => {
       return {
         ...state,
         expandedRow: null,
-        filteredData: action.filteredData || [],
+        filteredData: action.filteredData.data || [],
+        filteredCount: action.filteredData.filteredCount,
+        totalCount: action.filteredData.totalCount,
         activePage: 1,
         direction: action.direction || "descending",
         column: action.clickedColumn || null,
