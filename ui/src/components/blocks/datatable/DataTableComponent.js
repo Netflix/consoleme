@@ -2,7 +2,10 @@ import React from "react";
 import { Redirect, BrowserRouter } from "react-router-dom";
 import useDataTable from "./useDataTable";
 import {
+  Button,
   Dimmer,
+  Grid,
+  Icon,
   Loader,
   Message,
   Pagination,
@@ -75,7 +78,19 @@ const DataTableComponent = ({ config }) => {
           <p>{warningMessage}</p>
         </Message>
       ) : null}
-      <Table collapsing sortable celled compact selectable striped>
+
+      <Grid>
+        <Grid.Column textAlign="right">
+          <Button basic size="small" compact>
+            <Icon name="file code outline" color="black" /> Export JSON
+          </Button>
+          <Button basic size="small" compact>
+            <Icon name="file excel outline" color="black" /> Export CSV
+          </Button>
+        </Grid.Column>
+      </Grid>
+
+      <Table sortable celled compact selectable striped>
         <DataTableColumnsComponent
           column={column}
           data={data}
@@ -102,10 +117,7 @@ const DataTableComponent = ({ config }) => {
         </Table.Body>
         <Table.Footer>
           <Table.Row>
-            <Table.HeaderCell
-              collapsing
-              colSpan={calculateColumnSize(tableConfig)}
-            >
+            <Table.HeaderCell colSpan={calculateColumnSize(tableConfig)}>
               <div
                 style={{
                   alignItems: "center",
