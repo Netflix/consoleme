@@ -43,11 +43,12 @@ repos:
       - id: prettier
 
   - repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v7.18.0
+    rev: v7.24.0
     hooks:
       - id: eslint
         args: ["--fix", "--max-warnings", "0"]
         additional_dependencies:
+          - eslint@7.18.0
           - eslint-config-prettier@7.2.0
           - eslint-config-react-app@6.0.0
           - eslint-plugin-import@2.22.1
