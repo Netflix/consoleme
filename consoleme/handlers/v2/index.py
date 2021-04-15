@@ -1,10 +1,10 @@
 import tornado.web
-import ujson as json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.loader import WebpackLoader
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.models import DataTableResponse
 
 log = config.get_logger()
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
@@ -88,9 +88,13 @@ class EligibleRoleHandler(BaseHandler):
 
         # Default sort by account name
         roles = sorted(roles, key=lambda i: i.get("account_name", 0))
+        total_count = len(roles)
 
         self.set_header("Content-Type", "application/json")
-        self.write(json.dumps(roles, escape_forward_slashes=False))
+        res = DataTableResponse(
+            totalCount=total_count, filteredCount=total_count, data=roles
+        )
+        self.write(res.json())
         await self.finish()
 
 
