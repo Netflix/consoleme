@@ -52,6 +52,7 @@ class TestUserProfile(AsyncHTTPTestCase):
                 "can_logout": False,
                 "pages": {
                     "header": {
+                        "custom_header_message_route": ".*",
                         "custom_header_message_title": "",
                         "custom_header_message_text": "",
                     },
