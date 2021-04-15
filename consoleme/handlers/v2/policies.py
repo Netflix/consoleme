@@ -15,6 +15,7 @@ from consoleme.lib.generic import filter_table
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_url_for_resource
 from consoleme.lib.timeout import Timeout
+from consoleme.models import DataTableResponse
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
@@ -115,6 +116,8 @@ class PoliciesHandler(BaseAPIV2Handler):
             default=[],
         )
 
+        total_count = len(policies)
+
         if filters:
             try:
                 with Timeout(seconds=5):
@@ -155,7 +158,11 @@ class PoliciesHandler(BaseAPIV2Handler):
                 policies_to_write.append(policy)
         else:
             policies_to_write = policies[0:limit]
-        self.write(json.dumps(policies_to_write))
+        filtered_count = len(policies_to_write)
+        res = DataTableResponse(
+            totalCount=total_count, filteredCount=filtered_count, data=policies_to_write
+        )
+        self.write(res.json())
         return
 
 

@@ -7,7 +7,7 @@ import qs from "qs";
 const useDataTable = (config) => {
   const { sendRequestCommon } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { data, debounceWait, filters, tableConfig } = state;
+  const { data, totalCount, debounceWait, filters, tableConfig } = state;
 
   const setFilteredData = (filteredData, direction, clickedColumn) =>
     dispatch({
@@ -58,9 +58,9 @@ const useDataTable = (config) => {
 
   const filterColumnClientSide = useCallback(
     (filters) => {
-      let filteredData = [];
+      let filteredData = {};
       if (Object.keys(filters).length > 0) {
-        filteredData = data.filter((item) => {
+        filteredData.data = data.filter((item) => {
           let isMatched = true;
           Object.keys(filters).forEach((key) => {
             const filter = filters[key];
@@ -72,11 +72,13 @@ const useDataTable = (config) => {
           return isMatched;
         });
       } else {
-        filteredData = data;
+        filteredData.data = data;
       }
+      filteredData.totalCount = totalCount || 0;
+      filteredData.filteredCount = filteredData?.data?.length || 0;
       setFilteredData(filteredData);
     },
-    [data]
+    [data, totalCount]
   );
 
   const filterDateRangeTime = async (event, data) => {

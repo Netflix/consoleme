@@ -42,6 +42,20 @@ repos:
     hooks:
       - id: prettier
 
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v7.24.0
+    hooks:
+      - id: eslint
+        args:
+          [
+            "--fix",
+            "--max-warnings",
+            "0",
+            "--resolve-plugins-relative-to",
+            "./ui",
+            "-c",
+            "./ui/.eslintrc",
+          ]
   - repo: local
     hooks:
       - id: pytest

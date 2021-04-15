@@ -541,6 +541,12 @@ class WebResponse(BaseModel):
     data: Optional[Dict[str, Any]] = None
 
 
+class DataTableResponse(BaseModel):
+    totalCount: int = None
+    filteredCount: int = None
+    data: List[Dict[str, Any]] = None
+
+
 class PolicyCheckModelItem(BaseModel):
     issue: Optional[str] = None
     detail: Optional[str] = None
