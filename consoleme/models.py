@@ -593,7 +593,7 @@ class AssumeRolePolicyChangeModel(ChangeModel):
 
 
 class ResourcePolicyChangeModel(ChangeModel):
-    change_type: Optional[constr(regex="resource_policy")] = None
+    change_type: Optional[constr(regex="resource_policy|sts_resource_policy")] = None
     arn: constr(
         regex="(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
     )

@@ -36,6 +36,12 @@ class TestRequestsHandler(AsyncHTTPTestCase):
             },
         ]
 
+        expected_response = {
+            "totalCount": 2,
+            "filteredCount": 2,
+            "data": mock_request_data,
+        }
+
         from consoleme.lib.redis import RedisHandler
 
         # Mocked by fakeredis
@@ -53,7 +59,7 @@ class TestRequestsHandler(AsyncHTTPTestCase):
             "/api/v2/requests", method="POST", headers=headers, body="{}"
         )
         self.assertEqual(response.code, 200)
-        diff = DeepDiff(json.loads(response.body), mock_request_data)
+        diff = DeepDiff(json.loads(response.body), expected_response)
         self.assertFalse(diff)
 
     def test_post_limit(self):
@@ -82,7 +88,8 @@ class TestRequestsHandler(AsyncHTTPTestCase):
             body=json.dumps({"limit": 1}),
         )
         self.assertEqual(response.code, 200)
-        self.assertEqual(len(json.loads(response.body)), 1)
+        self.assertEqual(len(json.loads(response.body)), 3)
+        self.assertEqual(len(json.loads(response.body)["data"]), 1)
 
     def test_post_filter(self):
         mock_request_data = [
@@ -111,8 +118,9 @@ class TestRequestsHandler(AsyncHTTPTestCase):
         )
         self.assertEqual(response.code, 200)
         res = json.loads(response.body)
-        self.assertEqual(len(json.loads(response.body)), 1)
-        self.assertEqual(res[0], mock_request_data[1])
+        self.assertEqual(len(json.loads(response.body)), 3)
+        self.assertEqual(len(json.loads(response.body)["data"]), 1)
+        self.assertEqual(res["data"][0], mock_request_data[1])
 
 
 class TestRequestDetailHandler(AsyncHTTPTestCase):
