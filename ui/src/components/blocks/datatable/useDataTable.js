@@ -7,14 +7,7 @@ import qs from "qs";
 const useDataTable = (config) => {
   const { sendRequestCommon } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
-  const {
-    data,
-    totalCount,
-    filteredCount,
-    debounceWait,
-    filters,
-    tableConfig,
-  } = state;
+  const { data, totalCount, debounceWait, filters, tableConfig } = state;
 
   const setFilteredData = (filteredData, direction, clickedColumn) =>
     dispatch({
@@ -85,7 +78,7 @@ const useDataTable = (config) => {
       filteredData.filteredCount = filteredData?.data?.length || 0;
       setFilteredData(filteredData);
     },
-    [data]
+    [data, totalCount]
   );
 
   const filterDateRangeTime = async (event, data) => {
