@@ -46,16 +46,16 @@ repos:
     rev: v7.24.0
     hooks:
       - id: eslint
-        args: ["--fix", "--max-warnings", "0"]
-        additional_dependencies:
-          - eslint@7.18.0
-          - eslint-config-prettier@7.2.0
-          - eslint-config-react-app@6.0.0
-          - eslint-plugin-import@2.22.1
-          - eslint-plugin-jsx-a11y@6.4.1
-          - eslint-plugin-react@7.22.0
-          - eslint-plugin-react-hooks@4.2.0
-
+        args:
+          [
+            "--fix",
+            "--max-warnings",
+            "0",
+            "--resolve-plugins-relative-to",
+            "./ui",
+            "-c",
+            "./ui/.eslintrc",
+          ]
   - repo: local
     hooks:
       - id: pytest
