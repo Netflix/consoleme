@@ -11,8 +11,10 @@ from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import fetch_resource_details
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_url_for_resource
+from consoleme.lib.redis import RedisHandler, redis_hget
 from consoleme.lib.web import handle_generic_error_response
 from consoleme.models import WebResponse
 
@@ -26,6 +28,7 @@ auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 internal_policies = get_plugin_by_name(
     config.get("plugins.internal_policies", "default_policies")
 )()
+red = RedisHandler().redis_sync()
 
 
 class ResourceDetailHandler(BaseAPIV2Handler):
@@ -162,6 +165,21 @@ class GetResourceURLHandler(BaseMtlsHandler):
         try:
             # parse_arn will raise an exception on invalid arns
             parse_arn(arn)
+
+            resources_from_aws_config_redis_key = config.get(
+                "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+            )
+            if not red.exists(resources_from_aws_config_redis_key):
+                # This will force a refresh of our redis cache if the data exists in S3
+                await retrieve_json_data_from_redis_or_s3(
+                    redis_key=resources_from_aws_config_redis_key,
+                    s3_bucket=config.get("aws_config_cache_combined.s3.bucket"),
+                    s3_key=config.get("aws_config_cache_combined.s3.file"),
+                    redis_data_type="hash",
+                )
+            resource_info = await redis_hget(resources_from_aws_config_redis_key, arn)
+            if not resource_info:
+                raise ValueError("Resource not found in organization cache")
             resource_url = await get_url_for_resource(arn)
             if not resource_url:
                 raise ValueError("This resource type is currently not supported")
