@@ -1,5 +1,5 @@
 module "network_label" {
-  source       = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.5.0"
+  source       = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.8.0"
   namespace    = var.namespace
   stage        = var.stage
   name         = var.name
@@ -10,7 +10,7 @@ module "network_label" {
 }
 
 module "security_group_label" {
-  source       = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.5.0"
+  source       = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.8.0"
   namespace    = var.namespace
   stage        = var.stage
   name         = var.name
@@ -22,7 +22,7 @@ module "security_group_label" {
 }
 
 module "compute_label" {
-  source       = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.5.0"
+  source       = "git::https://github.com/cloudposse/terraform-terraform-label.git?ref=0.8.0"
   namespace    = var.namespace
   stage        = var.stage
   name         = var.name
