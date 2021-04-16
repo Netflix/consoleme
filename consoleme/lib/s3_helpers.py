@@ -29,7 +29,7 @@ async def is_object_older_than_seconds(
     if not s3_client:
         s3_client = boto3.client("s3")
     try:
-        res = sync_to_async(s3_client.head_object)(Bucket=bucket, Key=key)
+        res = await sync_to_async(s3_client.head_object)(Bucket=bucket, Key=key)
     except ClientError as e:
         # If file is not found, we'll tell the user it's older than the specified time
         if e.response.get("Error", {}).get("Code") == "404":
