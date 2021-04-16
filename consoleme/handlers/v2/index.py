@@ -122,6 +122,8 @@ class EligibleRolePageConfigHandler(BaseHandler):
                 "totalRows": 1000,
                 "rowsPerPage": 50,
                 "serverSideFiltering": False,
+                "allowCsvExport": False,
+                "allowJsonExport": False,
                 "columns": [
                     {
                         "placeholder": "Account Name",

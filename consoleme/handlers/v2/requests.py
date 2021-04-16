@@ -718,6 +718,8 @@ class RequestsPageConfigHandler(BaseHandler):
                 "totalRows": 200,
                 "rowsPerPage": 50,
                 "serverSideFiltering": True,
+                "allowCsvExport": True,
+                "allowJsonExport": True,
                 "columns": [
                     {
                         "placeholder": "Username",
