@@ -77,7 +77,10 @@ const DataTableComponent = ({ config }) => {
         </Message>
       ) : null}
 
-      <DataTableActionsComponent filteredData={filteredData} />
+      <DataTableActionsComponent
+        filteredData={filteredData}
+        tableConfig={tableConfig}
+      />
 
       <Table sortable celled compact selectable striped>
         <DataTableColumnsComponent

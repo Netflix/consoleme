@@ -3,7 +3,7 @@ import { Button, Grid, Icon } from "semantic-ui-react";
 
 import { json2csv } from "json-2-csv";
 
-const DataTableActionsComponent = ({ filteredData }) => {
+const DataTableActionsComponent = ({ filteredData, tableConfig }) => {
   const generateFileDownload = (data, type, ext) => {
     const fileName = `console_me_export_${new Date().getTime()}`;
     const blob = new Blob([data], { type: type });
@@ -37,15 +37,23 @@ const DataTableActionsComponent = ({ filteredData }) => {
     );
   };
 
+  if (!tableConfig.allowCsvExport && !tableConfig.allowJsonExport) {
+    return null;
+  }
+
   return (
     <Grid>
       <Grid.Column textAlign="right">
-        <Button basic size="small" compact onClick={handleExportJson}>
-          <Icon name="file code outline" color="black" /> Export JSON
-        </Button>
-        <Button basic size="small" compact onClick={handleExportCsv}>
-          <Icon name="file excel outline" color="black" /> Export CSV
-        </Button>
+        {tableConfig.allowJsonExport ? (
+          <Button basic size="small" compact onClick={handleExportJson}>
+            <Icon name="file code outline" color="black" /> Export JSON
+          </Button>
+        ) : null}
+        {tableConfig.allowCsvExport ? (
+          <Button basic size="small" compact onClick={handleExportCsv}>
+            <Icon name="file excel outline" color="black" /> Export CSV
+          </Button>
+        ) : null}
       </Grid.Column>
     </Grid>
   );
