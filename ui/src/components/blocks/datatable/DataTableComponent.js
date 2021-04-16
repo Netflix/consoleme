@@ -2,16 +2,14 @@ import React from "react";
 import { Redirect, BrowserRouter } from "react-router-dom";
 import useDataTable from "./useDataTable";
 import {
-  Button,
   Dimmer,
-  Grid,
-  Icon,
   Loader,
   Message,
   Pagination,
   Segment,
   Table,
 } from "semantic-ui-react";
+import DataTableActionsComponent from "./DataTableActionsComponent";
 import DataTableColumnsComponent from "./DataTableColumnsComponent";
 import DataTableRowsComponent from "./DataTableRowsComponent";
 
@@ -79,16 +77,7 @@ const DataTableComponent = ({ config }) => {
         </Message>
       ) : null}
 
-      <Grid>
-        <Grid.Column textAlign="right">
-          <Button basic size="small" compact>
-            <Icon name="file code outline" color="black" /> Export JSON
-          </Button>
-          <Button basic size="small" compact>
-            <Icon name="file excel outline" color="black" /> Export CSV
-          </Button>
-        </Grid.Column>
-      </Grid>
+      <DataTableActionsComponent filteredData={filteredData} />
 
       <Table sortable celled compact selectable striped>
         <DataTableColumnsComponent
