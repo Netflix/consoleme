@@ -462,7 +462,10 @@ class PolicyRequestReview extends Component {
                 />
               );
             }
-            if (change.change_type === "resource_policy") {
+            if (
+              change.change_type === "resource_policy" ||
+              change.change_type === "sts_resource_policy"
+            ) {
               return (
                 <ResourcePolicyChangeComponent
                   change={change}

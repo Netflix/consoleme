@@ -541,6 +541,12 @@ class WebResponse(BaseModel):
     data: Optional[Dict[str, Any]] = None
 
 
+class DataTableResponse(BaseModel):
+    totalCount: int = None
+    filteredCount: int = None
+    data: List[Dict[str, Any]] = None
+
+
 class PolicyCheckModelItem(BaseModel):
     issue: Optional[str] = None
     detail: Optional[str] = None
@@ -587,7 +593,7 @@ class AssumeRolePolicyChangeModel(ChangeModel):
 
 
 class ResourcePolicyChangeModel(ChangeModel):
-    change_type: Optional[constr(regex="resource_policy")] = None
+    change_type: Optional[constr(regex="resource_policy|sts_resource_policy")] = None
     arn: constr(
         regex="(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
     )

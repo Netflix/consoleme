@@ -71,7 +71,7 @@ get_user_by_saml_settings:
 These are the general steps to follow when configuring ConsoleMe as a SAML service provider:
 
 1. Update ConsoleMe's configuration with your configuration parameters \(Shown above\)
-2. Put your Service Provider certificate and private key in the location you specified in your
+2. Put your Service Provider certificate and private key in a subdirectory `certs` within the location you specified in your
 
    `get_user_by_saml_settings.saml_path` configuration value.
 

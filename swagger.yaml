@@ -890,7 +890,7 @@ components:
           properties:
             change_type:
               type: string
-              pattern: "resource_policy"
+              pattern: "resource_policy|sts_resource_policy"
             arn:
               type: string
               pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
@@ -1542,6 +1542,21 @@ components:
             type: string
         data:
           type: object
+    DataTableResponse:
+      type: object
+      required:
+        - totalCount
+        - filteredCount
+        - data
+      properties:
+        totalCount:
+          type: integer
+        filteredCount:
+          type: integer
+        data:
+          type: array
+          items:
+            type: object
     PolicyCheckModel:
       type: array
       items:

@@ -40,6 +40,7 @@ from consoleme.lib.v2.requests import (
 )
 from consoleme.models import (
     CommentModel,
+    DataTableResponse,
     ExtendedRequestModel,
     PolicyRequestModificationRequestModel,
     RequestCreationModel,
@@ -443,6 +444,8 @@ class RequestsHandler(BaseAPIV2Handler):
             cache_key, s3_bucket=s3_bucket, s3_key=s3_key
         )
 
+        total_count = len(requests)
+
         if filters:
             try:
                 with Timeout(seconds=5):
@@ -489,7 +492,11 @@ class RequestsHandler(BaseAPIV2Handler):
                 requests_to_write.append(request)
         else:
             requests_to_write = requests[0:limit]
-        self.write(json.dumps(requests_to_write))
+        filtered_count = len(requests_to_write)
+        res = DataTableResponse(
+            totalCount=total_count, filteredCount=filtered_count, data=requests_to_write
+        )
+        self.write(res.json())
         return
 
 

@@ -6,6 +6,8 @@ import _ from "lodash";
 const DataTableColumnsComponent = ({
   column,
   data,
+  totalCount,
+  filteredCount,
   direction,
   filters,
   filterColumn,
@@ -47,15 +49,18 @@ const DataTableColumnsComponent = ({
     // - Sort the filteredData list by the name of column a user clicked.
     // - Keep track of which column was clicked for sorting.
     // - Keep track of sorting order last time it was used.
+    let sortedData = {
+      totalCount: totalCount,
+      filteredCount: filteredCount,
+    };
+    // TODO: Fix bug where icons for all clicked columns are changing
     if (column !== clickedColumn) {
-      setFilteredData(
-        _.sortBy(filteredData, [clickedColumn]),
-        "ascending",
-        clickedColumn
-      );
+      sortedData.data = _.sortBy(filteredData, [clickedColumn]);
+      setFilteredData(sortedData, "ascending", clickedColumn);
     } else {
+      sortedData.data = filteredData.reverse();
       setFilteredData(
-        filteredData.reverse(),
+        sortedData,
         direction === "ascending" ? "descending" : "ascending",
         null
       );
