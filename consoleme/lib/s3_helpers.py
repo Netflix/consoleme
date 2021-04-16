@@ -123,6 +123,7 @@ def map_operation_to_api(operation, default):
         "REST.GET.WEBSITE": "s3:GetBucketWebsite",
         "REST.HEAD.BUCKET": "s3:ListBucket",
         "REST.HEAD.OBJECT": "s3:GetObject",
+        "REST.COPY.PART_GET": "s3:GetObject",
         "REST.POST.BUCKET": "REST.POST.BUCKET",
         "REST.POST.MULTI_OBJECT_DELETE": "s3:DeleteObject",
         "REST.POST.RESTORE": "s3:RestoreObject",
