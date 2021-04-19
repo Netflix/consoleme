@@ -12,8 +12,23 @@ services:
     container_name: consoleme-dynamodb
     entrypoint: java
     command: "-jar DynamoDBLocal.jar -sharedDb -dbPath /data -port 8005"
+    networks:
+      - dynamo
     ports:
       - "8005:8005"
     restart: always
     volumes:
       - ./dynamodb-data:/data:delegated
+
+  consoleme-dynamodb_admin:
+    container_name: consoleme-dynamodb-admin
+    image: aaronshaf/dynamodb-admin:latest
+    networks:
+      - dynamo
+    environment:
+      - DYNAMO_ENDPOINT=http://consoleme-dynamodb:8005
+    ports:
+      - "8001:8001"
+
+networks:
+  dynamo:
