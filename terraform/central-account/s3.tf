@@ -27,9 +27,9 @@ resource "aws_s3_bucket_object" "consoleme_zip" {
   bucket = aws_s3_bucket.consoleme_files_bucket.bucket
   key    = "consoleme.tar.gz"
 
-  source = "${path.module}/consoleme.tar.gz"
+  source = "${path.module}/../../consoleme.tar.gz"
 
-  etag = md5(filebase64("${path.module}/consoleme.tar.gz"))
+  etag = md5(filebase64("${path.module}/../../consoleme.tar.gz"))
 }
 
 resource "aws_s3_bucket_object" "consoleme_config" {

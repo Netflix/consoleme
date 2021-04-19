@@ -13,6 +13,7 @@ data "aws_iam_policy_document" "consoleme_target" {
       "config:List*",
       "config:Select*",
       "ec2:DescribeInstances",
+      "ec2:DescribeRegions",
       "ec2:DescribeSubnets",
       "ec2:DescribeVpcs",
       "ec2:describevpcendpoints",
@@ -67,4 +68,3 @@ resource "aws_iam_role" "consoleme_target" {
   name               = "ConsoleMeTarget"
   assume_role_policy = data.aws_iam_policy_document.consoleme_target_trust_policy.json
 }
-
