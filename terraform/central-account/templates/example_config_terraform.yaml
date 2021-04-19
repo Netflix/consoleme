@@ -84,8 +84,8 @@ auth:
     trusted_remote_ip_header: X-Forwarded-For
 
 get_user_by_aws_alb_auth_settings:
-  jwt_email_key: sub
-  jwt_groups_key: groups
+  jwt_email_key: ${jwt_email_key}
+  jwt_groups_key: ${jwt_groups_key}
 
 jwt_secret: secret
 url: ${user_facing_url}
