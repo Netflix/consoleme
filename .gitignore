@@ -133,3 +133,6 @@ package-lock.json
 **/package-lock.json
 .setupmeta.version
 consoleme/templates/*
+
+# Local Build Artifact
+consoleme.tar.gz
