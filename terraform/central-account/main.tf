@@ -28,11 +28,11 @@ module "server" {
 
   tags = module.compute_label.tags
 
-  depends_on = [aws_s3_bucket_object.consoleme_zip, aws_s3_bucket_object.consoleme_config]
+  depends_on = [aws_s3_bucket_object.consoleme_config]
 }
 
 module "kms_ebs" {
-  source                  = "git::https://github.com/cloudposse/terraform-aws-kms-key.git?ref=0.7.0"
+  source                  = "git::https://github.com/cloudposse/terraform-aws-kms-key.git?ref=0.10.0"
   namespace               = var.namespace
   stage                   = var.stage
   name                    = var.name

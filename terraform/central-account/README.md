@@ -1,16 +1,10 @@
 # Demo infrastructure for ConsoleMe in AWS
 
-Since Consoleme is not public yet, we have to create a tar.gz file in the root directory, have Terraform upload the tarball to an S3 bucket, and then download it as part of the demo infrastructure.
+- Download and install Terraform 0.15.0. I highly recommend [tfenv](https://github.com/tfutils/tfenv)
 
-- First, create the tarball of Consoleme in the root directory of this repository.
-
-```bash
-make consoleme.tar.gz
-```
-
-Note that if you modify this consoleme.tar.gz file and then run Terraform again, it will update the Terraform infrastructure to include your changes.
-
-- Download and install Terraform 0.13.4. I highly recommend [tfenv](https://github.com/tfutils/tfenv)
+  - If using tfenv, run the following commands in the `central_account` directory:
+    - `tfenv install 0.15.0`
+    - `tfenv use 0.15.0`
 
 - Create your `terraform.tfvars` file (see [terraform.tfvars.example](terraform.tfvars.example) for direction) and insert the content shown below.
 
@@ -35,7 +29,7 @@ bucket_name_prefix = "your-name-prefix"
 - Create the infrastructure with Terraform.
 
 ```bash
-terraform init
+terraform init # If you're upgrading from a previous version of Terraform, you may need to run `terraform init -upgrade`
 terraform plan
 terraform apply -auto-approve
 ```

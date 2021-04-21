@@ -42,9 +42,7 @@ mkdir -p /apps/consoleme
 mkdir /logs
 cd /apps/
 yum -y install unzip
-aws s3 cp s3://${bucket}/consoleme.tar.gz /apps/
-tar -xzvf consoleme.tar.gz -C consoleme/
-rm consoleme.tar.gz
+git clone https://github.com/Netflix/consoleme/
 
 #### User specific installation
 # Create a dedicated service user
