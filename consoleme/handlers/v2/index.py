@@ -126,20 +126,21 @@ class EligibleRolePageConfigHandler(BaseHandler):
                 "allowJsonExport": False,
                 "columns": [
                     {
-                        "placeholder": "Account Name",
-                        "key": "account_name",
-                        "type": "input",
-                    },
-                    {"placeholder": "Account ID", "key": "account_id", "type": "input"},
-                    {"placeholder": "Role Name", "key": "role_name", "type": "link"},
-                    {
                         "placeholder": "AWS Console Sign-In",
                         "key": "redirect_uri",
                         "type": "button",
                         "icon": "sign-in",
                         "content": "Sign-In",
                         "onClick": {"action": "redirect"},
+                        "style": {"maxWidth": "300px"},
                     },
+                    {
+                        "placeholder": "Account Name",
+                        "key": "account_name",
+                        "type": "input",
+                    },
+                    {"placeholder": "Role Name", "key": "role_name", "type": "link"},
+                    {"placeholder": "Account ID", "key": "account_id", "type": "input"},
                 ],
             },
         }
