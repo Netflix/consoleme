@@ -50,7 +50,7 @@ const ConsoleMeHeader = () => {
   };
 
   const getAvatarImage = () => {
-    const dropdownOptions = [
+    let dropdownOptions = [
       {
         key: user.user,
         text: user.user,
@@ -58,21 +58,21 @@ const ConsoleMeHeader = () => {
         image: { avatar: true, src: user?.employee_photo_url },
       },
     ];
+    if (user?.can_logout) {
+      dropdownOptions.push({
+        key: "logout",
+        as: NavLink,
+        to: "/logout",
+        text: "Logout",
+      });
+    }
     return (
       <Dropdown
         inline
         options={dropdownOptions}
         defaultValue={dropdownOptions[0].value}
         icon={null}
-      >
-        <Dropdown.Menu>
-          {user?.can_logout ? (
-            <Dropdown.Item as={NavLink} to="/logout">
-              Logout
-            </Dropdown.Item>
-          ) : null}
-        </Dropdown.Menu>
-      </Dropdown>
+      />
     );
   };
 
