@@ -122,14 +122,9 @@ class EligibleRolePageConfigHandler(BaseHandler):
                 "totalRows": 1000,
                 "rowsPerPage": 50,
                 "serverSideFiltering": False,
+                "allowCsvExport": False,
+                "allowJsonExport": False,
                 "columns": [
-                    {
-                        "placeholder": "Account Name",
-                        "key": "account_name",
-                        "type": "input",
-                    },
-                    {"placeholder": "Account ID", "key": "account_id", "type": "input"},
-                    {"placeholder": "Role Name", "key": "role_name", "type": "link"},
                     {
                         "placeholder": "AWS Console Sign-In",
                         "key": "redirect_uri",
@@ -137,7 +132,15 @@ class EligibleRolePageConfigHandler(BaseHandler):
                         "icon": "sign-in",
                         "content": "Sign-In",
                         "onClick": {"action": "redirect"},
+                        "style": {"maxWidth": "300px"},
                     },
+                    {
+                        "placeholder": "Account Name",
+                        "key": "account_name",
+                        "type": "input",
+                    },
+                    {"placeholder": "Role Name", "key": "role_name", "type": "link"},
+                    {"placeholder": "Account ID", "key": "account_id", "type": "input"},
                 ],
             },
         }

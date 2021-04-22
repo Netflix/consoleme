@@ -63,12 +63,14 @@ const ProtectedRoute = (props) => {
           marginLeft: "240px",
         }}
       >
-        <Route
-          {...rest}
-          render={(props) => {
-            return <Component {...props} {...rest} {...auth} />;
-          }}
-        />
+        <div className="inner-container">
+          <Route
+            {...rest}
+            render={(props) => {
+              return <Component {...props} {...rest} {...auth} />;
+            }}
+          />
+        </div>
       </Segment>
     </>
   );
