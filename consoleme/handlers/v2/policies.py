@@ -42,6 +42,8 @@ class PoliciesPageConfigHandler(BaseHandler):
                 "totalRows": 1000,
                 "rowsPerPage": 50,
                 "serverSideFiltering": True,
+                "allowCsvExport": True,
+                "allowJsonExport": True,
                 "columns": [
                     {
                         "placeholder": "Account ID",

@@ -9,6 +9,7 @@ import {
   Segment,
   Table,
 } from "semantic-ui-react";
+import DataTableActionsComponent from "./DataTableActionsComponent";
 import DataTableColumnsComponent from "./DataTableColumnsComponent";
 import DataTableRowsComponent from "./DataTableRowsComponent";
 
@@ -75,7 +76,10 @@ const DataTableComponent = ({ config }) => {
           <p>{warningMessage}</p>
         </Message>
       ) : null}
-      <Table collapsing sortable celled compact selectable striped>
+
+      <DataTableActionsComponent filters={filters} tableConfig={tableConfig} />
+
+      <Table sortable celled compact selectable striped>
         <DataTableColumnsComponent
           column={column}
           data={data}
@@ -102,10 +106,7 @@ const DataTableComponent = ({ config }) => {
         </Table.Body>
         <Table.Footer>
           <Table.Row>
-            <Table.HeaderCell
-              collapsing
-              colSpan={calculateColumnSize(tableConfig)}
-            >
+            <Table.HeaderCell colSpan={calculateColumnSize(tableConfig)}>
               <div
                 style={{
                   alignItems: "center",
