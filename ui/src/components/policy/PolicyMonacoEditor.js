@@ -444,3 +444,31 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
     </>
   );
 };
+
+export const ReadOnlyPolicyMonacoEditor = ({ policy }) => {
+  const readOnlyEditorOptions = {
+    ...editorOptions,
+    readOnly: true,
+  };
+  return (
+    <>
+      <Segment
+        attached
+        style={{
+          border: 0,
+          padding: 0,
+        }}
+      >
+        <MonacoEditor
+          height="540px"
+          language="json"
+          theme="vs-dark"
+          value={JSON.stringify(policy, null, "\t")}
+          options={readOnlyEditorOptions}
+          editorDidMount={editorDidMount}
+          textAlign="center"
+        />
+      </Segment>
+    </>
+  );
+};
