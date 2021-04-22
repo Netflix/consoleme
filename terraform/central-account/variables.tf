@@ -245,3 +245,8 @@ variable "user_facing_url" {
   type    = string
   default = ""
 }
+
+variable "consoleme_repo" {
+  type    = string
+  default = "https://github.com/Netflix/consoleme/"
+}

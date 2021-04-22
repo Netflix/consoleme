@@ -6,7 +6,7 @@ provider "template" {
 }
 
 terraform {
-  required_version = ">= 0.15.0"
+  required_version = ">= 0.13.0"
   // Unfortunately, we can't use variables to specify a backend S3 bucket / DynamoDB table for Terraform state
   // consistency. If you want to make use of this, you'll need to make a copy of these terraform files in your own
   // private repository, and customize as necessary

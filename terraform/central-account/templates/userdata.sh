@@ -42,7 +42,7 @@ mkdir -p /apps/consoleme
 mkdir /logs
 cd /apps/
 yum -y install unzip
-git clone https://github.com/Netflix/consoleme/
+git clone {consoleme_repo}
 
 #### User specific installation
 # Create a dedicated service user
