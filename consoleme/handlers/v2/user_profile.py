@@ -27,9 +27,13 @@ class UserProfileHandler(BaseAPIV1Handler):
         site_config = {
             "consoleme_logo": await get_random_security_logo(),
             "google_tracking_uri": config.get("google_analytics.tracking_url"),
-            "documentation_url": config.get("documentation_page"),
+            "documentation_url": config.get(
+                "documentation_page", "https://hawkins.gitbook.io/consoleme/"
+            ),
             "support_contact": config.get("support_contact"),
-            "support_chat_url": config.get("support_chat_url"),
+            "support_chat_url": config.get(
+                "support_chat_url", "https://discord.com/invite/nQVpNGGkYu"
+            ),
             "security_logo": config.get("security_logo.image"),
             "security_url": config.get("security_logo.url"),
         }
