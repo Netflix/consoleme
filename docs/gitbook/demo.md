@@ -50,7 +50,7 @@ Authenticate to [https://demo.consolemeoss.com](https://demo.consolemeoss.com), 
 1. Type the name of a role to request permission changes for. For example, if you started typing `consolemeusera`, you'd observe typeahead hints for all roles matching your query
 2. Select a role by clicking on the role ARN in the dropdown
 
-![](.gitbook/assets/image%20%2810%29%20%281%29%20%281%29%20%281%29%20%281%29%20%282%29%20%282%29.png)
+![](.gitbook/assets/image%20%2810%29%20%281%29%20%281%29%20%281%29%20%281%29%20%282%29%20%282%29%20%282%29.png)
 
 1. Information about the role should appear in the right pane. Observe this information, and then click **Next** to proceed to Step 2
 2. Add multiple sets of permissions here. Most fields should support typeahead.
