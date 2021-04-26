@@ -32,7 +32,13 @@ from consoleme.exceptions.exceptions import (
     InvalidInvocationArgument,
     MissingConfigurationValue,
 )
-from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
+from consoleme.lib.account_indexers.aws_organizations import (
+    retrieve_scps_for_organization,
+)
+from consoleme.lib.cache import (
+    retrieve_json_data_from_redis_or_s3,
+    store_json_results_in_redis_and_s3,
+)
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hget
 from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
@@ -1262,3 +1268,44 @@ async def validate_iam_policy(policy: str, log_data: Dict):
         policy, log_data, policy_type="IDENTITY_POLICY"
     )
     return parliament_findings + access_analyzer_findings
+
+
+async def get_all_scps(force_sync=False) -> Dict[str, Any]:
+    redis_key = config.get(
+        "cache_scps_across_organizations.redis.key.all_scps_key", "ALL_AWS_SCPS"
+    )
+    scps = await retrieve_json_data_from_redis_or_s3(
+        redis_key,
+        s3_bucket=config.get("cache_scps_across_organizations.s3.bucket"),
+        s3_key=config.get("cache_scps_across_organizations.s3.file"),
+        default={},
+    )
+    if force_sync or not scps:
+        scps = await cache_all_scps()
+    return scps
+
+
+async def cache_all_scps() -> Dict[str, Any]:
+    all_scps = {}
+    for organization in config.get("cache_scps_across_organizations.organizations", []):
+        org_account_id = organization.get("account_id")
+        region = organization.get("region")
+        org_scps = await retrieve_scps_for_organization(org_account_id, region=region)
+        all_scps[org_account_id] = org_scps.dict()
+    redis_key = config.get(
+        "cache_scps_across_organizations.redis.key.all_scps_key", "ALL_AWS_SCPS"
+    )
+    s3_bucket = None
+    s3_key = None
+    if config.region == config.get("celery.active_region", config.region) or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("cache_scps_across_organizations.s3.bucket")
+        s3_key = config.get("cache_scps_across_organizations.s3.file")
+    await store_json_results_in_redis_and_s3(
+        all_scps,
+        redis_key=redis_key,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+    )
+    return all_scps

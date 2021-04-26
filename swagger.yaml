@@ -1574,3 +1574,44 @@ components:
             type: string
           description:
             type: string
+    ServiceControlPolicyDetailsModel:
+      type: object
+      properties:
+        Id:
+          type: string
+        Arn:
+          type: string
+        Name:
+          type: string
+        Description:
+          type: string
+        Type:
+          type: string
+        AwsManaged:
+          type: boolean
+        Content:
+          type: string
+    ServiceControlPolicyTargetModel:
+      type: object
+      properties:
+        TargetId:
+          type: string
+        Arn:
+          type: string
+        Name:
+          type: string
+        Type:
+          type: string
+    ServiceControlPolicyModel:
+      type: object
+      properties:
+        targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceControlPolicyTargetModel"
+        policy:
+          $ref: "#/components/schemas/ServiceControlPolicyDetailsModel"
+    ServiceControlPolicyArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/ServiceControlPolicyModel"

@@ -646,3 +646,29 @@ class ExtendedRequestModel(RequestModel):
     requester_info: UserModel
     reviewer: Optional[str] = None
     comments: Optional[List[CommentModel]] = None
+
+
+class ServiceControlPolicyDetailsModel(BaseModel):
+    Id: str
+    Arn: str
+    Name: str
+    Description: str
+    Type: str
+    AwsManaged: bool
+    Content: str
+
+
+class ServiceControlPolicyTargetModel(BaseModel):
+    TargetId: str
+    Arn: str
+    Name: str
+    Type: str
+
+
+class ServiceControlPolicyModel(BaseModel):
+    targets: List[ServiceControlPolicyTargetModel]
+    policy: ServiceControlPolicyDetailsModel
+
+
+class ServiceControlPolicyArrayModel(BaseModel):
+    __root__: List[ServiceControlPolicyModel]
