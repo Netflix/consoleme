@@ -91,45 +91,51 @@ const ConsoleMeSidebar = () => {
           <Menu.Item>
             <Menu.Header>Help</Menu.Header>
             <Menu.Menu>
-              <Menu.Item
-                as="a"
-                name="documentation"
-                href={documentation_url || ""}
-                rel="noopener noreferrer"
-                target="_blank"
-                style={{
-                  fontSize: "14px",
-                }}
-              >
-                <Icon name="file" />
-                Documentation
-              </Menu.Item>
-              <Menu.Item
-                as="a"
-                name="email"
-                href={support_contact ? "mailto:" + support_contact : "/"}
-                rel="noopener noreferrer"
-                target="_blank"
-                style={{
-                  fontSize: "14px",
-                }}
-              >
-                <Icon name="send" />
-                Email us
-              </Menu.Item>
-              <Menu.Item
-                as="a"
-                name="slack"
-                href={support_chat_url || "/"}
-                rel="noopener noreferrer"
-                target="_blank"
-                style={{
-                  fontSize: "14px",
-                }}
-              >
-                <Icon name="slack" />
-                Find us on Slack
-              </Menu.Item>
+              {documentation_url ? (
+                <Menu.Item
+                  as="a"
+                  name="documentation"
+                  href={documentation_url}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  <Icon name="file" />
+                  Documentation
+                </Menu.Item>
+              ) : null}
+              {support_contact ? (
+                <Menu.Item
+                  as="a"
+                  name="email"
+                  href={"mailto:" + support_contact}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  <Icon name="send" />
+                  Email us
+                </Menu.Item>
+              ) : null}
+              {support_chat_url ? (
+                <Menu.Item
+                  as="a"
+                  name="slack"
+                  href={support_chat_url || "/"}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  <Icon name="slack" />
+                  Chat with us
+                </Menu.Item>
+              ) : null}
             </Menu.Menu>
           </Menu.Item>
         </div>

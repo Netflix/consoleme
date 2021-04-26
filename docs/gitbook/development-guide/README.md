@@ -2,13 +2,13 @@
 
 We welcome your PRs and feature enhancements. 
 
-You'll want to create a fork of the ConsoleMe repository, and follow the [Local Quick Start](quick-start/local-development.md) guide using your fork. 
+You'll want to create a fork of the ConsoleMe repository, and follow the [Local Quick Start](../quick-start/local-development.md) guide using your fork. 
 
 We recommend using an IDE such as PyCharm or VS Code to get ConsoleMe running in a debug state.
 
 Below is a very basic configuration of ConsoleMe in PyCharm. You'll need to set up the [virtual environment configuration](https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html) yourself.
 
-![](.gitbook/assets/image%20%2810%29.png)
+![](../.gitbook/assets/image%20%2810%29.png)
 
 After your virtual environment is installed, you'll want to install `pre-commit`. ConsoleMe uses pre-commit to enforce code linting and to run our unit tests on commit.
 
