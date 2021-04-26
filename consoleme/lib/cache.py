@@ -1,3 +1,4 @@
+import gzip
 import json
 import sys
 import time
@@ -77,13 +78,18 @@ async def store_json_results_in_redis_and_s3(
         red.hset(last_updated_redis_key, redis_key, last_updated)
 
     if s3_bucket and s3_key:
-        data_for_s3 = {"last_updated": last_updated, "data": data}
+        data_for_s3 = json.dumps(
+            {"last_updated": last_updated, "data": data},
+            cls=SetEncoder,
+            default=json_encoder,
+            indent=2,
+        ).encode()
+        if s3_key.endswith(".gz"):
+            data_for_s3 = gzip.compress(data_for_s3)
         put_object(
             Bucket=s3_bucket,
             Key=s3_key,
-            Body=json.dumps(
-                data_for_s3, cls=SetEncoder, default=json_encoder, indent=2
-            ).encode(),
+            Body=data_for_s3,
         )
 
 
@@ -100,7 +106,7 @@ async def retrieve_json_data_from_redis_or_s3(
 ):
     """
     Retrieve data from Redis as a priority. If data is unavailable in Redis, fall back to S3 and attempt to store
-    data in Redis for quicker retrieval later
+    data in Redis for quicker retrieval later.
 
     :param redis_data_type: "str" or "hash", depending on how the data is stored in Redis
     :param redis_key: Redis Key to retrieve data from
@@ -138,6 +144,8 @@ async def retrieve_json_data_from_redis_or_s3(
     if not data and s3_bucket and s3_key:
         s3_object = get_object(Bucket=s3_bucket, Key=s3_key)
         s3_object_content = await sync_to_async(s3_object["Body"].read)()
+        if s3_key.endswith(".gz"):
+            s3_object_content = gzip.decompress(s3_object_content)
         data_object = json.loads(s3_object_content, object_hook=json_object_hook)
         data = data_object["data"]
 

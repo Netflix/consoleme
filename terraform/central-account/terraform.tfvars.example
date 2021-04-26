@@ -35,3 +35,9 @@ lb-authentication-jwt-groups-key = "groups"
 lb-authentication-token-endpoint = "https://dev-12345.okta.com/oauth2/default/v1/token"
 lb-authentication-user-info-endpoint = "https://dev-12345.okta.com/oauth2/default/v1/userinfo"
 lb-authentication-scope = "email openid groups"
+
+// Optionally customize the repo or release you'd like to use for ConsoleMe. This is used as an argument to
+// `git clone`. Since the default value will cause your instances to pull from Netflix's ConsoleMe `master` branch,
+// you may want to customize this to use a specific release. The master branch is prone to have breaking changes.
+// Example: consoleme_repo = "https://github.com/Netflix/consoleme --branch v0.6.8"
+consoleme_repo = "https://github.com/Netflix/consoleme/"
