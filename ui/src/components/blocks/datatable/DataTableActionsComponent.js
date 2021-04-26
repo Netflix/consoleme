@@ -34,7 +34,7 @@ const DataTableActionsComponent = ({ filters, tableConfig }) => {
     setJsonExportLoading(true);
     fetchAllData()
       .then(({ data }) => {
-        generateFileDownload(JSON.stringify(data), "application/json", ".json");
+        generateFileDownload(JSON.stringify(data), "application/json", "json");
       })
       .catch((error) => console.error("Error during JSON export: ", error))
       .finally(() => setJsonExportLoading(false));
@@ -51,7 +51,7 @@ const DataTableActionsComponent = ({ filters, tableConfig }) => {
               console.error("Error when generating CSV: ", err);
               return;
             }
-            generateFileDownload(csv, "text/csv;charset=utf-8;", ".csv");
+            generateFileDownload(csv, "text/csv;charset=utf-8;", "csv");
           },
           {
             emptyFieldValue: "",
