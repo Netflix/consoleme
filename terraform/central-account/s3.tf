@@ -18,7 +18,7 @@ resource "aws_s3_bucket" "consoleme_files_bucket" {
   }
 
   force_destroy = true
-  tags          = merge(tomap({"Name" = var.bucket_name_prefix}), var.default_tags)
+  tags          = merge(tomap({ "Name" = var.bucket_name_prefix }), var.default_tags)
 }
 
 

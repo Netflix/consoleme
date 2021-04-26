@@ -1,14 +1,14 @@
 module "server" {
   source = "git::https://github.com/terraform-aws-modules/terraform-aws-ec2-instance?ref=v2.16.0"
 
-  name                        = module.compute_label.id
-  instance_count              = 1
-  ami                         = data.aws_ami.amazon_linux.id
-  instance_type               = var.instance_type
-  key_name                    = var.key_name
-  iam_instance_profile        = aws_iam_instance_profile.ConsoleMeInstanceProfile.name
-  subnet_id                   = module.network.private_subnets[0]
-  user_data                   = data.template_file.consoleme_userdata.rendered
+  name                 = module.compute_label.id
+  instance_count       = 1
+  ami                  = data.aws_ami.amazon_linux.id
+  instance_type        = var.instance_type
+  key_name             = var.key_name
+  iam_instance_profile = aws_iam_instance_profile.ConsoleMeInstanceProfile.name
+  subnet_id            = module.network.private_subnets[0]
+  user_data            = data.template_file.consoleme_userdata.rendered
 
   root_block_device = [
     {
@@ -20,8 +20,8 @@ module "server" {
   ]
 
   metadata_options = {
-    http_endpoint               = "enabled"
-    http_tokens                 = "required"
+    http_endpoint = "enabled"
+    http_tokens   = "required"
   }
 
   vpc_security_group_ids = [aws_security_group.server.id]
