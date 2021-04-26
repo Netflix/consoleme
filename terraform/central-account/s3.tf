@@ -18,18 +18,7 @@ resource "aws_s3_bucket" "consoleme_files_bucket" {
   }
 
   force_destroy = true
-  tags          = merge(tomap({"Name" = var.bucket_name_prefix}), var.default_tags)
-}
-
-
-# We can remove this process after ConsoleMe is open sourced
-resource "aws_s3_bucket_object" "consoleme_zip" {
-  bucket = aws_s3_bucket.consoleme_files_bucket.bucket
-  key    = "consoleme.tar.gz"
-
-  source = "${path.module}/../../consoleme.tar.gz"
-
-  etag = md5(filebase64("${path.module}/../../consoleme.tar.gz"))
+  tags          = merge(tomap({ "Name" = var.bucket_name_prefix }), var.default_tags)
 }
 
 resource "aws_s3_bucket_object" "consoleme_config" {
