@@ -53,7 +53,6 @@ const DataTableColumnsComponent = ({
       totalCount: totalCount,
       filteredCount: filteredCount,
     };
-    // TODO: Fix bug where icons for all clicked columns are changing
     if (column !== clickedColumn) {
       sortedData.data = _.sortBy(filteredData, [clickedColumn]);
       setFilteredData(sortedData, "ascending", clickedColumn);
@@ -62,7 +61,7 @@ const DataTableColumnsComponent = ({
       setFilteredData(
         sortedData,
         direction === "ascending" ? "descending" : "ascending",
-        null
+        clickedColumn
       );
     }
   };
@@ -202,7 +201,11 @@ const DataTableColumnsComponent = ({
         onClick={() => {
           handleSort(key, column, filteredData, direction);
         }}
-        sorted={!["button"].includes(item.type) ? direction : null}
+        sorted={
+          column === item.key && !["button"].includes(item.type)
+            ? direction
+            : null
+        }
         textAlign={item.type === "button" ? "center" : null}
       >
         {columnCell}
