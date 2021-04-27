@@ -4,6 +4,7 @@ from cloudaux.aws.iam import get_role_managed_policy_documents
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MustBeFte
 from consoleme.handlers.base import BaseAPIV2Handler
+from consoleme.models import WebResponse
 
 log = config.get_logger()
 
@@ -41,4 +42,9 @@ class ManagedPoliciesOnRoleHandler(BaseAPIV2Handler):
             assume_role=config.get("policies.role_name"),
             region=config.region,
         )
-        self.write(managed_policy_details)
+        res = WebResponse(
+            status="success",
+            status_code=200,
+            data=managed_policy_details,
+        )
+        self.write(res.json())

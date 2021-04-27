@@ -56,10 +56,10 @@ const ManagedPolicy = () => {
         `/api/v2/managed_policies_on_role/${accountID}/${resource?.name}`,
         "get"
       );
-      if (!result) {
+      if (!result?.data) {
         return;
       }
-      setAttachedManagedPolicyDetails(result);
+      setAttachedManagedPolicyDetails(result.data);
     })();
   }, [accountID, resource, sendRequestCommon]);
 
@@ -177,7 +177,8 @@ const ManagedPolicy = () => {
                 <List.Content>
                   <List.Header>{policy.PolicyName}</List.Header>
                   <List.Description as="a">{policy.PolicyArn}</List.Description>
-                  {attachedManagedPolicyDetails ? (
+                  {attachedManagedPolicyDetails &&
+                  attachedManagedPolicyDetails[policy?.PolicyName] ? (
                     <Segment
                       attached
                       style={{
@@ -191,7 +192,7 @@ const ManagedPolicy = () => {
                         language="json"
                         theme="vs-dark"
                         value={JSON.stringify(
-                          attachedManagedPolicyDetails,
+                          attachedManagedPolicyDetails[policy?.PolicyName],
                           null,
                           "\t"
                         )}
