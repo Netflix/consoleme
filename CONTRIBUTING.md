@@ -60,9 +60,9 @@ Some of the key files/folders for you as a new developer on `consoleme`:
 `consoleme/` - houses all our (Python/Tornado) API code
     - `routes.py` - all our API routes, and what code they're mapped to
     - `models.py` - Python classes for domain modeling
-    - `__main.py__` - runs our tornado web server
+    - `__main__.py` - runs our tornado web server
     - `celery_tasks/celery_tasks.py` - contains code for our scheduled, asynchronous tasks
-    - `handlers/` - "controller" code that our routes are mapped to
+    - `handlers/` - HTTP handlers that our routes are mapped to
     - `exceptions/exceptions.py` - various domain specific exception classes we've created
     - `lib` - actual business logic goes here. is the bulk of our backend code.
 - `ui/` - houses all our (React) UI code
