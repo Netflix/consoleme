@@ -57,7 +57,7 @@ git push origin master
 Some of the key files/folders for you as a new developer on `consoleme`:
 
 
-`consoleme/` - houses all our (Python/Tornado) API code
+- `consoleme/` - houses all our (Python/Tornado) API code
     - `routes.py` - all our API routes, and what code they're mapped to
     - `models.py` - Python classes for domain modeling
     - `__main__.py` - runs our tornado web server
