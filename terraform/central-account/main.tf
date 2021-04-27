@@ -8,7 +8,15 @@ module "server" {
   key_name             = var.key_name
   iam_instance_profile = aws_iam_instance_profile.ConsoleMeInstanceProfile.name
   subnet_id            = module.network.private_subnets[0]
-  user_data            = data.template_file.consoleme_userdata.rendered
+  user_data = templatefile("${path.module}/templates/userdata.sh", tomap({
+    bucket                  = aws_s3_bucket.consoleme_files_bucket.bucket
+    current_account_id      = data.aws_caller_identity.current.account_id
+    region                  = data.aws_region.current.name
+    CONFIG_LOCATION         = "/apps/consoleme/example_config/example_config_terraform.yaml"
+    CONSOLEME_CONFIG_S3     = format("s3://%s/%s", aws_s3_bucket.consoleme_files_bucket.id, aws_s3_bucket_object.consoleme_config.id)
+    custom_user_data_script = var.custom_user_data_script
+    consoleme_repo          = var.consoleme_repo
+  }))
 
   root_block_device = [
     {
