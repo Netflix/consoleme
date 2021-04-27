@@ -167,6 +167,21 @@ paths:
                 $ref: "#/components/schemas/CreateCloneRequestResponse"
         default:
           $ref: "#/components/responses/DefaultErrorResponse"
+  /managed_policies_on_role/{accountNumber}/{roleName}:
+    get:
+      summary: get details about managed policies attached to a role
+      tags:
+        - managed_policies
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
   /roles:
     get:
       summary: get a list of roles
