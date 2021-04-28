@@ -41,7 +41,7 @@ sudo usermod -a -G docker ec2-user
 mkdir -p /apps/consoleme
 mkdir /logs
 cd /apps/
-git clone {consoleme_repo}
+git clone ${consoleme_repo}
 
 #### User specific installation
 # Create a dedicated service user
