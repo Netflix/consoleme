@@ -41,7 +41,7 @@ from consoleme.lib.cache import (
 )
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hget
-from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel, ServiceControlPolicyArrayModel
+from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel, ServiceControlPolicyArrayModel, ServiceControlPolicyModel
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
@@ -1377,9 +1377,20 @@ async def get_organizational_units_for_account(account_id: str) -> Set[str]:
     return organizational_units
 
 
+async def _scp_targets_account(scp: ServiceControlPolicyModel, identifier: str, organizational_units: Set[str]) -> bool:
+    for target in scp.targets:
+        if target.target_id == identifier or target.target_id in organizational_units:
+            return True
+    return False
 
-async def get_scps_for_account(account_id: str) -> ServiceControlPolicyArrayModel:
+
+async def get_scps_for_account_or_ou(identifier: str) -> ServiceControlPolicyArrayModel:
     all_scps = await get_all_scps()
+    account_ous = await get_organizational_units_for_account(identifier)
+    scps_for_account = ServiceControlPolicyArrayModel([])
     for org_account_id, scps in all_scps.items():
         # Iterate through each org's SCPs and see if the provided account_id is in the targets
-        pass
+        for scp in scps:
+            if _scp_targets_account(scp, identifier, account_ous):
+                scps_for_account.append(scp)
+    return scps_for_account
