@@ -1576,34 +1576,49 @@ components:
             type: string
     ServiceControlPolicyDetailsModel:
       type: object
+      required:
+        - id
+        - arn
+        - name
+        - description
+        - aws_managed
+        - content
       properties:
-        Id:
+        id:
           type: string
-        Arn:
+        arn:
           type: string
-        Name:
+        name:
           type: string
-        Description:
+        description:
           type: string
-        Type:
+        type:
           type: string
-        AwsManaged:
+        aws_managed:
           type: boolean
-        Content:
+        content:
           type: string
     ServiceControlPolicyTargetModel:
       type: object
+      required:
+        - target_id
+        - arn
+        - name
+        - type
       properties:
-        TargetId:
+        target_id:
           type: string
-        Arn:
+        arn:
           type: string
-        Name:
+        name:
           type: string
-        Type:
+        type:
           type: string
     ServiceControlPolicyModel:
       type: object
+      required:
+        - targets
+        - policy
       properties:
         targets:
           type: array
@@ -1611,7 +1626,7 @@ components:
             $ref: "#/components/schemas/ServiceControlPolicyTargetModel"
         policy:
           $ref: "#/components/schemas/ServiceControlPolicyDetailsModel"
-    ServiceControlPolicyArray:
+    ServiceControlPolicyArrayModel:
       type: array
       items:
         $ref: "#/components/schemas/ServiceControlPolicyModel"

@@ -33,7 +33,7 @@ from consoleme.exceptions.exceptions import (
     MissingConfigurationValue,
 )
 from consoleme.lib.account_indexers.aws_organizations import (
-    retrieve_scps_for_organization,
+    retrieve_scps_for_organization, retrieve_org_structure
 )
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
@@ -41,7 +41,7 @@ from consoleme.lib.cache import (
 )
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hget
-from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
+from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel, ServiceControlPolicyArrayModel
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
@@ -1309,3 +1309,77 @@ async def cache_all_scps() -> Dict[str, Any]:
         s3_key=s3_key,
     )
     return all_scps
+
+
+async def get_org_structure(force_sync=False) -> Dict[str, Any]:
+    redis_key = config.get(
+        "cache_organization_structure.redis.key.org_structure_key", "AWS_ORG_STRUCTURE"
+    )
+    org_structure = await retrieve_json_data_from_redis_or_s3(
+        redis_key,
+        s3_bucket=config.get("cache_organization_structure.s3.bucket"),
+        s3_key=config.get("cache_organization_structure.s3.file"),
+        default={},
+    )
+    if force_sync or not org_structure:
+        org_structure = await cache_org_structure()
+    return org_structure
+
+
+async def cache_org_structure() -> Dict[str, Any]:
+    org_structure = {}
+    for organization in config.get("cache_organization_structure.organizations", []):
+        org_account_id = organization.get("account_id")
+        region = organization.get("region")
+        org_scps = await retrieve_org_structure(org_account_id, region=region)
+        org_structure.update(org_scps)
+    redis_key = config.get(
+        "cache_organization_structure.redis.key.org_structure_key", "AWS_ORG_STRUCTURE"
+    )
+    s3_bucket = None
+    s3_key = None
+    if config.region == config.get("celery.active_region", config.region) or config.get(
+            "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("cache_organization_structure.s3.bucket")
+        s3_key = config.get("cache_organization_structure.s3.file")
+    await store_json_results_in_redis_and_s3(
+        org_structure,
+        redis_key=redis_key,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+    )
+    return org_structure
+
+
+async def _account_in_ou(account_id: str, ou: Dict[str, Any]) -> Tuple[bool, set[str]]:
+    """Recursively walk org structure to determine if the account is in the org and, if so, return all OUs the account is in"""
+    found = False
+    ou_path = set()
+    for child in ou.get("Children", []):
+        if child.get("Type") == "ACCOUNT":
+            if child.get("Id") == account_id:
+                found = True
+        elif child.get("Type") == "ORGANIZATIONAL_UNIT":
+            found, ou_path = await _account_in_ou(account_id, child)
+        else:
+            raise Exception("bad org structure")
+        if found:
+            ou_path.add(ou.get("Id"))
+            return True, ou_path
+
+
+async def get_organizational_units_for_account(account_id: str) -> Set[str]:
+    org_structure = await get_org_structure()
+    found, organizational_units = await _account_in_ou(account_id, org_structure)
+    if not found:
+        log.warning("could not find account in organization")
+    return organizational_units
+
+
+
+async def get_scps_for_account(account_id: str) -> ServiceControlPolicyArrayModel:
+    all_scps = await get_all_scps()
+    for org_account_id, scps in all_scps.items():
+        # Iterate through each org's SCPs and see if the provided account_id is in the targets
+        pass

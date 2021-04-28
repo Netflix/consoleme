@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional, Any, Literal
 
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
@@ -135,6 +135,92 @@ def _list_targets_for_policy(
         MaxResults=20,
         **kwargs
     )
+
+
+def _describe_ou(ca: CloudAux, ou_id: str, **kwargs) -> Dict[str, str]:
+    result = ca.call(
+        "organizations.client.describe_organizational_unit",
+        OrganizationalUnitId=ou_id,
+        **kwargs
+    )
+    return result.get("OrganizationalUnit")
+
+
+def _describe_account(ca: CloudAux, account_id: str, **kwargs) -> Dict[str, str]:
+    result = ca.call(
+        "organizations.client.describe_account",
+        AccountId=account_id,
+        **kwargs
+    )
+    return result.get("Account")
+
+
+@paginated(
+    "Children",
+    response_pagination_marker="NextToken",
+    request_pagination_marker="NextToken",
+)
+def _list_children_for_ou(
+    ca: CloudAux, parent_id: str, child_type: Literal["ACCOUNT", "ORGANIZATIONAL_UNIT"], **kwargs
+) -> List[Dict[str, Any]]:
+    return ca.call(
+        "organizations.client.list_children",
+        ChildType=child_type,
+        ParentId=parent_id,
+        **kwargs
+    )
+
+
+@paginated(
+    "Roots",
+    response_pagination_marker="NextToken",
+    request_pagination_marker="NextToken",
+)
+def _list_org_roots(
+    ca: CloudAux, **kwargs
+) -> List[Dict[str, Any]]:
+    return ca.call(
+        "organizations.client.list_roots",
+        **kwargs
+    )
+
+
+def _get_children_for_ou(ca: CloudAux, root_id: str) -> Dict[str, Any]:
+    """Recursively build OU structure"""
+    children: List[Dict[str, Any]] = []
+    children.extend(_list_children_for_ou(ca, root_id, "ORGANIZATIONAL_UNIT"))
+    children.extend(_list_children_for_ou(ca, root_id, "ACCOUNT"))
+    for child in children:
+        child["Parent"] = root_id
+        if child["Type"] == "ORGANIZATIONAL_UNIT":
+            child.update(_describe_ou(ca, child["Id"]))
+            child["Children"] = _get_children_for_ou(ca, child["Id"])
+        else:
+            child.update(_describe_account(ca, child["Id"]))
+    return children
+
+
+async def retrieve_org_structure(
+    org_account_id: str, region: str = "us-east-1"
+) -> Dict[str, Any]:
+    """Retrieve org roots then recursively build a dict of child OUs and accounts.
+
+    This is a slow and expensive operation.
+    """
+    conn_details = {
+        "assume_role": config.get("policies.role_name"),
+        "account_number": org_account_id,
+        "session_name": "ConsoleMeSCPSync",
+        "region": region,
+    }
+    ca = CloudAux(**conn_details)
+    roots = _list_org_roots(ca)
+    org_structure = {}
+    for root in roots:
+        root_id = root["Id"]
+        root["Children"] = _get_children_for_ou(ca, root["Id"])
+        org_structure[root_id] = root
+    print(org_structure)
 
 
 async def retrieve_scps_for_organization(
