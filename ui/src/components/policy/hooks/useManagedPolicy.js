@@ -49,6 +49,7 @@ const useManagedPolicy = () => {
         type: "SET_MANAGED_POLICIES",
         policies,
       }),
+    resource: resource,
     addManagedPolicy: (arn) => dispatch({ type: "ADD_MANAGED_POLICY", arn }),
     deleteManagedPolicy: (arn) =>
       dispatch({ type: "DELETE_MANAGED_POLICY", arn }),
