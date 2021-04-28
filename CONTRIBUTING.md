@@ -66,4 +66,11 @@ Some of the key files/folders for you as a new developer on `consoleme`:
     - `exceptions/exceptions.py` - various domain specific exception classes we've created
     - `lib` - actual business logic goes here. is the bulk of our backend code.
 - `ui/` - houses all our (React) UI code
+- `tests/` - tests for our python code
+- `terraform/` - Terraform config if you choose to [deploy consoleme using Terraform](https://hawkins.gitbook.io/consoleme/deployment-strategies)
+- `packer/` - Packer config if you choose to [deploy consoleme using a EC2 instance](https://hawkins.gitbook.io/consoleme/deployment-strategies)
+- `docs/gitbook/` - our documentation site, written in markdown, built using gitbook
+- `default_plugins/` - examples of plugins used to extend and customize ConsoleMe
+- `.github/workflows` - our CI config (using GitHub Actions)
+- `.run/` - configurations to run consoleme in JetBrains IDEs (i.e. PyCharm)
 
