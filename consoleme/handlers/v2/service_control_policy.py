@@ -14,4 +14,8 @@ class ServiceControlPolicyHandler(BaseAPIV2Handler):
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         scps = await get_scps_for_account_or_ou(identifier)
-        return scps.json()
+        response = {
+            "status": "success",
+            "data": scps
+        }
+        self.write(response)

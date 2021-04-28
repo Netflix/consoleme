@@ -220,12 +220,12 @@ async def retrieve_org_structure(
         root_id = root["Id"]
         root["Children"] = _get_children_for_ou(ca, root["Id"])
         org_structure[root_id] = root
-    print(org_structure)
+    return org_structure
 
 
 async def retrieve_scps_for_organization(
     org_account_id: str, region: str = "us-east-1"
-) -> ServiceControlPolicyArrayModel:
+) -> List[ServiceControlPolicyModel]:
     """Return a ServiceControlPolicyArrayModel containing all SCPs for an organization"""
     conn_details = {
         "assume_role": config.get("policies.role_name"),
@@ -244,6 +244,5 @@ async def retrieve_scps_for_organization(
             targets=target_models,
             policy=ServiceControlPolicyDetailsModel(**policy),
         )
-        all_scp_objects.append(scp_object)
-    all_scps = ServiceControlPolicyArrayModel(__root__=all_scp_objects)
-    return all_scps
+        all_scp_objects.append(scp_object.dict())
+    return all_scp_objects
