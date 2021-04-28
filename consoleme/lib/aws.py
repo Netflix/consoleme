@@ -33,7 +33,8 @@ from consoleme.exceptions.exceptions import (
     MissingConfigurationValue,
 )
 from consoleme.lib.account_indexers.aws_organizations import (
-    retrieve_scps_for_organization, retrieve_org_structure
+    retrieve_org_structure,
+    retrieve_scps_for_organization,
 )
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
@@ -41,7 +42,11 @@ from consoleme.lib.cache import (
 )
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hget
-from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel, ServiceControlPolicyArrayModel, ServiceControlPolicyModel
+from consoleme.models import (
+    CloneRoleRequestModel,
+    RoleCreationRequestModel,
+    ServiceControlPolicyModel,
+)
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
@@ -1339,7 +1344,7 @@ async def cache_org_structure() -> Dict[str, Any]:
     s3_bucket = None
     s3_key = None
     if config.region == config.get("celery.active_region", config.region) or config.get(
-            "environment"
+        "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_organization_structure.s3.bucket")
         s3_key = config.get("cache_organization_structure.s3.file")
@@ -1381,7 +1386,9 @@ async def get_organizational_units_for_account(account_id: str) -> Set[str]:
     return organizational_units
 
 
-async def _scp_targets_account(scp: ServiceControlPolicyModel, identifier: str, organizational_units: Set[str]) -> bool:
+async def _scp_targets_account(
+    scp: ServiceControlPolicyModel, identifier: str, organizational_units: Set[str]
+) -> bool:
     for target in scp.targets:
         if target.target_id == identifier or target.target_id in organizational_units:
             return True

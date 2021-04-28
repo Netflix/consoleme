@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Any, Literal
+from typing import Any, Dict, List, Literal
 
 from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError
@@ -11,7 +11,6 @@ from consoleme.exceptions.exceptions import MissingConfigurationValue
 from consoleme.models import (
     CloudAccountModel,
     CloudAccountModelArray,
-    ServiceControlPolicyArrayModel,
     ServiceControlPolicyDetailsModel,
     ServiceControlPolicyModel,
     ServiceControlPolicyTargetModel,
@@ -148,9 +147,7 @@ def _describe_ou(ca: CloudAux, ou_id: str, **kwargs) -> Dict[str, str]:
 
 def _describe_account(ca: CloudAux, account_id: str, **kwargs) -> Dict[str, str]:
     result = ca.call(
-        "organizations.client.describe_account",
-        AccountId=account_id,
-        **kwargs
+        "organizations.client.describe_account", AccountId=account_id, **kwargs
     )
     return result.get("Account")
 
@@ -161,7 +158,10 @@ def _describe_account(ca: CloudAux, account_id: str, **kwargs) -> Dict[str, str]
     request_pagination_marker="NextToken",
 )
 def _list_children_for_ou(
-    ca: CloudAux, parent_id: str, child_type: Literal["ACCOUNT", "ORGANIZATIONAL_UNIT"], **kwargs
+    ca: CloudAux,
+    parent_id: str,
+    child_type: Literal["ACCOUNT", "ORGANIZATIONAL_UNIT"],
+    **kwargs
 ) -> List[Dict[str, Any]]:
     return ca.call(
         "organizations.client.list_children",
@@ -176,13 +176,8 @@ def _list_children_for_ou(
     response_pagination_marker="NextToken",
     request_pagination_marker="NextToken",
 )
-def _list_org_roots(
-    ca: CloudAux, **kwargs
-) -> List[Dict[str, Any]]:
-    return ca.call(
-        "organizations.client.list_roots",
-        **kwargs
-    )
+def _list_org_roots(ca: CloudAux, **kwargs) -> List[Dict[str, Any]]:
+    return ca.call("organizations.client.list_roots", **kwargs)
 
 
 def _get_children_for_ou(ca: CloudAux, root_id: str) -> Dict[str, Any]:

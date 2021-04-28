@@ -50,7 +50,11 @@ from consoleme.lib.account_indexers import (
     cache_cloud_accounts,
     get_account_id_to_name_mapping,
 )
-from consoleme.lib.aws import cache_all_scps, cache_org_structure, get_enabled_regions_for_account
+from consoleme.lib.aws import (
+    cache_all_scps,
+    cache_org_structure,
+    get_enabled_regions_for_account,
+)
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,

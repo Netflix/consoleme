@@ -15,106 +15,106 @@ from consoleme.lib.pydantic import BaseModel
 
 class ResourceModel(BaseModel):
     arn: constr(
-        regex=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
-    ) = Field(..., description='resource ARN')
-    name: str = Field(..., description='Resource Name')
-    account_id: Optional[str] = Field(None, description='AWS account ID')
-    region: Optional[str] = Field(None, description='Region')
+        regex=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
+    ) = Field(..., description="resource ARN")
+    name: str = Field(..., description="Resource Name")
+    account_id: Optional[str] = Field(None, description="AWS account ID")
+    region: Optional[str] = Field(None, description="Region")
     account_name: Optional[str] = Field(
-        None, description='human-friendly AWS account name'
+        None, description="human-friendly AWS account name"
     )
     policy_sha256: Optional[str] = Field(
-        None, description='hash of the most recent resource policy seen by ConsoleMe'
+        None, description="hash of the most recent resource policy seen by ConsoleMe"
     )
     policy: Optional[str] = None
     actions: Optional[List[str]] = None
     owner: Optional[str] = Field(
-        None, description='email address of team or individual who owns this resource'
+        None, description="email address of team or individual who owns this resource"
     )
     approvers: Optional[List[str]] = None
     resource_type: str
     last_updated: Optional[datetime] = Field(
-        None, description='last time resource was updated from source-of-truth'
+        None, description="last time resource was updated from source-of-truth"
     )
 
 
 class RequestStatus(Enum):
-    pending = 'pending'
-    cancelled = 'cancelled'
-    approved = 'approved'
-    rejected = 'rejected'
+    pending = "pending"
+    cancelled = "cancelled"
+    approved = "approved"
+    rejected = "rejected"
 
 
 class RequestModel(BaseModel):
     id: str
     arn: constr(
-        regex=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        regex=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
     ) = Field(
         ...,
-        description='ARN of principal being modified',
-        example='arn:aws:iam::123456789012:role/super_awesome_admin',
+        description="ARN of principal being modified",
+        example="arn:aws:iam::123456789012:role/super_awesome_admin",
     )
     timestamp: datetime
     justification: str
     requester_email: str
     approvers: List[str] = Field(
         ...,
-        description='list of approvers, derived from approvers of `resource`s in `changes`',
+        description="list of approvers, derived from approvers of `resource`s in `changes`",
     )
     request_status: RequestStatus
     cross_account: Optional[bool] = Field(
-        None, description='if true, the request touches cross-account resources'
+        None, description="if true, the request touches cross-account resources"
     )
     arn_url: Optional[str] = Field(None, description="the principal arn's URL")
     admin_auto_approve: Optional[bool] = False
 
 
 class GeneratorType(Enum):
-    advanced = 'advanced'
-    crud_lookup = 'crud_lookup'
-    ec2 = 'ec2'
-    generic = 'generic'
-    rds = 'rds'
-    route53 = 'route53'
-    s3 = 's3'
-    ses = 'ses'
-    sns = 'sns'
-    sqs = 'sqs'
-    sts = 'sts'
+    advanced = "advanced"
+    crud_lookup = "crud_lookup"
+    ec2 = "ec2"
+    generic = "generic"
+    rds = "rds"
+    route53 = "route53"
+    s3 = "s3"
+    ses = "ses"
+    sns = "sns"
+    sqs = "sqs"
+    sts = "sts"
 
 
 class ChangeGeneratorModel(BaseModel):
     principal_arn: Optional[
         constr(
-            regex=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+            regex=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
         )
     ] = Field(
         None,
-        description='The principal (Source ARN) associated with the Change. This is most commomly an IAM role ARN.\nThe principal ARN is associated with the entity whose policy will be modified if the change is\napproved and successful.',
-        example='arn:aws:iam::123456789012:role/exampleRole',
+        description="The principal (Source ARN) associated with the Change. This is most commomly an IAM role ARN.\nThe principal ARN is associated with the entity whose policy will be modified if the change is\napproved and successful.",
+        example="arn:aws:iam::123456789012:role/exampleRole",
     )
     generator_type: GeneratorType
     resource_arn: constr(
-        regex=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|(^\*$)'
+        regex=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|(^\*$)"
     ) = Field(
         ...,
-        description='The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the\nresource policy will need to be modified if the change is approved and successful.',
-        example='arn:aws:sqs:us-east-1:123456789012:sqs_queue',
+        description="The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the\nresource policy will need to be modified if the change is approved and successful.",
+        example="arn:aws:sqs:us-east-1:123456789012:sqs_queue",
     )
-    version: Optional[str] = Field(2.0, description='Version')
+    version: Optional[str] = Field(2.0, description="Version")
     user: Optional[str] = Field(
-        None, description='Email address of user creating the change'
+        None, description="Email address of user creating the change"
     )
-    action_groups: Optional[List[str]] = Field(None, description='Action groups')
-    policy_name: Optional[constr(regex=r'^[a-zA-Z0-9+=,.@\\-_]+$')] = Field(
-        None, description='Optional policy name for the change, if applicable.'
+    action_groups: Optional[List[str]] = Field(None, description="Action groups")
+    policy_name: Optional[constr(regex=r"^[a-zA-Z0-9+=,.@\\-_]+$")] = Field(
+        None, description="Optional policy name for the change, if applicable."
     )
-    effect: Optional[constr(regex=r'^(Allow|Deny)$')] = Field(
-        'Allow', description='The effect. By default, this is allow'
+    effect: Optional[constr(regex=r"^(Allow|Deny)$")] = Field(
+        "Allow", description="The effect. By default, this is allow"
     )
     condition: Optional[Dict[str, Any]] = Field(
         None,
-        description='Optional condition for the change',
+        description="Optional condition for the change",
         example='{\n    "StringEquals": {"iam:PassedToService": "ec2.amazonaws.com"},\n    "StringLike": {\n        "iam:AssociatedResourceARN": [\n            "arn:aws:ec2:us-east-1:111122223333:instance/*",\n            "arn:aws:ec2:us-west-1:111122223333:instance/*"\n        ]\n    }\n}',
     )
     service: Optional[str] = None
@@ -122,9 +122,9 @@ class ChangeGeneratorModel(BaseModel):
 
 
 class AdvancedChangeGeneratorModel(ChangeGeneratorModel):
-    generator_type: constr(regex=r'advanced')
-    iam_action: Optional[str] = Field(None, example='kinesis:AddTagsToStream')
-    resource: Optional[str] = Field(None, example='*')
+    generator_type: constr(regex=r"advanced")
+    iam_action: Optional[str] = Field(None, example="kinesis:AddTagsToStream")
+    resource: Optional[str] = Field(None, example="*")
 
 
 class GenericChangeGeneratorModel(ChangeGeneratorModel):
@@ -132,122 +132,122 @@ class GenericChangeGeneratorModel(ChangeGeneratorModel):
 
 
 class CrudChangeGeneratorModel(ChangeGeneratorModel):
-    generator_type: constr(regex=r'crud_lookup')
+    generator_type: constr(regex=r"crud_lookup")
     action_groups: List[str]
     service_name: str
 
 
 class S3ChangeGeneratorModel(ChangeGeneratorModel):
-    generator_type: constr(regex=r's3')
+    generator_type: constr(regex=r"s3")
     resource_arn: str = Field(
         ...,
-        description='The ARN of the S3 resource being accessed.',
-        example='arn:aws:s3:::example_bucket',
+        description="The ARN of the S3 resource being accessed.",
+        example="arn:aws:s3:::example_bucket",
     )
-    bucket_prefix: str = Field(..., example='/awesome/prefix/*')
+    bucket_prefix: str = Field(..., example="/awesome/prefix/*")
     action_groups: List[str]
 
 
 class SQSChangeGeneratorModel(ChangeGeneratorModel):
-    generator_type: constr(regex=r'sqs')
+    generator_type: constr(regex=r"sqs")
     action_groups: List[str]
 
 
 class SNSChangeGeneratorModel(ChangeGeneratorModel):
-    generator_type: constr(regex=r'sns')
+    generator_type: constr(regex=r"sns")
     action_groups: List[str]
 
 
 class SESChangeGeneratorModel(ChangeGeneratorModel):
-    generator_type: constr(regex=r'ses')
+    generator_type: constr(regex=r"ses")
     from_address: str
     action_groups: Optional[List[str]] = None
 
 
 class Status(Enum):
-    applied = 'applied'
-    not_applied = 'not_applied'
-    cancelled = 'cancelled'
+    applied = "applied"
+    not_applied = "not_applied"
+    cancelled = "cancelled"
 
 
 class ChangeModel(BaseModel):
     principal_arn: constr(
-        regex=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        regex=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
     )
     change_type: str
     resources: Optional[List[ResourceModel]] = []
     version: Optional[str] = 2.0
-    status: Optional[Status] = 'not_applied'
+    status: Optional[Status] = "not_applied"
     id: Optional[str] = None
     autogenerated: Optional[bool] = False
     updated_by: Optional[str] = None
 
 
 class Action(Enum):
-    attach = 'attach'
-    detach = 'detach'
+    attach = "attach"
+    detach = "detach"
 
 
 class TagAction(Enum):
-    create = 'create'
-    update = 'update'
-    delete = 'delete'
+    create = "create"
+    update = "update"
+    delete = "delete"
 
 
 class ResourceTagChangeModel(ChangeModel):
     original_key: Optional[str] = Field(
         None,
-        description='original_key is used for renaming a key to something else. This is optional.',
-        example='key_to_be_renamed',
+        description="original_key is used for renaming a key to something else. This is optional.",
+        example="key_to_be_renamed",
     )
     key: Optional[str] = Field(
         None,
-        description='This is the desired key name for the tag. If a tag key is being renamed, this is what it will be renamed\nto. Otherwise, this key name will be used when creating or updating a tag.',
-        example='desired_key_name',
+        description="This is the desired key name for the tag. If a tag key is being renamed, this is what it will be renamed\nto. Otherwise, this key name will be used when creating or updating a tag.",
+        example="desired_key_name",
     )
     original_value: Optional[str] = None
     value: Optional[str] = None
-    change_type: Optional[constr(regex=r'resource_tag')] = None
+    change_type: Optional[constr(regex=r"resource_tag")] = None
     tag_action: TagAction
 
 
 class Action1(Enum):
-    attach = 'attach'
-    detach = 'detach'
+    attach = "attach"
+    detach = "detach"
 
 
 class ManagedPolicyChangeModel(ChangeModel):
     arn: constr(
-        regex=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        regex=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
     )
-    change_type: Optional[constr(regex=r'managed_policy')] = None
+    change_type: Optional[constr(regex=r"managed_policy")] = None
     action: Action1
 
 
 class ArnArray(BaseModel):
     __root__: List[
         constr(
-            regex=r'^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$'
+            regex=r"^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$"
         )
     ]
 
 
 class Status1(Enum):
-    active = 'active'
-    deleted = 'deleted'
-    created = 'created'
-    suspended = 'suspended'
-    deprecated = 'deprecated'
+    active = "active"
+    deleted = "deleted"
+    created = "created"
+    suspended = "suspended"
+    deprecated = "deprecated"
 
 
 class Type(Enum):
-    aws = 'aws'
-    gcp = 'gcp'
+    aws = "aws"
+    gcp = "gcp"
 
 
 class Environment(Enum):
-    prod = 'prod'
-    test = 'test'
+    prod = "prod"
+    test = "test"
 
 
 class CloudAccountModel(BaseModel):
@@ -263,39 +263,39 @@ class CloudAccountModel(BaseModel):
 
 
 class PolicyModel(BaseModel):
-    version: Optional[str] = Field(None, description='AWS Policy Version')
+    version: Optional[str] = Field(None, description="AWS Policy Version")
     policy_document: Optional[Dict[str, Any]] = Field(
-        None, description='JSON policy document'
+        None, description="JSON policy document"
     )
     policy_sha256: Optional[str] = Field(
-        None, description='hash of the policy_document json'
+        None, description="hash of the policy_document json"
     )
 
 
 class PolicyStatement(BaseModel):
-    action: List[str] = Field(..., description='AWS Policy Actions')
-    effect: str = Field(..., description='Allow | Deny')
-    resource: List[str] = Field(..., description='AWS Resource ARNs')
-    sid: Optional[constr(regex=r'^([a-zA-Z0-9]+)*')] = Field(
-        None, description='Statement identifier'
+    action: List[str] = Field(..., description="AWS Policy Actions")
+    effect: str = Field(..., description="Allow | Deny")
+    resource: List[str] = Field(..., description="AWS Resource ARNs")
+    sid: Optional[constr(regex=r"^([a-zA-Z0-9]+)*")] = Field(
+        None, description="Statement identifier"
     )
 
 
 class RoleModel(BaseModel):
-    name: str = Field(..., example='super_awesome_admin')
+    name: str = Field(..., example="super_awesome_admin")
     account_id: constr(min_length=12, max_length=12) = Field(
-        ..., example='123456789012'
+        ..., example="123456789012"
     )
-    account_name: Optional[str] = Field(None, example='super_awesome')
+    account_name: Optional[str] = Field(None, example="super_awesome")
     arn: Optional[
         constr(
-            regex=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+            regex=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
         )
-    ] = Field(None, example='arn:aws:iam::123456789012:role/super_awesome_admin')
+    ] = Field(None, example="arn:aws:iam::123456789012:role/super_awesome_admin")
 
 
 class CloudTrailError(BaseModel):
-    event_call: Optional[str] = Field(None, example='sqs:CreateQueue')
+    event_call: Optional[str] = Field(None, example="sqs:CreateQueue")
     count: Optional[int] = Field(None, example=5)
 
 
@@ -305,23 +305,23 @@ class CloudTrailErrorArray(BaseModel):
 
 class CloudTrailDetailsModel(BaseModel):
     error_url: Optional[str] = Field(
-        None, example='https://cloudtrail_logs/for/role_arn'
+        None, example="https://cloudtrail_logs/for/role_arn"
     )
     errors: Optional[CloudTrailErrorArray] = None
 
 
 class S3Error(BaseModel):
-    error_call: Optional[str] = Field(None, example='s3:PutObject')
+    error_call: Optional[str] = Field(None, example="s3:PutObject")
     count: Optional[int] = Field(None, example=5)
-    bucket_name: Optional[str] = Field(None, example='bucket_name')
-    request_prefix: Optional[str] = Field(None, example='folder/file.txt')
+    bucket_name: Optional[str] = Field(None, example="bucket_name")
+    request_prefix: Optional[str] = Field(None, example="folder/file.txt")
     status_code: Optional[int] = Field(None, example=403)
-    status_text: Optional[str] = Field(None, example='AccessDenied')
+    status_text: Optional[str] = Field(None, example="AccessDenied")
     role_arn: Optional[
         constr(
-            regex=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+            regex=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
         )
-    ] = Field(None, example='arn:aws:iam::123456789012:role/roleName')
+    ] = Field(None, example="arn:aws:iam::123456789012:role/roleName")
 
 
 class S3ErrorArray(BaseModel):
@@ -330,20 +330,20 @@ class S3ErrorArray(BaseModel):
 
 class S3DetailsModel(BaseModel):
     query_url: Optional[str] = Field(
-        None, example='https://s3_log_query/for/role_or_bucket_arn'
+        None, example="https://s3_log_query/for/role_or_bucket_arn"
     )
     error_url: Optional[str] = Field(
-        None, example='https://s3_error_query/for/role_or_bucket_arn'
+        None, example="https://s3_error_query/for/role_or_bucket_arn"
     )
     errors: Optional[S3ErrorArray] = None
 
 
 class AppDetailsModel(BaseModel):
-    name: Optional[str] = Field(None, example='app_name')
-    owner: Optional[str] = Field(None, example='owner@example.com')
-    owner_url: Optional[str] = Field(None, example='https://link_to_owner_group')
+    name: Optional[str] = Field(None, example="app_name")
+    owner: Optional[str] = Field(None, example="owner@example.com")
+    owner_url: Optional[str] = Field(None, example="https://link_to_owner_group")
     app_url: Optional[str] = Field(
-        None, example='https://link_to_app_ci_pipeline_for_app'
+        None, example="https://link_to_app_ci_pipeline_for_app"
     )
 
 
@@ -373,9 +373,9 @@ class ExtendedRoleModel(RoleModel):
 class UserModel(BaseModel):
     email: Optional[str] = None
     extended_info: Optional[Dict[str, Any]] = None
-    details_url: Optional[str] = Field(None, example='https://details_about/user')
+    details_url: Optional[str] = Field(None, example="https://details_about/user")
     photo_url: Optional[str] = Field(
-        None, example='https://user_photos/user_thumbnail.jpg'
+        None, example="https://user_photos/user_thumbnail.jpg"
     )
 
 
@@ -434,14 +434,14 @@ class RequestCreationResponse(BaseModel):
 
 
 class Command(Enum):
-    add_comment = 'add_comment'
-    approve_request = 'approve_request'
-    reject_request = 'reject_request'
-    cancel_request = 'cancel_request'
-    apply_change = 'apply_change'
-    update_change = 'update_change'
-    cancel_change = 'cancel_change'
-    move_back_to_pending = 'move_back_to_pending'
+    add_comment = "add_comment"
+    approve_request = "approve_request"
+    reject_request = "reject_request"
+    cancel_request = "cancel_request"
+    apply_change = "apply_change"
+    update_change = "update_change"
+    cancel_change = "cancel_change"
+    move_back_to_pending = "move_back_to_pending"
 
 
 class RequestModificationBaseModel(BaseModel):
@@ -514,9 +514,9 @@ class AuthenticationResponse(BaseModel):
 
 
 class UserManagementAction(Enum):
-    create = 'create'
-    update = 'update'
-    delete = 'delete'
+    create = "create"
+    update = "update"
+    delete = "delete"
 
 
 class UserManagementModel(BaseModel):
@@ -538,16 +538,16 @@ class RegistrationAttemptModel(BaseModel):
 
 
 class Status2(Enum):
-    success = 'success'
-    error = 'error'
-    redirect = 'redirect'
+    success = "success"
+    error = "error"
+    redirect = "redirect"
 
 
 class WebResponse(BaseModel):
     status: Optional[Status2] = None
     reason: Optional[str] = Field(
         None,
-        example=['authenticated_redirect', 'authentication_failure', 'not_configured'],
+        example=["authenticated_redirect", "authentication_failure", "not_configured"],
     )
     redirect_url: Optional[str] = None
     status_code: Optional[int] = None
@@ -617,34 +617,34 @@ class ChangeGeneratorModelArray(BaseModel):
 class InlinePolicyChangeModel(ChangeModel):
     policy_name: Optional[str] = None
     new: Optional[bool] = True
-    action: Optional[Action] = 'attach'
-    change_type: Optional[constr(regex=r'inline_policy')] = None
+    action: Optional[Action] = "attach"
+    change_type: Optional[constr(regex=r"inline_policy")] = None
     policy: Optional[PolicyModel] = None
     old_policy: Optional[PolicyModel] = None
 
 
 class AssumeRolePolicyChangeModel(ChangeModel):
-    change_type: Optional[constr(regex=r'assume_role_policy')] = None
+    change_type: Optional[constr(regex=r"assume_role_policy")] = None
     policy: Optional[PolicyModel] = None
     old_policy: Optional[PolicyModel] = None
     source_change_id: Optional[str] = Field(
         None,
-        description='the change model ID of the source change, that this change was generated from',
+        description="the change model ID of the source change, that this change was generated from",
     )
 
 
 class ResourcePolicyChangeModel(ChangeModel):
-    change_type: Optional[constr(regex=r'resource_policy|sts_resource_policy')] = None
+    change_type: Optional[constr(regex=r"resource_policy|sts_resource_policy")] = None
     arn: constr(
-        regex=r'(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        regex=r"(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$"
     )
     source_change_id: Optional[str] = Field(
         None,
-        description='the change model ID of the source change, that this change was generated from',
+        description="the change model ID of the source change, that this change was generated from",
     )
     supported: Optional[bool] = Field(
         None,
-        description='whether we currently support this type of resource policy change or not',
+        description="whether we currently support this type of resource policy change or not",
     )
     policy: PolicyModel
     old_policy: Optional[PolicyModel] = None

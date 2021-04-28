@@ -10,12 +10,9 @@ class ServiceControlPolicyHandler(BaseAPIV2Handler):
     async def get(self, identifier):
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
-                    "groups.can_bypass_contractor_restrictions", []
+                "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
         scps = await get_scps_for_account_or_ou(identifier)
-        response = {
-            "status": "success",
-            "data": scps
-        }
+        response = {"status": "success", "data": scps}
         self.write(response)
