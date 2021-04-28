@@ -24,7 +24,6 @@ systemctl restart rsyslog
 # Prereqs
 # ---------------------------------------------------------------------------------------------------------------------
 
-# Install Docker
 sudo yum update -y
 yum -y erase python3
 sudo amazon-linux-extras enable python3.8 # consoleme requires 3.8
@@ -34,9 +33,6 @@ yum -y install libxml2-devel xmlsec1-devel xmlsec1-openssl-devel libtool-ltdl-de
 sudo yum install -y gcc-c++
 
 yum -y install gcc
-sudo amazon-linux-extras install -y docker
-sudo service docker start
-sudo usermod -a -G docker ec2-user
 
 mkdir -p /apps/consoleme
 mkdir /logs
@@ -47,7 +43,6 @@ git clone {consoleme_repo}
 # Create a dedicated service user
 useradd -r -s /bin/false consoleme
 usermod -aG consoleme consoleme
-usermod -aG docker consoleme
 
 # Flower
 useradd -r -s /bin/false flower
