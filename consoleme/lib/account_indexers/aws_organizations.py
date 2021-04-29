@@ -78,7 +78,11 @@ async def retrieve_accounts_from_aws_organizations() -> CloudAccountModelArray:
     request_pagination_marker="NextToken",
 )
 def _list_service_control_policies(ca: CloudAux, **kwargs) -> List[Dict]:
-    """Return a complete list of service control policy metadata dicts from the paginated ListPolicies API call"""
+    """Return a complete list of service control policy metadata dicts from the paginated ListPolicies API call
+
+    Args:
+        ca: CloudAux instance
+    """
     return ca.call(
         "organizations.client.list_policies",
         Filter="SERVICE_CONTROL_POLICY",
@@ -88,14 +92,23 @@ def _list_service_control_policies(ca: CloudAux, **kwargs) -> List[Dict]:
 
 
 def _transform_organizations_policy_object(policy: Dict) -> Dict:
-    """Transform a Policy object returned by an AWS Organizations API to a more convenient format"""
+    """Transform a Policy object returned by an AWS Organizations API to a more convenient format
+
+    Args:
+        policy: policy dict returned from organizations:DescribePolicy API
+    """
     transformed_policy = policy["PolicySummary"]
     transformed_policy["Content"] = policy["Content"]
     return transformed_policy
 
 
 def _get_service_control_policy(ca: CloudAux, policy_id: str) -> Dict:
-    """Retrieve metadata for an SCP by Id, transformed to convenient format. If not found, return an empty dict."""
+    """Retrieve metadata for an SCP by Id, transformed to convenient format. If not found, return an empty dict
+
+    Args:
+        ca: CloudAux instance
+        policy_id: Service Control Policy ID
+    """
     try:
         r = ca.call("organizations.client.describe_policy", PolicyId=policy_id)[
             "Policy"
@@ -111,7 +124,12 @@ def _get_service_control_policy(ca: CloudAux, policy_id: str) -> Dict:
 
 
 def _get_service_control_policy_by_name(ca: CloudAux, scp_name: str) -> Dict:
-    """Return True if an SCP with the specified name exists in this account"""
+    """Retrieve and return a Service Control Policy
+
+    Args:
+        ca: CloudAux instance
+        scp_name: name of SCP to retrieve
+    """
     scps = _list_service_control_policies(ca)
     scp_id = next((x["Id"] for x in scps if x["Name"] == scp_name), None)
     if scp_id is None:
@@ -127,7 +145,12 @@ def _get_service_control_policy_by_name(ca: CloudAux, scp_name: str) -> Dict:
 def _list_targets_for_policy(
     ca: CloudAux, scp_id: str, **kwargs
 ) -> List[Dict[str, str]]:
-    """Return a complete list of target metadata dicts from the paginated ListTargetsForPolicy API call"""
+    """Return a complete list of target metadata dicts from the paginated ListTargetsForPolicy API call
+
+    Args:
+        ca: CloudAuc instance
+        scp_id: service control policy ID
+    """
     return ca.call(
         "organizations.client.list_targets_for_policy",
         PolicyId=scp_id,
@@ -137,7 +160,12 @@ def _list_targets_for_policy(
 
 
 def _describe_ou(ca: CloudAux, ou_id: str, **kwargs) -> Dict[str, str]:
-    """Wrapper for organizations:DescribeOrganizationalUnit"""
+    """Wrapper for organizations:DescribeOrganizationalUnit
+
+    Args:
+        ca: CloudAux instance
+        ou_id: organizational unit ID
+    """
     result = ca.call(
         "organizations.client.describe_organizational_unit",
         OrganizationalUnitId=ou_id,
@@ -147,7 +175,12 @@ def _describe_ou(ca: CloudAux, ou_id: str, **kwargs) -> Dict[str, str]:
 
 
 def _describe_account(ca: CloudAux, account_id: str, **kwargs) -> Dict[str, str]:
-    """Wrapper for organizations:DescribeAccount"""
+    """Wrapper for organizations:DescribeAccount
+
+    Args:
+        ca: CloudAux instance
+        account_id: AWS account ID
+    """
     result = ca.call(
         "organizations.client.describe_account", AccountId=account_id, **kwargs
     )
@@ -165,7 +198,13 @@ def _list_children_for_ou(
     child_type: Literal["ACCOUNT", "ORGANIZATIONAL_UNIT"],
     **kwargs
 ) -> List[Dict[str, Any]]:
-    """Wrapper for organizations:ListChildren"""
+    """Wrapper for organizations:ListChildren
+
+    Args:
+        ca: CloudAux instance
+        parent_id: ID of organization root or organizational unit
+        child_type: ACCOUNT or ORGANIZATIONAL_UNIT
+    """
     return ca.call(
         "organizations.client.list_children",
         ChildType=child_type,
@@ -180,12 +219,21 @@ def _list_children_for_ou(
     request_pagination_marker="NextToken",
 )
 def _list_org_roots(ca: CloudAux, **kwargs) -> List[Dict[str, Any]]:
-    """Wrapper for organizations:ListRoots"""
+    """Wrapper for organizations:ListRoots
+
+    Args:
+        ca: CloudAux instance
+    """
     return ca.call("organizations.client.list_roots", **kwargs)
 
 
 def _get_children_for_ou(ca: CloudAux, root_id: str) -> Dict[str, Any]:
-    """Recursively build OU structure"""
+    """Recursively build OU structure
+
+    Args:
+        ca: CloudAux instance
+        root_id: ID of organization root or organizational unit
+    """
     children: List[Dict[str, Any]] = []
     children.extend(_list_children_for_ou(ca, root_id, "ORGANIZATIONAL_UNIT"))
     children.extend(_list_children_for_ou(ca, root_id, "ACCOUNT"))
@@ -205,6 +253,10 @@ async def retrieve_org_structure(
     """Retrieve org roots then recursively build a dict of child OUs and accounts.
 
     This is a slow and expensive operation.
+
+    Args:
+        org_account_id: ID for AWS account containing org(s)
+        region: AWS region
     """
     conn_details = {
         "assume_role": config.get("policies.role_name"),
@@ -225,7 +277,12 @@ async def retrieve_org_structure(
 async def retrieve_scps_for_organization(
     org_account_id: str, region: str = "us-east-1"
 ) -> List[ServiceControlPolicyModel]:
-    """Return a ServiceControlPolicyArrayModel containing all SCPs for an organization"""
+    """Return a ServiceControlPolicyArrayModel containing all SCPs for an organization
+
+    Args:
+        org_account_id: ID for AWS account containing org(s)
+        region: AWS region
+    """
     conn_details = {
         "assume_role": config.get("policies.role_name"),
         "account_number": org_account_id,
