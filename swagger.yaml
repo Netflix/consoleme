@@ -1006,6 +1006,8 @@ components:
           type: string
           enum:
             - active # AKA: ready
+            - in-progress
+            - in-active
             - deleted
             - created
             - suspended
@@ -1234,6 +1236,8 @@ components:
               type: array
               items:
                 type: object # TODO: make managed_policies schema
+            permissions_boundary:
+              type: object
             tags:
               type: array
               items:
