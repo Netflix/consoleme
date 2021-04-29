@@ -574,9 +574,6 @@ class Aws:
     def handle_detected_role(role):
         pass
 
-    async def should_auto_approve_policy(self, events, user, user_groups):
-        return False
-
     async def should_auto_approve_policy_v2(self, extended_request, user, user_groups):
         return {"approved": False}
 
