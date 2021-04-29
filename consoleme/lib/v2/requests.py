@@ -46,7 +46,6 @@ from consoleme.lib.policies import (
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import (
     Action,
-    Action1,
     ActionResult,
     ApplyChangeModificationModel,
     AssumeRolePolicyChangeModel,
@@ -530,7 +529,7 @@ async def validate_managed_policy_change(
         log_data["message"] = "Invalid characters were detected in the policy name."
         log.error(log_data)
         raise InvalidRequestParameter(log_data["message"])
-    if change.action == Action1.attach:
+    if change.action == Action.attach:
         # check to make sure managed policy is not already attached
         for existing_policy in role.managed_policies:
             if change.arn == existing_policy.get("PolicyArn"):
@@ -541,7 +540,7 @@ async def validate_managed_policy_change(
                 raise InvalidRequestParameter(
                     f"{change.arn} already attached to this role"
                 )
-    elif change.action == Action1.detach:
+    elif change.action == Action.detach:
         # check to make sure managed policy is actually attached to role
         seen = False
         for existing_policy in role.managed_policies:
@@ -723,7 +722,7 @@ async def apply_changes_to_role(
                         )
                     )
         elif change.change_type == "managed_policy":
-            if change.action == Action1.attach:
+            if change.action == Action.attach:
                 try:
                     await sync_to_async(iam_client.attach_role_policy)(
                         RoleName=role_name, PolicyArn=change.arn
@@ -748,7 +747,7 @@ async def apply_changes_to_role(
                             + str(e),
                         )
                     )
-            elif change.action == Action1.detach:
+            elif change.action == Action.detach:
                 try:
                     await sync_to_async(iam_client.detach_role_policy)(
                         RoleName=role_name, PolicyArn=change.arn
