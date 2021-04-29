@@ -1357,7 +1357,7 @@ async def cache_org_structure() -> Dict[str, Any]:
     return all_org_structure
 
 
-async def _account_in_ou(account_id: str, ou: Dict[str, Any]) -> Tuple[bool, set[str]]:
+async def _account_in_ou(account_id: str, ou: Dict[str, Any]) -> Tuple[bool, Set[str]]:
     """Recursively walk org structure to determine if the account is in the org and, if so, return all OUs the account is in"""
     found = False
     ou_path = set()
