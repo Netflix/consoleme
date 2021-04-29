@@ -182,6 +182,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WebResponse"
+  /service_control_policies/{accountNumberOrOuId}:
+    get:
+      summary: get details about service control policies targeting an account or organizational unit
+      tags:
+        - service_control_policies
+      parameters:
+        - $ref: "#/components/parameters/AccountOrOuId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
   /roles:
     get:
       summary: get a list of roles
@@ -385,6 +399,14 @@ components:
       schema:
         type: string
         pattern: '^\d{12}$'
+    AccountOrOuId:
+      name: account_or_ou_id
+      in: path
+      required: true
+      example: 012345678901
+      schema:
+        type: string
+        pattern: '^(\d{12}|ou-[0-9a-z]{4,32}-[a-z0-9]{8,32})$'
     RoleName:
       name: role_name
       in: path
