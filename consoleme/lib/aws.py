@@ -45,6 +45,7 @@ from consoleme.lib.redis import RedisHandler, redis_hget
 from consoleme.models import (
     CloneRoleRequestModel,
     RoleCreationRequestModel,
+    ServiceControlPolicyArrayModel,
     ServiceControlPolicyModel,
 )
 
@@ -1275,7 +1276,12 @@ async def validate_iam_policy(policy: str, log_data: Dict):
     return parliament_findings + access_analyzer_findings
 
 
-async def get_all_scps(force_sync=False) -> Dict[str, Any]:
+async def get_all_scps(force_sync=False) -> Dict[str, ServiceControlPolicyModel]:
+    """Retrieve a dictionary containing all Service Control Policies across organizations
+
+    Args:
+        force_sync: force a cache update
+    """
     redis_key = config.get(
         "cache_scps_across_organizations.redis.key.all_scps_key", "ALL_AWS_SCPS"
     )
@@ -1287,10 +1293,14 @@ async def get_all_scps(force_sync=False) -> Dict[str, Any]:
     )
     if force_sync or not scps:
         scps = await cache_all_scps()
-    return scps
+    scp_models = {}
+    for account, org_scps in scps.items():
+        scp_models[account] = [ServiceControlPolicyModel(**scp) for scp in org_scps]
+    return scp_models
 
 
 async def cache_all_scps() -> Dict[str, Any]:
+    """Store a dictionary of all Service Control Policies across organizations in the cache"""
     all_scps = {}
     for organization in config.get("cache_scps_across_organizations.organizations", []):
         org_account_id = organization.get("account_id")
@@ -1317,6 +1327,11 @@ async def cache_all_scps() -> Dict[str, Any]:
 
 
 async def get_org_structure(force_sync=False) -> Dict[str, Any]:
+    """Retrieve a dictionary containing the organization structure
+
+    Args:
+        force_sync: force a cache update
+    """
     redis_key = config.get(
         "cache_organization_structure.redis.key.org_structure_key", "AWS_ORG_STRUCTURE"
     )
@@ -1332,6 +1347,7 @@ async def get_org_structure(force_sync=False) -> Dict[str, Any]:
 
 
 async def cache_org_structure() -> Dict[str, Any]:
+    """Store a dictionary of the organization structure in the cache"""
     all_org_structure = {}
     for organization in config.get("cache_organization_structure.organizations", []):
         org_account_id = organization.get("account_id")
@@ -1357,28 +1373,37 @@ async def cache_org_structure() -> Dict[str, Any]:
     return all_org_structure
 
 
-async def _account_in_ou(account_id: str, ou: Dict[str, Any]) -> Tuple[bool, Set[str]]:
-    """Recursively walk org structure to determine if the account is in the org and, if so, return all OUs the account is in"""
+async def _is_member_of_ou(
+    identifier: str, ou: Dict[str, Any]
+) -> Tuple[bool, Set[str]]:
+    """Recursively walk org structure to determine if the account or OU is in the org and, if so, return all OUs of which the account or OU is a member
+
+    Args:
+        identifier: AWS account or OU ID
+        ou: dictionary representing the organization/organizational unit structure to search
+    """
     found = False
     ou_path = set()
     for child in ou.get("Children", []):
-        if child.get("Type") == "ACCOUNT":
-            if child.get("Id") == account_id:
-                found = True
+        if child.get("Id") == identifier:
+            found = True
         elif child.get("Type") == "ORGANIZATIONAL_UNIT":
-            found, ou_path = await _account_in_ou(account_id, child)
-        else:
-            raise Exception("bad org structure")
+            found, ou_path = await _is_member_of_ou(identifier, child)
         if found:
             ou_path.add(ou.get("Id"))
-            return True, ou_path
-    return False, ou_path
+            break
+    return found, ou_path
 
 
-async def get_organizational_units_for_account(account_id: str) -> Set[str]:
+async def get_organizational_units_for_account(identifier: str) -> Set[str]:
+    """Return a set of Organizational Unit IDs for a given account or OU ID
+
+    Args:
+        identifier: AWS account or OU ID
+    """
     all_orgs = await get_org_structure()
     for org_id, org_structure in all_orgs.items():
-        found, organizational_units = await _account_in_ou(account_id, org_structure)
+        found, organizational_units = await _is_member_of_ou(identifier, org_structure)
         if found:
             break
     if not organizational_units:
@@ -1386,22 +1411,35 @@ async def get_organizational_units_for_account(account_id: str) -> Set[str]:
     return organizational_units
 
 
-async def _scp_targets_account(
+async def _scp_targets_account_or_ou(
     scp: ServiceControlPolicyModel, identifier: str, organizational_units: Set[str]
 ) -> bool:
+    """Return True if the provided SCP targets the account or OU identifier provided
+
+    Args:
+        scp: Service Control Policy whose targets we check
+        identifier: AWS account or OU ID
+        organizational_units: set of IDs for OUs of which the identifier is a member
+    """
     for target in scp.targets:
         if target.target_id == identifier or target.target_id in organizational_units:
             return True
     return False
 
 
-async def get_scps_for_account_or_ou(identifier: str) -> List[Dict[str, Any]]:
+async def get_scps_for_account_or_ou(identifier: str) -> ServiceControlPolicyArrayModel:
+    """Retrieve a list of Service Control Policies for the account or OU specified by the identifier
+
+    Args:
+        identifier: AWS account or OU ID
+    """
     all_scps = await get_all_scps()
     account_ous = await get_organizational_units_for_account(identifier)
     scps_for_account = []
     for org_account_id, scps in all_scps.items():
         # Iterate through each org's SCPs and see if the provided account_id is in the targets
         for scp in scps:
-            if _scp_targets_account(scp, identifier, account_ous):
+            if await _scp_targets_account_or_ou(scp, identifier, account_ous):
                 scps_for_account.append(scp)
-    return scps_for_account
+    scps = ServiceControlPolicyArrayModel(__root__=scps_for_account)
+    return scps

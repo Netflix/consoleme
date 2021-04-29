@@ -137,6 +137,7 @@ def _list_targets_for_policy(
 
 
 def _describe_ou(ca: CloudAux, ou_id: str, **kwargs) -> Dict[str, str]:
+    """Wrapper for organizations:DescribeOrganizationalUnit"""
     result = ca.call(
         "organizations.client.describe_organizational_unit",
         OrganizationalUnitId=ou_id,
@@ -146,6 +147,7 @@ def _describe_ou(ca: CloudAux, ou_id: str, **kwargs) -> Dict[str, str]:
 
 
 def _describe_account(ca: CloudAux, account_id: str, **kwargs) -> Dict[str, str]:
+    """Wrapper for organizations:DescribeAccount"""
     result = ca.call(
         "organizations.client.describe_account", AccountId=account_id, **kwargs
     )
@@ -163,6 +165,7 @@ def _list_children_for_ou(
     child_type: Literal["ACCOUNT", "ORGANIZATIONAL_UNIT"],
     **kwargs
 ) -> List[Dict[str, Any]]:
+    """Wrapper for organizations:ListChildren"""
     return ca.call(
         "organizations.client.list_children",
         ChildType=child_type,
@@ -177,6 +180,7 @@ def _list_children_for_ou(
     request_pagination_marker="NextToken",
 )
 def _list_org_roots(ca: CloudAux, **kwargs) -> List[Dict[str, Any]]:
+    """Wrapper for organizations:ListRoots"""
     return ca.call("organizations.client.list_roots", **kwargs)
 
 

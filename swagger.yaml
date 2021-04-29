@@ -1556,7 +1556,9 @@ components:
           items:
             type: string
         data:
-          type: object
+          oneOf:
+            - type: object
+            - type: array
     DataTableResponse:
       type: object
       required:
