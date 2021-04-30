@@ -32,6 +32,8 @@ jobs:
           yarn --cwd ui
           yarn --cwd ui build:prod
           CI=false yarn --cwd ui start &
+          terraform -chdir=terraform/central-account/ init
+          terraform -chdir=terraform/spoke-accounts/ init
           pre-commit install
       - name: Run pre-commit
         run: |
