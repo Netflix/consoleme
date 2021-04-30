@@ -5,7 +5,7 @@ import sys
 import jwt
 import requests
 from okta_jwt.exceptions import ExpiredSignatureError
-from okta_jwt.jwt import validate_token
+from okta_jwt.utils import verify_exp, verify_iat
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import UnableToAuthenticate
@@ -51,17 +51,21 @@ async def authenticate_user_by_alb_auth(request):
     # Step 4: Parse the Access Token
     # User has already passed ALB auth and successfully authenticated
     try:
-        access_token_jwt = jwt.decode(encoded_claims_jwt, pub_key, verify=False)
-        groups = access_token_jwt.get(
-            config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key", "groups")
+        access_token_jwt = jwt.decode(
+            encoded_claims_jwt, pub_key, algorithms=["RS256"], options={"verify_signature": False}
         )
         # Step 5: Verify the access token.
-        validate_token(
-            encoded_claims_jwt,
-            access_token_jwt["iss"],
-            access_token_jwt["aud"],
-            access_token_jwt["cid"],
-        )
+        verify_exp(encoded_claims_jwt)
+        verify_iat(encoded_claims_jwt)
+
+        # Extract groups from tokens, checking both because IdPs aren't consistent here
+        for token in [access_token_jwt, payload]:
+            groups = token.get(
+                config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key", "groups")
+            )
+            if groups:
+                break
+
     except jwt.exceptions.DecodeError as e:
         # This exception occurs when the access token is not JWT-parsable. It is expected with some IdPs.
         log.debug(
@@ -88,6 +92,7 @@ async def authenticate_user_by_alb_auth(request):
             }
         )
         log.debug(log_data, exc_info=True)
+        groups = []
         request.request.clear_cookie("AWSELBAuthSessionCookie-0")
         request.redirect(request.request.uri)
 
