@@ -72,7 +72,7 @@ async def authenticate_user_by_alb_auth(request):
             {
                 **log_data,
                 "message": (
-                    "Unable to derive user's groups from access_token. This is expected for some identity providers."
+                    "Unable to decode claims token. This is expected for some Identity Providers."
                 ),
                 "error": e,
                 "user": email,
