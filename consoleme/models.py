@@ -230,6 +230,8 @@ class ArnArray(BaseModel):
 
 class Status1(Enum):
     active = "active"
+    in_progress = "in-progress"
+    in_active = "in-active"
     deleted = "deleted"
     created = "created"
     suspended = "suspended"
@@ -354,6 +356,7 @@ class ExtendedRoleModel(RoleModel):
     s3_details: Optional[S3DetailsModel] = None
     apps: Optional[AppDetailsArray] = None
     managed_policies: List[Dict[str, Any]]
+    permissions_boundary: Optional[Dict[str, Any]] = None
     tags: List[Dict[str, Any]]
     config_timeline_url: Optional[str] = Field(
         None, description="A link to the role's AWS Config Timeline"

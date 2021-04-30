@@ -648,12 +648,6 @@ async def get_formatted_policy_changes(account_id, arn, request):
     return {"changes": formatted_policy_changes, "role": existing_role}
 
 
-async def should_auto_approve_policy(events, user, user_groups):
-    aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
-    result = await aws.should_auto_approve_policy(events, user, user_groups)
-    return result
-
-
 async def should_auto_approve_policy_v2(
     extended_request: ExtendedRequestModel, user, user_groups
 ):
