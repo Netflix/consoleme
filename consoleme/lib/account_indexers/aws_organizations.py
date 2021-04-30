@@ -111,7 +111,7 @@ async def _get_service_control_policy(ca: CloudAux, policy_id: str) -> Dict:
         policy_id: Service Control Policy ID
     """
     try:
-        result = sync_to_async(ca.call)(
+        result = await sync_to_async(ca.call)(
             "organizations.client.describe_policy", PolicyId=policy_id
         )
     except ClientError as e:
