@@ -1302,10 +1302,26 @@ async def get_all_scps(force_sync=False) -> Dict[str, ServiceControlPolicyModel]
 async def cache_all_scps() -> Dict[str, Any]:
     """Store a dictionary of all Service Control Policies across organizations in the cache"""
     all_scps = {}
-    for organization in config.get("cache_scps_across_organizations.organizations", []):
-        org_account_id = organization.get("account_id")
-        region = organization.get("region")
-        org_scps = await retrieve_scps_for_organization(org_account_id, region=region)
+    for organization in config.get("cache_accounts_from_aws_organizations", []):
+        org_account_id = organization.get("organizations_master_account_id")
+        role_to_assume = organization.get(
+            "organizations_master_role_to_assume", config.get("policies.role_name")
+        )
+        if not org_account_id:
+            raise MissingConfigurationValue(
+                "Your AWS Organizations Master Account ID is not specified in configuration. "
+                "Unable to sync accounts from "
+                "AWS Organizations"
+            )
+
+        if not role_to_assume:
+            raise MissingConfigurationValue(
+                "ConsoleMe doesn't know what role to assume to retrieve account information "
+                "from AWS Organizations. please set the appropriate configuration value."
+            )
+        org_scps = await retrieve_scps_for_organization(
+            org_account_id, role_to_assume=role_to_assume, region=config.region
+        )
         all_scps[org_account_id] = org_scps
     redis_key = config.get(
         "cache_scps_across_organizations.redis.key.all_scps_key", "ALL_AWS_SCPS"
@@ -1349,10 +1365,26 @@ async def get_org_structure(force_sync=False) -> Dict[str, Any]:
 async def cache_org_structure() -> Dict[str, Any]:
     """Store a dictionary of the organization structure in the cache"""
     all_org_structure = {}
-    for organization in config.get("cache_organization_structure.organizations", []):
-        org_account_id = organization.get("account_id")
-        region = organization.get("region")
-        org_structure = await retrieve_org_structure(org_account_id, region=region)
+    for organization in config.get("cache_accounts_from_aws_organizations", []):
+        org_account_id = organization.get("organizations_master_account_id")
+        role_to_assume = organization.get(
+            "organizations_master_role_to_assume", config.get("policies.role_name")
+        )
+        if not org_account_id:
+            raise MissingConfigurationValue(
+                "Your AWS Organizations Master Account ID is not specified in configuration. "
+                "Unable to sync accounts from "
+                "AWS Organizations"
+            )
+
+        if not role_to_assume:
+            raise MissingConfigurationValue(
+                "ConsoleMe doesn't know what role to assume to retrieve account information "
+                "from AWS Organizations. please set the appropriate configuration value."
+            )
+        org_structure = await retrieve_org_structure(
+            org_account_id, region=config.region
+        )
         all_org_structure.update(org_structure)
     redis_key = config.get(
         "cache_organization_structure.redis.key.org_structure_key", "AWS_ORG_STRUCTURE"
