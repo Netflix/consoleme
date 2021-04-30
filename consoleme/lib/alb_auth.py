@@ -52,7 +52,10 @@ async def authenticate_user_by_alb_auth(request):
     # User has already passed ALB auth and successfully authenticated
     try:
         access_token_jwt = jwt.decode(
-            encoded_claims_jwt, pub_key, algorithms=["RS256"], options={"verify_signature": False}
+            encoded_claims_jwt,
+            pub_key,
+            algorithms=["RS256"],
+            options={"verify_signature": False},
         )
         # Step 5: Verify the access token.
         verify_exp(encoded_claims_jwt)
