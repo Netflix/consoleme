@@ -1290,6 +1290,7 @@ async def get_all_scps(force_sync=False) -> Dict[str, List[ServiceControlPolicyM
         s3_bucket=config.get("cache_scps_across_organizations.s3.bucket"),
         s3_key=config.get("cache_scps_across_organizations.s3.file"),
         default={},
+        max_age=86400,
     )
     if force_sync or not scps:
         scps = await cache_all_scps()
@@ -1434,7 +1435,7 @@ async def get_organizational_units_for_account(identifier: str) -> Set[str]:
         identifier: AWS account or OU ID
     """
     all_orgs = await get_org_structure()
-    organizational_units = {}
+    organizational_units = set()
     for org_id, org_structure in all_orgs.items():
         found, organizational_units = await _is_member_of_ou(identifier, org_structure)
         if found:
