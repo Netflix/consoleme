@@ -8,7 +8,9 @@ import tornado.httpclient
 from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 from jwt.exceptions import (
     ExpiredSignatureError,
+    ImmatureSignatureError,
     InvalidAudienceError,
+    InvalidIssuedAtError,
     InvalidIssuerError,
 )
 from okta_jwt.utils import verify_exp, verify_iat
@@ -70,6 +72,22 @@ async def populate_oidc_config():
         "get_user_by_aws_alb_auth_settings.access_token_validation.client_id"
     )
     return oidc_config
+
+
+async def handle_jwt_validation_error(
+    e, email, log_data, request, message="JWT Validation Failed"
+):
+    log.debug(
+        {
+            **log_data,
+            "message": (message),
+            "error": e,
+            "user": email,
+        }
+    )
+    log.debug(log_data, exc_info=True)
+    request.request.clear_cookie("AWSELBAuthSessionCookie-0")
+    request.redirect(request.request.uri)
 
 
 async def authenticate_user_by_alb_auth(request):
@@ -160,35 +178,26 @@ async def authenticate_user_by_alb_auth(request):
         )
         log.debug(log_data, exc_info=True)
         groups = []
-    except ExpiredSignatureError as e:
-        # This exception occurs when the access token has expired. Delete cookies associated with ALB Auth
-        # (AWSELBAuthSessionCookie-0)
+    except (
+        ExpiredSignatureError,
+        ImmatureSignatureError,
+        InvalidAudienceError,
+        InvalidIssuedAtError,
+        InvalidIssuerError,
+    ) as e:
+        # JWT Validation failed, log an error and revoke the ALB auth cookie
         log.debug(
             {
                 **log_data,
-                "message": ("Access token has expired"),
+                "message": (str(e)),
                 "error": e,
                 "user": email,
             }
         )
         log.debug(log_data, exc_info=True)
-        groups = []
         request.request.clear_cookie("AWSELBAuthSessionCookie-0")
         request.redirect(request.request.uri)
-    except InvalidAudienceError as e:
-        # This exception occurs when the access token's audience field does not match the configured oidc client id
-        # Delete cookies associated with ALB Auth
-        log.debug(
-            {
-                **log_data,
-                "message": ("Invalid Audience in access token"),
-                "error": e,
-                "user": email,
-            }
-        )
-        log.debug(log_data, exc_info=True)
+
         groups = []
-        request.request.clear_cookie("AWSELBAuthSessionCookie-0")
-        request.redirect(request.request.uri)
 
     return {"user": email, "groups": groups}
