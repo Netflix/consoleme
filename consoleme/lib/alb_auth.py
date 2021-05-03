@@ -74,22 +74,6 @@ async def populate_oidc_config():
     return oidc_config
 
 
-async def handle_jwt_validation_error(
-    e, email, log_data, request, message="JWT Validation Failed"
-):
-    log.debug(
-        {
-            **log_data,
-            "message": (message),
-            "error": e,
-            "user": email,
-        }
-    )
-    log.debug(log_data, exc_info=True)
-    request.request.clear_cookie("AWSELBAuthSessionCookie-0")
-    request.redirect(request.request.uri)
-
-
 async def authenticate_user_by_alb_auth(request):
     aws_alb_auth_header_name = config.get(
         "get_user_by_aws_alb_auth_settings.aws_alb_auth_header_name", "X-Amzn-Oidc-Data"
