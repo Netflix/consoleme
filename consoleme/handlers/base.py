@@ -355,6 +355,20 @@ class BaseHandler(TornadoRequestHandler):
                 after_redirect_uri = self.request.arguments.get("redirect_url", [""])[0]
                 if after_redirect_uri and isinstance(after_redirect_uri, bytes):
                     after_redirect_uri = after_redirect_uri.decode("utf-8")
+
+                consoleme_uri = config.get("url")
+                if consoleme_uri not in after_redirect_uri:
+                    log.error(
+                        {
+                            **log_data,
+                            "after_redirect_uri": after_redirect_uri,
+                            "error": (
+                                "Incoming authentication request attempted to redirect user to a non-ConsoleMe "
+                                "endpoint. Re-configuring to redirec to ConsoleMe's landing page."
+                            ),
+                        }
+                    )
+                    after_redirect_uri = consoleme_uri
                 self.set_status(403)
                 self.write(
                     {

@@ -93,6 +93,7 @@ async def authenticate_user_by_oidc(request):
     # The endpoint where we want our OIDC provider to redirect us back to perform auth
     oidc_redirect_uri = f"{protocol}://{request.request.host}/auth"
 
+    consoleme_uri = config.get("url")
     # The endpoint where the user wants to be sent after authentication. This will be stored in the state
     after_redirect_uri = request.request.arguments.get("redirect_url", [""])[0]
     if not after_redirect_uri:
@@ -101,6 +102,18 @@ async def authenticate_user_by_oidc(request):
         after_redirect_uri = after_redirect_uri.decode("utf-8")
     if not after_redirect_uri:
         after_redirect_uri = config.get("url", f"{protocol}://{request.request.host}/")
+    if consoleme_uri not in after_redirect_uri:
+        log.error(
+            {
+                **log_data,
+                "after_redirect_uri": after_redirect_uri,
+                "error": (
+                    "Incoming authentication request attempted to redirect user to a non-ConsoleMe "
+                    "endpoint. Re-configuring to redirec to ConsoleMe's landing page."
+                ),
+            }
+        )
+        after_redirect_uri = consoleme_uri
 
     if not code:
         args = {"response_type": "code"}

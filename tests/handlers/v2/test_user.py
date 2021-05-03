@@ -141,7 +141,7 @@ class TestLoginApi(AsyncHTTPTestCase):
             {
                 "username": "testuser2",
                 "password": "correctpassword",
-                "after_redirect_uri": "/",
+                "after_redirect_uri": "http://127.0.0.1:8081/",
             }
         )
         response = self.fetch("/api/v2/login", method="POST", body=body)
@@ -151,7 +151,7 @@ class TestLoginApi(AsyncHTTPTestCase):
             {
                 "status": "redirect",
                 "reason": "authenticated_redirect",
-                "redirect_url": "/",
+                "redirect_url": "http://127.0.0.1:8081/",
                 "status_code": 200,
                 "message": "User has successfully authenticated. Redirecting to their intended destination.",
                 "errors": None,
