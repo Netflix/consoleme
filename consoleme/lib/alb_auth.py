@@ -2,15 +2,60 @@ import base64
 import json
 import sys
 
+from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 import jwt
 import requests
+import tornado.httpclient
 from okta_jwt.exceptions import ExpiredSignatureError
 from okta_jwt.utils import verify_exp, verify_iat
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import UnableToAuthenticate
+from consoleme.exceptions.exceptions import UnableToAuthenticate, MissingConfigurationValue
 
 log = config.get_logger()
+
+
+async def populate_oidc_config():
+    http_client = tornado.httpclient.AsyncHTTPClient()
+    metadata_url = config.get("get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url")
+
+    if metadata_url:
+        res = await http_client.fetch(
+            metadata_url,
+            method="GET",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json",
+            },
+        )
+        oidc_config = json.loads(res.body)
+    else:
+        jwks_uri = config.get("get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri")
+        if not jwks_uri:
+            raise MissingConfigurationValue("Missing OIDC Configuration.")
+        oidc_config = {
+            "jwks_uri": jwks_uri,
+        }
+
+    # Fetch jwks_uri for jwt validation
+    res = await http_client.fetch(
+        oidc_config["jwks_uri"],
+        method="GET",
+        headers={
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json",
+        },
+    )
+    oidc_config["jwks_data"] = json.loads(res.body)
+    oidc_config["jwt_keys"] = {}
+    for k in oidc_config["jwks_data"]["keys"]:
+        key_type = k["kty"]
+        key_id = k["kid"]
+        if key_type == "RSA":
+            oidc_config["jwt_keys"][key_id] = RSAAlgorithm.from_jwk(json.dumps(k))
+        elif key_type == "EC":
+            oidc_config["jwt_keys"][key_id] = ECAlgorithm.from_jwk(json.dumps(k))
+    return oidc_config
 
 
 async def authenticate_user_by_alb_auth(request):
@@ -24,10 +69,10 @@ async def authenticate_user_by_alb_auth(request):
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     log_data = {"function": function}
     encoded_auth_jwt = request.request.headers.get(aws_alb_auth_header_name)
-    encoded_claims_jwt = request.request.headers.get(aws_alb_claims_header_name)
+    access_token = request.request.headers.get(aws_alb_claims_header_name)
     if not encoded_auth_jwt:
         raise Exception(f"Missing header: {aws_alb_auth_header_name}")
-    if not encoded_claims_jwt:
+    if not access_token:
         raise Exception(f"Missing header: {aws_alb_claims_header_name}")
 
     jwt_headers = encoded_auth_jwt.split(".")[0]
@@ -50,19 +95,34 @@ async def authenticate_user_by_alb_auth(request):
 
     # Step 4: Parse the Access Token
     # User has already passed ALB auth and successfully authenticated
+    access_token_verify_options = {"verify_signature": False}
+    access_token_pub_key = None
+    jwt_verify = config.get("get_user_by_aws_alb_auth_settings.jwt_verify", True)
+    algorithm = None
+    if jwt_verify:
+        access_token_verify_options = {"verify_signature": True}
+        oidc_config = await populate_oidc_config()
+        header = jwt.get_unverified_header(access_token)
+        key_id = header["kid"]
+        algorithm = header["alg"]
+        if not algorithm:
+            raise UnableToAuthenticate(
+                "Access Token header does not specify a signing algorithm."
+            )
+        access_token_pub_key = oidc_config["jwt_keys"][key_id]
     try:
-        access_token_jwt = jwt.decode(
-            encoded_claims_jwt,
-            pub_key,
-            algorithms=["RS256"],
-            options={"verify_signature": False},
+        decoded_access_token = jwt.decode(
+            access_token,
+            access_token_pub_key,
+            algorithms=algorithm,
+            options=access_token_verify_options,
         )
         # Step 5: Verify the access token.
-        verify_exp(encoded_claims_jwt)
-        verify_iat(encoded_claims_jwt)
+        verify_exp(access_token)
+        verify_iat(access_token)
 
         # Extract groups from tokens, checking both because IdPs aren't consistent here
-        for token in [access_token_jwt, payload]:
+        for token in [decoded_access_token, payload]:
             groups = token.get(
                 config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key", "groups")
             )
