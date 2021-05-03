@@ -136,7 +136,7 @@ def _list_targets_for_policy(
     """Return a complete list of target metadata dicts from the paginated ListTargetsForPolicy API call
 
     Args:
-        ca: CloudAuc instance
+        ca: CloudAux instance
         scp_id: service control policy ID
     """
     return ca.call(
