@@ -116,17 +116,18 @@ async def authenticate_user_by_alb_auth(request):
     access_token_verify_options = {"verify_signature": jwt_verify}
     oidc_config = {}
     algorithm = None
-    if jwt_verify:
-        oidc_config = await populate_oidc_config()
-        header = jwt.get_unverified_header(access_token)
-        key_id = header["kid"]
-        algorithm = header["alg"]
-        if not algorithm:
-            raise UnableToAuthenticate(
-                "Access Token header does not specify a signing algorithm."
-            )
-        access_token_pub_key = oidc_config["jwt_keys"][key_id]
     try:
+        if jwt_verify:
+            oidc_config = await populate_oidc_config()
+            header = jwt.get_unverified_header(access_token)
+            key_id = header["kid"]
+            algorithm = header["alg"]
+            if not algorithm:
+                raise UnableToAuthenticate(
+                    "Access Token header does not specify a signing algorithm."
+                )
+            access_token_pub_key = oidc_config["jwt_keys"][key_id]
+
         decoded_access_token = jwt.decode(
             access_token,
             access_token_pub_key,
@@ -179,7 +180,7 @@ async def authenticate_user_by_alb_auth(request):
             }
         )
         log.debug(log_data, exc_info=True)
-        request.request.clear_cookie("AWSELBAuthSessionCookie-0")
+        request.clear_cookie("AWSELBAuthSessionCookie-0")
         request.redirect(request.request.uri)
 
         groups = []
