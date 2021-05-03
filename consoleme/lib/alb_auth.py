@@ -6,7 +6,11 @@ import jwt
 import requests
 import tornado.httpclient
 from jwt.algorithms import ECAlgorithm, RSAAlgorithm
-from okta_jwt.exceptions import ExpiredSignatureError
+from jwt.exceptions import (
+    ExpiredSignatureError,
+    InvalidAudienceError,
+    InvalidIssuerError,
+)
 from okta_jwt.utils import verify_exp, verify_iat
 
 from consoleme.config import config
@@ -163,6 +167,21 @@ async def authenticate_user_by_alb_auth(request):
             {
                 **log_data,
                 "message": ("Access token has expired"),
+                "error": e,
+                "user": email,
+            }
+        )
+        log.debug(log_data, exc_info=True)
+        groups = []
+        request.request.clear_cookie("AWSELBAuthSessionCookie-0")
+        request.redirect(request.request.uri)
+    except InvalidAudienceError as e:
+        # This exception occurs when the access token's audience field does not match the configured oidc client id
+        # Delete cookies associated with ALB Auth
+        log.debug(
+            {
+                **log_data,
+                "message": ("Invalid Audience in access token"),
                 "error": e,
                 "user": email,
             }
