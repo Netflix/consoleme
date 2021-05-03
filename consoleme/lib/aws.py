@@ -1276,7 +1276,7 @@ async def validate_iam_policy(policy: str, log_data: Dict):
     return parliament_findings + access_analyzer_findings
 
 
-async def get_all_scps(force_sync=False) -> Dict[str, ServiceControlPolicyModel]:
+async def get_all_scps(force_sync=False) -> Dict[str, List[ServiceControlPolicyModel]]:
     """Retrieve a dictionary containing all Service Control Policies across organizations
 
     Args:
@@ -1434,6 +1434,7 @@ async def get_organizational_units_for_account(identifier: str) -> Set[str]:
         identifier: AWS account or OU ID
     """
     all_orgs = await get_org_structure()
+    organizational_units = {}
     for org_id, org_structure in all_orgs.items():
         found, organizational_units = await _is_member_of_ou(identifier, org_structure)
         if found:
