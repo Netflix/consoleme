@@ -2,22 +2,27 @@ import base64
 import json
 import sys
 
-from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 import jwt
 import requests
 import tornado.httpclient
+from jwt.algorithms import ECAlgorithm, RSAAlgorithm
 from okta_jwt.exceptions import ExpiredSignatureError
 from okta_jwt.utils import verify_exp, verify_iat
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import UnableToAuthenticate, MissingConfigurationValue
+from consoleme.exceptions.exceptions import (
+    MissingConfigurationValue,
+    UnableToAuthenticate,
+)
 
 log = config.get_logger()
 
 
 async def populate_oidc_config():
     http_client = tornado.httpclient.AsyncHTTPClient()
-    metadata_url = config.get("get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url")
+    metadata_url = config.get(
+        "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url"
+    )
 
     if metadata_url:
         res = await http_client.fetch(
@@ -30,7 +35,9 @@ async def populate_oidc_config():
         )
         oidc_config = json.loads(res.body)
     else:
-        jwks_uri = config.get("get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri")
+        jwks_uri = config.get(
+            "get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri"
+        )
         if not jwks_uri:
             raise MissingConfigurationValue("Missing OIDC Configuration.")
         oidc_config = {
