@@ -62,7 +62,9 @@ async def populate_oidc_config():
             oidc_config["jwt_keys"][key_id] = RSAAlgorithm.from_jwk(json.dumps(k))
         elif key_type == "EC":
             oidc_config["jwt_keys"][key_id] = ECAlgorithm.from_jwk(json.dumps(k))
-    oidc_config["aud"] = config.get("get_user_by_aws_alb_auth_settings.access_token_validation.client_id")
+    oidc_config["aud"] = config.get(
+        "get_user_by_aws_alb_auth_settings.access_token_validation.client_id"
+    )
     return oidc_config
 
 
