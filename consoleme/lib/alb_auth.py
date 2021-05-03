@@ -62,6 +62,7 @@ async def populate_oidc_config():
             oidc_config["jwt_keys"][key_id] = RSAAlgorithm.from_jwk(json.dumps(k))
         elif key_type == "EC":
             oidc_config["jwt_keys"][key_id] = ECAlgorithm.from_jwk(json.dumps(k))
+    oidc_config["aud"] = config.get("get_user_by_aws_alb_auth_settings.access_token_validation.client_id")
     return oidc_config
 
 
@@ -102,12 +103,12 @@ async def authenticate_user_by_alb_auth(request):
 
     # Step 4: Parse the Access Token
     # User has already passed ALB auth and successfully authenticated
-    access_token_verify_options = {"verify_signature": False}
     access_token_pub_key = None
     jwt_verify = config.get("get_user_by_aws_alb_auth_settings.jwt_verify", True)
+    access_token_verify_options = {"verify_signature": jwt_verify}
+    oidc_config = {}
     algorithm = None
     if jwt_verify:
-        access_token_verify_options = {"verify_signature": True}
         oidc_config = await populate_oidc_config()
         header = jwt.get_unverified_header(access_token)
         key_id = header["kid"]
@@ -121,12 +122,15 @@ async def authenticate_user_by_alb_auth(request):
         decoded_access_token = jwt.decode(
             access_token,
             access_token_pub_key,
-            algorithms=algorithm,
+            algorithms=[algorithm],
             options=access_token_verify_options,
+            audience=oidc_config.get("aud"),
+            issuer=oidc_config.get("issuer"),
         )
         # Step 5: Verify the access token.
-        verify_exp(access_token)
-        verify_iat(access_token)
+        if not jwt_verify:
+            verify_exp(access_token)
+            verify_iat(access_token)
 
         # Extract groups from tokens, checking both because IdPs aren't consistent here
         for token in [decoded_access_token, payload]:
