@@ -9,7 +9,7 @@ resource "aws_dynamodb_table" "consoleme_audit_global" {
   range_key        = "group"
 
   point_in_time_recovery {
-    enabled        = true
+    enabled = true
   }
 
   attribute {
@@ -38,7 +38,7 @@ resource "aws_dynamodb_table" "consoleme_config_global" {
   hash_key         = "id"
 
   point_in_time_recovery {
-    enabled        = true
+    enabled = true
   }
 
   attribute {
@@ -65,7 +65,7 @@ resource "aws_dynamodb_table" "consoleme_iamroles_global" {
   range_key        = "accountId"
 
   point_in_time_recovery {
-    enabled        = true
+    enabled = true
   }
 
   attribute {
@@ -94,7 +94,7 @@ resource "aws_dynamodb_table" "consoleme_policy_requests" {
   hash_key         = "request_id"
 
   point_in_time_recovery {
-    enabled        = true
+    enabled = true
   }
 
   attribute {
@@ -119,7 +119,7 @@ resource "aws_dynamodb_table" "consoleme_requests_global" {
   hash_key         = "request_id"
 
   point_in_time_recovery {
-    enabled        = true
+    enabled = true
   }
 
   attribute {
@@ -144,7 +144,7 @@ resource "aws_dynamodb_table" "consoleme_resource_cache" {
   range_key        = "resourceType"
 
   point_in_time_recovery {
-    enabled        = true
+    enabled = true
   }
 
   attribute {
@@ -174,7 +174,7 @@ resource "aws_dynamodb_table" "consoleme_users_global" {
   hash_key         = "username"
 
   point_in_time_recovery {
-    enabled        = true
+    enabled = true
   }
 
   attribute {
