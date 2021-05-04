@@ -54,7 +54,7 @@ class TestRolesHandler(AsyncHTTPTestCase):
         expected = {
             "status": 400,
             "title": "Bad Request",
-            "message": "Error validating input: 1 validation error for RoleCreationRequestModel\nrole_name\n"
+            "message": "Error validating input: 1 validation error for RoleCreationRequestModel\nRoleName\n"
             "  field required (type=value_error.missing)",
         }
         response = self.fetch(
@@ -309,7 +309,7 @@ class TestRoleCloneHandler(AsyncHTTPTestCase):
         expected = {
             "status": 400,
             "title": "Bad Request",
-            "message": "Error validating input: 1 validation error for CloneRoleRequestModel\nrole_name\n  "
+            "message": "Error validating input: 1 validation error for CloneRoleRequestModel\nRoleName\n  "
             "field required (type=value_error.missing)",
         }
         response = self.fetch(

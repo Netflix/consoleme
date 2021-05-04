@@ -1,6 +1,11 @@
 name: pre-commit
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [master]
 
 jobs:
   build:
@@ -12,6 +17,8 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.8
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
       - name: Install dependencies
         run: |
           curl -sL https://deb.nodesource.com/setup_14.x | sudo bash
@@ -30,6 +37,8 @@ jobs:
           yarn --cwd ui
           yarn --cwd ui build:prod
           CI=false yarn --cwd ui start &
+          terraform -chdir=terraform/central-account/ init
+          terraform -chdir=terraform/spoke-accounts/ init
           pre-commit install
       - name: Run pre-commit
         run: |
