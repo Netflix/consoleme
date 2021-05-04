@@ -65,11 +65,7 @@ const IAMRolePolicy = () => {
     {
       menuItem: {
         key: "service_control_policy",
-        content: (
-          <>
-            Service Control Policy<Label>xx</Label>
-          </>
-        ),
+        content: <>Service Control Policy</>,
       },
       render: () => {
         return (

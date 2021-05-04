@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Accordion, Header, Table } from "semantic-ui-react";
+import { Accordion, Header, Icon, Table } from "semantic-ui-react";
 import { ReadOnlyPolicyMonacoEditor } from "./PolicyMonacoEditor";
 import { useAuth } from "../../auth/AuthProviderDefault";
 import { usePolicyContext } from "./hooks/PolicyProvider";
@@ -10,6 +10,7 @@ const ServiceControlPolicy = () => {
   const { sendRequestCommon } = useAuth();
   const [serviceControlPolicies, setServiceControlPolicies] = useState([]);
   const [panels, setPanels] = useState([]);
+  const [activeTargets, setActiveTargets] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -21,7 +22,7 @@ const ServiceControlPolicy = () => {
       if (!result) {
         return;
       }
-      setServiceControlPolicies(result);
+      setServiceControlPolicies(result.data);
     })();
   }, [accountID, sendRequestCommon]);
 
@@ -35,62 +36,79 @@ const ServiceControlPolicy = () => {
               content: {
                 content: (
                   <>
-                    <Header as="h4" block>
-                      Details
-                    </Header>
-                    <Header as="h5">
-                      ARN
-                      <Header.Subheader>{policy.policy.arn}</Header.Subheader>
-                    </Header>
-                    <Header as="h5">
-                      Description
-                      <Header.Subheader>
-                        {policy.policy.description}
-                      </Header.Subheader>
-                    </Header>
-                    <Header as="h5">
-                      Type
-                      <Header.Subheader>{policy.policy.type}</Header.Subheader>
-                    </Header>
-                    <Header as="h5">
-                      AWS Managed
-                      <Header.Subheader>
-                        {policy.policy.aws_managed ? "True" : "False"}
-                      </Header.Subheader>
-                    </Header>
-                    <Header as="h4" block style={{ marginTop: "3rem" }}>
-                      Content
-                    </Header>
+                    <Header as="h2">Details</Header>
+                    <Table celled striped definition>
+                      <Table.Body>
+                        <Table.Row>
+                          <Table.Cell>ARN</Table.Cell>
+                          <Table.Cell>{policy.policy.arn}</Table.Cell>
+                        </Table.Row>
+                        <Table.Row>
+                          <Table.Cell>Description</Table.Cell>
+                          <Table.Cell>{policy.policy.description}</Table.Cell>
+                        </Table.Row>
+                        <Table.Row>
+                          <Table.Cell>Type</Table.Cell>
+                          <Table.Cell>{policy.policy.type}</Table.Cell>
+                        </Table.Row>
+                        <Table.Row>
+                          <Table.Cell>AWS Managed</Table.Cell>
+                          <Table.Cell>
+                            {policy.policy.aws_managed ? "True" : "False"}
+                          </Table.Cell>
+                        </Table.Row>
+                      </Table.Body>
+                    </Table>
+                    <Header as="h2">Content</Header>
                     <ReadOnlyPolicyMonacoEditor
                       policy={JSON.parse(policy.policy.content)}
                     />
                     {policy.targets.length ? (
                       <>
-                        <Header as="h4" block style={{ marginTop: "3rem" }}>
-                          Targets
-                        </Header>
-                        <Table celled>
-                          <Table.Header>
-                            <Table.Row>
-                              <Table.HeaderCell>Name</Table.HeaderCell>
-                              <Table.HeaderCell>ID</Table.HeaderCell>
-                              <Table.HeaderCell>ARN</Table.HeaderCell>
-                              <Table.HeaderCell>Type</Table.HeaderCell>
-                            </Table.Row>
-                          </Table.Header>
-                          <Table.Body>
-                            {policy.targets.map((target) => {
-                              return (
-                                <Table.Row key={target.target_id}>
-                                  <Table.Cell>{target.name}</Table.Cell>
-                                  <Table.Cell>{target.target_id}</Table.Cell>
-                                  <Table.Cell>{target.arn}</Table.Cell>
-                                  <Table.Cell>{target.type}</Table.Cell>
+                        <Accordion exclusive={false} fluid>
+                          <Accordion.Title
+                            active={activeTargets[policy.policy.id] === true}
+                            index={true}
+                            onClick={() => {
+                              let newState = activeTargets;
+                              newState[policy.policy.id] = !newState[
+                                policy.policy.id
+                              ];
+                              setActiveTargets(newState);
+                            }}
+                          >
+                            <Icon name="dropdown" />
+                            Targets
+                          </Accordion.Title>
+                          <Accordion.Content
+                            active={activeTargets[policy.policy.id] === true}
+                          >
+                            <Table celled>
+                              <Table.Header>
+                                <Table.Row>
+                                  <Table.HeaderCell>Name</Table.HeaderCell>
+                                  <Table.HeaderCell>ID</Table.HeaderCell>
+                                  <Table.HeaderCell>ARN</Table.HeaderCell>
+                                  <Table.HeaderCell>Type</Table.HeaderCell>
                                 </Table.Row>
-                              );
-                            })}
-                          </Table.Body>
-                        </Table>
+                              </Table.Header>
+                              <Table.Body>
+                                {policy.targets.map((target) => {
+                                  return (
+                                    <Table.Row key={target.target_id}>
+                                      <Table.Cell>{target.name}</Table.Cell>
+                                      <Table.Cell>
+                                        {target.target_id}
+                                      </Table.Cell>
+                                      <Table.Cell>{target.arn}</Table.Cell>
+                                      <Table.Cell>{target.type}</Table.Cell>
+                                    </Table.Row>
+                                  );
+                                })}
+                              </Table.Body>
+                            </Table>
+                          </Accordion.Content>
+                        </Accordion>
                       </>
                     ) : null}
                   </>
@@ -100,17 +118,26 @@ const ServiceControlPolicy = () => {
           })
         : [];
     setPanels(newPanels);
-  }, [serviceControlPolicies]);
+  }, [serviceControlPolicies, activeTargets]);
 
   return (
     <>
       <Header as="h2">
         Service Control Policies
         <Header.Subheader>
-          Lorem ipsum dolor sit amet, consectetur adipisicing elit. A aliquid
-          assumenda commodi cum cupiditate, debitis deserunt eligendi eos fuga
-          itaque nam pariatur quibusdam, quisquam. Atque cupiditate iure libero
-          sunt. Facere.
+          Service control policies (SCPs) are a type of organization policy that
+          can be used to manage permissions across an entire AWS organization.
+          More information about SCPs is
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href={
+              "https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html"
+            }
+          >
+            {" "}
+            here
+          </a>
         </Header.Subheader>
       </Header>
       <Accordion
