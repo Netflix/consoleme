@@ -1457,6 +1457,3 @@ if config.get("celery.clear_tasks_for_development", False):
 
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"
-
-cache_organization_structure()
-cache_scps_across_organizations()
