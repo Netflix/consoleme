@@ -10,6 +10,7 @@ import {
 } from "semantic-ui-react";
 import { useHistory } from "react-router-dom";
 import qs from "qs";
+import { generateRedirectUri } from "../helpers/utils";
 
 const LoginForm = () => {
   const [pageConfig, setPageConfig] = useState(null);
@@ -64,7 +65,7 @@ const LoginForm = () => {
     });
     const respJson = await resp.json();
     if (respJson.type === "redirect") {
-      window.location.href = respJson.redirect_url;
+      window.location.href = generateRedirectUri(respJson.redirect_url);
     }
   };
 

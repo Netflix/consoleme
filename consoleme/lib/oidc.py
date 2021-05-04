@@ -90,30 +90,27 @@ async def authenticate_user_by_oidc(request):
         protocol = "https"
     force_redirect = await should_force_redirect(request.request)
 
-    # The endpoint where we want our OIDC provider to redirect us back to perform auth
+    # We want the user to be redirected by IdP to `oidc_redirect_uri` after authn.
     oidc_redirect_uri = f"{protocol}://{request.request.host}/auth"
+    base_redirect_uri = f"{protocol}://{request.request.host}"
+    if config.get("auth.frontend_port"):
+        base_redirect_uri = f"{protocol}://{request.request.host_name}:" + str(
+            config.get("auth.frontend_port")
+        )
+    # The endpoint where we want our OIDC provider to redirect us back to perform auth
 
-    consoleme_uri = config.get("url")
     # The endpoint where the user wants to be sent after authentication. This will be stored in the state
     after_redirect_uri = request.request.arguments.get("redirect_url", [""])[0]
     if not after_redirect_uri:
         after_redirect_uri = request.request.arguments.get("state", [""])[0]
     if after_redirect_uri and isinstance(after_redirect_uri, bytes):
         after_redirect_uri = after_redirect_uri.decode("utf-8")
-    if not after_redirect_uri:
-        after_redirect_uri = config.get("url", f"{protocol}://{request.request.host}/")
-    if consoleme_uri not in after_redirect_uri:
-        log.error(
-            {
-                **log_data,
-                "after_redirect_uri": after_redirect_uri,
-                "error": (
-                    "Incoming authentication request attempted to redirect user to a non-ConsoleMe "
-                    "endpoint. Re-configuring to redirec to ConsoleMe's landing page."
-                ),
-            }
-        )
-        after_redirect_uri = consoleme_uri
+
+    # If after_redirect_uri doesn't exist, or if it's not a relative URL, force redirection to landing page.
+    if not after_redirect_uri or not after_redirect_uri.startswith("/"):
+        after_redirect_uri = f"{base_redirect_uri}/"
+    else:
+        after_redirect_uri = f"{base_redirect_uri}{after_redirect_uri}"
 
     if not code:
         args = {"response_type": "code"}
