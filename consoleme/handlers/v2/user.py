@@ -217,6 +217,21 @@ class LoginHandler(TornadoRequestHandler):
             httponly=config.get("auth.cookie.httponly", True),
             samesite=config.get("auth.cookie.samesite", True),
         )
+
+        consoleme_uri = config.get("url")
+
+        if consoleme_uri not in login_attempt.after_redirect_uri:
+            log.error(
+                {
+                    **log_data,
+                    "after_redirect_uri": login_attempt.after_redirect_uri,
+                    "error": (
+                        "Incoming authentication request attempted to redirect user to a non-ConsoleMe "
+                        "endpoint. Re-configuring to redirec to ConsoleMe's landing page."
+                    ),
+                }
+            )
+            login_attempt.after_redirect_uri = consoleme_uri
         res = WebResponse(
             status="redirect",
             redirect_url=login_attempt.after_redirect_uri,

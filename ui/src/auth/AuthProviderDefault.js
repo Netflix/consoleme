@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer } from "react";
-import { getCookie } from "../helpers/utils";
+import { generateRedirectUri, getCookie } from "../helpers/utils";
 
 const initialAuthState = {
   user: null, // user profile data
@@ -44,16 +44,21 @@ export const AuthProvider = ({ children }) => {
   const login = async () => {
     try {
       // First check whether user is currently authenticated by using the backend auth endpoint.
-      const auth = await fetch("/auth?redirect_url=" + window.location.href, {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          Accept: "application/json",
-        },
-      }).then((res) => res.json());
+      const auth = await fetch(
+        "/auth?redirect_url=" +
+          window.location.pathname +
+          window.location.search,
+        {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            Accept: "application/json",
+          },
+        }
+      ).then((res) => res.json());
 
       // ConsoleMe backend returns a response containing a redirection to IDP for authentication.
       if (auth.type === "redirect" && auth.reason === "unauthenticated") {
-        window.location.href = auth.redirect_url;
+        window.location.href = generateRedirectUri(auth.redirect_url);
       } else if (auth.status === 401) {
         // handle the session expiration if the response status is 401 for re-authentication
         setIsSessionExpired(true);
@@ -121,14 +126,19 @@ export const AuthProvider = ({ children }) => {
           response.type === "redirect" &&
           response.reason === "unauthenticated"
         ) {
-          fetch("/auth?redirect_url=" + window.location.href, {
-            headers: {
-              "X-Requested-With": "XMLHttpRequest",
-              Accept: "application/json",
-            },
-          }).then((resp) => {
+          fetch(
+            "/auth?redirect_url=" +
+              window.location.pathname +
+              window.location.search,
+            {
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                Accept: "application/json",
+              },
+            }
+          ).then((resp) => {
             if (resp.type === "redirect") {
-              window.location.href = resp.redirect_url;
+              window.location.href = generateRedirectUri(resp.redirect_url);
             }
           });
         } else if (response.status === 401) {

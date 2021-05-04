@@ -22,6 +22,37 @@ export function getCookie(name) {
   return r ? r[1] : undefined;
 }
 
+// Generates a redirect URI given a relative or full URI from backend
+export function generateRedirectUri(redirectUri) {
+  let relative = false;
+  if (redirectUri.startsWith("/")) {
+    relative = true;
+  }
+  if (relative) {
+    let port = "";
+    if (window.location.port) {
+      port = ":" + window.location.port;
+    }
+    console.log(
+      "Redirecting to " +
+        window.location.protocol +
+        "//" +
+        window.location.host +
+        port +
+        redirectUri
+    );
+    return (
+      window.location.protocol +
+      "//" +
+      window.location.host +
+      port +
+      redirectUri
+    );
+  }
+  console.log(redirectUri);
+  return redirectUri;
+}
+
 // NOTE: avoid using sendRequestCommon from utils file.
 async function sendRequestCommon(
   json,
@@ -53,15 +84,20 @@ async function sendRequestCommon(
       resJson.type === "redirect" &&
       resJson.reason === "unauthenticated"
     ) {
-      const auth = await fetch("/auth?redirect_url=" + window.location.href, {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-          Accept: "application/json",
-        },
-      }).then((res) => res.json());
+      const auth = await fetch(
+        "/auth?redirect_url=" +
+          window.location.pathname +
+          window.location.search,
+        {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            Accept: "application/json",
+          },
+        }
+      ).then((res) => res.json());
       // redirect to IDP for authentication.
       if (auth.type === "redirect") {
-        window.location.href = auth.redirect_url;
+        window.location.href = generateRedirectUri(auth.redirect_url);
       }
     } else if (response.status === 401) {
       return null;
