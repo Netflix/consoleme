@@ -10,11 +10,11 @@ To configure this option, the following configuration values should be set in yo
 
 ```text
 cache_accounts_from_aws_organizations:
-  # This is the account ID of your AWS organizations master
-  organizations_master_account_id: "123456789012"
-  # This is the name of the role that consoleme will attempt to assume on
-  # your Organizations master account to call organizations:listaccounts.
-  organizations_master_role_to_assume: "ConsoleMe"
+  # This is a list of the account IDs of your AWS organizations master(s)
+  - organizations_master_account_id: "123456789012"
+    # This is the name of the role that consoleme will attempt to assume on
+    # your Organizations master account to call organizations:listaccounts.
+    organizations_master_role_to_assume: "ConsoleMe"
 ```
 
 ## **Sync Accounts from** SWAG

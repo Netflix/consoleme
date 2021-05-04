@@ -50,7 +50,11 @@ from consoleme.lib.account_indexers import (
     cache_cloud_accounts,
     get_account_id_to_name_mapping,
 )
-from consoleme.lib.aws import get_enabled_regions_for_account
+from consoleme.lib.aws import (
+    cache_all_scps,
+    cache_org_structure,
+    get_enabled_regions_for_account,
+)
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
@@ -1318,6 +1322,32 @@ def cache_credential_authorization_mapping() -> Dict:
     return log_data
 
 
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
+def cache_scps_across_organizations() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    scps = async_to_sync(cache_all_scps)()
+    log_data = {
+        "function": function,
+        "message": "Successfully cached service control policies",
+        "num_organizations": len(scps),
+    }
+    log.debug(log_data)
+    return log_data
+
+
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
+def cache_organization_structure() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    org_structure = async_to_sync(cache_org_structure)()
+    log_data = {
+        "function": function,
+        "message": "Successfully cached organization structure",
+        "num_organizations": len(org_structure),
+    }
+    log.debug(log_data)
+    return log_data
+
+
 schedule_30_minute = timedelta(seconds=1800)
 schedule_45_minute = timedelta(seconds=2700)
 schedule_6_hours = timedelta(hours=6)
@@ -1406,6 +1436,16 @@ schedule = {
         "task": "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping",
         "options": {"expires": 1000},
         "schedule": schedule_5_minutes,
+    },
+    "cache_scps_across_organizations": {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_scps_across_organizations",
+        "options": {"expires": 1000},
+        "schedule": schedule_1_hour,
+    },
+    "cache_organization_structure": {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_organization_structure",
+        "options": {"expires": 1000},
+        "schedule": schedule_1_hour,
     },
 }
 

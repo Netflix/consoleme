@@ -32,10 +32,22 @@ from consoleme.exceptions.exceptions import (
     InvalidInvocationArgument,
     MissingConfigurationValue,
 )
-from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
+from consoleme.lib.account_indexers.aws_organizations import (
+    retrieve_org_structure,
+    retrieve_scps_for_organization,
+)
+from consoleme.lib.cache import (
+    retrieve_json_data_from_redis_or_s3,
+    store_json_results_in_redis_and_s3,
+)
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hget
-from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
+from consoleme.models import (
+    CloneRoleRequestModel,
+    RoleCreationRequestModel,
+    ServiceControlPolicyArrayModel,
+    ServiceControlPolicyModel,
+)
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
@@ -1262,3 +1274,206 @@ async def validate_iam_policy(policy: str, log_data: Dict):
         policy, log_data, policy_type="IDENTITY_POLICY"
     )
     return parliament_findings + access_analyzer_findings
+
+
+async def get_all_scps(force_sync=False) -> Dict[str, List[ServiceControlPolicyModel]]:
+    """Retrieve a dictionary containing all Service Control Policies across organizations
+
+    Args:
+        force_sync: force a cache update
+    """
+    redis_key = config.get(
+        "cache_scps_across_organizations.redis.key.all_scps_key", "ALL_AWS_SCPS"
+    )
+    scps = await retrieve_json_data_from_redis_or_s3(
+        redis_key,
+        s3_bucket=config.get("cache_scps_across_organizations.s3.bucket"),
+        s3_key=config.get("cache_scps_across_organizations.s3.file"),
+        default={},
+        max_age=86400,
+    )
+    if force_sync or not scps:
+        scps = await cache_all_scps()
+    scp_models = {}
+    for account, org_scps in scps.items():
+        scp_models[account] = [ServiceControlPolicyModel(**scp) for scp in org_scps]
+    return scp_models
+
+
+async def cache_all_scps() -> Dict[str, Any]:
+    """Store a dictionary of all Service Control Policies across organizations in the cache"""
+    all_scps = {}
+    for organization in config.get("cache_accounts_from_aws_organizations", []):
+        org_account_id = organization.get("organizations_master_account_id")
+        role_to_assume = organization.get(
+            "organizations_master_role_to_assume", config.get("policies.role_name")
+        )
+        if not org_account_id:
+            raise MissingConfigurationValue(
+                "Your AWS Organizations Master Account ID is not specified in configuration. "
+                "Unable to sync accounts from "
+                "AWS Organizations"
+            )
+
+        if not role_to_assume:
+            raise MissingConfigurationValue(
+                "ConsoleMe doesn't know what role to assume to retrieve account information "
+                "from AWS Organizations. please set the appropriate configuration value."
+            )
+        org_scps = await retrieve_scps_for_organization(
+            org_account_id, role_to_assume=role_to_assume, region=config.region
+        )
+        all_scps[org_account_id] = org_scps
+    redis_key = config.get(
+        "cache_scps_across_organizations.redis.key.all_scps_key", "ALL_AWS_SCPS"
+    )
+    s3_bucket = None
+    s3_key = None
+    if config.region == config.get("celery.active_region", config.region) or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("cache_scps_across_organizations.s3.bucket")
+        s3_key = config.get("cache_scps_across_organizations.s3.file")
+    await store_json_results_in_redis_and_s3(
+        all_scps,
+        redis_key=redis_key,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+    )
+    return all_scps
+
+
+async def get_org_structure(force_sync=False) -> Dict[str, Any]:
+    """Retrieve a dictionary containing the organization structure
+
+    Args:
+        force_sync: force a cache update
+    """
+    redis_key = config.get(
+        "cache_organization_structure.redis.key.org_structure_key", "AWS_ORG_STRUCTURE"
+    )
+    org_structure = await retrieve_json_data_from_redis_or_s3(
+        redis_key,
+        s3_bucket=config.get("cache_organization_structure.s3.bucket"),
+        s3_key=config.get("cache_organization_structure.s3.file"),
+        default={},
+    )
+    if force_sync or not org_structure:
+        org_structure = await cache_org_structure()
+    return org_structure
+
+
+async def cache_org_structure() -> Dict[str, Any]:
+    """Store a dictionary of the organization structure in the cache"""
+    all_org_structure = {}
+    for organization in config.get("cache_accounts_from_aws_organizations", []):
+        org_account_id = organization.get("organizations_master_account_id")
+        role_to_assume = organization.get(
+            "organizations_master_role_to_assume", config.get("policies.role_name")
+        )
+        if not org_account_id:
+            raise MissingConfigurationValue(
+                "Your AWS Organizations Master Account ID is not specified in configuration. "
+                "Unable to sync accounts from "
+                "AWS Organizations"
+            )
+
+        if not role_to_assume:
+            raise MissingConfigurationValue(
+                "ConsoleMe doesn't know what role to assume to retrieve account information "
+                "from AWS Organizations. please set the appropriate configuration value."
+            )
+        org_structure = await retrieve_org_structure(
+            org_account_id, region=config.region
+        )
+        all_org_structure.update(org_structure)
+    redis_key = config.get(
+        "cache_organization_structure.redis.key.org_structure_key", "AWS_ORG_STRUCTURE"
+    )
+    s3_bucket = None
+    s3_key = None
+    if config.region == config.get("celery.active_region", config.region) or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("cache_organization_structure.s3.bucket")
+        s3_key = config.get("cache_organization_structure.s3.file")
+    await store_json_results_in_redis_and_s3(
+        all_org_structure,
+        redis_key=redis_key,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+    )
+    return all_org_structure
+
+
+async def _is_member_of_ou(
+    identifier: str, ou: Dict[str, Any]
+) -> Tuple[bool, Set[str]]:
+    """Recursively walk org structure to determine if the account or OU is in the org and, if so, return all OUs of which the account or OU is a member
+
+    Args:
+        identifier: AWS account or OU ID
+        ou: dictionary representing the organization/organizational unit structure to search
+    """
+    found = False
+    ou_path = set()
+    for child in ou.get("Children", []):
+        if child.get("Id") == identifier:
+            found = True
+        elif child.get("Type") == "ORGANIZATIONAL_UNIT":
+            found, ou_path = await _is_member_of_ou(identifier, child)
+        if found:
+            ou_path.add(ou.get("Id"))
+            break
+    return found, ou_path
+
+
+async def get_organizational_units_for_account(identifier: str) -> Set[str]:
+    """Return a set of Organizational Unit IDs for a given account or OU ID
+
+    Args:
+        identifier: AWS account or OU ID
+    """
+    all_orgs = await get_org_structure()
+    organizational_units = set()
+    for org_id, org_structure in all_orgs.items():
+        found, organizational_units = await _is_member_of_ou(identifier, org_structure)
+        if found:
+            break
+    if not organizational_units:
+        log.warning("could not find account in organization")
+    return organizational_units
+
+
+async def _scp_targets_account_or_ou(
+    scp: ServiceControlPolicyModel, identifier: str, organizational_units: Set[str]
+) -> bool:
+    """Return True if the provided SCP targets the account or OU identifier provided
+
+    Args:
+        scp: Service Control Policy whose targets we check
+        identifier: AWS account or OU ID
+        organizational_units: set of IDs for OUs of which the identifier is a member
+    """
+    for target in scp.targets:
+        if target.target_id == identifier or target.target_id in organizational_units:
+            return True
+    return False
+
+
+async def get_scps_for_account_or_ou(identifier: str) -> ServiceControlPolicyArrayModel:
+    """Retrieve a list of Service Control Policies for the account or OU specified by the identifier
+
+    Args:
+        identifier: AWS account or OU ID
+    """
+    all_scps = await get_all_scps()
+    account_ous = await get_organizational_units_for_account(identifier)
+    scps_for_account = []
+    for org_account_id, scps in all_scps.items():
+        # Iterate through each org's SCPs and see if the provided account_id is in the targets
+        for scp in scps:
+            if await _scp_targets_account_or_ou(scp, identifier, account_ous):
+                scps_for_account.append(scp)
+    scps = ServiceControlPolicyArrayModel(__root__=scps_for_account)
+    return scps

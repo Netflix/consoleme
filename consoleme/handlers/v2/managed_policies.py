@@ -4,7 +4,7 @@ from cloudaux.aws.iam import get_role_managed_policy_documents
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MustBeFte
 from consoleme.handlers.base import BaseAPIV2Handler
-from consoleme.models import WebResponse
+from consoleme.models import Status2, WebResponse
 
 log = config.get_logger()
 
@@ -43,7 +43,7 @@ class ManagedPoliciesOnRoleHandler(BaseAPIV2Handler):
             region=config.region,
         )
         res = WebResponse(
-            status="success",
+            status=Status2.success,
             status_code=200,
             data=managed_policy_details,
         )
