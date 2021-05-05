@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Accordion, Header, Icon, Table } from "semantic-ui-react";
+import { Accordion, Header, Icon, Message, Table } from "semantic-ui-react";
 import { ReadOnlyPolicyMonacoEditor } from "./PolicyMonacoEditor";
 import { useAuth } from "../../auth/AuthProviderDefault";
 import { usePolicyContext } from "./hooks/PolicyProvider";
@@ -9,6 +9,7 @@ const ServiceControlPolicy = () => {
   const { accountID } = params;
   const { sendRequestCommon } = useAuth();
   const [serviceControlPolicies, setServiceControlPolicies] = useState([]);
+  const [errorMessage, setErrorMessage] = useState(null);
   const [panels, setPanels] = useState([]);
   const [activeTargets, setActiveTargets] = useState({});
 
@@ -22,7 +23,11 @@ const ServiceControlPolicy = () => {
       if (!result) {
         return;
       }
-      setServiceControlPolicies(result.data);
+      if (result.status === "error") {
+        setErrorMessage(JSON.stringify(result));
+      } else {
+        setServiceControlPolicies(result.data);
+      }
     })();
   }, [accountID, sendRequestCommon]);
 
@@ -143,6 +148,11 @@ const ServiceControlPolicy = () => {
           </a>
         </Header.Subheader>
       </Header>
+      {errorMessage ? (
+        <Message negative>
+          <p>{errorMessage}</p>
+        </Message>
+      ) : null}
       {panels.length > 0 ? (
         <Accordion
           defaultActiveIndex={[0]}
