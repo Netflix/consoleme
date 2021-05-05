@@ -27,9 +27,7 @@ account_ids_to_name:
 cache_cloud_accounts:
   from_aws_organizations: ${sync_accounts_from_organizations}
 
-cache_accounts_from_aws_organizations:
-  organizations_master_account_id: "${sync_accounts_from_organizations_master_account_id}"
-  organizations_master_role_to_assume: "${sync_accounts_from_organizations_role_to_assume}"
+cache_accounts_from_aws_organizations: "${sync_accounts_from_organizations_account_map}"
 
 cloud_credential_authorization_mapping:
   role_tags:

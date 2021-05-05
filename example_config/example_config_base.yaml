@@ -23,13 +23,21 @@ tornado:
 #  "123456789013": prod
 #  "123456789014": test
 
+# ConsoleMe can cache account, org structure, and SCPs from AWS Organizations in one or more accounts
 #cache_accounts_from_aws_organizations:
 #  # This is the account ID of your AWS organizations master
-#  organizations_master_account_id: "123456789012"
-#  # This is the name of the role that consoleme will attempt to assume on your Organizations master account to retrieve
-#  # account information. Ensure that ConsoleMe can assume this role, and that this role has the permission:
-#  # organizations:listaccounts
-#  organizations_master_role_to_assume: "ConsoleMe"
+#  - organizations_master_account_id: "123456789012"
+#    # This is the name of the role that consoleme will attempt to assume on your Organizations master account to retrieve
+#    # account information. Ensure that ConsoleMe can assume this role, and that this role has the permissions:
+#    # organizations:DescribeAccount
+#    # organizations:DescribeOrganizationalUnit
+#    # organizations:DescribePolicy
+#    # organizations:ListAccounts
+#    # organizations:ListChildren
+#    # organizations:ListPolicies
+#    # organizations:ListRoots
+#    # organizations:ListTargetsForPolicy
+#    organizations_master_role_to_assume: "ConsoleMe"
 
 #retrieve_accounts_from_swag:
 #  base_url: 'https://your_swag_url/'

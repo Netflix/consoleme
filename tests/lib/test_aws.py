@@ -113,3 +113,102 @@ class TestAwsLib(TestCase):
             result,
             f"Test case failed: " f"{aws_config_resources_test_case['description']}",
         )
+
+    def test_is_member_of_ou(self):
+        from consoleme.lib.aws import _is_member_of_ou
+
+        loop = asyncio.get_event_loop()
+        fake_org = {
+            "Id": "r",
+            "Children": [
+                {
+                    "Id": "a",
+                    "Type": "ORGANIZATIONAL_UNIT",
+                    "Children": [
+                        {
+                            "Id": "b",
+                            "Type": "ORGANIZATIONAL_UNIT",
+                            "Children": [{"Id": "100", "Type": "ACCOUNT"}],
+                        }
+                    ],
+                },
+            ],
+        }
+
+        # Account ID in nested OU
+        result, ous = loop.run_until_complete(_is_member_of_ou("100", fake_org))
+        self.assertTrue(result)
+        self.assertEqual(ous, {"b", "a", "r"})
+
+        # OU ID in OU structure
+        result, ous = loop.run_until_complete(_is_member_of_ou("b", fake_org))
+        self.assertTrue(result)
+        self.assertEqual(ous, {"a", "r"})
+
+        # ID not in OU structure
+        result, ous = loop.run_until_complete(_is_member_of_ou("101", fake_org))
+        self.assertFalse(result)
+        self.assertEqual(ous, set())
+
+    def test_scp_targets_account_or_ou(self):
+        from consoleme.lib.aws import _scp_targets_account_or_ou
+        from consoleme.models import (
+            ServiceControlPolicyDetailsModel,
+            ServiceControlPolicyModel,
+            ServiceControlPolicyTargetModel,
+        )
+
+        loop = asyncio.get_event_loop()
+        blank_scp_details = ServiceControlPolicyDetailsModel(
+            id="",
+            arn="",
+            name="",
+            description="",
+            aws_managed=False,
+            content="",
+        )
+
+        # SCP targets account directly
+        scp_targets = [
+            ServiceControlPolicyTargetModel(
+                target_id="100", arn="", name="", type="ACCOUNT"
+            )
+        ]
+        fake_scp = ServiceControlPolicyModel(
+            targets=scp_targets, policy=blank_scp_details
+        )
+        fake_ous = set()
+        result = loop.run_until_complete(
+            _scp_targets_account_or_ou(fake_scp, "100", fake_ous)
+        )
+        self.assertTrue(result)
+
+        # SCP targets OU of which account is a member
+        scp_targets = [
+            ServiceControlPolicyTargetModel(
+                target_id="abc123", arn="", name="", type="ORGANIZATIONAL_UNIT"
+            )
+        ]
+        fake_scp = ServiceControlPolicyModel(
+            targets=scp_targets, policy=blank_scp_details
+        )
+        fake_ous = {"abc123", "def456"}
+        result = loop.run_until_complete(
+            _scp_targets_account_or_ou(fake_scp, "100", fake_ous)
+        )
+        self.assertTrue(result)
+
+        # SCP doesn't target account
+        scp_targets = [
+            ServiceControlPolicyTargetModel(
+                target_id="ghi789", arn="", name="", type="ORGANIZATIONAL_UNIT"
+            )
+        ]
+        fake_scp = ServiceControlPolicyModel(
+            targets=scp_targets, policy=blank_scp_details
+        )
+        fake_ous = {"abc123", "def456"}
+        result = loop.run_until_complete(
+            _scp_targets_account_or_ou(fake_scp, "100", fake_ous)
+        )
+        self.assertFalse(result)

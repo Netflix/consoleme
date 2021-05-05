@@ -64,6 +64,7 @@ from consoleme.handlers.v2.self_service import (
     PermissionTemplatesHandler,
     SelfServiceConfigHandler,
 )
+from consoleme.handlers.v2.service_control_policy import ServiceControlPolicyHandler
 from consoleme.handlers.v2.typeahead import ResourceTypeAheadHandlerV2
 from consoleme.handlers.v2.user import (
     LoginConfigurationHandler,
@@ -154,6 +155,7 @@ def make_app(jwt_validator=None):
             r"/api/v2/resources/(\d{12})/(s3|sqs|sns)(?:/([a-z\-1-9]+))?/(.*)",
             ResourceDetailHandler,
         ),
+        (r"/api/v2/service_control_policies/(.*)", ServiceControlPolicyHandler),
         (r"/api/v2/mtls/roles/(\d{12})/(.*)", RoleDetailAppHandler),
         (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),

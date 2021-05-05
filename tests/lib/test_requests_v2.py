@@ -9,7 +9,6 @@ from pydantic import ValidationError
 
 from consoleme.models import (
     Action,
-    Action1,
     AssumeRolePolicyChangeModel,
     ChangeModelArray,
     Command,
@@ -281,7 +280,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Invalid characters were detected in the policy.", str(e))
 
         # Trying to detach a policy that is not attached
-        managed_policy_change_model.action = Action1.detach
+        managed_policy_change_model.action = Action.detach
         with pytest.raises(InvalidRequestParameter) as e:
             await validate_managed_policy_change(
                 managed_policy_change_model, "user@example.com", role
@@ -293,7 +292,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         # Trying to attach a policy that is already attached
         role.managed_policies = [{"PolicyArn": managed_policy_change_model.arn}]
-        managed_policy_change_model.action = Action1.attach
+        managed_policy_change_model.action = Action.attach
         with pytest.raises(InvalidRequestParameter) as e:
             await validate_managed_policy_change(
                 managed_policy_change_model, "user@example.com", role
@@ -309,14 +308,14 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         managed_policy_change_model.arn = (
             "arn:aws:iam::123456789012:policy/TestManagedPolicy2"
         )
-        managed_policy_change_model.action = Action1.attach
+        managed_policy_change_model.action = Action.attach
         await validate_managed_policy_change(
             managed_policy_change_model, "user@example.com", role
         )
 
         # Detach a managed policy that is attached to the role
         role.managed_policies = [{"PolicyArn": managed_policy_change_model.arn}]
-        managed_policy_change_model.action = Action1.detach
+        managed_policy_change_model.action = Action.detach
         await validate_managed_policy_change(
             managed_policy_change_model, "user@example.com", role
         )
@@ -802,7 +801,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         # Trying to attach a managed policy that doesn't exist
         response.action_results = []
         response.errors = 0
-        managed_policy_change_model.action = Action1.attach
+        managed_policy_change_model.action = Action.attach
         extended_request.changes = ChangeModelArray(
             changes=[managed_policy_change_model]
         )
@@ -845,7 +844,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         # Detaching the managed policy -> no errors
         response.action_results = []
         response.errors = 0
-        managed_policy_change_model.action = Action1.detach
+        managed_policy_change_model.action = Action.detach
         extended_request.changes = ChangeModelArray(
             changes=[managed_policy_change_model]
         )

@@ -22,7 +22,7 @@ We use [datamodel-code-generator](https://github.com/koxudaxi/datamodel-code-gen
 If you make changes to [ConsoleMe's Swagger specification](https://github.com/Netflix/consoleme/blob/master/swagger.yaml), you'll need to re-generate the [Pydantic Models file ](https://github.com/Netflix/consoleme/blob/master/consoleme/models.py)with the following command:
 
 ```text
-datamodel-codegen --input swagger.yaml --output consoleme/models.py
+ datamodel-codegen --target-python-version 3.8 --base-class consoleme.lib.pydantic.BaseModel --input swagger.yaml --output consoleme/models.py
 ```
 
 ## How do I debug the unit tests?

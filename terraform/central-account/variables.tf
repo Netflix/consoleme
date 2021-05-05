@@ -162,14 +162,10 @@ variable "sync_accounts_from_organizations" {
   default     = false
 }
 
-variable "sync_accounts_from_organizations_master_account_id" {
+variable "sync_accounts_from_organizations_account_map" {
+  type        = list(map(string))
   description = "Organizations master account ID"
-  default     = null
-}
-
-variable "sync_accounts_from_organizations_role_to_assume" {
-  description = "Organizations master role to assume"
-  default     = "ConsoleMeTarget"
+  default     = []
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
