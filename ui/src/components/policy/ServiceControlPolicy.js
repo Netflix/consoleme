@@ -74,7 +74,10 @@ const ServiceControlPolicy = () => {
                               newState[policy.policy.id] = !newState[
                                 policy.policy.id
                               ];
-                              setActiveTargets(newState);
+                              setActiveTargets({
+                                ...activeTargets,
+                                ...newState,
+                              });
                             }}
                           >
                             <Icon name="dropdown" />
@@ -83,7 +86,7 @@ const ServiceControlPolicy = () => {
                           <Accordion.Content
                             active={activeTargets[policy.policy.id] === true}
                           >
-                            <Table celled>
+                            <Table celled attached="bottom">
                               <Table.Header>
                                 <Table.Row>
                                   <Table.HeaderCell>Name</Table.HeaderCell>
@@ -140,14 +143,16 @@ const ServiceControlPolicy = () => {
           </a>
         </Header.Subheader>
       </Header>
-      <Accordion
-        defaultActiveIndex={[0]}
-        exclusive={false}
-        fluid
-        panels={panels}
-        styled
-        style={{ marginTop: "2rem" }}
-      />
+      {panels.length > 0 ? (
+        <Accordion
+          defaultActiveIndex={[0]}
+          exclusive={false}
+          fluid
+          panels={panels}
+          styled
+          style={{ marginTop: "2rem" }}
+        />
+      ) : null}
     </>
   );
 };
