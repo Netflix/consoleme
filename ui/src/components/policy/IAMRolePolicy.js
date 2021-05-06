@@ -3,6 +3,7 @@ import { Label, Tab } from "semantic-ui-react";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import AssumeRolePolicy from "./AssumeRolePolicy";
 import ManagedPolicy from "./ManagedPolicy";
+import PermissionsBoundary from "./PermissionsBoundary";
 import InlinePolicy from "./InlinePolicy";
 import Issues from "./Issues";
 import Tags from "./Tags";
@@ -57,6 +58,19 @@ const IAMRolePolicy = () => {
         return (
           <Tab.Pane>
             <ManagedPolicy />
+          </Tab.Pane>
+        );
+      },
+    },
+    {
+      menuItem: {
+        key: "permissions_boundary",
+        content: "Permissions Boundary",
+      },
+      render: () => {
+        return (
+          <Tab.Pane>
+            <PermissionsBoundary />
           </Tab.Pane>
         );
       },

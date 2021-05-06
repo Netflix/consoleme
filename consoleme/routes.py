@@ -138,7 +138,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/requests_page_config", RequestsPageConfigHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesForAccountHandler),
-        (r"/api/v2/managed_policies/(\d{12})/(.*)", ManagedPoliciesHandler),
+        (r"/api/v2/managed_policies/(.*)", ManagedPoliciesHandler),
         (
             r"/api/v2/managed_policies_on_role/(\d{12})/(.*)",
             ManagedPoliciesOnRoleHandler,

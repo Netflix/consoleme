@@ -57,19 +57,20 @@ class ManagedPoliciesOnRoleHandler(BaseAPIV2Handler):
 
 class ManagedPoliciesHandler(BaseAPIV2Handler):
     """
-    Handler for /api/v2/managed_policies/{accountNumber}/{policyName}
+    Handler for /api/v2/managed_policies/{policyArn}
 
     Returns details about the specified managed policy
     """
 
-    async def get(self, account_id, policy_name):
+    async def get(self, policy_arn: str):
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
                 "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
 
-        policy_arn = f"arn:aws:iam::{account_id}:policy/{policy_name}"
+        account_id = policy_arn.split(":")[4]
+        policy_name = policy_arn.split("/")[-1]
         log_data = {
             "function": "ManagedPoliciesHandler.get",
             "user": self.user,

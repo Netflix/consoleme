@@ -156,6 +156,7 @@ async def get_role_details(
             created_time=role["policy"].get("CreateDate"),
             last_used_time=role["policy"].get("RoleLastUsed", {}).get("LastUsedDate"),
             description=role["policy"].get("Description"),
+            permissions_boundary=role["permissions_boundary"],
         )
     else:
         return RoleModel(
