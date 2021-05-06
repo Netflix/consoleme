@@ -116,7 +116,9 @@ const IAMRolePolicy = () => {
     },
   ];
 
-  return <Tab panes={tabs} />;
+  return (
+    <Tab menu={{ fluid: true, vertical: true, tabular: true }} panes={tabs} />
+  );
 };
 
 export default IAMRolePolicy;
