@@ -36,6 +36,7 @@ const ServiceControlPolicy = () => {
       serviceControlPolicies.length > 0
         ? serviceControlPolicies.map((policy) => {
             return {
+              active: true,
               key: policy.policy.id,
               title: policy.policy.name,
               content: {
