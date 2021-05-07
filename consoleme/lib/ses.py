@@ -19,7 +19,7 @@ async def send_email(
     subject: str,
     body: str,
     sending_app: str = "consoleme",
-    region: str = "us-west-2",
+    region: str = config.get("ses.region", "us-west-2"),
     charset: str = "UTF-8",
 ) -> None:
     client = boto3.client("ses", region_name=region)
