@@ -1005,7 +1005,11 @@ async def get_url_for_resource(
 
 
 async def get_aws_config_history_url_for_resource(
-    account_id, resource_id, resource_name, technology, region=config.get("aws.region", "us-east-1")
+    account_id,
+    resource_id,
+    resource_name,
+    technology,
+    region=config.get("aws.region", "us-east-1"),
 ):
     if config.get("get_aws_config_history_url_for_resource.generate_conglomo_url"):
         return await get_conglomo_url_for_resource(
