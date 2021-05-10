@@ -43,7 +43,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
         arguments = {k: self.get_argument(k) for k in self.request.arguments}
         role = role.lower()
         selected_roles = await group_mapping.filter_eligible_roles(role, self)
-        region = arguments.get("r", "us-east-1")
+        region = arguments.get("r", config.get("aws.region", "us-east-1"))
         redirect = arguments.get("redirect")
         log_data = {
             "user": self.user,
