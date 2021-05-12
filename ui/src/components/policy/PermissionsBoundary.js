@@ -51,6 +51,7 @@ const PermissionsBoundary = () => {
 
   useEffect(() => {
     (async () => {
+      if (!resource?.permissions_boundary?.PermissionsBoundaryArn) return;
       const result = await sendRequestCommon(
         null,
         `/api/v2/managed_policies/${resource?.permissions_boundary?.PermissionsBoundaryArn}`,
@@ -104,6 +105,13 @@ const PermissionsBoundary = () => {
       <Header as="h2">Permissions Boundary</Header>
       <Form>
         <Form.Field>
+          A permissions boundary is an advanced feature for using a managed
+          policy to set the maximum permissions that an IAM role can have. An
+          entity's permissions boundary allows it to perform only the actions
+          that are allowed by both its identity-based policies and its
+          permissions boundaries.
+          <br />
+          <br />
           <label>
             Select a managed policy from the dropdown that you wish to add to
             this role as a permissions boundary.
@@ -141,79 +149,83 @@ const PermissionsBoundary = () => {
       </Form>
       <Header as="h3" attached="top" content="Attached Permissions Boundary" />
       <Segment attached="bottom">
-        <List divided size="medium" relaxed="very" verticalAlign="middle">
-          <List.Item key={permissionsBoundary?.PolicyName}>
-            <List.Content floated="right">
-              <Button.Group attached="bottom">
-                {user?.authorization?.can_edit_policies ? (
-                  <>
-                    <Button
-                      negative
-                      size="small"
-                      name={permissionsBoundary?.PermissionsBoundaryArn}
-                      onClick={() =>
-                        onPermissionsBoundaryDelete(
-                          permissionsBoundary.PermissionsBoundaryArn
-                        )
-                      }
-                    >
-                      <Icon name="remove" />
-                      Remove
-                    </Button>
-                    <Button.Or />
-                  </>
+        {attachedPermissionsBoundaryDetails ? (
+          <List divided size="medium" relaxed="very" verticalAlign="middle">
+            <List.Item key={permissionsBoundary?.PolicyName}>
+              <List.Content floated="right">
+                <Button.Group attached="bottom">
+                  {user?.authorization?.can_edit_policies ? (
+                    <>
+                      <Button
+                        negative
+                        size="small"
+                        name={permissionsBoundary?.PermissionsBoundaryArn}
+                        onClick={() =>
+                          onPermissionsBoundaryDelete(
+                            permissionsBoundary.PermissionsBoundaryArn
+                          )
+                        }
+                      >
+                        <Icon name="remove" />
+                        Remove
+                      </Button>
+                      <Button.Or />
+                    </>
+                  ) : null}
+                  <Button
+                    negative
+                    size="small"
+                    name={permissionsBoundary?.PermissionsBoundaryArn}
+                    onClick={() =>
+                      onPermissionsBoundaryDeleteRequest(
+                        permissionsBoundary?.PermissionsBoundaryArn
+                      )
+                    }
+                  >
+                    <Icon name="remove" />
+                    Request Removal
+                  </Button>
+                </Button.Group>
+              </List.Content>
+              <List.Content>
+                <List.Header>
+                  {permissionsBoundary?.PermissionsBoundaryArn?.split(
+                    "/"
+                  ).slice(-1)}
+                </List.Header>
+                <List.Description as="a">
+                  {permissionsBoundary?.PermissionsBoundaryArn}
+                </List.Description>
+                {attachedPermissionsBoundaryDetails &&
+                attachedPermissionsBoundaryDetails ? (
+                  <Segment
+                    attached
+                    style={{
+                      border: 10,
+                      padding: 10,
+                    }}
+                  >
+                    <MonacoEditor
+                      ref={editorRef}
+                      height="540px"
+                      language="json"
+                      theme="vs-dark"
+                      value={JSON.stringify(
+                        attachedPermissionsBoundaryDetails,
+                        null,
+                        "\t"
+                      )}
+                      options={editorOptions}
+                      textAlign="center"
+                    />
+                  </Segment>
                 ) : null}
-                <Button
-                  negative
-                  size="small"
-                  name={permissionsBoundary?.PermissionsBoundaryArn}
-                  onClick={() =>
-                    onPermissionsBoundaryDeleteRequest(
-                      permissionsBoundary?.PermissionsBoundaryArn
-                    )
-                  }
-                >
-                  <Icon name="remove" />
-                  Request Removal
-                </Button>
-              </Button.Group>
-            </List.Content>
-            <List.Content>
-              <List.Header>
-                {permissionsBoundary?.PermissionsBoundaryArn?.split("/").slice(
-                  -1
-                )}
-              </List.Header>
-              <List.Description as="a">
-                {permissionsBoundary?.PermissionsBoundaryArn}
-              </List.Description>
-              {attachedPermissionsBoundaryDetails &&
-              attachedPermissionsBoundaryDetails ? (
-                <Segment
-                  attached
-                  style={{
-                    border: 10,
-                    padding: 10,
-                  }}
-                >
-                  <MonacoEditor
-                    ref={editorRef}
-                    height="540px"
-                    language="json"
-                    theme="vs-dark"
-                    value={JSON.stringify(
-                      attachedPermissionsBoundaryDetails,
-                      null,
-                      "\t"
-                    )}
-                    options={editorOptions}
-                    textAlign="center"
-                  />
-                </Segment>
-              ) : null}
-            </List.Content>
-          </List.Item>
-        </List>
+              </List.Content>
+            </List.Item>
+          </List>
+        ) : (
+          "No permissions boundary is attached."
+        )}
       </Segment>
       <JustificationModal handleSubmit={handlePermissionsBoundarySubmit} />
     </>

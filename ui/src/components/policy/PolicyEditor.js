@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Dimmer,
+  Divider,
   Grid,
   Header,
   Icon,
@@ -79,6 +80,7 @@ const PolicyEditor = () => {
         ) : null}
       </>
       <ResourceDetail />
+      <Divider />
       <EditPolicy />
       <DeleteResourceModal />
       <Dimmer active={isPolicyEditorLoading} inverted>

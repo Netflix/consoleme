@@ -968,6 +968,22 @@ components:
               pattern: "managed_policy"
             action:
               $ref: "#/components/schemas/Action"
+    PermissionsBoundaryChangeModel:
+      allOf:
+        - $ref: "#/components/schemas/ChangeModel"
+        - type: object
+          required:
+            - arn
+            - action
+          properties:
+            arn:
+              type: string
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+            change_type:
+              type: string
+              pattern: "permissions_boundary"
+            action:
+              $ref: "#/components/schemas/Action"
     ChangeModelArray:
       type: object
       required:
@@ -979,6 +995,7 @@ components:
             anyOf:
               - $ref: "#/components/schemas/InlinePolicyChangeModel"
               - $ref: "#/components/schemas/ManagedPolicyChangeModel"
+              - $ref: "#/components/schemas/PermissionsBoundaryChangeModel"
               - $ref: "#/components/schemas/ResourcePolicyChangeModel"
               - $ref: "#/components/schemas/AssumeRolePolicyChangeModel"
               - $ref: "#/components/schemas/ResourceTagChangeModel"
