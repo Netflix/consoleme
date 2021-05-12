@@ -105,18 +105,31 @@ const PermissionsBoundary = () => {
 
   return (
     <>
-      <Header as="h2">Permissions Boundary</Header>
-      <Form>
-        <Form.Field>
+      <Header as="h2">
+        Permissions Boundary
+        <Header.Subheader>
           A permissions boundary is an advanced feature for using a managed
           policy to set the maximum permissions that an IAM role can have. An
           entity's permissions boundary allows it to perform only the actions
           that are allowed by both its identity-based policies and its
-          permissions boundaries.
-          <br />
-          <br />
+          permissions boundaries. More information about permissions boundaries
+          is
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href={
+              "https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html"
+            }
+          >
+            {" "}
+            here
+          </a>
+        </Header.Subheader>
+      </Header>
+      <Form>
+        <Form.Field>
           <label>
-            Select a managed policy from the dropdown that you wish to add to
+            Select a managed policy from the dropdown that you wish to attach to
             this role as a permissions boundary.
           </label>
           <Dropdown
