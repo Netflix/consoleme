@@ -53,7 +53,14 @@ const IAMRolePolicy = () => {
     {
       menuItem: {
         key: "managed_policy",
-        content: "Managed Policy",
+        content: (() => {
+          return (
+            <>
+              Managed Policies
+              <Label>{resource?.managed_policies?.length}</Label>
+            </>
+          );
+        })(),
       },
       render: () => {
         return (
@@ -66,7 +73,19 @@ const IAMRolePolicy = () => {
     {
       menuItem: {
         key: "permissions_boundary",
-        content: "Permissions Boundary",
+        content: (() => {
+          return (
+            <>
+              Permissions Boundary
+              <Label>
+                {(resource?.permissions_boundary &&
+                  Object.keys(resource.permissions_boundary).length) !== 0
+                  ? "Attached"
+                  : "Detached"}
+              </Label>
+            </>
+          );
+        })(),
       },
       render: () => {
         return (
@@ -92,7 +111,14 @@ const IAMRolePolicy = () => {
     {
       menuItem: {
         key: "tags",
-        content: "Tags",
+        content: (() => {
+          return (
+            <>
+              Tags
+              <Label>{resource?.tags?.length}</Label>
+            </>
+          );
+        })(),
       },
       render: () => {
         return (

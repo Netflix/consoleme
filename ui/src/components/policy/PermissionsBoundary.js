@@ -51,7 +51,10 @@ const PermissionsBoundary = () => {
 
   useEffect(() => {
     (async () => {
-      if (!resource?.permissions_boundary?.PermissionsBoundaryArn) return;
+      if (!resource?.permissions_boundary?.PermissionsBoundaryArn) {
+        setAttachedPermissionsBoundaryDetails(null);
+        return null;
+      }
       const result = await sendRequestCommon(
         null,
         `/api/v2/managed_policies/${resource?.permissions_boundary?.PermissionsBoundaryArn}`,
@@ -196,30 +199,27 @@ const PermissionsBoundary = () => {
                 <List.Description as="a">
                   {permissionsBoundary?.PermissionsBoundaryArn}
                 </List.Description>
-                {attachedPermissionsBoundaryDetails &&
-                attachedPermissionsBoundaryDetails ? (
-                  <Segment
-                    attached
-                    style={{
-                      border: 10,
-                      padding: 10,
-                    }}
-                  >
-                    <MonacoEditor
-                      ref={editorRef}
-                      height="540px"
-                      language="json"
-                      theme="vs-dark"
-                      value={JSON.stringify(
-                        attachedPermissionsBoundaryDetails,
-                        null,
-                        "\t"
-                      )}
-                      options={editorOptions}
-                      textAlign="center"
-                    />
-                  </Segment>
-                ) : null}
+                <Segment
+                  attached
+                  style={{
+                    border: 10,
+                    padding: 10,
+                  }}
+                >
+                  <MonacoEditor
+                    ref={editorRef}
+                    height="540px"
+                    language="json"
+                    theme="vs-dark"
+                    value={JSON.stringify(
+                      attachedPermissionsBoundaryDetails,
+                      null,
+                      "\t"
+                    )}
+                    options={editorOptions}
+                    textAlign="center"
+                  />
+                </Segment>
               </List.Content>
             </List.Item>
           </List>

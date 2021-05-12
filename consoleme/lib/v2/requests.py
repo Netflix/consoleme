@@ -206,6 +206,7 @@ async def generate_request_from_change_model_array(
         len(inline_policy_changes) > 0
         or len(managed_policy_changes) > 0
         or len(assume_role_policy_changes) > 0
+        or len(permissions_boundary_changes) > 0
     ):
         # for inline/managed/assume role policies, principal arn must be a role
         if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
@@ -543,15 +544,15 @@ async def validate_permissions_boundary_change(
     if change.action == Action.attach:
         if not role.permissions_boundary:
             return
-        # check to make sure managed policy is not already attached
-        if change.arn == role.permissions_boundary.get("PermissionsBoundaryArn"):
-            log_data[
-                "message"
-            ] = "Permissions boundary with that ARN already attached to this role."
-            log.error(log_data)
-            raise InvalidRequestParameter(
-                f"{change.arn} already attached to this role as a permissions boundary"
-            )
+        log_data["message"] = (
+            "A permissions boundary is already attached to this role. "
+            "Only one permission boundary can be attached to a role."
+        )
+        log.error(log_data)
+        raise InvalidRequestParameter(
+            "A permissions boundary is already attached to this role. "
+            "Only one permission boundary can be attached to a role."
+        )
     elif change.action == Action.detach:
         # check to make sure permissions boundary is actually attached to the role
         if change.arn == role.permissions_boundary.get("PermissionsBoundaryArn"):
