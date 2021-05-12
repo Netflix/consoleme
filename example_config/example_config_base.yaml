@@ -63,6 +63,7 @@ cloud_credential_authorization_mapping:
 
 aws:
   issuer: YourCompany
+  region: "us-east-1"
 
 celery:
   # Some jobs should only run in one region. The `active_region` key should define your primary region.
@@ -163,6 +164,7 @@ logging_levels:
 ses:
   support_reference: "Please contact us at consoleme@example.com if you have any questions or concerns."
   arn: "arn:aws:ses:us-east-1:123456789012:identity/example.com"
+  region: "us-west-2"
   consoleme:
     name: ConsoleMe
     sender: consoleme_test@example.com

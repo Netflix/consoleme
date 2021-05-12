@@ -1,3 +1,5 @@
+import sentry_sdk
+
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MustBeFte
 from consoleme.handlers.base import BaseAPIV2Handler
@@ -33,7 +35,15 @@ class ServiceControlPolicyHandler(BaseAPIV2Handler):
         }
 
         log.debug(log_data)
-        scps = await get_scps_for_account_or_ou(identifier)
+        try:
+            scps = await get_scps_for_account_or_ou(identifier)
+        except Exception as e:
+            sentry_sdk.capture_exception()
+            response = WebResponse(
+                status=Status2.error, status_code=403, errors=[str(e)], data=[]
+            )
+            self.write(response.json())
+            return
         response = WebResponse(
             status=Status2.success, status_code=200, data=scps.__root__
         )
