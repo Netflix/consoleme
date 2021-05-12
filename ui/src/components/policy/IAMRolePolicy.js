@@ -3,6 +3,7 @@ import { Label, Tab } from "semantic-ui-react";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import AssumeRolePolicy from "./AssumeRolePolicy";
 import ManagedPolicy from "./ManagedPolicy";
+import PermissionsBoundary from "./PermissionsBoundary";
 import ServiceControlPolicy from "./ServiceControlPolicy";
 import InlinePolicy from "./InlinePolicy";
 import Issues from "./Issues";
@@ -52,12 +53,44 @@ const IAMRolePolicy = () => {
     {
       menuItem: {
         key: "managed_policy",
-        content: "Managed Policy",
+        content: (() => {
+          return (
+            <>
+              Managed Policies
+              <Label>{resource?.managed_policies?.length}</Label>
+            </>
+          );
+        })(),
       },
       render: () => {
         return (
           <Tab.Pane>
             <ManagedPolicy />
+          </Tab.Pane>
+        );
+      },
+    },
+    {
+      menuItem: {
+        key: "permissions_boundary",
+        content: (() => {
+          return (
+            <>
+              Permissions Boundary
+              <Label>
+                {(resource?.permissions_boundary &&
+                  Object.keys(resource.permissions_boundary).length) !== 0
+                  ? "Attached"
+                  : "Detached"}
+              </Label>
+            </>
+          );
+        })(),
+      },
+      render: () => {
+        return (
+          <Tab.Pane>
+            <PermissionsBoundary />
           </Tab.Pane>
         );
       },
@@ -78,7 +111,14 @@ const IAMRolePolicy = () => {
     {
       menuItem: {
         key: "tags",
-        content: "Tags",
+        content: (() => {
+          return (
+            <>
+              Tags
+              <Label>{resource?.tags?.length}</Label>
+            </>
+          );
+        })(),
       },
       render: () => {
         return (
@@ -116,7 +156,9 @@ const IAMRolePolicy = () => {
     },
   ];
 
-  return <Tab panes={tabs} />;
+  return (
+    <Tab menu={{ fluid: true, vertical: true, tabular: true }} panes={tabs} />
+  );
 };
 
 export default IAMRolePolicy;

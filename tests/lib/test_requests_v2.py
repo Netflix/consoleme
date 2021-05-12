@@ -16,6 +16,7 @@ from consoleme.models import (
     ExtendedRoleModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
+    PermissionsBoundaryChangeModel,
     PolicyRequestModificationRequestModel,
     PolicyRequestModificationResponseModel,
     RequestCreationResponse,
@@ -318,6 +319,72 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         managed_policy_change_model.action = Action.detach
         await validate_managed_policy_change(
             managed_policy_change_model, "user@example.com", role
+        )
+
+    async def test_validate_permissions_boundary_change(self):
+        from consoleme.exceptions.exceptions import InvalidRequestParameter
+        from consoleme.lib.v2.requests import validate_permissions_boundary_change
+
+        role = ExtendedRoleModel(
+            name="role_name",
+            account_id="123456789012",
+            account_name="friendly_name",
+            arn="arn:aws:iam::123456789012:role/role_name",
+            inline_policies=[],
+            assume_role_policy_document={},
+            managed_policies=[],
+            permissions_boundary={},
+            tags=[],
+        )
+        permissions_boundary_change = {
+            "principal_arn": "arn:aws:iam::123456789012:role/role_name",
+            "change_type": "permissions_boundary",
+            "policy_name": "invalid<html>characters",
+            "resources": [],
+            "status": "not_applied",
+            "action": "detach",
+            "arn": "arn:aws:iam::123456789012:policy/TestManagedPolicy",
+        }
+        permissions_boundary_change_model = PermissionsBoundaryChangeModel.parse_obj(
+            permissions_boundary_change
+        )
+
+        # Trying to update an managed policy with invalid characters
+        with pytest.raises(InvalidRequestParameter) as e:
+            await validate_permissions_boundary_change(
+                permissions_boundary_change_model, "user@example.com", role
+            )
+            self.assertIn("Invalid characters were detected in the policy.", str(e))
+
+        # Trying to detach a policy that is not attached
+        permissions_boundary_change_model.action = Action.detach
+        with pytest.raises(InvalidRequestParameter) as e:
+            await validate_permissions_boundary_change(
+                permissions_boundary_change_model, "user@example.com", role
+            )
+            self.assertIn(
+                f"{permissions_boundary_change_model.arn}  is not attached to this role as a permissions boundary",
+                str(e),
+            )
+
+        # Valid tests
+
+        # Attach a managed policy that is not attached
+        permissions_boundary_change_model.arn = (
+            "arn:aws:iam::123456789012:policy/TestManagedPolicy2"
+        )
+        permissions_boundary_change_model.action = Action.attach
+        await validate_permissions_boundary_change(
+            permissions_boundary_change_model, "user@example.com", role
+        )
+
+        # Detach a managed policy that is attached to the role
+        role.permissions_boundary = {
+            "PermissionsBoundaryArn": permissions_boundary_change_model.arn
+        }
+        permissions_boundary_change_model.action = Action.detach
+        await validate_permissions_boundary_change(
+            permissions_boundary_change_model, "user@example.com", role
         )
 
     async def test_validate_assume_role_policy_change(self):

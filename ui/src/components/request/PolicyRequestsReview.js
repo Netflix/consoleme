@@ -14,6 +14,7 @@ import {
 import CommentsFeedBlockComponent from "../blocks/CommentsFeedBlockComponent";
 import InlinePolicyChangeComponent from "../blocks/InlinePolicyChangeComponent";
 import ManagedPolicyChangeComponent from "../blocks/ManagedPolicyChangeComponent";
+import PermissionsBoundaryChangeComponent from "../blocks/PermissionsBoundaryChangeComponent";
 import AssumeRolePolicyChangeComponent from "../blocks/AssumeRolePolicyChangeComponent";
 import ResourcePolicyChangeComponent from "../blocks/ResourcePolicyChangeComponent";
 import ResourceTagChangeComponent from "../blocks/ResourceTagChangeComponent";
@@ -426,6 +427,19 @@ class PolicyRequestReview extends Component {
             if (change.change_type === "managed_policy") {
               return (
                 <ManagedPolicyChangeComponent
+                  change={change}
+                  config={requestConfig}
+                  requestReadOnly={requestReadOnly}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
+                  sendProposedPolicy={this.sendProposedPolicy}
+                  sendRequestCommon={this.props.sendRequestCommon}
+                />
+              );
+            }
+            if (change.change_type === "permissions_boundary") {
+              return (
+                <PermissionsBoundaryChangeComponent
                   change={change}
                   config={requestConfig}
                   requestReadOnly={requestReadOnly}

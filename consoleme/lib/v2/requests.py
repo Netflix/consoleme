@@ -59,6 +59,7 @@ from consoleme.models import (
     ExtendedRoleModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
+    PermissionsBoundaryChangeModel,
     PolicyModel,
     PolicyRequestModificationRequestModel,
     PolicyRequestModificationResponseModel,
@@ -110,6 +111,7 @@ async def generate_request_from_change_model_array(
     resource_policy_changes = []
     assume_role_policy_changes = []
     resource_tag_changes = []
+    permissions_boundary_changes = []
     role = None
 
     extended_request_uuid = str(uuid.uuid4())
@@ -161,6 +163,10 @@ async def generate_request_from_change_model_array(
             resource_tag_changes.append(
                 ResourceTagChangeModel.parse_obj(change.__dict__)
             )
+        elif change.change_type == "permissions_boundary":
+            permissions_boundary_changes.append(
+                PermissionsBoundaryChangeModel.parse_obj(change.__dict__)
+            )
         else:
             raise UnsupportedChangeType(
                 f"Invalid `change_type` for change: {change.__dict__}"
@@ -200,6 +206,7 @@ async def generate_request_from_change_model_array(
         len(inline_policy_changes) > 0
         or len(managed_policy_changes) > 0
         or len(assume_role_policy_changes) > 0
+        or len(permissions_boundary_changes) > 0
     ):
         # for inline/managed/assume role policies, principal arn must be a role
         if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
@@ -217,6 +224,10 @@ async def generate_request_from_change_model_array(
             await validate_inline_policy_change(inline_policy_change, user, role)
         for managed_policy_change in managed_policy_changes:
             await validate_managed_policy_change(managed_policy_change, user, role)
+        for permissions_boundary_change in permissions_boundary_changes:
+            await validate_permissions_boundary_change(
+                permissions_boundary_change, user, role
+            )
         for assume_role_policy_change in assume_role_policy_changes:
             await validate_assume_role_policy_change(
                 assume_role_policy_change, user, role
@@ -233,6 +244,7 @@ async def generate_request_from_change_model_array(
         + resource_policy_changes
         + assume_role_policy_changes
         + resource_tag_changes
+        + permissions_boundary_changes
     )
     extended_request = ExtendedRequestModel(
         admin_auto_approve=request_creation.admin_auto_approve,
@@ -513,6 +525,47 @@ async def validate_inline_policy_change(
     # If here, then that means inline policy is validated
 
 
+async def validate_permissions_boundary_change(
+    change: PermissionsBoundaryChangeModel, user: str, role: ExtendedRoleModel
+):
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "arn": change.principal_arn,
+        "request": change.dict(),
+        "message": "Validating permissions boundary change",
+    }
+    log.info(log_data)
+    policy_name = change.arn.split("/")[-1]
+    if await invalid_characters_in_policy(policy_name):
+        log_data["message"] = "Invalid characters were detected in the policy name."
+        log.error(log_data)
+        raise InvalidRequestParameter(log_data["message"])
+    if change.action == Action.attach:
+        if not role.permissions_boundary:
+            return
+        log_data["message"] = (
+            "A permissions boundary is already attached to this role. "
+            "Only one permission boundary can be attached to a role."
+        )
+        log.error(log_data)
+        raise InvalidRequestParameter(
+            "A permissions boundary is already attached to this role. "
+            "Only one permission boundary can be attached to a role."
+        )
+    elif change.action == Action.detach:
+        # check to make sure permissions boundary is actually attached to the role
+        if change.arn == role.permissions_boundary.get("PermissionsBoundaryArn"):
+            return
+        log_data[
+            "message"
+        ] = "The Permissions Boundary you are trying to detach is not attached to this role."
+        log.error(log_data)
+        raise InvalidRequestParameter(
+            f"{change.arn} is not attached to this role as a permissions boundary"
+        )
+
+
 async def validate_managed_policy_change(
     change: ManagedPolicyChangeModel, user: str, role: ExtendedRoleModel
 ):
@@ -719,6 +772,63 @@ async def apply_changes_to_role(
                             status="error",
                             message=f"Error occurred deleting inline policy {change.policy_name} from role: {role_name} "
                             + str(e),
+                        )
+                    )
+        elif change.change_type == "permissions_boundary":
+            if change.action == Action.attach:
+                try:
+                    await sync_to_async(iam_client.put_role_permissions_boundary)(
+                        RoleName=role_name, PermissionsBoundary=change.arn
+                    )
+                    response.action_results.append(
+                        ActionResult(
+                            status="success",
+                            message=f"Successfully attached permissions boundary {change.arn} to role: {role_name}",
+                        )
+                    )
+                    change.status = Status.applied
+                except Exception as e:
+                    log_data[
+                        "message"
+                    ] = "Exception occurred attaching permissions boundary"
+                    log_data["error"] = str(e)
+                    log.error(log_data, exc_info=True)
+                    sentry_sdk.capture_exception()
+                    response.errors += 1
+                    response.action_results.append(
+                        ActionResult(
+                            status="error",
+                            message=f"Error occurred attaching permissions boundary {change.arn} to role: {role_name}: "
+                            + str(e),
+                        )
+                    )
+            elif change.action == Action.detach:
+                try:
+                    await sync_to_async(iam_client.delete_role_permissions_boundary)(
+                        RoleName=role_name
+                    )
+                    response.action_results.append(
+                        ActionResult(
+                            status="success",
+                            message=f"Successfully detached permissions boundary {change.arn} from role: {role_name}",
+                        )
+                    )
+                    change.status = Status.applied
+                except Exception as e:
+                    log_data[
+                        "message"
+                    ] = "Exception occurred detaching permissions boundary"
+                    log_data["error"] = str(e)
+                    log.error(log_data, exc_info=True)
+                    sentry_sdk.capture_exception()
+                    response.errors += 1
+                    response.action_results.append(
+                        ActionResult(
+                            status="error",
+                            message=(
+                                f"Error occurred detaching permissions boundary {change.arn} "
+                                "from role: {role_name}: " + str(e),
+                            ),
                         )
                     )
         elif change.change_type == "managed_policy":

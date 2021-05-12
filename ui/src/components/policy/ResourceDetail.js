@@ -27,11 +27,11 @@ const ResourceDetail = () => {
       <Table celled striped definition>
         <Table.Body>
           <Table.Row>
-            <Table.Cell collapsing>Account</Table.Cell>
+            <Table.Cell width={4}>Account</Table.Cell>
             <Table.Cell>{`${account_name} (${account_id}`})</Table.Cell>
           </Table.Row>
           <Table.Row>
-            <Table.Cell collapsing>Amazon Resource Name</Table.Cell>
+            <Table.Cell>Amazon Resource Name</Table.Cell>
             <Table.Cell>{arn}</Table.Cell>
           </Table.Row>
           <Table.Row>
@@ -46,7 +46,7 @@ const ResourceDetail = () => {
           ) : null}
           {description ? (
             <Table.Row>
-              <Table.Cell collapsing>Description</Table.Cell>
+              <Table.Cell>Description</Table.Cell>
               <Table.Cell>{description}</Table.Cell>
             </Table.Row>
           ) : null}
@@ -86,24 +86,24 @@ const ResourceDetail = () => {
           ) : null}
           {created_time ? (
             <Table.Row>
-              <Table.Cell collapsing>Created on</Table.Cell>
+              <Table.Cell>Created on</Table.Cell>
               <Table.Cell>{created_time}</Table.Cell>
             </Table.Row>
           ) : null}
           {last_used_time ? (
             <Table.Row>
-              <Table.Cell collapsing>Last Used on</Table.Cell>
+              <Table.Cell>Last Used on</Table.Cell>
               <Table.Cell>{last_used_time}</Table.Cell>
             </Table.Row>
           ) : null}
           {resource_details?.updated_time ? (
             <Table.Row>
-              <Table.Cell collapsing>Last Updated</Table.Cell>
+              <Table.Cell>Last Updated</Table.Cell>
               <Table.Cell>{resource_details.updated_time}</Table.Cell>
             </Table.Row>
           ) : null}
           <Table.Row>
-            <Table.Cell collapsing>Templated</Table.Cell>
+            <Table.Cell>Templated</Table.Cell>
             <Table.Cell>
               <span>
                 {`${templated ? "True" : "False"}`}
