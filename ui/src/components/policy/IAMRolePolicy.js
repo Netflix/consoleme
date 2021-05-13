@@ -157,7 +157,11 @@ const IAMRolePolicy = () => {
   ];
 
   return (
-    <Tab menu={{ fluid: true, vertical: true, tabular: true }} panes={tabs} />
+    <Tab
+      menu={{ fluid: true, vertical: true, tabular: true }}
+      panes={tabs}
+      style={{ minHeight: "100vh" }}
+    />
   );
 };
 
