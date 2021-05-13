@@ -63,6 +63,10 @@ async def store_json_results_in_redis_and_s3(
         tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key},
     )
 
+    # If we've defined an S3 key, but not a bucket, let's use the default bucket if it's defined in configuration.
+    if s3_key and not s3_bucket:
+        s3_bucket = config.get("consoleme_s3_bucket")
+
     if redis_key:
         if redis_data_type == "str":
             if isinstance(data, str):
@@ -124,6 +128,11 @@ async def retrieve_json_data_from_redis_or_s3(
         f"{function}.called",
         tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key},
     )
+
+    # If we've defined an S3 key, but not a bucket, let's use the default bucket if it's defined in configuration.
+    if s3_key and not s3_bucket:
+        s3_bucket = config.get("consoleme_s3_bucket")
+
     data = None
     if redis_key:
         if redis_data_type == "str":
@@ -142,10 +151,6 @@ async def retrieve_json_data_from_redis_or_s3(
                 # Fall back to S3 if expired.
                 if not s3_bucket or not s3_key:
                     raise ExpiredData(f"Data in Redis is older than {max_age} seconds.")
-
-    # If we've defined a key, but not a bucket, let's use the default bucket if defined in configuration.
-    if s3_key and not s3_bucket:
-        s3_bucket = config.get("consoleme_s3_bucket")
 
     # Fall back to S3 if there's no data
     if not data and s3_bucket and s3_key:
