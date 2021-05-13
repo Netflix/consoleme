@@ -1,3 +1,4 @@
+import sentry_sdk
 import ujson as json
 from asgiref.sync import sync_to_async
 from cloudaux.aws.iam import (
@@ -109,7 +110,11 @@ class ManagedPoliciesForAccountHandler(BaseAPIV2Handler):
                 "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
-        all_account_managed_policies = await get_all_iam_managed_policies_for_account(
-            account_id
-        )
+        try:
+            all_account_managed_policies = (
+                await get_all_iam_managed_policies_for_account(account_id)
+            )
+        except Exception:
+            sentry_sdk.capture_exception()
+            all_account_managed_policies = []
         self.write(json.dumps(all_account_managed_policies))
