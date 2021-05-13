@@ -14,3 +14,21 @@ code {
   max-width: 1920px;
   width: 100%;
 }
+
+/*
+  There are some layout issues with the Semantic UI vertical Tabs
+  component at lower resolutions, when used in combination with Labels.
+  This is our attempt at overriding some of this default behavior to
+  accommodate some more screen real estate.
+ */
+.ui.vertical.tabular.menu .item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.ui.vertical.tabular.menu .item > .label {
+  margin: 0.5rem 0 0 0;
+}
