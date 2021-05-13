@@ -138,7 +138,14 @@ async def retrieve_json_data_from_redis_or_s3(
             current_time = int(time.time())
             last_updated = int(red.hget(last_updated_redis_key, redis_key))
             if current_time - last_updated > max_age:
-                raise ExpiredData(f"Data in Redis is older than {max_age} seconds.")
+                data = None
+                # Fall back to S3 if expired.
+                if not s3_bucket or not s3_key:
+                    raise ExpiredData(f"Data in Redis is older than {max_age} seconds.")
+
+    # If we've defined a key, but not a bucket, let's use the default bucket if defined in configuration.
+    if s3_key and not s3_bucket:
+        s3_bucket = config.get("consoleme_s3_bucket")
 
     # Fall back to S3 if there's no data
     if not data and s3_bucket and s3_key:
