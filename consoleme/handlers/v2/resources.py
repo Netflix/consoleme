@@ -45,10 +45,13 @@ class ResourceDetailHandler(BaseAPIV2Handler):
         can_save_delete = (can_admin_policies(self.user, self.groups),)
 
         account_id_for_arn: str = account_id
+
         if resource_type == "s3":
             account_id_for_arn = ""
         arn = f"arn:aws:{resource_type}:{region or ''}:{account_id_for_arn}:{resource_name}"
 
+        if resource_type == "iam_managed_policy":
+            arn = resource_name
         stats.count(
             "ResourcePolicyEditHandler.get", tags={"user": self.user, "arn": arn}
         )

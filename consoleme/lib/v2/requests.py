@@ -23,6 +23,7 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import (
+    create_or_update_managed_policy,
     fetch_resource_details,
     generate_updated_resource_policy,
     get_bucket_location_with_fallback,
@@ -117,7 +118,8 @@ async def generate_request_from_change_model_array(
     extended_request_uuid = str(uuid.uuid4())
     incremental_change_id = 0
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+        "policies.supported_resource_types_for_policy_application",
+        ["s3", "sqs", "sns", "iam_managed_policy"],
     )
 
     for change in change_models.changes:
@@ -150,6 +152,8 @@ async def generate_request_from_change_model_array(
             change.source_change_id = None
             resource_arn_parsed = parse_arn(change.arn)
             resource_type = resource_arn_parsed["service"]
+            if resource_type == "iam" and resource_arn_parsed["resource"] == "policy":
+                resource_type = "iam_managed_policy"
             if resource_type in supported_resource_policies:
                 change.supported = True
             else:
@@ -339,7 +343,8 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
     role_account_id = await get_resource_account(extended_request.arn)
     arn_parsed = parse_arn(extended_request.arn)
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+        "policies.supported_resource_types_for_policy_application",
+        ["s3", "sqs", "sns", "iam_managed_policy"],
     )
     supported_trust_policy_permissions = config.get(
         "policies.supported_trust_policy_permissions",
@@ -1079,7 +1084,8 @@ async def populate_cross_account_resource_policy_for_change(
 ):
     resource_policies_changed = False
     supported_resource_policies = config.get(
-        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+        "policies.supported_resource_types_for_policy_application",
+        ["s3", "sqs", "sns", "iam_managed_policy"],
     )
     sts_resource_policy_supported = config.get(
         "policies.sts_resource_policy_supported", True
@@ -1310,7 +1316,8 @@ async def apply_non_iam_resource_tag_change(
         return response
 
     supported_resource_types = config.get(
-        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+        "policies.supported_resource_types_for_policy_application",
+        ["s3", "sqs", "sns", "iam_managed_policy"],
     )
 
     if resource_type not in supported_resource_types:
@@ -1486,6 +1493,8 @@ async def apply_resource_policy_change(
 
     resource_arn_parsed = parse_arn(change.arn)
     resource_type = resource_arn_parsed["service"]
+    if resource_type == "iam" and resource_arn_parsed["resource"] == "policy":
+        resource_type = "iam_managed_policy"
     resource_name = resource_arn_parsed["resource"]
     resource_region = resource_arn_parsed["region"]
     resource_account = resource_arn_parsed["account"]
@@ -1511,7 +1520,8 @@ async def apply_resource_policy_change(
         return response
 
     supported_resource_types = config.get(
-        "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
+        "policies.supported_resource_types_for_policy_application",
+        ["s3", "sqs", "sns", "iam_managed_policy"],
     )
     sts_resource_policy_supported = config.get(
         "policies.sts_resource_policy_supported", True
@@ -1540,8 +1550,11 @@ async def apply_resource_policy_change(
         return response
 
     try:
+        client_resource_type = resource_type
+        if resource_type == "iam_managed_policy":
+            client_resource_type = "iam"
         client = await sync_to_async(boto3_cached_conn)(
-            resource_type,
+            client_resource_type,
             service_type="client",
             future_expiration_minutes=15,
             account_number=resource_account,
@@ -1591,6 +1604,32 @@ async def apply_resource_policy_change(
             )
             # force refresh the role for which we just changed the assume role policy doc
             await aws.fetch_iam_role(resource_account, change.arn, force_refresh=True)
+        elif resource_type == "iam_managed_policy":
+            versions = await sync_to_async(client.list_policy_versions)(
+                PolicyArn=change.arn
+            )
+            current_policy_versions = []
+            default_policy_index = 0
+            for i, version in enumerate(versions.get("Versions", [])):
+                if version["IsDefaultVersion"]:
+                    default_policy_index = i
+                current_policy_versions.append(version)
+            if len(current_policy_versions) == 5:
+                # Want to make sure we don't pop the default version so arbitrarily set position to 1 if default ends
+                # up being the last index position
+                pop_position = 1 if default_policy_index == 4 else 4
+                await sync_to_async(client.delete_policy_version)(
+                    PolicyArn=change.arn,
+                    VersionId=current_policy_versions.pop(pop_position)["VersionId"],
+                )
+            await sync_to_async(client.create_policy_version)(
+                PolicyArn=change.arn,
+                PolicyDocument=json.dumps(
+                    change.policy.policy_document, escape_forward_slashes=False
+                ),
+                SetAsDefault=True,
+            )
+        # TODO: TAGS and policy diff review
         response.action_results.append(
             ActionResult(
                 status="success",

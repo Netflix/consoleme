@@ -317,9 +317,36 @@ async def fetch_resource_details(
         return await fetch_sqs_queue(account_id, region, resource_name)
     elif resource_type == "sns":
         return await fetch_sns_topic(account_id, region, resource_name)
-
+    elif resource_type == "iam_managed_policy":
+        return await fetch_iam_managed_policy(account_id, resource_name)
     else:
         return {}
+
+
+async def fetch_iam_managed_policy(account_id: str, policy_arn: str):
+    client = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        region=config.region,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+    )
+    managed_policy_metadata: Dict = await sync_to_async(client.get_policy)(
+        PolicyArn=policy_arn,
+    )
+
+    managed_policy_details = await sync_to_async(client.get_policy_version)(
+        PolicyArn=policy_arn,
+        VersionId=managed_policy_metadata["Policy"]["DefaultVersionId"],
+    )
+    result = {
+        "TagSet": managed_policy_metadata["Policy"].get("Tags", []),
+        "Policy": managed_policy_details["PolicyVersion"].get("Document", {}),
+    }
+    return result
 
 
 async def fetch_assume_role_policy(role_arn: str) -> Optional[Dict]:

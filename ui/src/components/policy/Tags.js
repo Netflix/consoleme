@@ -110,7 +110,7 @@ const Tags = () => {
       <Header as="h2">
         Tags
         <Header.Subheader>
-          You can add/edit/delete tags for this role from here.
+          You can add/edit/delete tags for this resource from here.
         </Header.Subheader>
       </Header>
       <Label as="a" attached="top right" color="green" onClick={onCreateTag}>
