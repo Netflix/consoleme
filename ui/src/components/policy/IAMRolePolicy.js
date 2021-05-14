@@ -160,7 +160,7 @@ const IAMRolePolicy = () => {
     <Tab
       menu={{ fluid: true, vertical: true, tabular: true }}
       panes={tabs}
-      style={{ minHeight: "100vh" }}
+      className="vertical-tab-override"
     />
   );
 };
