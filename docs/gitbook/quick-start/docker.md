@@ -8,7 +8,7 @@ description: >-
 
 ## Docker
 
-Docker-Compose is the quickest way to get ConsoleMe up and running locally for **testing** purposes. For **development**, we highly recommend setting up ConsoleMe locally with the instructions below this Quick Start. The Dockerfile is a great point of reference for the installation process. If you are going to deploy ConsoleMe in a production environment, we recommend deploying it to an isolated, locked-down AWS account.
+Docker-Compose is the quickest way to get ConsoleMe up and running locally for **testing** purposes. For **development**, we highly recommend setting up ConsoleMe [locally](local-development.md). The Dockerfile is a great point of reference for the installation process. If you are going to deploy ConsoleMe in a production environment, we recommend deploying it to an isolated, locked-down AWS account with a configuration that enables authentication.
 
 Firstly, install [**git**](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), [**docker**](https://docs.docker.com/get-docker/), and [**docker-compose**](https://docs.docker.com/compose/install/) ****on your system, consider following [Docker's post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/), then clone ConsoleMe locally in a directory of your choosing via HTTP or SSH:
 
@@ -32,6 +32,10 @@ docker-compose -f docker-compose-dockerhub.yaml -f docker-compose-dependencies.y
 # If you wish to build ConsoleMe instead of using a pre-build image, run this command:
 # docker-compose -f docker-compose.yaml -f docker-compose-dependencies.yaml up -d
 ```
+
+{% hint style="warning" %}
+If you are building a ConsoleMe docker image locally and see multiple **ReadTimeoutErrors** while fetching Python dependencies, you'll want to ensure that the MTU for your Docker network interface is lower than the MTU on your host interface. Read more about this issue [here](https://civo.com/learn/fixing-networking-for-docker).
+{% endhint %}
 
 At this point you should the below command and verify you have 4 ConsoleMe related containers running.
 
