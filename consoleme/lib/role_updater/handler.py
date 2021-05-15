@@ -68,6 +68,7 @@ async def update_role(event):
             account_number=account_number,
             assume_role=config.get("policies.role_name", "ConsoleMe"),
             session_name=aws_session_name,
+            retry_max_attempts=2,
         )
         inline_policies = d.get("inline_policies", [])
         managed_policies = d.get("managed_policies", [])
