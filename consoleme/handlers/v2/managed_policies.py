@@ -47,7 +47,6 @@ class ManagedPoliciesOnRoleHandler(BaseAPIV2Handler):
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
-            retry_max_attempts=2,
         )
         res = WebResponse(
             status=Status2.success,
@@ -92,7 +91,6 @@ class ManagedPoliciesHandler(BaseAPIV2Handler):
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
-            retry_max_attempts=2,
         )
         res = WebResponse(
             status=Status2.success,
