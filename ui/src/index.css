@@ -21,7 +21,16 @@ code {
   This is our attempt at overriding some of this default behavior to
   accommodate some more screen real estate.
  */
-.ui.vertical.tabular.menu .item {
+.vertical-tab-override,
+.vertical-tab-override .ui.grid {
+  min-height: 100vh;
+}
+
+.vertical-tab-override .ui.vertical.menu.fluid {
+  height: 100%;
+}
+
+.vertical-tab-override .ui.vertical.tabular.menu .item {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -29,6 +38,11 @@ code {
   flex-wrap: wrap;
 }
 
-.ui.vertical.tabular.menu .item > .label {
+.vertical-tab-override .ui.vertical.tabular.menu .item > .label {
   margin: 0.5rem 0 0 0;
+}
+
+.vertical-tab-override .ui.attached.segment {
+  border: none;
+  padding: 0;
 }
