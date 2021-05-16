@@ -210,6 +210,7 @@ async def get_resource_account(arn: str) -> str:
             s3_key=config.get("aws_config_cache_combined.s3.file"),
             redis_data_type="hash",
         )
+
     resource_info = await redis_hget(resources_from_aws_config_redis_key, arn)
     if resource_info:
         return json.loads(resource_info).get("accountId", "")
@@ -468,6 +469,7 @@ async def get_bucket_location_with_fallback(
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            retry_max_attempts=2,
         )
         bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
         if bucket_location == "EU":
