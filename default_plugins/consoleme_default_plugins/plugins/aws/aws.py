@@ -193,6 +193,7 @@ class Aws:
                     "iam",
                     account_number=account_id,
                     assume_role=config.get("policies.role_name"),
+                    retry_max_attempts=2,
                 )
                 conn = {
                     "account_number": account_id,

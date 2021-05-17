@@ -59,6 +59,7 @@ def get_object(**kwargs):
                 assume_role=assume_role,
                 session_name=kwargs.get("session_name", "ConsoleMe"),
                 region=kwargs.get("region", config.region),
+                retry_max_attempts=2,
             )
         else:
             client = boto3.client("s3")
