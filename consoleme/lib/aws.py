@@ -210,6 +210,7 @@ async def get_resource_account(arn: str) -> str:
             s3_key=config.get("aws_config_cache_combined.s3.file"),
             redis_data_type="hash",
         )
+
     resource_info = await redis_hget(resources_from_aws_config_redis_key, arn)
     if resource_info:
         return json.loads(resource_info).get("accountId", "")
@@ -380,6 +381,7 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        retry_max_attempts=2,
     )
 
     result: Dict = await sync_to_async(get_topic_attributes)(
@@ -391,6 +393,7 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        retry_max_attempts=2,
     )
 
     tags: Dict = await sync_to_async(client.list_tags_for_resource)(ResourceArn=arn)
@@ -426,6 +429,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        retry_max_attempts=2,
     )
 
     result: Dict = await sync_to_async(get_queue_attributes)(
@@ -438,6 +442,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        retry_max_attempts=2,
     )
 
     tags: Dict = await sync_to_async(list_queue_tags)(
@@ -449,6 +454,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        retry_max_attempts=2,
     )
     result["TagSet"]: list = []
     result["QueueUrl"]: str = queue_url
@@ -490,6 +496,7 @@ async def get_bucket_location_with_fallback(
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            retry_max_attempts=2,
         )
         bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
         if bucket_location == "EU":
@@ -531,6 +538,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            retry_max_attempts=2,
         )
         created_time_stamp = bucket_resource.creation_date
         if created_time_stamp:
@@ -550,6 +558,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            retry_max_attempts=2,
         )
     except ClientError as e:
         if "NoSuchBucketPolicy" in str(e):
@@ -566,6 +575,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            retry_max_attempts=2,
         )
     except ClientError as e:
         if "NoSuchTagSet" in str(e):
@@ -636,6 +646,7 @@ def apply_managed_policy_to_role(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         session_name=session_name,
+        retry_max_attempts=2,
     )
 
     client.attach_role_policy(RoleName=role.get("RoleName"), PolicyArn=policy_arn)
@@ -715,6 +726,7 @@ async def fetch_role_details(account_id, role_name):
         region=config.region,
         assume_role=config.get("policies.role_name"),
         session_name="fetch_role_details",
+        retry_max_attempts=2,
     )
     try:
         iam_role = await sync_to_async(iam_resource.Role)(role_name)
@@ -778,6 +790,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
         region=config.region,
         assume_role=config.get("policies.role_name"),
         session_name="create_role_" + username,
+        retry_max_attempts=2,
     )
     results = {"errors": 0, "role_created": "false", "action_results": []}
     try:
@@ -939,6 +952,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
         region=config.region,
         assume_role=config.get("policies.role_name"),
         session_name="clone_role_" + username,
+        retry_max_attempts=2,
     )
     results = {"errors": 0, "role_created": "false", "action_results": []}
     try:
@@ -1221,6 +1235,7 @@ async def get_enabled_regions_for_account(account_id: str) -> Set[str]:
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         read_only=True,
+        retry_max_attempts=2,
     )
 
     regions = await sync_to_async(client.describe_regions)()

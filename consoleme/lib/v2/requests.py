@@ -709,6 +709,7 @@ async def apply_changes_to_role(
         region=config.region,
         assume_role=config.get("policies.role_name"),
         session_name="role-updater-v2-" + user,
+        retry_max_attempts=2,
     )
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
@@ -1346,6 +1347,7 @@ async def apply_non_iam_resource_tag_change(
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            retry_max_attempts=2,
         )
 
         resource_details = await fetch_resource_details(
@@ -1566,6 +1568,7 @@ async def apply_resource_policy_change(
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            retry_max_attempts=2,
         )
         if resource_type == "s3":
             await sync_to_async(client.put_bucket_policy)(

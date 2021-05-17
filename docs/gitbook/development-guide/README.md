@@ -16,6 +16,14 @@ After your virtual environment is installed, you'll want to install `pre-commit`
 pre-commit install
 ```
 
+Pre-commit will automatically run across changed files when you run a git commit. You can also force it to run across all files with: 
+
+```text
+pre-commit run -a
+```
+
+When creating a PR, we highly recommend that you select [`Allow Edits from Maintainers`](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/allowing-changes-to-a-pull-request-branch-created-from-a-fork) on your PR for better collaboration.
+
 After your fork is configured, set Netflix's ConsoleMe as an upstream, create a new commit, write your code, and push it to a branch on your fork.
 
 ```text
