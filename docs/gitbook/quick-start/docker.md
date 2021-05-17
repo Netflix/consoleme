@@ -63,6 +63,8 @@ On Linux, you may need to increase your inotify settings on your Docker host:
 
 `echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf`
 
+`echo fs.inotify.max_user_instances=512 | sudo tee -a /etc/sysctl.conf`
+
 `sudo sysctl -p`
 
 If the containers are still not starting, please open a GitHub issue and paste your container logs.
