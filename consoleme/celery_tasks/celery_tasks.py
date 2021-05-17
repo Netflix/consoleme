@@ -13,7 +13,7 @@ import json  # We use a separate SetEncoder here so we cannot use ujson
 import sys
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import celery
 import sentry_sdk
@@ -70,6 +70,7 @@ from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.timeout import Timeout
+from consoleme.models import WebResponse
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
 default_retry_kwargs = {
@@ -417,7 +418,7 @@ def report_revoked_task(**kwargs):
     wait_exponential_multiplier=1000,
     wait_exponential_max=1000,
 )
-def _add_role_to_redis(redis_key: str, role_entry: dict) -> None:
+def _add_role_to_redis(redis_key: str, role_entry: Dict) -> None:
     """
     This function will add IAM role data to redis so that policy details can be quickly retrieved by the policies
     endpoint.
@@ -428,7 +429,7 @@ def _add_role_to_redis(redis_key: str, role_entry: dict) -> None:
     ----------
     redis_key : str
         The redis key (hash)
-    role_entry : dict
+    role_entry : Dict
         The role entry
         Example: {'name': 'nameOfRole', 'accountId': '123456789012', 'arn': 'arn:aws:iam::123456789012:role/nameOfRole',
         'templated': None, 'ttl': 1562510908, 'policy': '<json_formatted_policy>'}
@@ -787,12 +788,12 @@ def cache_roles_across_accounts() -> Dict:
 
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, int]]:
-    managed_policies: list[dict] = get_all_managed_policies(
+    managed_policies: List[Dict] = get_all_managed_policies(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=config.region,
     )
-    all_policies: list = []
+    all_policies: List = []
     for policy in managed_policies:
         all_policies.append(policy.get("Arn"))
 
@@ -844,7 +845,7 @@ def cache_managed_policies_across_accounts() -> bool:
 def cache_s3_buckets_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
+    accounts_d: List = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -860,7 +861,7 @@ def cache_s3_buckets_across_accounts() -> bool:
 def cache_sqs_queues_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
+    accounts_d: List = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -876,7 +877,7 @@ def cache_sqs_queues_across_accounts() -> bool:
 def cache_sns_topics_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
+    accounts_d: List = async_to_sync(get_account_id_to_name_mapping)()
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
             cache_sns_topics_for_account.delay(account_id)
@@ -986,13 +987,13 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
 
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
-    s3_buckets: list = list_buckets(
+    s3_buckets: List = list_buckets(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=config.region,
         read_only=True,
     )
-    buckets: list = []
+    buckets: List = []
     for bucket in s3_buckets["Buckets"]:
         buckets.append(bucket["Name"])
     s3_bucket_key: str = config.get("redis.s3_buckets_key", "S3_BUCKETS")
@@ -1217,7 +1218,7 @@ def get_iam_role_limit() -> dict:
         success_message = "Task successfully completed"
 
         # First, get list of accounts
-        accounts_d: dict = async_to_sync(get_account_id_to_name_mapping)()
+        accounts_d: Dict = async_to_sync(get_account_id_to_name_mapping)()
         num_accounts = len(accounts_d.keys())
         for account_id, account_name in accounts_d.items():
             try:
@@ -1347,6 +1348,76 @@ def cache_organization_structure() -> Dict:
     log.debug(log_data)
     return log_data
 
+
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
+def cache_self_service_typeahead() -> Dict:
+    # Cache role and app information
+    role_data = async_to_sync(retrieve_json_data_from_redis_or_s3)(
+        s3_bucket=config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+        ),
+        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+    )
+    from enum import Enum
+    from typing import Optional
+
+    from pydantic import BaseModel
+
+    class SelfServiceResourceType(Enum):
+        AwsIamRole = "AwsIamRole"
+        HoneybeeAwsIamRoleTemplate = "HoneybeeAwsIamRoleTemplate"
+
+    class SelfServiceTypeaheadModel(BaseModel):
+        icon: str
+        resource_type: SelfServiceResourceType
+        number_of_affected_resources: int
+        display_text: str
+        account: Optional[str] = None
+        details_endpoint: str
+
+    class SelfServiceTypeaheadModelArray(BaseModel):
+        typeahead_entries: Optional[List[SelfServiceTypeaheadModel]] = None
+
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
+
+    typeahead_entries = []
+
+    for role, details_j in role_data.items():
+        account_id = role.split(":")[4]
+        account_name = accounts_d.get(account_id, account_id)
+        details = json.loads(details_j)
+        policy = json.loads(details["policy"])
+        role_name = policy.get("RoleName", policy["Arn"].split("/")[-1])
+        typeahead_entries.append(
+            SelfServiceTypeaheadModel(
+                icon="user",
+                resource_type="AwsIamRole",
+                number_of_affected_resources=1,
+                display_text=role_name,
+                account=account_name,
+                details_endpoint=f"/api/v2/roles/{account_id}/{role_name}",
+            )
+        )
+    typeahead_data = SelfServiceTypeaheadModelArray(typeahead_entries=typeahead_entries)
+    # mock_web_reponse = WebResponse(
+    #     status="success",
+    #     status_code=200,
+    #     data=typeahead_data.dict()
+    # )
+
+    # cache HoneyBee template information
+    r = {
+        "icon": "user|users",
+        "resource_type": "role|honeybee_template",
+        "number_of_affected_resources": "1-400",
+        "name": "ConsoleMeInstanceProfileUserA",
+        "account": "awstest|123456789012",
+        "details_endpoint": "/api/v2/self_service_step_1_resource_details/honeybee_template/{path}",
+    }
+    pass
+
+
+cache_self_service_typeahead()
 
 schedule_30_minute = timedelta(seconds=1800)
 schedule_45_minute = timedelta(seconds=2700)
