@@ -12,7 +12,7 @@ from consoleme.config import config
 from consoleme.lib.git import clone_repo
 from consoleme.lib.pydantic import BaseModel
 from consoleme.lib.templated_resources.models import (
-    TemplatedResourceModelArray,
+    TemplatedFileModelArray,
     TemplateFile,
 )
 
@@ -23,14 +23,15 @@ yaml.width = 4096
 
 
 async def cache_resource_templates():
+    results = TemplatedFileModelArray()
     for repository in config.get("cache_resource_templates.repositories", []):
         if repository.get("type") == "git":
-            await cache_resource_templates_for_repository(repository)
+            results = await cache_resource_templates_for_repository(repository)
 
 
 async def cache_resource_templates_for_repository(
     repository,
-) -> TemplatedResourceModelArray:
+) -> TemplatedFileModelArray:
     if repository["type"] not in ["git"]:
         raise Exception("Unsupported repository type")
     tempdir = tempfile.mkdtemp()
@@ -112,8 +113,7 @@ async def cache_resource_templates_for_repository(
                         )
                         template_matched = True
                         break
-    print(discovered_templates)
-    # TODO: Save this to S3
+    return TemplatedFileModelArray(discovered_templates)
 
 
 async_to_sync(cache_resource_templates)()

@@ -16,5 +16,5 @@ class TemplateFile(BaseModel):
     content: Optional[str]
 
 
-class TemplatedResourceModelArray(BaseModel):
+class TemplatedFileModelArray(BaseModel):
     templated_resources: List[TemplateFile]

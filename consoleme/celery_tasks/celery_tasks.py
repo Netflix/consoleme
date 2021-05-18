@@ -1389,6 +1389,7 @@ def cache_self_service_typeahead() -> Dict:
         policy = json.loads(details["policy"])
         role_name = policy.get("RoleName", policy["Arn"].split("/")[-1])
         typeahead_entries.append(
+            # TODO: Put App Name here if available based on Tag
             SelfServiceTypeaheadModel(
                 icon="user",
                 resource_type="AwsIamRole",
