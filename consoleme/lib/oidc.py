@@ -168,6 +168,19 @@ async def authenticate_user_by_oidc(request):
                 "get_user_by_oidc_settings.access_token_response_key", "access_token"
             )
         )
+        if access_token:
+            if oidc_config.get('userinfo_endpoint'):
+                user_info = await http_client.fetch(
+                    oidc_config['userinfo_endpoint'],
+                    method="GET",
+                    headers={
+                        "Content-Type": "application/x-www-form-urlencoded",
+                        "Authorization": "Bearer %s" % access_token,
+                        "Accept": "application/json",
+                    },
+                )
+                groups = json.loads(user_info).get("groups", [])
+
         jwt_verify = config.get("get_user_by_oidc_settings.jwt_verify", True)
         if jwt_verify:
             header = jwt.get_unverified_header(id_token)
@@ -210,19 +223,20 @@ async def authenticate_user_by_oidc(request):
                     algorithms=algorithm,
                 )
             except (DecodeError, KeyError) as e:
-                # This exception occurs when the access token is not JWT-parsable. It is expected with some IdPs.
+                # This exception occurs when the access token is opaque or otherwise not JWT-parsable.
+                # It is expected with some IdPs.
                 log.debug(
                     {
                         **log_data,
                         "message": (
-                            "Unable to derive user's groups from access_token. This is expected for some identity providers."
+                            "Unable to derive user's groups from access_token. Attempting to get groups through "
+                            "userinfo endpoint. "
                         ),
                         "error": e,
                         "user": email,
                     }
                 )
                 log.debug(log_data, exc_info=True)
-                groups = []
         else:
             decoded_id_token = jwt.decode(id_token, verify=jwt_verify)
             decoded_access_token = jwt.decode(access_token, verify=jwt_verify)
