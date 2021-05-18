@@ -1,3 +1,7 @@
+# Warning: The following configuration file is an example, and it is insecure by default. Please carefully
+# review and change values accordingly before deploying to a production environment. You are responsible
+# for your deployment.
+
 # You'll need to tell ConsoleMe which configuration to use. You can do this by setting the CONFIG_LOCATION environment
 # variable to the full path of your configuration.
 # Example:

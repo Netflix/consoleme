@@ -1,3 +1,7 @@
+# Warning: The following configuration file is an example, and it is insecure by default. Please carefully
+# review and change values accordingly before deploying to a production environment. You are responsible
+# for your deployment.
+
 extends:
   - example_config_base.yaml
   - example_secrets.yaml
@@ -8,6 +12,8 @@ auth:
 
 get_user_by_oidc_settings:
   resource: consoleme-oidc
+  # If you use Okta, but are unable to visit your metadata URL in your web browser, try changing
+  # `/.well-known/oauth-authorization-server` to `/.well-known/openid-configuration` in your metadata_url configuration.
   metadata_url: https://dev-123456.okta.com/oauth2/default/.well-known/oauth-authorization-server
   # If you have a metadata URL and it returns JSON with authorization_endpoint, token_endpoint, and jwks_uri, you do
   # not need to specify those values in the configuration.
