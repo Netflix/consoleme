@@ -1,3 +1,7 @@
+# Warning: The following configuration file is an example, and it is insecure by default. Please carefully
+# review and change values accordingly before deploying to a production environment. You are responsible
+# for your deployment.
+
 # Enter your team's e-mail address here. This e-mail will be used as the default approvers of IAM policy requests
 application_admin: consoleme_admins@example.com
 

@@ -1,3 +1,7 @@
+# Warning: The following configuration file is an example, and it is insecure by default. Please carefully
+# review and change values accordingly before deploying to a production environment. You are responsible
+# for your deployment.
+
 extends:
   - example_config_base.yaml
 
