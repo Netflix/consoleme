@@ -24,6 +24,7 @@
   * [Web App Authentication and Authorization](configuration/authentication-and-authorization/README.md)
     * [Local Development \(Auth bypass\)](configuration/authentication-and-authorization/local-development-auth-bypass.md)
     * [OIDC/OAuth2 \(Tested with Okta\)](configuration/authentication-and-authorization/oidc-oauth2-okta/README.md)
+      * [Cognito](configuration/authentication-and-authorization/oidc-oauth2-okta/cognito.md)
       * [Okta](configuration/authentication-and-authorization/oidc-oauth2-okta/okta.md)
     * [SAML \(Tested with Auth0\)](configuration/authentication-and-authorization/saml-auth0.md)
     * [ALB Auth](configuration/authentication-and-authorization/alb-auth.md)
