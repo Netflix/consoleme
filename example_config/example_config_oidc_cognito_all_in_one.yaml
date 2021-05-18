@@ -1,0 +1,215 @@
+# This is an all-in-one configuration and doesn't `extend` other configuration files. If you wanted to extend other
+# files, you can `extend` it with the `extends` keyword. Example:
+#extends:
+#  - example_config_base.yaml
+#  - example_secrets.yaml
+
+# Enter your team's e-mail address here. This e-mail will be used as the default approvers of IAM policy requests
+application_admin: consoleme_admins@example.com
+
+auth:
+  get_user_by_oidc: true
+  set_auth_cookie: true
+
+get_user_by_oidc_settings:
+  # If you use Okta, but are unable to visit your metadata URL in your web browser, try changing
+  # `/.well-known/oauth-authorization-server` to `/.well-known/openid-configuration` in your metadata_url configuration.
+  metadata_url: https://cognito-idp.us-east-1.amazonaws.com/REPLACE_WITH_YOUR_POOL_ID/.well-known/openid-configuration
+  # If you have a metadata URL and it returns JSON with authorization_endpoint, token_endpoint, and jwks_uri, you do
+  # not need to specify those values in the configuration.
+  #authorization_endpoint: https://consolemedemo.auth.us-east-1.amazoncognito.com/oauth2/authorize
+  #token_endpoint: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_5sCOjJHce/token
+  #jwks_uri: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_5sCOjJHce/.well-known/jwks.json
+  jwt_verify: true
+  jwt_email_key: email
+  jwt_groups_key: cognito:groups
+  grant_type: authorization_code
+  id_token_response_key: id_token
+  access_token_response_key: access_token
+  access_token_audience: null # Audience must not be set for Cognito
+
+oidc_secrets:
+  client_id: REPLACE_WITH_YOUR_CLIENT_ID
+  secret: REPLACE_WITH_YOUR_SECRET
+  client_scope:
+    - openid
+    - email
+
+development: true
+
+url: http://127.0.0.1:8081
+
+fakesecret: secret
+jwt_secret: secret
+
+# These are the tornado settings. Set `debug` to false in production.
+tornado:
+  debug: true
+  port: 8081
+  xsrf: true
+  xsrf_cookie_kwargs:
+    samesite: strict
+
+# ConsoleMe needs to know about your AWS accounts. ConsoleMe can retrieve a list of your accounts from the following
+# sources:
+# 1) Your local configuration file (See the account_ids_to_name key below)
+# 2) AWS Organizations (See the cache_accounts_from_aws_organizations key below)
+# 3) Swag ( https://github.com/Netflix-Skunkworks/swag-api) (See the retrieve_accounts_from_swag key below)
+# 4) Your current AWS credentials. If you do not configure any sources to retrieve information about your AWS accounts,
+#    ConsoleMe will use the current credentials and attempt to determine account information. If Celery tasks are ran,
+#    ConsoleMe will attempt to sync resources from this account.
+
+#account_ids_to_name:
+#  "123456789012": default_account
+#  "123456789013": prod
+#  "123456789014": test
+
+# ConsoleMe can cache account, org structure, and SCPs from AWS Organizations in one or more accounts
+#cache_accounts_from_aws_organizations:
+#  # This is the account ID of your AWS organizations master
+#  - organizations_master_account_id: "123456789012"
+#    # This is the name of the role that consoleme will attempt to assume on your Organizations master account to retrieve
+#    # account information. Ensure that ConsoleMe can assume this role, and that this role has the permissions:
+#    # organizations:DescribeAccount
+#    # organizations:DescribeOrganizationalUnit
+#    # organizations:DescribePolicy
+#    # organizations:ListAccounts
+#    # organizations:ListChildren
+#    # organizations:ListPolicies
+#    # organizations:ListRoots
+#    # organizations:ListTargetsForPolicy
+#    organizations_master_role_to_assume: "ConsoleMe"
+
+#retrieve_accounts_from_swag:
+#  base_url: 'https://your_swag_url/'
+
+# The `cloud_credential_authorization_mapping` configuration is where you would define the IAM role tags that dictate
+# which users/groups are authorized to access the role. The tag keys are defined below.
+# The tag values should be set to a colon-delimited list of users or groups (Commas are not valid in tag values).
+# Users/groups defined in the `authorized_groups_tags` tag can retrieve credentials from ConsoleMe either via the CLI
+# or the web interface. Users/groups defined in the `authorized_groups_cli_only_tags` tag can only retreive credentials
+# via the CLI, and will not see the roles in ConsoleMe's UI. This is useful to keep the UI uncluttered.
+# Example IAM role tags:
+# consoleme-authorized=user1@example.com:group2@example.com
+# consoleme-owner-dl=appowner@example.com
+# consoleme-authorized-cli-only=group3@example.com
+cloud_credential_authorization_mapping:
+  role_tags:
+    enabled: true
+    authorized_groups_tags:
+      - consoleme-authorized
+    authorized_groups_cli_only_tags:
+      - consoleme-owner-dl
+      - consoleme-authorized-cli-only
+
+aws:
+  issuer: YourCompany
+  region: "us-east-1"
+
+celery:
+  # Some jobs should only run in one region. The `active_region` key should define your primary region.
+  active_region: us-west-2
+
+# If you want to retrieve credentials through mutual TLS, you'll need to use something fronting ConsoleMe to do the
+# certificate validation. It should pass down a "Success" header, and a header with the certificate. You'll need to
+# implement your own certificate parsing logic.
+# Refer to consoleme/default_plugins/consoleme_default_plugins/plugins/auth/auth.py
+cli_auth:
+  certificate_header: certificate_header
+  required_headers:
+    - RequiredMTLSHeader: RequiredMTLSHeaderValue
+
+# This is where you can define groups that can modify ConsoleMe's dynamic configuration and administer
+# IAM/S3/SQS/SNS policies.
+groups:
+  can_edit_config:
+    - configeditors@example.com
+  can_admin_policies:
+    - consoleme_admins@example.com
+
+jwt:
+  email_key: email
+
+#groups:
+#  can_admin:
+#    - admin@example.com
+#  can_admin_policies:
+#    - admin@example.com
+#  developement_notification_emails:
+#    - developer@example.com
+#  can_edit_config:
+#    - configeditors@example.com
+#  can_edit_policies:
+#    - policyeditors@example.com
+
+# You can define support contact information and custom documentation here. This information is displayed in ConsoleMe's
+# sidebar.
+support_contact: consoleme-support@example.com
+support_chat_url: https://www.example.com/slack/channel
+documentation_page: https://github.com/Netflix/consoleme/
+
+# If you wish to override the entry-points to any of the default plugins with your own
+# plugin set that you `pip install`ed into ConsoleMe, you can modify this configuration to point to the applicable
+# entry point
+#plugins:
+#  auth: default_auth
+#  aws: default_aws
+#  group_mapping: default_group_mapping
+#  internal_celery_tasks: default_celery_tasks
+#  metrics: default_metrics
+#  internal_config: config
+#  internal_routes: default_internal_routes
+#  internal_policies: default_policies
+
+logging_levels:
+  asyncio: WARNING
+  boto3: CRITICAL
+  boto: CRITICAL
+  botocore: CRITICAL
+  elasticsearch.trace: ERROR
+  elasticsearch: ERROR
+  nose: CRITICAL
+  parso.python.diff: WARNING
+  s3transfer: CRITICAL
+  spectator.HttpClient: WARNING
+  spectator.Registry: WARNING
+  urllib3: ERROR
+
+#policies:
+#  role_name: ConsoleMeRole
+
+#sso:
+#  enabled: true
+#  jwk_url: https://provider.example.com/ext/oauth/something/jwks
+#  jwk_schema:
+#    header:
+#      alg:
+#        enum:
+#          - RS512
+#    payload:
+#      iss:
+#        enum:
+#          - https://provider.example.com
+
+# Note: Do not put anything sensitive in the self_service_iam key. This will be exposed to the frontend UI
+#self_service_iam:
+#   Reference the default values provided in consoleme/lib/defaults.py as SELF_SERVICE_IAM_DEFAULTS
+
+# In your deployment, you'll probably want to move these to Dynamic Configuration at
+# https://YOUR_CONSOLEME_DOMAIN/config
+#permission_templates:
+#   Reference the default values provided in consoleme/lib/defaults.py as PERMISSION_TEMPLATE_DEFAULTS
+
+# SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+# administrators and requesters about policy requests applicable to them.
+ses:
+  support_reference: "Please contact us at consoleme@example.com if you have any questions or concerns."
+  arn: "arn:aws:ses:us-east-1:123456789012:identity/example.com"
+  region: "us-west-2"
+  consoleme:
+    name: ConsoleMe
+    sender: consoleme_test@example.com
+
+# Challenge URL authentication is used to authenticate users from CLI clients (like Weep).
+challenge_url:
+  enabled: true
