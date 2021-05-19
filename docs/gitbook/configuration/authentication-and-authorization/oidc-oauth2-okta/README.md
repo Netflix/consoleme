@@ -1,4 +1,4 @@
-# OIDC/OAuth2 \(Tested with Okta\)
+# OIDC/OAuth2
 
 ConsoleMe can directly authenticate users against an OIDC identity provider. We have an example configuration [here](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_oidc.yaml).
 
