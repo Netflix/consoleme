@@ -181,7 +181,7 @@ async def authenticate_user_by_oidc(request):
             header = jwt.get_unverified_header(id_token)
             key_id = header["kid"]
             algorithm = header["alg"]
-            if not algorithm:
+            if algorithm == "none" or not algorithm:
                 raise UnableToAuthenticate(
                     "ID Token header does not specify a signing algorithm."
                 )
@@ -206,7 +206,7 @@ async def authenticate_user_by_oidc(request):
                     header = jwt.get_unverified_header(access_token)
                     key_id = header["kid"]
                     algorithm = header["alg"]
-                    if not algorithm:
+                    if algorithm == "none" or not algorithm:
                         raise UnableToAuthenticate(
                             "Access Token header does not specify a signing algorithm."
                         )
