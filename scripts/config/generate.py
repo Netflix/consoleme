@@ -43,6 +43,11 @@ def email_validator(input_email: str):
 def ask_questions(template_config):
     generated_config = {}
     for question in template_config["questions"]:
+        # if the question has a condition and it is not same, don't ask the question
+        if "depends_on" in question:
+            if generated_config[question["depends_on"]] != question["depends_on_val"]:
+                continue
+
         # Generate the question text to ask
         question_text = template_config["default"][question["type"]].format(
             friendly_name=question["friendly_name"],
@@ -60,10 +65,20 @@ def ask_questions(template_config):
             generated_config[question["config_variable"]] = questionary.confirm(
                 message=question_text, default=default_ans
             ).ask()
-        if question["type"] == "text":
+        elif question["type"] == "text":
             generated_config[question["config_variable"]] = questionary.text(
                 message=question_text, default=default_ans
             ).ask()
+        elif question["type"] == "select":
+            choices = question["choices"]
+            generated_config[question["config_variable"]] = questionary.select(
+                choices=choices, message=question_text
+            ).ask()
+        elif question["type"] == "list":
+            generated_config[question["config_variable"]] = questionary.text(
+                message=question_text, default=default_ans
+            ).ask()
+            generated_config[question["config_variable"]] = (generated_config[question["config_variable"]]).split(",")
 
     return generated_config
 

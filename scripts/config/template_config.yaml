@@ -4,12 +4,14 @@ default:
   file_path: What is the path for {friendly_name} ({friendly_description})?
   email: Which user/group email should be responsible for {friendly_name} ({friendly_description})?
   text: What should the value be for {friendly_name} ({friendly_description})?
+  select: Which of the following should be used for {friendly_name} ({friendly_description})?
+  list: Please provide a comma-seperated list of {friendly_name} ({friendly_description})
 
 questions:
   - config_variable: application_admin
     friendly_name: Adminstration of ConsoleMe
     friendly_description: Enter your team's e-mail address here. This e-mail will be used as the default approvers of IAM policy requests
-    type: email
+    type: text
   - config_variable: tornado.debug
     friendly_name: Tornado Debug mode
     friendly_description: "Warning: if running in production, don't set debug on!"
@@ -25,3 +27,38 @@ questions:
     friendly_description: whether to turn on XSRF protection or not
     type: confirmation
     default: True
+  - config_variable: __accounts_choice
+    friendly_name: retrieving AWS accounts
+    friendly_description: knowledge about your AWS accounts is needed
+    type: select
+    choices:
+      - Configuration File
+      - AWS Organizations
+      - Swag
+  - config_variable: account_ids_to_name
+    friendly_name: accounts
+    friendly_description: the accounts that ConsoleMe should cache information for
+    type: list
+    depends_on: __accounts_choice
+    depends_on_val: Configuration File
+  - config_variable: cache_accounts_from_aws_organizations.organizations_master_account_id
+    friendly_name: account ID for the organization
+    friendly_description: account ID of your AWS organizations master
+    type: text
+    depends_on: __accounts_choice
+    depends_on_val: AWS Organizations
+  - config_variable: cache_accounts_from_aws_organizations.organizations_master_role_to_assume
+    friendly_name: role for the organization master account
+    friendly_description: name of the role that consoleme will attempt to assume on your Organizations master account to retrieve account information
+    type: text
+    depends_on: __accounts_choice
+    depends_on_val: AWS Organizations
+  - config_variable: retrieve_accounts_from_swag.base_url
+    friendly_name: swag URL
+    friendly_description: Base URL for swag from where to retrieve account information
+    type: text
+    depends_on: __accounts_choice
+    depends_on_val: Swag
+
+
+
