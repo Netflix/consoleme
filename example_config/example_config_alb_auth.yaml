@@ -7,6 +7,12 @@ auth:
   set_auth_cookie: true
 
 get_user_by_aws_alb_auth_settings:
+  # access_token_validation:
+  #    client_id: ... (Needed if an audience is specified in access token)
+  #    metadata_url: ...
+  #    for Google: https://accounts.google.com/.well-known/openid-configuration
+  #    for Cognito: https://cognito-idp.us-east-1.amazonaws.com/<REPLACE_WITH_COGNITO_POOL_ID>/.well-known/openid-configuration
+  #    for Okta: https://YOURDOMAIN.okta.com/oauth2/default/.well-known/oauth-authorization-server
   jwt_email_key: sub
   jwt_groups_key: groups
 
