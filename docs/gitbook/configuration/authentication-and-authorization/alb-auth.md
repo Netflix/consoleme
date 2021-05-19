@@ -71,5 +71,5 @@ Note: Only 5 conditions are allowed per rule, so you'll need two rules to exclud
 
 ![](../../.gitbook/assets/image%20%2823%29.png)
 
-9. Create a ConsoleMe configuration to support your ALB Authentication experience, and deploy ConsoleMe to your target group with this configuration. When a user authenticates, ConsoleMe will receive and decode two headers sent from the ALB. The first is "X-Amzn-Oidc-Data", which contains the user's identity and claims. The second includes an access token from the identity provider. ConsoleMe will attempt to decode the access token and retrieve the user's group memberships. 
+9. Create a ConsoleMe configuration to support your ALB Authentication experience, and deploy ConsoleMe to your target group with this configuration. When a user authenticates, ConsoleMe will receive and decode two headers sent from the ALB. The first is "X-Amzn-Oidc-Data", which contains the user's identity and claims. The second includes an access token from the identity provider. ConsoleMe will attempt to decode the access token and retrieve the user's group memberships based on its configuration. 
 
