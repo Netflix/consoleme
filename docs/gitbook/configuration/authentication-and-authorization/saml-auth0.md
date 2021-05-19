@@ -1,4 +1,4 @@
-# SAML \(Tested with Auth0\)
+# SAML
 
 ConsoleMe can directly authenticate users against an SAML identity provider. We have an example configuration [here](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_saml.yaml).
 
