@@ -75,6 +75,10 @@ async def populate_oidc_config():
                 oidc_config["jwt_keys"][key_id] = RSAAlgorithm.from_jwk(json.dumps(k))
             elif key_type == "EC":
                 oidc_config["jwt_keys"][key_id] = ECAlgorithm.from_jwk(json.dumps(k))
+            else:
+                raise MissingConfigurationValue(
+                    f"OIDC/OAuth2 key type not recognized. Detected key type: {key_type}."
+                )
     return oidc_config
 
 
