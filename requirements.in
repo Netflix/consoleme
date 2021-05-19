@@ -44,6 +44,7 @@ python-dateutil
 python-json-logger==0.1.11 # Needed until this is merged and new version created: https://github.com/madzak/python-json-logger/pull/113
 python3-saml
 pytz
+questionary
 redis
 requests
 retry
