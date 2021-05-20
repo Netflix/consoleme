@@ -45,17 +45,21 @@ Steps:
 
 7. Modify your **Port 443 listener.** The first step should authenticate against Cognito, or your OIDC identity provider. The next step is to forward to your ConsoleMe target group. Here are a few examples:
 
-* Google
+* Google \(Scopes required: **openid email**\)
 
-![](../../.gitbook/assets/image%20%2829%29.png)
+![](../../.gitbook/assets/image%20%2833%29.png)
 
-* Cognito
+* Cognito  \(Scopes required: **openid**\)
 
-![](../../.gitbook/assets/image%20%2820%29.png)
+![](../../.gitbook/assets/image%20%2834%29.png)
 
-* Okta
+* Okta \(Scopes required: **openid email groups**\)
 
-![](../../.gitbook/assets/image%20%2827%29.png)
+![](../../.gitbook/assets/image%20%2830%29.png)
+
+8. The rule after your Authenticate rule should forward to your ConsoleMe target group.
+
+![](../../.gitbook/assets/image%20%2835%29.png)
 
 8. Set up rules on your load balancer to exclude the following endpoints from ALB Authentication. These endpoints are used to perform CLI authentication and actions. 
 
