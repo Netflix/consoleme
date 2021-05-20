@@ -20,7 +20,7 @@ questions:
     friendly_description: "Warning: if running in production, don't set debug on!"
     type: confirmation
     default: False
-  # These 2 Tornado settings should be sane defaults - don't ask users these, just select them as values
+  # These 3 Tornado settings should be sane defaults - don't ask users these, just select them as values
   - config_variable: tornado.port
     friendly_name: Tornado Port
     friendly_description: the port to run ConsoleMe's backend on
@@ -31,6 +31,9 @@ questions:
     friendly_description: whether to turn on XSRF protection or not
     type: no_question
     value: True
+  - config_variable: tornado.xsrf_cookie_kwargs.samesite
+    type: no_question
+    value: strict
   # Multi-account related settings
   - config_variable: __accounts_choice
     friendly_name: retrieving AWS accounts
@@ -138,7 +141,7 @@ questions:
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
     friendly_name: jwks_uri
     friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
-    type: text
+    type: list
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Cognito
@@ -299,12 +302,6 @@ questions:
     depends_on: get_user_by_oidc_settings.get_groups_from_userinfo_endpoint
     depends_on_val:
       - True
-  - config_variable: consoleme_s3_bucket
-    friendly_name: ConsoleMe's S3 bucket
-    friendly_description: |-
-      Is there a (preferably versioned) S3 bucket that I can cache and retrieve data from? The role that ConsoleMe runs
-      as must have access to this bucket
-    type: text
   - config_variable: consoleme_s3_bucket
     friendly_name: ConsoleMe's S3 bucket
     friendly_description: |-

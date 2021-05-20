@@ -88,12 +88,13 @@ def ask_questions(template_config):
                 choices=choices, message=question_text
             ).ask()
         elif question["type"] == "list":
-            generated_config[question["config_variable"]] = questionary.text(
+            values = questionary.text(
                 message=question_text, default=default_ans
             ).ask()
-            generated_config[question["config_variable"]] = (
-                generated_config[question["config_variable"]]
-            ).split(",")
+            values = values.split(",")
+            generated_config[question["config_variable"]] = []
+            for val in values:
+                generated_config[question["config_variable"]].append(val.strip())
 
         # formatted keys
         if "format_text" in question:
@@ -104,15 +105,45 @@ def ask_questions(template_config):
     return generated_config
 
 
+def update_nested_dict(d, k, v):
+    if "." in k:
+        cur_key = k.split(".")[0]
+        leftover_key = k.split(".", 1)[1]
+        d[cur_key] = update_nested_dict(d.get(cur_key, {}), leftover_key, v)
+    else:
+        d[k] = v
+    return d
+
+
+def generate_consoleme_style_config(generated_config):
+    consoleme_generated_config = {}
+    for k in generated_config:
+        # skip those that are templated config variables and not actual config variables
+        if k.startswith("__"):
+            continue
+        # skip non-values
+        val = generated_config[k]
+        if (isinstance(val, str) or isinstance(val, list)) and len(val) == 0:
+            continue
+        update_nested_dict(consoleme_generated_config, k, val)
+    return consoleme_generated_config
+
+
 def main():
     template_config = load_template_config()
     generated_config_path = (
         get_generated_config_path() + f"/generated_config_{int(time.time())}.yaml"
     )
     generated_config = ask_questions(template_config)
-    print(json.dumps(generated_config, indent=4, sort_keys=True))
-    # Below line because pre-commit complains about unused variable.....
-    print(f"TODO: Save generated config to YAML {generated_config_path}")
+    consoleme_generated_config = generate_consoleme_style_config(generated_config)
+    print(json.dumps(consoleme_generated_config, indent=4, sort_keys=True))
+    print(f"Saving configuration to {generated_config_path}")
+    try:
+        with open(generated_config_path, 'w') as file:
+            yaml.dump(consoleme_generated_config, file)
+        print(f"Configuration saved to {generated_config_path}")
+    except Exception as e:
+        print(f"An error occurred saving configuration file: {str(e)}")
 
 
 if __name__ == "__main__":
