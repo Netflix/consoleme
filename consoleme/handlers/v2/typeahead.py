@@ -65,7 +65,10 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
         # Fall back to DynamoDB or S3?
         if not all_resource_arns:
             s3_bucket = config.get("aws_config_cache_combined.s3.bucket")
-            s3_key = config.get("aws_config_cache_combined.s3.file")
+            s3_key = config.get(
+                "aws_config_cache_combined.s3.file",
+                "aws_config_cache_combined/aws_config_resource_cache_combined_v1.json.gz",
+            )
             try:
                 all_resources = await retrieve_json_data_from_redis_or_s3(
                     s3_bucket=s3_bucket, s3_key=s3_key

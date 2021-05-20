@@ -1,13 +1,11 @@
 import fnmatch
 import os
+import sys
 import tempfile
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import sentry_sdk
-from asgiref.sync import async_to_sync
-from pydantic import BaseModel
 from ruamel.yaml import YAML
-from ruamel.yaml.comments import CommentedMap as OrderedDict
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
@@ -16,11 +14,12 @@ from consoleme.lib.cache import (
     store_json_results_in_redis_and_s3,
 )
 from consoleme.lib.git import clone_repo
-from consoleme.lib.pydantic import BaseModel
 from consoleme.lib.templated_resources.models import (
     TemplatedFileModelArray,
     TemplateFile,
 )
+
+log = config.get_logger()
 
 yaml = YAML()
 yaml.preserve_quotes = True
@@ -53,7 +52,6 @@ async def retrieve_cached_resource_templates(
     return_first_result=False,
 ) -> Optional[Union[TemplatedFileModelArray, TemplateFile]]:
     matching_templates = []
-    # TODO: Refresh cache if data stale?
     templated_resource_data_d = await retrieve_json_data_from_redis_or_s3(
         s3_bucket=config.get("cache_resource_templates.s3.bucket"),
         s3_key=config.get(
@@ -85,6 +83,11 @@ async def retrieve_cached_resource_templates(
 async def cache_resource_templates_for_repository(
     repository,
 ) -> TemplatedFileModelArray:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {
+        "function": function,
+        "repository": repository,
+    }
     if repository["type"] not in ["git"]:
         raise Exception("Unsupported repository type")
     tempdir = tempfile.mkdtemp()
@@ -126,9 +129,17 @@ async def cache_resource_templates_for_repository(
                         with open(full_temporary_file_path, "r") as f:
                             try:
                                 file_content = yaml.load(f)
-                            except Exception:
+                            except Exception as e:
                                 sentry_sdk.capture_exception()
-                                # TODO LOG HERE
+                                log.error(
+                                    {
+                                        **log_data,
+                                        "Message": "Error trying to parse template",
+                                        "file_path": full_temporary_file_path,
+                                        "error": str(e),
+                                    },
+                                    exc_info=True,
+                                )
                                 continue
                         name = file_content.get(
                             "TemplateName", file_content.get("Name", filename)
@@ -189,6 +200,3 @@ async def cache_resource_templates_for_repository(
                         template_matched = True
                         break
     return TemplatedFileModelArray(templated_resources=discovered_templates)
-
-
-async_to_sync(cache_resource_templates)()

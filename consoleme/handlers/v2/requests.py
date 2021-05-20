@@ -422,7 +422,10 @@ class RequestsHandler(BaseAPIV2Handler):
             "cache_all_policy_requests.redis_key", "ALL_POLICY_REQUESTS"
         )
         s3_bucket = config.get("cache_policy_requests.s3.bucket")
-        s3_key = config.get("cache_policy_requests.s3.file")
+        s3_key = config.get(
+            "cache_policy_requests.s3.file",
+            "policy_requests/all_policy_requests_v1.json.gz",
+        )
         arguments = json.loads(self.request.body)
         filters = arguments.get("filters")
         # TODO: Add server-side sorting

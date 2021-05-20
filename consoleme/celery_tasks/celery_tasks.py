@@ -70,12 +70,8 @@ from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.self_service.typeahead import cache_self_service_typeahead
-from consoleme.lib.templated_resources import (
-    cache_resource_templates,
-    retrieve_cached_resource_templates,
-)
+from consoleme.lib.templated_resources import cache_resource_templates
 from consoleme.lib.timeout import Timeout
-from consoleme.models import WebResponse
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
 default_retry_kwargs = {
@@ -626,7 +622,10 @@ def cache_policies_table_details() -> bool:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_policies_table_details.s3.bucket")
-        s3_key = config.get("cache_policies_table_details.s3.file")
+        s3_key = config.get(
+            "cache_policies_table_details.s3.file",
+            "policies_table/cache_policies_table_details_v1.json.gz",
+        )
     async_to_sync(store_json_results_in_redis_and_s3)(
         items,
         redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
@@ -687,9 +686,10 @@ def cache_roles_for_account(account_id: str) -> bool:
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_iam_resources,
             s3_bucket=config.get("cache_iam_resources_for_account.s3.bucket"),
-            s3_key=config.get("cache_iam_resources_for_account.s3.file", "").format(
-                account_id=account_id
-            ),
+            s3_key=config.get(
+                "cache_iam_resources_for_account.s3.file",
+                "get_account_authorization_details/get_account_authorization_details_{account_id}_v1.json.gz",
+            ).format(account_id=account_id),
         )
 
         iam_roles = all_iam_resources["RoleDetailList"]
@@ -697,9 +697,10 @@ def cache_roles_for_account(account_id: str) -> bool:
         async_to_sync(store_json_results_in_redis_and_s3)(
             iam_roles,
             s3_bucket=config.get("cache_roles_for_account.s3.bucket"),
-            s3_key=config.get("cache_roles_for_account.s3.file", "").format(
-                resource_type="iam_roles", account_id=account_id
-            ),
+            s3_key=config.get(
+                "cache_roles_for_account.s3.file",
+                "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+            ).format(resource_type="iam_roles", account_id=account_id),
         )
 
         ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
@@ -776,13 +777,16 @@ def cache_roles_across_accounts() -> Dict:
         for arn in roles_to_delete_from_cache:
             all_roles.pop(arn, None)
     log_data["num_roles"] = len(all_roles)
-    # Store full list of roles in a single place
+    # Store full list of roles in a single place. This list will be ~30 minutes out of date.
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_roles,
         s3_bucket=config.get(
             "cache_roles_across_accounts.all_roles_combined.s3.bucket"
         ),
-        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+        s3_key=config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.file",
+            "account_resource_cache/cache_all_roles_v1.json.gz",
+        ),
     )
 
     stats.count(f"{function}.success")
@@ -820,9 +824,10 @@ def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, 
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="managed_policies", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="managed_policies", account_id=account_id)
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_policies, s3_bucket=s3_bucket, s3_key=s3_key
         )
@@ -936,9 +941,10 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="sqs_queues", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="sqs_queues", account_id=account_id)
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_queues, s3_bucket=s3_bucket, s3_key=s3_key
         )
@@ -981,9 +987,10 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="sns_topics", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="sns_topics", account_id=account_id)
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_topics, s3_bucket=s3_bucket, s3_key=s3_key
         )
@@ -1019,9 +1026,10 @@ def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="s3_buckets", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="s3_buckets", account_id=account_id)
         async_to_sync(store_json_results_in_redis_and_s3)(
             buckets, s3_bucket=s3_bucket, s3_key=s3_key
         )
@@ -1097,7 +1105,9 @@ def clear_old_redis_iam_cache() -> bool:
 def cache_resources_from_aws_config_for_account(account_id) -> dict:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     s3_bucket = config.get("aws_config_cache.s3.bucket")
-    s3_key = config.get("aws_config_cache.s3.file", "").format(account_id=account_id)
+    s3_key = config.get(
+        "aws_config_cache.s3.file", "aws_config_cache/cache_{account_id}_v1.json.gz"
+    ).format(account_id=account_id)
     dynamo = UserDynamoHandler()
     # Only query in active region, otherwise get data from DDB
     if config.region == config.get("celery.active_region", config.region) or config.get(
@@ -1190,7 +1200,10 @@ def cache_resources_from_aws_config_across_accounts() -> bool:
             # Refresh all resources after deletion of expired entries
             all_resources = red.hgetall(resource_redis_cache_key)
             s3_bucket = config.get("aws_config_cache_combined.s3.bucket")
-            s3_key = config.get("aws_config_cache_combined.s3.file")
+            s3_key = config.get(
+                "aws_config_cache_combined.s3.file",
+                "aws_config_cache_combined/aws_config_resource_cache_combined_v1.json.gz",
+            )
             async_to_sync(store_json_results_in_redis_and_s3)(
                 all_resources, s3_bucket=s3_bucket, s3_key=s3_key
             )
@@ -1478,6 +1491,16 @@ schedule = {
         "task": "consoleme.celery_tasks.celery_tasks.cache_organization_structure",
         "options": {"expires": 1000},
         "schedule": schedule_1_hour,
+    },
+    "cache_resource_templates_task": {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_resource_templates_task",
+        "options": {"expires": 1000},
+        "schedule": schedule_30_minute,
+    },
+    "cache_self_service_typeahead_task": {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_self_service_typeahead_task",
+        "options": {"expires": 1000},
+        "schedule": schedule_30_minute,
     },
 }
 

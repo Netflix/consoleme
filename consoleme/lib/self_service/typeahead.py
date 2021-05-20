@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import ujson as json
-from asgiref.sync import async_to_sync
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
@@ -23,7 +22,10 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
         s3_bucket=config.get(
             "cache_roles_across_accounts.all_roles_combined.s3.bucket"
         ),
-        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+        s3_key=config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.file",
+            "account_resource_cache/cache_all_roles_v1.json.gz",
+        ),
     )
 
     accounts_d = await get_account_id_to_name_mapping()
@@ -32,22 +34,22 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
 
     # We want templates to appear in Self-Service ahead of IAM roles, so we will cache them in that order.
 
-    # TODO: Config flag to turn this feature on/off
-    resource_templates = await retrieve_cached_resource_templates(
-        resource_type="iam_role", template_language="honeybee"
-    )
-
-    for resource_template in resource_templates.templated_resources:
-        typeahead_entries.append(
-            SelfServiceTypeaheadModel(
-                icon="users",
-                resource_type="HoneybeeAwsIamRoleTemplate",
-                number_of_affected_resources=resource_template.number_of_accounts,
-                display_text=resource_template.name,
-                details_endpoint=f"/api/v2/templated_resource/{resource_template.repository_name}/"
-                + f"{resource_template.resource}",
-            )
+    if config.get("cache_self_service_typeahead.cache_resource_templates"):
+        resource_templates = await retrieve_cached_resource_templates(
+            resource_type="iam_role", template_language="honeybee"
         )
+
+        for resource_template in resource_templates.templated_resources:
+            typeahead_entries.append(
+                SelfServiceTypeaheadModel(
+                    icon="users",
+                    resource_type="HoneybeeAwsIamRoleTemplate",
+                    number_of_affected_resources=resource_template.number_of_accounts,
+                    display_text=resource_template.name,
+                    details_endpoint=f"/api/v2/templated_resource/{resource_template.repository_name}/"
+                    + f"{resource_template.resource}",
+                )
+            )
 
     for role, details_j in role_data.items():
         account_id = role.split(":")[4]
@@ -90,6 +92,3 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
         ),
     )
     return typeahead_data
-
-
-async_to_sync(cache_self_service_typeahead)()

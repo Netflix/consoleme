@@ -179,9 +179,10 @@ async def get_all_iam_managed_policies_for_account(account_id):
         return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
     else:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="managed_policies", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="managed_policies", account_id=account_id)
         return await retrieve_json_data_from_redis_or_s3(
             s3_bucket=s3_bucket, s3_key=s3_key, default=[]
         )
@@ -207,7 +208,10 @@ async def get_resource_account(arn: str) -> str:
         await retrieve_json_data_from_redis_or_s3(
             redis_key=resources_from_aws_config_redis_key,
             s3_bucket=config.get("aws_config_cache_combined.s3.bucket"),
-            s3_key=config.get("aws_config_cache_combined.s3.file"),
+            s3_key=config.get(
+                "aws_config_cache_combined.s3.file",
+                "aws_config_cache_combined/aws_config_resource_cache_combined_v1.json.gz",
+            ),
             redis_data_type="hash",
         )
 
@@ -1303,7 +1307,9 @@ async def get_all_scps(force_sync=False) -> Dict[str, List[ServiceControlPolicyM
     scps = await retrieve_json_data_from_redis_or_s3(
         redis_key,
         s3_bucket=config.get("cache_scps_across_organizations.s3.bucket"),
-        s3_key=config.get("cache_scps_across_organizations.s3.file"),
+        s3_key=config.get(
+            "cache_scps_across_organizations.s3.file", "scps/cache_scps_v1.json.gz"
+        ),
         default={},
         max_age=86400,
     )
@@ -1348,7 +1354,9 @@ async def cache_all_scps() -> Dict[str, Any]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_scps_across_organizations.s3.bucket")
-        s3_key = config.get("cache_scps_across_organizations.s3.file")
+        s3_key = config.get(
+            "cache_scps_across_organizations.s3.file", "scps/cache_scps_v1.json.gz"
+        )
     await store_json_results_in_redis_and_s3(
         all_scps,
         redis_key=redis_key,
@@ -1370,7 +1378,10 @@ async def get_org_structure(force_sync=False) -> Dict[str, Any]:
     org_structure = await retrieve_json_data_from_redis_or_s3(
         redis_key,
         s3_bucket=config.get("cache_organization_structure.s3.bucket"),
-        s3_key=config.get("cache_organization_structure.s3.file"),
+        s3_key=config.get(
+            "cache_organization_structure.s3.file",
+            "scps/cache_org_structure_v1.json.gz",
+        ),
         default={},
     )
     if force_sync or not org_structure:
@@ -1411,7 +1422,10 @@ async def cache_org_structure() -> Dict[str, Any]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_organization_structure.s3.bucket")
-        s3_key = config.get("cache_organization_structure.s3.file")
+        s3_key = config.get(
+            "cache_organization_structure.s3.file",
+            "scps/cache_org_structure_v1.json.gz",
+        )
     await store_json_results_in_redis_and_s3(
         all_org_structure,
         redis_key=redis_key,
