@@ -9,6 +9,8 @@ environment: test
 
 url: http://127.0.0.1:8081
 
+consoleme_s3_bucket: fakebucket
+
 tornado:
   debug: true
   port: 8081
@@ -94,17 +96,6 @@ cloud_credential_authorization_mapping:
   internal_plugin:
     enabled: true
 
-cache_roles_across_accounts:
-  all_roles_combined:
-    s3:
-      bucket: fakebucket
-      file: test/all_roles_combined_v1.json
-
-cache_cloud_accounts:
-  s3:
-    bucket: fakebucket
-    file: test/cache_cloud_accounts_v1.json
-
 # You'll probably want to override FUNCTION to generate this data with your own business logic.
 application_settings:
   application_1:
@@ -122,3 +113,13 @@ application_settings:
 api_auth:
   valid_entities:
     - user@example.com
+
+cache_self_service_typeahead:
+  cache_resource_templates: true
+
+cache_resource_templates:
+  repositories:
+    - type: git
+      repo_url: http://github.example.com/fake_repo/
+      resource_formats:
+        - honeybee

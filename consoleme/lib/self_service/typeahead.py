@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 import ujson as json
 
 from consoleme.config import config
@@ -12,10 +10,11 @@ from consoleme.lib.self_service.models import (
     SelfServiceTypeaheadModel,
     SelfServiceTypeaheadModelArray,
 )
-from consoleme.lib.templated_resources import retrieve_cached_resource_templates
 
 
 async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
+    from consoleme.lib.templated_resources import retrieve_cached_resource_templates
+
     app_name_tag = config.get("cache_self_service_typeahead.app_name_tag")
     # Cache role and app information
     role_data = await retrieve_json_data_from_redis_or_s3(
@@ -39,17 +38,18 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
             resource_type="iam_role", template_language="honeybee"
         )
 
-        for resource_template in resource_templates.templated_resources:
-            typeahead_entries.append(
-                SelfServiceTypeaheadModel(
-                    icon="users",
-                    resource_type="HoneybeeAwsIamRoleTemplate",
-                    number_of_affected_resources=resource_template.number_of_accounts,
-                    display_text=resource_template.name,
-                    details_endpoint=f"/api/v2/templated_resource/{resource_template.repository_name}/"
-                    + f"{resource_template.resource}",
+        if resource_templates:
+            for resource_template in resource_templates.templated_resources:
+                typeahead_entries.append(
+                    SelfServiceTypeaheadModel(
+                        icon="users",
+                        resource_type="HoneybeeAwsIamRoleTemplate",
+                        number_of_affected_resources=resource_template.number_of_accounts,
+                        display_text=resource_template.name,
+                        details_endpoint=f"/api/v2/templated_resource/{resource_template.repository_name}/"
+                        + f"{resource_template.resource}",
+                    )
                 )
-            )
 
     for role, details_j in role_data.items():
         account_id = role.split(":")[4]

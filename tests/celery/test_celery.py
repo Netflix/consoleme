@@ -1,4 +1,5 @@
 """Docstring in public module."""
+import copy
 import json
 import os
 import sys
@@ -23,8 +24,22 @@ class TestCelerySync(TestCase):
         red = RedisHandler().redis_sync()
 
         # Set the config value for the redis cache location
-        old_value = CONFIG.config["aws"].pop("iamroles_redis_key", None)
-        CONFIG.config["aws"]["iamroles_redis_key"] = "test_cache_roles_for_account"
+        old_config = copy.deepcopy(CONFIG.config)
+        CONFIG.config = {
+            **CONFIG.config,
+            "aws": {
+                **CONFIG.config.get("aws", {}),
+                "iamroles_redis_key": "test_cache_roles_for_account",
+            },
+            "cache_roles_across_accounts": {
+                "all_roles_combined": {
+                    "s3": {
+                        "file": "test_cache_roles_for_account.json.gz",
+                    }
+                }
+            },
+        }
+
         # Clear out the existing cache from Redis:
         red.delete("test_cache_roles_for_account")
         # Run it:
@@ -82,10 +97,7 @@ class TestCelerySync(TestCase):
 
         # Reset the config value:
         self.celery.config.region = old_conf_region
-        if not old_value:
-            del CONFIG.config["aws"]["iamroles_redis_key"]
-        else:
-            CONFIG.config["aws"]["iamroles_redis_key"] = old_value
+        CONFIG.config = old_config
 
     def test_clear_old_redis_iam_cache(self):
         from consoleme.config.config import CONFIG
