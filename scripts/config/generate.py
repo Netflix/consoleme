@@ -88,9 +88,7 @@ def ask_questions(template_config):
                 choices=choices, message=question_text
             ).ask()
         elif question["type"] == "list":
-            values = questionary.text(
-                message=question_text, default=default_ans
-            ).ask()
+            values = questionary.text(message=question_text, default=default_ans).ask()
             values = values.split(",")
             generated_config[question["config_variable"]] = []
             for val in values:
@@ -139,7 +137,7 @@ def main():
     print(json.dumps(consoleme_generated_config, indent=4, sort_keys=True))
     print(f"Saving configuration to {generated_config_path}")
     try:
-        with open(generated_config_path, 'w') as file:
+        with open(generated_config_path, "w") as file:
             yaml.dump(consoleme_generated_config, file)
         print(f"Configuration saved to {generated_config_path}")
     except Exception as e:
