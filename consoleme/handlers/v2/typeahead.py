@@ -105,6 +105,7 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
 class SelfServiceStep1ResourceTypeahead(BaseAPIV2Handler):
     async def get(self):
         try:
+            # Get type ahead request arg
             type_ahead: Optional[str] = (
                 self.request.arguments.get("typeahead")[0].decode("utf-8").lower()
             )
@@ -113,12 +114,14 @@ class SelfServiceStep1ResourceTypeahead(BaseAPIV2Handler):
         if not type_ahead:
             self.write(json.dumps([]))
             return
+        limit: int = 20
         try:
-            limit: int = self.request.arguments.get("limit")[0].decode("utf-8")
-            if limit:
-                limit = int(limit)
+            # Get limit request arg
+            limit_raw: str = self.request.arguments.get("limit")[0].decode("utf-8")
+            if limit_raw:
+                limit = int(limit_raw)
         except TypeError:
-            limit = 20
+            pass
 
         typehead_data = await retrieve_json_data_from_redis_or_s3(
             redis_key=config.get(
