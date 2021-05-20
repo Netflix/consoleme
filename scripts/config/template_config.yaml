@@ -20,17 +20,18 @@ questions:
     friendly_description: "Warning: if running in production, don't set debug on!"
     type: confirmation
     default: False
-  # These should be sane defaults
-  #  - config_variable: tornado.port
-  #    friendly_name: Tornado Port
-  #    friendly_description: the port to run ConsoleMe's backend on
-  #    type: text
-  #    default: "8081"
-  #  - config_variable: tornado.xsrf
-  #    friendly_name: Tornado XSRF
-  #    friendly_description: whether to turn on XSRF protection or not
-  #    type: confirmation
-  #    default: True
+  # These 2 Tornado settings should be sane defaults - don't ask users these, just select them as values
+  - config_variable: tornado.port
+    friendly_name: Tornado Port
+    friendly_description: the port to run ConsoleMe's backend on
+    type: no_question
+    value: 8081
+  - config_variable: tornado.xsrf
+    friendly_name: Tornado XSRF
+    friendly_description: whether to turn on XSRF protection or not
+    type: no_question
+    value: True
+  # Multi-account related settings
   - config_variable: __accounts_choice
     friendly_name: retrieving AWS accounts
     friendly_description: knowledge about your AWS accounts is needed
@@ -67,7 +68,7 @@ questions:
     type: text
     depends_on: __accounts_choice
     depends_on_val:
-      - Swag
+      - Swag (https://github.com/Netflix-Skunkworks/swag-api)
   - config_variable: policies.role_name
     friendly_name: multi-account support
     friendly_description: |-
@@ -75,13 +76,13 @@ questions:
       IAM role on all of your (spoke) accounts that it can assume to gather resource information and make changes on the
       account. (Yes, this role will be needed on the central account as well. If configured, ConsoleMe will always
       attempt to assume a role when attempting operations on a different account).
-    type: select
+    type: text
     depends_on: __accounts_choice
     default: "ConsoleMe"
     depends_on_val:
       - Configuration File
       - AWS Organizations
-      - Swag
+      - Swag (https://github.com/Netflix-Skunkworks/swag-api)
   - config_variable: __auth_choice
     friendly_name: auth mechanism
     friendly_description: method of Web App Authentication and Authorization
@@ -295,10 +296,9 @@ questions:
       We got a lovely JSON response from the OIDC userinfo endpoint. What key, oh master, should I expect to find the
       groups in?
     type: text
-    depends_on: __auth_choice
+    depends_on: get_user_by_oidc_settings.get_groups_from_userinfo_endpoint
     depends_on_val:
-      - OIDC/OAuth2 - Other
-      - get_user_by_oidc_settings.get_groups_from_userinfo_endpoint
+      - True
   - config_variable: consoleme_s3_bucket
     friendly_name: ConsoleMe's S3 bucket
     friendly_description: |-

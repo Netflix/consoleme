@@ -46,6 +46,9 @@ def ask_questions(template_config):
     for question in template_config["questions"]:
         # if the question has a condition and it is not same, don't ask the question
         if "depends_on" in question:
+            # If the the depended on key isn't present at all, then skip question
+            if question["depends_on"] not in generated_config:
+                continue
             if (
                 generated_config[question["depends_on"]]
                 not in question["depends_on_val"]
