@@ -122,7 +122,7 @@ async def authenticate_user_by_alb_auth(request):
             header = jwt.get_unverified_header(access_token)
             key_id = header["kid"]
             algorithm = header["alg"]
-            if not algorithm:
+            if algorithm == "none" or not algorithm:
                 raise UnableToAuthenticate(
                     "Access Token header does not specify a signing algorithm."
                 )
