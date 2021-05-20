@@ -12,8 +12,6 @@ amqp==5.0.5
     # via kombu
 appdirs==1.4.4
     # via black
-appnope==0.1.2
-    # via ipython
 argcomplete==1.12.2
     # via datamodel-code-generator
 asgiref==3.3.1

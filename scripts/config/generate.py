@@ -111,5 +111,6 @@ def main():
     # Below line because pre-commit complains about unused variable.....
     print(f"TODO: Save generated config to YAML {generated_config_path}")
 
+
 if __name__ == "__main__":
     main()
