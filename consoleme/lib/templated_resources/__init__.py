@@ -1,7 +1,7 @@
 import fnmatch
 import os
 import tempfile
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import sentry_sdk
 from asgiref.sync import async_to_sync
@@ -46,8 +46,12 @@ async def cache_resource_templates() -> TemplatedFileModelArray:
 
 
 async def retrieve_cached_resource_templates(
-    resource_type: Optional[str] = None, template_language: Optional[str] = None
-) -> TemplatedFileModelArray:
+    resource_type: Optional[str] = None,
+    resource: Optional[str] = None,
+    repository_name: Optional[str] = None,
+    template_language: Optional[str] = None,
+    return_first_result=False,
+) -> Optional[Union[TemplatedFileModelArray, TemplateFile]]:
     matching_templates = []
     # TODO: Refresh cache if data stale?
     templated_resource_data_d = await retrieve_json_data_from_redis_or_s3(
@@ -58,16 +62,23 @@ async def retrieve_cached_resource_templates(
         ),
     )
     templated_file_array = TemplatedFileModelArray.parse_obj(templated_resource_data_d)
-    if resource_type:
-        for template_file in templated_file_array.templated_resources:
-            if resource_type and not template_file.resource_type == resource_type:
-                continue
-            if (
-                template_language
-                and not template_file.template_language == template_language
-            ):
-                continue
-            matching_templates.append(template_file)
+    for template_file in templated_file_array.templated_resources:
+        if resource_type and not template_file.resource_type == resource_type:
+            continue
+        if resource and not template_file.resource == resource:
+            continue
+        if repository_name and not template_file.repository_name == repository_name:
+            continue
+        if (
+            template_language
+            and not template_file.template_language == template_language
+        ):
+            continue
+        if return_first_result:
+            return template_file
+        matching_templates.append(template_file)
+    if return_first_result:
+        return None
     return TemplatedFileModelArray(templated_resources=matching_templates)
 
 
@@ -119,7 +130,9 @@ async def cache_resource_templates_for_repository(
                                 sentry_sdk.capture_exception()
                                 # TODO LOG HERE
                                 continue
-                        name = file_content.get("Name")
+                        name = file_content.get(
+                            "TemplateName", file_content.get("Name", filename)
+                        )
                         owner = file_content.get("Owner")
 
                         # Generate a set of accounts the template applies to. This is used to get the number of accounts
@@ -161,6 +174,7 @@ async def cache_resource_templates_for_repository(
                         discovered_templates.append(
                             TemplateFile(
                                 name=name,
+                                repository_name=repository["name"],
                                 owner=owner,
                                 include_accounts=include_accounts,
                                 exclude_accounts=exclude_accounts,
@@ -175,3 +189,6 @@ async def cache_resource_templates_for_repository(
                         template_matched = True
                         break
     return TemplatedFileModelArray(templated_resources=discovered_templates)
+
+
+async_to_sync(cache_resource_templates)()

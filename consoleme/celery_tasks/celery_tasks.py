@@ -69,6 +69,7 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import cache_all_policy_requests
+from consoleme.lib.self_service.typeahead import cache_self_service_typeahead
 from consoleme.lib.templated_resources import (
     cache_resource_templates,
     retrieve_cached_resource_templates,
@@ -1367,86 +1368,17 @@ def cache_resource_templates_task() -> Dict:
 
 
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
-def cache_self_service_typeahead() -> Dict:
-    # TODO: Migrate most of the heavy lifting out of celery_tasks.py
-    # Cache role and app information
-    role_data = async_to_sync(retrieve_json_data_from_redis_or_s3)(
-        s3_bucket=config.get(
-            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
-        ),
-        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
-    )
-    from enum import Enum
-    from typing import Optional
+def cache_self_service_typeahead_task() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    self_service_typeahead = async_to_sync(cache_self_service_typeahead)()
+    log_data = {
+        "function": function,
+        "message": "Successfully cached resource templates",
+        "num_templated_files": len(self_service_typeahead.typeahead_entries),
+    }
+    log.debug(log_data)
+    return log_data
 
-    from pydantic import BaseModel
-
-    class SelfServiceResourceType(Enum):
-        AwsIamRole = "AwsIamRole"
-        HoneybeeAwsIamRoleTemplate = "HoneybeeAwsIamRoleTemplate"
-
-    class SelfServiceTypeaheadModel(BaseModel):
-        icon: str
-        resource_type: SelfServiceResourceType
-        number_of_affected_resources: int
-        display_text: str
-        account: Optional[str] = None
-        details_endpoint: str
-
-    class SelfServiceTypeaheadModelArray(BaseModel):
-        typeahead_entries: Optional[List[SelfServiceTypeaheadModel]] = None
-
-    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
-
-    typeahead_entries = []
-
-    for role, details_j in role_data.items():
-        account_id = role.split(":")[4]
-        account_name = accounts_d.get(account_id, account_id)
-        details = json.loads(details_j)
-        policy = json.loads(details["policy"])
-        role_name = policy.get("RoleName", policy["Arn"].split("/")[-1])
-        typeahead_entries.append(
-            # TODO: Put App Name here if available based on Tag
-            SelfServiceTypeaheadModel(
-                icon="user",
-                resource_type="AwsIamRole",
-                number_of_affected_resources=1,
-                display_text=role_name,
-                account=account_name,
-                details_endpoint=f"/api/v2/roles/{account_id}/{role_name}",
-            )
-        )
-
-    resource_templates = async_to_sync(retrieve_cached_resource_templates)(
-        resource_type="iam_role", template_language="honeybee"
-    )
-
-    for resource_template in resource_templates.templated_resources:
-        typeahead_entries.append(
-            # TODO: Put App Name here if available based on Tag
-            SelfServiceTypeaheadModel(
-                icon="users",
-                resource_type="HoneybeeAwsIamRoleTemplate",
-                number_of_affected_resources=1,
-                display_text=resource_template.name,
-                details_endpoint=f"/api/v2/honeybee_template_detail/{resource_template.resource}",
-            )
-        )
-
-    typeahead_data = SelfServiceTypeaheadModelArray(typeahead_entries=typeahead_entries)
-    await store_json_results_in_redis_and_s3(
-        json.loads(typeahead_data.json()),
-        redis_key="cache_self_service_typeahead_v1",
-        s3_bucket=config.get("cache_self_service_typeahead.s3.bucket"),
-        s3_key=config.get(
-            "cache_self_service_typeahead.s3.file",
-            "cache_self_service_typeahead/cache_self_service_typeahead_v1.json.gz",
-        ),
-    )
-
-
-cache_self_service_typeahead()
 
 schedule_30_minute = timedelta(seconds=1800)
 schedule_45_minute = timedelta(seconds=2700)

@@ -11,6 +11,7 @@ class TemplateFile(BaseModel):
     number_of_accounts: Optional[int]
     resource: str
     resource_type: str
+    repository_name: str
     template_language: str  # terraform|honeybee
     web_path: str
     file_path: str

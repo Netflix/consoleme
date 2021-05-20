@@ -97,3 +97,55 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
             self.write(json.dumps([{"title": arn} for arn in arn_array.__root__]))
         else:
             self.write(arn_array.json())
+
+
+class SelfServiceStep1ResourceTypeahead(BaseAPIV2Handler):
+    async def get(self):
+        try:
+            type_ahead: Optional[str] = (
+                self.request.arguments.get("typeahead")[0].decode("utf-8").lower()
+            )
+        except TypeError:
+            type_ahead = None
+        if not type_ahead:
+            self.write(json.dumps([]))
+            return
+        try:
+            limit: int = self.request.arguments.get("limit")[0].decode("utf-8")
+            if limit:
+                limit = int(limit)
+        except TypeError:
+            limit = 20
+
+        typehead_data = await retrieve_json_data_from_redis_or_s3(
+            redis_key="cache_self_service_typeahead_v1",
+            s3_bucket=config.get("cache_self_service_typeahead.s3.bucket"),
+            s3_key=config.get(
+                "cache_self_service_typeahead.s3.file",
+                "cache_self_service_typeahead/cache_self_service_typeahead_v1.json.gz",
+            ),
+        )
+        matching = []
+
+        for entry in typehead_data.get("typeahead_entries", []):
+            if len(matching) >= limit:
+                break
+            if (
+                entry.get("display_text")
+                and type_ahead.lower() in entry["display_text"].lower()
+            ):
+                matching.append(entry)
+                continue
+            if (
+                entry.get("resource_identifier")
+                and type_ahead.lower() in entry["resource_identifier"].lower()
+            ):
+                matching.append(entry)
+                continue
+            if (
+                entry.get("application_name")
+                and type_ahead.lower() in entry["application_name"].lower()
+            ):
+                matching.append(entry)
+                continue
+        self.write(json.dumps(matching))
