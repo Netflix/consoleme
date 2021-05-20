@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import sys
@@ -45,8 +46,16 @@ def ask_questions(template_config):
     for question in template_config["questions"]:
         # if the question has a condition and it is not same, don't ask the question
         if "depends_on" in question:
-            if generated_config[question["depends_on"]] != question["depends_on_val"]:
+            if (
+                generated_config[question["depends_on"]]
+                not in question["depends_on_val"]
+            ):
                 continue
+
+        # if it is not a question
+        if question["type"] == "no_question":
+            generated_config[question["config_variable"]] = question["value"]
+            continue
 
         # Generate the question text to ask
         question_text = template_config["default"][question["type"]].format(
@@ -67,7 +76,8 @@ def ask_questions(template_config):
             ).ask()
         elif question["type"] == "text":
             generated_config[question["config_variable"]] = questionary.text(
-                message=question_text, default=default_ans
+                message=question_text,
+                default=default_ans,
             ).ask()
         elif question["type"] == "select":
             choices = question["choices"]
@@ -78,7 +88,15 @@ def ask_questions(template_config):
             generated_config[question["config_variable"]] = questionary.text(
                 message=question_text, default=default_ans
             ).ask()
-            generated_config[question["config_variable"]] = (generated_config[question["config_variable"]]).split(",")
+            generated_config[question["config_variable"]] = (
+                generated_config[question["config_variable"]]
+            ).split(",")
+
+        # formatted keys
+        if "format_text" in question:
+            generated_config[question["config_variable"]] = question[
+                "format_text"
+            ].format(generated_config[question["config_variable"]])
 
     return generated_config
 
@@ -89,8 +107,9 @@ def main():
         get_generated_config_path() + f"/generated_config_{int(time.time())}.yaml"
     )
     generated_config = ask_questions(template_config)
-    print(generated_config)
-
+    print(json.dumps(generated_config, indent=4, sort_keys=True))
+    # Below line because pre-commit complains about unused variable.....
+    print(f"TODO: Save generated config to YAML {generated_config_path}")
 
 if __name__ == "__main__":
     main()

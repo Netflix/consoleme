@@ -6,6 +6,7 @@ default:
   text: What should the value be for {friendly_name} ({friendly_description})?
   select: Which of the following should be used for {friendly_name} ({friendly_description})?
   list: Please provide a comma-seperated list of {friendly_name} ({friendly_description})
+  no_question: This is not a question, but a placeholder for default value that is always chosen
 
 questions:
   - config_variable: application_admin
@@ -40,25 +41,135 @@ questions:
     friendly_description: the accounts that ConsoleMe should cache information for
     type: list
     depends_on: __accounts_choice
-    depends_on_val: Configuration File
+    depends_on_val:
+      - Configuration File
   - config_variable: cache_accounts_from_aws_organizations.organizations_master_account_id
     friendly_name: account ID for the organization
     friendly_description: account ID of your AWS organizations master
     type: text
     depends_on: __accounts_choice
-    depends_on_val: AWS Organizations
+    depends_on_val:
+      - AWS Organizations
   - config_variable: cache_accounts_from_aws_organizations.organizations_master_role_to_assume
     friendly_name: role for the organization master account
     friendly_description: name of the role that consoleme will attempt to assume on your Organizations master account to retrieve account information
     type: text
     depends_on: __accounts_choice
-    depends_on_val: AWS Organizations
+    depends_on_val:
+      - AWS Organizations
   - config_variable: retrieve_accounts_from_swag.base_url
     friendly_name: swag URL
     friendly_description: Base URL for swag from where to retrieve account information
     type: text
     depends_on: __accounts_choice
-    depends_on_val: Swag
+    depends_on_val:
+      - Swag
+  - config_variable: __auth_choice
+    friendly_name: auth mechanism
+    friendly_description: method of Web App Authentication and Authorization
+    type: select
+    choices:
+      - ALB Auth - Cognito
+      - ALB Auth - Google
+      - ALB Auth - Okta
+  # auth specific questions
+  ## ALB Auth - Cognito ##
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
+    friendly_name: cognito pool ID
+    friendly_description: Amazon Cognito user pool ID
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+    format_text: https://cognito-idp.us-east-1.amazonaws.com/{}/.well-known/openid-configuration
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
+    friendly_name: jwks_uri
+    friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+  - config_variable: get_user_by_aws_alb_auth_settings.jwt_groups_key
+    friendly_name: jwt_groups_key
+    friendly_description: jwt_groups_key
+    type: text
+    default: "cognito:groups"
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+  ## ALB Auth - Google ##
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
+    friendly_name: metadata URL
+    friendly_description: Google metadata URL
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Google
+    default: https://accounts.google.com/.well-known/openid-configuration
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
+    friendly_name: jwks_uri
+    friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Google
+  ## ALB Auth - Okta ##
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
+    friendly_name: Okta Domain
+    friendly_description: "the domain for your Okta, https://<DOMAIN>.okta.com"
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Okta
+    format_text: https://{}.okta.com/oauth2/default/.well-known/oauth-authorization-server
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
+    friendly_name: jwks_uri
+    friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Okta
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.client_id
+    friendly_name: client ID
+    friendly_description: Okta Client ID
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Okta
 
-
-
+  ## General Auth config - ALB Auth ##
+  - config_variable: get_user_by_aws_alb_auth_settings.jwt_email_key
+    friendly_name: jwt_email_key
+    friendly_description: jwt_email_key
+    type: text
+    default: email
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+      - ALB Auth - Google
+      - ALB Auth - Okta
+  - config_variable: get_user_by_aws_alb_auth_settings.jwt_groups_key
+    friendly_name: jwt_groups_key
+    friendly_description: jwt_groups_key
+    type: text
+    default: groups
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Google
+      - ALB Auth - Okta
+  - config_variable: auth.get_user_by_aws_alb_auth
+    type: no_question
+    value: True
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+      - ALB Auth - Google
+      - ALB Auth - Okta
+  - config_variable: auth.set_auth_cookie
+    type: no_question
+    value: True
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+      - ALB Auth - Google
+      - ALB Auth - Okta
