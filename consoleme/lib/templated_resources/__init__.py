@@ -35,6 +35,9 @@ async def cache_resource_templates() -> TemplatedFileModelArray:
             templated_file_array.templated_resources.extend(result.templated_resources)
     await store_json_results_in_redis_and_s3(
         templated_file_array.dict(),
+        redis_key=config.get(
+            "cache_resource_templates.redis.key", "cache_templated_resources_v1"
+        ),
         s3_bucket=config.get("cache_resource_templates.s3.bucket"),
         s3_key=config.get(
             "cache_resource_templates.s3.file",
@@ -53,6 +56,9 @@ async def retrieve_cached_resource_templates(
 ) -> Optional[Union[TemplatedFileModelArray, TemplateFile]]:
     matching_templates = []
     templated_resource_data_d = await retrieve_json_data_from_redis_or_s3(
+        redis_key=config.get(
+            "cache_resource_templates.redis.key", "cache_templated_resources_v1"
+        ),
         s3_bucket=config.get("cache_resource_templates.s3.bucket"),
         s3_key=config.get(
             "cache_resource_templates.s3.file",

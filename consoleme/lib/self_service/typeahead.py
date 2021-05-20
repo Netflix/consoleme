@@ -84,7 +84,9 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
     typeahead_data = SelfServiceTypeaheadModelArray(typeahead_entries=typeahead_entries)
     await store_json_results_in_redis_and_s3(
         json.loads(typeahead_data.json()),
-        redis_key="cache_self_service_typeahead_v1",
+        redis_key=config.get(
+            "cache_self_service_typeahead.redis.key", "cache_self_service_typeahead_v1"
+        ),
         s3_bucket=config.get("cache_self_service_typeahead.s3.bucket"),
         s3_key=config.get(
             "cache_self_service_typeahead.s3.file",

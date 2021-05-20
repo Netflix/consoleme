@@ -121,7 +121,10 @@ class SelfServiceStep1ResourceTypeahead(BaseAPIV2Handler):
             limit = 20
 
         typehead_data = await retrieve_json_data_from_redis_or_s3(
-            redis_key="cache_self_service_typeahead_v1",
+            redis_key=config.get(
+                "cache_self_service_typeahead.redis.key",
+                "cache_self_service_typeahead_v1",
+            ),
             s3_bucket=config.get("cache_self_service_typeahead.s3.bucket"),
             s3_key=config.get(
                 "cache_self_service_typeahead.s3.file",
