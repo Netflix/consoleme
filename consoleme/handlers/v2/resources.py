@@ -174,7 +174,10 @@ class GetResourceURLHandler(BaseMtlsHandler):
                 await retrieve_json_data_from_redis_or_s3(
                     redis_key=resources_from_aws_config_redis_key,
                     s3_bucket=config.get("aws_config_cache_combined.s3.bucket"),
-                    s3_key=config.get("aws_config_cache_combined.s3.file"),
+                    s3_key=config.get(
+                        "aws_config_cache_combined.s3.file",
+                        "aws_config_cache_combined/aws_config_resource_cache_combined_v1.json.gz",
+                    ),
                     redis_data_type="hash",
                 )
             resource_info = await redis_hget(resources_from_aws_config_redis_key, arn)

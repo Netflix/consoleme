@@ -111,7 +111,10 @@ class PoliciesHandler(BaseAPIV2Handler):
         policies = await retrieve_json_data_from_redis_or_s3(
             redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
             s3_bucket=config.get("cache_policies_table_details.s3.bucket"),
-            s3_key=config.get("cache_policies_table_details.s3.file"),
+            s3_key=config.get(
+                "cache_policies_table_details.s3.file",
+                "policies_table/cache_policies_table_details_v1.json.gz",
+            ),
             default=[],
         )
 
