@@ -114,12 +114,17 @@ class SelfServiceStep1ResourceTypeahead(BaseAPIV2Handler):
         if not type_ahead:
             self.write(json.dumps([]))
             return
+        max_limit: int = config.get(
+            "self_service_step_1_resource_typeahead.max_limit", 10000
+        )
         limit: int = 20
         try:
             # Get limit request arg
             limit_raw: str = self.request.arguments.get("limit")[0].decode("utf-8")
             if limit_raw:
                 limit = int(limit_raw)
+            if limit > max_limit:
+                limit = max_limit
         except TypeError:
             pass
 
