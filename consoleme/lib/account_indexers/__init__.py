@@ -52,7 +52,9 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_cloud_accounts.s3.bucket")
-        s3_key = config.get("cache_cloud_accounts.s3.file")
+        s3_key = config.get(
+            "cache_cloud_accounts.s3.file", "cache_cloud_accounts/accounts_v1.json.gz"
+        )
     # Store full mapping of the model
     # We want to pass a dict to store_json_results_in_redis_and_s3, but the problem is account_mapping.dict()
     # includes pydantic objects that cannot be dumped to json without passing a special JSON encoder for the
@@ -102,7 +104,10 @@ async def get_account_id_to_name_mapping(
         accounts = await retrieve_json_data_from_redis_or_s3(
             redis_key,
             s3_bucket=config.get("cache_cloud_accounts.s3.bucket"),
-            s3_key=config.get("cache_cloud_accounts.s3.file"),
+            s3_key=config.get(
+                "cache_cloud_accounts.s3.file",
+                "cache_cloud_accounts/accounts_v1.json.gz",
+            ),
             default={},
         )
 

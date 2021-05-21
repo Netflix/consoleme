@@ -273,7 +273,7 @@ def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
     from consoleme.lib.cache import store_json_results_in_redis_and_s3
 
     global all_roles
-    buckets = [config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket")]
+    buckets = [config.get("consoleme_s3_bucket")]
     for bucket in buckets:
         s3.create_bucket(Bucket=bucket)
 
@@ -816,6 +816,9 @@ def populate_caches(
         celery.cache_sqs_queues_for_account(account_id)
         celery.cache_managed_policies_for_account(account_id)
         # celery.cache_resources_from_aws_config_for_account(account_id) # No select_resource_config in moto yet
+    # Running cache_roles_across_accounts ensures that all of the pre-existing roles in our role cache are stored in
+    # (mock) S3
+    celery.cache_roles_across_accounts()
     celery.cache_policies_table_details()
     celery.cache_policy_requests()
     celery.cache_credential_authorization_mapping()

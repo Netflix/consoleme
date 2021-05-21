@@ -124,7 +124,10 @@ async def cache_all_policy_requests(
             "celery.active_region", config.region
         ) or config.get("environment") in ["dev", "test"]:
             s3_bucket = config.get("cache_policy_requests.s3.bucket")
-            s3_key = config.get("cache_policy_requests.s3.file")
+            s3_key = config.get(
+                "cache_policy_requests.s3.file",
+                "policy_requests/all_policy_requests_v1.json.gz",
+            )
     requests = await get_all_policy_requests(user)
     requests_to_cache = []
     for request in requests:

@@ -65,7 +65,10 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
         # Fall back to DynamoDB or S3?
         if not all_resource_arns:
             s3_bucket = config.get("aws_config_cache_combined.s3.bucket")
-            s3_key = config.get("aws_config_cache_combined.s3.file")
+            s3_key = config.get(
+                "aws_config_cache_combined.s3.file",
+                "aws_config_cache_combined/aws_config_resource_cache_combined_v1.json.gz",
+            )
             try:
                 all_resources = await retrieve_json_data_from_redis_or_s3(
                     s3_bucket=s3_bucket, s3_key=s3_key
@@ -97,3 +100,66 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
             self.write(json.dumps([{"title": arn} for arn in arn_array.__root__]))
         else:
             self.write(arn_array.json())
+
+
+class SelfServiceStep1ResourceTypeahead(BaseAPIV2Handler):
+    async def get(self):
+        try:
+            # Get type ahead request arg
+            type_ahead: Optional[str] = (
+                self.request.arguments.get("typeahead")[0].decode("utf-8").lower()
+            )
+        except TypeError:
+            type_ahead = None
+        if not type_ahead:
+            self.write(json.dumps([]))
+            return
+        max_limit: int = config.get(
+            "self_service_step_1_resource_typeahead.max_limit", 10000
+        )
+        limit: int = 20
+        try:
+            # Get limit request arg
+            limit_raw: str = self.request.arguments.get("limit")[0].decode("utf-8")
+            if limit_raw:
+                limit = int(limit_raw)
+            if limit > max_limit:
+                limit = max_limit
+        except TypeError:
+            pass
+
+        typehead_data = await retrieve_json_data_from_redis_or_s3(
+            redis_key=config.get(
+                "cache_self_service_typeahead.redis.key",
+                "cache_self_service_typeahead_v1",
+            ),
+            s3_bucket=config.get("cache_self_service_typeahead.s3.bucket"),
+            s3_key=config.get(
+                "cache_self_service_typeahead.s3.file",
+                "cache_self_service_typeahead/cache_self_service_typeahead_v1.json.gz",
+            ),
+        )
+        matching = []
+
+        for entry in typehead_data.get("typeahead_entries", []):
+            if len(matching) >= limit:
+                break
+            if (
+                entry.get("display_text")
+                and type_ahead.lower() in entry["display_text"].lower()
+            ):
+                matching.append(entry)
+                continue
+            if (
+                entry.get("resource_identifier")
+                and type_ahead.lower() in entry["resource_identifier"].lower()
+            ):
+                matching.append(entry)
+                continue
+            if (
+                entry.get("application_name")
+                and type_ahead.lower() in entry["application_name"].lower()
+            ):
+                matching.append(entry)
+                continue
+        self.write(json.dumps(matching))

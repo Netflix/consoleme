@@ -1,3 +1,4 @@
+import copy
 import unittest
 
 
@@ -8,9 +9,26 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
             cache_roles_across_accounts,
             cache_roles_for_account,
         )
+        from consoleme.config.config import CONFIG
 
+        old_config = copy.deepcopy(CONFIG.config)
+        CONFIG.config = {
+            **CONFIG.config,
+            "aws": {
+                **CONFIG.config.get("aws", {}),
+                "iamroles_redis_key": "test_cache_roles_for_account",
+            },
+            "cache_roles_across_accounts": {
+                "all_roles_combined": {
+                    "s3": {
+                        "file": "TestCloudCredentialAuthorizationMapping.json.gz",
+                    }
+                }
+            },
+        }
         cache_roles_for_account("123456789012")
         cache_roles_across_accounts()
+        CONFIG.config = old_config
 
     def setUp(self):
         self.maxDiff = 10000
