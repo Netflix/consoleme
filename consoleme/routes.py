@@ -68,7 +68,11 @@ from consoleme.handlers.v2.self_service import (
     SelfServiceConfigHandler,
 )
 from consoleme.handlers.v2.service_control_policy import ServiceControlPolicyHandler
-from consoleme.handlers.v2.typeahead import ResourceTypeAheadHandlerV2
+from consoleme.handlers.v2.templated_resources import TemplatedResourceDetailHandler
+from consoleme.handlers.v2.typeahead import (
+    ResourceTypeAheadHandlerV2,
+    SelfServiceStep1ResourceTypeahead,
+)
 from consoleme.handlers.v2.user import (
     LoginConfigurationHandler,
     LoginHandler,
@@ -140,12 +144,20 @@ def make_app(jwt_validator=None):
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesForAccountHandler),
         (r"/api/v2/managed_policies/(.*)", ManagedPoliciesHandler),
         (
+            r"/api/v2/templated_resource/([a-zA-Z0-9_-]+)/(.*)",
+            TemplatedResourceDetailHandler,
+        ),
+        (
             r"/api/v2/managed_policies_on_role/(\d{12})/(.*)",
             ManagedPoliciesOnRoleHandler,
         ),
         (r"/api/v2/login", LoginHandler),
         (r"/api/v2/login_configuration", LoginConfigurationHandler),
         (r"/api/v2/logout", LogOutHandler),
+        (
+            r"/api/v2/typeahead/self_service_resources",
+            SelfServiceStep1ResourceTypeahead,
+        ),
         (r"/api/v2/user", UserManagementHandler),
         (r"/api/v2/user_registration", UserRegistrationHandler),
         (r"/api/v2/policies", PoliciesHandler),

@@ -13,7 +13,7 @@ import json  # We use a separate SetEncoder here so we cannot use ujson
 import sys
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import celery
 import sentry_sdk
@@ -69,6 +69,8 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler
 from consoleme.lib.requests import cache_all_policy_requests
+from consoleme.lib.self_service.typeahead import cache_self_service_typeahead
+from consoleme.lib.templated_resources import cache_resource_templates
 from consoleme.lib.timeout import Timeout
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
@@ -423,7 +425,7 @@ def report_revoked_task(**kwargs):
     wait_exponential_multiplier=1000,
     wait_exponential_max=1000,
 )
-def _add_role_to_redis(redis_key: str, role_entry: dict) -> None:
+def _add_role_to_redis(redis_key: str, role_entry: Dict) -> None:
     """
     This function will add IAM role data to redis so that policy details can be quickly retrieved by the policies
     endpoint.
@@ -434,7 +436,7 @@ def _add_role_to_redis(redis_key: str, role_entry: dict) -> None:
     ----------
     redis_key : str
         The redis key (hash)
-    role_entry : dict
+    role_entry : Dict
         The role entry
         Example: {'name': 'nameOfRole', 'accountId': '123456789012', 'arn': 'arn:aws:iam::123456789012:role/nameOfRole',
         'templated': None, 'ttl': 1562510908, 'policy': '<json_formatted_policy>'}
@@ -626,7 +628,10 @@ def cache_policies_table_details() -> bool:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_policies_table_details.s3.bucket")
-        s3_key = config.get("cache_policies_table_details.s3.file")
+        s3_key = config.get(
+            "cache_policies_table_details.s3.file",
+            "policies_table/cache_policies_table_details_v1.json.gz",
+        )
     async_to_sync(store_json_results_in_redis_and_s3)(
         items,
         redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
@@ -687,9 +692,10 @@ def cache_roles_for_account(account_id: str) -> bool:
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_iam_resources,
             s3_bucket=config.get("cache_iam_resources_for_account.s3.bucket"),
-            s3_key=config.get("cache_iam_resources_for_account.s3.file", "").format(
-                account_id=account_id
-            ),
+            s3_key=config.get(
+                "cache_iam_resources_for_account.s3.file",
+                "get_account_authorization_details/get_account_authorization_details_{account_id}_v1.json.gz",
+            ).format(account_id=account_id),
         )
 
         iam_roles = all_iam_resources["RoleDetailList"]
@@ -697,9 +703,10 @@ def cache_roles_for_account(account_id: str) -> bool:
         async_to_sync(store_json_results_in_redis_and_s3)(
             iam_roles,
             s3_bucket=config.get("cache_roles_for_account.s3.bucket"),
-            s3_key=config.get("cache_roles_for_account.s3.file", "").format(
-                resource_type="iam_roles", account_id=account_id
-            ),
+            s3_key=config.get(
+                "cache_roles_for_account.s3.file",
+                "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+            ).format(resource_type="iam_roles", account_id=account_id),
         )
 
         ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
@@ -776,13 +783,16 @@ def cache_roles_across_accounts() -> Dict:
         for arn in roles_to_delete_from_cache:
             all_roles.pop(arn, None)
     log_data["num_roles"] = len(all_roles)
-    # Store full list of roles in a single place
+    # Store full list of roles in a single place. This list will be ~30 minutes out of date.
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_roles,
         s3_bucket=config.get(
             "cache_roles_across_accounts.all_roles_combined.s3.bucket"
         ),
-        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+        s3_key=config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.file",
+            "account_resource_cache/cache_all_roles_v1.json.gz",
+        ),
     )
 
     stats.count(f"{function}.success")
@@ -793,12 +803,12 @@ def cache_roles_across_accounts() -> Dict:
 
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, int]]:
-    managed_policies: list[dict] = get_all_managed_policies(
+    managed_policies: List[Dict] = get_all_managed_policies(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=config.region,
     )
-    all_policies: list = []
+    all_policies: List = []
     for policy in managed_policies:
         all_policies.append(policy.get("Arn"))
 
@@ -820,9 +830,10 @@ def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, 
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="managed_policies", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="managed_policies", account_id=account_id)
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_policies, s3_bucket=s3_bucket, s3_key=s3_key
         )
@@ -850,7 +861,7 @@ def cache_managed_policies_across_accounts() -> bool:
 def cache_s3_buckets_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
+    accounts_d: List = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -866,7 +877,7 @@ def cache_s3_buckets_across_accounts() -> bool:
 def cache_sqs_queues_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
+    accounts_d: List = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
@@ -882,7 +893,7 @@ def cache_sqs_queues_across_accounts() -> bool:
 def cache_sns_topics_across_accounts() -> bool:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     # First, get list of accounts
-    accounts_d: list = async_to_sync(get_account_id_to_name_mapping)()
+    accounts_d: List = async_to_sync(get_account_id_to_name_mapping)()
     for account_id in accounts_d.keys():
         if config.get("environment") == "prod":
             cache_sns_topics_for_account.delay(account_id)
@@ -936,9 +947,10 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="sqs_queues", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="sqs_queues", account_id=account_id)
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_queues, s3_bucket=s3_bucket, s3_key=s3_key
         )
@@ -981,9 +993,10 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="sns_topics", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="sns_topics", account_id=account_id)
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_topics, s3_bucket=s3_bucket, s3_key=s3_key
         )
@@ -992,13 +1005,13 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
 
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
-    s3_buckets: list = list_buckets(
+    s3_buckets: List = list_buckets(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=config.region,
         read_only=True,
     )
-    buckets: list = []
+    buckets: List = []
     for bucket in s3_buckets["Buckets"]:
         buckets.append(bucket["Name"])
     s3_bucket_key: str = config.get("redis.s3_buckets_key", "S3_BUCKETS")
@@ -1019,9 +1032,10 @@ def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="s3_buckets", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="s3_buckets", account_id=account_id)
         async_to_sync(store_json_results_in_redis_and_s3)(
             buckets, s3_bucket=s3_bucket, s3_key=s3_key
         )
@@ -1097,7 +1111,9 @@ def clear_old_redis_iam_cache() -> bool:
 def cache_resources_from_aws_config_for_account(account_id) -> dict:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     s3_bucket = config.get("aws_config_cache.s3.bucket")
-    s3_key = config.get("aws_config_cache.s3.file", "").format(account_id=account_id)
+    s3_key = config.get(
+        "aws_config_cache.s3.file", "aws_config_cache/cache_{account_id}_v1.json.gz"
+    ).format(account_id=account_id)
     dynamo = UserDynamoHandler()
     # Only query in active region, otherwise get data from DDB
     if config.region == config.get("celery.active_region", config.region) or config.get(
@@ -1190,7 +1206,10 @@ def cache_resources_from_aws_config_across_accounts() -> bool:
             # Refresh all resources after deletion of expired entries
             all_resources = red.hgetall(resource_redis_cache_key)
             s3_bucket = config.get("aws_config_cache_combined.s3.bucket")
-            s3_key = config.get("aws_config_cache_combined.s3.file")
+            s3_key = config.get(
+                "aws_config_cache_combined.s3.file",
+                "aws_config_cache_combined/aws_config_resource_cache_combined_v1.json.gz",
+            )
             async_to_sync(store_json_results_in_redis_and_s3)(
                 all_resources, s3_bucket=s3_bucket, s3_key=s3_key
             )
@@ -1223,7 +1242,7 @@ def get_iam_role_limit() -> dict:
         success_message = "Task successfully completed"
 
         # First, get list of accounts
-        accounts_d: dict = async_to_sync(get_account_id_to_name_mapping)()
+        accounts_d: Dict = async_to_sync(get_account_id_to_name_mapping)()
         num_accounts = len(accounts_d.keys())
         for account_id, account_name in accounts_d.items():
             try:
@@ -1354,6 +1373,32 @@ def cache_organization_structure() -> Dict:
     return log_data
 
 
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
+def cache_resource_templates_task() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    templated_file_array = async_to_sync(cache_resource_templates)()
+    log_data = {
+        "function": function,
+        "message": "Successfully cached resource templates",
+        "num_templated_files": len(templated_file_array.templated_resources),
+    }
+    log.debug(log_data)
+    return log_data
+
+
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
+def cache_self_service_typeahead_task() -> Dict:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    self_service_typeahead = async_to_sync(cache_self_service_typeahead)()
+    log_data = {
+        "function": function,
+        "message": "Successfully cached resource templates",
+        "num_templated_files": len(self_service_typeahead.typeahead_entries),
+    }
+    log.debug(log_data)
+    return log_data
+
+
 schedule_30_minute = timedelta(seconds=1800)
 schedule_45_minute = timedelta(seconds=2700)
 schedule_6_hours = timedelta(hours=6)
@@ -1452,6 +1497,16 @@ schedule = {
         "task": "consoleme.celery_tasks.celery_tasks.cache_organization_structure",
         "options": {"expires": 1000},
         "schedule": schedule_1_hour,
+    },
+    "cache_resource_templates_task": {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_resource_templates_task",
+        "options": {"expires": 1000},
+        "schedule": schedule_30_minute,
+    },
+    "cache_self_service_typeahead_task": {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_self_service_typeahead_task",
+        "options": {"expires": 1000},
+        "schedule": schedule_30_minute,
     },
 }
 

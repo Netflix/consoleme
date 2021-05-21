@@ -44,7 +44,8 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
                 "generate_and_store_credential_authorization_mapping.s3.bucket"
             )
             s3_key = config.get(
-                "generate_and_store_credential_authorization_mapping.s3.file"
+                "generate_and_store_credential_authorization_mapping.s3.file",
+                "credential_authorization_mapping/credential_authorization_mapping_v1.json.gz",
             )
             try:
                 self.authorization_mapping = await retrieve_json_data_from_redis_or_s3(
@@ -120,7 +121,8 @@ async def generate_and_store_credential_authorization_mapping() -> Dict[
             "generate_and_store_credential_authorization_mapping.s3.bucket"
         )
         s3_key = config.get(
-            "generate_and_store_credential_authorization_mapping.s3.file"
+            "generate_and_store_credential_authorization_mapping.s3.file",
+            "credential_authorization_mapping/credential_authorization_mapping_v1.json.gz",
         )
     await store_json_results_in_redis_and_s3(
         authorization_mapping,
