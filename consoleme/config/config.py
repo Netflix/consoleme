@@ -16,6 +16,7 @@ import yaml
 from asgiref.sync import async_to_sync
 from pytz import timezone
 
+from consoleme.lib.aws_secret_manager import get_aws_secret
 from consoleme.lib.plugins import get_plugin_by_name
 
 config_plugin_entrypoint = os.environ.get(
@@ -85,19 +86,42 @@ class Configuration(object):
                 self.config["dynamic_config"] = dynamic_config
             time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
 
+    def purge_redislite_cache(self):
+        """
+        Purges redislite cache in primary DB periodically. This will force a cache refresh, and it is
+        convenient for cases where you cannot securely run shared Redis (ie: AWS AppRunner)
+        """
+        if not self.get("redis.use_redislite"):
+            return
+        from consoleme.lib.redis import RedisHandler
+
+        red = RedisHandler().redis_sync()
+        while True:
+            red.flushdb()
+            time.sleep(self.get("redis.purge_redislite_cache_interval", 1800))
+
     async def merge_extended_paths(self, extends, dir_path):
         for s in extends:
-            try:
-                extend_path = os.path.join(dir_path, s)
-                with open(extend_path, "r") as ymlfile:
-                    extend_config = yaml.safe_load(ymlfile)
-                dict_merge(self.config, extend_config)
-                if extend_config.get("extends"):
-                    await self.merge_extended_paths(
-                        extend_config.get("extends"), dir_path
+            extend_config = {}
+            # This decode and YAML-load a string stored in AWS Secrets Manager
+            if s.startswith("AWS_SECRETS_MANAGER:"):
+                secret_name = "".join(s.split("AWS_SECRETS_MANAGER:")[1:])
+                extend_config = yaml.safe_load(
+                    await get_aws_secret(
+                        secret_name, os.environ.get("EC2_REGION", "us-east-1")
                     )
-            except FileNotFoundError:
-                logging.error(f"Unable to open file: {s}", exc_info=True)
+                )
+            else:
+                try:
+                    extend_path = os.path.join(dir_path, s)
+                    with open(extend_path, "r") as ymlfile:
+                        extend_config = yaml.safe_load(ymlfile)
+                except FileNotFoundError:
+                    logging.error(f"Unable to open file: {s}", exc_info=True)
+
+            dict_merge(self.config, extend_config)
+            if extend_config.get("extends"):
+                await self.merge_extended_paths(extend_config.get("extends"), dir_path)
 
     async def load_config(self):
         """Load configuration from the location given to us by config_plugin"""
@@ -116,6 +140,9 @@ class Configuration(object):
 
         if extends:
             await self.merge_extended_paths(extends, dir_path)
+
+        if self.get("redis.use_redislite"):
+            Timer(0, self.purge_redislite_cache, ()).start()
 
         if self.get("config.load_from_dynamo", True):
             Timer(0, self.load_config_from_dynamo, ()).start()
@@ -223,6 +250,8 @@ class Configuration(object):
             "spectator.HttpClient": "WARNING",
             "spectator.Registry": "WARNING",
             "urllib3": "ERROR",
+            "redislite.client": "WARNING",
+            "redislite.configuration": "WARNING",
         }
         for logger, level in self.get("logging_levels", default_logging_levels).items():
             logging.getLogger(logger).setLevel(level)

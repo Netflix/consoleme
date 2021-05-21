@@ -15,7 +15,7 @@ import boto3
 import sentry_sdk
 import simplejson as json
 import yaml
-from asgiref.sync import async_to_sync, sync_to_async
+from asgiref.sync import sync_to_async
 from boto3.dynamodb.types import Binary  # noqa
 from cloudaux import get_iso_string
 from cloudaux.aws.sts import boto3_cached_conn
@@ -260,7 +260,7 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     def get_dynamic_config_dict(self) -> dict:
         """Retrieve dynamic configuration dictionary that can be merged with primary configuration dictionary."""
-        current_config_yaml = async_to_sync(self.get_dynamic_config_yaml)()
+        current_config_yaml = asyncio.run(self.get_dynamic_config_yaml())
         config_d = yaml.safe_load(current_config_yaml)
         return config_d
 
