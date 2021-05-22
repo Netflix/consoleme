@@ -334,10 +334,44 @@ questions:
       fully qualified redis URL because Celery expects it.
     type: text
     default: redis://localhost:6379/2
+  - config_variable: celery.active_region
+    friendly_name: Celery active region
+    friendly_description: |-
+      Some celery jobs should only run in one region. You should define your primary region here.
+    type: text
+    default: us-west-2
   - config_variable: challenge_url.enabled
     friendly_name: Challenge URL authentication
     friendly_description: |-
       Challenge URL authentication is used to authenticate users from CLI clients (like Weep).
     type: confirmation
     default: True
-# TODO: questions for cloud_credential_authorization_mapping, SES, Celery region, support documentation
+  - config_variable: ses.arn
+    friendly_name: SES ARN
+    friendly_description: |-
+      SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+      administrators and requesters about policy requests applicable to them.
+    type: text
+  - config_variable: ses.region
+    friendly_name: SES region
+    friendly_description: |-
+      SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+      administrators and requesters about policy requests applicable to them.
+    default: us-west-2
+    type: text
+  - config_variable: ses.consoleme.sender
+    friendly_name: SES email address
+    friendly_description: |-
+      SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+      administrators and requesters about policy requests applicable to them.
+    type: text
+  - config_variable: ses.consoleme.name
+    friendly_name: SES Application Name
+    friendly_description: |-
+      SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+      administrators and requesters about policy requests applicable to them.
+    type: text
+    default: ConsoleMe
+
+# TODO: questions for cloud_credential_authorization_mapping, support documentation
+# TODO: maybe add validation (required property) for some of these fields?

@@ -89,11 +89,13 @@ def ask_questions(template_config):
             ).ask()
         elif question["type"] == "list":
             values = questionary.text(message=question_text, default=default_ans).ask()
-            values = values.split(",")
-            generated_config[question["config_variable"]] = []
-            for val in values:
-                generated_config[question["config_variable"]].append(val.strip())
-
+            if values != "":
+                values = values.split(",")
+                generated_config[question["config_variable"]] = []
+                for val in values:
+                    generated_config[question["config_variable"]].append(val.strip())
+            else:
+                generated_config[question["config_variable"]] = []
         # formatted keys
         if "format_text" in question:
             generated_config[question["config_variable"]] = question[
