@@ -1,5 +1,8 @@
 from typing import Dict, Optional, Union
 
+from consoleme.config import config
+from consoleme_default_plugins.plugins.metrics.cloudwatch import CloudWatchMetric
+
 
 class Metric:
     def count(self, metric_name, tags=None):
@@ -16,6 +19,10 @@ class Metric:
         tags: Optional[Union[Dict[str, Union[str, bool]], Dict[str, str]]] = None,
     ) -> None:
         pass
+
+
+if config.get("metrics.metrics_provider") == "cloudwatch":
+    Metric = CloudWatchMetric  # noqa: F811
 
 
 def init():
