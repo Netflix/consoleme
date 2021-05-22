@@ -372,6 +372,5 @@ questions:
       administrators and requesters about policy requests applicable to them.
     type: text
     default: ConsoleMe
-
 # TODO: questions for cloud_credential_authorization_mapping, support documentation
 # TODO: maybe add validation (required property) for some of these fields?
