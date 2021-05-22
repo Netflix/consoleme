@@ -277,6 +277,8 @@ protobuf==3.15.6
     # via
     #   google-api-core
     #   googleapis-common-protos
+psutil==5.8.0
+    # via redislite
 ptyprocess==0.7.0
     # via pexpect
 py==1.10.0
@@ -342,6 +344,9 @@ redis==3.5.3
     # via
     #   -r requirements.in
     #   celery
+    #   redislite
+redislite==6.0.674960
+    # via -r requirements.in
 regex==2020.11.13
     # via black
 requests==2.25.1

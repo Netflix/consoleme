@@ -46,6 +46,7 @@ python3-saml
 pytz
 questionary
 redis
+redislite
 requests
 retry
 retrying

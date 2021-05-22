@@ -39,6 +39,7 @@
   * [AWS Resource Syncing](configuration/resource-syncing.md)
   * [CLI Authentication](configuration/cli-authentication.md)
   * [Sending email through SES](configuration/ses.md)
+  * [AWS Secret Manager Integration](configuration/aws-secret-manager-integration.md)
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
 * [Development Guide](development-guide/README.md)

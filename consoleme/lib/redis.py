@@ -1,3 +1,4 @@
+import os
 import sys
 import threading
 from typing import Optional
@@ -10,6 +11,14 @@ from redis.client import Redis
 
 from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
+
+if config.get("redis.use_redislite"):
+    import tempfile
+
+    import redislite
+
+    if not config.get("redis.redis_lite.db_path"):
+        default_redislite_db_path = tempfile.NamedTemporaryFile(delete=False)
 
 region = config.region
 log = config.get_logger()
@@ -361,6 +370,11 @@ class RedisHandler:
             self.enabled = False
 
     async def redis(self, db: int = 0) -> Redis:
+        if config.get("redis.use_redislite"):
+            REDIS_DB_PATH = os.path.join(
+                config.get("redis.redis_lite.db_path", default_redislite_db_path)
+            )
+            return redislite.StrictRedis(REDIS_DB_PATH)
         self.red = await sync_to_async(ConsoleMeRedis)(
             host=self.host,
             port=self.port,
@@ -371,6 +385,11 @@ class RedisHandler:
         return self.red
 
     def redis_sync(self, db: int = 0) -> Redis:
+        if config.get("redis.use_redislite"):
+            REDIS_DB_PATH = os.path.join(
+                config.get("redis.redis_lite.db_path", default_redislite_db_path)
+            )
+            return redislite.StrictRedis(REDIS_DB_PATH)
         self.red = ConsoleMeRedis(
             host=self.host,
             port=self.port,
