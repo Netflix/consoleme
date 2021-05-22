@@ -10,6 +10,7 @@ command: celery -A consoleme.celery_tasks.celery_tasks worker --loglevel=info -l
 from __future__ import absolute_import
 
 import json  # We use a separate SetEncoder here so we cannot use ujson
+import os
 import sys
 import time
 from datetime import datetime, timedelta
@@ -102,11 +103,27 @@ app = Celery(
     backend=config.get(f"celery.backend.{config.region}", "redis://127.0.0.1:6379/2"),
 )
 
+if config.get("redis.use_redislite"):
+    import tempfile
+
+    import redislite
+
+    redislite_db_path = os.path.join(
+        config.get("redis.redislite.db_path", tempfile.NamedTemporaryFile(delete=False))
+    )
+    redislite_client = redislite.Redis(redislite_db_path)
+    redislite_socket_path = f"redis+socket://{redislite_client.socket_file}"
+    app = Celery(
+        "tasks",
+        broker=config.get(f"{redislite_socket_path}/1"),
+        backend=config.get(f"{redislite_socket_path}/2"),
+    )
+
 app.conf.result_expires = config.get("celery.result_expires", 60)
 app.conf.worker_prefetch_multiplier = config.get("celery.worker_prefetch_multiplier", 4)
 app.conf.task_acks_late = config.get("celery.task_acks_late", True)
 
-if config.get("celery.purge"):
+if config.get("celery.purge") and not config.get("redis.use_redislite"):
     # Useful to clear celery queue in development
     with Timeout(seconds=5, error_message="Timeout: Are you sure Redis is running?"):
         app.control.purge()

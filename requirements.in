@@ -45,6 +45,7 @@ python-json-logger==0.1.11 # Needed until this is merged and new version created
 python3-saml
 pytz
 redis
+redislite
 requests
 retry
 retrying
