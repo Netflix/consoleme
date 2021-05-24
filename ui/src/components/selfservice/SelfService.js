@@ -267,7 +267,7 @@ class SelfService extends Component {
           <Button
             disabled={currStep === SelfServiceStepEnum.STEP3}
             floated="right"
-            primary
+            positive
             onClick={this.handleStepClick.bind(this, "next")}
           >
             Next

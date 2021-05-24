@@ -1,16 +1,21 @@
 import React from "react";
-import { Header, Icon, List, Segment } from "semantic-ui-react";
+import { Grid, Header, List } from "semantic-ui-react";
 
 function RoleDetails(props) {
   const role = props.role;
   if (!role) {
     return (
-      <Segment placeholder>
-        <Header icon>
-          <Icon name="braille" />
-          No Role is selected for display.
-        </Header>
-      </Segment>
+      <Grid style={{ height: "100%" }}>
+        <Grid.Row>
+          <Grid.Column textAlign="center" verticalAlign="middle">
+            <div>
+              <Header as="h3">
+                Enter a role name or key term to search for a role.
+              </Header>
+            </div>
+          </Grid.Column>
+        </Grid.Row>
+      </Grid>
     );
   }
 

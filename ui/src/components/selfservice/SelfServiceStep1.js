@@ -161,16 +161,45 @@ class SelfServiceStep1 extends Component {
     return (
       <Segment>
         {messagesToShow}
-        <Grid columns={2} divided>
+        <Grid columns={2} divided style={{ minHeight: "400px" }}>
           <Grid.Row>
-            <Grid.Column>
-              <Header>
-                Select a Role
-                <Header.Subheader>
-                  Please search for your role where you want to attach new
-                  permissions.
-                </Header.Subheader>
-              </Header>
+            <Grid.Column
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+              }}
+            >
+              <div>
+                <Header as="h1">
+                  Search & Select a Role
+                  <Header.Subheader>
+                    Search for the role(s) you want to modify the actions,
+                    effects, or resources to. You can refine your search using
+                    the advanced search options.
+                  </Header.Subheader>
+                </Header>
+                <Form widths="equal">
+                  <Form.Field required>
+                    <Search
+                      category
+                      loading={isLoading}
+                      onResultSelect={this.handleResultSelect.bind(this)}
+                      onSearchChange={_.debounce(
+                        this.handleSearchChange.bind(this),
+                        500,
+                        {
+                          leading: true,
+                        }
+                      )}
+                      results={results}
+                      value={value}
+                      placeholder="Enter role name or search terms here"
+                    />
+                  </Form.Field>
+                </Form>
+              </div>
+
               <p>
                 For Help, please visit{" "}
                 <a
@@ -181,28 +210,9 @@ class SelfServiceStep1 extends Component {
                   go/selfserviceiamtldr
                 </a>
               </p>
-              <Form widths="equal">
-                <Form.Field required>
-                  <label>Search Your Application Roles</label>
-                  <Search
-                    category
-                    loading={isLoading}
-                    onResultSelect={this.handleResultSelect.bind(this)}
-                    onSearchChange={_.debounce(
-                      this.handleSearchChange.bind(this),
-                      500,
-                      {
-                        leading: true,
-                      }
-                    )}
-                    results={results}
-                    value={value}
-                  />
-                </Form.Field>
-              </Form>
             </Grid.Column>
             <Grid.Column>
-              <Header>Selected Role Information</Header>
+              <Header as="h4">Selected Role Information</Header>
               {isRoleLoading ? (
                 <Loader active={isRoleLoading} />
               ) : (
