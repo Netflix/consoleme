@@ -15,6 +15,7 @@ questions:
       Enter your team's (or just your) e-mail address here. This e-mail will have full admin capabilities in ConsoleMe,
       and be used as the default approvers of IAM policy requests.
     type: text
+    required: True
   - config_variable: tornado.debug
     friendly_name: Tornado Debug mode
     friendly_description: "Warning: if running in production, don't set debug on!"
@@ -51,6 +52,7 @@ questions:
     depends_on: __accounts_choice
     depends_on_val:
       - Configuration File
+    required: True
   - config_variable: cache_accounts_from_aws_organizations.organizations_master_account_id
     friendly_name: account ID for the organization
     friendly_description: account ID of your AWS organizations master
@@ -58,6 +60,7 @@ questions:
     depends_on: __accounts_choice
     depends_on_val:
       - AWS Organizations
+    required: True
   - config_variable: cache_accounts_from_aws_organizations.organizations_master_role_to_assume
     friendly_name: role for the organization master account
     friendly_description: name of the role that consoleme will attempt to assume on your Organizations master account to retrieve account information
@@ -65,6 +68,7 @@ questions:
     depends_on: __accounts_choice
     depends_on_val:
       - AWS Organizations
+    required: True
   - config_variable: retrieve_accounts_from_swag.base_url
     friendly_name: swag URL
     friendly_description: Base URL for swag from where to retrieve account information
@@ -72,6 +76,7 @@ questions:
     depends_on: __accounts_choice
     depends_on_val:
       - Swag (https://github.com/Netflix-Skunkworks/swag-api)
+    required: True
   - config_variable: policies.role_name
     friendly_name: multi-account support
     friendly_description: |-
@@ -86,6 +91,7 @@ questions:
       - Configuration File
       - AWS Organizations
       - Swag (https://github.com/Netflix-Skunkworks/swag-api)
+    required: True
   - config_variable: __auth_choice
     friendly_name: auth mechanism
     friendly_description: method of Web App Authentication and Authorization
@@ -107,6 +113,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+    required: True
   - config_variable: auth.get_groups_by_header
     friendly_name: Get groups by header
     friendly_description: Get comma-separated list of groups by a trusted header, post authentication
@@ -115,6 +122,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+    required: True
   - config_variable: auth.user_header_name
     friendly_name: Name of header specifying username
     friendly_description: Name of trusted header specifying username
@@ -122,6 +130,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+    required: True
   - config_variable: auth.groups_header_name
     friendly_name: Name of header specifying comma-separated list of user's groups
     friendly_description: Name of trusted header specifying comma-separated list of user's groups
@@ -129,6 +138,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+    required: True
   ## ALB Auth - Cognito ##
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
     friendly_name: cognito pool ID
@@ -138,6 +148,7 @@ questions:
     depends_on_val:
       - ALB Auth - Cognito
     format_text: https://cognito-idp.us-east-1.amazonaws.com/{}/.well-known/openid-configuration
+    required: True
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
     friendly_name: jwks_uri
     friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
@@ -153,6 +164,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Cognito
+    required: True
   ## ALB Auth - Google ##
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
     friendly_name: metadata URL
@@ -161,6 +173,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Google
+    required: True
     default: https://accounts.google.com/.well-known/openid-configuration
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
     friendly_name: jwks_uri
@@ -177,6 +190,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Okta
+    required: True
     format_text: https://{}.okta.com/oauth2/default/.well-known/oauth-authorization-server
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
     friendly_name: jwks_uri
@@ -192,6 +206,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Okta
+    required: True
   ## ALB Auth - Generic ##
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
     friendly_name: Metadata URL
@@ -201,6 +216,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Generic
+    required: True
   ## General Auth config - ALB Auth ##
   - config_variable: get_user_by_aws_alb_auth_settings.jwt_email_key
     friendly_name: jwt_email_key
@@ -213,6 +229,7 @@ questions:
       - ALB Auth - Google
       - ALB Auth - Okta
       - ALB Auth - Generic
+    required: True
   - config_variable: get_user_by_aws_alb_auth_settings.jwt_groups_key
     friendly_name: jwt_groups_key
     friendly_description: jwt_groups_key
@@ -223,6 +240,7 @@ questions:
       - ALB Auth - Google
       - ALB Auth - Okta
       - ALB Auth - Generic
+    required: True
   - config_variable: auth.get_user_by_aws_alb_auth
     type: no_question
     value: True
@@ -261,6 +279,7 @@ questions:
     depends_on: __auth_choice
     depends_on_val:
       - OIDC/OAuth2 - Other
+    required: True
   - config_variable: get_user_by_oidc_settings.jwt_email_key
     friendly_name: Email key in the ID token
     friendly_description: |-
@@ -274,6 +293,7 @@ questions:
     depends_on_val:
       - OIDC/OAuth2 - Other
     default: email
+    required: True
   - config_variable: get_user_by_oidc_settings.jwt_groups_key
     friendly_name: Groups key in either the ID or Access token
     friendly_description: |-
@@ -283,6 +303,7 @@ questions:
     depends_on_val:
       - OIDC/OAuth2 - Other
     default: groups
+    required: True
   - config_variable: get_user_by_oidc_settings.get_groups_from_userinfo_endpoint
     friendly_name: getting groups from OIDC userinfo endpoint?
     friendly_description: |-
@@ -302,12 +323,14 @@ questions:
     depends_on: get_user_by_oidc_settings.get_groups_from_userinfo_endpoint
     depends_on_val:
       - True
+    required: True
   - config_variable: consoleme_s3_bucket
     friendly_name: ConsoleMe's S3 bucket
     friendly_description: |-
       Is there a (preferably versioned) S3 bucket that I can cache and retrieve data from? The role that ConsoleMe runs
       as must have access to this bucket
     type: text
+    required: True
   - config_variable: redis.host.global
     friendly_name: |-
       Is there a redis host I can use? Elasticache cluster, by chance?
@@ -352,6 +375,7 @@ questions:
       SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
       administrators and requesters about policy requests applicable to them.
     type: text
+    required: True
   - config_variable: ses.region
     friendly_name: SES region
     friendly_description: |-
@@ -359,12 +383,14 @@ questions:
       administrators and requesters about policy requests applicable to them.
     default: us-west-2
     type: text
+    required: True
   - config_variable: ses.consoleme.sender
     friendly_name: SES email address
     friendly_description: |-
       SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
       administrators and requesters about policy requests applicable to them.
-    type: text
+    type: email
+    required: True
   - config_variable: ses.consoleme.name
     friendly_name: SES Application Name
     friendly_description: |-
@@ -372,5 +398,22 @@ questions:
       administrators and requesters about policy requests applicable to them.
     type: text
     default: ConsoleMe
-# TODO: questions for cloud_credential_authorization_mapping, support documentation
-# TODO: maybe add validation (required property) for some of these fields?
+    required: True
+  - config_variable: support_contact
+    friendly_name: support contact email
+    friendly_description: |-
+      This information is displayed in ConsoleMe's sidebar
+    type: email
+  - config_variable: support_chat_url
+    friendly_name: support chat URL
+    friendly_description: |-
+      This information is displayed in ConsoleMe's sidebar
+    type: text
+    default: https://www.example.com/slack/channel
+  - config_variable: documentation_page
+    friendly_name: documentation page for more information
+    friendly_description: |-
+      This information is displayed in ConsoleMe's sidebar
+    type: text
+    default: https://hawkins.gitbook.io/consoleme/
+# TODO: questions for cloud_credential_authorization_mapping

@@ -78,17 +78,37 @@ def ask_questions(template_config):
                 message=question_text, default=default_ans
             ).ask()
         elif question["type"] == "text":
-            generated_config[question["config_variable"]] = questionary.text(
-                message=question_text,
-                default=default_ans,
-            ).ask()
+            if question.get("required", False):
+                generated_config[question["config_variable"]] = questionary.text(
+                    message=question_text,
+                    default=default_ans,
+                    validate=lambda text: True
+                    if len(text) > 0
+                    else "This is a required field",
+                ).ask()
+            else:
+                generated_config[question["config_variable"]] = questionary.text(
+                    message=question_text,
+                    default=default_ans,
+                ).ask()
         elif question["type"] == "select":
             choices = question["choices"]
             generated_config[question["config_variable"]] = questionary.select(
                 choices=choices, message=question_text
             ).ask()
         elif question["type"] == "list":
-            values = questionary.text(message=question_text, default=default_ans).ask()
+            if question.get("required", False):
+                values = questionary.text(
+                    message=question_text,
+                    default=default_ans,
+                    validate=lambda text: True
+                    if len(text) > 0
+                    else "This is a required field",
+                ).ask()
+            else:
+                values = questionary.text(
+                    message=question_text, default=default_ans
+                ).ask()
             if values != "":
                 values = values.split(",")
                 generated_config[question["config_variable"]] = []
