@@ -1403,7 +1403,7 @@ def cache_self_service_typeahead_task() -> Dict:
     self_service_typeahead = async_to_sync(cache_self_service_typeahead)()
     log_data = {
         "function": function,
-        "message": "Successfully cached resource templates",
+        "message": "Successfully cached roles and templates for self service typeahead",
         "num_templated_files": len(self_service_typeahead.typeahead_entries),
     }
     log.debug(log_data)
