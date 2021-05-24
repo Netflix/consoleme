@@ -7,6 +7,7 @@ cchardet
 celery[redis]
 cloudaux
 datamodel-code-generator
+decorator<5 # Internal requirement has decorator pinned to <5.
 deepdiff
 defusedxml
 ed25519
