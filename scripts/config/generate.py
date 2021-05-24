@@ -96,7 +96,7 @@ def ask_questions(template_config):
             generated_config[question["config_variable"]] = questionary.select(
                 choices=choices, message=question_text
             ).ask()
-        elif question["type"] == "list":
+        elif question["type"] == "list" or question["type"] == "list_dict":
             if question.get("required", False):
                 values = questionary.text(
                     message=question_text,
@@ -111,9 +111,19 @@ def ask_questions(template_config):
                 ).ask()
             if values != "":
                 values = values.split(",")
-                generated_config[question["config_variable"]] = []
-                for val in values:
-                    generated_config[question["config_variable"]].append(val.strip())
+                if question["type"] == "list":
+                    generated_config[question["config_variable"]] = []
+                    for val in values:
+                        generated_config[question["config_variable"]].append(
+                            val.strip()
+                        )
+                else:
+                    generated_config[question["config_variable"]] = {}
+                    for val in values:
+                        val = val.strip()
+                        val = val.split(":")
+                        cur_key = question["config_variable"] + "." + val[0]
+                        generated_config[cur_key] = val[1]
             else:
                 generated_config[question["config_variable"]] = []
         # formatted keys

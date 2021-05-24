@@ -6,6 +6,7 @@ default:
   text: What should the value be for {friendly_name} ({friendly_description})?
   select: Which of the following should be used for {friendly_name} ({friendly_description})?
   list: Please provide a comma-seperated list of {friendly_name} ({friendly_description})
+  list_dict: Please provide a comma-seperated list of {friendly_name} ({friendly_description})
   no_question: This is not a question, but a placeholder for default value that is always chosen
 
 questions:
@@ -46,9 +47,10 @@ questions:
       - AWS Organizations
       - Swag (https://github.com/Netflix-Skunkworks/swag-api)
   - config_variable: account_ids_to_name
-    friendly_name: accounts
-    friendly_description: the accounts that ConsoleMe should cache information for
-    type: list
+    friendly_name: accounts IDs to name mapping
+    friendly_description: |-
+      this will be accounts that ConsoleMe should cache information for, for example: 1234: prod, 5678: test
+    type: list_dict
     depends_on: __accounts_choice
     depends_on_val:
       - Configuration File
