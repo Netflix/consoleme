@@ -4,6 +4,7 @@ import {
   Form,
   Grid,
   Header,
+  Icon,
   Loader,
   Message,
   Search,
@@ -101,26 +102,25 @@ class SelfServiceStep1 extends Component {
         });
       }
 
-      const re = new RegExp(_.escapeRegExp(value), "i");
-      const isMatch = (result) => re.test(result.title);
-      const TYPEAHEAD_API = "/policies/typeahead?resource=app&search=" + value;
+      const TYPEAHEAD_API = `/api/v2/typeahead/self_service_resources?typeahead=${value}`;
       this.props
         .sendRequestCommon(null, TYPEAHEAD_API, "get")
-        .then((source) => {
-          const filteredResults = _.reduce(
-            source,
-            (memo, data, name) => {
-              const results = _.filter(data.results, isMatch);
-              if (results.length) {
-                memo[name] = { name, results };
-              }
-              return memo;
-            },
-            {}
-          );
+        .then((results) => {
+          // The Semantic UI Search component is quite opinionated
+          // as it expects search results data to be in a specific format
+          // and will throw an error when this is not the case.
+          // A way to get around the error is to add a key to each search result
+          // that is expected - `title` in our use case.
+          const reformattedResults = results.map((res, idx) => {
+            return {
+              id: idx,
+              title: res.display_text,
+              ...res,
+            };
+          });
           this.setState({
             isLoading: false,
-            results: filteredResults,
+            results: reformattedResults,
           });
         });
     }, 300);
@@ -139,6 +139,36 @@ class SelfServiceStep1 extends Component {
           this.fetchRoleDetail(value);
         }
       }
+    );
+  }
+
+  resultRenderer(result) {
+    return (
+      <Grid>
+        <Grid.Row verticalAlign="middle">
+          <Grid.Column width={10}>
+            <div style={{ display: "flex" }}>
+              <Icon
+                name={result.icon}
+                style={{ flexShrink: 0, width: "30px" }}
+              />
+              <strong
+                style={{
+                  display: "inline-block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {result.display_text}
+              </strong>
+            </div>
+          </Grid.Column>
+          <Grid.Column width={6} textAlign="right">
+            {result.account ? result.account : null}
+          </Grid.Column>
+        </Grid.Row>
+      </Grid>
     );
   }
 
@@ -182,7 +212,7 @@ class SelfServiceStep1 extends Component {
                 <Form widths="equal">
                   <Form.Field required>
                     <Search
-                      category
+                      fluid
                       loading={isLoading}
                       onResultSelect={this.handleResultSelect.bind(this)}
                       onSearchChange={_.debounce(
@@ -193,6 +223,7 @@ class SelfServiceStep1 extends Component {
                         }
                       )}
                       results={results}
+                      resultRenderer={this.resultRenderer}
                       value={value}
                       placeholder="Enter role name or search terms here"
                     />
