@@ -13,7 +13,11 @@ from consoleme.exceptions.exceptions import (
 )
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.defaults import SELF_SERVICE_IAM_DEFAULTS
-from consoleme.lib.generic import generate_random_string, iterate_and_format_dict
+from consoleme.lib.generic import (
+    generate_random_string,
+    iterate_and_format_dict,
+    sort_dict,
+)
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import (
     ChangeGeneratorModel,
@@ -388,6 +392,7 @@ async def _minimize_iam_policy_statements(
 
     for i in range(len(inline_iam_policy_statements)):
         if i not in exclude_ids:
+            inline_iam_policy_statements[i] = sort_dict(inline_iam_policy_statements[i])
             minimized_statements.append(inline_iam_policy_statements[i])
     # TODO(cccastrapel): Intelligently combine actions and/or resources if they include wildcards
     return minimized_statements
