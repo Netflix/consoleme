@@ -42,7 +42,7 @@ class CloudWatchMetric(Metric):
                     "MetricName": metric_name,
                     "Dimensions": dimensions,
                     "Unit": unit,
-                    "Value": "dsafasdf",
+                    "Value": value,
                 },
             ],
         }
