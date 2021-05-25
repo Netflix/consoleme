@@ -60,7 +60,16 @@ class Configuration(object):
         self.config = {}
         self.log = None
 
-    def load_config_from_dynamo(self, ddb, red):
+    def load_config_from_dynamo(self, ddb=None, red=None):
+        if not ddb:
+            from consoleme.lib.dynamo import UserDynamoHandler
+
+            ddb = UserDynamoHandler()
+        if not red:
+            from consoleme.lib.redis import RedisHandler
+
+            red = RedisHandler().redis_sync()
+
         dynamic_config = refresh_dynamic_config(ddb)
         if dynamic_config and dynamic_config != self.config.get("dynamic_config"):
             red.set(
@@ -148,11 +157,6 @@ class Configuration(object):
             Timer(0, self.purge_redislite_cache, ()).start()
 
         if self.get("config.load_from_dynamo", True):
-            # from consoleme.lib.dynamo import UserDynamoHandler
-            # from consoleme.lib.redis import RedisHandler
-            # ddb = UserDynamoHandler()
-            # red = RedisHandler().redis_sync()
-            # self.load_config_from_dynamo(ddb, red)
             Timer(0, self.load_config_from_dynamo_bg_thread, ()).start()
 
         if self.get("config.run_recurring_internal_tasks"):

@@ -29,6 +29,7 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.dynamo import IAMRoleDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.policies import send_communications_policy_change_request_v2
 from consoleme.lib.redis import RedisHandler
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
@@ -565,11 +566,18 @@ class Aws:
         :param extended_request:
         :return:
         """
-        log_data: dict = {
+        log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
-            "message": "Function is not configured.",
+            "message": "Received a new SNS publish V2 request",
+            "admin_approved": admin_approved,
+            "approval_probe_approved": approval_probe_approved,
+            "arn": extended_request.arn,
+            "username": extended_request.requester_info.email,
+            "request": extended_request.dict(),
         }
-        log.warning(log_data)
+        log.debug(log_data)
+        # Send email for new policy request
+        await send_communications_policy_change_request_v2(extended_request)
         return
 
     @staticmethod

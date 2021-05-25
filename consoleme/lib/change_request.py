@@ -312,6 +312,8 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
         policy = await _generate_inline_policy_statement_from_policy_sentry(change)
     else:
         policy = await _generate_inline_policy_statement_from_mapping(change)
+
+    # Honeybee supports restricting policies to certain accounts.
     if change.include_accounts:
         policy["IncludeAccounts"] = change.include_accounts
     if change.exclude_accounts:

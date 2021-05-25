@@ -1,9 +1,9 @@
 import argparse
-import time
 
 from asgiref.sync import async_to_sync
 
 from consoleme.celery_tasks import celery_tasks as celery
+from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme_default_plugins.plugins.celery_tasks import (
     celery_tasks as default_celery_tasks,
@@ -29,7 +29,10 @@ parser.add_argument(
     help="Invoke celery tasks instead of running synchronously",
 )
 args = parser.parse_args()
-time.sleep(1)  # sleeping here allows Dyanmic Configuration changes to load.
+
+# Force dynamic configuration update synchronously
+config.CONFIG.load_config_from_dynamo()
+
 if args.use_celery:
     # Initialize Redis locally. If use_celery is set to `True`, you must be running a celery beat and worker. You can
     # run this locally with the following command:
