@@ -4,11 +4,12 @@ from typing import Dict, Optional, Union
 import boto3
 
 from consoleme.config import config
+from consoleme_default_plugins.plugins.metrics.base_metric import Metric
 
 cloudwatch = boto3.client("cloudwatch", region_name=config.region)
 
 
-class CloudWatchMetric:
+class CloudWatchMetric(Metric):
     def __init__(self):
         self.namespace = config.get("metrics.cloudwatch.namespace", "ConsoleMe")
 
