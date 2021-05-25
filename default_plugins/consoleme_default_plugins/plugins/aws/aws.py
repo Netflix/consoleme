@@ -566,17 +566,6 @@ class Aws:
         :param extended_request:
         :return:
         """
-        log_data = {
-            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
-            "message": "Received a new SNS publish V2 request",
-            "admin_approved": admin_approved,
-            "approval_probe_approved": approval_probe_approved,
-            "arn": extended_request.arn,
-            "username": extended_request.requester_info.email,
-            "request": extended_request.dict(),
-        }
-        log.debug(log_data)
-        # Send email for new policy request
         await send_communications_policy_change_request_v2(extended_request)
         return
 
