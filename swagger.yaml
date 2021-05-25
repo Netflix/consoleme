@@ -593,12 +593,12 @@ components:
               - $ref: "#/components/schemas/SESChangeGeneratorModel"
               - $ref: "#/components/schemas/CrudChangeGeneratorModel"
               - $ref: "#/components/schemas/GenericChangeGeneratorModel"
+              - $ref: "#/components/schemas/CustomIamChangeGeneratorModel"
     ChangeGeneratorModel:
       type: object
       required:
         - generator_type
         - arn
-        - resource_arn
       properties:
         principal_arn:
           description: |-
@@ -622,6 +622,7 @@ components:
             - sns
             - sqs
             - sts
+            - custom_iam
           discriminator:
             propertyName: generator_type
             mapping:
@@ -635,6 +636,7 @@ components:
               ses: "#/components/schemas/SESChangeGeneratorModel"
               sns: "#/components/schemas/SNSChangeGeneratorModel"
               sqs: "#/components/schemas/SQSChangeGeneratorModel"
+              custom_iam: "#/components/schemas/CustomIamChangeGeneratorModel"
         resource_arn:
           description: |-
             The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
@@ -680,7 +682,48 @@ components:
           type: string
         bucket_prefix:
           type: string
-
+        policy:
+          type: object
+          description: |-
+            Optional full policy statement provided by frontend
+          example: |-
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Action": [
+                          "s3:GetObject",
+                      "Effect": "Allow",
+                      "Resource": [
+                          "arn:aws:s3:::abc",
+                          "arn:aws:s3:::abc/*"
+                      ],
+                  }
+              ]
+            }
+        include_accounts:
+          type: array
+          example: [account_a, account_b, ...]
+          description: |-
+            An array of accounts to include this policy on. This is only relevant for templated
+            IAM roles. By default, the change will apply to all of the accounts the template is deployed to.
+          items:
+            type: string
+        exclude_accounts:
+          type: array
+          example: [account_a, account_b, ...]
+          description: |-
+            An array of accounts to explicitly exclude this policy on. This is only relevant for templated
+            IAM roles. By default, exclude_accounts is null and the change will apply to all of the accounts
+          items:
+            type: string
+        extra_actions:
+          type: array
+          example: ["*", "s3:getobject", "s3:list*"]
+          description: |-
+            An array with a list of extra actions the user wants appended to the policy
+          items:
+            type: string
     AdvancedChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
@@ -688,6 +731,7 @@ components:
           required:
             - action_groups
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string
@@ -705,6 +749,7 @@ components:
         - type: object
           required:
             - action_groups
+            - resource_arn
           properties:
             action_groups:
               type: array
@@ -719,6 +764,7 @@ components:
             - action_groups
             - service_name
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string
@@ -765,6 +811,19 @@ components:
     #                  - get
     #                  - put
     #                  - delete
+    CustomIamChangeGeneratorModel:
+      allOf:
+        - $ref: "#/components/schemas/ChangeGeneratorModel"
+        - type: object
+          required:
+            - policy
+            - generator_type
+          properties:
+            generator_type:
+              type: string
+              pattern: "custom_iam"
+            policy:
+              type: object
     SQSChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
@@ -772,6 +831,7 @@ components:
           required:
             - action_groups
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string
@@ -793,6 +853,7 @@ components:
           required:
             - action_groups
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string
@@ -814,6 +875,7 @@ components:
           required:
             - from_address
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string

@@ -307,16 +307,20 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
     if change.generator_type == "s3":
-        return await _generate_s3_inline_policy_statement_from_mapping(change)
-    if change.generator_type == "crud_lookup":
-        return await _generate_inline_policy_statement_from_policy_sentry(change)
-    return await _generate_inline_policy_statement_from_mapping(change)
-    # TODO: Custom policy handler where we handle explicit permission additions
-    pass
+        policy = await _generate_s3_inline_policy_statement_from_mapping(change)
+    elif change.generator_type == "crud_lookup":
+        policy = await _generate_inline_policy_statement_from_policy_sentry(change)
+    else:
+        policy = await _generate_inline_policy_statement_from_mapping(change)
+    if change.include_accounts:
+        policy["IncludeAccounts"] = change.include_accounts
+    if change.exclude_accounts:
+        policy["ExcludeAccounts"] = change.exclude_accounts
+    return policy
 
 
 async def _minimize_iam_policy_statements(
-    inline_iam_policy_statements: List[Dict],
+    inline_iam_policy_statements: List[Dict], disregard_sid=True
 ) -> List[Dict]:
     """
     Minimizes a list of inline IAM policy statements.
@@ -334,6 +338,8 @@ async def _minimize_iam_policy_statements(
 
     for i in range(len(inline_iam_policy_statements)):
         inline_iam_policy_statement = inline_iam_policy_statements[i]
+        if disregard_sid:
+            inline_iam_policy_statement.pop("Sid", None)
         if i in exclude_ids:
             # We've already combined this policy with another. Ignore it.
             continue
@@ -342,7 +348,8 @@ async def _minimize_iam_policy_statements(
                 # We've already combined this policy with another. Ignore it.
                 continue
             inline_iam_policy_statement_to_compare = inline_iam_policy_statements[j]
-
+            if disregard_sid:
+                inline_iam_policy_statement_to_compare.pop("Sid", None)
             # Check to see if policy statements are identical except for a given element. Merge the policies
             # if possible.
             for element in [
@@ -466,27 +473,40 @@ async def generate_change_model_array(
                 "We only support making changes to a single principal ARN per request."
             )
 
-        # Generate inline policy for the change, if applicable
-        inline_policy = (
-            await _generate_inline_iam_policy_statement_from_change_generator(change)
-        )
-        if inline_policy and (
-            not inline_policy.get("Action")
-            or not inline_policy.get("Effect")
-            or not inline_policy.get("Resource")
-        ):
-            raise InvalidRequestParameter(
-                f"Generated inline policy is invalid. Double-check request parameter: {inline_policy}"
-            )
-        if inline_policy:
-            # TODO(ccastrapel): Add more details to the ResourceModel when we determine we can use it for something.
-            resource_model = await _generate_resource_model_from_arn(
-                change.resource_arn
-            )
-            # If the resource arn is actually a wildcard, we might not have a valid resource model
-            if resource_model:
-                resources.append(resource_model)
-            inline_iam_policy_statements.append(inline_policy)
+        if change.generator_type == "custom_iam":
+            inline_policies = change.policy["Statement"]
+            if isinstance(inline_policies, dict):
+                inline_policies = [inline_policies]
+        else:
+            # Generate inline policy for the change, if applicable
+            inline_policies = [
+                await _generate_inline_iam_policy_statement_from_change_generator(
+                    change
+                )
+            ]
+        for inline_policy in inline_policies:
+            # Inline policies must have Action|NotAction, Resource|NotResource, and an Effect
+            if inline_policy and (
+                (not inline_policy.get("Action") and not inline_policy.get("NotAction"))
+                or (
+                    not inline_policy.get("Resource")
+                    and not inline_policy.get("NotResource")
+                )
+                or not inline_policy.get("Effect")
+            ):
+                raise InvalidRequestParameter(
+                    f"Generated inline policy is invalid. Double-check request parameter: {inline_policy}"
+                )
+            if inline_policy and change.resource_arn:
+                # TODO(ccastrapel): Add more details to the ResourceModel when we determine we can use it for something.
+                resource_model = await _generate_resource_model_from_arn(
+                    change.resource_arn
+                )
+                # If the resource arn is actually a wildcard, we might not have a valid resource model
+                if resource_model:
+                    resources.append(resource_model)
+            if inline_policy:
+                inline_iam_policy_statements.append(inline_policy)
 
         # TODO(ccastrapel): V2: Generate resource policies for the change, if applicable
 
