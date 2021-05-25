@@ -38,3 +38,16 @@ def get_plugin_by_name(plugin_name: str) -> Any:
     )
 
     raise Exception(exception_message)
+
+
+def import_class_by_name(class_full_path: str):
+    """
+    Import a class by a dot-delimited class name.
+    i.e: import_class("consoleme_default_plugins.plugins.metrics.default_metrics.DefaultMetric")
+        --> <class 'consoleme_default_plugins.plugins.metrics.default_metrics.DefaultMetric'>
+    """
+
+    d = class_full_path.rfind(".")
+    class_name = class_full_path[d + 1 : len(class_full_path)]
+    m = __import__(class_full_path[0:d], globals(), locals(), [class_name])
+    return getattr(m, class_name)
