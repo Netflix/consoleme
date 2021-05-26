@@ -59,7 +59,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "generator_type": "s3",
@@ -71,7 +71,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "generator_type": "s3",
@@ -83,7 +83,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "generator_type": "crud_lookup",
@@ -119,7 +119,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "generator_type": "s3",
@@ -131,7 +131,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "generator_type": "s3",
@@ -143,7 +143,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "generator_type": "crud_lookup",
@@ -175,7 +175,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "resource_arn": "arn:aws:s3::123456789012:examplebucket",
@@ -207,7 +207,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "resource_arn": "arn:aws:s3::123456789012:examplebucket",
@@ -219,7 +219,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 },
                 {
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "generator_type": "custom_iam",
@@ -317,7 +317,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "resource_arn": "arn:aws:s3::123456789012:examplebucket",
@@ -345,7 +345,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/exampleRole",
                     },
                     "resource_arn": "arn:aws:sns:us-east-1:123456789012:exampletopic",
@@ -377,7 +377,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 {
                     "user": "username@example.com",
                     "principal": {
-                        "principal_type": "AwsIamRole",
+                        "principal_type": "AwsResource",
                         "principal_arn": "arn:aws:iam::123456789012:role/roleName",
                     },
                     "generator_type": "sqs",

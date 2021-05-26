@@ -31,7 +31,7 @@ const useManagedPolicy = () => {
           {
             principal: {
               principal_arn: arn,
-              principal_type: "AwsIamRole",
+              principal_type: "AwsResource",
             },
             arn: state.managedPolicyArn,
             change_type: "managed_policy",

@@ -602,8 +602,8 @@ components:
       properties:
         principal:
           anyOf:
-            - $ref: "#/components/schemas/AwsIamRolePrincipalModel"
-            - $ref: "#/components/schemas/HoneybeeAwsIamRoleTemplatePrincipalModel"
+            - $ref: "#/components/schemas/AwsResourcePrincipalModel"
+            - $ref: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
         generator_type:
           type: string
           enum:
@@ -893,15 +893,15 @@ components:
         principal_type:
           type: string
           enum:
-            - AwsIamRole
-            - HoneybeeAwsIamRoleTemplate
+            - AwsResource
+            - HoneybeeAwsResourceTemplate
           discriminator:
             propertyName: principal_type
             mapping:
-              AwsIamRole: "#/components/schemas/AwsIamRolePrincipalModel"
-              HoneybeeAwsIamRoleTemplate: "#/components/schemas/HoneybeeAwsIamRoleTemplatePrincipalModel"
+              AwsResource: "#/components/schemas/AwsResourcePrincipalModel"
+              HoneybeeAwsResourceTemplate: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
 
-    AwsIamRolePrincipalModel:
+    AwsResourcePrincipalModel:
       allOf:
         - $ref: "#/components/schemas/PrincipalModel"
         - type: object
@@ -911,7 +911,7 @@ components:
           properties:
             principal_type:
               type: string
-              pattern: "AwsIamRole"
+              pattern: "AwsResource"
             principal_arn:
               description: |-
                 The principal (Source ARN) associated with the Change. This is most commomly an IAM role ARN.
@@ -921,7 +921,7 @@ components:
               type: string
               pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
 
-    HoneybeeAwsIamRoleTemplatePrincipalModel:
+    HoneybeeAwsResourceTemplatePrincipalModel:
       allOf:
         - $ref: "#/components/schemas/PrincipalModel"
         - type: object
@@ -932,7 +932,7 @@ components:
           properties:
             principal_type:
               type: string
-              pattern: "HoneybeeAwsIamRoleTemplate"
+              pattern: "HoneybeeAwsResourceTemplate"
             repository_name:
               description: |-
                 The name of the repository for the template. This is specified in the configuration key
@@ -949,8 +949,8 @@ components:
       properties:
         principal:
           anyOf:
-            - $ref: "#/components/schemas/AwsIamRolePrincipalModel"
-            - $ref: "#/components/schemas/HoneybeeAwsIamRoleTemplatePrincipalModel"
+            - $ref: "#/components/schemas/AwsResourcePrincipalModel"
+            - $ref: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
         change_type:
           type: string
         resources:

@@ -54,7 +54,7 @@ async def get_extended_request_helper():
     inline_policy_change = {
         "principal": {
             "principal_arn": "arn:aws:iam::123456789012:role/test",
-            "principal_type": "AwsIamRole",
+            "principal_type": "AwsResource",
         },
         "change_type": "inline_policy",
         "resources": [],
@@ -119,7 +119,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         inline_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "inline_policy",
             "resources": [],
@@ -269,7 +269,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         managed_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/role_name",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "managed_policy",
             "policy_name": "invalid<html>characters",
@@ -348,7 +348,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         permissions_boundary_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/role_name",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "permissions_boundary",
             "policy_name": "invalid<html>characters",
@@ -416,7 +416,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         assume_role_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/role_name",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "assume_role_policy",
             "resources": [],
@@ -490,7 +490,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         inline_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "inline_policy",
             "resources": [
@@ -596,7 +596,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         managed_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/role_name",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "managed_policy",
             "policy_name": "invalid<html>characters",
@@ -693,7 +693,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         inline_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "inline_policy",
             "resources": [],
@@ -846,7 +846,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         managed_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/role_name",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "managed_policy",
             "policy_name": "TestManagedPolicy",
@@ -956,7 +956,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         assume_role_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/role_name",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "assume_role_policy",
             "resources": [],
@@ -1026,7 +1026,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         resource_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "resource_policy",
             "resources": [
@@ -1084,7 +1084,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         assume_role_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/role_name",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "assume_role_policy",
             "resources": [],
@@ -1211,7 +1211,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         inline_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "inline_policy",
             "resources": [],
@@ -1291,7 +1291,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         resource_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "resource_policy",
             "id": "1234",
@@ -1352,7 +1352,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         resource_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "sts_resource_policy",
             "id": "1234",
@@ -1448,7 +1448,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         resource_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "resource_policy",
             "id": "1234",
@@ -1547,7 +1547,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         resource_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "resource_policy",
             "id": "1234",
@@ -1642,7 +1642,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         resource_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "resource_policy",
             "id": "1234",
@@ -2175,7 +2175,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         resource_policy_change = {
             "principal": {
                 "principal_arn": "arn:aws:iam::123456789012:role/test",
-                "principal_type": "AwsIamRole",
+                "principal_type": "AwsResource",
             },
             "change_type": "resource_policy",
             "resources": [

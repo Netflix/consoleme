@@ -31,7 +31,7 @@ const usePermissionsBoundary = () => {
           {
             principal: {
               principal_arn: arn,
-              principal_type: "AwsIamRole",
+              principal_type: "AwsResource",
             },
             arn: state.permissionsBoundaryArn,
             change_type: "permissions_boundary",

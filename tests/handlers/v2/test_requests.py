@@ -71,7 +71,7 @@ class TestRequestsHandler(AsyncHTTPTestCase):
                     {
                         "principal": {
                             "principal_arn": "arn:aws:iam::123456789012:role/TestInstanceProfile",
-                            "principal_type": "AwsIamRole",
+                            "principal_type": "AwsResource",
                         },
                         "change_type": "inline_policy",
                         "action": "attach",
@@ -128,7 +128,7 @@ class TestRequestsHandler(AsyncHTTPTestCase):
                     {
                         "principal": {
                             "principal_arn": "arn:aws:iam::123456789012:role/TestInstanceProfile",
-                            "principal_type": "AwsIamRole",
+                            "principal_type": "AwsResource",
                         },
                         "change_type": "inline_policy",
                         "action": "attach",

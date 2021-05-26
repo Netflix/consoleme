@@ -2,7 +2,7 @@ import tornado
 from tornado.testing import AsyncTestCase
 
 from consoleme.models import (
-    AwsIamRolePrincipalModel,
+    AwsResourcePrincipalModel,
     InlinePolicyChangeModel,
     ResourceModel,
 )
@@ -118,9 +118,9 @@ class TestChangeRequestLib(AsyncTestCase):
 
         is_new = True
         policy_name = None
-        principal = AwsIamRolePrincipalModel(
+        principal = AwsResourcePrincipalModel(
             principal_arn="arn:aws:iam::123456789012:role/roleName",
-            principal_type="AwsIamRole",
+            principal_type="AwsResource",
         )
         resources = [
             ResourceModel(

@@ -11,8 +11,8 @@ from consoleme.lib.self_service.models import (
     SelfServiceTypeaheadModelArray,
 )
 from consoleme.models import (
-    AwsIamRolePrincipalModel,
-    HoneybeeAwsIamRoleTemplatePrincipalModel,
+    AwsResourcePrincipalModel,
+    HoneybeeAwsResourceTemplatePrincipalModel,
 )
 
 
@@ -51,8 +51,8 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
                         display_text=resource_template.name,
                         details_endpoint=f"/api/v2/templated_resource/{resource_template.repository_name}/"
                         + f"{resource_template.resource}",
-                        principal=HoneybeeAwsIamRoleTemplatePrincipalModel(
-                            principal_type="HoneybeeAwsIamRoleTemplate",
+                        principal=HoneybeeAwsResourceTemplatePrincipalModel(
+                            principal_type="HoneybeeAwsResourceTemplate",
                             repository_name=resource_template.repository_name,
                             resource_identifier=resource_template.resource,
                         ),
@@ -83,8 +83,8 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
                 account=account_name,
                 application_name=app_name,
                 application_url=app_url,
-                principal=AwsIamRolePrincipalModel(
-                    principal_type="AwsIamRole", principal_arn=policy["Arn"]
+                principal=AwsResourcePrincipalModel(
+                    principal_type="AwsResource", principal_arn=policy["Arn"]
                 ),
                 details_endpoint=f"/api/v2/roles/{account_id}/{role_name}",
             )

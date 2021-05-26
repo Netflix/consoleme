@@ -49,7 +49,7 @@ from consoleme.models import (
     ActionResult,
     ApplyChangeModificationModel,
     AssumeRolePolicyChangeModel,
-    AwsIamRolePrincipalModel,
+    AwsResourcePrincipalModel,
     CancelChangeModificationModel,
     ChangeModel,
     ChangeModelArray,
@@ -400,9 +400,9 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
                                 policy_sha256=resource_policy_sha,
                             ),
                             change_type="resource_policy",
-                            principal=AwsIamRolePrincipalModel(
+                            principal=AwsResourcePrincipalModel(
                                 principal_arn=extended_request.arn,
-                                principal_type="AwsIamRole",
+                                principal_type="AwsResource",
                             ),
                             status=Status.not_applied,
                             source_change_id=policy_change.id,
@@ -438,9 +438,9 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
                                                 policy_sha256=resource_policy_sha,
                                             ),
                                             change_type="sts_resource_policy",
-                                            principal=AwsIamRolePrincipalModel(
+                                            principal=AwsResourcePrincipalModel(
                                                 principal_arn=extended_request.arn,
-                                                principal_type="AwsIamRole",
+                                                principal_type="AwsResource",
                                             ),
                                             status=Status.not_applied,
                                             source_change_id=policy_change.id,

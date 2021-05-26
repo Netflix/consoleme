@@ -83,7 +83,7 @@ class RequestHandler(BaseAPIV2Handler):
               {
                 "principal": {
                     "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
-                    "principal_type": "AwsIamRole"
+                    "principal_type": "AwsResource"
                 },
                 "change_type": "inline_policy",
                 "action": "attach",
@@ -134,7 +134,7 @@ class RequestHandler(BaseAPIV2Handler):
               {
                 "principal": {
                     "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
-                    "principal_type": "AwsIamRole"
+                    "principal_type": "AwsResource"
                 },
                 "change_type": "assume_role_policy",
                 "policy": {
@@ -156,7 +156,7 @@ class RequestHandler(BaseAPIV2Handler):
               {
                 "principal": {
                     "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
-                    "principal_type": "AwsIamRole"
+                    "principal_type": "AwsResource"
                 },
                 "change_type": "managed_policy",
                 "policy_name": "ApiProtect",
@@ -166,7 +166,7 @@ class RequestHandler(BaseAPIV2Handler):
               {
                 "principal": {
                     "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
-                    "principal_type": "AwsIamRole"
+                    "principal_type": "AwsResource"
                 },
                 "change_type": "managed_policy",
                 "policy_name": "TagProtect",
@@ -176,7 +176,7 @@ class RequestHandler(BaseAPIV2Handler):
               {
                 "principal": {
                     "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
-                    "principal_type": "AwsIamRole"
+                    "principal_type": "AwsResource"
                 },
                 "change_type": "inline_policy",
                 "policy_name": "random_policy254",

@@ -7,7 +7,7 @@ from consoleme.lib.self_service.models import (
     SelfServiceTypeaheadModel,
     SelfServiceTypeaheadModelArray,
 )
-from consoleme.models import AwsIamRolePrincipalModel
+from consoleme.models import AwsResourcePrincipalModel
 from tests.conftest import MockBaseHandler, create_future
 
 
@@ -139,7 +139,7 @@ class TestTypeAheadHandler(AsyncHTTPTestCase):
             icon="users",
             number_of_affected_resources=1,
             principal={
-                "principal_type": "HoneybeeAwsIamRoleTemplate",
+                "principal_type": "HoneybeeAwsResourceTemplate",
                 "repository_name": "fake_repo",
                 "resource_identifier": "path/to/file.yaml",
             },
@@ -176,8 +176,8 @@ class TestTypeAheadHandler(AsyncHTTPTestCase):
             display_text="RoleNumber5",
             icon="user",
             number_of_affected_resources=1,
-            principal=AwsIamRolePrincipalModel(
-                principal_type="AwsIamRole",
+            principal=AwsResourcePrincipalModel(
+                principal_type="AwsResource",
                 principal_arn="arn:aws:iam::123456789012:role/RoleNumber5",
             ),
         )

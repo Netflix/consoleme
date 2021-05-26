@@ -23,7 +23,7 @@ const useInlinePolicy = () => {
           {
             principal: {
               principal_arn: arn,
-              principal_type: "AwsIamRole",
+              principal_type: "AwsResource",
             },
             change_type: "inline_policy",
             new: state.newPolicy.new,

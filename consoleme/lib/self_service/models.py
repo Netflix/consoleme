@@ -2,8 +2,8 @@ from typing import List, Optional, Union
 
 from consoleme.lib.pydantic import BaseModel
 from consoleme.models import (
-    AwsIamRolePrincipalModel,
-    HoneybeeAwsIamRoleTemplatePrincipalModel,
+    AwsResourcePrincipalModel,
+    HoneybeeAwsResourceTemplatePrincipalModel,
 )
 
 
@@ -14,7 +14,9 @@ class SelfServiceTypeaheadModel(BaseModel):
     account: Optional[str] = None
     details_endpoint: str
     application_name: Optional[str] = None
-    principal: Union[AwsIamRolePrincipalModel, HoneybeeAwsIamRoleTemplatePrincipalModel]
+    principal: Union[
+        AwsResourcePrincipalModel, HoneybeeAwsResourceTemplatePrincipalModel
+    ]
 
 
 class SelfServiceTypeaheadModelArray(BaseModel):
