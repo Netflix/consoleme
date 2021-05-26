@@ -333,12 +333,14 @@ async def send_policy_request_status_update_v2(
     extended_request: ExtendedRequestModel, policy_change_uri, sending_app="consoleme"
 ):
     app_name = config.get(f"ses.{sending_app}.name", sending_app)
-
+    to_addresses = [extended_request.requester_email]
     if extended_request.request_status == RequestStatus.pending:
         subject = f"{app_name}: Policy change request for {extended_request.arn} has been created"
         message = (
             f"A policy change request for {extended_request.arn} has been created."
         )
+        # This is a new request, also send email to application admins
+        to_addresses.append(config.get("application_admin"))
     else:
         subject = (
             f"{app_name}: Policy change request for {extended_request.arn} has been "
@@ -348,7 +350,6 @@ async def send_policy_request_status_update_v2(
             f"A policy change request for {extended_request.arn} "
             f"has been updated to {extended_request.request_status.value}"
         )
-    to_addresses = [extended_request.requester_email]
 
     if extended_request.request_status == RequestStatus.approved:
         message += " and committed"
