@@ -88,7 +88,7 @@ function RoleDetails(props) {
                 <List.Header>TAGS</List.Header>
                 <List.List>
                   {role.tags.map((tag) => (
-                    <List.Item>
+                    <List.Item key={tag.Key}>
                       <List.Icon name="tag" />
                       <List.Content>
                         <List.Header>{tag.Key}</List.Header>

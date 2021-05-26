@@ -34,37 +34,28 @@ class SelfServiceStep1 extends Component {
     }
   }
 
-  fetchRoleDetail(value) {
-    let {
-      groups: { accountId, roleName },
-    } = ARN_REGEX.exec(value);
-
-    roleName = roleName.split("/").splice(-1, 1)[0];
-    this.props
-      .sendRequestCommon(null, `/api/v2/roles/${accountId}/${roleName}`, "get")
-      .then((response) => {
-        if (!response) {
-          return;
-        }
-        // if the given role doesn't exist.
-        if (response.status === 404) {
-          this.props.handleRoleUpdate(null);
-          this.setState({
-            isLoading: false,
-            isRoleLoading: false,
-            messages: [response.message],
-          });
-        } else {
-          const role = response;
-          this.props.handleRoleUpdate(role);
-          this.setState({
-            isLoading: false,
-            isRoleLoading: false,
-            value: role.arn,
-            messages: [],
-          });
-        }
-      });
+  fetchRoleDetail(endpoint) {
+    this.props.sendRequestCommon(null, endpoint, "get").then((response) => {
+      if (!response) {
+        return;
+      }
+      // if the given role doesn't exist.
+      if (response.status === 404) {
+        this.props.handleRoleUpdate(null);
+        this.setState({
+          isLoading: false,
+          isRoleLoading: false,
+          messages: [response.message],
+        });
+      } else {
+        this.props.handleRoleUpdate(response);
+        this.setState({
+          isLoading: false,
+          isRoleLoading: false,
+          messages: [],
+        });
+      }
+    });
   }
 
   handleSearchChange(event, { value }) {
@@ -134,10 +125,7 @@ class SelfServiceStep1 extends Component {
         isRoleLoading: true,
       },
       () => {
-        const match = ARN_REGEX.exec(result.title);
-        if (match) {
-          this.fetchRoleDetail(value);
-        }
+        this.fetchRoleDetail(result.details_endpoint);
       }
     );
   }
