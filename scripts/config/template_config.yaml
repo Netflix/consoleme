@@ -2,7 +2,7 @@
 default:
   confirmation: Do you want to enable {friendly_name} ({friendly_description})?
   file_path: What is the path for {friendly_name} ({friendly_description})?
-  email: Which user/group email should be responsible for {friendly_name} ({friendly_description})?
+  email: Which email should be used for {friendly_name} ({friendly_description})?
   text: What should the value be for {friendly_name} ({friendly_description})?
   select: Which of the following should be used for {friendly_name} ({friendly_description})?
   list: Please provide a comma-seperated list of {friendly_name} ({friendly_description})
@@ -13,7 +13,7 @@ questions:
   - config_variable: application_admin
     friendly_name: Adminstrator of ConsoleMe
     friendly_description: |-
-      Enter your team's (or just your) e-mail address here. This e-mail will have full admin capabilities in ConsoleMe,
+      Enter your team's (or just your) username/email here. This user (or members of the group) will have full admin capabilities in ConsoleMe,
       and be used as the default approvers of IAM policy requests.
     type: text
     required: True
@@ -32,7 +32,7 @@ questions:
     friendly_name: Tornado XSRF
     friendly_description: whether to turn on XSRF protection or not
     type: no_question
-    value: True
+    value: true
   - config_variable: tornado.xsrf_cookie_kwargs.samesite
     type: no_question
     value: strict
@@ -105,6 +105,9 @@ questions:
       - ALB Auth - Generic
       - OIDC/OAuth2 - Other
       - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+  - config_variable: auth.require_jwt
+    type: no_question
+    value: true
   # auth specific questions
   ## Header Authentication ##
   - config_variable: auth.get_user_by_header
@@ -329,36 +332,35 @@ questions:
   - config_variable: consoleme_s3_bucket
     friendly_name: ConsoleMe's S3 bucket
     friendly_description: |-
-      Is there a (preferably versioned) S3 bucket that I can cache and retrieve data from? The role that ConsoleMe runs
+      a (preferably versioned) S3 bucket that I can cache and retrieve data from? The role that ConsoleMe runs
       as must have access to this bucket
     type: text
     required: True
   - config_variable: redis.host.global
     friendly_name: |-
-      Is there a redis host I can use? Elasticache cluster, by chance?
+      the redis host I can use? Elasticache Redis is preferred in production
     friendly_description: |-
-      Is there a redis host I can use? Don't use localhost in prod, you monster!
+      Don't use localhost in production, you monster!
     type: text
     default: localhost
   - config_variable: celery.broker.global
     friendly_name: |-
-      Is there a redis host I can use as the Celery broker? Elasticache cluster, by chance? This time, please enter a
+      the redis host and database that ConsoleMe can use as the Celery broker? Elasticache Redis is preferred. This time, please enter a
       fully qualified redis URL because Celery expects it.
     friendly_description: |-
-      Is there a redis host I can use as the Celery backend? Fully qualified URL required this time. If you want to
+      Is there a redis host ConsoleMe can use as the Celery backend? Fully qualified URL required this time. If you want to
       reuse an existing endpoint, please select a different database than the one you used before (The default is /0,
       so just add /1 to the end of your url)
     type: text
-    default: redis://localhost:6379/1
+    default: redis://{redis-host-global}:6379/1
   - config_variable: celery.broker.global
     friendly_name: |-
-      Is there a redis host I can use as the Celery backend? Fully qualified URL required this time. If you want to
+      Is there a redis host ConsoleMe can use as the Celery backend? Fully qualified URL required this time. If you want to
       reuse an existing endpoint, please select a different database than the one you used before (change /1 to /2)
     friendly_description: |-
-      Is there a redis host I can use as the Celery broker? Elasticache cluster, by chance? This time, please enter a
-      fully qualified redis URL because Celery expects it.
+      Is there a redis host ConsoleMe can use as the Celery broker? Elasticache cluster preferred.
     type: text
-    default: redis://localhost:6379/2
+    default: redis://{redis-host-global}:6379/2
   - config_variable: celery.active_region
     friendly_name: Celery active region
     friendly_description: |-
@@ -387,7 +389,7 @@ questions:
     type: text
     required: True
   - config_variable: ses.consoleme.sender
-    friendly_name: SES email address
+    friendly_name: the SES email address ConsoleMe sends mail from
     friendly_description: |-
       SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
       administrators and requesters about policy requests applicable to them.
@@ -396,13 +398,11 @@ questions:
   - config_variable: ses.consoleme.name
     friendly_name: SES Application Name
     friendly_description: |-
-      SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
-      administrators and requesters about policy requests applicable to them.
-    type: text
-    default: ConsoleMe
-    required: True
+      When ConsoleMe sends e-mail, it will prefix the subject with this application name.
+    type: no_question
+    value: ConsoleMe
   - config_variable: support_contact
-    friendly_name: support contact email
+    friendly_name: the support contact
     friendly_description: |-
       This information is displayed in ConsoleMe's sidebar
     type: email
@@ -412,10 +412,75 @@ questions:
       This information is displayed in ConsoleMe's sidebar
     type: text
     default: https://www.example.com/slack/channel
+  - config_variable: ses.support_reference
+    friendly_name: support reference added to the bottom of ConsoleMe emails that are sent to end-users
+    friendly_description: |-
+      When ConsoleMe sends e-mail, the end of the message will contain this string.
+    type: text
+    default: Please contact us at {support_contact} if you have any questions or concerns.
   - config_variable: documentation_page
     friendly_name: documentation page for more information
     friendly_description: |-
       This information is displayed in ConsoleMe's sidebar
     type: text
     default: https://hawkins.gitbook.io/consoleme/
-# TODO: questions for cloud_credential_authorization_mapping
+  ## Metrics ##
+  - config_variable: __metrics_choice
+    friendly_name: Your Metrics Provider
+    friendly_description: Should we enable metrics
+    type: select
+    choices:
+      - No Metrics
+      - CloudWatch Metrics
+  - config_variable: metrics.metrics_plugin
+    friendly_name: Cloudwatch Metric Provider
+    friendly_description: Cloudwatch Metric Provider
+    type: no_question
+    value: consoleme_default_plugins.plugins.metrics.cloudwatch.CloudWatchMetric
+    depends_on: __metrics_choice
+    depends_on_val:
+      - CloudWatch Metrics
+  ## Cloud Credential Authorization Mapping ##
+  # TODO: questions for cloud_credential_authorization_mapping
+  - config_variable: cloud_credential_authorization_mapping.role_tags.enabled
+    friendly_name: |-
+      Should we use role tags to determine who is authorized to get CLI and/or AWS console access to a role?
+    friendly_description: |-
+      More details are here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/role-tagging-recommended
+    type: no_question
+    value: true
+  - config_variable: cloud_credential_authorization_mapping.dynamic_config.enabled
+    friendly_name: |-
+      Should we use ConsoleMe's dynamic configuration to determine who has access to an IAM role?
+    friendly_description: |-
+      More details are here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/dynamic-configuration-1
+    type: no_question
+    value: true
+  - config_variable: cloud_credential_authorization_mapping.internal_plugin.enabled
+    friendly_name: |-
+      Should we use a ConsoleMe internal plugin (you would write the plugin) to determine
+      who has access to an IAM role?
+    friendly_description: |-
+      More details are here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/custom-authorization-internal-plugin
+    type: no_question
+    value: false
+  - config_variable: cloud_credential_authorization_mapping.role_tags.authorized_groups_tags
+    friendly_name: |-
+      the tags on an IAM role that indicate the users/groups authorized to get credentials for a role
+      in both the ConsoleMe UI and via CLI. You must prevent non-administrative users from modifying
+      these tags via an AWS Service Control Policy on your Organizations Master account.
+    friendly_description: |-
+      ConsoleMe uses IAM role tags to determine who gets access to a role. Read more about this feature
+      here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/role-tagging-recommended
+    type: list
+    default: consoleme-authorized
+  - config_variable: cloud_credential_authorization_mapping.role_tags.authorized_groups_cli_only_tags
+    friendly_name: |-
+      the tags on an IAM role that indicate the users/groups authorized to get credentials for a role
+      via the CLI only. You must prevent non-administrative users from modifying
+      these tags via an AWS Service Control Policy on your Organizations Master account.
+    friendly_description: |-
+      ConsoleMe uses IAM role tags to determine who gets access to a role. Read more about this feature
+      here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/role-tagging-recommended
+    type: list
+    default: consoleme-owner-dl,consoleme-authorized-cli-only

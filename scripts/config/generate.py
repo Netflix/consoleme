@@ -28,7 +28,7 @@ def get_generated_config_path():
         message="Where do you want to save the generated config file?",
         default=default_path,
         only_directories=True,
-    ).ask()
+    ).unsafe_ask()
     if not os.path.isdir(generated_config_dir):
         print(f"Invalid path provided, saving to default path instead: {default_path}")
         return default_path
@@ -43,7 +43,11 @@ def email_validator(input_email: str):
 
 def ask_questions(template_config):
     generated_config = {}
+    generated_config_dash_delimited = {}
     for question in template_config["questions"]:
+        generated_config_dash_delimited = {
+            k.replace(".", "-"): v for k, v in generated_config.items()
+        }
         # if the question has a condition and it is not same, don't ask the question
         if "depends_on" in question:
             # If the the depended on key isn't present at all, then skip question
@@ -67,16 +71,23 @@ def ask_questions(template_config):
         )
         # if the question has a default answer
         default_ans = question.get("default", "")
+        if question.get("default") and isinstance(question["default"], str):
+            try:
+                default_ans = question.get("default", "").format(
+                    **generated_config_dash_delimited
+                )
+            except KeyError:
+                pass
 
         # Different prompts based on question type
         if question["type"] == "email":
             generated_config[question["config_variable"]] = questionary.text(
                 message=question_text, validate=email_validator, default=default_ans
-            ).ask()
+            ).unsafe_ask()
         elif question["type"] == "confirmation":
             generated_config[question["config_variable"]] = questionary.confirm(
                 message=question_text, default=default_ans
-            ).ask()
+            ).unsafe_ask()
         elif question["type"] == "text":
             if question.get("required", False):
                 generated_config[question["config_variable"]] = questionary.text(
@@ -85,17 +96,17 @@ def ask_questions(template_config):
                     validate=lambda text: True
                     if len(text) > 0
                     else "This is a required field",
-                ).ask()
+                ).unsafe_ask()
             else:
                 generated_config[question["config_variable"]] = questionary.text(
                     message=question_text,
                     default=default_ans,
-                ).ask()
+                ).unsafe_ask()
         elif question["type"] == "select":
             choices = question["choices"]
             generated_config[question["config_variable"]] = questionary.select(
                 choices=choices, message=question_text
-            ).ask()
+            ).unsafe_ask()
         elif question["type"] == "list" or question["type"] == "list_dict":
             if question.get("required", False):
                 values = questionary.text(
@@ -104,11 +115,11 @@ def ask_questions(template_config):
                     validate=lambda text: True
                     if len(text) > 0
                     else "This is a required field",
-                ).ask()
+                ).unsafe_ask()
             else:
                 values = questionary.text(
                     message=question_text, default=default_ans
-                ).ask()
+                ).unsafe_ask()
             if values != "":
                 values = values.split(",")
                 if question["type"] == "list":
