@@ -24,7 +24,10 @@ const useAssumeRolePolicy = () => {
       changes: {
         changes: [
           {
-            principal_arn: arn,
+            principal: {
+              principal_arn: arn,
+              principal_type: "AwsIamRole",
+            },
             change_type: "assume_role_policy",
             policy_name: state.assumeRolePolicy.PolicyName,
             policy: {

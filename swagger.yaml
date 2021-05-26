@@ -600,14 +600,10 @@ components:
         - generator_type
         - arn
       properties:
-        principal_arn:
-          description: |-
-            The principal (Source ARN) associated with the Change. This is most commomly an IAM role ARN.
-            The principal ARN is associated with the entity whose policy will be modified if the change is
-            approved and successful.
-          example: arn:aws:iam::123456789012:role/exampleRole
-          type: string
-          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        principal:
+          anyOf:
+            - $ref: "#/components/schemas/AwsIamRolePrincipalModel"
+            - $ref: "#/components/schemas/HoneybeeAwsIamRoleTemplatePrincipalModel"
         generator_type:
           type: string
           enum:
@@ -889,15 +885,72 @@ components:
                 type: string
     #                enum:
     #                  - send_email
+    PrincipalModel:
+      type: object
+      required:
+        - principal_type
+      properties:
+        principal_type:
+          type: string
+          enum:
+            - AwsIamRole
+            - HoneybeeAwsIamRoleTemplate
+          discriminator:
+            propertyName: principal_type
+            mapping:
+              AwsIamRole: "#/components/schemas/AwsIamRolePrincipalModel"
+              HoneybeeAwsIamRoleTemplate: "#/components/schemas/HoneybeeAwsIamRoleTemplatePrincipalModel"
+
+    AwsIamRolePrincipalModel:
+      allOf:
+        - $ref: "#/components/schemas/PrincipalModel"
+        - type: object
+          required:
+            - principal_arn
+            - principal_type
+          properties:
+            principal_type:
+              type: string
+              pattern: "AwsIamRole"
+            principal_arn:
+              description: |-
+                The principal (Source ARN) associated with the Change. This is most commomly an IAM role ARN.
+                The principal ARN is associated with the entity whose policy will be modified if the change is
+                approved and successful.
+              example: arn:aws:iam::123456789012:role/exampleRole
+              type: string
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+
+    HoneybeeAwsIamRoleTemplatePrincipalModel:
+      allOf:
+        - $ref: "#/components/schemas/PrincipalModel"
+        - type: object
+          required:
+            - resource_identifier
+            - repository_name
+            - principal_type
+          properties:
+            principal_type:
+              type: string
+              pattern: "HoneybeeAwsIamRoleTemplate"
+            repository_name:
+              description: |-
+                The name of the repository for the template. This is specified in the configuration key
+                `cache_resource_templates.repositories[n].name`
+              type: string
+            resource_identifier:
+              type: string
+              example: path/to/template.yaml
     ChangeModel:
       type: object
       required:
-        - principal_arn
+        - principal
         - change_type
       properties:
-        principal_arn:
-          type: string
-          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        principal:
+          anyOf:
+            - $ref: "#/components/schemas/AwsIamRolePrincipalModel"
+            - $ref: "#/components/schemas/HoneybeeAwsIamRoleTemplatePrincipalModel"
         change_type:
           type: string
         resources:

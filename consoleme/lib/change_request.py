@@ -108,7 +108,7 @@ async def _generate_inline_policy_model_from_statements(
 
 
 async def _generate_inline_policy_change_model(
-    principal_arn: str,
+    principal: str,
     resources: List[ResourceModel],
     statements: List[Dict],
     user: str,
@@ -118,8 +118,8 @@ async def _generate_inline_policy_change_model(
     """
     Generates an inline policy change model.
 
-    :param principal_arn: ARN of the principal associated with the InlinePolicyChangeModel
-    :param resource_arns: Resource ARNs (or wildcards) of the resources associated with the InlinePolicyChangeModel
+    :param principal: principal associated with the InlinePolicyChangeModel
+    :param resources: Resource ARNs (or wildcards) of the resources associated with the InlinePolicyChangeModel
     :param statements: A list of AWS IAM policy statement dictionaries
     :param user: User e-mail address
     :param is_new: Boolean representing if we're creating a new policy or updating an existing policy
@@ -130,7 +130,7 @@ async def _generate_inline_policy_change_model(
     policy_document = await _generate_inline_policy_model_from_statements(statements)
     change_details = {
         "change_type": "inline_policy",
-        "principal_arn": principal_arn,
+        "principal": principal,
         "resources": resources,
         "policy_name": policy_name,
         "new": is_new,
@@ -459,7 +459,7 @@ async def generate_change_model_array(
 
     change_models = []
     inline_iam_policy_statements: List[Dict] = []
-    primary_principal_arn = None
+    primary_principal = None
     primary_user = None
     resources = []
 
@@ -473,9 +473,9 @@ async def generate_change_model_array(
             )
 
         # Enforce a maximum of one principal ARN per ChangeGeneratorModelArray (aka Policy Request)
-        if not primary_principal_arn:
-            primary_principal_arn = change.principal_arn
-        if primary_principal_arn != change.principal_arn:
+        if not primary_principal:
+            primary_principal = change.principal
+        if primary_principal != change.principal:
             raise InvalidRequestParameter(
                 "We only support making changes to a single principal ARN per request."
             )
@@ -527,7 +527,7 @@ async def generate_change_model_array(
     )
     # TODO(ccastrapel): Check if the inline policy statements would be auto-approved and supply that context
     inline_iam_policy_change_model = await _generate_inline_policy_change_model(
-        primary_principal_arn, resources, inline_iam_policy_statements, primary_user
+        primary_principal, resources, inline_iam_policy_statements, primary_user
     )
     change_models.append(inline_iam_policy_change_model)
     return ChangeModelArray.parse_obj({"changes": change_models})

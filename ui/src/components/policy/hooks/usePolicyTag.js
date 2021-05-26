@@ -29,7 +29,10 @@ const usePolicyTag = () => {
 
   const createTag = ({ arn, newTag }) => {
     const created = {
-      principal_arn: arn,
+      principal: {
+        principal_arn: arn,
+        principal_type: "AwsIamRole",
+      },
       change_type: "resource_tag",
       tag_action: "create",
       key: newTag.Key,
@@ -39,7 +42,10 @@ const usePolicyTag = () => {
   };
   const deleteTag = ({ arn, tag }) => {
     const deleted = {
-      principal_arn: arn,
+      principal: {
+        principal_arn: arn,
+        principal_type: "AwsIamRole",
+      },
       change_type: "resource_tag",
       tag_action: "delete",
       key: tag.Key,
@@ -48,7 +54,10 @@ const usePolicyTag = () => {
   };
   const updateTag = ({ arn, originalTag, action, value }) => {
     let changed = {
-      principal_arn: arn,
+      principal: {
+        principal_arn: arn,
+        principal_type: "AwsIamRole",
+      },
       change_type: "resource_tag",
       tag_action: "update",
       original_key: originalTag.Key,

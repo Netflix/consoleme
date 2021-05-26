@@ -27,7 +27,10 @@ const useResourcePolicy = () => {
       changes: {
         changes: [
           {
-            principal_arn: arn,
+            principal: {
+              principal_arn: arn,
+              principal_type: "AwsIamRole",
+            },
             arn,
             change_type: "resource_policy",
             policy: {

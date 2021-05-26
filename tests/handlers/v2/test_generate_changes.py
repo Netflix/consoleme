@@ -58,7 +58,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "changes": [
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "generator_type": "s3",
                     "resource_arn": "arn:aws:s3:::123456789012-bucket",
                     "bucket_prefix": "/*",
@@ -67,7 +70,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 },
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "generator_type": "s3",
                     "resource_arn": "arn:aws:s3:::bucket2",
                     "bucket_prefix": "/*",
@@ -76,7 +82,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 },
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "generator_type": "crud_lookup",
                     "resource_arn": "*",
                     "effect": "Allow",
@@ -92,8 +101,8 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["changes"][0]["principal_arn"],
-            input_body["changes"][0]["principal_arn"],
+            result["changes"][0]["principal"]["principal_arn"],
+            input_body["changes"][0]["principal"]["principal_arn"],
         )
         self.assertEqual(
             len(result["changes"]),
@@ -109,7 +118,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "changes": [
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "generator_type": "s3",
                     "resource_arn": "*",
                     "bucket_prefix": "folder_name/filename",
@@ -118,7 +130,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 },
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "generator_type": "s3",
                     "resource_arn": "*",
                     "bucket_prefix": "folder_name/*",
@@ -127,7 +142,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                 },
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "generator_type": "crud_lookup",
                     "resource_arn": "*",
                     "effect": "Allow",
@@ -143,8 +161,8 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["changes"][0]["principal_arn"],
-            input_body["changes"][0]["principal_arn"],
+            result["changes"][0]["principal"]["principal_arn"],
+            input_body["changes"][0]["principal"]["principal_arn"],
         )
 
     @patch(
@@ -156,7 +174,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "changes": [
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "resource_arn": "arn:aws:s3::123456789012:examplebucket",
                     "bucket_prefix": "/*",
                     "generator_type": "s3",
@@ -172,7 +193,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["changes"][0]["principal_arn"],
+            result["changes"][0]["principal"]["principal_arn"],
             "arn:aws:iam::123456789012:role/roleName",
         )
 
@@ -185,7 +206,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "changes": [
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "resource_arn": "arn:aws:s3::123456789012:examplebucket",
                     "bucket_prefix": "/*",
                     "generator_type": "s3",
@@ -194,7 +218,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                     "action_groups": ["list", "delete"],
                 },
                 {
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "generator_type": "custom_iam",
                     "policy": {
                         "Version": "2012-10-17",
@@ -232,7 +259,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["changes"][0]["principal_arn"],
+            result["changes"][0]["principal"]["principal_arn"],
             "arn:aws:iam::123456789012:role/roleName",
         )
         policy = result["changes"][0]["policy"]["policy_document"]
@@ -289,7 +316,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "changes": [
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "resource_arn": "arn:aws:s3::123456789012:examplebucket",
                     "bucket_prefix": "/*",
                     "generator_type": "s3",
@@ -314,7 +344,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "changes": [
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/exampleRole",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/exampleRole",
+                    },
                     "resource_arn": "arn:aws:sns:us-east-1:123456789012:exampletopic",
                     "generator_type": "sns",
                     "version": "abcd",
@@ -330,7 +363,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["changes"][0]["principal_arn"],
+            result["changes"][0]["principal"]["principal_arn"],
             "arn:aws:iam::123456789012:role/exampleRole",
         )
 
@@ -343,7 +376,10 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
             "changes": [
                 {
                     "user": "username@example.com",
-                    "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    "principal": {
+                        "principal_type": "AwsIamRole",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
                     "generator_type": "sqs",
                     "resource_arn": "arn:aws:sqs:us-east-1:123456789012:resourceName",
                     "effect": "Allow",
@@ -357,6 +393,6 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 200)
         result = json.loads(response.body)
         self.assertEqual(
-            result["changes"][0]["principal_arn"],
+            result["changes"][0]["principal"]["principal_arn"],
             "arn:aws:iam::123456789012:role/roleName",
         )

@@ -29,7 +29,10 @@ const useManagedPolicy = () => {
       changes: {
         changes: [
           {
-            principal_arn: arn,
+            principal: {
+              principal_arn: arn,
+              principal_type: "AwsIamRole",
+            },
             arn: state.managedPolicyArn,
             change_type: "managed_policy",
             action: state.actionType,

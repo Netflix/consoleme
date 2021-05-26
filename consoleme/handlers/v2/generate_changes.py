@@ -32,7 +32,10 @@ class GenerateChangesHandler(BaseAPIV2Handler):
 
         {"changes": [
             {
-                "principal_arn": "arn:aws:iam::123456789012:role/aRole",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/aRole",
+                    "principal_type": "AwsIamRole"
+                },
                 "generator_type": "s3",
                 "resource_arn": "arn:aws:s3:::123456789012-bucket",
                 "bucket_prefix": "/*",
@@ -48,7 +51,10 @@ class GenerateChangesHandler(BaseAPIV2Handler):
 
         { "changes" : [
                 {
-                    "principal_arn": "arn:aws:iam::123456789012:role/aRole",
+                    "principal": {
+                        "principal_arn": "arn:aws:iam::123456789012:role/aRole",
+                        "principal_type": "AwsIamRole"
+                    },
                     "change_type": "inline_policy",
                     "resource_arns": [
                         "arn:aws:s3:::123456789012-bucket"
