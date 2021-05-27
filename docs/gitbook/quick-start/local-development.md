@@ -103,7 +103,7 @@ You'll notice that you're unable to access any IAM roles with the default config
 
 ## Create your Configuration
 
-At this point, you'll want to configure ConsoleMe to suit your needs. Read up on [ConsoleMe’s yaml configuration.](../configuration/) ConsoleMe can be configured to [authenticate your users via SAML, OIDC, header authentication, or it can bypass authentication altogether](../configuration/authentication-and-authorization/). We have a script that can help you generate your ConsoleMe configuration. Read more about that in our [Configuration FAQ](../configuration/).
+At this point, you'll want to configure ConsoleMe to suit your needs. Read up on [ConsoleMe’s yaml configuration.](../configuration/) ConsoleMe can be configured to [authenticate your users via SAML, OIDC, header authentication, or it can bypass authentication altogether](../configuration/authentication-and-authorization/). We have a script that can help you generate your ConsoleMe configuration. Read more about that in our [Configuration FAQ](https://hawkins.gitbook.io/consoleme/configuration#configuring-consoleme-is-complicated-is-there-something-that-can-help-me-generate-a-configuration).
 
 To get started, copy [this configuration](https://gist.github.com/castrapel/888cd106d12523a5445bf6f3cf9c810b). Read through the configuration and change the values to suit your environment. Then, set the `CONFIG_LOCATION` environment variable to the full path of your configuration file, or copy the configuration to one of the locations ConsoleMe will load from \(described [here](https://app.gitbook.com/@hawkins/s/consoleme/~/drafts/-MUCSXyHqSfyDOwV-0Mc/configuration)\).
 
