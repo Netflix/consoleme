@@ -128,12 +128,15 @@ class Configuration(object):
         while True:
             async_to_sync(self.load_config)(
                 allow_automatically_reload_configuration=False,
-                allow_start_background_threads=False)
+                allow_start_background_threads=False,
+            )
             time.sleep(self.get("dynamic_config.reload_static_config_interval", 60))
 
-    async def load_config(self,
-                          allow_automatically_reload_configuration=True,
-                          allow_start_background_threads=True):
+    async def load_config(
+        self,
+        allow_automatically_reload_configuration=True,
+        allow_start_background_threads=True,
+    ):
         """Load configuration from the location given to us by config_plugin"""
         path = config_plugin.get_config_location()
 
@@ -158,12 +161,16 @@ class Configuration(object):
         if allow_start_background_threads and self.get("config.load_from_dynamo", True):
             Timer(0, self.load_config_from_dynamo, ()).start()
 
-        if allow_start_background_threads and self.get("config.run_recurring_internal_tasks"):
+        if allow_start_background_threads and self.get(
+            "config.run_recurring_internal_tasks"
+        ):
             Timer(
                 0, config_plugin.internal_functions, kwargs={"cfg": self.config}
             ).start()
 
-        if allow_automatically_reload_configuration and self.get("config.automatically_reload_configuration"):
+        if allow_automatically_reload_configuration and self.get(
+            "config.automatically_reload_configuration"
+        ):
             Timer(0, self.reload_config, ()).start()
 
     def get(
