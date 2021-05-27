@@ -93,7 +93,7 @@ def main():
     generated_questions = generate_questions(template_config)
     generated_dict = {"questions": generated_questions, **initial_options}
     try:
-        with open(f"{os.path.dirname(__file__)}/questions.js", "w") as file:
+        with open(f"{os.path.dirname(__file__)}/ui/questions.js", "w") as file:
             file.write(
                 "const json = " + json.dumps(generated_dict, indent=4, sort_keys=True)
             )
