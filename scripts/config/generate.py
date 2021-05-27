@@ -182,7 +182,18 @@ def main():
     try:
         with open(generated_config_path, "w") as file:
             yaml.dump(consoleme_generated_config, file)
-        print(f"Configuration saved to {generated_config_path}")
+        print(f"Configuration saved to {generated_config_path}\n\n")
+        print(
+            f"Next steps:\n1. Retrieve AWS credentials locally.\n"
+            "They should have the permissions outlined here: https://hawkins.gitbook.io/consoleme/prerequisites/required-iam-permissions/central-account-consolemeinstanceprofile\n"
+            "Then run the following commands from the ConsoleMe root directory. You should also have your Redis and (if used) local DynamoDB running:\n"
+            f"export CONFIG_LOCATION={generated_config_path}\n\n"
+            "2. Run `make redis`\n"
+            "3. Run `make dynamo`\n"
+            "4. Start ConsoleMe Backend with `python consoleme/__main__.py`"
+            "5. In another terminal window, visit the consoleme/ui directory and build the frontend with: `yarn ; yarn build:prod`"
+            "6. Visit http://localhost:3000 (in a local context) to confirm functionality. ALB Auth will not work locally."
+        )
     except Exception as e:
         print(f"An error occurred saving configuration file: {str(e)}")
 

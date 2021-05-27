@@ -13,8 +13,8 @@ questions:
   - config_variable: application_admin
     friendly_name: Adminstrator of ConsoleMe
     friendly_description: |-
-      Enter your team's (or just your) username/email here. This user (or members of the group) will have full admin capabilities in ConsoleMe,
-      and be used as the default approvers of IAM policy requests.
+      Enter your team's (or just your) username/email here. This user (or members of the group) will have full admin
+      capabilities in ConsoleMe, and be used as the default approvers of IAM policy requests.
     type: text
     required: True
   - config_variable: tornado.debug
@@ -36,6 +36,21 @@ questions:
   - config_variable: tornado.xsrf_cookie_kwargs.samesite
     type: no_question
     value: strict
+  # DynamoDB
+  - config_variable: __dynamodb_confirmation
+    friendly_name: Local DynamoDB
+    friendly_description: |-
+      To use Local DynamoDB, You must be running Local DynamoDB via the provided docker-compose-dependencies.yaml file or manually at
+      http://localhost:8005. This should NOT be used in production
+    type: confirmation
+  - config_variable: dynamodb_server
+    friendly_name: Local DynamoDB URL
+    friendly_description: Local DynamoDB URL
+    type: no_question
+    value: http://localhost:8005
+    depends_on: __dynamodb_choice
+    depends_on_val:
+      - True
   # Multi-account related settings
   - config_variable: __accounts_choice
     friendly_name: retrieving AWS accounts
@@ -49,7 +64,7 @@ questions:
   - config_variable: account_ids_to_name
     friendly_name: accounts IDs to name mapping
     friendly_description: |-
-      this will be accounts that ConsoleMe should cache information for, for example: 1234: prod, 5678: test
+      this will be accounts that ConsoleMe should cache information for, for example: 123456789012: prod, 223456789012: test
     type: list_dict
     depends_on: __accounts_choice
     depends_on_val:
@@ -303,6 +318,8 @@ questions:
     friendly_name: Groups key in either the ID or Access token
     friendly_description: |-
       The key of the user's groups in the ID or Access token JWT
+      Most providers - groups
+      Cognito - cognito:groups
     type: text
     depends_on: __auth_choice
     depends_on_val:
@@ -313,7 +330,7 @@ questions:
     friendly_name: getting groups from OIDC userinfo endpoint?
     friendly_description: |-
       If we can't find the user's groups in their ID or Access tokens, we can try to get groups from the OIDC userinfo
-      endpoint. Should we? (We're desperate at this point!)
+      endpoint. Should we?
     type: confirmation
     depends_on: __auth_choice
     depends_on_val:
@@ -322,8 +339,9 @@ questions:
   - config_variable: get_user_by_oidc_settings.user_info_groups_key
     friendly_name: What is the group key in the userinfo response?
     friendly_description: |-
-      We got a lovely JSON response from the OIDC userinfo endpoint. What key, oh master, should I expect to find the
+      We get a JSON response from the OIDC userinfo endpoint. What key should ConsoleMe expect to find the
       groups in?
+    default: groups
     type: text
     depends_on: get_user_by_oidc_settings.get_groups_from_userinfo_endpoint
     depends_on_val:
@@ -333,7 +351,8 @@ questions:
     friendly_name: ConsoleMe's S3 bucket
     friendly_description: |-
       a (preferably versioned) S3 bucket that I can cache and retrieve data from? The role that ConsoleMe runs
-      as must have access to this bucket
+      as must have access to this bucket, and this bucket must exist on the account ConsoleMe has direct IAM credentials
+      for
     type: text
     required: True
   - config_variable: redis.host.global
@@ -411,7 +430,7 @@ questions:
     friendly_description: |-
       This information is displayed in ConsoleMe's sidebar
     type: text
-    default: https://www.example.com/slack/channel
+    default: https://discord.gg/nQVpNGGkYu
   - config_variable: ses.support_reference
     friendly_name: support reference added to the bottom of ConsoleMe emails that are sent to end-users
     friendly_description: |-
@@ -441,7 +460,6 @@ questions:
     depends_on_val:
       - CloudWatch Metrics
   ## Cloud Credential Authorization Mapping ##
-  # TODO: questions for cloud_credential_authorization_mapping
   - config_variable: cloud_credential_authorization_mapping.role_tags.enabled
     friendly_name: |-
       Should we use role tags to determine who is authorized to get CLI and/or AWS console access to a role?
