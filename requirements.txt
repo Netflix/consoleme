@@ -277,6 +277,7 @@ prompt-toolkit==3.0.18
     # via
     #   click-repl
     #   ipython
+    #   questionary
 protobuf==3.17.0
     # via
     #   google-api-core
@@ -342,6 +343,8 @@ pyyaml==5.4.1
     #   parliament
     #   policy-sentry
     #   prance
+questionary==1.9.0
+    # via -r requirements.in
 redis==3.5.3
     # via
     #   -r requirements.in

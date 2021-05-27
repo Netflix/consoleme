@@ -355,7 +355,9 @@ class ConsoleMeRedis(redis.StrictRedis):
 class RedisHandler:
     def __init__(
         self,
-        host: str = config.get("redis.host.{}".format(region), "localhost"),
+        host: str = config.get(
+            "redis.host.{}".format(region), config.get("redis.host.global", "localhost")
+        ),
         port: int = config.get("redis.port", 6379),
         db: int = config.get("redis.db", 0),
     ) -> None:
