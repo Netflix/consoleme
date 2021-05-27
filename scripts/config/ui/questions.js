@@ -22,6 +22,7 @@ const json = {
                 "Swag (https://github.com/Netflix-Skunkworks/swag-api)"
             ],
             "colCount": 1,
+            "isRequired": true,
             "name": "__accounts_choice",
             "title": "Which of the following should be used for retrieving AWS accounts (knowledge about your AWS accounts is needed)?",
             "type": "radiogroup"
@@ -73,6 +74,7 @@ const json = {
                 "Header Authentication (I have trusted headers that identify the authenticated user and their groups)"
             ],
             "colCount": 1,
+            "isRequired": true,
             "name": "__auth_choice",
             "title": "Which of the following should be used for auth mechanism (method of Web App Authentication and Authorization)?",
             "type": "radiogroup"
@@ -305,6 +307,7 @@ const json = {
                 "CloudWatch Metrics"
             ],
             "colCount": 1,
+            "isRequired": true,
             "name": "__metrics_choice",
             "title": "Which of the following should be used for Your Metrics Provider (Should we enable metrics)?",
             "type": "radiogroup"

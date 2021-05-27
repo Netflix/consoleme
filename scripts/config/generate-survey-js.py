@@ -80,6 +80,7 @@ def generate_questions(template_config):
             cur_generated_question["type"] = "radiogroup"
             cur_generated_question["colCount"] = 1
             cur_generated_question["choices"] = question["choices"]
+            cur_generated_question["isRequired"] = True
         elif question["type"] == "list" or question["type"] == "list_dict":
             cur_generated_question["type"] = "text"
             cur_generated_question["__extra_details"] = question["type"]
