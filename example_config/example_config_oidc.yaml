@@ -11,7 +11,6 @@ auth:
   set_auth_cookie: true
 
 get_user_by_oidc_settings:
-  resource: consoleme-oidc
   # If you use Okta, but are unable to visit your metadata URL in your web browser, try changing
   # `/.well-known/oauth-authorization-server` to `/.well-known/openid-configuration` in your metadata_url configuration.
   metadata_url: https://dev-123456.okta.com/oauth2/default/.well-known/oauth-authorization-server

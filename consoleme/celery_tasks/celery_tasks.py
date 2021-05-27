@@ -99,8 +99,14 @@ class Celery(celery.Celery):
 
 app = Celery(
     "tasks",
-    broker=config.get(f"celery.broker.{config.region}", "redis://127.0.0.1:6379/1"),
-    backend=config.get(f"celery.backend.{config.region}", "redis://127.0.0.1:6379/2"),
+    broker=config.get(
+        f"celery.broker.{config.region}",
+        config.get("celery.broker.global", "redis://127.0.0.1:6379/1"),
+    ),
+    backend=config.get(
+        f"celery.backend.{config.region}",
+        config.get("celery.broker.global", "redis://127.0.0.1:6379/2"),
+    ),
 )
 
 if config.get("redis.use_redislite"):
