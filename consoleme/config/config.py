@@ -123,9 +123,20 @@ class Configuration(object):
             if extend_config.get("extends"):
                 await self.merge_extended_paths(extend_config.get("extends"), dir_path)
 
-    async def load_config(self):
+    def reload_config(self):
+        # We don't want to start additional background threads when we're reloading static configuration.
+        while True:
+            async_to_sync(self.load_config)(
+                allow_automatically_reload_configuration=False,
+                allow_start_background_threads=False)
+            time.sleep(self.get("dynamic_config.reload_static_config_interval", 60))
+
+    async def load_config(self,
+                          allow_automatically_reload_configuration=True,
+                          allow_start_background_threads=True):
         """Load configuration from the location given to us by config_plugin"""
         path = config_plugin.get_config_location()
+
         try:
             with open(path, "r") as ymlfile:
                 self.config = yaml.safe_load(ymlfile)
@@ -141,16 +152,19 @@ class Configuration(object):
         if extends:
             await self.merge_extended_paths(extends, dir_path)
 
-        if self.get("redis.use_redislite"):
+        if allow_start_background_threads and self.get("redis.use_redislite"):
             Timer(0, self.purge_redislite_cache, ()).start()
 
-        if self.get("config.load_from_dynamo", True):
+        if allow_start_background_threads and self.get("config.load_from_dynamo", True):
             Timer(0, self.load_config_from_dynamo, ()).start()
 
-        if self.get("config.run_recurring_internal_tasks"):
+        if allow_start_background_threads and self.get("config.run_recurring_internal_tasks"):
             Timer(
                 0, config_plugin.internal_functions, kwargs={"cfg": self.config}
             ).start()
+
+        if allow_automatically_reload_configuration and self.get("config.automatically_reload_configuration"):
+            Timer(0, self.reload_config, ()).start()
 
     def get(
         self, key: str, default: Optional[Union[List[str], int, bool, str, Dict]] = None
