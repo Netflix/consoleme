@@ -4,10 +4,7 @@ import sys
 
 import yaml
 
-initial_options = {
-    "clearInvisibleValues": "onHidden",
-    "calculatedValues": []
-}
+initial_options = {"clearInvisibleValues": "onHidden", "calculatedValues": []}
 
 
 def load_template_config():
@@ -27,10 +24,17 @@ def generate_questions(template_config):
         cur_generated_question = {}
         # if the question has a condition
         if "depends_on" in question:
-            cur_generated_question["visibleIf"] = "{" + f"{question['depends_on']}" + "}" + f" = '{question['depends_on_val'][0]}'"
+            cur_generated_question["visibleIf"] = (
+                "{"
+                + f"{question['depends_on']}"
+                + "}"
+                + f" = '{question['depends_on_val'][0]}'"
+            )
             for idx in range(1, len(question["depends_on_val"])):
-                value = question['depends_on_val'][idx]
-                cur_generated_question["visibleIf"] += " or {" + f"{question['depends_on']}" + "}" + f" = '{value}'"
+                value = question["depends_on_val"][idx]
+                cur_generated_question["visibleIf"] += (
+                    " or {" + f"{question['depends_on']}" + "}" + f" = '{value}'"
+                )
 
         # TODO: if it is not a question
         if question["type"] == "no_question":
@@ -67,11 +71,7 @@ def generate_questions(template_config):
             cur_generated_question["type"] = "text"
             cur_generated_question["inputType"] = "email"
             cur_generated_question["autoComplete"] = "email"
-            cur_generated_question["validators"] = [
-                {
-                    "type": "email"
-                }
-            ]
+            cur_generated_question["validators"] = [{"type": "email"}]
         elif question["type"] == "confirmation":
             cur_generated_question["type"] = "boolean"
         elif question["type"] == "text":
@@ -91,13 +91,12 @@ def generate_questions(template_config):
 def main():
     template_config = load_template_config()
     generated_questions = generate_questions(template_config)
-    generated_dict = {
-        "questions": generated_questions,
-        **initial_options
-    }
+    generated_dict = {"questions": generated_questions, **initial_options}
     try:
         with open(f"{os.path.dirname(__file__)}/questions.js", "w") as file:
-            file.write("const json = " + json.dumps(generated_dict, indent=4, sort_keys=True))
+            file.write(
+                "const json = " + json.dumps(generated_dict, indent=4, sort_keys=True)
+            )
         print("Questions saved")
     except Exception as e:
         print(f"An error occurred saving questions file: {str(e)}")
