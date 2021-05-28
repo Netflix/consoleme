@@ -14,7 +14,7 @@ import os
 import sys
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import celery
 import sentry_sdk
@@ -25,7 +25,6 @@ from botocore.exceptions import ClientError
 from celery import group
 from celery.app.task import Context
 from celery.concurrency import asynpool
-from celery.result import ResultSet
 from celery.schedules import crontab
 from celery.signals import (
     task_failure,
@@ -117,7 +116,7 @@ if config.get("redis.use_redislite"):
     import redislite
 
     redislite_db_path = os.path.join(
-        config.get("redis.redislite.db_path", tempfile.NamedTemporaryFile(delete=False))
+        config.get("redis.redislite.db_path", tempfile.NamedTemporaryFile().name)
     )
     redislite_client = redislite.Redis(redislite_db_path)
     redislite_socket_path = f"redis+socket://{redislite_client.socket_file}"
@@ -768,13 +767,12 @@ def cache_roles_across_accounts() -> Dict:
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
 
     log_data = {"function": function, "cache_key": cache_key}
-
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
     tasks = []
     if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
-    ) in ["dev", "test"]:
+    ) in ["dev"]:
         # First, get list of accounts
-        accounts_d = async_to_sync(get_account_id_to_name_mapping)()
         # Second, call tasks to enumerate all the roles across all accounts
         for account_id in accounts_d.keys():
             if config.get("environment") in ["prod", "dev"]:
@@ -808,6 +806,8 @@ def cache_roles_across_accounts() -> Dict:
     # Store full list of roles in a single place. This list will be ~30 minutes out of date.
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_roles,
+        redis_key=cache_key,
+        redis_data_type="hash",
         s3_bucket=config.get(
             "cache_roles_across_accounts.all_roles_combined.s3.bucket"
         ),
@@ -818,7 +818,7 @@ def cache_roles_across_accounts() -> Dict:
     )
 
     stats.count(f"{function}.success")
-    log_data["num_accounts"] = len(tasks)
+    log_data["num_accounts"] = len(accounts_d)
     log.debug(log_data)
     return log_data
 
@@ -1047,7 +1047,7 @@ def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     log.debug(log_data)
     stats.count(
         "cache_s3_buckets_for_account",
-        tags={"account_id": account_id, "number_sns_topics": len(buckets)},
+        tags={"account_id": account_id, "number_s3_buckets": len(buckets)},
     )
 
     if config.region == config.get("celery.active_region", config.region) or config.get(
@@ -1191,23 +1191,33 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     return log_data
 
 
-@app.task(soft_time_limit=1800)
-def cache_resources_from_aws_config_across_accounts() -> bool:
+@app.task(soft_time_limit=3600)
+def cache_resources_from_aws_config_across_accounts() -> Dict[
+    str, Union[Union[str, int], Any]
+]:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     resource_redis_cache_key = config.get(
         "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
     )
 
+    log_data = {
+        "function": function,
+        "resource_redis_cache_key": resource_redis_cache_key,
+    }
+
+    tasks = []
     # First, get list of accounts
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()
     # Second, call tasks to enumerate all the roles across all accounts
     for account_id in accounts_d.keys():
         if config.get("environment") in ["prod", "dev"]:
-            cache_resources_from_aws_config_for_account.delay(account_id)
+            tasks.append(cache_resources_from_aws_config_for_account.s(account_id))
         else:
             if account_id in config.get("celery.test_account_ids", []):
-                cache_resources_from_aws_config_for_account.delay(account_id)
-
+                tasks.append(cache_resources_from_aws_config_for_account.s(account_id))
+    if tasks:
+        results = group(*tasks).apply_async()
+        results.join()
     # Delete roles in Redis cache with expired TTL
     all_resources = red.hgetall(resource_redis_cache_key)
     if all_resources:
@@ -1217,7 +1227,11 @@ def cache_resources_from_aws_config_across_accounts() -> bool:
             if datetime.fromtimestamp(resource_entry["ttl"]) < datetime.utcnow():
                 expired_arns.append(arn)
         if expired_arns:
+            for expired_arn in expired_arns:
+                all_resources.pop(expired_arn, None)
             red.hdel(resource_redis_cache_key, *expired_arns)
+
+        log_data["number_of_resources"] = len(all_resources)
 
         # Cache all resource ARNs into a single file. Note: This runs synchronously with this task. This task triggers
         # resource collection on all accounts to happen asynchronously. That means when we store or delete data within
@@ -1236,7 +1250,7 @@ def cache_resources_from_aws_config_across_accounts() -> bool:
                 all_resources, s3_bucket=s3_bucket, s3_key=s3_key
             )
     stats.count(f"{function}.success")
-    return True
+    return log_data
 
 
 @app.task(soft_time_limit=1800)
