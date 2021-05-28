@@ -22,8 +22,10 @@ import ujson
 from asgiref.sync import async_to_sync
 from billiard.exceptions import SoftTimeLimitExceeded
 from botocore.exceptions import ClientError
+from celery import group
 from celery.app.task import Context
 from celery.concurrency import asynpool
+from celery.result import ResultSet
 from celery.schedules import crontab
 from celery.signals import (
     task_failure,
@@ -766,7 +768,8 @@ def cache_roles_across_accounts() -> Dict:
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
 
     log_data = {"function": function, "cache_key": cache_key}
-    num_accounts = 0
+
+    tasks = []
     if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
@@ -775,12 +778,14 @@ def cache_roles_across_accounts() -> Dict:
         # Second, call tasks to enumerate all the roles across all accounts
         for account_id in accounts_d.keys():
             if config.get("environment") in ["prod", "dev"]:
-                cache_roles_for_account.delay(account_id)
-                num_accounts += 1
+                tasks.append(cache_roles_for_account.s(account_id))
             else:
                 if account_id in config.get("celery.test_account_ids", []):
-                    cache_roles_for_account.delay(account_id)
-                    num_accounts += 1
+                    tasks.append(cache_roles_for_account.s(account_id))
+
+        results = group(*tasks).apply_async()
+        # results.join() forces function to wait until all tasks are complete
+        results.join()
     else:
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
@@ -813,7 +818,7 @@ def cache_roles_across_accounts() -> Dict:
     )
 
     stats.count(f"{function}.success")
-    log_data["num_accounts"] = num_accounts
+    log_data["num_accounts"] = len(tasks)
     log.debug(log_data)
     return log_data
 
