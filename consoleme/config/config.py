@@ -130,6 +130,8 @@ class Configuration(object):
                 allow_automatically_reload_configuration=False,
                 allow_start_background_threads=False,
             )
+            if not self.get("config.automatically_reload_configuration"):
+                break
             time.sleep(self.get("dynamic_config.reload_static_config_interval", 60))
 
     async def load_config(
