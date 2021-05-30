@@ -181,7 +181,7 @@ challenge_url:
 # remove the below config variable, or switch it to false
 example_config:
   is_example_config: true
-  header: "Warning:"
+  title: "Warning:"
   text: |-
     This configuration has no authentication configured. Do not use in a production environment. Do not publicly expose this endpoint or your AWS environment will be compromised! Click [here](/generate_config) to generate a configuration.
   routes: .*
