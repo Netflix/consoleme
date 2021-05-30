@@ -25,7 +25,8 @@
     "react-scripts": "4.0.1",
     "react-semantic-ui-datepickers": "^2.12.0",
     "semantic-ui-css": "^2.4.1",
-    "semantic-ui-react": "^2.0.2"
+    "semantic-ui-react": "^2.0.2",
+    "survey-react": "^1.8.49"
   },
   "resolutions": {
     "**/monaco-editor": "0.21.3"
