@@ -224,3 +224,12 @@ ses:
 # Challenge URL authentication is used to authenticate users from CLI clients (like Weep).
 challenge_url:
   enabled: true
+
+# If you have read this far and modified the above config variables to production ready values
+# remove the below config variable, or switch it to false
+example_config:
+  is_example_config: true
+  title: "Warning:"
+  text: |-
+    This configuration has no authentication configured. Do not use in a production environment. Do not publicly expose this endpoint or your AWS environment will be compromised! Click [here](/generate_config) to generate a configuration.
+  routes: .*

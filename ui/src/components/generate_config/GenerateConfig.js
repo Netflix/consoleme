@@ -4,6 +4,7 @@ import "survey-react/survey.css";
 import { questions_json } from "./questions.js";
 import MonacoEditor from "react-monaco-editor";
 import yaml from "js-yaml";
+import { Header, Icon, Message, Popup, Segment } from "semantic-ui-react";
 
 const generated_config_editor_options = {
   selectOnLineNumbers: true,
@@ -18,19 +19,26 @@ const generated_config_editor_options = {
 function GenerateConfig() {
   const [complete, setComplete] = useState(false);
   const [results, setResults] = useState({});
+  const [messages, setMessages] = useState([]);
   const getSpecialTypes = (questions) => {
     const specialTypes = {};
+    const formatTypes = {};
     for (let i = 0; i < questions.length; i++) {
       if (questions[i].hasOwnProperty("__extra_details")) {
         specialTypes[questions[i].name] = questions[i].__extra_details;
       }
+      if (questions[i].hasOwnProperty("__format_text")) {
+        formatTypes[questions[i].name] = questions[i].__format_text;
+      }
     }
-    return specialTypes;
+    return [specialTypes, formatTypes];
   };
   const onComplete = (results) => {
     setComplete(true);
     let resultsConsoleMeStyle = {};
-    const specialTypes = getSpecialTypes(questions_json.questions);
+    const [specialTypes, formatTypes] = getSpecialTypes(
+      questions_json.questions
+    );
     for (let [key, value] of Object.entries(results.data)) {
       if (!key.startsWith("__")) {
         const updatedKey = key.split("_PLACEHOLDER_")[0];
@@ -50,6 +58,9 @@ function GenerateConfig() {
               results.data[replacement]
             );
           }
+        }
+        if (formatTypes.hasOwnProperty(key)) {
+          value = formatTypes[key].replace("{}", value);
         }
         if (specialTypes.hasOwnProperty(key) && specialTypes[key] === "list") {
           const updatedValue = value.split(",");
@@ -86,6 +97,60 @@ function GenerateConfig() {
     }
     return d;
   };
+  const copyToClipboard = () => {
+    navigator.clipboard
+      .writeText(yaml.dump(results, 4))
+      .then((r) => setMessages(["Copied to Clipboard!"]));
+  };
+  const downloadConfig = () => {
+    const fileName = `consoleme_generated_config_${new Date().getTime()}.yaml`;
+    const data = yaml.dump(results, 4);
+    const blob = new Blob([data], { type: "yaml" });
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setMessages([]);
+  };
+  const messagesToShow = () => {
+    return messages.length > 0 ? (
+      <Segment>
+        <Message positive>
+          <Message.Header>Success!</Message.Header>
+          <Message.List>
+            {messages.map((message) => (
+              <Message.Item>{message}</Message.Item>
+            ))}
+          </Message.List>
+        </Message>
+      </Segment>
+    ) : null;
+  };
+  const headerContent = () => {
+    return (
+      <Segment>
+        <Header>
+          Your ConsoleMe configuration has been generated! You can either copy
+          it to clipboard, or download it as a file by clicking below.
+        </Header>
+        <Popup
+          content="Copy to Clipboard"
+          trigger={
+            <Icon link name="copy" size="big" onClick={copyToClipboard} />
+          }
+        />
+        <Popup
+          content="Download Configuration"
+          trigger={
+            <Icon link name="download" size="big" onClick={downloadConfig} />
+          }
+        />
+      </Segment>
+    );
+  };
   const surveyContent = () => {
     if (!complete) {
       return (
@@ -96,17 +161,20 @@ function GenerateConfig() {
         />
       );
     }
-    // TODO: show copy/save to file button
     return (
-      <MonacoEditor
-        height="700px"
-        language="yaml"
-        width="100%"
-        theme="vs-dark"
-        value={yaml.dump(results, 4)}
-        options={generated_config_editor_options}
-        textAlign="center"
-      />
+      <Segment.Group>
+        {headerContent()}
+        {messagesToShow()}
+        <MonacoEditor
+          height="700px"
+          language="yaml"
+          width="100%"
+          theme="vs-dark"
+          value={yaml.dump(results, 4)}
+          options={generated_config_editor_options}
+          textAlign="center"
+        />
+      </Segment.Group>
     );
   };
 

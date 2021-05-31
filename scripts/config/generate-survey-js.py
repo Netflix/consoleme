@@ -64,8 +64,10 @@ def generate_questions(template_config):
                 cur_generated_question["defaultValue"] = question["default"].replace(
                     variable, placeholder_variable
                 )
+        # formatted keys
+        if "format_text" in question:
+            cur_generated_question["__format_text"] = question["format_text"]
 
-        # TODO: if it is not a question
         if question["type"] == "no_question":
             cur_generated_question["type"] = "text"
             cur_generated_question["readOnly"] = True

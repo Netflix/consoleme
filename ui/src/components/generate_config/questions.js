@@ -152,6 +152,8 @@ export const questions_json = {
         "{__auth_choice} = 'Header Authentication (I have trusted headers that identify the authenticated user and their groups)'",
     },
     {
+      __format_text:
+        "https://cognito-idp.us-east-1.amazonaws.com/{}/.well-known/openid-configuration",
       isRequired: true,
       name:
         "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_15",
@@ -197,6 +199,8 @@ export const questions_json = {
       visibleIf: "{__auth_choice} = 'ALB Auth - Google'",
     },
     {
+      __format_text:
+        "https://{}.okta.com/oauth2/default/.well-known/oauth-authorization-server",
       isRequired: true,
       name:
         "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_20",
