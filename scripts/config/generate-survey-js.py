@@ -43,17 +43,6 @@ def generate_questions(template_config):
                     " or {" + f"{depends_on_actual}" + "}" + f" = '{value}'"
                 )
 
-        # TODO: if it is not a question
-        if question["type"] == "no_question":
-            # generated_config[question["config_variable"]] = question["value"]
-            continue
-
-        # Generate the question text to ask
-        question_text = template_config["default"][question["type"]].format(
-            friendly_name=question["friendly_name"],
-            friendly_description=question["friendly_description"],
-        )
-        cur_generated_question["title"] = question_text
         if question["config_variable"].startswith("__"):
             cur_generated_question["name"] = question["config_variable"]
         else:
@@ -76,8 +65,24 @@ def generate_questions(template_config):
                     variable, placeholder_variable
                 )
 
+        # TODO: if it is not a question
+        if question["type"] == "no_question":
+            cur_generated_question["type"] = "text"
+            cur_generated_question["readOnly"] = True
+            # cur_generated_question["visible"] = True
+            cur_generated_question["defaultValue"] = question["value"]
+            generated_config.append(cur_generated_question)
+            continue
+
         if question.get("required", False):
             cur_generated_question["isRequired"] = True
+
+        # Generate the question text to ask
+        question_text = template_config["default"][question["type"]].format(
+            friendly_name=question["friendly_name"],
+            friendly_description=question["friendly_description"],
+        )
+        cur_generated_question["title"] = question_text
 
         # Different prompts based on question type
         if question["type"] == "email":
