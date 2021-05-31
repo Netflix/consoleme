@@ -18,13 +18,59 @@ const generated_config_editor_options = {
 function GenerateConfig() {
   const [complete, setComplete] = useState(false);
   const [results, setResults] = useState({});
+  const getSpecialTypes = (questions) => {
+    const specialTypes = {};
+    for (let i = 0; i < questions.length; i++) {
+      if (questions[i].hasOwnProperty("__extra_details")) {
+        specialTypes[questions[i].name] = questions[i].__extra_details;
+      }
+    }
+    return specialTypes;
+  };
   const onComplete = (results) => {
     setComplete(true);
-    // TODO some manipulation for certain keys (lists, list of dicts)
     let resultsConsoleMeStyle = {};
-    for (const [key, value] of Object.entries(results.data)) {
+    const specialTypes = getSpecialTypes(questions_json.questions);
+    for (let [key, value] of Object.entries(results.data)) {
       if (!key.startsWith("__")) {
-        updateNestedObj(resultsConsoleMeStyle, key, value);
+        const updatedKey = key.split("_PLACEHOLDER_")[0];
+        if (
+          typeof value === "string" &&
+          value.includes("{") &&
+          value.includes("}")
+        ) {
+          let replacement = value.substring(
+            value.lastIndexOf("{") + 1,
+            value.lastIndexOf("}")
+          );
+          replacement = replacement.replaceAll("-", ".");
+          if (results.data.hasOwnProperty(replacement)) {
+            value = value.replace(
+              "{" + replacement + "}",
+              results.data[replacement]
+            );
+          }
+        }
+        if (specialTypes.hasOwnProperty(key) && specialTypes[key] === "list") {
+          const updatedValue = value.split(",");
+          updatedValue.forEach(function (part, index) {
+            this[index] = this[index].trim();
+          }, updatedValue);
+          updateNestedObj(resultsConsoleMeStyle, updatedKey, updatedValue);
+        } else if (
+          specialTypes.hasOwnProperty(key) &&
+          specialTypes[key] === "list_dict"
+        ) {
+          const updatedValue = value.split(",");
+          const updatedValueDict = {};
+          updatedValue.forEach((val) => {
+            const splits = val.split(":");
+            updatedValueDict[splits[0].trim()] = splits[1].trim();
+          });
+          updateNestedObj(resultsConsoleMeStyle, updatedKey, updatedValueDict);
+        } else {
+          updateNestedObj(resultsConsoleMeStyle, updatedKey, value);
+        }
       }
     }
     setResults(resultsConsoleMeStyle);

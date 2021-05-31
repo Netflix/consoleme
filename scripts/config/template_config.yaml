@@ -183,7 +183,7 @@ questions:
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
     friendly_name: jwks_uri
     friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
-    type: text
+    type: list
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Google
@@ -200,7 +200,7 @@ questions:
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
     friendly_name: jwks_uri
     friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
-    type: text
+    type: list
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Okta

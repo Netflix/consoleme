@@ -20,20 +20,27 @@ def load_template_config():
 
 def generate_questions(template_config):
     generated_config = []
+    counter = 0
+    placeholders_map = {}
     for question in template_config["questions"]:
         cur_generated_question = {}
         # if the question has a condition
         if "depends_on" in question:
+            depends_on_actual = (
+                question["depends_on"]
+                if question["depends_on"].startswith("__")
+                else placeholders_map[question["depends_on"]]
+            )
             cur_generated_question["visibleIf"] = (
                 "{"
-                + f"{question['depends_on']}"
+                + f"{depends_on_actual}"
                 + "}"
                 + f" = '{question['depends_on_val'][0]}'"
             )
             for idx in range(1, len(question["depends_on_val"])):
                 value = question["depends_on_val"][idx]
                 cur_generated_question["visibleIf"] += (
-                    " or {" + f"{question['depends_on']}" + "}" + f" = '{value}'"
+                    " or {" + f"{depends_on_actual}" + "}" + f" = '{value}'"
                 )
 
         # TODO: if it is not a question
@@ -47,21 +54,27 @@ def generate_questions(template_config):
             friendly_description=question["friendly_description"],
         )
         cur_generated_question["title"] = question_text
-        cur_generated_question["name"] = question["config_variable"]
+        if question["config_variable"].startswith("__"):
+            cur_generated_question["name"] = question["config_variable"]
+        else:
+            # Some of our questions have the same "name" which causes problems. We need to de-duplicate
+            cur_generated_question["name"] = (
+                question["config_variable"] + f"_PLACEHOLDER_{counter}"
+            )
+            placeholders_map[question["config_variable"]] = cur_generated_question[
+                "name"
+            ]
+            counter += 1
         # if the question has a default answer
         # default_ans = question.get("default", "")
         if "default" in question:
             cur_generated_question["defaultValue"] = question["default"]
-            # TODO: default formatting
-            # if isinstance(question["default"], str) and "{" in question["default"]:
-            #     variable = question["default"].split("{", 1)[1].split("}", 1)[0]
-            #     value = variable if "-" not in variable else variable.replace("-", ".")
-            #     initial_options["calculatedValues"].append(
-            #         {
-            #             "name": variable,
-            #             "expression": value
-            #         }
-            #     )
+            if isinstance(question["default"], str) and "{" in question["default"]:
+                variable = question["default"].split("{", 1)[1].split("}", 1)[0]
+                placeholder_variable = placeholders_map[variable.replace("-", ".")]
+                cur_generated_question["defaultValue"] = question["default"].replace(
+                    variable, placeholder_variable
+                )
 
         if question.get("required", False):
             cur_generated_question["isRequired"] = True
