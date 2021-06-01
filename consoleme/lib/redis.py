@@ -18,7 +18,7 @@ if config.get("redis.use_redislite"):
     import redislite
 
     if not config.get("redis.redis_lite.db_path"):
-        default_redislite_db_path = tempfile.NamedTemporaryFile(delete=False)
+        default_redislite_db_path = tempfile.NamedTemporaryFile().name
 
 region = config.region
 log = config.get_logger()
@@ -372,7 +372,7 @@ class RedisHandler:
     async def redis(self, db: int = 0) -> Redis:
         if config.get("redis.use_redislite"):
             REDIS_DB_PATH = os.path.join(
-                config.get("redis.redis_lite.db_path", default_redislite_db_path)
+                config.get("redis.redislite.db_path", default_redislite_db_path)
             )
             return redislite.StrictRedis(REDIS_DB_PATH)
         self.red = await sync_to_async(ConsoleMeRedis)(
@@ -387,7 +387,7 @@ class RedisHandler:
     def redis_sync(self, db: int = 0) -> Redis:
         if config.get("redis.use_redislite"):
             REDIS_DB_PATH = os.path.join(
-                config.get("redis.redis_lite.db_path", default_redislite_db_path)
+                config.get("redis.redislite.db_path", default_redislite_db_path)
             )
             return redislite.StrictRedis(REDIS_DB_PATH)
         self.red = ConsoleMeRedis(
