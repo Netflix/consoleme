@@ -251,6 +251,30 @@ async def should_force_redirect(req):
     return True
 
 
+def sort_dict(original):
+    """Recursively sorts dictionary keys and dictionary values in alphabetical order"""
+    if isinstance(original, dict):
+        res = (
+            dict()
+        )  # Make a new "ordered" dictionary. No need for Collections in Python 3.7+
+        for k, v in sorted(original.items()):
+            res[k] = v
+        d = res
+    else:
+        d = original
+    for k in d:
+        if isinstance(d[k], str):
+            continue
+        if isinstance(d[k], list) and len(d[k]) > 1 and isinstance(d[k][0], str):
+            d[k] = sorted(d[k])
+        if isinstance(d[k], dict):
+            d[k] = sort_dict(d[k])
+        if isinstance(d[k], list) and len(d[k]) >= 1 and isinstance(d[k][0], dict):
+            for i in range(len(d[k])):
+                d[k][i] = sort_dict(d[k][i])
+    return d
+
+
 class Struct:
     def __init__(self, **entries):
         self.__dict__.update(entries)

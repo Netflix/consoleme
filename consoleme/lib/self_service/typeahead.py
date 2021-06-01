@@ -10,6 +10,10 @@ from consoleme.lib.self_service.models import (
     SelfServiceTypeaheadModel,
     SelfServiceTypeaheadModelArray,
 )
+from consoleme.models import (
+    AwsResourcePrincipalModel,
+    HoneybeeAwsResourceTemplatePrincipalModel,
+)
 
 
 async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
@@ -43,11 +47,15 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
                 typeahead_entries.append(
                     SelfServiceTypeaheadModel(
                         icon="users",
-                        resource_type="HoneybeeAwsIamRoleTemplate",
                         number_of_affected_resources=resource_template.number_of_accounts,
                         display_text=resource_template.name,
                         details_endpoint=f"/api/v2/templated_resource/{resource_template.repository_name}/"
                         + f"{resource_template.resource}",
+                        principal=HoneybeeAwsResourceTemplatePrincipalModel(
+                            principal_type="HoneybeeAwsResourceTemplate",
+                            repository_name=resource_template.repository_name,
+                            resource_identifier=resource_template.resource,
+                        ),
                     )
                 )
 
@@ -70,13 +78,14 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
         typeahead_entries.append(
             SelfServiceTypeaheadModel(
                 icon="user",
-                resource_type="AwsIamRole",
                 number_of_affected_resources=1,
                 display_text=role_name,
                 account=account_name,
                 application_name=app_name,
                 application_url=app_url,
-                resource_identifier=policy["Arn"],
+                principal=AwsResourcePrincipalModel(
+                    principal_type="AwsResource", principal_arn=policy["Arn"]
+                ),
                 details_endpoint=f"/api/v2/roles/{account_id}/{role_name}",
             )
         )

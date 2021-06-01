@@ -60,7 +60,32 @@ class Configuration(object):
         self.config = {}
         self.log = None
 
-    def load_config_from_dynamo(self):
+    def load_config_from_dynamo(self, ddb=None, red=None):
+        if not ddb:
+            from consoleme.lib.dynamo import UserDynamoHandler
+
+            ddb = UserDynamoHandler()
+        if not red:
+            from consoleme.lib.redis import RedisHandler
+
+            red = RedisHandler().redis_sync()
+
+        dynamic_config = refresh_dynamic_config(ddb)
+        if dynamic_config and dynamic_config != self.config.get("dynamic_config"):
+            red.set(
+                "DYNAMIC_CONFIG_CACHE",
+                json.dumps(dynamic_config),
+            )
+            self.get_logger("config").debug(
+                {
+                    "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+                    "message": "Dynamic configuration changes detected and loaded",
+                    "dynamic_config": dynamic_config,
+                }
+            )
+            self.config["dynamic_config"] = dynamic_config
+
+    def load_config_from_dynamo_bg_thread(self):
         """If enabled, we can load a configuration dynamically from Dynamo at a certain time interval. This reduces
         the need for code redeploys to make configuration changes"""
         from consoleme.lib.dynamo import UserDynamoHandler
@@ -70,20 +95,7 @@ class Configuration(object):
         red = RedisHandler().redis_sync()
 
         while True:
-            dynamic_config = refresh_dynamic_config(ddb)
-            if dynamic_config and dynamic_config != self.config.get("dynamic_config"):
-                red.set(
-                    "DYNAMIC_CONFIG_CACHE",
-                    json.dumps(dynamic_config),
-                )
-                self.get_logger("config").debug(
-                    {
-                        "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
-                        "message": "Dynamic configuration changes detected and loaded",
-                        "dynamic_config": dynamic_config,
-                    }
-                )
-                self.config["dynamic_config"] = dynamic_config
+            self.load_config_from_dynamo(ddb, red)
             time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
 
     def purge_redislite_cache(self):
@@ -161,7 +173,7 @@ class Configuration(object):
             Timer(0, self.purge_redislite_cache, ()).start()
 
         if allow_start_background_threads and self.get("config.load_from_dynamo", True):
-            Timer(0, self.load_config_from_dynamo, ()).start()
+            Timer(0, self.load_config_from_dynamo_bg_thread, ()).start()
 
         if allow_start_background_threads and self.get(
             "config.run_recurring_internal_tasks"

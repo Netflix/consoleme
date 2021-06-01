@@ -3,6 +3,7 @@ import argparse
 from asgiref.sync import async_to_sync
 
 from consoleme.celery_tasks import celery_tasks as celery
+from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme_default_plugins.plugins.celery_tasks import (
     celery_tasks as default_celery_tasks,
@@ -29,6 +30,9 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
+# Force dynamic configuration update synchronously
+config.CONFIG.load_config_from_dynamo()
+
 if args.use_celery:
     # Initialize Redis locally. If use_celery is set to `True`, you must be running a celery beat and worker. You can
     # run this locally with the following command:
@@ -47,7 +51,7 @@ if args.use_celery:
 
 else:
     celery.cache_cloud_account_mapping()
-    accounts_d = async_to_sync(get_account_id_to_name_mapping)()
+    accounts_d = async_to_sync(get_account_id_to_name_mapping)(force_sync=True)
     default_celery_tasks.cache_application_information()
 
     for account_id in accounts_d.keys():
@@ -60,5 +64,7 @@ else:
     celery.cache_policies_table_details()
     celery.cache_policy_requests()
     celery.cache_credential_authorization_mapping()
+    # Forces writing config to S3
+    celery.cache_roles_across_accounts()
 
 print("Done caching redis data")

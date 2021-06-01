@@ -62,6 +62,128 @@ class TestRequestsHandler(AsyncHTTPTestCase):
         diff = DeepDiff(json.loads(response.body), expected_response)
         self.assertFalse(diff)
 
+    def test_post_request(self):
+        mock_request_data = {
+            "justification": "test asdf",
+            "admin_auto_approve": False,
+            "changes": {
+                "changes": [
+                    {
+                        "principal": {
+                            "principal_arn": "arn:aws:iam::123456789012:role/TestInstanceProfile",
+                            "principal_type": "AwsResource",
+                        },
+                        "change_type": "inline_policy",
+                        "action": "attach",
+                        "policy": {
+                            "policy_document": {
+                                "Version": "2012-10-17",
+                                "Statement": [
+                                    {
+                                        "Action": ["sqs:SetQueueAttributes"],
+                                        "Effect": "Allow",
+                                        "Resource": [
+                                            "arn:aws:sqs:us-east-1:223456789012:queue"
+                                        ],
+                                    }
+                                ],
+                            }
+                        },
+                    }
+                ]
+            },
+        }
+
+        from consoleme.lib.redis import RedisHandler
+
+        # Mocked by fakeredis
+        red = RedisHandler().redis_sync()
+        red.set(
+            self.config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS"),
+            json.dumps(mock_request_data),
+        )
+
+        headers = {
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+        }
+        response = self.fetch(
+            "/api/v2/request",
+            method="POST",
+            headers=headers,
+            body=json.dumps(mock_request_data),
+        )
+        self.assertEqual(response.code, 200)
+        response_d = json.loads(response.body)
+        self.assertEqual(response_d["errors"], 0)
+        self.assertEqual(response_d["request_created"], True)
+        self.assertIn("/policies/request/", response_d["request_url"])
+
+    def test_post_request_admin_auto_approve(self):
+        mock_request_data = {
+            "justification": "test asdf",
+            "admin_auto_approve": True,
+            "changes": {
+                "changes": [
+                    {
+                        "principal": {
+                            "principal_arn": "arn:aws:iam::123456789012:role/TestInstanceProfile",
+                            "principal_type": "AwsResource",
+                        },
+                        "change_type": "inline_policy",
+                        "action": "attach",
+                        "policy": {
+                            "policy_document": {
+                                "Version": "2012-10-17",
+                                "Statement": [
+                                    {
+                                        "Action": ["sqs:SetQueueAttributes"],
+                                        "Effect": "Allow",
+                                        "Resource": [
+                                            "arn:aws:sqs:us-east-1:223456789012:queue"
+                                        ],
+                                    }
+                                ],
+                            }
+                        },
+                    }
+                ]
+            },
+        }
+
+        from consoleme.lib.redis import RedisHandler
+
+        # Mocked by fakeredis
+        red = RedisHandler().redis_sync()
+        red.set(
+            self.config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS"),
+            json.dumps(mock_request_data),
+        )
+
+        headers = {
+            self.config.get("auth.user_header_name"): "consoleme_admins@example.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+        }
+        response = self.fetch(
+            "/api/v2/request",
+            method="POST",
+            headers=headers,
+            body=json.dumps(mock_request_data),
+        )
+        self.assertEqual(response.code, 200)
+        response_d = json.loads(response.body)
+        self.assertEqual(response_d["errors"], 0)
+        self.assertEqual(response_d["request_created"], True)
+        self.assertIn("/policies/request/", response_d["request_url"])
+        self.assertIn(
+            {"status": "success", "message": "Successfully updated request status"},
+            response_d["action_results"],
+        )
+        self.assertIn(
+            {"status": "success", "message": "Successfully updated change in dynamo"},
+            response_d["action_results"],
+        )
+
     def test_post_limit(self):
         mock_request_data = [
             {"request_id": 12345, "username": "user@example.com"},

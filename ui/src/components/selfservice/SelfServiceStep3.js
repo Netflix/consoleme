@@ -91,7 +91,10 @@ class SelfServiceStep3 extends Component {
     };
     payload.changes = permissions.map((permission) => {
       const change = {
-        principal_arn: role.arn,
+        principal: {
+          principal_arn: role.arn,
+          principal_type: "AwsResource",
+        },
         generator_type: permission.service,
         action_groups: permission.actions,
         condition: permission.condition,
@@ -280,7 +283,10 @@ class SelfServiceStep3 extends Component {
       changes: {
         changes: [
           {
-            principal_arn: arn,
+            principal: {
+              principal_arn: arn,
+              principal_type: "AwsResource",
+            },
             change_type: "inline_policy",
             action: "attach",
             policy: {

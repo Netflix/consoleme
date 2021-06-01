@@ -1429,7 +1429,7 @@ def cache_self_service_typeahead_task() -> Dict:
     log_data = {
         "function": function,
         "message": "Successfully cached roles and templates for self service typeahead",
-        "num_templated_files": len(self_service_typeahead.typeahead_entries),
+        "num_typeahead_entries": len(self_service_typeahead.typeahead_entries),
     }
     log.debug(log_data)
     return log_data
@@ -1545,6 +1545,7 @@ schedule = {
         "schedule": schedule_30_minute,
     },
 }
+
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}

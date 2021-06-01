@@ -13,7 +13,11 @@ from consoleme.exceptions.exceptions import (
 )
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.defaults import SELF_SERVICE_IAM_DEFAULTS
-from consoleme.lib.generic import generate_random_string, iterate_and_format_dict
+from consoleme.lib.generic import (
+    generate_random_string,
+    iterate_and_format_dict,
+    sort_dict,
+)
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import (
     ChangeGeneratorModel,
@@ -104,7 +108,7 @@ async def _generate_inline_policy_model_from_statements(
 
 
 async def _generate_inline_policy_change_model(
-    principal_arn: str,
+    principal: str,
     resources: List[ResourceModel],
     statements: List[Dict],
     user: str,
@@ -114,8 +118,8 @@ async def _generate_inline_policy_change_model(
     """
     Generates an inline policy change model.
 
-    :param principal_arn: ARN of the principal associated with the InlinePolicyChangeModel
-    :param resource_arns: Resource ARNs (or wildcards) of the resources associated with the InlinePolicyChangeModel
+    :param principal: principal associated with the InlinePolicyChangeModel
+    :param resources: Resource ARNs (or wildcards) of the resources associated with the InlinePolicyChangeModel
     :param statements: A list of AWS IAM policy statement dictionaries
     :param user: User e-mail address
     :param is_new: Boolean representing if we're creating a new policy or updating an existing policy
@@ -126,7 +130,7 @@ async def _generate_inline_policy_change_model(
     policy_document = await _generate_inline_policy_model_from_statements(statements)
     change_details = {
         "change_type": "inline_policy",
-        "principal_arn": principal_arn,
+        "principal": principal,
         "resources": resources,
         "policy_name": policy_name,
         "new": is_new,
@@ -307,16 +311,22 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
     if change.generator_type == "s3":
-        return await _generate_s3_inline_policy_statement_from_mapping(change)
-    if change.generator_type == "crud_lookup":
-        return await _generate_inline_policy_statement_from_policy_sentry(change)
-    return await _generate_inline_policy_statement_from_mapping(change)
-    # TODO: Custom policy handler where we handle explicit permission additions
-    pass
+        policy = await _generate_s3_inline_policy_statement_from_mapping(change)
+    elif change.generator_type == "crud_lookup":
+        policy = await _generate_inline_policy_statement_from_policy_sentry(change)
+    else:
+        policy = await _generate_inline_policy_statement_from_mapping(change)
+
+    # Honeybee supports restricting policies to certain accounts.
+    if change.include_accounts:
+        policy["IncludeAccounts"] = change.include_accounts
+    if change.exclude_accounts:
+        policy["ExcludeAccounts"] = change.exclude_accounts
+    return policy
 
 
 async def _minimize_iam_policy_statements(
-    inline_iam_policy_statements: List[Dict],
+    inline_iam_policy_statements: List[Dict], disregard_sid=True
 ) -> List[Dict]:
     """
     Minimizes a list of inline IAM policy statements.
@@ -334,6 +344,8 @@ async def _minimize_iam_policy_statements(
 
     for i in range(len(inline_iam_policy_statements)):
         inline_iam_policy_statement = inline_iam_policy_statements[i]
+        if disregard_sid:
+            inline_iam_policy_statement.pop("Sid", None)
         if i in exclude_ids:
             # We've already combined this policy with another. Ignore it.
             continue
@@ -342,7 +354,8 @@ async def _minimize_iam_policy_statements(
                 # We've already combined this policy with another. Ignore it.
                 continue
             inline_iam_policy_statement_to_compare = inline_iam_policy_statements[j]
-
+            if disregard_sid:
+                inline_iam_policy_statement_to_compare.pop("Sid", None)
             # Check to see if policy statements are identical except for a given element. Merge the policies
             # if possible.
             for element in [
@@ -379,6 +392,7 @@ async def _minimize_iam_policy_statements(
 
     for i in range(len(inline_iam_policy_statements)):
         if i not in exclude_ids:
+            inline_iam_policy_statements[i] = sort_dict(inline_iam_policy_statements[i])
             minimized_statements.append(inline_iam_policy_statements[i])
     # TODO(cccastrapel): Intelligently combine actions and/or resources if they include wildcards
     return minimized_statements
@@ -445,7 +459,7 @@ async def generate_change_model_array(
 
     change_models = []
     inline_iam_policy_statements: List[Dict] = []
-    primary_principal_arn = None
+    primary_principal = None
     primary_user = None
     resources = []
 
@@ -459,34 +473,47 @@ async def generate_change_model_array(
             )
 
         # Enforce a maximum of one principal ARN per ChangeGeneratorModelArray (aka Policy Request)
-        if not primary_principal_arn:
-            primary_principal_arn = change.principal_arn
-        if primary_principal_arn != change.principal_arn:
+        if not primary_principal:
+            primary_principal = change.principal
+        if primary_principal != change.principal:
             raise InvalidRequestParameter(
                 "We only support making changes to a single principal ARN per request."
             )
 
-        # Generate inline policy for the change, if applicable
-        inline_policy = (
-            await _generate_inline_iam_policy_statement_from_change_generator(change)
-        )
-        if inline_policy and (
-            not inline_policy.get("Action")
-            or not inline_policy.get("Effect")
-            or not inline_policy.get("Resource")
-        ):
-            raise InvalidRequestParameter(
-                f"Generated inline policy is invalid. Double-check request parameter: {inline_policy}"
-            )
-        if inline_policy:
-            # TODO(ccastrapel): Add more details to the ResourceModel when we determine we can use it for something.
-            resource_model = await _generate_resource_model_from_arn(
-                change.resource_arn
-            )
-            # If the resource arn is actually a wildcard, we might not have a valid resource model
-            if resource_model:
-                resources.append(resource_model)
-            inline_iam_policy_statements.append(inline_policy)
+        if change.generator_type == "custom_iam":
+            inline_policies = change.policy["Statement"]
+            if isinstance(inline_policies, dict):
+                inline_policies = [inline_policies]
+        else:
+            # Generate inline policy for the change, if applicable
+            inline_policies = [
+                await _generate_inline_iam_policy_statement_from_change_generator(
+                    change
+                )
+            ]
+        for inline_policy in inline_policies:
+            # Inline policies must have Action|NotAction, Resource|NotResource, and an Effect
+            if inline_policy and (
+                (not inline_policy.get("Action") and not inline_policy.get("NotAction"))
+                or (
+                    not inline_policy.get("Resource")
+                    and not inline_policy.get("NotResource")
+                )
+                or not inline_policy.get("Effect")
+            ):
+                raise InvalidRequestParameter(
+                    f"Generated inline policy is invalid. Double-check request parameter: {inline_policy}"
+                )
+            if inline_policy and change.resource_arn:
+                # TODO(ccastrapel): Add more details to the ResourceModel when we determine we can use it for something.
+                resource_model = await _generate_resource_model_from_arn(
+                    change.resource_arn
+                )
+                # If the resource arn is actually a wildcard, we might not have a valid resource model
+                if resource_model:
+                    resources.append(resource_model)
+            if inline_policy:
+                inline_iam_policy_statements.append(inline_policy)
 
         # TODO(ccastrapel): V2: Generate resource policies for the change, if applicable
 
@@ -500,7 +527,7 @@ async def generate_change_model_array(
     )
     # TODO(ccastrapel): Check if the inline policy statements would be auto-approved and supply that context
     inline_iam_policy_change_model = await _generate_inline_policy_change_model(
-        primary_principal_arn, resources, inline_iam_policy_statements, primary_user
+        primary_principal, resources, inline_iam_policy_statements, primary_user
     )
     change_models.append(inline_iam_policy_change_model)
     return ChangeModelArray.parse_obj({"changes": change_models})

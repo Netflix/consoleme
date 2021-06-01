@@ -49,6 +49,7 @@ from consoleme.models import (
     ActionResult,
     ApplyChangeModificationModel,
     AssumeRolePolicyChangeModel,
+    AwsResourcePrincipalModel,
     CancelChangeModificationModel,
     ChangeModel,
     ChangeModelArray,
@@ -99,7 +100,7 @@ async def generate_request_from_change_model_array(
     }
     log.info(log_data)
 
-    primary_principal_arn = None
+    primary_principal = None
     change_models = request_creation.changes
     if len(change_models.changes) < 1:
         log_data["message"] = "At least 1 change is required to create a request."
@@ -128,9 +129,9 @@ async def generate_request_from_change_model_array(
         incremental_change_id += 1
 
         # Enforce a maximum of one principal ARN per ChangeGeneratorModelArray (aka Policy Request)
-        if not primary_principal_arn:
-            primary_principal_arn = change.principal_arn
-        if primary_principal_arn != change.principal_arn:
+        if not primary_principal:
+            primary_principal = change.principal
+        if primary_principal != change.principal:
             log_data[
                 "message"
             ] = "We only support making changes to a single principal ARN per request."
@@ -179,14 +180,14 @@ async def generate_request_from_change_model_array(
             split_items[0][: (64 - (len(split_items[-1]) + 1))] + "@" + split_items[-1]
         )
 
-    account_id = await get_resource_account(primary_principal_arn)
-    arn_parsed = parse_arn(primary_principal_arn)
+    account_id = await get_resource_account(primary_principal.principal_arn)
+    arn_parsed = parse_arn(primary_principal.principal_arn)
     arn_type = arn_parsed["service"]
     arn_name = arn_parsed["resource"]
     arn_region = arn_parsed["region"]
     try:
         arn_url = await get_url_for_resource(
-            arn=primary_principal_arn,
+            arn=primary_principal.principal_arn,
             resource_type=arn_type,
             account_id=account_id,
             region=arn_region,
@@ -217,6 +218,10 @@ async def generate_request_from_change_model_array(
             raise InvalidRequestParameter(log_data["message"])
         role_name = arn_parsed["resource_path"].split("/")[-1]
         role = await get_role_details(account_id, role_name=role_name, extended=True)
+        if not role:
+            log_data["message"] = "Principal not found"
+            log.error(log_data)
+            raise InvalidRequestParameter(log_data["message"])
         for inline_policy_change in inline_policy_changes:
             inline_policy_change.policy_name = await generate_policy_name(
                 inline_policy_change.policy_name, user
@@ -249,7 +254,7 @@ async def generate_request_from_change_model_array(
     extended_request = ExtendedRequestModel(
         admin_auto_approve=request_creation.admin_auto_approve,
         id=extended_request_uuid,
-        arn=primary_principal_arn,
+        arn=primary_principal.principal_arn,
         timestamp=int(time.time()),
         justification=request_creation.justification,
         requester_email=user,
@@ -395,7 +400,10 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
                                 policy_sha256=resource_policy_sha,
                             ),
                             change_type="resource_policy",
-                            principal_arn=extended_request.arn,
+                            principal=AwsResourcePrincipalModel(
+                                principal_arn=extended_request.arn,
+                                principal_type="AwsResource",
+                            ),
                             status=Status.not_applied,
                             source_change_id=policy_change.id,
                             id=str(uuid.uuid4()),
@@ -430,7 +438,10 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
                                                 policy_sha256=resource_policy_sha,
                                             ),
                                             change_type="sts_resource_policy",
-                                            principal_arn=extended_request.arn,
+                                            principal=AwsResourcePrincipalModel(
+                                                principal_arn=extended_request.arn,
+                                                principal_type="AwsResource",
+                                            ),
                                             status=Status.not_applied,
                                             source_change_id=policy_change.id,
                                             id=str(uuid.uuid4()),
@@ -460,7 +471,7 @@ async def validate_inline_policy_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "policy_name": change.policy_name,
         "request": change.dict(),
         "message": "Validating inline policy change",
@@ -531,7 +542,7 @@ async def validate_permissions_boundary_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "request": change.dict(),
         "message": "Validating permissions boundary change",
     }
@@ -572,7 +583,7 @@ async def validate_managed_policy_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "request": change.dict(),
         "message": "Validating managed policy change",
     }
@@ -616,7 +627,7 @@ async def validate_resource_tag_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "request": change.dict(),
         "role": role,
         "message": "Validating resource tag change",
@@ -632,7 +643,7 @@ async def validate_assume_role_policy_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "request": change.dict(),
         "message": "Validating assume role policy change",
     }
@@ -1206,7 +1217,7 @@ async def populate_cross_account_resource_policy_for_change(
 
         new_policy = await generate_updated_resource_policy(
             existing=old_policy,
-            principal_arn=extended_request.arn,
+            principal=extended_request.arn,
             resource_arns=list(set(resource_arns)),
             actions=actions,
             # since iam assume role policy documents can't include resources
@@ -1284,13 +1295,13 @@ async def apply_non_iam_resource_tag_change(
         "message": "Applying resource policy change changes",
         "request": extended_request.dict(),
     }
-    resource_arn_parsed = parse_arn(change.principal_arn)
+    resource_arn_parsed = parse_arn(change.principal.principal_arn)
     resource_type = resource_arn_parsed["service"]
     resource_name = resource_arn_parsed["resource"]
     resource_region = resource_arn_parsed["region"]
     resource_account = resource_arn_parsed["account"]
     if not resource_account:
-        resource_account = await get_resource_account(change.principal_arn)
+        resource_account = await get_resource_account(change.principal.principal_arn)
     if resource_type == "s3" and not resource_region:
         resource_region = await get_bucket_location_with_fallback(
             resource_name, resource_account
@@ -1305,7 +1316,7 @@ async def apply_non_iam_resource_tag_change(
         response.action_results.append(
             ActionResult(
                 status="error",
-                message=f"Cannot apply change to {change.principal_arn} as cannot determine resource account",
+                message=f"Cannot apply change to {change.principal.json()} as cannot determine resource account",
             )
         )
         return response
@@ -1321,7 +1332,7 @@ async def apply_non_iam_resource_tag_change(
         response.action_results.append(
             ActionResult(
                 status="error",
-                message=f"Cannot apply change to {change.principal_arn} as it's not supported",
+                message=f"Cannot apply change to {change.principal.json()} as it's not supported",
             )
         )
         return response
@@ -1398,18 +1409,18 @@ async def apply_non_iam_resource_tag_change(
         elif resource_type == "sns":
             if change.tag_action in [TagAction.create, TagAction.update]:
                 await sync_to_async(client.tag_resource)(
-                    ResourceArn=change.principal_arn,
+                    ResourceArn=change.principal.principal_arn,
                     Tags=[{"Key": change.key, "Value": change.value}],
                 )
                 # Renaming a key
                 if change.original_key and change.original_key != change.key:
                     await sync_to_async(client.untag_resource)(
-                        ResourceArn=change.principal_arn,
+                        ResourceArn=change.principal.principal_arn,
                         TagKeys=[change.original_key],
                     )
             elif change.tag_action == TagAction.delete:
                 await sync_to_async(client.untag_resource)(
-                    ResourceArn=change.principal_arn,
+                    ResourceArn=change.principal.principal_arn,
                     TagKeys=[change.key],
                 )
         elif resource_type == "sqs":
@@ -1431,7 +1442,7 @@ async def apply_non_iam_resource_tag_change(
         response.action_results.append(
             ActionResult(
                 status="success",
-                message=f"Successfully updated resource policy for {change.principal_arn}",
+                message=f"Successfully updated resource policy for {change.principal.principal_arn}",
             )
         )
         change.status = Status.applied
@@ -1445,7 +1456,7 @@ async def apply_non_iam_resource_tag_change(
         response.action_results.append(
             ActionResult(
                 status="error",
-                message=f"Error occurred changing resource tags for {change.principal_arn}"
+                message=f"Error occurred changing resource tags for {change.principal.principal_arn}"
                 + str(e),
             )
         )
@@ -1909,7 +1920,9 @@ async def parse_and_apply_policy_request_modification(
                 )
             elif (
                 specific_change.change_type == "resource_tag"
-                and not specific_change.principal_arn.startswith("arn:aws:iam::")
+                and not specific_change.principal.principal_arn.startswith(
+                    "arn:aws:iam::"
+                )
             ):
                 response = await apply_non_iam_resource_tag_change(
                     extended_request, specific_change, response, user

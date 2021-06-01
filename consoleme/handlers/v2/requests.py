@@ -81,7 +81,10 @@ class RequestHandler(BaseAPIV2Handler):
           "changes": {
             "changes": [
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "inline_policy",
                 "action": "attach",
                 "policy": {
@@ -129,7 +132,10 @@ class RequestHandler(BaseAPIV2Handler):
                 }
               },
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "assume_role_policy",
                 "policy": {
                   "policy_document": {
@@ -148,21 +154,30 @@ class RequestHandler(BaseAPIV2Handler):
                 }
               },
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "managed_policy",
                 "policy_name": "ApiProtect",
                 "action": "attach",
                 "arn": "arn:aws:iam::123456789012:policy/ApiProtect"
               },
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "managed_policy",
                 "policy_name": "TagProtect",
                 "action": "detach",
                 "arn": "arn:aws:iam::123456789012:policy/TagProtect"
               },
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "inline_policy",
                 "policy_name": "random_policy254",
                 "action": "attach",
