@@ -162,7 +162,9 @@ async def handle_resource_type_ahead_request(cls):
         except Exception as e:  # noqa
             accounts = {}
 
-        app_to_role_map = json.loads(data)
+        app_to_role_map = {}
+        if data:
+            app_to_role_map = json.loads(data)
         seen: Dict = {}
         seen_roles = {}
         for app_name, roles in app_to_role_map.items():

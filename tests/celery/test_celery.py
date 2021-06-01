@@ -90,7 +90,17 @@ class TestCelerySync(TestCase):
             {
                 "function": "consoleme.celery_tasks.celery_tasks.cache_roles_across_accounts",
                 "cache_key": "test_cache_roles_for_account",
-                "num_roles": 0,
+                "num_roles": 15,
+                "num_accounts": 1,
+            },
+        )  # This should spin off extra fake celery tasks
+        res = self.celery.cache_roles_across_accounts()
+        self.assertEqual(
+            res,
+            {
+                "function": "consoleme.celery_tasks.celery_tasks.cache_roles_across_accounts",
+                "cache_key": "test_cache_roles_for_account",
+                "num_roles": 15,
                 "num_accounts": 1,
             },
         )
