@@ -5,7 +5,7 @@ Whenever we pin to a specific version in requirements*.in, we add a comment expl
 We also have comments on their use.
 
 
-All the required dependencies for running the commands on this page are in pip-tools (https://github.com/jazzband/pip-tools) which installs pip-compile command.  
+All the required dependencies for running pip-compile are in pip-tools (https://github.com/jazzband/pip-tools) which installs pip-compile command.  
 
 ## To install or update all dependencies
 
@@ -18,21 +18,9 @@ To compile all dependencies run
 pip-compile --output-file requirements.txt requirements.in
 ```
 
-To update all dependencies, periodically re-run
+To update all dependencies; Install GNU Make and periodically run
 ```text
-@echo "--> Updating Python requirements"
-pip install --upgrade pip
-pip install --upgrade pip-tools
-pip install --upgrade setuptools
-pip-compile --output-file requirements.txt requirements.in -U --no-emit-index-url
-pip-compile --output-file requirements-test.txt requirements-test.in requirements.txt -U --no-emit-index-url
-pip-compile --output-file requirements-docs.txt requirements-docs.in -U --no-emit-index-url
-@echo "--> Done updating Python requirements"
-@echo "--> Installing new dependencies"
-pip install -e .
-pip install -r requirements-test.txt
-pip install -r requirements-docs.txt
-@echo "--> Done installing new dependencies"
+make up-reqs
 ```
 
 ## To add a specific new dependency
