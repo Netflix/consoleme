@@ -45,7 +45,7 @@
   * [Celery Flower](celery-tasks/celery-flower.md)
 * [Development Guide](development-guide/README.md)
   * [UI Components](development-guide/ui-components.md)
-  * [Upgrading Dependencies](development-guide/ChangeDependencies.md)
+  * [Managing Dependencies](development-guide/changedependencies.md)
 * [Deployment Strategies](deployment-strategies.md)
 * [Contributing](contributing.md)
 * [FAQ](faq.md)
