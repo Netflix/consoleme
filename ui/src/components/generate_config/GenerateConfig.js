@@ -5,6 +5,7 @@ import { questions_json } from "./questions.js";
 import MonacoEditor from "react-monaco-editor";
 import yaml from "js-yaml";
 import { Header, Icon, Message, Popup, Segment } from "semantic-ui-react";
+import "./GenerateConfig.css";
 
 const generated_config_editor_options = {
   selectOnLineNumbers: true,
@@ -32,6 +33,12 @@ function GenerateConfig() {
       }
     }
     return [specialTypes, formatTypes];
+  };
+  const clearMessage = async () => {
+    const timer = setTimeout(() => {
+      setMessages([]);
+    }, 3000);
+    return () => clearTimeout(timer);
   };
   const onComplete = (results) => {
     setComplete(true);
@@ -98,9 +105,10 @@ function GenerateConfig() {
     return d;
   };
   const copyToClipboard = () => {
-    navigator.clipboard
-      .writeText(yaml.dump(results, 4))
-      .then((r) => setMessages(["Copied to Clipboard!"]));
+    navigator.clipboard.writeText(yaml.dump(results, 4)).then((r) => {
+      setMessages(["Copied to Clipboard!"]);
+      clearMessage();
+    });
   };
   const downloadConfig = () => {
     const fileName = `consoleme_generated_config_${new Date().getTime()}.yaml`;
@@ -151,6 +159,20 @@ function GenerateConfig() {
       </Segment>
     );
   };
+  const customCSS = (survey, options) => {
+    let classes = options.cssClasses;
+
+    if (options.question.isRequired) {
+      classes.title += " sq-title-required";
+    }
+    // Hide questions that are internally set (read only questions)
+    if (options.question.readOnly) {
+      classes.mainRoot += " sq-hidden-custom";
+    }
+    // Hide question number, because we hide questions, numbers become wonky
+    classes.number += " sq-hidden-custom";
+  };
+
   const surveyContent = () => {
     if (!complete) {
       return (
@@ -158,6 +180,7 @@ function GenerateConfig() {
           json={questions_json}
           showCompletedPage={true}
           onComplete={onComplete}
+          onUpdateQuestionCssClasses={customCSS}
         />
       );
     }
