@@ -46,7 +46,7 @@ Steps:
 
 7. Modify your **Port 443 listener.** The first step should authenticate against Cognito, or your OIDC identity provider. The next step is to forward to your ConsoleMe target group. Here are a few examples:
 
-* Google \(Scopes required: **openid email**\)
+* Google \(Scopes required: **openid email** \)
 
 ![](../../.gitbook/assets/image%20%2836%29%20%283%29%20%282%29.png)
 
