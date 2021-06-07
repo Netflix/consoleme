@@ -99,6 +99,7 @@ class SelfServiceComponent extends Component {
               defaultValue={defaultValue}
               handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
               required={input.required || false}
+              key={Math.random().toString(36).substring(7)}
               label={input.text}
             />
           );
@@ -109,6 +110,7 @@ class SelfServiceComponent extends Component {
               handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
               required={input.required || false}
               typeahead={input.typeahead_endpoint}
+              key={Math.random().toString(36).substring(7)}
               label={input.text}
               sendRequestCommon={this.props.sendRequestCommon}
             />

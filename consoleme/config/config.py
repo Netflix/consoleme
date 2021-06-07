@@ -169,23 +169,25 @@ class Configuration(object):
         if extends:
             await self.merge_extended_paths(extends, dir_path)
 
+        # We use different Timer intervals for our background threads to prevent logger objects from clashing, which
+        # could cause duplicate log entries.
         if allow_start_background_threads and self.get("redis.use_redislite"):
-            Timer(0, self.purge_redislite_cache, ()).start()
+            Timer(1, self.purge_redislite_cache, ()).start()
 
         if allow_start_background_threads and self.get("config.load_from_dynamo", True):
-            Timer(0, self.load_config_from_dynamo_bg_thread, ()).start()
+            Timer(2, self.load_config_from_dynamo_bg_thread, ()).start()
 
         if allow_start_background_threads and self.get(
             "config.run_recurring_internal_tasks"
         ):
             Timer(
-                0, config_plugin.internal_functions, kwargs={"cfg": self.config}
+                3, config_plugin.internal_functions, kwargs={"cfg": self.config}
             ).start()
 
         if allow_automatically_reload_configuration and self.get(
             "config.automatically_reload_configuration"
         ):
-            Timer(0, self.reload_config, ()).start()
+            Timer(4, self.reload_config, ()).start()
 
     def get(
         self, key: str, default: Optional[Union[List[str], int, bool, str, Dict]] = None
