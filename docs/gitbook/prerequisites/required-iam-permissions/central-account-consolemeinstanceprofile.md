@@ -95,6 +95,28 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
 }
 ```
 
+You must also allow ConsoleMe to read/write to the bucket you've decided to use to cache data. Please replace `BUCKET_NAME` below with the name of the bucket you will cache data in. This bucket must be in the same account as this role, and it must also be defined in your ConsoleMe configuration under the `consoleme_s3_bucket` configuration key. You can add this as a new inline policy on your ConsoleMeInstanceProfile role, or append the statement to an existing inline policy.
+
+```text
+{
+	"Statement": [
+		{
+			"Action": [
+				"s3:ListBucket",
+				"s3:GetObject",
+				"s3:PutObject",
+				"s3:DeleteObject"
+			],
+			"Effect": "Allow",
+			"Resource": [
+				"arn:aws:s3:::BUCKET_NAME",
+				"arn:aws:s3:::BUCKET_NAME/*"
+			]
+		}
+	]
+}
+```
+
 Configure the trust policy with the following settings \(Yes, you'll want to give ConsoleMeInstanceProfile the ability to assume itself\):
 
 ```text
