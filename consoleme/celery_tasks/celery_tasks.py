@@ -172,7 +172,7 @@ def report_celery_last_success_metrics() -> bool:
         if last_success == 0:
             log_data["message"] = "Last Success Value is 0"
             log_data["task_last_success_key"] = f"{task}.last_success"
-            log.error(log_data)
+            log.warn(log_data)
         stats.gauge(f"{task}.time_since_last_success", current_time - last_success)
         red.set(f"{task}.time_since_last_success", current_time - last_success)
     red.set(
@@ -783,7 +783,7 @@ def cache_roles_across_accounts() -> Dict:
 
         results = group(*tasks).apply_async()
         # results.join() forces function to wait until all tasks are complete
-        results.join()
+        results.join(disable_sync_subtasks=False)
     else:
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
@@ -1217,7 +1217,7 @@ def cache_resources_from_aws_config_across_accounts() -> Dict[
                 tasks.append(cache_resources_from_aws_config_for_account.s(account_id))
     if tasks:
         results = group(*tasks).apply_async()
-        results.join()
+        results.join(disable_sync_subtasks=False)
     # Delete roles in Redis cache with expired TTL
     all_resources = red.hgetall(resource_redis_cache_key)
     if all_resources:
