@@ -27,13 +27,6 @@ class SelfServiceStep1 extends Component {
     };
   }
 
-  componentDidMount() {
-    const { role } = this.props;
-    if (role) {
-      this.fetchRoleDetail(role.arn);
-    }
-  }
-
   fetchRoleDetail(endpoint) {
     this.props.sendRequestCommon(null, endpoint, "get").then((response) => {
       if (!response) {

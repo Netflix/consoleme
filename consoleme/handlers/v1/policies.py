@@ -200,6 +200,8 @@ async def handle_resource_type_ahead_request(cls):
                 )
 
     else:
+        if not data:
+            return []
         for k, v in data.items():
             if account_id and k != account_id:
                 continue
