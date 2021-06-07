@@ -65,6 +65,6 @@ else:
     celery.cache_policy_requests()
     celery.cache_credential_authorization_mapping()
     # Forces writing config to S3
-    celery.cache_roles_across_accounts()
-
+    celery.cache_roles_across_accounts(wait_for_subtask_completion=False)
+    celery.cache_self_service_typeahead_task()
 print("Done caching redis data")
