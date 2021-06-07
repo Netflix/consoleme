@@ -172,7 +172,7 @@ def report_celery_last_success_metrics() -> bool:
         if last_success == 0:
             log_data["message"] = "Last Success Value is 0"
             log_data["task_last_success_key"] = f"{task}.last_success"
-            log.error(log_data)
+            log.warn(log_data)
         stats.gauge(f"{task}.time_since_last_success", current_time - last_success)
         red.set(f"{task}.time_since_last_success", current_time - last_success)
     red.set(
@@ -761,7 +761,7 @@ def cache_roles_for_account(account_id: str) -> bool:
 
 
 @app.task(soft_time_limit=3600)
-def cache_roles_across_accounts() -> Dict:
+def cache_roles_across_accounts(wait_for_subtask_completion=True) -> Dict:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
@@ -782,8 +782,9 @@ def cache_roles_across_accounts() -> Dict:
                     tasks.append(cache_roles_for_account.s(account_id))
 
         results = group(*tasks).apply_async()
-        # results.join() forces function to wait until all tasks are complete
-        results.join()
+        if wait_for_subtask_completion:
+            # results.join() forces function to wait until all tasks are complete
+            results.join(disable_sync_subtasks=False)
     else:
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
@@ -1192,9 +1193,9 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
 
 
 @app.task(soft_time_limit=3600)
-def cache_resources_from_aws_config_across_accounts() -> Dict[
-    str, Union[Union[str, int], Any]
-]:
+def cache_resources_from_aws_config_across_accounts(
+    wait_for_subtask_completion=True,
+) -> Dict[str, Union[Union[str, int], Any]]:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     resource_redis_cache_key = config.get(
         "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
@@ -1217,7 +1218,8 @@ def cache_resources_from_aws_config_across_accounts() -> Dict[
                 tasks.append(cache_resources_from_aws_config_for_account.s(account_id))
     if tasks:
         results = group(*tasks).apply_async()
-        results.join()
+        if wait_for_subtask_completion:
+            results.join(disable_sync_subtasks=False)
     # Delete roles in Redis cache with expired TTL
     all_resources = red.hgetall(resource_redis_cache_key)
     if all_resources:
