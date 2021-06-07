@@ -4,7 +4,7 @@ Here are step-by-step directions for configuring Cognito as an identity provider
 
 1. Sign in to AWS, visit Cognito, and create a new User Pool
 
-![](../../../.gitbook/assets/image%20%2817%29%20%281%29.png)
+![](../../../.gitbook/assets/image%20%2817%29%20%281%29%20%281%29.png)
 
 2. Under App Clients, click "Add an app client"
 
