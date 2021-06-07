@@ -18,6 +18,7 @@ Prerequisites:
 
 * A Route53 hosted zone that will contain your ConsoleMe domain
 * An EC2 target group with one or more ConsoleMe instances or containers
+* ConsoleMe \(And Celery\) should be running with the `EC2_REGION` environment variable set to the region your instance\(s\) are in. For example: `EC2_REGION=us-west-2`.
 
 Steps:
 
