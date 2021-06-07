@@ -3,7 +3,6 @@ from hashlib import sha256
 from typing import Dict, List, Optional
 
 import ujson as json
-from deepdiff import DeepDiff
 from policy_sentry.querying.actions import get_actions_with_access_level
 
 from consoleme.config import config
@@ -12,12 +11,9 @@ from consoleme.exceptions.exceptions import (
     MissingConfigurationValue,
 )
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.aws import minimize_iam_policy_statements
 from consoleme.lib.defaults import SELF_SERVICE_IAM_DEFAULTS
-from consoleme.lib.generic import (
-    generate_random_string,
-    iterate_and_format_dict,
-    sort_dict,
-)
+from consoleme.lib.generic import generate_random_string, iterate_and_format_dict
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import (
     ChangeGeneratorModel,
@@ -216,6 +212,8 @@ async def _generate_s3_inline_policy_statement_from_mapping(
     for action in generator.action_groups:
         action_group_actions.append(action)
     actions = await _get_actions_from_groups(action_group_actions, permissions_map)
+    if generator.extra_actions:
+        actions.extend(generator.extra_actions)
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
 
@@ -266,6 +264,8 @@ async def _generate_inline_policy_statement_from_mapping(
         else:
             action_group_actions.append(action)
     actions = await _get_actions_from_groups(action_group_actions, permissions_map)
+    if generator.extra_actions:
+        actions.extend(generator.extra_actions)
     condition: Optional[Dict] = await _generate_condition_with_substitutions(generator)
     return await _generate_policy_statement(actions, resource_arns, effect, condition)
 
@@ -297,6 +297,8 @@ async def _generate_inline_policy_statement_from_policy_sentry(
     actions = await _get_policy_sentry_access_level_actions(
         generator.service_name, access_level_actions
     )
+    if generator.extra_actions:
+        actions.extend(generator.extra_actions)
     return await _generate_policy_statement(
         actions, [generator.resource_arn], generator.effect, generator.condition
     )
@@ -323,79 +325,6 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
     if change.exclude_accounts:
         policy["ExcludeAccounts"] = change.exclude_accounts
     return policy
-
-
-async def _minimize_iam_policy_statements(
-    inline_iam_policy_statements: List[Dict], disregard_sid=True
-) -> List[Dict]:
-    """
-    Minimizes a list of inline IAM policy statements.
-
-    1. Policies that are identical except for the resources will have the resources merged into a single statement
-    with the same actions, effects, conditions, etc.
-
-    2. Policies that have an identical resource, but different actions, will be combined if the rest of the policy
-    is identical.
-    :param inline_iam_policy_statements: A list of IAM policy statement dictionaries
-    :return: A potentially more compact list of IAM policy statement dictionaries
-    """
-    exclude_ids = []
-    minimized_statements = []
-
-    for i in range(len(inline_iam_policy_statements)):
-        inline_iam_policy_statement = inline_iam_policy_statements[i]
-        if disregard_sid:
-            inline_iam_policy_statement.pop("Sid", None)
-        if i in exclude_ids:
-            # We've already combined this policy with another. Ignore it.
-            continue
-        for j in range(i + 1, len(inline_iam_policy_statements)):
-            if j in exclude_ids:
-                # We've already combined this policy with another. Ignore it.
-                continue
-            inline_iam_policy_statement_to_compare = inline_iam_policy_statements[j]
-            if disregard_sid:
-                inline_iam_policy_statement_to_compare.pop("Sid", None)
-            # Check to see if policy statements are identical except for a given element. Merge the policies
-            # if possible.
-            for element in [
-                "Resource",
-                "Action",
-                "NotAction",
-                "NotResource",
-                "NotPrincipal",
-            ]:
-                if not (
-                    inline_iam_policy_statement.get(element)
-                    or inline_iam_policy_statement_to_compare.get(element)
-                ):
-                    # This function won't handle `Condition`.
-                    continue
-                diff = DeepDiff(
-                    inline_iam_policy_statement,
-                    inline_iam_policy_statement_to_compare,
-                    ignore_order=True,
-                    exclude_paths=[f"root['{element}']"],
-                )
-                if not diff:
-                    exclude_ids.append(j)
-                    # Policy can be minimized
-                    inline_iam_policy_statement[element] = sorted(
-                        list(
-                            set(
-                                inline_iam_policy_statement[element]
-                                + inline_iam_policy_statement_to_compare[element]
-                            )
-                        )
-                    )
-                    break
-
-    for i in range(len(inline_iam_policy_statements)):
-        if i not in exclude_ids:
-            inline_iam_policy_statements[i] = sort_dict(inline_iam_policy_statements[i])
-            minimized_statements.append(inline_iam_policy_statements[i])
-    # TODO(cccastrapel): Intelligently combine actions and/or resources if they include wildcards
-    return minimized_statements
 
 
 async def _attach_sids_to_policy_statements(
@@ -518,7 +447,7 @@ async def generate_change_model_array(
         # TODO(ccastrapel): V2: Generate resource policies for the change, if applicable
 
     # Minimize the policy statements to remove redundancy
-    inline_iam_policy_statements = await _minimize_iam_policy_statements(
+    inline_iam_policy_statements = await minimize_iam_policy_statements(
         inline_iam_policy_statements
     )
     # Attach Sids to each of the statements that will help with identifying who made the request and when.
