@@ -1,4 +1,8 @@
 import argparse
+import concurrent.futures
+import os
+import time
+from concurrent.futures.thread import ThreadPoolExecutor
 
 from asgiref.sync import async_to_sync
 
@@ -8,6 +12,8 @@ from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme_default_plugins.plugins.celery_tasks import (
     celery_tasks as default_celery_tasks,
 )
+
+start_time = int(time.time())
 
 
 def str2bool(v):
@@ -53,18 +59,34 @@ else:
     celery.cache_cloud_account_mapping()
     accounts_d = async_to_sync(get_account_id_to_name_mapping)(force_sync=True)
     default_celery_tasks.cache_application_information()
-
+    executor = ThreadPoolExecutor(max_workers=os.cpu_count())
+    futures = []
     for account_id in accounts_d.keys():
-        celery.cache_roles_for_account(account_id)
-        celery.cache_s3_buckets_for_account(account_id)
-        celery.cache_sns_topics_for_account(account_id)
-        celery.cache_sqs_queues_for_account(account_id)
-        celery.cache_managed_policies_for_account(account_id)
-        celery.cache_resources_from_aws_config_for_account(account_id)
+        futures.extend(
+            [
+                executor.submit(celery.cache_roles_for_account, account_id),
+                executor.submit(celery.cache_s3_buckets_for_account, account_id),
+                executor.submit(celery.cache_sns_topics_for_account, account_id),
+                executor.submit(celery.cache_sqs_queues_for_account, account_id),
+                executor.submit(celery.cache_managed_policies_for_account, account_id),
+                executor.submit(
+                    celery.cache_resources_from_aws_config_for_account, account_id
+                ),
+            ]
+        )
+    for future in concurrent.futures.as_completed(futures):
+        try:
+            data = future.result()
+        except Exception as exc:
+            print("%r generated an exception: %s" % (future, exc))
+
     celery.cache_policies_table_details()
     celery.cache_policy_requests()
     celery.cache_credential_authorization_mapping()
     # Forces writing config to S3
-    celery.cache_roles_across_accounts(wait_for_subtask_completion=False)
+    celery.cache_roles_across_accounts(
+        wait_for_subtask_completion=False, run_subtasks=False
+    )
     celery.cache_self_service_typeahead_task()
-print("Done caching redis data")
+total_time = int(time.time()) - start_time
+print(f"Done caching data in Redis. It took {total_time} seconds")

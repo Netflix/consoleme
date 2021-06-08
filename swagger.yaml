@@ -962,7 +962,7 @@ components:
             $ref: "#/components/schemas/ResourceModel"
         version:
           type: string
-          default: 2.0
+          default: 3.0
         status:
           type: string
           default: not_applied
