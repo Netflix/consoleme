@@ -374,7 +374,7 @@ class RedisHandler:
             REDIS_DB_PATH = os.path.join(
                 config.get("redis.redislite.db_path", default_redislite_db_path)
             )
-            return redislite.StrictRedis(REDIS_DB_PATH)
+            return redislite.StrictRedis(REDIS_DB_PATH, decode_responses=True)
         self.red = await sync_to_async(ConsoleMeRedis)(
             host=self.host,
             port=self.port,
@@ -389,7 +389,7 @@ class RedisHandler:
             REDIS_DB_PATH = os.path.join(
                 config.get("redis.redislite.db_path", default_redislite_db_path)
             )
-            return redislite.StrictRedis(REDIS_DB_PATH)
+            return redislite.StrictRedis(REDIS_DB_PATH, decode_responses=True)
         self.red = ConsoleMeRedis(
             host=self.host,
             port=self.port,

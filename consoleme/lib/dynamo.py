@@ -509,7 +509,7 @@ class UserDynamoHandler(BaseDynamoHandler):
         return matching_requests
 
     async def get_all_policy_requests(
-        self, status: str = "pending"
+        self, status: Optional[str] = "pending"
     ) -> List[Dict[str, Union[int, List[str], str]]]:
         """Return all policy requests. If a status is specified, only requests with the specified status will be
         returned.

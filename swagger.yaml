@@ -751,6 +751,13 @@ components:
               type: array
               items:
                 type: string
+            resource_arn:
+              description: |-
+                The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
+                resource policy will need to be modified if the change is approved and successful.
+              example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
+              type: string
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|(^\*$)'
     CrudChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -802,11 +809,6 @@ components:
               type: array
               items:
                 type: string
-    #                enum:
-    #                  - list
-    #                  - get
-    #                  - put
-    #                  - delete
     CustomIamChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
