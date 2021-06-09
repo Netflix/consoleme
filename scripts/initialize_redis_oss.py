@@ -87,6 +87,19 @@ else:
     celery.cache_roles_across_accounts(
         wait_for_subtask_completion=False, run_subtasks=False
     )
+    celery.cache_s3_buckets_across_accounts(
+        wait_for_subtask_completion=False, run_subtasks=False
+    )
+    celery.cache_sns_topics_across_accounts(
+        wait_for_subtask_completion=False, run_subtasks=False
+    )
+    celery.cache_sqs_queues_across_accounts(
+        wait_for_subtask_completion=False, run_subtasks=False
+    )
+    celery.cache_resources_from_aws_config_across_accounts(
+        wait_for_subtask_completion=False, run_subtasks=False
+    )
+    celery.cache_resource_templates_task()
     celery.cache_self_service_typeahead_task()
 total_time = int(time.time()) - start_time
 print(f"Done caching data in Redis. It took {total_time} seconds")
