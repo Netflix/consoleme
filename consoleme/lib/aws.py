@@ -1506,3 +1506,10 @@ async def get_scps_for_account_or_ou(identifier: str) -> ServiceControlPolicyArr
                 scps_for_account.append(scp)
     scps = ServiceControlPolicyArrayModel(__root__=scps_for_account)
     return scps
+
+
+def split_s3_path(s3_path):
+    path_parts = s3_path.replace("s3://", "").split("/")
+    b = path_parts.pop(0)
+    k = "/".join(path_parts)
+    return b, k
