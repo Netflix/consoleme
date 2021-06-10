@@ -137,7 +137,7 @@ class Configuration(object):
             if s.startswith("AWS_SECRETS_MANAGER:"):
                 secret_name = "".join(s.split("AWS_SECRETS_MANAGER:")[1:])
                 extend_config = yaml.safe_load(
-                    await get_aws_secret(
+                    get_aws_secret(
                         secret_name, os.environ.get("EC2_REGION", "us-east-1")
                     )
                 )
@@ -314,6 +314,22 @@ class Configuration(object):
         for logger, level in self.get("logging_levels", default_logging_levels).items():
             logging.getLogger(logger).setLevel(level)
 
+    def get_aws_region(self):
+        region_checks = [
+            # check if set through ENV vars
+            os.environ.get("EC2_REGION"),
+            os.environ.get("AWS_REGION"),
+            os.environ.get("AWS_DEFAULT_REGION"),
+            # else check if set in config or in boto already
+            boto3.DEFAULT_SESSION.region_name if boto3.DEFAULT_SESSION else None,
+            boto3.Session().region_name,
+            boto3.client("s3").meta.region_name,
+            "us-east-1",
+        ]
+        for region in region_checks:
+            if region:
+                return region
+
 
 class ContextFilter(logging.Filter):
     """Logging Filter for adding hostname to log entries."""
@@ -335,7 +351,7 @@ get_logger = CONFIG.get_logger
 CONFIG.set_logging_levels()
 
 values = CONFIG.config
-region = os.environ.get("EC2_REGION", "us-east-1")
+region = CONFIG.get_aws_region()
 hostname = socket.gethostname()
 api_spec = {}
 dir_ref = dir
