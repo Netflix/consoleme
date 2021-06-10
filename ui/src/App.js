@@ -16,6 +16,7 @@ import Login from "./components/Login";
 import Logout from "./components/Logout";
 import NoMatch from "./components/NoMatch";
 import AuthenticateModal from "./components/AuthenticateModal";
+import GenerateConfig from "./components/generate_config/GenerateConfig";
 
 function App() {
   return (
@@ -66,6 +67,12 @@ function App() {
           exact
           path="/config"
           component={ConsoleMeDynamicConfig}
+        />
+        <ProtectedRoute
+          key="generate_config"
+          exact
+          path="/generate_config"
+          component={GenerateConfig}
         />
         <ProtectedRoute
           key="role_query"
