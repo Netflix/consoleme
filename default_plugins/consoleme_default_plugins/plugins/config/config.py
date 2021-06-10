@@ -3,6 +3,10 @@ import os
 import urllib.parse
 from typing import List
 
+import yaml
+
+from consoleme.lib.aws_secret_manager import get_aws_secret
+
 
 def split_s3_path(s3_path):
     path_parts = s3_path.replace("s3://", "").split("/")
@@ -26,6 +30,15 @@ class Config:
                 s3_object_content = obj["Body"].read()
                 with open(default_save_location, "w") as f:
                     f.write(s3_object_content.decode())
+            elif config_location.startswith("AWS_SECRETS_MANAGER:"):
+                secret_name = "".join(config_location.split("AWS_SECRETS_MANAGER:")[1:])
+                aws_secret_content = yaml.safe_load(
+                    get_aws_secret(
+                        secret_name, os.environ.get("EC2_REGION", "us-east-1")
+                    )
+                )
+                with open(default_save_location, "w") as f:
+                    f.write(aws_secret_content)
             else:
                 return config_location
         config_locations: List[str] = [

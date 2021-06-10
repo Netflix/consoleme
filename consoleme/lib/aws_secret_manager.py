@@ -3,7 +3,7 @@ import base64
 import boto3
 
 
-async def get_aws_secret(secret_name, region):
+def get_aws_secret(secret_name, region):
     session = boto3.session.Session()
     client = session.client(
         service_name="secretsmanager",
