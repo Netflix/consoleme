@@ -183,14 +183,14 @@ questions:
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
     friendly_name: jwks_uri
     friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
-    type: text
+    type: list
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Google
   ## ALB Auth - Okta ##
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
     friendly_name: Okta Domain
-    friendly_description: "the domain for your Okta, https://<DOMAIN>.okta.com"
+    friendly_description: "the domain for your Okta, https://<DOMAIN>.okta.com, just enter the <DOMAIN> part"
     type: text
     depends_on: __auth_choice
     depends_on_val:
@@ -200,7 +200,7 @@ questions:
   - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
     friendly_name: jwks_uri
     friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
-    type: text
+    type: list
     depends_on: __auth_choice
     depends_on_val:
       - ALB Auth - Okta
@@ -330,9 +330,9 @@ questions:
       - True
     required: True
   - config_variable: consoleme_s3_bucket
-    friendly_name: ConsoleMe's S3 bucket
+    friendly_name: ConsoleMe's S3 bucket name
     friendly_description: |-
-      a (preferably versioned) S3 bucket that I can cache and retrieve data from? The role that ConsoleMe runs
+      a (preferably versioned) S3 bucket name that I can cache and retrieve data from? The role that ConsoleMe runs
       as must have access to this bucket
     type: text
     required: True
