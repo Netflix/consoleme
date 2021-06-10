@@ -25,6 +25,12 @@ async def get_custom_page_header(user: str, user_groups: List[str]) -> Dict[str,
             message: Read this!
         ```
     """
+    if config.get("example_config.is_example_config", False):
+        return {
+            "custom_header_message_title": config.get("example_config.title"),
+            "custom_header_message_text": config.get("example_config.text"),
+            "custom_header_message_route": config.get("example_config.routes"),
+        }
     custom_headers_for_group_members = config.get(
         "dynamic_config.custom_headers_for_group_members", []
     )
