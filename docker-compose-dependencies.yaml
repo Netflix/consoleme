@@ -25,6 +25,3 @@ services:
       - DYNAMO_ENDPOINT=http://consoleme-dynamodb:8005
     ports:
       - "8001:8001"
-
-networks:
-  dynamo:
