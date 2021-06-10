@@ -10,6 +10,8 @@ from logging import LoggerAdapter, LogRecord
 from threading import Timer
 from typing import Any, Dict, List, Optional, Union
 
+import boto3
+import botocore.exceptions
 import logmatic
 import ujson as json
 import yaml
@@ -59,6 +61,22 @@ class Configuration(object):
         """Initialize empty configuration."""
         self.config = {}
         self.log = None
+
+    @staticmethod
+    def raise_if_invalid_aws_credentials():
+        try:
+            boto3.client("sts").get_caller_identity()
+        except botocore.exceptions.NoCredentialsError:
+            raise Exception(
+                "We were unable to detect valid AWS credentials. ConsoleMe needs valid AWS credentials to "
+                "run.\n\n"
+                "For local development: Provide credentials via environment variables, in your "
+                "~/.aws/credentials file, or via Weep EC2 IMDS / ECS credential provider emulation.\n\n"
+                "For a production configuration, please attach an IAM role to your instance(s) or container(s) through"
+                "AWS.\n\n"
+                "For more information, see how the Python AWS SDK retrieves credentials here: "
+                "https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials"
+            )
 
     def load_config_from_dynamo(self, ddb=None, red=None):
         if not ddb:
@@ -168,6 +186,9 @@ class Configuration(object):
 
         if extends:
             await self.merge_extended_paths(extends, dir_path)
+
+        if self.config.get("environment") != "test":
+            self.raise_if_invalid_aws_credentials()
 
         # We use different Timer intervals for our background threads to prevent logger objects from clashing, which
         # could cause duplicate log entries.
