@@ -136,3 +136,6 @@ consoleme/templates/*
 
 # Local Build Artifact
 consoleme.tar.gz
+
+# Config
+consoleme.yaml
