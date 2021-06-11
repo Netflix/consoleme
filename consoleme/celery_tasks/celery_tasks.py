@@ -482,7 +482,7 @@ def _add_role_to_redis(redis_key: str, role_entry: Dict) -> None:
         'templated': None, 'ttl': 1562510908, 'policy': '<json_formatted_policy>'}
     """
     try:
-        red.hset(redis_key, str(role_entry["arn"]), str(json.dumps(role_entry)))
+        red.hset(redis_key, role_entry["arn"], json.dumps(role_entry))
     except Exception as e:  # noqa
         stats.count(
             "cache_roles_for_account.error",
@@ -1726,6 +1726,3 @@ if config.get("celery.clear_tasks_for_development", False):
 
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"
-
-cache_credential_authorization_mapping.delay()
-cache_credential_authorization_mapping.apply_async(countdown=4)
