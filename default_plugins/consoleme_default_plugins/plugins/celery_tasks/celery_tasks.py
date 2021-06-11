@@ -4,6 +4,7 @@ the external tasks
 
 """
 import json
+import os
 from datetime import timedelta
 
 from asgiref.sync import async_to_sync
@@ -12,17 +13,47 @@ from celery import Celery
 from consoleme.config import config
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.redis import RedisHandler
+from consoleme.lib.timeout import Timeout
 
 region = config.region
 red = async_to_sync(RedisHandler().redis)()
 
 app = Celery(
     "tasks",
-    broker=config.get("celery.broker.{}".format(region), "redis://127.0.0.1:6379/1"),
+    broker=config.get(
+        f"celery.broker.{config.region}",
+        config.get("celery.broker.global", "redis://127.0.0.1:6379/1"),
+    ),
+    backend=config.get(
+        f"celery.backend.{config.region}",
+        config.get("celery.broker.global", "redis://127.0.0.1:6379/2"),
+    ),
 )
 
-if config.get("celery.purge"):
-    app.control.purge()
+if config.get("redis.use_redislite"):
+    import tempfile
+
+    import redislite
+
+    redislite_db_path = os.path.join(
+        config.get("redis.redislite.db_path", tempfile.NamedTemporaryFile().name)
+    )
+    redislite_client = redislite.Redis(redislite_db_path)
+    redislite_socket_path = f"redis+socket://{redislite_client.socket_file}"
+    app = Celery(
+        "tasks",
+        broker=f"{redislite_socket_path}?virtual_host=1",
+        backend=f"{redislite_socket_path}?virtual_host=2",
+    )
+
+app.conf.result_expires = config.get("celery.result_expires", 60)
+app.conf.worker_prefetch_multiplier = config.get("celery.worker_prefetch_multiplier", 4)
+app.conf.task_acks_late = config.get("celery.task_acks_late", True)
+
+if config.get("celery.purge") and not config.get("redis.use_redislite"):
+    # Useful to clear celery queue in development
+    with Timeout(seconds=5, error_message="Timeout: Are you sure Redis is running?"):
+        app.control.purge()
 
 
 @app.task(soft_time_limit=600)
