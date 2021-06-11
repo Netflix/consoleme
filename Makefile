@@ -50,7 +50,7 @@ redis:
 
 .PHONY: test
 test: clean
-	CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest)
+	ASYNC_TEST_TIMEOUT=60 CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest)
 
 .PHONY: bandit
 bandit: clean
@@ -58,7 +58,7 @@ bandit: clean
 
 .PHONY: testhtml
 testhtml: clean
-	CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest) $(html_report) && open htmlcov/index.html
+	ASYNC_TEST_TIMEOUT=60 CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest) $(html_report) && open htmlcov/index.html
 
 .PHONY: clean
 clean:
