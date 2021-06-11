@@ -18,6 +18,8 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
     app_name_tag = config.get("cache_self_service_typeahead.app_name_tag")
     # Cache role and app information
     role_data = await retrieve_json_data_from_redis_or_s3(
+        redis_key=config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"),
+        redis_data_type="hash",
         s3_bucket=config.get(
             "cache_roles_across_accounts.all_roles_combined.s3.bucket"
         ),
