@@ -8,6 +8,7 @@ services:
       - "8081:8081"
     environment:
       - SETUPTOOLS_USE_DISTUTILS=stdlib
+      - CONFIG_LOCATION=${CONFIG_LOCATION:-/apps/consoleme/example_config/example_config_docker_development.yaml}
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
     command: >
       bash -c 'python consoleme/__main__.py'
@@ -15,6 +16,7 @@ services:
     build: .
     environment:
       - SETUPTOOLS_USE_DISTUTILS=stdlib
+      - CONFIG_LOCATION=${CONFIG_LOCATION:-/apps/consoleme/example_config/example_config_docker_development.yaml}
       - COLUMNS=80 # Needed for Celery: https://github.com/celery/celery/issues/5761
     # Run Redis with ConsoleMe configuration
     command: >

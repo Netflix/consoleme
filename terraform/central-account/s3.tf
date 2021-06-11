@@ -32,8 +32,6 @@ resource "aws_s3_bucket_object" "consoleme_config" {
     demo_user_role_arn_1                         = aws_iam_role.consoleme_example_user_role_1.arn
     demo_user_role_arn_2                         = aws_iam_role.consoleme_example_user_role_2.arn
     current_account_id                           = data.aws_caller_identity.current.account_id
-    sync_accounts_from_organizations             = var.sync_accounts_from_organizations
-    sync_accounts_from_organizations_account_map = var.sync_accounts_from_organizations_account_map != null ? var.sync_accounts_from_organizations_account_map : list(tomap({ organizations_master_account_id = data.aws_caller_identity.current.account_id }))
     application_admin                            = var.application_admin
     region                                       = data.aws_region.current.name
     jwt_email_key                                = var.lb-authentication-jwt-email-key
