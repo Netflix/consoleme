@@ -13,7 +13,7 @@ services:
       - ~/.ssh:/root/.ssh:cached
       - ~/.config/consoleme:/etc/consoleme/
     environment:
-      - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_docker_development.yaml
+      - CONFIG_LOCATION=${CONFIG_LOCATION:-/apps/consoleme/example_config/example_config_docker_development.yaml}
       - SETUPTOOLS_USE_DISTUTILS=stdlib
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
     # We're running `FORCE_COLOR=true yarn --cwd /apps/consoleme/ui/ start | cat` instead of
@@ -41,7 +41,7 @@ services:
       - ~/.ssh:/root/.ssh:cached
       - ~/.config/consoleme:/etc/consoleme/
     environment:
-      - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_docker_development.yaml
+      - CONFIG_LOCATION=${CONFIG_LOCATION:-/apps/consoleme/example_config/example_config_docker_development.yaml}
       - SETUPTOOLS_USE_DISTUTILS=stdlib
       - COLUMNS=80 # Needed for Celery: https://github.com/celery/celery/issues/5761
     # Run Redis with ConsoleMe configuration
@@ -49,7 +49,7 @@ services:
       bash -c '
       python scripts/retrieve_or_decode_configuration.py;
       python scripts/initialize_dynamodb_oss.py;
-      python scripts/initialize_redis_oss.py --use_celery=true;
+      python scripts/initialize_redis_oss.py;
       celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=8
       '
     depends_on:

@@ -130,7 +130,7 @@ app.conf.result_expires = config.get("celery.result_expires", 60)
 app.conf.worker_prefetch_multiplier = config.get("celery.worker_prefetch_multiplier", 4)
 app.conf.task_acks_late = config.get("celery.task_acks_late", True)
 
-if config.get("celery.purge") and not config.get("redis.use_redislite"):
+if config.get("celery.purge"):
     # Useful to clear celery queue in development
     with Timeout(seconds=5, error_message="Timeout: Are you sure Redis is running?"):
         app.control.purge()
@@ -436,6 +436,28 @@ def report_revoked_task(**kwargs):
     error_tags.pop("error", None)
     error_tags.pop("task_id", None)
     stats.timer("celery.revoked_task", tags=error_tags)
+
+
+def is_task_already_running(fun, args):
+    """
+    Returns True if an identical task for a given function (and arguments) is already being
+    ran by Celery.
+    """
+    task_id = None
+    if celery.current_task:
+        task_id = celery.current_task.request.id
+    if not task_id:
+        return False
+    log.debug(task_id)
+
+    active_tasks = app.control.inspect()._request("active")
+    for _, tasks in active_tasks.items():
+        for task in tasks:
+            if task.get("id") == task_id:
+                continue
+            if task.get("name") == fun and task.get("args") == args:
+                return True
+    return False
 
 
 @retry(
@@ -1510,18 +1532,25 @@ def cache_cloud_account_mapping() -> Dict:
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_credential_authorization_mapping() -> Dict:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {
+        "function": function,
+    }
+    if is_task_already_running(function, []):
+        log_data["message"] = "Skipping task: An identical task is currently running"
+        log.debug(log_data)
+        return log_data
 
     authorization_mapping = async_to_sync(
         generate_and_store_credential_authorization_mapping
     )()
 
-    log_data = {
-        "function": function,
-        "message": "Successfully cached cloud credential authorization mapping",
-        "num_group_authorizations": len(authorization_mapping),
-    }
-
-    log.debug(log_data)
+    log_data["num_group_authorizations"] = len(authorization_mapping)
+    log.debug(
+        {
+            **log_data,
+            "message": "Successfully cached cloud credential authorization mapping",
+        }
+    )
     return log_data
 
 
