@@ -16,7 +16,7 @@ services:
       - /apps/consoleme/node_modules/
       - /apps/consoleme/ui/node_modules/
     environment:
-      - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_docker_development.yaml
+      - CONFIG_LOCATION=${CONFIG_LOCATION:-/apps/consoleme/example_config/example_config_docker_development.yaml}
       - SETUPTOOLS_USE_DISTUTILS=stdlib
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
     # We're running `FORCE_COLOR=true yarn --cwd /apps/consoleme/ui/ start | cat` instead of
@@ -49,7 +49,7 @@ services:
       - /apps/consoleme/node_modules/
       - /apps/consoleme/ui/node_modules/
     environment:
-      - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_docker_development.yaml
+      - CONFIG_LOCATION=${CONFIG_LOCATION:-/apps/consoleme/example_config/example_config_docker_development.yaml}
       - SETUPTOOLS_USE_DISTUTILS=stdlib
       - COLUMNS=80 # Needed for Celery: https://github.com/celery/celery/issues/5761
     # Run Redis with ConsoleMe configuration
