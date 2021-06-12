@@ -93,7 +93,7 @@ docker ps
 
 Your output should resemble the following screenshot:
 
-![](../.gitbook/assets/image%20%288%29.png)
+![](../.gitbook/assets/docker-containers.png)
 
 If you do not have 5 containers running, run the docker compose command again to ensure they are started.
 
