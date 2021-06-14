@@ -66,6 +66,7 @@ from consoleme.lib.cloud_credential_authorization_mapping import (
     generate_and_store_credential_authorization_mapping,
 )
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
+from consoleme.lib.event_bridge.role_updates import detect_role_changes_and_update_cache
 from consoleme.lib.git import store_iam_resources_in_git
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
@@ -1606,6 +1607,60 @@ def cache_self_service_typeahead_task() -> Dict:
     return log_data
 
 
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
+def trigger_credential_mapping_refresh_from_role_changes():
+    """
+    This task triggers a role cache refresh for any role that a change was detected for. This feature requires an
+    Event Bridge rule monitoring Cloudtrail for your accounts for IAM role mutation.
+
+    This task will trigger a credential authorization refresh if any changes were detected.
+
+    This task should run in all regions to force IAM roles to be refreshed in each region's cache on change.
+    :return:
+    """
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    roles_changed = async_to_sync(detect_role_changes_and_update_cache)()
+    log_data = {
+        "function": function,
+        "message": "Successfully checked role changes",
+        "num_roles_changed": len(roles_changed),
+    }
+    if roles_changed:
+        # Trigger credential authorization mapping refresh. We don't want credential authorization mapping refreshes
+        # running in parallel, so the cache_credential_authorization_mapping is protected to prevent parallel runs.
+        # This task can run in parallel without negative impact.
+        cache_credential_authorization_mapping.delay()
+    log.debug(log_data)
+    return log_data
+
+
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
+def retrieve_errors_from_cloudtrail():
+    """
+    This task triggers a role cache refresh for any role that a change was detected for. This feature requires an
+    Event Bridge rule monitoring Cloudtrail for your accounts for IAM role mutation.
+
+    This task will trigger a credential authorization refresh if any changes were detected.
+
+    This task should run in all regions to force IAM roles to be refreshed in each region's cache on change.
+    :return:
+    """
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    roles_changed = async_to_sync(detect_role_changes_and_update_cache)()
+    log_data = {
+        "function": function,
+        "message": "Successfully checked role changes",
+        "num_roles_changed": len(roles_changed),
+    }
+    if roles_changed:
+        # Trigger credential authorization mapping refresh. We don't want credential authorization mapping refreshes
+        # running in parallel, so the cache_credential_authorization_mapping is protected to prevent parallel runs.
+        # This task can run in parallel without negative impact.
+        cache_credential_authorization_mapping.delay()
+    log.debug(log_data)
+    return log_data
+
+
 schedule_30_minute = timedelta(seconds=1800)
 schedule_45_minute = timedelta(seconds=2700)
 schedule_6_hours = timedelta(hours=6)
@@ -1714,6 +1769,11 @@ schedule = {
         "task": "consoleme.celery_tasks.celery_tasks.cache_self_service_typeahead_task",
         "options": {"expires": 1000},
         "schedule": schedule_30_minute,
+    },
+    "trigger_credential_mapping_refresh_from_role_changes": {
+        "task": "consoleme.celery_tasks.celery_tasks.trigger_credential_mapping_refresh_from_role_changes",
+        "options": {"expires": 1000},
+        "schedule": schedule_minute,
     },
 }
 

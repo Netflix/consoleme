@@ -88,6 +88,8 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
 async def generate_and_store_credential_authorization_mapping() -> Dict[
     user_or_group, RoleAuthorizations
 ]:
+    # TODO: Retrieve old authorization mapping and compare to new one. Trigger server-side-cache deletions for any
+    # users whose allowances have changed
     authorization_mapping: Dict[user_or_group, RoleAuthorizations] = {}
 
     if config.get("cloud_credential_authorization_mapping.role_tags.enabled", True):
