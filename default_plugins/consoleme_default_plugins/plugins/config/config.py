@@ -3,14 +3,42 @@ import os
 import urllib.parse
 from typing import List
 
+from consoleme.lib.aws_secret_manager import get_aws_secret
+
+
+def split_s3_path(s3_path):
+    path_parts = s3_path.replace("s3://", "").split("/")
+    b = path_parts.pop(0)
+    k = "/".join(path_parts)
+    return b, k
+
 
 class Config:
     @staticmethod
     def get_config_location():
-        if os.environ.get("CONFIG_LOCATION"):
-            return os.environ.get("CONFIG_LOCATION")
+        config_location = os.environ.get("CONFIG_LOCATION")
+        default_save_location = f"{os.curdir}/consoleme.yaml"
+        if config_location:
+            if config_location.startswith("s3://"):
+                import boto3
+
+                client = boto3.client("s3")
+                bucket, key = split_s3_path(config_location)
+                obj = client.get_object(Bucket=bucket, Key=key)
+                s3_object_content = obj["Body"].read()
+                with open(default_save_location, "w") as f:
+                    f.write(s3_object_content.decode())
+            elif config_location.startswith("AWS_SECRETS_MANAGER:"):
+                secret_name = "".join(config_location.split("AWS_SECRETS_MANAGER:")[1:])
+                aws_secret_content = get_aws_secret(
+                    secret_name, os.environ.get("EC2_REGION", "us-east-1")
+                )
+                with open(default_save_location, "w") as f:
+                    f.write(aws_secret_content)
+            else:
+                return config_location
         config_locations: List[str] = [
-            f"{os.curdir}/consoleme.yaml",
+            default_save_location,
             os.path.expanduser("~/.config/consoleme/config.yaml"),
             "/etc/consoleme/config/config.yaml",
             "example_config/example_config_development.yaml",
@@ -21,8 +49,9 @@ class Config:
         raise Exception(
             "Unable to find ConsoleMe's configuration. It either doesn't exist, or "
             "ConsoleMe doesn't have permission to access it. Please set the CONFIG_LOCATION environment variable "
-            "to the path of the configuration. Otherwise, ConsoleMe will automatically search for the configuration "
-            f"in these locations: {', '.join(config_locations)}"
+            "to the path of the configuration, or to an s3 location with your configuration"
+            "(i.e: s3://YOUR_BUCKET/path/to/config.yaml). Otherwise, ConsoleMe will automatically search for the"
+            f"configuration in these locations: {', '.join(config_locations)}"
         )
 
     @staticmethod

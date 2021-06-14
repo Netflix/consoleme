@@ -93,7 +93,7 @@ celerybeat-schedule
 *.sage.py
 
 # Environments
-.env
+.env*
 .venv
 env/
 venv/
@@ -136,3 +136,7 @@ consoleme/templates/*
 
 # Local Build Artifact
 consoleme.tar.gz
+
+# Config
+consoleme.yaml
+

@@ -8,6 +8,7 @@ from consoleme.config import config
 from consoleme.exceptions.exceptions import InvalidRequestParameter, MustBeFte
 from consoleme.handlers.base import BaseAPIV1Handler, BaseHandler, BaseMtlsHandler
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import redis_get, redis_hgetall
 
@@ -108,20 +109,53 @@ async def handle_resource_type_ahead_request(cls):
     role_name = False
     if resource_type == "s3":
         topic = config.get("redis.s3_bucket_key", "S3_BUCKETS")
+        s3_bucket = config.get("account_resource_cache.s3_combined.bucket")
+        s3_key = config.get(
+            "account_resource_cache.s3_combined.file",
+            "account_resource_cache/cache_s3_combined_v1.json.gz",
+        )
     elif resource_type == "sqs":
         topic = config.get("redis.sqs_queues_key", "SQS_QUEUES")
+        s3_bucket = config.get("account_resource_cache.sqs_combined.bucket")
+        s3_key = config.get(
+            "account_resource_cache.sqs_combined.file",
+            "account_resource_cache/cache_sqs_queues_combined_v1.json.gz",
+        )
     elif resource_type == "sns":
         topic = config.get("redis.sns_topics_key ", "SNS_TOPICS")
+        s3_bucket = config.get("account_resource_cache.sns_topics_combined.bucket")
+        s3_key = config.get(
+            "account_resource_cache.sns_topics_topics_combined.file",
+            "account_resource_cache/cache_sns_topics_combined_v1.json.gz",
+        )
     elif resource_type == "iam_arn":
         topic = config.get("aws.iamroles_redis_key ", "IAM_ROLE_CACHE")
+        s3_bucket = config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+        )
+        s3_key = config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.file",
+            "account_resource_cache/cache_all_roles_v1.json.gz",
+        )
     elif resource_type == "iam_role":
         topic = config.get("aws.iamroles_redis_key ", "IAM_ROLE_CACHE")
+        s3_bucket = config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+        )
+        s3_key = config.get(
+            "cache_roles_across_accounts.all_roles_combined.s3.file",
+            "account_resource_cache/cache_all_roles_v1.json.gz",
+        )
         role_name = True
     elif resource_type == "account":
         topic = None
+        s3_bucket = None
+        s3_key = None
         topic_is_hash = False
     elif resource_type == "app":
         topic = config.get("celery.apps_to_roles.redis_key", "APPS_TO_ROLES")
+        s3_bucket = None
+        s3_key = None
         topic_is_hash = False
     else:
         cls.send_error(404, message=f"Invalid resource_type: {resource_type}")
@@ -130,8 +164,10 @@ async def handle_resource_type_ahead_request(cls):
     if not topic and resource_type != "account":
         raise InvalidRequestParameter("Invalid resource_type specified")
 
-    if topic and topic_is_hash:
-        data = await redis_hgetall(topic)
+    if topic and topic_is_hash and s3_key:
+        data = await retrieve_json_data_from_redis_or_s3(
+            redis_key=topic, redis_data_type="hash", s3_bucket=s3_bucket, s3_key=s3_key
+        )
     elif topic:
         data = await redis_get(topic)
 
@@ -200,6 +236,8 @@ async def handle_resource_type_ahead_request(cls):
                 )
 
     else:
+        if not data:
+            return []
         for k, v in data.items():
             if account_id and k != account_id:
                 continue

@@ -35,8 +35,10 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
     )
     @patch("consoleme.lib.aws.RedisHandler", mock_policy_redis)
     @patch("consoleme.handlers.base.auth")
-    @patch("consoleme.handlers.v1.policies.redis_hgetall")
-    def test_resource_typeahead(self, mock_redis_hgetall, mock_auth):
+    @patch("consoleme.handlers.v1.policies.retrieve_json_data_from_redis_or_s3")
+    def test_resource_typeahead(
+        self, mock_retrieve_json_data_from_redis_or_s3, mock_auth
+    ):
         from consoleme.config import config
 
         mock_auth.validate_certificate.return_value = create_future(True)
@@ -67,7 +69,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         )
         self.assertEqual(response.code, 400)
         result = create_future({"123456789012": '["abucket1", "abucket2"]'})
-        mock_redis_hgetall.return_value = result
+        mock_retrieve_json_data_from_redis_or_s3.return_value = result
         account_id = "123456789012"
         resource = "s3"
         search = "a"
