@@ -4,7 +4,7 @@ from botocore.exceptions import ClientError
 from consoleme.config import config
 
 ddb = boto3.client(
-    "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name="us-east-1"
+    "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name=config.region
 )
 
 
@@ -20,6 +20,10 @@ try:
             {"AttributeName": "accountId", "KeyType": "RANGE"},
         ],
         ProvisionedThroughput={"ReadCapacityUnits": 100, "WriteCapacityUnits": 100},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
     )
 
     ddb.update_time_to_live(
@@ -39,6 +43,10 @@ try:
         KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],  # Partition key
         AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
         ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
     )
 except ClientError as e:
     print(
@@ -66,6 +74,10 @@ try:
             }
         ],
         ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
     )
 except ClientError as e:
     print(
@@ -97,6 +109,10 @@ try:
             }
         ],
         ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
     )
 except ClientError as e:
     print(
@@ -116,6 +132,10 @@ try:
             {"AttributeName": "request_id", "AttributeType": "S"},
         ],
         ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
     )
 except ClientError as e:
     print(
@@ -130,6 +150,10 @@ try:
         KeySchema=[{"AttributeName": "username", "KeyType": "HASH"}],  # Partition key
         AttributeDefinitions=[{"AttributeName": "username", "AttributeType": "S"}],
         ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
     )
 except ClientError as e:
     print(
