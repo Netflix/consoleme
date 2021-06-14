@@ -3,9 +3,14 @@ from botocore.exceptions import ClientError
 
 from consoleme.config import config
 
-ddb = boto3.client(
-    "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name=config.region
-)
+if config.get("dynamodb_server"):
+	ddb = boto3.client(
+	    "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name=config.region
+	)
+else:
+	ddb = boto3.client(
+        "dynamodb", region_name=config.region
+    )
 
 
 try:
