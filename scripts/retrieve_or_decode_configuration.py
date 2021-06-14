@@ -55,7 +55,8 @@ s3_config_path = os.environ.get("CONSOLEME_CONFIG_S3")
 if not base64_config and not s3_config_path:
     logging.warning(
         "Neither the CONSOLEME_CONFIG_B64 or CONSOLEME_CONFIG_S3 environment variables are defined. This is required "
-        "to retrieve ConsoleMe's configuration via S3, or decode it from Base64. Exiting"
+        "to retrieve a custom ConsoleMe configuration via S3, or decode it from Base64. This warning is safe to ignore "
+        "if you're just testing ConsoleMe and want to rely on the default configuration."
     )
     sys.exit(0)
 if base64_config and s3_config_path:

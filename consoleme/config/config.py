@@ -5,6 +5,7 @@ import logging
 import os
 import socket
 import sys
+import threading
 import time
 from logging import LoggerAdapter, LogRecord
 from threading import Timer
@@ -112,7 +113,7 @@ class Configuration(object):
         ddb = UserDynamoHandler()
         red = RedisHandler().redis_sync()
 
-        while True:
+        while threading.main_thread().is_alive():
             self.load_config_from_dynamo(ddb, red)
             time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
 
@@ -126,7 +127,7 @@ class Configuration(object):
         from consoleme.lib.redis import RedisHandler
 
         red = RedisHandler().redis_sync()
-        while True:
+        while threading.main_thread().is_alive():
             red.flushdb()
             time.sleep(self.get("redis.purge_redislite_cache_interval", 1800))
 
@@ -155,7 +156,7 @@ class Configuration(object):
 
     def reload_config(self):
         # We don't want to start additional background threads when we're reloading static configuration.
-        while True:
+        while threading.main_thread().is_alive():
             async_to_sync(self.load_config)(
                 allow_automatically_reload_configuration=False,
                 allow_start_background_threads=False,
