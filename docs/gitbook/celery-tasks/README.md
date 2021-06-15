@@ -144,4 +144,3 @@ ConsoleMe uses [**Celery**](https://docs.celeryproject.org/en/stable/getting-sta
     </tr>
   </tbody>
 </table>
-

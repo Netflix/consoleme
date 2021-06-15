@@ -5,6 +5,7 @@ import logging
 import os
 import socket
 import sys
+import threading
 import time
 from logging import LoggerAdapter, LogRecord
 from threading import Timer
@@ -112,7 +113,7 @@ class Configuration(object):
         ddb = UserDynamoHandler()
         red = RedisHandler().redis_sync()
 
-        while True:
+        while threading.main_thread().is_alive():
             self.load_config_from_dynamo(ddb, red)
             time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
 
@@ -126,7 +127,7 @@ class Configuration(object):
         from consoleme.lib.redis import RedisHandler
 
         red = RedisHandler().redis_sync()
-        while True:
+        while threading.main_thread().is_alive():
             red.flushdb()
             time.sleep(self.get("redis.purge_redislite_cache_interval", 1800))
 
@@ -155,7 +156,7 @@ class Configuration(object):
 
     def reload_config(self):
         # We don't want to start additional background threads when we're reloading static configuration.
-        while True:
+        while threading.main_thread().is_alive():
             async_to_sync(self.load_config)(
                 allow_automatically_reload_configuration=False,
                 allow_start_background_threads=False,
@@ -193,22 +194,28 @@ class Configuration(object):
         # We use different Timer intervals for our background threads to prevent logger objects from clashing, which
         # could cause duplicate log entries.
         if allow_start_background_threads and self.get("redis.use_redislite"):
-            Timer(1, self.purge_redislite_cache, ()).start()
+            t = Timer(1, self.purge_redislite_cache, ())
+            t.daemon = True
+            t.start()
 
         if allow_start_background_threads and self.get("config.load_from_dynamo", True):
-            Timer(2, self.load_config_from_dynamo_bg_thread, ()).start()
+            t = Timer(2, self.load_config_from_dynamo_bg_thread, ())
+            t.daemon = True
+            t.start()
 
         if allow_start_background_threads and self.get(
             "config.run_recurring_internal_tasks"
         ):
-            Timer(
-                3, config_plugin.internal_functions, kwargs={"cfg": self.config}
-            ).start()
+            t = Timer(3, config_plugin.internal_functions, kwargs={"cfg": self.config})
+            t.daemon = True
+            t.start()
 
         if allow_automatically_reload_configuration and self.get(
             "config.automatically_reload_configuration"
         ):
-            Timer(4, self.reload_config, ()).start()
+            t = Timer(4, self.reload_config, ())
+            t.daemon = True
+            t.start()
 
     def get(
         self, key: str, default: Optional[Union[List[str], int, bool, str, Dict]] = None
