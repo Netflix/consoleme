@@ -26,6 +26,7 @@ config_plugin_entrypoint = os.environ.get(
     "CONSOLEME_CONFIG_ENTRYPOINT", "default_config"
 )
 config_plugin = get_plugin_by_name(config_plugin_entrypoint)
+main_exit_flag = threading.Event()
 
 
 def dict_merge(dct: dict, merge_dct: dict):
@@ -115,7 +116,18 @@ class Configuration(object):
 
         while threading.main_thread().is_alive():
             self.load_config_from_dynamo(ddb, red)
-            time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
+            # Wait till main exit flag is set OR a fixed timeout
+            if main_exit_flag.wait(
+                timeout=self.get("dynamic_config.dynamo_load_interval", 60)
+            ):
+                break
+
+    def __set_flag_on_main_exit(self):
+        # while main thread is active, do nothing
+        while threading.main_thread().is_alive():
+            time.sleep(1)
+        # Main thread exited, signal to other threads
+        main_exit_flag.set()
 
     def purge_redislite_cache(self):
         """
@@ -129,7 +141,11 @@ class Configuration(object):
         red = RedisHandler().redis_sync()
         while threading.main_thread().is_alive():
             red.flushdb()
-            time.sleep(self.get("redis.purge_redislite_cache_interval", 1800))
+            # Wait till main exit flag is set OR a fixed timeout
+            if main_exit_flag.wait(
+                timeout=self.get("redis.purge_redislite_cache_interval", 1800)
+            ):
+                break
 
     async def merge_extended_paths(self, extends, dir_path):
         for s in extends:
@@ -163,7 +179,11 @@ class Configuration(object):
             )
             if not self.get("config.automatically_reload_configuration"):
                 break
-            time.sleep(self.get("dynamic_config.reload_static_config_interval", 60))
+            # Wait till main exit flag is set OR a fixed timeout
+            if main_exit_flag.wait(
+                timeout=self.get("dynamic_config.reload_static_config_interval", 60)
+            ):
+                break
 
     async def load_config(
         self,
@@ -193,28 +213,27 @@ class Configuration(object):
 
         # We use different Timer intervals for our background threads to prevent logger objects from clashing, which
         # could cause duplicate log entries.
+        if allow_start_background_threads:
+            Timer(0, self.__set_flag_on_main_exit, ()).start()
+
         if allow_start_background_threads and self.get("redis.use_redislite"):
             t = Timer(1, self.purge_redislite_cache, ())
-            t.daemon = True
             t.start()
 
         if allow_start_background_threads and self.get("config.load_from_dynamo", True):
             t = Timer(2, self.load_config_from_dynamo_bg_thread, ())
-            t.daemon = True
             t.start()
 
         if allow_start_background_threads and self.get(
             "config.run_recurring_internal_tasks"
         ):
             t = Timer(3, config_plugin.internal_functions, kwargs={"cfg": self.config})
-            t.daemon = True
             t.start()
 
         if allow_automatically_reload_configuration and self.get(
             "config.automatically_reload_configuration"
         ):
             t = Timer(4, self.reload_config, ())
-            t.daemon = True
             t.start()
 
     def get(
