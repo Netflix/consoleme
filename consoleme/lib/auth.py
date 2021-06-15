@@ -200,7 +200,7 @@ def can_edit_attributes(
 
     if is_in_group(user, user_groups, [*config.get("groups.can_admin_restricted", []), *config.get("dynamic_config.groups.can_admin_restricted", [])]):
         return True
-    if is_in_group(user, user_groups, [config.get("groups.can_edit_attributes", []), *config.get("dynamic_config.groups.can_edit_attributes", [])]):
+    if is_in_group(user, user_groups, [*config.get("groups.can_edit_attributes", []), *config.get("dynamic_config.groups.can_edit_attributes", [])]):
         return True
     return False
 
