@@ -1786,3 +1786,5 @@ if config.get("celery.clear_tasks_for_development", False):
 
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"
+
+trigger_credential_mapping_refresh_from_role_changes.delay()

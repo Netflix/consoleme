@@ -21,7 +21,7 @@ _development_groups_override:
 
 # ConsoleMe uses a Local DynamoDB docker container for development. You won't want this setting in your
 # test/prod stacks.
-dynamodb_server: http://localhost:8005
+#dynamodb_server: http://localhost:8005
 
 # Whether to show terraform exporter tab or not
 export_to_terraform_enabled: true

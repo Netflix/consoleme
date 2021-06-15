@@ -17,13 +17,13 @@ async def detect_role_changes_and_update_cache():
     """
     This function detects role changes through event bridge rules, and forces a refresh of updated roles.
     """
-    # MAKE CONFIGURABLE
+    # TODO: MAKE CONFIGURABLE
     log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
-    queue_arn = "arn:aws:sqs:us-east-1:313219654698:consoleme-cloudtrail-role-events-eventbridge-queue"
+    queue_arn = "arn:aws:sqs:us-east-1:441660064727:consoleme-cloudtrail-role-events"
     queue_name = queue_arn.split(":")[-1]
     queue_account_number = queue_arn.split(":")[4]
     queue_region = queue_arn.split(":")[3]
-    queue_assume_role = ""
+    queue_assume_role = "ConsoleMe"
 
     conn = dict(
         account_number=queue_account_number,
@@ -43,9 +43,6 @@ async def detect_role_changes_and_update_cache():
                 role_arn = f"arn:aws:iam::{role_account_id}:role/{role_name}"
                 updated_roles.add(role_arn)
 
-                # TODO: Trigger refresh of this role
-                # TODO: Trigger credential authz mapping job
-                # TODO: Modify credential authz mapping job to delete cache of users affected by recent changes
             except Exception as e:
                 log.error({**log_data, "error": str(e)})
                 sentry_sdk.capture_exception()

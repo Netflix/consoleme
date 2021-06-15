@@ -1,5 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
+from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from consoleme.config import config
 
@@ -26,10 +27,21 @@ try:
         },
     )
 
-    ddb.update_time_to_live(
-        TableName="consoleme_iamroles_global",
-        TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
-    )
+    for attempt in Retrying(
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(3),
+        retry=retry_if_exception_type(
+            (
+                ddb.exceptions.ResourceNotFoundException,
+                ddb.exceptions.ResourceInUseException,
+            )
+        ),
+    ):
+        with attempt:
+            ddb.update_time_to_live(
+                TableName="consoleme_iamroles_global",
+                TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
+            )
 
 except ClientError as e:
     print(
