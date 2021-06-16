@@ -184,3 +184,14 @@ class TestCelerySync(TestCase):
             del CONFIG.config["aws"]["iamroles_redis_key"]
         else:
             CONFIG.config["aws"]["iamroles_redis_key"] = old_value
+
+    def test_trigger_credential_mapping_refresh_from_role_changes(self):
+        res = self.celery.trigger_credential_mapping_refresh_from_role_changes()
+        self.assertEqual(
+            res,
+            {
+                "function": "consoleme.celery_tasks.celery_tasks.trigger_credential_mapping_refresh_from_role_changes",
+                "message": "Successfully checked role changes",
+                "num_roles_changed": 1,
+            },
+        )
