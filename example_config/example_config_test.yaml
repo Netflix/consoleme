@@ -37,6 +37,12 @@ celery:
     - us-east-1
     - us-west-2
     - eu-west-1
+  trigger_credential_mapping_refresh_from_role_changes:
+    enabled: true
+
+event_bridge:
+  detect_role_changes_and_update_cache:
+    queue_arn: arn:aws:sqs:{region}:123456789012:consoleme-cloudtrail-role-events-test
 redis:
   host:
     us-east-1: null

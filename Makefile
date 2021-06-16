@@ -66,6 +66,7 @@ clean:
 	rm -rf build/
 	rm -rf *.egg-info
 	rm -f celerybeat-schedule.db
+	rm -f celerybeat-schedule
 	rm -rf consoleme.tar.gz
 	rm -rf ui/.npmrc ui/.yarnrc
 	find $(project) tests -name "*.pyc" -delete

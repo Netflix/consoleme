@@ -240,7 +240,15 @@ def refresh_dynamic_config_in_worker(**kwargs):
 
     dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
     if not dynamic_config:
-        log.error({**log_data, "error": "Unable to retrieve Dynamic Config from Redis"})
+        log.warn(
+            {
+                **log_data,
+                "error": (
+                    "Unable to retrieve Dynamic Config from Redis. "
+                    "This can be safely ignored if your dynamic config is empty."
+                ),
+            }
+        )
         return
     dynamic_config_j = json.loads(dynamic_config)
     if config.CONFIG.config.get("dynamic_config", {}) != dynamic_config_j:
@@ -1619,7 +1627,14 @@ def trigger_credential_mapping_refresh_from_role_changes():
     :return:
     """
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    roles_changed = async_to_sync(detect_role_changes_and_update_cache)()
+    if not config.get(
+        "celery.trigger_credential_mapping_refresh_from_role_changes.enabled"
+    ):
+        return {
+            "function": function,
+            "message": "Not running Celery task because it is not enabled.",
+        }
+    roles_changed = detect_role_changes_and_update_cache(app)
     log_data = {
         "function": function,
         "message": "Successfully checked role changes",
@@ -1629,36 +1644,21 @@ def trigger_credential_mapping_refresh_from_role_changes():
         # Trigger credential authorization mapping refresh. We don't want credential authorization mapping refreshes
         # running in parallel, so the cache_credential_authorization_mapping is protected to prevent parallel runs.
         # This task can run in parallel without negative impact.
-        cache_credential_authorization_mapping.delay()
+        cache_credential_authorization_mapping.apply_async(countdown=30)
     log.debug(log_data)
     return log_data
 
 
-@app.task(soft_time_limit=1800, **default_retry_kwargs)
-def retrieve_errors_from_cloudtrail():
+@app.task(soft_time_limit=60, **default_retry_kwargs)
+def refresh_iam_role(role_arn):
     """
-    This task triggers a role cache refresh for any role that a change was detected for. This feature requires an
-    Event Bridge rule monitoring Cloudtrail for your accounts for IAM role mutation.
+    This task is called on demand to asynchronously refresh an AWS IAM role in Redis/DDB
 
-    This task will trigger a credential authorization refresh if any changes were detected.
-
-    This task should run in all regions to force IAM roles to be refreshed in each region's cache on change.
-    :return:
     """
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    roles_changed = async_to_sync(detect_role_changes_and_update_cache)()
-    log_data = {
-        "function": function,
-        "message": "Successfully checked role changes",
-        "num_roles_changed": len(roles_changed),
-    }
-    if roles_changed:
-        # Trigger credential authorization mapping refresh. We don't want credential authorization mapping refreshes
-        # running in parallel, so the cache_credential_authorization_mapping is protected to prevent parallel runs.
-        # This task can run in parallel without negative impact.
-        cache_credential_authorization_mapping.delay()
-    log.debug(log_data)
-    return log_data
+    account_id = role_arn.split(":")[4]
+    async_to_sync(aws().fetch_iam_role)(
+        account_id, role_arn, force_refresh=True, run_sync=True
+    )
 
 
 schedule_30_minute = timedelta(seconds=1800)
@@ -1772,7 +1772,7 @@ schedule = {
     },
     "trigger_credential_mapping_refresh_from_role_changes": {
         "task": "consoleme.celery_tasks.celery_tasks.trigger_credential_mapping_refresh_from_role_changes",
-        "options": {"expires": 1000},
+        "options": {"expires": 300},
         "schedule": schedule_minute,
     },
 }
@@ -1786,5 +1786,3 @@ if config.get("celery.clear_tasks_for_development", False):
 
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"
-
-trigger_credential_mapping_refresh_from_role_changes()

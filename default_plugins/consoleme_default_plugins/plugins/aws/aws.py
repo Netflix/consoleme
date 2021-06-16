@@ -129,7 +129,11 @@ class Aws:
         return role
 
     async def fetch_iam_role(
-        self, account_id: str, role_arn: str, force_refresh: bool = False
+        self,
+        account_id: str,
+        role_arn: str,
+        force_refresh: bool = False,
+        run_sync=False,
     ) -> dict:
         """Fetch the IAM Role template from Redis and/or Dynamo.
 
@@ -190,42 +194,60 @@ class Aws:
                 tasks = []
                 role_name = role_arn.split("/")[-1]
                 # Instantiate a cached CloudAux client
-                client = await sync_to_async(boto3_cached_conn)(
-                    "iam",
-                    account_number=account_id,
-                    assume_role=config.get("policies.role_name"),
-                    retry_max_attempts=2,
-                )
+                if run_sync:
+                    client = boto3_cached_conn(
+                        "iam",
+                        account_number=account_id,
+                        assume_role=config.get("policies.role_name"),
+                        read_only=True,
+                        retry_max_attempts=2,
+                    )
+                else:
+                    client = await sync_to_async(boto3_cached_conn)(
+                        "iam",
+                        account_number=account_id,
+                        assume_role=config.get("policies.role_name"),
+                        read_only=True,
+                        retry_max_attempts=2,
+                    )
                 conn = {
                     "account_number": account_id,
                     "assume_role": config.get("policies.role_name"),
                     "region": config.region,
                 }
-
-                role_details = asyncio.ensure_future(
-                    sync_to_async(client.get_role)(RoleName=role_name)
-                )
-                tasks.append(role_details)
-
-                all_tasks = [
-                    get_role_managed_policies,
-                    get_role_inline_policies,
-                    list_role_tags,
-                ]
-
-                for t in all_tasks:
-                    tasks.append(
-                        asyncio.ensure_future(
-                            sync_to_async(t)({"RoleName": role_name}, **conn)
-                        )
+                if run_sync:
+                    role = client.get_role(RoleName=role_name)["Role"]
+                    role["ManagedPolicies"] = get_role_managed_policies(
+                        {"RoleName": role_name}, **conn
                     )
+                    role["InlinePolicies"] = get_role_inline_policies(
+                        {"RoleName": role_name}, **conn
+                    )
+                else:
+                    role_details = asyncio.ensure_future(
+                        sync_to_async(client.get_role)(RoleName=role_name)
+                    )
+                    tasks.append(role_details)
 
-                responses = asyncio.gather(*tasks)
-                result = await responses
-                role = result[0]["Role"]
-                role["ManagedPolicies"] = result[1]
-                role["InlinePolicies"] = result[2]
-                role["Tags"] = result[3]
+                    all_tasks = [
+                        get_role_managed_policies,
+                        get_role_inline_policies,
+                        list_role_tags,
+                    ]
+
+                    for t in all_tasks:
+                        tasks.append(
+                            asyncio.ensure_future(
+                                sync_to_async(t)({"RoleName": role_name}, **conn)
+                            )
+                        )
+
+                    responses = asyncio.gather(*tasks)
+                    async_task_result = await responses
+                    role = async_task_result[0]["Role"]
+                    role["ManagedPolicies"] = async_task_result[1]
+                    role["InlinePolicies"] = async_task_result[2]
+                    role["Tags"] = async_task_result[3]
 
             except ClientError as ce:
                 if ce.response["Error"]["Code"] == "NoSuchEntity":
