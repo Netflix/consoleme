@@ -1,4 +1,5 @@
 import asyncio
+import os
 from typing import List
 
 from asgiref.sync import sync_to_async
@@ -26,7 +27,7 @@ async def bound_fetch_sync(sem, fn, args, kwargs):
         }
 
 
-async def run_in_parallel(task_list: List, threads=1000, sync=True):
+async def run_in_parallel(task_list: List, threads=os.cpu_count(), sync=True):
     async def run():
         sem = asyncio.Semaphore(threads)
         futures = []

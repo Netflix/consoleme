@@ -365,6 +365,77 @@ def iamrole_table(dynamodb):
 
 
 @pytest.fixture(autouse=True, scope="session")
+def sqs_queue(sqs):
+    # Create the table:
+    sqs.create_queue(
+        QueueName="consoleme-cloudtrail-role-events-test",
+    )
+
+    queue_url = sqs.get_queue_url(QueueName="consoleme-cloudtrail-role-events-test")
+    message = json.dumps(
+        {
+            "Message": json.dumps(
+                {
+                    "version": "0",
+                    "id": "825688d9-11c0-e149-0ef0-7c996f7f1468",
+                    "detail-type": "AWS API Call via CloudTrail",
+                    "source": "aws.iam",
+                    "account": "123456789012",
+                    "time": "2021-06-15T18:51:57Z",
+                    "region": "us-east-1",
+                    "resources": [],
+                    "detail": {
+                        "eventVersion": "1.08",
+                        "userIdentity": {
+                            "type": "AssumedRole",
+                            "principalId": "ABC123:i-12345",
+                            "arn": "arn:aws:sts::123456789012:assumed-role/role1/3957",
+                            "accountId": "123456789012",
+                            "accessKeyId": "ACESSKEYID",
+                            "sessionContext": {
+                                "sessionIssuer": {
+                                    "type": "Role",
+                                    "principalId": "PRINCIPALID",
+                                    "arn": "arn:aws:iam::123456789012:role/role1",
+                                    "accountId": "123456789012",
+                                    "userName": "role1",
+                                },
+                                "webIdFederationData": {},
+                                "attributes": {
+                                    "creationDate": "2021-06-15T18:51:56Z",
+                                    "mfaAuthenticated": "false",
+                                },
+                            },
+                        },
+                        "eventTime": "2021-06-15T18:51:57Z",
+                        "eventSource": "iam.amazonaws.com",
+                        "eventName": "AttachRolePolicy",
+                        "awsRegion": "us-east-1",
+                        "sourceIPAddress": "1.2.3.4",
+                        "userAgent": "Botocore",
+                        "requestParameters": {
+                            "roleName": "role1",
+                            "policyArn": "arn:aws:iam::123456789012:policy/1",
+                        },
+                        "responseElements": None,
+                        "requestID": "22ba2e61-aae9-4a8f-80af-e1d20d3b07b5",
+                        "eventID": "2ee753fa-c79c-4b2a-9584-7a011d6fe763",
+                        "readOnly": False,
+                        "eventType": "AwsApiCall",
+                        "managementEvent": True,
+                        "recipientAccountId": "123456789012",
+                        "eventCategory": "Management",
+                    },
+                }
+            )
+        }
+    )
+    sqs.send_message(QueueUrl=queue_url["QueueUrl"], MessageBody=message)
+
+    yield sqs
+
+
+@pytest.fixture(autouse=True, scope="session")
 def policy_requests_table(dynamodb):
     # Create the table:
     dynamodb.create_table(
