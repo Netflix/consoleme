@@ -10,11 +10,9 @@ from consoleme.exceptions.exceptions import (
     MissingConfigurationValue,
 )
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.threading import GlobalThreadPool
 
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 log = config.get_logger()
-thread_pool = GlobalThreadPool()
 
 
 def detect_role_changes_and_update_cache(celery_app):
