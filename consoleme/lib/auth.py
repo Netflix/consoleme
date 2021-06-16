@@ -140,7 +140,14 @@ def can_admin_all(user: str, user_groups: List[str]):
     if application_admin:
         if user == application_admin or application_admin in user_groups:
             return True
-    if is_in_group(user, user_groups, config.get("groups.can_admin", [])):
+    if is_in_group(
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_admin", []),
+            *config.get("dynamic_config.groups.can_admin", []),
+        ],
+    ):
         return True
     return False
 
@@ -151,7 +158,14 @@ def can_create_roles(
 ) -> bool:
     if can_admin_all(user, user_groups):
         return True
-    if is_in_group(user, user_groups, config.get("groups.can_create_roles", [])):
+    if is_in_group(
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_create_roles", []),
+            *config.get("dynamic_config.groups.can_create_roles", []),
+        ],
+    ):
         return True
     return False
 
@@ -159,13 +173,23 @@ def can_create_roles(
 def can_admin_policies(user: str, user_groups: List[str]) -> bool:
     if can_admin_all(user, user_groups):
         return True
-    if is_in_group(user, user_groups, config.get("groups.can_admin_policies", [])):
+    if is_in_group(
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_admin_policies", []),
+            *config.get("dynamic_config.groups.can_admin_policies", []),
+        ],
+    ):
         return True
     return False
 
 
 def can_delete_roles_app(app_name):
-    if app_name in config.get("groups.can_delete_roles_apps", []):
+    if app_name in [
+        *config.get("groups.can_delete_roles_apps", []),
+        *config.get("dynamic_config.groups.can_delete_roles_apps", []),
+    ]:
         return True
     return False
 
@@ -176,7 +200,14 @@ def can_delete_roles(
 ) -> bool:
     if can_admin_all(user, user_groups):
         return True
-    if is_in_group(user, user_groups, config.get("groups.can_delete_roles", [])):
+    if is_in_group(
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_delete_roles", []),
+            *config.get("dynamic_config.groups.can_delete_roles", []),
+        ],
+    ):
         return True
     return False
 
@@ -187,7 +218,14 @@ def can_edit_dynamic_config(
 ) -> bool:
     if can_admin_all(user, user_groups):
         return True
-    if is_in_group(user, user_groups, config.get("groups.can_edit_config", [])):
+    if is_in_group(
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_edit_config", []),
+            *config.get("dynamic_config.groups.can_edit_config", []),
+        ],
+    ):
         return True
     return False
 
@@ -198,9 +236,23 @@ def can_edit_attributes(
     if can_admin_all(user, user_groups):
         return True
 
-    if is_in_group(user, user_groups, config.get("groups.can_admin_restricted", [])):
+    if is_in_group(
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_admin_restricted", []),
+            *config.get("dynamic_config.groups.can_admin_restricted", []),
+        ],
+    ):
         return True
-    if is_in_group(user, user_groups, config.get("groups.can_edit_attributes", [])):
+    if is_in_group(
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_edit_attributes", []),
+            *config.get("dynamic_config.groups.can_edit_attributes", []),
+        ],
+    ):
         return True
     return False
 
@@ -215,10 +267,24 @@ def can_modify_members(
     if can_admin_all(user, user_groups):
         return True
 
-    if is_in_group(user, user_groups, config.get("groups.can_admin_restricted", [])):
+    if is_in_group(
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_admin_restricted", []),
+            *config.get("dynamic_config.groups.can_admin_restricted", []),
+        ],
+    ):
         return True
 
-    if is_in_group(user, user_groups, config.get("groups.can_modify_members", [])):
+    if is_in_group(
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_modify_members", []),
+            *config.get("dynamic_config.groups.can_modify_members", []),
+        ],
+    ):
         return True
     return False
 
@@ -229,18 +295,29 @@ def can_edit_sensitive_attributes(
     if can_admin_all(user, user_groups):
         return True
     if is_in_group(
-        user, user_groups, config.get("groups.can_edit_sensitive_attributes", [])
+        user,
+        user_groups,
+        [
+            *config.get("groups.can_edit_sensitive_attributes", []),
+            *config.get("dynamic_config.groups.can_edit_sensitive_attributes", []),
+        ],
     ):
         return True
     return False
 
 
 def is_sensitive_attr(attribute):
-    for attr in config.get("groups.attributes.boolean", []):
+    for attr in [
+        *config.get("groups.attributes.boolean", []),
+        *config.get("dynamic_config.groups.attributes.boolean", []),
+    ]:
         if attr.get("name") == attribute:
             return attr.get("sensitive", False)
 
-    for attr in config.get("groups.attributes.list", []):
+    for attr in [
+        *config.get("groups.attributes.list", []),
+        *config.get("dynamic_config.groups.attributes.list", []),
+    ]:
         if attr.get("name") == attribute:
             return attr.get("sensitive", False)
     return False
