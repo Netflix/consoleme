@@ -75,7 +75,10 @@ async def get_extended_request_helper():
 
     extended_request = ExtendedRequestModel(
         id="1234",
-        arn="arn:aws:iam::123456789012:role/test",
+        principal=dict(
+            principal_type="AwsResource",
+            principal_arn="arn:aws:iam::123456789012:role/test",
+        ),
         timestamp=int(time.time()),
         justification="Test justification",
         requester_email="user@example.com",
@@ -614,7 +617,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         }
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -737,7 +743,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -861,7 +870,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -987,7 +999,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -1052,7 +1067,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -1116,7 +1134,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -1233,7 +1254,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -1319,7 +1343,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -1392,7 +1419,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -1496,7 +1526,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -1586,7 +1619,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",
@@ -1681,7 +1717,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         extended_request = ExtendedRequestModel(
             id="1234",
-            arn="arn:aws:iam::123456789012:role/test",
+            principal=dict(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/test",
+            ),
             timestamp=int(time.time()),
             justification="Test justification",
             requester_email="user@example.com",

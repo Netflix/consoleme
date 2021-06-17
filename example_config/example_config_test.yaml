@@ -102,6 +102,10 @@ cloud_credential_authorization_mapping:
   internal_plugin:
     enabled: true
 
+logging:
+  json_formatter:
+    indent: 2
+
 # You'll probably want to override FUNCTION to generate this data with your own business logic.
 application_settings:
   application_1:

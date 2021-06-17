@@ -517,7 +517,6 @@ components:
         - id
         - arn
         - timestamp
-        - justification
         - requester_email
         - approvers
         - request_status
@@ -525,11 +524,10 @@ components:
         id:
           type: string
           readOnly: true
-        arn:
-          type: string
-          description: ARN of principal being modified
-          example: arn:aws:iam::123456789012:role/super_awesome_admin
-          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        principal:
+          anyOf:
+            - $ref: "#/components/schemas/AwsResourcePrincipalModel"
+            - $ref: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
         timestamp:
           type: string
           format: date-time
@@ -978,6 +976,31 @@ components:
           default: false
         updated_by:
           type: string
+    GenericFileChangeModel:
+      allOf:
+        - $ref: "#/components/schemas/ChangeModel"
+        - type: object
+          properties:
+            resource_name:
+              type: string
+            action:
+              $ref: "#/components/schemas/Action"
+            change_type:
+              type: string
+              pattern: "generic_file"
+            policy:
+              type: object
+              description: JSON policy document
+            old_policy:
+              type: object
+              description: JSON policy document
+            encoding:
+              type: string
+              enum:
+                - yaml
+                - json
+                - hcl
+                - text
     InlinePolicyChangeModel:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
@@ -1116,6 +1139,7 @@ components:
               - $ref: "#/components/schemas/ResourcePolicyChangeModel"
               - $ref: "#/components/schemas/AssumeRolePolicyChangeModel"
               - $ref: "#/components/schemas/ResourceTagChangeModel"
+              - $ref: "#/components/schemas/GenericFileChangeModel"
     ArnArray:
       type: array
       items:
@@ -1493,12 +1517,14 @@ components:
       type: object
       required:
         - changes
-        - justification
       properties:
         changes:
           $ref: "#/components/schemas/ChangeModelArray"
         justification:
           type: string
+        dry_run:
+          type: boolean
+          default: False
         admin_auto_approve:
           type: boolean
           default: False
@@ -1517,6 +1543,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ActionResult"
+        extended_request:
+          $ref: "#/components/schemas/ExtendedRequestModel"
     RequestModificationBaseModel:
       type: object
       required:

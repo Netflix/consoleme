@@ -438,7 +438,7 @@ class UserDynamoHandler(BaseDynamoHandler):
         """
         new_request = {
             "request_id": extended_request.id,
-            "arn": extended_request.arn,
+            "principal": extended_request.principal.dict(),
             "status": extended_request.request_status.value,
             "justification": extended_request.justification,
             "request_time": extended_request.timestamp,
