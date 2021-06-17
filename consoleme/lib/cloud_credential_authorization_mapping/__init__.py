@@ -1,6 +1,7 @@
 import sys
 import time
-from typing import Dict
+from collections import defaultdict
+from typing import Dict, List
 
 import sentry_sdk
 from pydantic.json import pydantic_encoder
@@ -83,6 +84,43 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
                 if include_cli:
                     authorized_roles.update(group_mapping.authorized_roles_cli_only)
         return sorted(authorized_roles)
+
+
+async def generate_and_store_reverse_authorization_mapping(
+    authorization_mapping: Dict[user_or_group, RoleAuthorizations]
+) -> Dict[str, List[user_or_group]]:
+    reverse_mapping = defaultdict(list)
+    for identity, roles in authorization_mapping.items():
+        for role in roles.authorized_roles:
+            reverse_mapping[role].append(identity)
+        for role in roles.authorized_roles_cli_only:
+            reverse_mapping[role].append(identity)
+
+    # Store in S3 and Redis
+    redis_topic = config.get(
+        "generate_and_store_reverse_authorization_mapping.redis_key",
+        "REVERSE_AUTHORIZATION_MAPPING_V1",
+    )
+    s3_bucket = None
+    s3_key = None
+    if config.region == config.get("celery.active_region", config.region) or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get(
+            "generate_and_store_reverse_authorization_mapping.s3.bucket"
+        )
+        s3_key = config.get(
+            "generate_and_store_reverse_authorization_mapping.s3.file",
+            "reverse_authorization_mapping/reverse_authorization_mapping_v1.json.gz",
+        )
+    await store_json_results_in_redis_and_s3(
+        reverse_mapping,
+        redis_topic,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+        json_encoder=pydantic_encoder,
+    )
+    return reverse_mapping
 
 
 async def generate_and_store_credential_authorization_mapping() -> Dict[

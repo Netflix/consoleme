@@ -1708,13 +1708,13 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/ServiceControlPolicyModel"
-    RoleAccessModel:
+    RoleAccessResponseModel:
       type: object
       properties:
-        id:
+        authorized_roles:
           type: string
           example: owner@example.com
-        type:
+        authorized_roles_cli_only:
           type: string
           enum:
             - group
