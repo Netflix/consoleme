@@ -382,6 +382,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WebResponse"
+  /audit/roles/{account_id}/{role_name}/access:
+    get:
+      summary:
+      tags:
+        - audit
+        - privileged
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleAccessArray"
+        "404":
+          description: Missing or Malformed data, please check errors for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
 components:
   responses:
     DefaultErrorResponse:
@@ -1686,3 +1708,18 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/ServiceControlPolicyModel"
+    RoleAccessModel:
+      type: object
+      properties:
+        id:
+          type: string
+          example: owner@example.com
+        type:
+          type: string
+          enum:
+            - group
+            - user
+    RoleAccessArray:
+      type: array
+      items:
+        $ref: "#/components/schemas/RoleAccessModel"
