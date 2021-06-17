@@ -514,8 +514,7 @@ components:
     RequestModel:
       type: object
       required:
-        - id
-        - arn
+        - principal
         - timestamp
         - requester_email
         - approvers
@@ -981,19 +980,19 @@ components:
         - $ref: "#/components/schemas/ChangeModel"
         - type: object
           properties:
-            resource_name:
-              type: string
+            principal:
+              anyOf:
+                - $ref: "#/components/schemas/AwsResourcePrincipalModel"
+                - $ref: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
             action:
               $ref: "#/components/schemas/Action"
             change_type:
               type: string
               pattern: "generic_file"
             policy:
-              type: object
-              description: JSON policy document
+              type: string
             old_policy:
-              type: object
-              description: JSON policy document
+              type: string
             encoding:
               type: string
               enum:

@@ -43,6 +43,9 @@ from consoleme.lib.policies import (
     send_communications_new_comment,
     send_communications_policy_change_request_v2,
 )
+from consoleme.lib.templated_resources.requests import (
+    generate_honeybee_request_from_change_model_array,
+)
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import (
     Action,
@@ -179,99 +182,114 @@ async def generate_request_from_change_model_array(
             split_items[0][: (64 - (len(split_items[-1]) + 1))] + "@" + split_items[-1]
         )
 
-    account_id = await get_resource_account(primary_principal.principal_arn)
-    arn_parsed = parse_arn(primary_principal.principal_arn)
-    arn_type = arn_parsed["service"]
-    arn_name = arn_parsed["resource"]
-    arn_region = arn_parsed["region"]
-    try:
-        arn_url = await get_url_for_resource(
-            arn=primary_principal.principal_arn,
-            resource_type=arn_type,
-            account_id=account_id,
-            region=arn_region,
-            resource_name=arn_name,
-        )
-    except ResourceNotFound:
-        # should never reach this case...
-        arn_url = ""
+    if primary_principal.principal_type == "AwsResource":
+        # TODO: Separate this out into another function
+        account_id = await get_resource_account(primary_principal.principal_arn)
+        arn_parsed = parse_arn(primary_principal.principal_arn)
+        arn_type = arn_parsed["service"]
+        arn_name = arn_parsed["resource"]
+        arn_region = arn_parsed["region"]
+        try:
+            arn_url = await get_url_for_resource(
+                arn=primary_principal.principal_arn,
+                resource_type=arn_type,
+                account_id=account_id,
+                region=arn_region,
+                resource_name=arn_name,
+            )
+        except ResourceNotFound:
+            # should never reach this case...
+            arn_url = ""
 
-    # Only one assume role policy change allowed per request
-    if len(assume_role_policy_changes) > 1:
-        log_data["message"] = "One one assume role policy change supported per request."
-        log.error(log_data)
-        raise InvalidRequestParameter(log_data["message"])
-
-    if (
-        len(inline_policy_changes) > 0
-        or len(managed_policy_changes) > 0
-        or len(assume_role_policy_changes) > 0
-        or len(permissions_boundary_changes) > 0
-    ):
-        # for inline/managed/assume role policies, principal arn must be a role
-        if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+        # Only one assume role policy change allowed per request
+        if len(assume_role_policy_changes) > 1:
             log_data[
                 "message"
-            ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
+            ] = "One one assume role policy change supported per request."
             log.error(log_data)
             raise InvalidRequestParameter(log_data["message"])
-        role_name = arn_parsed["resource_path"].split("/")[-1]
-        role = await get_role_details(account_id, role_name=role_name, extended=True)
-        if not role:
-            log_data["message"] = "Principal not found"
-            log.error(log_data)
-            raise InvalidRequestParameter(log_data["message"])
-        for inline_policy_change in inline_policy_changes:
-            inline_policy_change.policy_name = await generate_policy_name(
-                inline_policy_change.policy_name, user
-            )
-            await validate_inline_policy_change(inline_policy_change, user, role)
-        for managed_policy_change in managed_policy_changes:
-            await validate_managed_policy_change(managed_policy_change, user, role)
-        for permissions_boundary_change in permissions_boundary_changes:
-            await validate_permissions_boundary_change(
-                permissions_boundary_change, user, role
-            )
-        for assume_role_policy_change in assume_role_policy_changes:
-            await validate_assume_role_policy_change(
-                assume_role_policy_change, user, role
-            )
-        for resource_tag_change in resource_tag_changes:
-            await validate_resource_tag_change(resource_tag_change, user, role)
 
-    # TODO: validate resource policy logic when we are ready to apply that
+        if (
+            len(inline_policy_changes) > 0
+            or len(managed_policy_changes) > 0
+            or len(assume_role_policy_changes) > 0
+            or len(permissions_boundary_changes) > 0
+        ):
+            # for inline/managed/assume role policies, principal arn must be a role
+            if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+                log_data[
+                    "message"
+                ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
+                log.error(log_data)
+                raise InvalidRequestParameter(log_data["message"])
+            role_name = arn_parsed["resource_path"].split("/")[-1]
+            role = await get_role_details(
+                account_id, role_name=role_name, extended=True
+            )
+            if not role:
+                log_data["message"] = "Principal not found"
+                log.error(log_data)
+                raise InvalidRequestParameter(log_data["message"])
+            for inline_policy_change in inline_policy_changes:
+                inline_policy_change.policy_name = await generate_policy_name(
+                    inline_policy_change.policy_name, user
+                )
+                await validate_inline_policy_change(inline_policy_change, user, role)
+            for managed_policy_change in managed_policy_changes:
+                await validate_managed_policy_change(managed_policy_change, user, role)
+            for permissions_boundary_change in permissions_boundary_changes:
+                await validate_permissions_boundary_change(
+                    permissions_boundary_change, user, role
+                )
+            for assume_role_policy_change in assume_role_policy_changes:
+                await validate_assume_role_policy_change(
+                    assume_role_policy_change, user, role
+                )
+            for resource_tag_change in resource_tag_changes:
+                await validate_resource_tag_change(resource_tag_change, user, role)
 
-    # If here, request is valid and can successfully be generated
-    request_changes = ChangeModelArray(
-        changes=inline_policy_changes
-        + managed_policy_changes
-        + resource_policy_changes
-        + assume_role_policy_changes
-        + resource_tag_changes
-        + permissions_boundary_changes
-    )
-    extended_request = ExtendedRequestModel(
-        admin_auto_approve=request_creation.admin_auto_approve,
-        id=extended_request_uuid,
-        principal=primary_principal,
-        timestamp=int(time.time()),
-        justification=request_creation.justification,
-        requester_email=user,
-        approvers=[],  # TODO: approvers logic (future feature)
-        request_status=RequestStatus.pending,
-        changes=request_changes,
-        requester_info=UserModel(
-            email=user,
-            extended_info=await auth.get_user_info(user),
-            details_url=config.config_plugin().get_employee_info_url(user),
-            photo_url=config.config_plugin().get_employee_photo_url(user),
-        ),
-        comments=[],
-        cross_account=False,
-        arn_url=arn_url,
-    )
-    extended_request = await populate_old_policies(extended_request, user, role)
-    extended_request = await generate_resource_policies(extended_request, user)
+        # TODO: validate resource policy logic when we are ready to apply that
+
+        # If here, request is valid and can successfully be generated
+        request_changes = ChangeModelArray(
+            changes=inline_policy_changes
+            + managed_policy_changes
+            + resource_policy_changes
+            + assume_role_policy_changes
+            + resource_tag_changes
+            + permissions_boundary_changes
+        )
+        extended_request = ExtendedRequestModel(
+            admin_auto_approve=request_creation.admin_auto_approve,
+            id=extended_request_uuid,
+            principal=primary_principal,
+            timestamp=int(time.time()),
+            justification=request_creation.justification,
+            requester_email=user,
+            approvers=[],  # TODO: approvers logic (future feature)
+            request_status=RequestStatus.pending,
+            changes=request_changes,
+            requester_info=UserModel(
+                email=user,
+                extended_info=await auth.get_user_info(user),
+                details_url=config.config_plugin().get_employee_info_url(user),
+                photo_url=config.config_plugin().get_employee_photo_url(user),
+            ),
+            comments=[],
+            cross_account=False,
+            arn_url=arn_url,
+        )
+        extended_request = await populate_old_policies(extended_request, user, role)
+        extended_request = await generate_resource_policies(extended_request, user)
+
+    elif primary_principal.principal_type == "HoneybeeAwsResourceTemplate":
+        # TODO: Generate extended request from HB template
+        extended_request = await generate_honeybee_request_from_change_model_array(
+            request_creation, user
+        )
+    else:
+        raise Exception("Unknown principal type")
+
     return extended_request
 
 
