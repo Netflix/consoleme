@@ -15,7 +15,7 @@ credential_mapping = CredentialAuthorizationMapping()
 
 
 class RoleAccessHandler(BaseMtlsHandler):
-    """Handler for /api/v2/audit/role/{accountNumber}/{roleName}/access
+    """Handler for /api/v2/audit/roles/{accountNumber}/{roleName}/access
 
     Returns a list of groups with access to the requested role
     """
@@ -27,7 +27,7 @@ class RoleAccessHandler(BaseMtlsHandler):
 
     async def get(self, account_id, role_name):
         """
-        GET /api/v2/audit/role/{accountNumber}/{roleName}/access
+        GET /api/v2/audit/roles/{accountNumber}/{roleName}/access
         """
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
