@@ -23,6 +23,7 @@ from consoleme.handlers.v1.policies import (
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
+from consoleme.handlers.v2.audit import RoleAccessHandler
 from consoleme.handlers.v2.challenge import (
     ChallengeGeneratorHandler,
     ChallengePollerHandler,
@@ -186,6 +187,7 @@ def make_app(jwt_validator=None):
         ),
         (r"/noauth/v1/challenge_generator/(.*)", ChallengeGeneratorHandler),
         (r"/noauth/v1/challenge_poller/([a-zA-Z0-9_-]+)", ChallengePollerHandler),
+        (r"/api/v2/audit/roles/(\d{12})/(.*)/access", RoleAccessHandler),
         (r"/api/v2/.*", V2NotFoundHandler),
         (
             r"/(.*)",

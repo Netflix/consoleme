@@ -33,10 +33,15 @@ log = config.get_logger("consoleme")
 class CredentialAuthorizationMapping(metaclass=Singleton):
     def __init__(self) -> None:
         self.authorization_mapping = {}
-        self.last_update = 0
+        self.authorization_mapping_last_update = 0
+        self.reverse_mapping = {}
+        self.reverse_mapping_last_update = 0
 
     async def retrieve_credential_authorization_mapping(self):
-        if not self.authorization_mapping or int(time.time()) - self.last_update > 60:
+        if (
+            not self.authorization_mapping
+            or int(time.time()) - self.authorization_mapping_last_update > 60
+        ):
             redis_topic = config.get(
                 "generate_and_store_credential_authorization_mapping.redis_key",
                 "CREDENTIAL_AUTHORIZATION_MAPPING_V1",
@@ -56,7 +61,7 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
                     json_object_hook=RoleAuthorizationsDecoder,
                     json_encoder=pydantic_encoder,
                 )
-                self.last_update = int(time.time())
+                self.authorization_mapping_last_update = int(time.time())
             except Exception as e:
                 sentry_sdk.capture_exception()
                 log.error(
@@ -68,6 +73,49 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
                 )
                 return {}
         return self.authorization_mapping
+
+    async def retrieve_reverse_authorization_mapping(self):
+        if (
+            not self.reverse_mapping
+            or int(time.time()) - self.reverse_mapping_last_update > 60
+        ):
+            redis_topic = config.get(
+                "generate_and_store_reverse_authorization_mapping.redis_key",
+                "REVERSE_AUTHORIZATION_MAPPING_V1",
+            )
+            s3_bucket = config.get(
+                "generate_and_store_reverse_authorization_mapping.s3.bucket"
+            )
+            s3_key = config.get(
+                "generate_and_store_reverse_authorization_mapping.s3.file",
+                "reverse_authorization_mapping/reverse_authorization_mapping_v1.json.gz",
+            )
+            try:
+                self.reverse_mapping = await retrieve_json_data_from_redis_or_s3(
+                    redis_topic,
+                    s3_bucket=s3_bucket,
+                    s3_key=s3_key,
+                    json_object_hook=RoleAuthorizationsDecoder,
+                    json_encoder=pydantic_encoder,
+                )
+                self.reverse_mapping_last_update = int(time.time())
+            except Exception as e:
+                sentry_sdk.capture_exception()
+                log.error(
+                    {
+                        "function": f"{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+                        "error": f"Error loading reverse credential mapping. Returning empty mapping: {e}",
+                    },
+                    exc_info=True,
+                )
+                return {}
+        return self.reverse_mapping
+
+    async def determine_role_authorized_groups(self, account_id: str, role_name: str):
+        arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+        reverse_mapping = await self.retrieve_reverse_authorization_mapping()
+        groups = reverse_mapping.get(arn, [])
+        return set(groups)
 
     async def determine_users_authorized_roles(self, user, groups, include_cli=False):
         authorization_mapping = await self.retrieve_credential_authorization_mapping()

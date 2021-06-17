@@ -397,7 +397,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RoleAccessArray"
+                $ref: "#/components/schemas/WebResponse"
         "404":
           description: Missing or Malformed data, please check errors for details
           content:
@@ -1708,18 +1708,3 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/ServiceControlPolicyModel"
-    RoleAccessResponseModel:
-      type: object
-      properties:
-        authorized_roles:
-          type: string
-          example: owner@example.com
-        authorized_roles_cli_only:
-          type: string
-          enum:
-            - group
-            - user
-    RoleAccessArray:
-      type: array
-      items:
-        $ref: "#/components/schemas/RoleAccessModel"
