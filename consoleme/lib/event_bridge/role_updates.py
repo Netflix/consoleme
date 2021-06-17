@@ -78,7 +78,9 @@ def detect_role_changes_and_update_cache(celery_app):
                     }
                 )
             except Exception as e:
-                log.error({**log_data, "error": str(e)}, exc_info=True)
+                log.error(
+                    {**log_data, "error": str(e), "raw_message": message}, exc_info=True
+                )
                 sentry_sdk.capture_exception()
         sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=processed_messages)
         messages = sqs_client.receive_message(

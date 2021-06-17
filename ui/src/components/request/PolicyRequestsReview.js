@@ -410,6 +410,20 @@ class PolicyRequestReview extends Component {
       extendedRequest.changes.changes.length > 0 ? (
         <>
           {extendedRequest.changes.changes.map((change) => {
+            if (change.change_type === "generic_file") {
+              return (
+                <InlinePolicyChangeComponent
+                  change={change}
+                  config={requestConfig}
+                  requestReadOnly={requestReadOnly}
+                  updatePolicyDocument={this.updatePolicyDocument}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
+                  sendProposedPolicy={this.sendProposedPolicy}
+                  sendRequestCommon={this.props.sendRequestCommon}
+                />
+              );
+            }
             if (change.change_type === "inline_policy") {
               return (
                 <InlinePolicyChangeComponent

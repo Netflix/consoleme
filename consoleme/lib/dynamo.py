@@ -447,12 +447,23 @@ class UserDynamoHandler(BaseDynamoHandler):
             "extended_request": json.loads(extended_request.json()),
             "username": extended_request.requester_email,
         }
+
+        if extended_request.principal.principal_type == "AwsResource":
+            new_request["arn"] = extended_request.principal.principal_arn
+        elif extended_request.principal.principal_type == "HoneybeeAwsResourceTemplate":
+            repository_name = extended_request.principal.repository_name
+            resource_identifier = extended_request.principal.resource_identifier
+            new_request["arn"] = f"{repository_name}-{resource_identifier}"
+        else:
+            raise Exception("Invalid principal type")
+
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "message": "Writing policy request v2 to Dynamo",
             "request": new_request,
         }
         log.debug(log_data)
+
         try:
             await sync_to_async(self.policy_requests_table.put_item)(
                 Item=self._data_to_dynamo_replace(new_request)

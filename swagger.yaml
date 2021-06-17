@@ -523,6 +523,8 @@ components:
         id:
           type: string
           readOnly: true
+        request_url:
+          type: string
         principal:
           anyOf:
             - $ref: "#/components/schemas/AwsResourcePrincipalModel"

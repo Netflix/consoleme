@@ -285,12 +285,21 @@ async def generate_request_from_change_model_array(
     elif primary_principal.principal_type == "HoneybeeAwsResourceTemplate":
         # TODO: Generate extended request from HB template
         extended_request = await generate_honeybee_request_from_change_model_array(
-            request_creation, user
+            request_creation, user, extended_request_uuid
         )
     else:
         raise Exception("Unknown principal type")
 
     return extended_request
+
+
+async def get_request_url(extended_request: ExtendedRequestModel) -> str:
+    if extended_request.principal.principal_type == "AwsResource":
+        return f"/policies/request/{extended_request.id}"
+    elif extended_request.principal.principal_type == "HoneybeeAwsResourceTemplate":
+        return extended_request.request_url
+    else:
+        raise Exception("Unsupported principal type")
 
 
 async def is_request_eligible_for_auto_approval(
@@ -1233,7 +1242,7 @@ async def populate_cross_account_resource_policy_for_change(
 
         new_policy = await generate_updated_resource_policy(
             existing=old_policy,
-            principal=extended_request.principal.principal_arn,
+            principal_arn=extended_request.principal.principal_arn,
             resource_arns=list(set(resource_arns)),
             actions=actions,
             # since iam assume role policy documents can't include resources

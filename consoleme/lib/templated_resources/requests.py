@@ -1,12 +1,14 @@
 import io
 import json
 import os
+import shutil
 import tempfile
 import time
 from typing import Optional
 
 import git
 from asgiref.sync import sync_to_async
+from atlassian import Bitbucket
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedSeq
 
@@ -23,6 +25,7 @@ from consoleme.models import (
 )
 
 auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+log = config.get_logger()
 
 typ = "rt"
 yaml = YAML(typ=typ)
@@ -34,6 +37,7 @@ yaml.width = 4096
 
 class GitRepository:
     def __init__(self, repo_url, repo_name):
+        self.tempdir = tempfile.mkdtemp()
         self.repo_url = repo_url
         self.repo = None
         self.repo_name = repo_name
@@ -47,16 +51,19 @@ class GitRepository:
         args.append(self.repo_url)
         if depth:
             kwargs["depth"] = depth
-        tempdir = tempfile.mkdtemp()
-        await sync_to_async(git.Git(tempdir).clone)(*args, **kwargs)
-        self.repo = git.Repo(os.path.join(tempdir, self.repo_name))
+        await sync_to_async(git.Git(self.tempdir).clone)(*args, **kwargs)
+        self.repo = git.Repo(os.path.join(self.tempdir, self.repo_name))
         self.git = self.repo.git
         return self.repo
 
+    async def cleanup(self):
+        await sync_to_async(shutil.rmtree)(self.tempdir)
+
 
 async def generate_honeybee_request_from_change_model_array(
-    request_creation: RequestCreationModel, user: str
+    request_creation: RequestCreationModel, user: str, extended_request_uuid: str
 ) -> ExtendedRequestModel:
+
     repositories_for_request = {}
     primary_principal = None
     t = int(time.time())
@@ -65,6 +72,8 @@ async def generate_honeybee_request_from_change_model_array(
         "generate_honeybee_request_from_change_model_array.policy_name",
         "self_service_generated",
     )
+    repo_config = None
+
     # Checkout Git Repo and generate a branch name for the user's change
     for change in request_creation.changes.changes:
         if primary_principal and change.principal != primary_principal:
@@ -73,9 +82,10 @@ async def generate_honeybee_request_from_change_model_array(
         discovered_repository_for_change = False
         if repositories_for_request.get(change.principal.repository_name):
             continue
-        # 1. Find repo
+        # Find repo
         for r in config.get("cache_resource_templates.repositories", []):
             if r["name"] == change.principal.repository_name:
+                repo_config = r
                 repo = GitRepository(r["repo_url"], r["name"])
                 await repo.clone(depth=1)
                 git_client = repo.git
@@ -83,8 +93,9 @@ async def generate_honeybee_request_from_change_model_array(
                 git_client.checkout(b=generated_branch_name)
                 repositories_for_request[change.principal.repository_name] = {
                     "main_branch_name": r["main_branch_name"],
-                    "repo": repo.repo,
+                    "repo": repo,
                     "git_client": git_client,
+                    "config": r,
                 }
                 discovered_repository_for_change = True
                 break
@@ -93,20 +104,20 @@ async def generate_honeybee_request_from_change_model_array(
                 "No matching repository found for change in ConsoleMe's configuration"
             )
     request_changes = ChangeModelArray(changes=[])
+    affected_templates = []
     for change in request_creation.changes.changes:
         git_client = repositories_for_request[change.principal.repository_name][
             "git_client"
         ]
-        repo = repositories_for_request[change.principal.repository_name]["repo"]
+        repo = repositories_for_request[change.principal.repository_name]["repo"].repo
         main_branch_name = repositories_for_request[change.principal.repository_name][
             "main_branch_name"
         ]
         git_client.checkout(
             f"origin/{main_branch_name}", change.principal.resource_identifier
         )
-        with open(
-            f"{repo.working_dir}/{change.principal.resource_identifier}", "r"
-        ) as f:
+        change_file_path = f"{repo.working_dir}/{change.principal.resource_identifier}"
+        with open(change_file_path, "r") as f:
             yaml_content = yaml.load(f)
 
         # Original
@@ -149,9 +160,7 @@ async def generate_honeybee_request_from_change_model_array(
                     "Statement": change.policy.policy_document["Statement"],
                 }
             )
-        with open(
-            f"{repo.working_dir}/{change.principal.resource_identifier}", "w"
-        ) as f:
+        with open(change_file_path, "w") as f:
             yaml.dump(yaml_content, f)
         # New
         buf = io.BytesIO()
@@ -168,9 +177,44 @@ async def generate_honeybee_request_from_change_model_array(
                 encoding="yaml",
             )
         )
+        git_client.add(change.principal.resource_identifier)
+        affected_templates.append(change.principal.resource_identifier)
 
-    # TODO: Need to clean up directory
+    if not request_creation.dry_run:
+        commit_title = f"ConsoleMe Generated PR for {', '.join(affected_templates)}"
+        commit_message = (
+            f"This request was made through ConsoleMe Self Service\n\nUser: {user}\n\n"
+            f"Justification: {request_creation.justification}"
+        )
+
+        git_client.commit(m=commit_message)
+        git_client.push(u=["origin", generated_branch_name])
+        bitbucket = Bitbucket(
+            url="https://stash.corp.netflix.com",
+            username=config.get("bitbucket.username"),
+            password=config.get("bitbucket.password"),
+        )
+        pull_request_url = None
+        if repo_config["provider_type"] == "bitbucket":
+            pull_request = bitbucket.open_pull_request(
+                repo_config["project_key"],
+                repo_config["name"],
+                repo_config["project_key"],
+                repo_config["name"],
+                generated_branch_name,
+                repo_config["main_branch_name"],
+                commit_title,
+                commit_message,
+            )
+            pull_request_url = pull_request["links"]["self"][0]["href"]
+        else:
+            raise Exception("Unsupported repository provider_type.")
+    for repo_name, repo_details in repositories_for_request.items():
+        await repo_details["repo"].cleanup()
+
     return ExtendedRequestModel(
+        id=extended_request_uuid,
+        request_url=pull_request_url,
         principal=primary_principal,
         timestamp=int(time.time()),
         requester_email=user,
