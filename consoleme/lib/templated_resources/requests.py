@@ -1,20 +1,14 @@
 import io
 import json
-import os
-import shutil
-import tempfile
 import time
-from typing import Optional
 
-import git
-from asgiref.sync import sync_to_async
-from atlassian import Bitbucket
-from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedSeq
 
 from consoleme.config import config
 from consoleme.lib.aws import minimize_iam_policy_statements
+from consoleme.lib.code_repository.bitbucket import BitBucketCodeRepository
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.version_control.git import GitRepository
 from consoleme.models import (
     ChangeModelArray,
     ExtendedRequestModel,
@@ -23,41 +17,10 @@ from consoleme.models import (
     RequestStatus,
     UserModel,
 )
+from consoleme.yaml import yaml
 
 auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 log = config.get_logger()
-
-typ = "rt"
-yaml = YAML(typ=typ)
-yaml.preserve_quotes = True
-yaml.indent(mapping=2, sequence=4, offset=2)
-yaml.representer.ignore_aliases = lambda *data: True
-yaml.width = 4096
-
-
-class GitRepository:
-    def __init__(self, repo_url, repo_name):
-        self.tempdir = tempfile.mkdtemp()
-        self.repo_url = repo_url
-        self.repo = None
-        self.repo_name = repo_name
-        self.git = None
-
-    async def clone(self, no_checkout=True, depth: Optional[int] = None):
-        args = []
-        kwargs = {}
-        if no_checkout:
-            args.append("-n")
-        args.append(self.repo_url)
-        if depth:
-            kwargs["depth"] = depth
-        await sync_to_async(git.Git(self.tempdir).clone)(*args, **kwargs)
-        self.repo = git.Repo(os.path.join(self.tempdir, self.repo_name))
-        self.git = self.repo.git
-        return self.repo
-
-    async def cleanup(self):
-        await sync_to_async(shutil.rmtree)(self.tempdir)
 
 
 async def generate_honeybee_request_from_change_model_array(
@@ -189,14 +152,13 @@ async def generate_honeybee_request_from_change_model_array(
 
         git_client.commit(m=commit_message)
         git_client.push(u=["origin", generated_branch_name])
-        bitbucket = Bitbucket(
-            url="https://stash.corp.netflix.com",
-            username=config.get("bitbucket.username"),
-            password=config.get("bitbucket.password"),
-        )
-        pull_request_url = None
-        if repo_config["provider_type"] == "bitbucket":
-            pull_request = bitbucket.open_pull_request(
+        if repo_config["code_repository_provider"] == "bitbucket":
+            bitbucket = BitBucketCodeRepository(
+                url=config.get("bitbucket.url"),
+                username=config.get("bitbucket.username"),
+                password=config.get("bitbucket.password"),
+            )
+            pull_request_url = await bitbucket.create_pull_request(
                 repo_config["project_key"],
                 repo_config["name"],
                 repo_config["project_key"],
@@ -206,9 +168,10 @@ async def generate_honeybee_request_from_change_model_array(
                 commit_title,
                 commit_message,
             )
-            pull_request_url = pull_request["links"]["self"][0]["href"]
         else:
-            raise Exception("Unsupported repository provider_type.")
+            raise Exception(
+                f"Unsupported `code_repository_provider` specified in configuration: {repo_config}"
+            )
     for repo_name, repo_details in repositories_for_request.items():
         await repo_details["repo"].cleanup()
 
