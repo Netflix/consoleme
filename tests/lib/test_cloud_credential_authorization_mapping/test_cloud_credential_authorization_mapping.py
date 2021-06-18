@@ -494,68 +494,68 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
         )
 
         expected = {
-            "arn:aws:iam::123456789012:role/RoleNumber0": [
+            "arn:aws:iam::123456789012:role/rolenumber0": [
                 "group0",
                 "group0@example.com",
                 "group0-cli",
                 "group0-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/RoleNumber1": [
+            "arn:aws:iam::123456789012:role/rolenumber1": [
                 "group1",
                 "group1@example.com",
                 "group1-cli",
                 "group1-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/RoleNumber2": [
+            "arn:aws:iam::123456789012:role/rolenumber2": [
                 "group2",
                 "group2@example.com",
                 "group2-cli",
                 "group2-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/RoleNumber3": [
+            "arn:aws:iam::123456789012:role/rolenumber3": [
                 "group3",
                 "group3@example.com",
                 "group3-cli",
                 "group3-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/RoleNumber4": [
+            "arn:aws:iam::123456789012:role/rolenumber4": [
                 "group4",
                 "group4@example.com",
                 "group4-cli",
                 "group4-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/RoleNumber5": [
+            "arn:aws:iam::123456789012:role/rolenumber5": [
                 "group5",
                 "group5@example.com",
                 "group5-cli",
                 "group5-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/RoleNumber6": [
+            "arn:aws:iam::123456789012:role/rolenumber6": [
                 "group6",
                 "group6@example.com",
                 "group6-cli",
                 "group6-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/RoleNumber7": [
+            "arn:aws:iam::123456789012:role/rolenumber7": [
                 "group7",
                 "group7@example.com",
                 "group7-cli",
                 "group7-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/RoleNumber8": [
+            "arn:aws:iam::123456789012:role/rolenumber8": [
                 "group8",
                 "group8@example.com",
                 "group8-cli",
                 "group8-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/RoleNumber9": [
+            "arn:aws:iam::123456789012:role/rolenumber9": [
                 "group9",
                 "group9@example.com",
                 "group9-cli",
                 "group9-cli@example.com",
             ],
-            "arn:aws:iam::123456789012:role/roleA": ["groupa@example.com"],
-            "arn:aws:iam::123456789012:role/roleB": ["groupa@example.com"],
+            "arn:aws:iam::123456789012:role/rolea": ["groupa@example.com"],
+            "arn:aws:iam::123456789012:role/roleb": ["groupa@example.com"],
             "arn:aws:iam::123456789012:role/rolename": ["group1@example.com"],
             "arn:aws:iam::123456789012:role/rolename2": ["group1@example.com"],
             "arn:aws:iam::123456789012:role/userrolename": ["someuser@example.com"],
