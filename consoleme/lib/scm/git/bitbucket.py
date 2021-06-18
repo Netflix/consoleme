@@ -1,14 +1,12 @@
-from atlassian import Bitbucket
-
-from consoleme.lib.code_repository.base import BaseCodeRepository
+from atlassian import Bitbucket as AtlassianBitBucketLib
 
 
-class BitBucketCodeRepository(BaseCodeRepository):
-    def __init(self, *args, **kwargs):
-        self.bitbucket = Bitbucket(
-            url=kwargs["url"],
-            username=kwargs["username"],
-            password=kwargs["password"],
+class BitBucket:
+    def __init__(self, url, username, password):
+        self.bitbucket = AtlassianBitBucketLib(
+            url=url,
+            username=username,
+            password=password,
         )
 
     async def create_pull_request(

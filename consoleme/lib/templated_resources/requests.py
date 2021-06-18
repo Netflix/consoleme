@@ -6,9 +6,10 @@ from ruamel.yaml.comments import CommentedSeq
 
 from consoleme.config import config
 from consoleme.lib.aws import minimize_iam_policy_statements
-from consoleme.lib.code_repository.bitbucket import BitBucketCodeRepository
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.version_control.git import GitRepository
+from consoleme.lib.scm.git import Repository
+from consoleme.lib.scm.git.bitbucket import BitBucket
+from consoleme.lib.yaml import yaml
 from consoleme.models import (
     ChangeModelArray,
     ExtendedRequestModel,
@@ -17,7 +18,6 @@ from consoleme.models import (
     RequestStatus,
     UserModel,
 )
-from consoleme.yaml import yaml
 
 auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 log = config.get_logger()
@@ -49,7 +49,7 @@ async def generate_honeybee_request_from_change_model_array(
         for r in config.get("cache_resource_templates.repositories", []):
             if r["name"] == change.principal.repository_name:
                 repo_config = r
-                repo = GitRepository(r["repo_url"], r["name"])
+                repo = Repository(r["repo_url"], r["name"])
                 await repo.clone(depth=1)
                 git_client = repo.git
                 git_client.reset()
@@ -143,6 +143,7 @@ async def generate_honeybee_request_from_change_model_array(
         git_client.add(change.principal.resource_identifier)
         affected_templates.append(change.principal.resource_identifier)
 
+    pull_request_url = ""
     if not request_creation.dry_run:
         commit_title = f"ConsoleMe Generated PR for {', '.join(affected_templates)}"
         commit_message = (
@@ -153,10 +154,10 @@ async def generate_honeybee_request_from_change_model_array(
         git_client.commit(m=commit_message)
         git_client.push(u=["origin", generated_branch_name])
         if repo_config["code_repository_provider"] == "bitbucket":
-            bitbucket = BitBucketCodeRepository(
-                url=config.get("bitbucket.url"),
-                username=config.get("bitbucket.username"),
-                password=config.get("bitbucket.password"),
+            bitbucket = BitBucket(
+                config.get("bitbucket.url"),
+                config.get("bitbucket.username"),
+                config.get("bitbucket.password"),
             )
             pull_request_url = await bitbucket.create_pull_request(
                 repo_config["project_key"],
@@ -172,8 +173,12 @@ async def generate_honeybee_request_from_change_model_array(
             raise Exception(
                 f"Unsupported `code_repository_provider` specified in configuration: {repo_config}"
             )
+
     for repo_name, repo_details in repositories_for_request.items():
         await repo_details["repo"].cleanup()
+
+    if not pull_request_url and not request_creation.dry_run:
+        raise Exception("Unable to generate pull request URL")
 
     return ExtendedRequestModel(
         id=extended_request_uuid,

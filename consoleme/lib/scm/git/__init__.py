@@ -6,10 +6,8 @@ from typing import Optional
 import git
 from asgiref.sync import sync_to_async
 
-from consoleme.lib.version_control.base import BaseVersionControl
 
-
-class GitRepository(BaseVersionControl):
+class Repository:
     def __init__(self, repo_url, repo_name):
         self.tempdir = tempfile.mkdtemp()
         self.repo_url = repo_url
