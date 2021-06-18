@@ -382,6 +382,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WebResponse"
+  /audit/roles/{account_id}/{role_name}/access:
+    get:
+      summary:
+      tags:
+        - audit
+        - privileged
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
+        "404":
+          description: Missing or Malformed data, please check errors for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
 components:
   responses:
     DefaultErrorResponse:
