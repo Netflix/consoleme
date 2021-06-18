@@ -140,9 +140,9 @@ async def generate_and_store_reverse_authorization_mapping(
     reverse_mapping = defaultdict(list)
     for identity, roles in authorization_mapping.items():
         for role in roles.authorized_roles:
-            reverse_mapping[role].append(identity)
+            reverse_mapping[role.lower()].append(identity)
         for role in roles.authorized_roles_cli_only:
-            reverse_mapping[role].append(identity)
+            reverse_mapping[role.lower()].append(identity)
 
     # Store in S3 and Redis
     redis_topic = config.get(
