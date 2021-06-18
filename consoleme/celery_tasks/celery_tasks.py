@@ -64,6 +64,7 @@ from consoleme.lib.cache import (
 )
 from consoleme.lib.cloud_credential_authorization_mapping import (
     generate_and_store_credential_authorization_mapping,
+    generate_and_store_reverse_authorization_mapping,
 )
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.event_bridge.role_updates import detect_role_changes_and_update_cache
@@ -1553,7 +1554,12 @@ def cache_credential_authorization_mapping() -> Dict:
         generate_and_store_credential_authorization_mapping
     )()
 
+    reverse_mapping = async_to_sync(generate_and_store_reverse_authorization_mapping)(
+        authorization_mapping
+    )
+
     log_data["num_group_authorizations"] = len(authorization_mapping)
+    log_data["num_identities"] = len(reverse_mapping)
     log.debug(
         {
             **log_data,
