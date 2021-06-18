@@ -112,7 +112,7 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
         return self.reverse_mapping
 
     async def determine_role_authorized_groups(self, account_id: str, role_name: str):
-        arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+        arn = f"arn:aws:iam::{account_id}:role/{role_name.lower()}"
         reverse_mapping = await self.retrieve_reverse_authorization_mapping()
         groups = reverse_mapping.get(arn, [])
         return set(groups)
