@@ -37,7 +37,7 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
         self.reverse_mapping = {}
         self.reverse_mapping_last_update = 0
 
-    async def retrieve_credential_authorization_mapping(self):
+    async def retrieve_credential_authorization_mapping(self, max_age=None):
         if (
             not self.authorization_mapping
             or int(time.time()) - self.authorization_mapping_last_update > 60
@@ -60,6 +60,7 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
                     s3_key=s3_key,
                     json_object_hook=RoleAuthorizationsDecoder,
                     json_encoder=pydantic_encoder,
+                    max_age=max_age,
                 )
                 self.authorization_mapping_last_update = int(time.time())
             except Exception as e:
@@ -74,7 +75,7 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
                 return {}
         return self.authorization_mapping
 
-    async def retrieve_reverse_authorization_mapping(self):
+    async def retrieve_reverse_authorization_mapping(self, max_age=None):
         if (
             not self.reverse_mapping
             or int(time.time()) - self.reverse_mapping_last_update > 60
@@ -97,6 +98,7 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
                     s3_key=s3_key,
                     json_object_hook=RoleAuthorizationsDecoder,
                     json_encoder=pydantic_encoder,
+                    max_age=max_age,
                 )
                 self.reverse_mapping_last_update = int(time.time())
             except Exception as e:
