@@ -1,7 +1,16 @@
 import _ from "lodash";
 import React, { Component } from "react";
 import ReactMarkdown from "react-markdown";
-import { Accordion, Button, Divider, Dropdown, Form, Header, Icon, Message } from "semantic-ui-react";
+import {
+  Accordion,
+  Button,
+  Divider,
+  Dropdown,
+  Form,
+  Header,
+  Icon,
+  Message,
+} from "semantic-ui-react";
 import DropDownBlockComponent from "../blocks/DropDownBlockComponent";
 import TextInputBlockComponent from "../blocks/TextInputBlockComponent";
 import TypeaheadBlockComponent from "../blocks/TypeaheadBlockComponent";
@@ -19,41 +28,44 @@ class SelfServiceComponent extends Component {
       excludeAccount: [],
       currentExtraActionValues: [],
       currentIncludeAccountValues: [],
-      currentExcludeAccountValues: []
+      currentExcludeAccountValues: [],
     };
   }
 
   handleExtraActionAddition = (e, { value }) => {
     this.setState((prevState) => ({
       extraAction: [{ text: value, value }, ...prevState.extraAction],
-    }))
-  }
+    }));
+  };
 
   handleIncludeAccountAddition = (e, { value }) => {
     this.setState((prevState) => ({
       includeAccount: [{ text: value, value }, ...prevState.includeAccount],
-    }))
-  }
+    }));
+  };
 
   handleExcludeAccountAddition = (e, { value }) => {
     this.setState((prevState) => ({
       excludeAccount: [{ text: value, value }, ...prevState.excludeAccount],
-    }))
-  }
+    }));
+  };
 
-  handleExtraActionChange = (e, { value }) => this.setState({ currentExtraActionValues: value })
+  handleExtraActionChange = (e, { value }) =>
+    this.setState({ currentExtraActionValues: value });
 
-  handleIncludeAccountChange = (e, { value }) => this.setState({ currentIncludeAccountValues: value })
+  handleIncludeAccountChange = (e, { value }) =>
+    this.setState({ currentIncludeAccountValues: value });
 
-  handleExcludeAccountChange = (e, { value }) => this.setState({ currentExcludeAccountValues: value })
+  handleExcludeAccountChange = (e, { value }) =>
+    this.setState({ currentExcludeAccountValues: value });
 
   handleClick = (e, titleProps) => {
-    const { index } = titleProps
-    const { activeIndex } = this.state
-    const newIndex = activeIndex === index ? -1 : index
+    const { index } = titleProps;
+    const { activeIndex } = this.state;
+    const newIndex = activeIndex === index ? -1 : index;
 
-    this.setState({ activeIndex: newIndex })
-  }
+    this.setState({ activeIndex: newIndex });
+  };
 
   handleInputUpdate(context, value) {
     const { values } = this.state;
@@ -69,7 +81,7 @@ class SelfServiceComponent extends Component {
   handleSubmit() {
     const { config, role, service } = this.props;
     const { values, extraAction, includeAccount, excludeAccount } = this.state;
-    const { inputs, condition } = config.permissions_map[service]
+    const { inputs, condition } = config.permissions_map[service];
 
     const default_values = { condition };
 
@@ -183,72 +195,72 @@ class SelfServiceComponent extends Component {
   }
 
   buildAdvancedOptions() {
-    const { role } = this.props
-    const { activeIndex } = this.state
-    const { currentExtraActionValues } = this.state
-    const { currentIncludeAccountValues } = this.state
-    const { currentExcludeAccountValues } = this.state
+    const { role } = this.props;
+    const { activeIndex } = this.state;
+    const { currentExtraActionValues } = this.state;
+    const { currentIncludeAccountValues } = this.state;
+    const { currentExcludeAccountValues } = this.state;
     if (role.template_language == "honeybee") {
       return (
-         <div>
-         <Divider />
-        <Accordion>
-          <Accordion.Title
-            active={activeIndex === 0}
-            index={0}
-            onClick={this.handleClick}
-          >
-            <span style={{color: "#4183c4"}}>Advanced Options</span>
-          </Accordion.Title>
-          <Accordion.Content active={activeIndex === 0}>
-            <label>Extra Actions</label>
-            <Dropdown
-              options={this.state.extraAction}
-              placeholder='Press Enter after typing each extra action'
-              search
-              selection
-              fluid
-              multiple
-              allowAdditions
-              value={currentExtraActionValues}
-              onAddItem={this.handleExtraActionAddition}
-              onChange={this.handleExtraActionChange}
-              style={{marginBottom: "1em"}}
-              className={"advancedOption"}
-            />
-            <label>Include Accounts</label>
-            <Dropdown
-              options={this.state.includeAccount}
-              placeholder='Press Enter after typing each included account'
-              search
-              selection
-              fluid
-              multiple
-              allowAdditions
-              value={currentIncludeAccountValues}
-              onAddItem={this.handleIncludeAccountAddition}
-              onChange={this.handleIncludeAccountChange}
-              style={{marginBottom: "1em"}}
-              className={"advancedOption"}
-            />
-            <label>Exclude Accounts</label>
-            <Dropdown
-              options={this.state.excludeAccount}
-              placeholder='Press Enter after typing each excluded account'
-              search
-              selection
-              fluid
-              multiple
-              allowAdditions
-              value={currentExcludeAccountValues}
-              onAddItem={this.handleExcludeAccountAddition}
-              onChange={this.handleExcludeAccountChange}
-              className={"advancedOption"}
-            />
-          </Accordion.Content>
-        </Accordion>
-         </div>
-      )
+        <div>
+          <Divider />
+          <Accordion>
+            <Accordion.Title
+              active={activeIndex === 0}
+              index={0}
+              onClick={this.handleClick}
+            >
+              <span style={{ color: "#4183c4" }}>Advanced Options</span>
+            </Accordion.Title>
+            <Accordion.Content active={activeIndex === 0}>
+              <label>Extra Actions</label>
+              <Dropdown
+                options={this.state.extraAction}
+                placeholder="Press Enter after typing each extra action"
+                search
+                selection
+                fluid
+                multiple
+                allowAdditions
+                value={currentExtraActionValues}
+                onAddItem={this.handleExtraActionAddition}
+                onChange={this.handleExtraActionChange}
+                style={{ marginBottom: "1em" }}
+                className={"advancedOption"}
+              />
+              <label>Include Accounts</label>
+              <Dropdown
+                options={this.state.includeAccount}
+                placeholder="Press Enter after typing each included account"
+                search
+                selection
+                fluid
+                multiple
+                allowAdditions
+                value={currentIncludeAccountValues}
+                onAddItem={this.handleIncludeAccountAddition}
+                onChange={this.handleIncludeAccountChange}
+                style={{ marginBottom: "1em" }}
+                className={"advancedOption"}
+              />
+              <label>Exclude Accounts</label>
+              <Dropdown
+                options={this.state.excludeAccount}
+                placeholder="Press Enter after typing each excluded account"
+                search
+                selection
+                fluid
+                multiple
+                allowAdditions
+                value={currentExcludeAccountValues}
+                onAddItem={this.handleExcludeAccountAddition}
+                onChange={this.handleExcludeAccountChange}
+                className={"advancedOption"}
+              />
+            </Accordion.Content>
+          </Accordion>
+        </div>
+      );
     }
   }
 

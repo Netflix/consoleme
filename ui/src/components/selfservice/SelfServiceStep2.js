@@ -11,10 +11,11 @@ import {
   List,
   Header,
   Segment,
-  TextArea, Message,
+  TextArea,
+  Message,
 } from "semantic-ui-react";
 import SelfServiceComponent from "./SelfServiceComponent";
-import SelfServiceModal from './SelfServiceModal.js';
+import SelfServiceModal from "./SelfServiceModal.js";
 
 // TODO, move this to config file.
 const DEFAULT_AWS_SERVICE = "s3";
@@ -101,13 +102,6 @@ class SelfServiceStep2 extends Component {
     });
   } */
 
-
-
-
-
-
-
-
   onChange(newValue, e) {
     this.setState({
       custom_statement: newValue,
@@ -121,19 +115,19 @@ class SelfServiceStep2 extends Component {
   }
 
   handleExtraActionsAdd(extraAction) {
-    const {extraActions} = this.props;
+    const { extraActions } = this.props;
     extraActions.push.apply(extraActions, extraAction);
     this.props.handleExtraActionsUpdate(extraActions);
   }
 
   handleIncludeAccountsAdd(includeAccount) {
-    const {includeAccounts} = this.props;
+    const { includeAccounts } = this.props;
     includeAccounts.push.apply(includeAccounts, includeAccount);
     this.props.handleIncludeAccountsUpdate(includeAccounts);
   }
 
   handleExcludeAccountsAdd(excludeAccount) {
-    const {excludeAccounts} = this.props;
+    const { excludeAccounts } = this.props;
     excludeAccounts.push.apply(excludeAccounts, excludeAccount);
     this.props.handleExcludeAccountsUpdate(excludeAccounts);
   }
@@ -249,49 +243,46 @@ class SelfServiceStep2 extends Component {
         </Message>
       ) : null;
 
-    const headerMessage =
-       role.arn ? (
-          <Header>
-            Add Permission
-            <Header.Subheader>
-              Please add permissions to your role&nbsp;
-              <a
-                 href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
-                 target="_blank"
-                 rel="noopener noreferrer"
-              >
-                {role.arn}
-              </a>
-              .&nbsp; You can also select multiple permissions.
-            </Header.Subheader>
-          </Header>
-       ) :
-          <Header>
-            Modify Policy
-            <Header.Subheader>
-              You can choose the resource(s) you wish to modify and the actions you wish to add.
-              Advanced options include specified actions, include and exclude accounts.
-              <a
-                 href={`/policies/edit/${role.account_id}/iamrole/${role.owner}`}
-                 target="_blank"
-                 rel="noopener noreferrer"
-              >
-                {role.resource}
-              </a>
-              .&nbsp; You can also select multiple permissions.
-            </Header.Subheader>
-          </Header>;
-
-
+    const headerMessage = role.arn ? (
+      <Header>
+        Add Permission
+        <Header.Subheader>
+          Please add permissions to your role&nbsp;
+          <a
+            href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {role.arn}
+          </a>
+          .&nbsp; You can also select multiple permissions.
+        </Header.Subheader>
+      </Header>
+    ) : (
+      <Header>
+        Modify Policy
+        <Header.Subheader>
+          You can choose the resource(s) you wish to modify and the actions you
+          wish to add. Advanced options include specified actions, include and
+          exclude accounts.
+          <a
+            href={`/policies/edit/${role.account_id}/iamrole/${role.owner}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {role.resource}
+          </a>
+          .&nbsp; You can also select multiple permissions.
+        </Header.Subheader>
+      </Header>
+    );
 
     return (
       <Segment>
         <Grid columns={2} divided>
           <Grid.Row>
             <Grid.Column>
-              <Header>
-                {headerMessage}
-              </Header>
+              <Header>{headerMessage}</Header>
               <Form>
                 <Form.Select
                   value={service}
@@ -311,8 +302,12 @@ class SelfServiceStep2 extends Component {
                   service={service}
                   updatePermission={this.handlePermissionAdd.bind(this)}
                   updateExtraActions={this.handleExtraActionsAdd.bind(this)}
-                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(this)}
-                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(this)}
+                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(
+                    this
+                  )}
+                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(
+                    this
+                  )}
                   {...this.props}
                 />
               ) : null}
@@ -327,10 +322,8 @@ class SelfServiceStep2 extends Component {
               <Item.Group divided>{this.getPermissionItems()}</Item.Group>
               <Divider />
               <Header>
-                You must add at least one resource to continue
-                or choose <SelfServiceModal
-                            {...this.props}
-                          /> to override permissions.
+                You must add at least one resource to continue or choose{" "}
+                <SelfServiceModal {...this.props} /> to override permissions.
               </Header>
               {messagesToShow}
             </Grid.Column>

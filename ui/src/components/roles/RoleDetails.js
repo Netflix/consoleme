@@ -90,8 +90,10 @@ function RoleDetails(props) {
                   <Header as="h5" style={{ marginBottom: 0 }}>
                     NUMBER OF AFFECTED ACCOUNTS
                   </Header>
-                  <Label circular style={{marginTop: 3, marginBottom: 4}}>{role.number_of_accounts}</Label> Affected
-                  Accounts
+                  <Label circular style={{ marginTop: 3, marginBottom: 4 }}>
+                    {role.number_of_accounts}
+                  </Label>{" "}
+                  Affected Accounts
                 </Grid.Column>
                 <Grid.Column width={8}>
                   <Header as="h5">
@@ -103,14 +105,28 @@ function RoleDetails(props) {
               {includeExcludeAccounts.length > 0 ? (
                 <Grid.Row>
                   <Grid.Column width={16}>
-                    <Header as="h5" style={{marginBottom: 0}}>ACCOUNTS</Header>
-                    <Table basic="very" compact="very" striped size="small" style={{ marginTop: 0}}>
+                    <Header as="h5" style={{ marginBottom: 0 }}>
+                      ACCOUNTS
+                    </Header>
+                    <Table
+                      basic="very"
+                      compact="very"
+                      striped
+                      size="small"
+                      style={{ marginTop: 0 }}
+                    >
                       <Table.Header>
                         <Table.Row>
-                          <Table.HeaderCell width={8} style={{ paddingLeft: "1.5em", paddingBottom: 0}}>
+                          <Table.HeaderCell
+                            width={8}
+                            style={{ paddingLeft: "1.5em", paddingBottom: 0 }}
+                          >
                             INCLUDED
                           </Table.HeaderCell>
-                          <Table.HeaderCell width={8} style={{ paddingLeft: "1.5em", paddingBottom: 0}}>
+                          <Table.HeaderCell
+                            width={8}
+                            style={{ paddingLeft: "1.5em", paddingBottom: 0 }}
+                          >
                             EXCLUDED
                           </Table.HeaderCell>
                         </Table.Row>
@@ -119,10 +135,10 @@ function RoleDetails(props) {
                         {includeExcludeAccounts.map((accts, index) => {
                           return (
                             <Table.Row key={`accts${index}`}>
-                              <Table.Cell style={{ paddingLeft: "1.5em"}}>
+                              <Table.Cell style={{ paddingLeft: "1.5em" }}>
                                 {accts[0] ? accts[0] : ""}
                               </Table.Cell>
-                              <Table.Cell style={{ paddingLeft: "1.5em"}}>
+                              <Table.Cell style={{ paddingLeft: "1.5em" }}>
                                 {accts[1] ? accts[1] : ""}
                               </Table.Cell>
                             </Table.Row>
@@ -203,7 +219,7 @@ function RoleDetails(props) {
                 <Header as="h5" style={{ marginBottom: 0 }}>
                   ACTIVITY
                 </Header>
-                <div style={{marginTop: 3, marginBottom: 4}}>
+                <div style={{ marginTop: 3, marginBottom: 4 }}>
                   <Label circular>
                     {role.cloudtrail_details.errors.cloudtrail_errors.length}
                   </Label>{" "}
@@ -220,28 +236,48 @@ function RoleDetails(props) {
                 <Header as="h5" style={{ marginBottom: 0 }}>
                   RESOURCE TYPE
                 </Header>
-                <div>
-                  {role.resource_type}
-                </div>
+                <div>{role.resource_type}</div>
               </Grid.Column>
             </Grid.Row>
             {role.tags.length > 0 ? (
               <Grid.Row>
                 <Grid.Column width={16}>
-                  <Header as="h5" style={{marginBottom: 0}}>TAGS</Header>
-                  <Table basic="very" compact="very" striped size="small" style={{ marginTop: 0}}>
+                  <Header as="h5" style={{ marginBottom: 0 }}>
+                    TAGS
+                  </Header>
+                  <Table
+                    basic="very"
+                    compact="very"
+                    striped
+                    size="small"
+                    style={{ marginTop: 0 }}
+                  >
                     <Table.Header>
                       <Table.Row>
-                        <Table.HeaderCell width={8} style={{ paddingLeft: "1.5em", paddingBottom: 0}}>NAME</Table.HeaderCell>
-                        <Table.HeaderCell width={8} style={{ paddingLeft: "1.5em", paddingBottom: 0}}>VALUE</Table.HeaderCell>
+                        <Table.HeaderCell
+                          width={8}
+                          style={{ paddingLeft: "1.5em", paddingBottom: 0 }}
+                        >
+                          NAME
+                        </Table.HeaderCell>
+                        <Table.HeaderCell
+                          width={8}
+                          style={{ paddingLeft: "1.5em", paddingBottom: 0 }}
+                        >
+                          VALUE
+                        </Table.HeaderCell>
                       </Table.Row>
                     </Table.Header>
                     <Table.Body>
                       {role.tags.map((tag) => {
                         return (
                           <Table.Row key={tag.Key}>
-                            <Table.Cell style={{ paddingLeft: "1.5em"}}>{tag.Key}</Table.Cell>
-                            <Table.Cell style={{ paddingLeft: "1.5em"}}>{tag.Value}</Table.Cell>
+                            <Table.Cell style={{ paddingLeft: "1.5em" }}>
+                              {tag.Key}
+                            </Table.Cell>
+                            <Table.Cell style={{ paddingLeft: "1.5em" }}>
+                              {tag.Value}
+                            </Table.Cell>
                           </Table.Row>
                         );
                       })}
