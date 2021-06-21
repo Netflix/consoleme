@@ -1,3 +1,95 @@
 #new_policy_wizard .ui.category.search .results {
   width: auto;
 }
+
+.ui.steps .step:after, .ui.steps .active.step:after {
+  display: none;
+}
+
+.ui.steps .step {
+  background: #ffffff;
+  border-right: 0px;
+}
+
+.ui.steps .step.active {
+  background: #ffffff;
+}
+
+.ui.steps .step .description {
+  color: #686868;
+}
+
+.ui.modal>.header {
+    border-bottom: 0px;
+}
+
+.ui.modal>.message {
+    margin-top: 0px;
+}
+.actions {
+    text-align: right;
+}
+
+.advancedOption>.menu.transition, .advancedOption>i {
+    display: none !important;
+}
+
+/* In order to help read roles on smaller screens better, increased results grid width */
+@media (max-width: 1067px) {
+  .ui.fluid.search .results {
+    width: 150%;
+  }
+}
+
+.ui.steps .step>.icon {
+  font-size: 4.5em;
+}
+
+.active.step1>.icon {
+    font-family: Step;
+    content: url("../../assets/icons/stepper1Active.svg");
+}
+
+.complete.step1>.icon {
+    font-size: 4em;
+    font-family: Step;
+    content: url("../../assets/icons/stepper1Complete.svg");
+}
+
+.step2>.icon {
+    font-size: 4em;
+    font-family: Step;
+    content: url("../../assets/icons/stepper2Complete.svg");
+}
+
+.active.step2>.icon {
+    font-family: Step;
+    content: url("../../assets/icons/stepper2Active.svg");
+}
+
+.complete.step2>.icon {
+    font-size: 4em;
+    font-family: Step;
+    content: url("../../assets/icons/stepper2Complete.svg");
+}
+
+.step3>.icon {
+    font-size: 4em;
+    font-family: Step;
+    content: url("../../assets/icons/stepper3Complete.svg");
+}
+
+.active.step3>.icon {
+    font-size: 4em;
+    font-family: Step;
+    content: url("../../assets/icons/stepper3Active.svg");
+}
+
+.users.large.icon, .users.icon {
+    color: #286f85;
+}
+
+.ui.blue.label, .ui.blue.labels .label {
+    background-color: #286f85 !important;
+    border-color: #286f85 !important;
+}

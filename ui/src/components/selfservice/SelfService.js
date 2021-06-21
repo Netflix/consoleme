@@ -9,6 +9,7 @@ import SelfServiceStep3 from "./SelfServiceStep3";
 import { SelfServiceStepEnum } from "./SelfServiceEnums";
 
 const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):role\/(.+\/)?(?<roleName>(.+))/;
+const honeyBee = "honeybee";
 
 class SelfService extends Component {
   constructor(props) {
@@ -22,6 +23,9 @@ class SelfService extends Component {
       services: [],
       admin_bypass_approval_enabled: false,
       export_to_terraform_enabled: false,
+      extraActions: [],
+      includeAccounts: [],
+      excludeAccounts: [],
     };
   }
 
@@ -87,6 +91,33 @@ class SelfService extends Component {
         },
         services,
       });
+    } else if (paramSearch.template_language === "honeybee") {
+        const match = honeyBee.exec(paramSearch.template_language);
+        const { accountId, roleName } = match.groups;
+        this.setState({
+          admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+          export_to_terraform_enabled: config.export_to_terraform_enabled,
+          config,
+          currStep: SelfServiceStepEnum.STEP2,
+          // TODO(heewonk), define the role type
+          role: {
+            "name": "ConsoleMe",
+            "owner": "infrasec@netflix.com",
+            "include_accounts": [
+              "*"
+            ],
+            "exclude_accounts": [],
+            "number_of_accounts": 2,
+              "resource": "iamrole/consoleme.yaml",
+              "resource_type": "iam_role",
+              "repository_name": "honeybee-templates",
+              "template_language": "honeybee",
+            "web_path": "https://stash.corp.netflix.com/projects/CLDSEC/repos/honeybee-templates/browse/iamrole/consoleme.yaml",
+              "file_path": "honeybee-templates/iamrole/consoleme.yaml",
+              "content": null
+          },
+          services,
+        });
     } else {
       this.setState({
         config,
@@ -144,6 +175,18 @@ class SelfService extends Component {
     this.setState({ role });
   }
 
+  handleExtraActionsUpdate(extraActions) {
+    this.setState({ extraActions });
+  }
+
+  handleIncludeAccountsUpdate(includeAccounts) {
+    this.setState({ includeAccounts });
+  }
+
+  handleExcludeAccountsUpdate(excludeAccounts) {
+    this.setState({ excludeAccounts });
+  }
+
   handlePermissionsUpdate(permissions) {
     this.setState({ permissions });
   }
@@ -179,6 +222,9 @@ class SelfService extends Component {
             services={services}
             permissions={permissions}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
+            handleExtraActionsUpdate={this.handleExtraActionsUpdate.bind(this)}
+            handleIncludeAccountsUpdate={this.handleIncludeAccountsUpdate.bind(this)}
+            handleExcludeAccountsUpdate={this.handleExcludeAccountsUpdate.bind(this)}
             {...this.props}
           />
         );
@@ -229,25 +275,31 @@ class SelfService extends Component {
       <Segment basic>
         {headerMessage}
         <Step.Group fluid>
-          <Step active={currStep === SelfServiceStepEnum.STEP1}>
-            <Icon name="search" />
+          <Step active={currStep === SelfServiceStepEnum.STEP1}
+                className={`${currStep !== SelfServiceStepEnum.STEP1 ? "complete" : ""} step1`}
+          >
+            <Icon name="handshake" />
             <Step.Content>
-              <Step.Title>Step 1.</Step.Title>
-              <Step.Description>Search and Select Resource</Step.Description>
+              <Step.Title>Select Role</Step.Title>
+              <Step.Description>Search and Select Role</Step.Description>
             </Step.Content>
           </Step>
-          <Step active={currStep === SelfServiceStepEnum.STEP2}>
-            <Icon name="search plus" />
+          <Step active={currStep === SelfServiceStepEnum.STEP2}
+                className={`${currStep === SelfServiceStepEnum.STEP3 ? "complete" : ""} step2`}
+          >
+            <Icon name="search plus" disabled={currStep === SelfServiceStepEnum.STEP1}/>
             <Step.Content>
-              <Step.Title>Step 2.</Step.Title>
+              <Step.Title>Modify Policy</Step.Title>
               <Step.Description>Provide Permission Details</Step.Description>
             </Step.Content>
           </Step>
-          <Step active={currStep === SelfServiceStepEnum.STEP3}>
-            <Icon name="handshake" />
+          <Step active={currStep === SelfServiceStepEnum.STEP3}
+                className={"step3"}
+          >
+            <Icon name="handshake" disabled={currStep !== SelfServiceStepEnum.STEP3}/>
             <Step.Content>
-              <Step.Title>Step 3.</Step.Title>
-              <Step.Description>Review and Submit</Step.Description>
+              <Step.Title>Review and Submit</Step.Title>
+              <Step.Description>Review and Submit Permissions</Step.Description>
             </Step.Content>
           </Step>
         </Step.Group>

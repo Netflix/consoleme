@@ -1,6 +1,7 @@
 import _ from "lodash";
 import React, { Component } from "react";
 import {
+  Divider,
   Form,
   Grid,
   Header,
@@ -24,6 +25,7 @@ class SelfServiceStep1 extends Component {
       messages: [],
       results: [],
       value: "",
+      count:[],
     };
   }
 
@@ -141,7 +143,11 @@ class SelfServiceStep1 extends Component {
                   whiteSpace: "nowrap",
                 }}
               >
-                {result.display_text}
+              {result.icon === 'users' ? (
+                  <span style={{color: '#286f85'}}>{result.display_text}</span>
+              ) : (
+                  <span>{result.display_text}</span>
+              )}
               </strong>
             </div>
           </Grid.Column>
@@ -200,7 +206,7 @@ class SelfServiceStep1 extends Component {
                         this.handleSearchChange.bind(this),
                         500,
                         {
-                          leading: true,
+                          leading: true
                         }
                       )}
                       results={results}
@@ -225,6 +231,10 @@ class SelfServiceStep1 extends Component {
             </Grid.Column>
             <Grid.Column>
               <Header as="h4">Selected Role Information</Header>
+              <Header as="h4" style={{marginTop: 0, color: '#686868', fontWeight: 400}}>
+                 items to display
+              </Header>
+              <Divider />
               {isRoleLoading ? (
                 <Loader active={isRoleLoading} />
               ) : (
