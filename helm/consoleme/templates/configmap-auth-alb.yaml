@@ -1,0 +1,22 @@
+{{- if (eq "alb" .Values.authentication.type) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "consoleme.fullname" . }}-config-auth
+  labels:
+    {{- include "consoleme.labels" . | nindent 4 }}
+data:
+  config_auth.yaml: |
+    auth:
+      get_user_by_aws_alb_auth: true
+      set_auth_cookie: true
+
+    {{- with .Values.authentication.alb_config.get_user_by_aws_alb_auth_settings }}
+    get_user_by_aws_alb_auth_settings:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    development: {{ .Values.consoleme.development }}
+    url: {{ .Values.consoleme.url }}
+
+{{- end }}

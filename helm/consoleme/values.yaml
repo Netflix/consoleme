@@ -1,0 +1,375 @@
+# Default values for consoleme.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image:
+  repository: consoleme/consoleme
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: false
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# If you're using Kube2iam: Role to be assumed by the pods
+podAnnotations:
+  iam.amazonaws.com/role: arn:aws:iam::<AWS account number>:role/ConsoleMeInstanceProfile
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+sentry:
+  dsn: <Sentry project DSN>
+
+tornado:
+  debug: false
+  port: 8081
+  xsrf: true
+  xsrf_cookie_kwargs:
+    samesite: strict
+
+redis:
+  broker_url: redis://<Redis Host>:6379/1
+  region: us-east-1
+  host: <Redis Host>
+  db: 0
+  port: 6379
+
+  # For local Redis:
+  #  broker_url: redis://consoleme-redis-master:6379/1
+  #  host: consoleme-redis-master
+
+  deployLocal: false
+  # Values from Redis Helm Chart: https://artifacthub.io/packages/helm/bitnami/redis
+  architecture: standalone
+  auth:
+    enabled: false
+    sentinel: false
+  master:
+    persistence:
+      storageClass: gp2
+
+dynamodb:
+  deployLocal: false
+  url: ""
+  # For local DynamodDB:
+  #  url:  "http://consoleme-dynamodb:8005"
+
+  # To be used if deployLocal is true
+  command: "java -jar DynamoDBLocal.jar -sharedDb -dbPath /data"
+  port: 8005
+  port_name: dynamodb
+  image:
+    repository: cnadiminti/dynamodb-local
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+authentication:
+  type: saml
+  # Used when type is header
+  header_config:
+    user_header: curtis@example.com
+    groups_header: group1,group2,group3
+    get_groups_by_header: true
+    get_user_by_header: true
+    groups_header_name: group_header
+    user_header_name: user_header
+  # Used when type is alb
+  alb_config:
+    get_user_by_aws_alb_auth_settings:
+      jwt_email_key: sub
+      jwt_groups_key: groups
+  # Used when type is saml
+  saml_config:
+    idp_metadata_url: https://portal.sso.us-east-1.amazonaws.com/saml/metadata/CUSTOMENDPOINT
+    support:
+      emailAddress: support@example.com
+      givenName: support_name
+      technical:
+        emailAddress: support@example.com
+        givenName: support_name
+    organization:
+      eu-FR:
+        displayname: ConsoleMe
+        name: ConsoleMe
+        url: http://localhost:8081
+    sp_cert: |-
+      <Certificate>
+    sp_key: |-
+      <Certificate Key>
+  # Used when type is oidc
+  oidc_config:
+    oidc_secrets:
+      client_id: oauth_client_id
+      secret: oauth_client_secret
+      client_scope:
+        - email
+        - groups
+        - openid
+    get_user_by_oidc_settings:
+      resource: consoleme-oidc
+      metadata_url: https://dev-123456.okta.com/oauth2/default/.well-known/oauth-authorization-server
+      # If you have a metadata URL and it returns JSON with authorization_endpoint, token_endpoint, and jwks_uri, you do
+      # not need to specify those values in the configuration.
+      #authorization_endpoint: https://dev-123456.okta.com/oauth2/default/v1/authorize
+      #token_endpoint: https://dev-123456.okta.com/oauth2/default/v1/token
+      #jwks_uri: https://dev-123456.okta.com/oauth2/default/v1/keys
+      jwt_verify: true
+      jwt_email_key: email
+      jwt_groups_key: groups
+      grant_type: authorization_code
+      id_token_response_key: id_token
+      access_token_response_key: access_token
+      access_token_audience: "consoleme"
+
+# If you're using SAML with AWS SSO keep in mind that AWS SSO returns the groups IDs when mapping ${user:groups}
+groups:
+  can_admin:
+    - admin@example.com
+  can_admin_policies:
+    - admin@example.com
+  development_notification_emails:
+    - admin@example.com
+    - developer@example.com
+  can_edit_config:
+    - admin@example.com
+  can_edit_policies:
+    - admin@example.com
+  can_delete_roles:
+    - admin@example.com
+  can_create_roles:
+    - developer@example.com
+  # Not a group definition but a default email receiving policy reviews
+  fallback_policy_request_reviewers:
+    - support@example.com
+
+#config:
+#  load_from_dynamo: false
+
+# You can define support contact information and custom documentation here. This information is displayed in ConsoleMe's
+# sidebar.
+support_contact: consoleme-support@example.com
+support_chat_url: https://www.example.com/slack/channel
+documentation_page: https://github.com/Netflix/consoleme/
+
+# The `cloud_credential_authorization_mapping` configuration is where you would define the IAM role tags that dictate
+# which users/groups are authorized to access the role. The tag keys are defined below.
+# The tag values should be set to a colon-delimited list of users or groups (Commas are not valid in tag values).
+# Users/groups defined in the `authorized_groups_tags` tag can retrieve credentials from ConsoleMe either via the CLI
+# or the web interface. Users/groups defined in the `authorized_groups_cli_only_tags` tag can only retreive credentials
+# via the CLI, and will not see the roles in ConsoleMe's UI. This is useful to keep the UI uncluttered.
+# Example IAM role tags:
+# consoleme-authorized=user1@example.com:group2@example.com
+# consoleme-owner-dl=appowner@example.com
+# consoleme-authorized-cli-only=group3@example.com
+cloud_credential_authorization_mapping:
+  role_tags:
+    enabled: True
+    required_trust_policy_entity: "arn:aws:iam::<AWS account number>:role/ConsoleMeInstanceProfile"
+    authorized_groups_tags:
+      - consoleme-authorized
+    authorized_groups_cli_only_tags:
+      - consoleme-owner-dl
+      - consoleme-authorized-cli-only
+    dynamic_config:
+      enabled: true
+    internal_plugin:
+      enabled: false
+
+account_ids_to_name:
+  "<First AWS account number>": <First AWS account name>
+  "<Second AWS account number>": <Second AWS account name>
+
+aws:
+  issuer: YourCompany
+  account_number: "<Main AWS account number>"
+  region: us-east-1
+
+cli_auth:
+  certificate_header: certificate_header
+  required_headers:
+    - RequiredMTLSHeader: RequiredMTLSHeaderValue
+
+challenge_url:
+  enabled: true
+  request_ip_must_match_challenge_creation_ip: false
+
+consoleme:
+  # Whether to show terraform exporter tab or not
+  export_to_terraform_enabled: false
+  environment: prod
+  development: false
+  url: http://localhost:8081
+  application_admin: admin@example.com
+  jwt_secret: secret
+  web:
+    replicaCount: 1
+    # Not using the script retrieve_or_decode_configuration
+    command: >
+      "FORCE_COLOR=true yarn --cwd /apps/consoleme/ui/ build:prod;
+      watchmedo auto-restart --recursive --pattern='*.py;*.yaml' --directory='.' python consoleme/__main__.py"
+    containerPort: 8081
+    livenessProbe:
+      path: /
+      port: 8081
+    readinessProbe:
+      path: /
+      port: 8081
+    env:
+      - name: EC2_REGION
+        value: us-east-1
+      - name: CONFIG_LOCATION
+        value: /etc/consoleme/config.yaml
+      - name: SETUPTOOLS_USE_DISTUTILS
+        value: stdlib
+    resources:
+      {}
+      # We usually recommend not to specify default resources and to leave this as a conscious
+      # choice for the user. This also increases chances charts run on environments with little
+      # resources, such as Minikube. If you do want to specify resources, uncomment the following
+      # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+      # limits:
+      #   cpu: 1
+      #   memory: 4096Mi
+      # requests:
+      #   cpu: 100m
+      #   memory: 512Mi
+  celery:
+    replicaCount: 1
+    region: us-east-1
+    # Not using the script retrieve_or_decode_configuration
+    # In case you're deploying DynamoDB in this chart you should add this command at the beginning:
+    #     python scripts/initialize_dynamodb_oss.py;
+    # It'll create the necessary tables
+    command: >
+      "python scripts/initialize_redis_oss.py --use_celery=false;
+      celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=8"
+    env:
+      - name: EC2_REGION
+        value: us-east-1
+      - name: CONFIG_LOCATION
+        value: /etc/consoleme/config.yaml
+      - name: SETUPTOOLS_USE_DISTUTILS
+        value: stdlib
+      - name: COLUMNS
+        value: "80"
+    resources:
+      {}
+      # We usually recommend not to specify default resources and to leave this as a conscious
+      # choice for the user. This also increases chances charts run on environments with little
+      # resources, such as Minikube. If you do want to specify resources, uncomment the following
+      # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+      # limits:
+      #   cpu: 500m
+      #   memory: 2048Mi
+      # requests:
+      #   cpu: 100m
+      #   memory: 512Mi
+
+policies:
+  role_name: ConsoleMeInstanceProfile
+  supported_resource_types_for_policy_application:
+    - s3
+    - sns
+    - sqs
+
+# Trust policy to be added to new roles
+user_role_creator:
+  default_trust_policy: |-
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+          {
+              "Effect": "Allow",
+              "Principal": {"Service": "ec2.amazonaws.com"},
+              "Action": "sts:AssumeRole"
+          }
+      ]
+    }
+
+logging_levels:
+  asyncio: WARNING
+  boto3: CRITICAL
+  boto: CRITICAL
+  botocore: CRITICAL
+  elasticsearch.trace: ERROR
+  elasticsearch: ERROR
+  nose: CRITICAL
+  parso.python.diff: WARNING
+  s3transfer: CRITICAL
+  spectator.HttpClient: WARNING
+  spectator.Registry: WARNING
+  urllib3: ERROR
+
+# SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+# administrators and requesters about policy requests applicable to them.
+ses:
+  support_reference: "Please contact us at support@example.com if you have any questions or concerns."
+  arn: "arn:aws:ses:us-east-1:<AWS account number>:identity/support@example.com"
+  region: "us-east-1"
+  consoleme:
+    name: ConsoleMe
+    sender: support@example.com
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8081
+
+ingress:
+  enabled: false
+  annotations: {}
+  hosts:
+    - host: <ConsoleMe URL>
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: consoleme
+              servicePort: 80
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+# Note: Do not put anything sensitive in the self_service_iam key. This will be exposed to the frontend UI
+#   Reference the default values provided in consoleme/lib/defaults.py as SELF_SERVICE_IAM_DEFAULTS
+#self_service_iam:
+#  permissions_map: {}
+
+# In your deployment, you'll probably want to move these to Dynamic Configuration at
+# https://YOUR_CONSOLEME_DOMAIN/config
+#   Reference the default values provided in consoleme/lib/defaults.py as PERMISSION_TEMPLATE_DEFAULTS
+#permission_templates: []

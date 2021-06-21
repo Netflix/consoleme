@@ -7,6 +7,8 @@ repos:
       - id: check-ast
       - id: check-case-conflict
       - id: check-yaml
+        exclude: "^docs/gitbook/|^helm/consoleme"
+
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.8.4
     hooks:
@@ -41,6 +43,7 @@ repos:
     rev: v2.2.1
     hooks:
       - id: prettier
+        exclude: "^helm/consoleme"
 
   - repo: https://github.com/pre-commit/mirrors-eslint
     rev: v7.24.0
@@ -76,5 +79,11 @@ repos:
         name: bandit
         entry: bandit
         args: ["--ini", "tox.ini", "-r", "consoleme"]
+        language: system
+        pass_filenames: false
+
+      - id: helm-lint
+        name: helm-lint
+        entry: helm lint helm/consoleme
         language: system
         pass_filenames: false

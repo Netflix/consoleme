@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "consoleme.fullname" . }}-celery
+  labels:
+    {{- include "consoleme.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.consoleme.celery.replicaCount }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "consoleme.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "consoleme.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "consoleme.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-celery
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/bin/bash","-c", {{ .Values.consoleme.celery.command }}]
+          resources:
+            {{- toYaml .Values.consoleme.celery.resources | nindent 12 }}
+          env: {{- toYaml .Values.consoleme.celery.env | nindent 12 }}
+          volumeMounts:
+            - mountPath: /etc/consoleme/secrets
+              name: consoleme-secrets
+            - mountPath: /etc/consoleme/config.yaml
+              name: consoleme-config
+              readOnly: true
+              subPath: config.yaml
+            - mountPath: /etc/consoleme/config_base.yaml
+              name: consoleme-config-base
+              readOnly: true
+              subPath: config_base.yaml
+            - mountPath: /etc/consoleme/config_auth.yaml
+              name: consoleme-config-auth
+              readOnly: true
+              subPath: config_auth.yaml
+            - mountPath: /etc/consoleme/config_redis.yaml
+              name: consoleme-config-redis
+              readOnly: true
+              subPath: config_redis.yaml
+            - mountPath: /etc/consoleme/config_dynamo.yaml
+              name: consoleme-config-dynamo
+              readOnly: true
+              subPath: config_dynamo.yaml
+      volumes:
+        - name: consoleme-secrets
+          secret:
+            secretName: {{ include "consoleme.fullname" . }}-secrets
+        - name: consoleme-config
+          configMap:
+            name: {{ include "consoleme.fullname" . }}-config
+        - name: consoleme-config-base
+          configMap:
+            name: {{ include "consoleme.fullname" . }}-config-base
+        - name: consoleme-config-auth
+          configMap:
+            name: {{ include "consoleme.fullname" . }}-config-auth
+        - name: consoleme-config-redis
+          configMap:
+            name: {{ include "consoleme.fullname" . }}-config-redis
+        - name: consoleme-config-dynamo
+          configMap:
+            name: {{ include "consoleme.fullname" . }}-config-dynamo
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
