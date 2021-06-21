@@ -263,7 +263,7 @@ consoleme:
     # It'll create the necessary tables
     command: >
       "python scripts/initialize_redis_oss.py --use_celery=false;
-      celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=8"
+      celery -A consoleme.celery_tasks.celery_tasks beat -l DEBUG --pidfile /tmp/celery.pid"
     env:
       - name: EC2_REGION
         value: us-east-1
@@ -273,8 +273,36 @@ consoleme:
         value: stdlib
       - name: COLUMNS
         value: "80"
-    resources:
-      {}
+    resources: {}
+      # We usually recommend not to specify default resources and to leave this as a conscious
+      # choice for the user. This also increases chances charts run on environments with little
+      # resources, such as Minikube. If you do want to specify resources, uncomment the following
+      # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+      # limits:
+      #   cpu: 500m
+      #   memory: 2048Mi
+      # requests:
+      #   cpu: 100m
+      #   memory: 512Mi
+  celery_worker:
+    replicaCount: 1
+    region: us-east-1
+    # Not using the script retrieve_or_decode_configuration
+    # In case you're deploying DynamoDB in this chart you should add this command at the beginning:
+    #     python scripts/initialize_dynamodb_oss.py;
+    # It'll create the necessary tables
+    command: >
+      "celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -E --pidfile /tmp/celery.pid --max-memory-per-child=1000000 --max-tasks-per-child 50 --soft-time-limit 3600 --concurrency=10 -O fair"
+    env:
+      - name: EC2_REGION
+        value: us-east-1
+      - name: CONFIG_LOCATION
+        value: /etc/consoleme/config.yaml
+      - name: SETUPTOOLS_USE_DISTUTILS
+        value: stdlib
+      - name: COLUMNS
+        value: "80"
+    resources: { }
       # We usually recommend not to specify default resources and to leave this as a conscious
       # choice for the user. This also increases chances charts run on environments with little
       # resources, such as Minikube. If you do want to specify resources, uncomment the following

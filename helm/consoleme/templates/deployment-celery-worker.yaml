@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "consoleme.fullname" . }}-celery
+  name: {{ include "consoleme.fullname" . }}-celery-worker
   labels:
     {{- include "consoleme.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.consoleme.celery.replicaCount }}
+  replicas: {{ .Values.consoleme.celery_worker.replicaCount }}
   revisionHistoryLimit: 5
   selector:
     matchLabels:
@@ -27,15 +27,15 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}-celery
+        - name: {{ .Chart.Name }}-celery-worker
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/bin/bash","-c", {{ .Values.consoleme.celery.command }}]
+          command: ["/bin/bash","-c", {{ .Values.consoleme.celery_worker.command }}]
           resources:
-            {{- toYaml .Values.consoleme.celery.resources | nindent 12 }}
-          env: {{- toYaml .Values.consoleme.celery.env | nindent 12 }}
+            {{- toYaml .Values.consoleme.celery_worker.resources | nindent 12 }}
+          env: {{- toYaml .Values.consoleme.celery_worker.env | nindent 12 }}
           volumeMounts:
             - mountPath: /etc/consoleme/secrets
               name: consoleme-secrets
