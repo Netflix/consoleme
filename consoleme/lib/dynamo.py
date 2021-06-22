@@ -3,6 +3,7 @@ import sys
 import time
 import uuid
 import zlib
+from collections import defaultdict
 from datetime import datetime
 
 # used as a placeholder for empty SID to work around this:
@@ -16,6 +17,7 @@ import sentry_sdk
 import simplejson as json
 import yaml
 from asgiref.sync import sync_to_async
+from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import Binary  # noqa
 from cloudaux import get_iso_string
 from cloudaux.aws.sts import boto3_cached_conn
@@ -214,6 +216,10 @@ class UserDynamoHandler(BaseDynamoHandler):
                     "aws.resource_cache_dynamo_table", "consoleme_resource_cache"
                 )
             )
+            self.cloudtrail_table = self._get_dynamo_table(
+                config.get("aws.cloudtrail_table", "consoleme_cloudtrail")
+            )
+
             if user_email:
                 self.user = self.get_or_create_user(user_email)
                 self.affected_user = self.user
@@ -1119,6 +1125,64 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     async def get_all_pending_requests(self):
         return await self.get_all_requests(status="pending")
+
+    def batch_write_cloudtrail_events(self, items):
+        with self.cloudtrail_table.batch_writer(
+            overwrite_by_pkeys=["arn", "request_id"]
+        ) as batch:
+            for item in items:
+                batch.put_item(Item=self._data_to_dynamo_replace(item))
+        return True
+
+    async def get_top_cloudtrail_errors_by_arn(self, arn, n=5):
+        response: dict = await sync_to_async(self.cloudtrail_table.query)(
+            KeyConditionExpression=Key("arn").eq(arn)
+        )
+        items = response.get("Items", [])
+        aggregated_errors = defaultdict(dict)
+
+        for item in items:
+            if int(item["ttl"]) < int(time.time()):
+                continue
+            event_call = item["event_call"]
+            event_resource = item.get("resource", "")
+
+            event_string = f"{event_call}|||{event_resource}"
+            if not aggregated_errors.get(event_string):
+                aggregated_errors[event_string]["count"] = 0
+                aggregated_errors[event_string]["generated_policy"] = item.get(
+                    "generated_policy", {}
+                )
+            aggregated_errors[event_string]["count"] += 1
+
+        top_n_errors = {
+            k: v
+            for k, v in sorted(
+                aggregated_errors.items(),
+                key=lambda item: item[1]["count"],
+                reverse=True,
+            )[:n]
+        }
+
+        return top_n_errors
+
+    def count_arn_errors(self, error_count, items):
+        for item in items:
+            if int(item["ttl"]) < int(time.time()):
+                continue
+            arn = item.get("arn")
+            if not error_count.get(arn):
+                error_count[arn] = 0
+            error_count[arn] += 1
+        return error_count
+
+    def count_cloudtrail_errors_by_arn(self):
+        error_count = {}
+        items = self.parallel_scan_table(self.cloudtrail_table)
+        error_count = self.count_arn_errors(
+            error_count, self._data_from_dynamo_replace(items)
+        )
+        return error_count
 
 
 class IAMRoleDynamoHandler(BaseDynamoHandler):

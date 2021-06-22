@@ -8,10 +8,10 @@ ddb = boto3.client(
     "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name=config.region
 )
 
-
+table_name = "consoleme_iamroles_global"
 try:
     ddb.create_table(
-        TableName="consoleme_iamroles_global",
+        TableName=table_name,
         AttributeDefinitions=[
             {"AttributeName": "arn", "AttributeType": "S"},
             {"AttributeName": "accountId", "AttributeType": "S"},
@@ -27,28 +27,37 @@ try:
         },
     )
 
-    for attempt in Retrying(
-        stop=stop_after_attempt(3),
-        wait=wait_fixed(3),
-        retry=retry_if_exception_type(
-            (
-                ddb.exceptions.ResourceNotFoundException,
-                ddb.exceptions.ResourceInUseException,
-            )
-        ),
-    ):
-        with attempt:
-            ddb.update_time_to_live(
-                TableName="consoleme_iamroles_global",
-                TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
-            )
+    try:
+        for attempt in Retrying(
+            stop=stop_after_attempt(3),
+            wait=wait_fixed(3),
+            retry=retry_if_exception_type(
+                (
+                    ddb.exceptions.ResourceNotFoundException,
+                    ddb.exceptions.ResourceInUseException,
+                )
+            ),
+        ):
+            with attempt:
+                ddb.update_time_to_live(
+                    TableName=table_name,
+                    TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
+                )
+    except ClientError as e:
+        if str(e) != (
+            "An error occurred (ValidationException) when calling the UpdateTimeToLive operation: "
+            "TimeToLive is already enabled"
+        ):
+            print(f"Unable to update TTL attribute on table {table_name}. Error: {e}.")
 
 except ClientError as e:
-    print(
-        "Unable to create table "
-        f"consoleme_iamroles_global. Most likely it already exists and you can ignore this message. Error: {e}."
-    )
+    if str(e) != (
+        "An error occurred (ResourceInUseException) when calling the CreateTable operation: "
+        "Cannot create preexisting table"
+    ):
+        print(f"Unable to create table {table_name}. Error: {e}.")
 
+table_name = "consoleme_config_global"
 try:
     ddb.create_table(
         TableName="consoleme_config_global",
@@ -61,14 +70,16 @@ try:
         },
     )
 except ClientError as e:
-    print(
-        f"Unable to create table consoleme_config_global. Most likely it already exists and you can ignore this "
-        f"message. Error: {e}"
-    )
+    if str(e) != (
+        "An error occurred (ResourceInUseException) when calling the CreateTable operation: "
+        "Cannot create preexisting table"
+    ):
+        print(f"Unable to create table {table_name}. Error: {e}.")
 
+table_name = "consoleme_policy_requests"
 try:
     ddb.create_table(
-        TableName="consoleme_policy_requests",
+        TableName=table_name,
         KeySchema=[{"AttributeName": "request_id", "KeyType": "HASH"}],  # Partition key
         AttributeDefinitions=[
             {"AttributeName": "request_id", "AttributeType": "S"},
@@ -92,14 +103,16 @@ try:
         },
     )
 except ClientError as e:
-    print(
-        f"Unable to create table consoleme_policy_requests  . Most likely it already exists and you can ignore this "
-        f"message. Error: {e}"
-    )
+    if str(e) != (
+        "An error occurred (ResourceInUseException) when calling the CreateTable operation: "
+        "Cannot create preexisting table"
+    ):
+        print(f"Unable to create table {table_name}. Error: {e}.")
 
+table_name = "consoleme_resource_cache"
 try:
     ddb.create_table(
-        TableName="consoleme_resource_cache",
+        TableName=table_name,
         KeySchema=[
             {"AttributeName": "resourceId", "KeyType": "HASH"},
             {"AttributeName": "resourceType", "KeyType": "RANGE"},  # Sort key
@@ -127,14 +140,16 @@ try:
         },
     )
 except ClientError as e:
-    print(
-        f"Unable to create table consoleme_resource_cache  . Most likely it already exists and you can ignore this "
-        f"message. Error: {e}"
-    )
+    if str(e) != (
+        "An error occurred (ResourceInUseException) when calling the CreateTable operation: "
+        "Cannot create preexisting table"
+    ):
+        print(f"Unable to create table {table_name}. Error: {e}.")
 
+table_name = "consoleme_cloudtrail"
 try:
     ddb.create_table(
-        TableName="consoleme_cloudtrail",
+        TableName=table_name,
         KeySchema=[
             {"AttributeName": "arn", "KeyType": "HASH"},  # Partition key
             {"AttributeName": "request_id", "KeyType": "RANGE"},  # Sort key
@@ -149,16 +164,39 @@ try:
             "StreamViewType": "NEW_AND_OLD_IMAGES",
         },
     )
+    try:
+        for attempt in Retrying(
+            stop=stop_after_attempt(3),
+            wait=wait_fixed(3),
+            retry=retry_if_exception_type(
+                (
+                    ddb.exceptions.ResourceNotFoundException,
+                    ddb.exceptions.ResourceInUseException,
+                )
+            ),
+        ):
+            with attempt:
+                ddb.update_time_to_live(
+                    TableName=table_name,
+                    TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
+                )
+    except ClientError as e:
+        if str(e) != (
+            "An error occurred (ValidationException) when calling the UpdateTimeToLive operation: "
+            "TimeToLive is already enabled"
+        ):
+            print(f"Unable to update TTL attribute on table {table_name}. Error: {e}.")
 except ClientError as e:
-    print(
-        "Unable to create table consoleme_chatbot. Most likely it already exists and you can ignore this message. Error: {}".format(
-            e
-        )
-    )
+    if str(e) != (
+        "An error occurred (ResourceInUseException) when calling the CreateTable operation: "
+        "Cannot create preexisting table"
+    ):
+        print(f"Unable to create table {table_name}. Error: {e}.")
 
 try:
+    table_name = "consoleme_users_global"
     ddb.create_table(
-        TableName="consoleme_users_global",
+        TableName=table_name,
         KeySchema=[{"AttributeName": "username", "KeyType": "HASH"}],  # Partition key
         AttributeDefinitions=[{"AttributeName": "username", "AttributeType": "S"}],
         ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
@@ -168,8 +206,8 @@ try:
         },
     )
 except ClientError as e:
-    print(
-        "Unable to create table consoleme_users_global. Most likely it already exists and you can ignore this message. Error: {}".format(
-            e
-        )
-    )
+    if str(e) != (
+        "An error occurred (ResourceInUseException) when calling the CreateTable operation: "
+        "Cannot create preexisting table"
+    ):
+        print(f"Unable to create table {table_name}. Error: {e}.")

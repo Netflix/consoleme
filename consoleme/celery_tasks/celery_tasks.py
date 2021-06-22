@@ -67,6 +67,9 @@ from consoleme.lib.cloud_credential_authorization_mapping import (
     generate_and_store_reverse_authorization_mapping,
 )
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
+from consoleme.lib.event_bridge.access_denies import (
+    detect_cloudtrail_denies_and_update_cache,
+)
 from consoleme.lib.event_bridge.role_updates import detect_role_changes_and_update_cache
 from consoleme.lib.git import store_iam_resources_in_git
 from consoleme.lib.plugins import get_plugin_by_name
@@ -524,6 +527,7 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
         json.dumps(cloudtrail_errors),
     )
     log_data["number_of_roles_with_errors"]: len(cloudtrail_errors.keys())
+    log_data["number_errors"]: sum(cloudtrail_errors.values())
     log.debug(log_data)
     return log_data
 
@@ -1655,6 +1659,39 @@ def trigger_credential_mapping_refresh_from_role_changes():
     return log_data
 
 
+@app.task(soft_time_limit=1800, **default_retry_kwargs)
+def cache_cloudtrail_denies():
+    """
+    This task caches acess denies reported by Cloudtrail. This feature requires an
+    Event Bridge rule monitoring Cloudtrail for your accounts for access deny errors.
+    """
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    if not config.get("celery.cache_cloudtrail_denies.enabled"):
+        return {
+            "function": function,
+            "message": "Not running Celery task because it is not enabled.",
+        }
+    if not (
+        config.region == config.get("celery.active_region", config.region)
+        or config.get("environment") in ["dev", "test"]
+    ):
+        return {
+            "function": function,
+            "message": "Not running Celery task in inactive region",
+        }
+    ct_events = async_to_sync(detect_cloudtrail_denies_and_update_cache)()
+    if ct_events:
+        # Spawn off a task to cache errors by ARN for the UI
+        cache_cloudtrail_errors_by_arn.delay()
+    log_data = {
+        "function": function,
+        "message": "Successfully cached cloudtrail denies",
+        "num_cloudtrail_denies": len(ct_events),
+    }
+    log.debug(log_data)
+    return log_data
+
+
 @app.task(soft_time_limit=60, **default_retry_kwargs)
 def refresh_iam_role(role_arn):
     """
@@ -1778,6 +1815,11 @@ schedule = {
     },
     "trigger_credential_mapping_refresh_from_role_changes": {
         "task": "consoleme.celery_tasks.celery_tasks.trigger_credential_mapping_refresh_from_role_changes",
+        "options": {"expires": 300},
+        "schedule": schedule_minute,
+    },
+    "cache_cloudtrail_denies": {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_denies",
         "options": {"expires": 300},
         "schedule": schedule_minute,
     },

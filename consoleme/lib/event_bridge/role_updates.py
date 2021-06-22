@@ -71,17 +71,17 @@ def detect_role_changes_and_update_cache(celery_app):
                         args=[role_arn],
                     )
                 roles_to_update.add(role_arn)
-                processed_messages.append(
-                    {
-                        "Id": message["MessageId"],
-                        "ReceiptHandle": message["ReceiptHandle"],
-                    }
-                )
             except Exception as e:
                 log.error(
                     {**log_data, "error": str(e), "raw_message": message}, exc_info=True
                 )
                 sentry_sdk.capture_exception()
+            processed_messages.append(
+                {
+                    "Id": message["MessageId"],
+                    "ReceiptHandle": message["ReceiptHandle"],
+                }
+            )
         sqs_client.delete_message_batch(QueueUrl=queue_url, Entries=processed_messages)
         messages = sqs_client.receive_message(
             QueueUrl=queue_url, MaxNumberOfMessages=10

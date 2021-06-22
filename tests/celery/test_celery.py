@@ -195,3 +195,14 @@ class TestCelerySync(TestCase):
                 "num_roles_changed": 1,
             },
         )
+
+    def test_cache_cloudtrail_denies(self):
+        res = self.celery.cache_cloudtrail_denies()
+        self.assertEqual(
+            res,
+            {
+                "function": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_denies",
+                "message": "Successfully cached cloudtrail denies",
+                "num_cloudtrail_denies": 1,
+            },
+        )

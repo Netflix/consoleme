@@ -1305,6 +1305,23 @@ components:
         event_call:
           type: string
           example: sqs:CreateQueue
+        resource:
+          type: string
+          example: arn:aws:iam::123456789012:role/roleName
+        generated_policy:
+          type: object
+          example:
+            {
+              "Version": "2012-10-17",
+              "Statement":
+                [
+                  {
+                    "Resource": ["arn:aws:iam::123456789012:role/roleName"],
+                    "Action": ["sts:AssumeRole"],
+                    "Effect": "Allow",
+                  },
+                ],
+            }
         count:
           type: integer
           example: 5
