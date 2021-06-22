@@ -4,25 +4,19 @@ from datetime import datetime
 
 import sentry_sdk
 import ujson as json
-from cloudaux.aws.sts import boto3_cached_conn
 from asgiref.sync import sync_to_async
-from consoleme.lib.dynamo import UserDynamoHandler
+from cloudaux.aws.sts import boto3_cached_conn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     DataNotRetrievable,
     MissingConfigurationValue,
 )
+from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 log = config.get_logger()
-# TODO REMOVE
-import os
-
-os.environ[
-    "AWS_CONTAINER_CREDENTIALS_FULL_URI"] = "http://localhost:9091/ecs/arn:aws:iam::441660064727:role/consolemeInstanceProfile"
-
 
 async def generate_policy_from_cloudtrail_deny(ct_event):
     """
@@ -61,8 +55,7 @@ async def detect_cloudtrail_denies_and_update_cache():
     log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
     dynamo = UserDynamoHandler()
     queue_arn = config.get(
-        "event_bridge.detect_cloudtrail_denies_and_update_cache.queue_arn",
-        ""
+        "event_bridge.detect_cloudtrail_denies_and_update_cache.queue_arn", ""
     ).format(region=config.region)
     if not queue_arn:
         raise MissingConfigurationValue(
@@ -104,10 +97,8 @@ async def detect_cloudtrail_denies_and_update_cache():
                 event_name = decoded_message.get("eventName")
                 event_source = decoded_message.get("eventSource")
                 for event_source_substitution in config.get(
-                        "event_bridge.detect_cloudtrail_denies_and_update_cache.event_bridge_substitutions",
-                        [
-                            ".amazonaws.com"
-                        ]
+                    "event_bridge.detect_cloudtrail_denies_and_update_cache.event_bridge_substitutions",
+                    [".amazonaws.com"],
                 ):
                     event_source = event_source.replace(event_source_substitution, "")
                 event_time = decoded_message.get("eventTime")
@@ -117,10 +108,15 @@ async def detect_cloudtrail_denies_and_update_cache():
                 )
                 try:
                     session_name = decoded_message["userIdentity"]["arn"].split("/")[-1]
-                except (IndexError, KeyError):  # If IAM user, there won't be a session name
+                except (
+                    IndexError,
+                    KeyError,
+                ):  # If IAM user, there won't be a session name
                     session_name = ""
                 try:
-                    role_arn = decoded_message["userIdentity"]["sessionContext"]["sessionIssuer"]["arn"]
+                    role_arn = decoded_message["userIdentity"]["sessionContext"][
+                        "sessionIssuer"
+                    ]["arn"]
                 except KeyError:  # Skip events without a parsable ARN
                     continue
 
@@ -147,7 +143,9 @@ async def detect_cloudtrail_denies_and_update_cache():
                     "ReceiptHandle": message["ReceiptHandle"],
                 }
             )
-        await sync_to_async(sqs_client.delete_message_batch)(QueueUrl=queue_url, Entries=processed_messages)
+        await sync_to_async(sqs_client.delete_message_batch)(
+            QueueUrl=queue_url, Entries=processed_messages
+        )
         await sync_to_async(dynamo.batch_write_cloudtrail_events)(ct_events)
         messages_awaitable = await sync_to_async(sqs_client.receive_message)(
             QueueUrl=queue_url, MaxNumberOfMessages=10

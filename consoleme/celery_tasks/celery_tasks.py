@@ -67,7 +67,9 @@ from consoleme.lib.cloud_credential_authorization_mapping import (
     generate_and_store_reverse_authorization_mapping,
 )
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
-from consoleme.lib.event_bridge.access_denies import detect_cloudtrail_denies_and_update_cache
+from consoleme.lib.event_bridge.access_denies import (
+    detect_cloudtrail_denies_and_update_cache,
+)
 from consoleme.lib.event_bridge.role_updates import detect_role_changes_and_update_cache
 from consoleme.lib.git import store_iam_resources_in_git
 from consoleme.lib.plugins import get_plugin_by_name
@@ -1663,9 +1665,7 @@ def cache_cloudtrail_denies():
     Event Bridge rule monitoring Cloudtrail for your accounts for access deny errors.
     """
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    if not config.get(
-        "celery.cache_cloudtrail_denies.enabled"
-    ):
+    if not config.get("celery.cache_cloudtrail_denies.enabled"):
         return {
             "function": function,
             "message": "Not running Celery task because it is not enabled.",
@@ -1679,8 +1679,6 @@ def cache_cloudtrail_denies():
     log.debug(log_data)
     return log_data
 
-# TODO: Remove
-cache_cloudtrail_denies()
 
 @app.task(soft_time_limit=60, **default_retry_kwargs)
 def refresh_iam_role(role_arn):
