@@ -1,4 +1,7 @@
+import sentry_sdk
+
 from consoleme.config import config
+from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.models import AppDetailsArray, AppDetailsModel
 
 
@@ -7,11 +10,24 @@ class Policies:
     Policies internal plugin
     """
 
+    def __init__(
+        self,
+    ) -> None:
+        self.dynamo = UserDynamoHandler()
+
     def error_count_by_arn(self):
-        return {}
+        try:
+            return self.dynamo.count_cloudtrail_errors_by_arn()
+        except Exception:
+            sentry_sdk.capture_exception()
+            return {}
 
     async def get_errors_by_role(self, arn, n=5):
-        return {}
+        try:
+            return await self.dynamo.get_top_cloudtrail_errors_by_arn(arn, n)
+        except Exception:
+            sentry_sdk.capture_exception()
+            return {}
 
     async def get_applications_associated_with_role(self, arn: str) -> AppDetailsArray:
         """

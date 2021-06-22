@@ -366,10 +366,10 @@ def iamrole_table(dynamodb):
 
 @pytest.fixture(autouse=True, scope="session")
 def sqs_queue(sqs):
-    # Create the table:
     sqs.create_queue(
         QueueName="consoleme-cloudtrail-role-events-test",
     )
+    sqs.create_queue(QueueName="consoleme-cloudtrail-access-deny-events-test")
 
     queue_url = sqs.get_queue_url(QueueName="consoleme-cloudtrail-role-events-test")
     message = json.dumps(
@@ -432,6 +432,73 @@ def sqs_queue(sqs):
     )
     sqs.send_message(QueueUrl=queue_url["QueueUrl"], MessageBody=message)
 
+    queue_url = sqs.get_queue_url(
+        QueueName="consoleme-cloudtrail-access-deny-events-test"
+    )
+    message = json.dumps(
+        {
+            "Message": json.dumps(
+                {
+                    "version": "0",
+                    "id": "12345",
+                    "detail-type": "AWS API Call via CloudTrail",
+                    "source": "aws.sts",
+                    "account": "123456789012",
+                    "time": "2021-06-22T16:17:45Z",
+                    "region": "us-east-1",
+                    "resources": [],
+                    "detail": {
+                        "eventVersion": "1.08",
+                        "userIdentity": {
+                            "type": "AssumedRole",
+                            "principalId": "principalId",
+                            "arn": "arn:aws:sts::123456789012:assumed-role/roleA/instanceId",
+                            "accountId": "123456789012",
+                            "accessKeyId": "ASIASFT37IGO3U7IQ5RA",
+                            "sessionContext": {
+                                "sessionIssuer": {
+                                    "type": "Role",
+                                    "principalId": "principalId",
+                                    "arn": "arn:aws:iam::123456789012:role/roleA",
+                                    "accountId": "123456789012",
+                                    "userName": "roleA",
+                                },
+                                "webIdFederationData": {},
+                                "attributes": {
+                                    "creationDate": "2021-06-22T10:59:51Z",
+                                    "mfaAuthenticated": "false",
+                                },
+                                "ec2RoleDelivery": "2.0",
+                            },
+                        },
+                        "eventTime": "2021-06-22T16:17:45Z",
+                        "eventSource": "sts.amazonaws.com",
+                        "eventName": "AssumeRole",
+                        "awsRegion": "global",
+                        "sourceIPAddress": "1.2.3.4",
+                        "userAgent": "userAgent",
+                        "errorCode": "AccessDenied",
+                        "errorMessage": "User: arn:aws:sts::123456789012:assumed-role/roleA/instanceId is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::123456789012:role/roleB",
+                        "requestParameters": None,
+                        "responseElements": None,
+                        "requestID": "404804f0-0b62-4220-8766-0e145cb85be9",
+                        "eventID": "cfaf5898-f822-47ce-ba52-1b01aabc18f4",
+                        "readOnly": True,
+                        "eventType": "AwsApiCall",
+                        "managementEvent": True,
+                        "recipientAccountId": "123456789012",
+                        "eventCategory": "Management",
+                        "tlsDetails": {
+                            "tlsVersion": "TLSv1.2",
+                            "cipherSuite": "ECDHE-RSA-AES128-SHA",
+                            "clientProvidedHostHeader": "sts.amazonaws.com",
+                        },
+                    },
+                }
+            )
+        }
+    )
+    sqs.send_message(QueueUrl=queue_url["QueueUrl"], MessageBody=message)
     yield sqs
 
 
