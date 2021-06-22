@@ -18,6 +18,22 @@ from consoleme.lib.plugins import get_plugin_by_name
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 log = config.get_logger()
 
+
+async def get_resource_from_cloudtrail_deny(ct_event):
+    """
+    Naive attempt to determine resource from Access Deny CloudTrail event. If we can't parse it from the
+    Cloudtrail message, we return `*`.
+    """
+    resource = "*"
+    if "on resource: arn:aws" in ct_event["error_message"]:
+        resource_re = re.match(
+            r"^.* on resource: (arn:aws:.*?$)", ct_event["error_message"]
+        )
+        if resource_re and len(resource_re.groups()) == 1:
+            resource = resource_re.groups()[0]
+    return resource
+
+
 async def generate_policy_from_cloudtrail_deny(ct_event):
     """
     Naive generation of policy from a cloudtrail deny event
@@ -33,18 +49,13 @@ async def generate_policy_from_cloudtrail_deny(ct_event):
     ]:
         return None
 
-    resource = "*"
-    if "on resource: arn:aws" in ct_event["error_message"]:
-        resource_re = re.match(
-            r"^.* on resource: (arn:aws:.*?$)", ct_event["error_message"]
-        )
-        if resource_re and len(resource_re.groups()) == 1:
-            resource = resource_re.groups()[0]
-
-    event_call = ct_event["event_call"]
     policy = {
         "Statement": [
-            {"Action": [event_call], "Effect": "Allow", "Resource": [resource]}
+            {
+                "Action": [ct_event["event_call"]],
+                "Effect": "Allow",
+                "Resource": [ct_event["resource"]],
+            }
         ],
         "Version": "2012-10-17",
     }
@@ -130,6 +141,7 @@ async def detect_cloudtrail_denies_and_update_cache():
                     epoch_event_time=epoch_event_time,
                     ttl=(epoch_event_time + 86400000) / 1000,
                 )
+                ct_event["resource"] = await get_resource_from_cloudtrail_deny(ct_event)
                 generated_policy = await generate_policy_from_cloudtrail_deny(ct_event)
                 if generated_policy:
                     ct_event["generated_policy"] = generated_policy

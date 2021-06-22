@@ -527,6 +527,7 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
         json.dumps(cloudtrail_errors),
     )
     log_data["number_of_roles_with_errors"]: len(cloudtrail_errors.keys())
+    log_data["number_errors"]: sum(cloudtrail_errors.values())
     log.debug(log_data)
     return log_data
 
@@ -1670,10 +1671,21 @@ def cache_cloudtrail_denies():
             "function": function,
             "message": "Not running Celery task because it is not enabled.",
         }
+    if not (
+        config.region == config.get("celery.active_region", config.region)
+        or config.get("environment") in ["dev", "test"]
+    ):
+        return {
+            "function": function,
+            "message": "Not running Celery task in inactive region",
+        }
     ct_events = async_to_sync(detect_cloudtrail_denies_and_update_cache)()
+    if ct_events:
+        # Spawn off a task to cache errors by ARN for the UI
+        cache_cloudtrail_errors_by_arn.delay()
     log_data = {
         "function": function,
-        "message": "Successfully cached cloudtrial denies",
+        "message": "Successfully cached cloudtrail denies",
         "num_cloudtrail_denies": len(ct_events),
     }
     log.debug(log_data)
@@ -1803,6 +1815,11 @@ schedule = {
     },
     "trigger_credential_mapping_refresh_from_role_changes": {
         "task": "consoleme.celery_tasks.celery_tasks.trigger_credential_mapping_refresh_from_role_changes",
+        "options": {"expires": 300},
+        "schedule": schedule_minute,
+    },
+    "cache_cloudtrail_denies": {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_denies",
         "options": {"expires": 300},
         "schedule": schedule_minute,
     },
