@@ -214,6 +214,10 @@ class UserDynamoHandler(BaseDynamoHandler):
                     "aws.resource_cache_dynamo_table", "consoleme_resource_cache"
                 )
             )
+            self.cloudtrail_table = self._get_dynamo_table(
+                config.get("aws.cloudtrail_table", "consoleme_cloudtrail")
+            )
+
             if user_email:
                 self.user = self.get_or_create_user(user_email)
                 self.affected_user = self.user
@@ -1108,6 +1112,14 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     async def get_all_pending_requests(self):
         return await self.get_all_requests(status="pending")
+
+    def batch_write_cloudtrail_events(self, items):
+        with self.cloudtrail_table.batch_writer(
+            overwrite_by_pkeys=["arn", "request_id"]
+        ) as batch:
+            for item in items:
+                batch.put_item(Item=self._data_to_dynamo_replace(item))
+        return True
 
 
 class IAMRoleDynamoHandler(BaseDynamoHandler):
