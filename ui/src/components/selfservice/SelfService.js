@@ -188,6 +188,10 @@ class SelfService extends Component {
 
   handlePermissionsUpdate(permissions) {
     this.setState({ permissions });
+    console.log(`real permissions ${typeof permissions}`);
+    permissions.forEach((item) =>
+      console.log(`from permissions = service is ==${item.service}`)
+    );
   }
 
   getCurrentSelfServiceStep() {

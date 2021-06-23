@@ -48,59 +48,9 @@ class SelfServiceStep2 extends Component {
     // this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
   }
 
-  /*async componentDidMount() {
-    const { role, permissions } = this.props;
-    const payload = {
-      changes: [],
-    };
-    payload.changes = permissions.map((permission) => {
-      const change = {
-        principal: {
-          principal_arn: role.arn,
-          principal_type: "AwsResource",
-        },
-        generator_type: permission.service,
-        action_groups: permission.actions,
-        condition: permission.condition,
-        effect: "Allow",
-        ...permission,
-      };
-      delete change.service;
-      delete change.actions;
-      return change;
-    });
-
-    const response = await this.props.sendRequestCommon(
-      payload,
-      "/api/v2/generate_changes"
-    );
-    if (response.status != null && response.status === 400) {
-      return this.setState({
-        isError: true,
-        messages: [response.message],
-      });
-    }
-
-    if ("changes" in response && response.changes.length > 0) {
-      const policy_name = response.changes[0].policy_name;
-      const statement = JSON.stringify(
-        response.changes[0].policy.policy_document,
-        null,
-        4
-      );
-      return this.setState({
-        custom_statement: statement,
-        isError: false,
-        messages: [],
-        policy_name,
-        statement,
-      });
-    }
-    return this.setState({
-      isError: true,
-      messages: ["Unknown Exception raised. Please reach out for support"],
-    });
-  } */
+  updateStatement() {
+    console.log("statement");
+  }
 
   onChange(newValue, e) {
     this.setState({
@@ -132,6 +82,24 @@ class SelfServiceStep2 extends Component {
     this.props.handleExcludeAccountsUpdate(excludeAccounts);
   }
 
+  handlePayloadPermissionsAdd(permission) {
+    const { permissions } = this.props;
+
+    for (let i = 0, l = permissions.length; i < l; i++) {
+      let arn = permission.resource_arn;
+      let actions = permission.actions;
+
+      if (arn === permissions[i].resource_arn) {
+        console.log(`duplicate arn`);
+        let permissionsActions = permissions[i].actions;
+
+        permissions.splice(i, 1);
+        permissions.push(permission);
+      }
+    }
+    this.props.handlePermissionsUpdate(permissions);
+  }
+
   handlePermissionAdd(permission) {
     this.setState(
       {
@@ -153,7 +121,7 @@ class SelfServiceStep2 extends Component {
 
   getPermissionItems() {
     const { config, services } = this.props;
-
+    console.log(this.props.permissions);
     return this.props.permissions.map((permission, idx) => {
       const found = _.find(services, { key: permission.service });
       const serviceName = found.text;
@@ -323,7 +291,25 @@ class SelfServiceStep2 extends Component {
               <Divider />
               <Header>
                 You must add at least one resource to continue or choose{" "}
-                <SelfServiceModal {...this.props} /> to override permissions.
+                <SelfServiceModal
+                  custom_statement={custom_statement}
+                  key={service}
+                  config={config}
+                  role={role}
+                  service={service}
+                  updatePayloadPermissions={this.handlePayloadPermissionsAdd.bind(
+                    this
+                  )}
+                  updateExtraActions={this.handleExtraActionsAdd.bind(this)}
+                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(
+                    this
+                  )}
+                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(
+                    this
+                  )}
+                  {...this.props}
+                />{" "}
+                to override permissions.
               </Header>
               {messagesToShow}
             </Grid.Column>
