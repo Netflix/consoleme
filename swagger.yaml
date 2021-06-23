@@ -340,6 +340,22 @@ paths:
           description: OK
         default:
           $ref: "#/components/responses/DefaultErrorResponse"
+    get:
+      summary: get details about a role (mtls apps/users only)
+      tags:
+        - roles
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtendedRoleModel"
+        default:
+          $ref: "#/components/responses/DefaultErrorResponse"
   /policies/check:
     post:
       summary: check a policy document
