@@ -1305,7 +1305,7 @@ def clear_old_redis_iam_cache() -> bool:
     return True
 
 
-@app.task(soft_time_limit=1800, **default_retry_kwargs)
+@app.task(soft_time_limit=3600, **default_retry_kwargs)
 def cache_resources_from_aws_config_for_account(account_id) -> dict:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     s3_bucket = config.get("aws_config_cache.s3.bucket")
