@@ -511,10 +511,14 @@ def _add_role_to_redis(redis_key: str, role_entry: Dict) -> None:
         raise
 
 
-@app.task(soft_time_limit=3600)
+@app.task(soft_time_limit=7200)
 def cache_cloudtrail_errors_by_arn() -> Dict:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
     log_data: Dict = {"function": function}
+    if is_task_already_running(function, []):
+        log_data["message"] = "Skipping task: An identical task is currently running"
+        log.debug(log_data)
+        return log_data
     cloudtrail_errors: Dict = internal_policies.error_count_by_arn()
     if not cloudtrail_errors:
         cloudtrail_errors = {}
