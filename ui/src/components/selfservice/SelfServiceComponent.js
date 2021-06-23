@@ -200,68 +200,71 @@ class SelfServiceComponent extends Component {
     const { currentExtraActionValues } = this.state;
     const { currentIncludeAccountValues } = this.state;
     const { currentExcludeAccountValues } = this.state;
-    if (role.template_language == "honeybee") {
-      return (
-        <div>
-          <Divider />
-          <Accordion>
-            <Accordion.Title
-              active={activeIndex === 0}
-              index={0}
-              onClick={this.handleClick}
-            >
-              <span style={{ color: "#4183c4" }}>Advanced Options</span>
-            </Accordion.Title>
-            <Accordion.Content active={activeIndex === 0}>
-              <label>Extra Actions</label>
-              <Dropdown
-                options={this.state.extraAction}
-                placeholder="Press Enter after typing each extra action"
-                search
-                selection
-                fluid
-                multiple
-                allowAdditions
-                value={currentExtraActionValues}
-                onAddItem={this.handleExtraActionAddition}
-                onChange={this.handleExtraActionChange}
-                style={{ marginBottom: "1em" }}
-                className={"advancedOption"}
-              />
-              <label>Include Accounts</label>
-              <Dropdown
-                options={this.state.includeAccount}
-                placeholder="Press Enter after typing each included account"
-                search
-                selection
-                fluid
-                multiple
-                allowAdditions
-                value={currentIncludeAccountValues}
-                onAddItem={this.handleIncludeAccountAddition}
-                onChange={this.handleIncludeAccountChange}
-                style={{ marginBottom: "1em" }}
-                className={"advancedOption"}
-              />
-              <label>Exclude Accounts</label>
-              <Dropdown
-                options={this.state.excludeAccount}
-                placeholder="Press Enter after typing each excluded account"
-                search
-                selection
-                fluid
-                multiple
-                allowAdditions
-                value={currentExcludeAccountValues}
-                onAddItem={this.handleExcludeAccountAddition}
-                onChange={this.handleExcludeAccountChange}
-                className={"advancedOption"}
-              />
-            </Accordion.Content>
-          </Accordion>
-        </div>
-      );
-    }
+
+    return (
+      <div>
+        <Divider />
+        <Accordion>
+          <Accordion.Title
+            active={activeIndex === 0}
+            index={0}
+            onClick={this.handleClick}
+          >
+            <span style={{ color: "#4183c4" }}>Advanced Options</span>
+          </Accordion.Title>
+          <Accordion.Content active={activeIndex === 0}>
+            <label>Extra Actions (example: s3:get*)</label>
+            <Dropdown
+              options={this.state.extraAction}
+              placeholder="Press Enter after typing each extra action"
+              search
+              selection
+              fluid
+              multiple
+              allowAdditions
+              value={currentExtraActionValues}
+              onAddItem={this.handleExtraActionAddition}
+              onChange={this.handleExtraActionChange}
+              style={{ marginBottom: "1em" }}
+              className={"advancedOption"}
+            />
+            {role.template_language === "honeybee" ? (
+              <>
+                <label>Include Accounts</label>
+                <Dropdown
+                  options={this.state.includeAccount}
+                  placeholder="Press Enter after typing each included account"
+                  search
+                  selection
+                  fluid
+                  multiple
+                  allowAdditions
+                  value={currentIncludeAccountValues}
+                  onAddItem={this.handleIncludeAccountAddition}
+                  onChange={this.handleIncludeAccountChange}
+                  style={{ marginBottom: "1em" }}
+                  className={"advancedOption"}
+                />
+                <label>Exclude Accounts</label>
+                <Dropdown
+                  options={this.state.excludeAccount}
+                  placeholder="Press Enter after typing each excluded account"
+                  search
+                  selection
+                  fluid
+                  multiple
+                  allowAdditions
+                  value={currentExcludeAccountValues}
+                  onAddItem={this.handleExcludeAccountAddition}
+                  onChange={this.handleExcludeAccountChange}
+                  className={"advancedOption"}
+                />
+              </>
+            ) : null}
+          </Accordion.Content>
+        </Accordion>
+      </div>
+    );
   }
 
   render() {
