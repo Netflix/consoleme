@@ -17,6 +17,7 @@ from consoleme.exceptions.exceptions import (
     BackgroundCheckNotPassedException,
     BulkAddPrevented,
     DifferentUserGroupDomainException,
+    MissingConfigurationValue,
     NoCredentialSubjectException,
     NoGroupsException,
     NotAMemberException,
@@ -197,13 +198,27 @@ async def get_service(service_name: str, service_path: str, group: str) -> Resou
         "message": f"Building service connection for {service_name} / {service_path}",
     }
     log.debug(log_data)
-    admin_credentials = service_account.Credentials.from_service_account_file(
-        config.get("google.service_key_file"),
-        scopes=config.get(
-            "google.admin_scopes",
-            "[https://www.googleapis.com/auth/admin.directory.group]",
-        ),
-    )
+    if config.get("google.service_key_file"):
+        admin_credentials = service_account.Credentials.from_service_account_file(
+            config.get("google.service_key_file"),
+            scopes=config.get(
+                "google.admin_scopes",
+                ["https://www.googleapis.com/auth/admin.directory.group"],
+            ),
+        )
+    elif config.get("google.service_key_dict"):
+        admin_credentials = service_account.Credentials.from_service_account_info(
+            config.get("google.service_key_dict"),
+            scopes=config.get(
+                "google.admin_scopes",
+                ["https://www.googleapis.com/auth/admin.directory.group"],
+            ),
+        )
+    else:
+        raise MissingConfigurationValue(
+            "Missing configuration for Google. You must configure either `google.service_key_file` "
+            "or `google.service_key_dict`."
+        )
 
     # Change credential subject based on group domain
     credential_subjects = config.get("google.credential_subject")
