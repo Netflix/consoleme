@@ -203,7 +203,7 @@ async def get_service(service_name: str, service_path: str, group: str) -> Resou
             config.get("google.service_key_file"),
             scopes=config.get(
                 "google.admin_scopes",
-                "[https://www.googleapis.com/auth/admin.directory.group]",
+                ["https://www.googleapis.com/auth/admin.directory.group"],
             ),
         )
     elif config.get("google.service_key_dict"):
@@ -211,7 +211,7 @@ async def get_service(service_name: str, service_path: str, group: str) -> Resou
             config.get("google.service_key_dict"),
             scopes=config.get(
                 "google.admin_scopes",
-                "[https://www.googleapis.com/auth/admin.directory.group]",
+                ["https://www.googleapis.com/auth/admin.directory.group"],
             ),
         )
     else:
