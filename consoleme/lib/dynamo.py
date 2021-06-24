@@ -1,4 +1,5 @@
 import asyncio
+import os
 import sys
 import time
 import uuid
@@ -156,7 +157,7 @@ class BaseDynamoHandler:
                     with attempt:
                         batch.put_item(Item=self._data_to_dynamo_replace(item))
 
-    def parallel_scan_table(self, table, total_threads=10, loop=None):
+    def parallel_scan_table(self, table, total_threads=os.cpu_count(), loop=None):
         async def _scan_segment(segment, total_segments):
             response = table.scan(Segment=segment, TotalSegments=total_segments)
             items = response.get("Items", [])

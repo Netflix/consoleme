@@ -157,6 +157,12 @@ class Auth:
             header_groups = await self.get_groups_by_header(headers)
             if header_groups:
                 groups.extend(header_groups)
+        elif config.get("auth.get_groups_from_google"):
+            from consoleme.lib.google import get_group_memberships
+
+            google_groups = await get_group_memberships(user)
+            if google_groups:
+                groups.extend(google_groups)
         if groups_to_add_for_all_users:
             # Optionally consider ConsoleMe users a member of these additional groups
             groups.extend(groups_to_add_for_all_users)

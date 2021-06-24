@@ -421,10 +421,10 @@ class RoleDetailAppHandler(BaseMtlsHandler):
 
     """Handler for /api/v2/mtls/roles/{accountNumber}/{roleName}
 
-    Allows apps to delete a role
+    Allows apps to view or delete a role
     """
 
-    allowed_methods = ["DELETE"]
+    allowed_methods = ["DELETE", "GET"]
 
     def check_xsrf_cookie(self):
         pass
@@ -494,6 +494,53 @@ class RoleDetailAppHandler(BaseMtlsHandler):
             "account": account_id,
         }
         self.write(response_json)
+
+    async def get(self, account_id, role_name):
+        """
+        GET /api/v2/mtls/roles/{account_id}/{role_name}
+        """
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "ip": self.ip,
+            "message": "Retrieving role details",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "account_id": account_id,
+            "role_name": role_name,
+        }
+        app_name = self.requester.get("name") or self.requester.get("username")
+        stats.count(
+            "RoleDetailAppHandler.get",
+            tags={
+                "requester": app_name,
+                "account_id": account_id,
+                "role_name": role_name,
+            },
+        )
+        log.debug(log_data)
+        force_refresh = str2bool(
+            self.request.arguments.get("force_refresh", [False])[0]
+        )
+
+        error = ""
+
+        try:
+            role_details = await get_role_details(
+                account_id, role_name, extended=True, force_refresh=force_refresh
+            )
+        except Exception as e:
+            sentry_sdk.capture_exception()
+            log.error({**log_data, "error": e}, exc_info=True)
+            role_details = None
+            error = str(e)
+
+        if not role_details:
+            self.send_error(
+                404,
+                message=f"Unable to retrieve the specified role: {account_id}/{role_name}. {error}",
+            )
+            return
+        self.write(role_details.json())
 
 
 class RoleCloneHandler(BaseAPIV2Handler):
