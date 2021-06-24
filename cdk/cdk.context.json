@@ -1,0 +1,5 @@
+{
+  "assume-role-credentials:writeIamRoleName": "writeRole",
+  "assume-role-credentials:readIamRoleName": "readRole",
+  "@aws-cdk/core:newStyleStackSynthesis": true
+}

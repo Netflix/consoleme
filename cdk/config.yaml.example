@@ -1,0 +1,18 @@
+---
+
+# Example configuration file. You should take it and customize according to your needs
+
+domain_prefix: 'dev'
+
+spoke_accounts:
+  - '123456789123'
+
+hosted_zone_id: 'XXXXXXXXXXXXXXXXXXXXX'
+hosted_zone_name: 'domain.com'
+
+container_image: 'consoleme/consoleme'
+min_capacity: 2
+max_capacity: 10
+
+admin_temp_password: '1Qaz2wsx!'
+jwt_secret: 'pg0zf7P5qoNoPYsSVO1Y'
