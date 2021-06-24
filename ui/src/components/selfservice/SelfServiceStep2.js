@@ -69,17 +69,77 @@ class SelfServiceStep2 extends Component {
     this.props.handleExcludeAccountsUpdate(excludeAccounts);
   }
 
-  handlePermissionAdd(permission) {
-    this.setState(
-      {
-        service: null,
-      },
-      () => {
-        const { permissions } = this.props;
-        permissions.push(permission);
-        this.props.handlePermissionsUpdate(permissions);
-      }
+  async handlePermissionAdd(permission) {
+    const { role, permissions, editor } = this.props;
+    permissions.push(permission);
+    const payload = {
+      changes: [],
+    };
+    let editorChange = "";
+    if (editor !== "") {
+      editorChange = {
+        principal: role.principal,
+        generator_type: "custom_iam",
+        policy: JSON.parse(editor),
+      };
+    } else {
+      console.log("empty");
+    }
+
+    const change = {
+      principal: role.principal,
+      generator_type: permission.service,
+      action_groups: permission.actions,
+      condition: permission.condition,
+      effect: "Allow",
+      ...permission,
+    };
+    delete change.service;
+    delete change.actions;
+
+    payload.changes = [change];
+
+    if (editorChange !== "") {
+      payload.changes.push(editorChange);
+    }
+
+    const response = await this.props.sendRequestCommon(
+      payload,
+      "/api/v2/generate_changes"
     );
+
+    if (response.status != null && response.status === 400) {
+      return this.setState({
+        isError: true,
+        messages: [response.message],
+      });
+    }
+
+    if ("changes" in response && response.changes.length > 0) {
+      const policy_name = response.changes[0].policy_name;
+      const statement = JSON.stringify(
+        response.changes[0].policy.policy_document,
+        null,
+        4
+      );
+      this.updateStatement(statement);
+      this.setState({
+        custom_statement: statement,
+        isError: false,
+        messages: [],
+        policy_name,
+        statement,
+      });
+      // Let's try to get the policy in advanced policy editor here, and set it here.
+      this.setState(
+        {
+          service: null,
+        },
+        () => {
+          this.props.handlePermissionsUpdate(permissions);
+        }
+      );
+    }
   }
 
   handlePermissionRemove(target) {
@@ -94,17 +154,14 @@ class SelfServiceStep2 extends Component {
       changes: [],
     };
     console.log(`editor === ${editor}`);
-    let editorChange = '';
+    let editorChange = "";
 
-    if (editor !== '') {
+    if (editor !== "") {
       editorChange = `{
-        principal: {
-          principal_arn: ${role.arn},
-          principal_type: "AwsResource",
-        },
+        principal: ${role.principal},
         generator_type: "custom_iam",
         policy: ${editor}
-      }`
+      }`;
     } else {
       console.log("empty");
     }
@@ -113,10 +170,7 @@ class SelfServiceStep2 extends Component {
 
     payload.changes = permissions.map((permission) => {
       const change = {
-        principal: {
-          principal_arn: role.arn,
-          principal_type: "AwsResource",
-        },
+        principal: role.principal,
         generator_type: permission.service,
         action_groups: permission.actions,
         condition: permission.condition,
@@ -128,7 +182,7 @@ class SelfServiceStep2 extends Component {
       return change;
     });
 
-    if (editorChange !== '') {
+    if (editorChange !== "") {
       payload.changes.push(editorChange);
     }
 
@@ -230,9 +284,7 @@ class SelfServiceStep2 extends Component {
   render() {
     const { config, role, services, editor } = this.props;
     const { service } = this.state;
-    const {
-      messages,
-    } = this.state;
+    const { messages } = this.state;
 
     const messagesToShow =
       messages.length > 0 ? (
@@ -248,6 +300,8 @@ class SelfServiceStep2 extends Component {
         </Message>
       ) : null;
 
+    // TODO(ccastrapel): The false condition for headerMessage needs to be updated. Maybe the backend should just
+    // provide a link to the policy editor for a given principal, or the repository location?
     const headerMessage = role.arn ? (
       <Header>
         Add Permission
@@ -308,8 +362,12 @@ class SelfServiceStep2 extends Component {
                   editor={editor}
                   updatePermission={this.handlePermissionAdd.bind(this)}
                   updateExtraActions={this.handleExtraActionsAdd.bind(this)}
-                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(this)}
-                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(this)}
+                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(
+                    this
+                  )}
+                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(
+                    this
+                  )}
                   {...this.props}
                 />
               ) : null}
@@ -332,8 +390,12 @@ class SelfServiceStep2 extends Component {
                   service={service}
                   updateStatement={this.updateStatement.bind(this)}
                   updateExtraActions={this.handleExtraActionsAdd.bind(this)}
-                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(this)}
-                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(this)}
+                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(
+                    this
+                  )}
+                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(
+                    this
+                  )}
                   {...this.props}
                 />{" "}
                 to override permissions.

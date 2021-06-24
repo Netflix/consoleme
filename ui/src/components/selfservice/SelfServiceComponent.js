@@ -8,13 +8,11 @@ import {
   Dropdown,
   Form,
   Header,
-  Icon,
   Message,
 } from "semantic-ui-react";
 import DropDownBlockComponent from "../blocks/DropDownBlockComponent";
 import TextInputBlockComponent from "../blocks/TextInputBlockComponent";
 import TypeaheadBlockComponent from "../blocks/TypeaheadBlockComponent";
-import SelfServiceModal from "./SelfServiceModal";
 
 class SelfServiceComponent extends Component {
   constructor(props) {
@@ -135,8 +133,8 @@ class SelfServiceComponent extends Component {
         messages: [],
         values: {},
       },
-      () => {
-        this.props.updatePermission(permission);
+      async () => {
+        await this.props.updatePermission(permission);
       }
     );
   }

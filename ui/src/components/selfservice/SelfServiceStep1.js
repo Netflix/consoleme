@@ -26,10 +26,12 @@ class SelfServiceStep1 extends Component {
       results: [],
       value: "",
       count: [],
+      principal: {},
     };
   }
 
   fetchRoleDetail(endpoint) {
+    const { principal } = this.state;
     this.props.sendRequestCommon(null, endpoint, "get").then((response) => {
       if (!response) {
         return;
@@ -43,6 +45,7 @@ class SelfServiceStep1 extends Component {
           messages: [response.message],
         });
       } else {
+        response.principal = principal;
         this.props.handleRoleUpdate(response);
         this.setState({
           isLoading: false,
@@ -118,6 +121,7 @@ class SelfServiceStep1 extends Component {
       {
         value,
         isRoleLoading: true,
+        principal: result.principal,
       },
       () => {
         this.fetchRoleDetail(result.details_endpoint);
