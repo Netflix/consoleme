@@ -19,40 +19,8 @@ import "brace";
 import "brace/ext/language_tools";
 import "brace/theme/monokai";
 import "brace/mode/json";
-import MonacoEditor from "react-monaco-editor";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-
-const editor_options = {
-  selectOnLineNumbers: true,
-  readOnly: false,
-  quickSuggestions: true,
-  scrollbar: {
-    alwaysConsumeMouseWheel: false,
-  },
-  scrollBeyondLastLine: false,
-  automaticLayout: true,
-};
-
-const terraform_exporter_options = {
-  selectOnLineNumbers: true,
-  readOnly: true,
-  scrollbar: {
-    alwaysConsumeMouseWheel: false,
-  },
-  scrollBeyondLastLine: false,
-  automaticLayout: true,
-};
-
-const convert_to_terraform = (policy_name, policy_statement) => {
-  return `resource "aws_iam_policy" "${policy_name}" {
-  name        = "${policy_name}"
-  path        = "/"
-  description = "Policy generated through ConsoleMe"
-  policy      =  <<EOF
-${policy_statement}
-EOF
-}`;
-};
+import { MonacoDiffEditor } from "react-monaco-editor";
 
 class SelfServiceStep3 extends Component {
   constructor(props) {
@@ -73,97 +41,17 @@ class SelfServiceStep3 extends Component {
       policy_name: "",
     };
     this.inlinePolicyEditorRef = React.createRef();
-    this.terraformPolicyExporterRef = React.createRef();
     this.onChange = this.onChange.bind(this);
     this.editorDidMount = this.editorDidMount.bind(this);
-    this.copy_terraform_to_clipboard = this.copy_terraform_to_clipboard.bind(
-      this
-    );
     this.handleJustificationChange = this.handleJustificationChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
   }
 
-  async componentDidMount() {
-    const { role, permissions, editor } = this.props;
-    const payload = {
-      changes: [],
-    };
-    let editorChange = {};
-
-    console.log(`editor === ${editor}`);
-
-    payload.changes = permissions.map((permission) => {
-      const change = {
-        principal: {
-          principal_arn: role.arn,
-          principal_type: "AwsResource",
-        },
-        generator_type: permission.service,
-        action_groups: permission.actions,
-        condition: permission.condition,
-        effect: "Allow",
-        ...permission,
-      };
-      delete change.service;
-      delete change.actions;
-      return change;
-    });
-
-
-    if (editor !== '') {
-      editorChange = {
-        "principal": {
-          "principal_arn": role.arn,
-          "principal_type": "AwsResource"
-        },
-        "generator_type": "custom_iam",
-        "policy": editor
-      }
-    } else {
-      console.log("empty");
-    }
-
-    console.log(`editor changed is === ${editorChange}`);
-
-    console.log(`payload === type ${payload.changes[0].principal.principal_type}`);
-
-    const response = await this.props.sendRequestCommon(
-      payload,
-      "/api/v2/generate_changes"
-    );
-    if (response.status != null && response.status === 400) {
-      return this.setState({
-        isError: true,
-        messages: [response.message],
-      });
-    }
-
-    if ("changes" in response && response.changes.length > 0) {
-      const policy_name = response.changes[0].policy_name;
-      const statement = JSON.stringify(
-        response.changes[0].policy.policy_document,
-        null,
-        4
-      );
-      return this.setState({
-        custom_statement: statement,
-        isError: false,
-        messages: [],
-        policy_name,
-        statement,
-      });
-    }
-    return this.setState({
-      isError: true,
-      messages: ["Unknown Exception raised. Please reach out for support"],
-    });
-  }
-
   editorDidMount(editor) {
-    editor.onDidChangeModelDecorations(() => {
-      const model = editor.getModel();
-
+    editor.modifiedEditor.onDidChangeModelDecorations(() => {
+      const { modifiedEditor } = this.state;
+      const model = modifiedEditor.getModel();
       if (model === null || model.getModeId() !== "json") {
         return;
       }
@@ -178,50 +66,40 @@ class SelfServiceStep3 extends Component {
         )
       );
     });
+    this.setState({
+      modifiedEditor: editor.modifiedEditor,
+    });
   }
 
-  buildMonacoEditor(custom_statement) {
+  buildMonacoEditor() {
+    const { oldValue, newValue, readOnly, updated_policy } = this.props;
+    const options = {
+      selectOnLineNumbers: true,
+      renderSideBySide: true,
+      enableSplitViewResizing: false,
+      quickSuggestions: true,
+      scrollbar: {
+        alwaysConsumeMouseWheel: false,
+      },
+      scrollBeyondLastLine: false,
+      automaticLayout: true,
+      readOnly,
+    };
     return (
-      <MonacoEditor
-        height="500px"
+      <MonacoDiffEditor
         language="json"
         width="100%"
-        theme="vs-dark"
-        value={custom_statement}
-        onChange={this.onChange}
-        options={editor_options}
+        height="500"
+        original={oldValue}
+        value={updated_policy}
+        editorWillMount={this.editorWillMount}
         editorDidMount={this.editorDidMount}
-        textAlign="center"
+        options={options}
+        onChange={this.onChange}
+        theme="vs-light"
+        alwaysConsumeMouseWheel={false}
       />
     );
-  }
-
-  buildTerraformMonacoExporter(custom_statement) {
-    const { policy_name } = this.state;
-    const terraform_statement = convert_to_terraform(
-      policy_name,
-      custom_statement
-    );
-    return (
-      <MonacoEditor
-        language="hcl"
-        width="100%"
-        height="500px"
-        theme="vs-dark"
-        ref={this.terraformPolicyExporterRef}
-        value={terraform_statement}
-        options={terraform_exporter_options}
-      />
-    );
-  }
-
-  copy_terraform_to_clipboard() {
-    const { policy_name, custom_statement } = this.state;
-    const terraform_statement = convert_to_terraform(
-      policy_name,
-      custom_statement
-    );
-    navigator.clipboard.writeText(terraform_statement);
   }
 
   buildPermissionsTable() {
@@ -362,9 +240,7 @@ class SelfServiceStep3 extends Component {
   }
 
   onChange(newValue, e) {
-    this.setState({
-      custom_statement: newValue,
-    });
+    this.onValueChange(newValue);
   }
 
   onLintError = (lintErrors) => {
@@ -444,122 +320,26 @@ class SelfServiceStep3 extends Component {
       />
     );
 
-    const terraformExporterPane = export_to_terraform_enabled
-      ? {
-          menuItem: "Terraform Exporter",
-          render: () => {
-            const terraformExporter = this.buildTerraformMonacoExporter(
-              custom_statement
-            );
-            return (
-              <Tab.Pane loading={isLoading}>
-                <Header>
-                  Export Terraform permissions
-                  <Popup
-                    content="Copy Terraform Statement"
-                    trigger={
-                      <Icon
-                        link
-                        name="copy"
-                        onClick={this.copy_terraform_to_clipboard}
-                      />
-                    }
-                  />
-                </Header>
-                <br />
-                {terraformExporter}
-                <Divider />
-                <Header>Justification</Header>
-                <Form>
-                  <TextArea
-                    onChange={this.handleJustificationChange}
-                    placeholder="Your Justification"
-                    value={justification}
-                  />
-                </Form>
-                <Divider />
-                {messagesToShow}
-                {submission_buttons}
-              </Tab.Pane>
-            );
-          },
-        }
-      : null;
-
-    const panes = [
-      {
-        menuItem: "Review",
-        render: () => (
-          <Tab.Pane loading={isLoading}>
-            <Header>
-              Please Review Permissions
-              <Header.Subheader>
-                You can customize your request using the JSON Editor for
-                advanced permissions.
-              </Header.Subheader>
-            </Header>
-            <p>
-              Your new permissions will be attached to the role{" "}
-              <a
-                href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {role.arn}
-              </a>{" "}
-              with the following statements:
-            </p>
-            <Dimmer.Dimmable dimmed={active}>
-              {this.buildPermissionsTable()}
-              <Dimmer active={active}>
-                <Header as="h2" inverted>
-                  Your changes made from the JSON Editor will override these
-                  permissions.
-                </Header>
-              </Dimmer>
-            </Dimmer.Dimmable>
-            <Divider />
-            <Header>Justification</Header>
-            <Form>
-              <TextArea
-                onChange={this.handleJustificationChange}
-                placeholder="Your Justification"
-                value={justification}
-              />
-            </Form>
-            <Divider />
-            {messagesToShow}
-            {submission_buttons}
-          </Tab.Pane>
-        ),
-      },
-      {
-        menuItem: "JSON Editor",
-        render: () => {
-          const jsonEditor = this.buildMonacoEditor(custom_statement);
-          return (
-            <Tab.Pane loading={isLoading}>
-              <Header>Edit your permissions in JSON format.</Header>
-              <br />
-              {jsonEditor}
-              <Divider />
-              <Header>Justification</Header>
-              <Form>
-                <TextArea
-                  onChange={this.handleJustificationChange}
-                  placeholder="Your Justification"
-                  value={justification}
-                />
-              </Form>
-              <Divider />
-              {messagesToShow}
-              {submission_buttons}
-            </Tab.Pane>
-          );
-        },
-      },
-      terraformExporterPane,
-    ];
+    const jsonEditor = this.buildMonacoEditor();
+    return (
+       <div>
+         <Header size={'huge'}>Review Changes & Submit</Header>
+         <p>Use the following editor to review the changes you've modified before submitting for team review.</p>
+         {jsonEditor}
+         <Divider />
+         <Header>Justification</Header>
+         <Form>
+           <TextArea
+              onChange={this.handleJustificationChange}
+              placeholder="Your Justification"
+              value={justification}
+           />
+         </Form>
+         <Divider />
+         {messagesToShow}
+         {submission_buttons}
+       </div>
+    );
 
     const tabContent = isSuccess ? (
       <Message positive>
@@ -582,7 +362,6 @@ class SelfServiceStep3 extends Component {
               activeIndex: data.activeIndex,
             })
           }
-          panes={panes}
         />
         <br />
       </>

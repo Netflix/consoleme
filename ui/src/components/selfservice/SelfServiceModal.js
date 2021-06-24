@@ -44,7 +44,8 @@ class SelfServiceModal extends Component {
       export_to_terraform_enabled: this.props.export_to_terraform_enabled,
       admin_auto_approve: false,
       payloadPermissions: [],
-      modal_statement: this.props.editor,
+      modal_statement: this.props.updated_policy,
+      open: false,
     };
     this.inlinePolicyEditorRef = React.createRef();
     this.onChange = this.onChange.bind(this);
@@ -52,7 +53,7 @@ class SelfServiceModal extends Component {
   }
 
   addToPolicy() {
-    const value = monaco.editor.getModels()[0].getValue();
+    const value = this.state.modal_statement;
     this.props.updateStatement(value);
   }
 
@@ -158,7 +159,7 @@ class SelfServiceModal extends Component {
       </Modal.Actions>
     ) : (
       <Modal.Actions>
-        <Button>Cancel</Button>
+        <Button onClick={() => this.setState({open:false})}>Cancel</Button>
         <Button
           content="Add to Policy"
           labelPosition="right"
@@ -173,7 +174,8 @@ class SelfServiceModal extends Component {
 
     return (
       // TODO: Resolve lint error with the following line
-      <Modal closeIcon trigger={<a>Advanced Editor</a>}>
+      <Modal closeIcon onOpen={() => this.setState({open:true})} onClose={() => this.setState({open:false})}
+             open={this.state.open} trigger={<a>Advanced Editor</a>}>
         <Header>Advanced Editor</Header>
         <Message info>
           <Message.Header>Edit your permissions in JSON format.</Message.Header>

@@ -34,13 +34,14 @@ class SelfServiceStep2 extends Component {
       export_to_terraform_enabled: this.props.export_to_terraform_enabled,
       admin_auto_approve: false,
       policy_name: "",
+      modal_policy: "",
     };
 
     this.inlinePolicyEditorRef = React.createRef();
   }
 
   updateStatement(value) {
-    this.props.updateEditor(value);
+    this.props.updatePolicy(value);
   }
 
   handleServiceTypeChange(e, { value }) {
@@ -68,17 +69,17 @@ class SelfServiceStep2 extends Component {
   }
 
   async handlePermissionAdd(permission) {
-    const { role, permissions, editor } = this.props;
+    const { role, permissions, updated_policy } = this.props;
     permissions.push(permission);
     const payload = {
       changes: [],
     };
     let editorChange = "";
-    if (editor !== "") {
+    if (updated_policy !== "") {
       editorChange = {
         principal: role.principal,
         generator_type: "custom_iam",
-        policy: JSON.parse(editor),
+        policy: JSON.parse(updated_policy),
       };
     }
 
@@ -118,7 +119,6 @@ class SelfServiceStep2 extends Component {
         null,
         4
       );
-      this.updateStatement(statement);
       this.setState({
         custom_statement: statement,
         isError: false,
@@ -127,6 +127,7 @@ class SelfServiceStep2 extends Component {
         statement,
       });
       // Let's try to get the policy in advanced policy editor here, and set it here.
+      this.updateStatement(statement);
       this.setState(
         {
           service: null,
@@ -205,7 +206,7 @@ class SelfServiceStep2 extends Component {
   }
 
   render() {
-    const { config, role, services, editor } = this.props;
+    const { config, role, services, updated_policy } = this.props;
     const { service } = this.state;
     const { messages } = this.state;
 
@@ -282,7 +283,7 @@ class SelfServiceStep2 extends Component {
                   config={config}
                   role={role}
                   service={service}
-                  editor={editor}
+                  updated_policy={updated_policy}
                   updatePermission={this.handlePermissionAdd.bind(this)}
                   updateExtraActions={this.handleExtraActionsAdd.bind(this)}
                   updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(
