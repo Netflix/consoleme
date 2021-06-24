@@ -4,16 +4,9 @@ verify_ssl = true
 
 [dev-packages]
 consoleme_ecs_service = {editable = true,path = "cdk"}
-pytest = "*"
-pytest-mock = "*"
-pytest-cov = "*"
-pytest-html = "*"
 
 [packages]
 boto3 = "*"
-dictdiffer = "*"
-mypy_boto3 = "*"
-boto3_type_annotations = "*"
 
 [requires]
 python_version = "3"
