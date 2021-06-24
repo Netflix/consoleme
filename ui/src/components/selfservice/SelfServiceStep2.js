@@ -40,9 +40,7 @@ class SelfServiceStep2 extends Component {
   }
 
   updateStatement(value) {
-    console.log("statement");
     this.props.updateEditor(value);
-    console.log(value);
   }
 
   handleServiceTypeChange(e, { value }) {
@@ -82,8 +80,6 @@ class SelfServiceStep2 extends Component {
         generator_type: "custom_iam",
         policy: JSON.parse(editor),
       };
-    } else {
-      console.log("empty");
     }
 
     const change = {
@@ -148,81 +144,8 @@ class SelfServiceStep2 extends Component {
     this.props.handlePermissionsUpdate(permissions);
   }
 
-  async createNewPolicy() {
-    const { role, permissions, editor } = this.props;
-    const payload = {
-      changes: [],
-    };
-    console.log(`editor === ${editor}`);
-    let editorChange = "";
-
-    if (editor !== "") {
-      editorChange = `{
-        principal: ${role.principal},
-        generator_type: "custom_iam",
-        policy: ${editor}
-      }`;
-    } else {
-      console.log("empty");
-    }
-
-    console.log(`editor changed is === ${editorChange}`);
-
-    payload.changes = permissions.map((permission) => {
-      const change = {
-        principal: role.principal,
-        generator_type: permission.service,
-        action_groups: permission.actions,
-        condition: permission.condition,
-        effect: "Allow",
-        ...permission,
-      };
-      delete change.service;
-      delete change.actions;
-      return change;
-    });
-
-    if (editorChange !== "") {
-      payload.changes.push(editorChange);
-    }
-
-    console.log(`payload === ${payload}`);
-
-    const response = await this.props.sendRequestCommon(
-      payload,
-      "/api/v2/generate_changes"
-    );
-    if (response.status != null && response.status === 400) {
-      return this.setState({
-        isError: true,
-        messages: [response.message],
-      });
-    }
-
-    if ("changes" in response && response.changes.length > 0) {
-      const policy_name = response.changes[0].policy_name;
-      const statement = JSON.stringify(
-        response.changes[0].policy.policy_document,
-        null,
-        4
-      );
-      return this.setState({
-        custom_statement: statement,
-        isError: false,
-        messages: [],
-        policy_name,
-        statement,
-      });
-    }
-    return this.setState({
-      isError: true,
-      messages: ["Unknown Exception raised. Please reach out for support"],
-    });
-  }
-
   getPermissionItems() {
     const { config, services } = this.props;
-    console.log(this.props.permissions);
     return this.props.permissions.map((permission, idx) => {
       const found = _.find(services, { key: permission.service });
       const serviceName = found.text;

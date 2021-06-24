@@ -9,7 +9,6 @@ import SelfServiceStep3 from "./SelfServiceStep3";
 import { SelfServiceStepEnum } from "./SelfServiceEnums";
 
 const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):role\/(.+\/)?(?<roleName>(.+))/;
-const honeyBee = "honeybee";
 
 class SelfService extends Component {
   constructor(props) {
@@ -93,14 +92,12 @@ class SelfService extends Component {
         services,
       });
     } else if (paramSearch.template_language === "honeybee") {
-      const match = honeyBee.exec(paramSearch.template_language);
-      const { accountId, roleName } = match.groups;
       this.setState({
         admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
         export_to_terraform_enabled: config.export_to_terraform_enabled,
         config,
         currStep: SelfServiceStepEnum.STEP2,
-        // TODO(heewonk), define the role type
+        // TODO: This needs cleanup
         role: {
           name: "ConsoleMe",
           owner: "infrasec@netflix.com",
@@ -171,11 +168,10 @@ class SelfService extends Component {
     });
   }
 
-  updateEditor(value){
+  updateEditor(value) {
     this.setState({
       editor: value,
     });
-    console.log(`editor == ${value}`);
   }
 
   handleRoleUpdate(role) {
@@ -196,10 +192,6 @@ class SelfService extends Component {
 
   handlePermissionsUpdate(permissions) {
     this.setState({ permissions });
-    console.log(`real permissions ${typeof permissions}`);
-    permissions.forEach((item) =>
-      console.log(`from permissions = service is ==${item.service}`)
-    );
   }
 
   getCurrentSelfServiceStep() {
@@ -237,8 +229,12 @@ class SelfService extends Component {
             updateEditor={this.updateEditor.bind(this)}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
             handleExtraActionsUpdate={this.handleExtraActionsUpdate.bind(this)}
-            handleIncludeAccountsUpdate={this.handleIncludeAccountsUpdate.bind(this)}
-            handleExcludeAccountsUpdate={this.handleExcludeAccountsUpdate.bind(this)}
+            handleIncludeAccountsUpdate={this.handleIncludeAccountsUpdate.bind(
+              this
+            )}
+            handleExcludeAccountsUpdate={this.handleExcludeAccountsUpdate.bind(
+              this
+            )}
             {...this.props}
           />
         );

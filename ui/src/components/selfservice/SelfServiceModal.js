@@ -78,7 +78,6 @@ class SelfServiceModal extends Component {
   }
 
   buildMonacoEditor(modal_statement) {
-
     if (modal_statement === "") {
       modal_statement = blank_statement;
     }
@@ -99,7 +98,6 @@ class SelfServiceModal extends Component {
   }
 
   onChange(newValue, e) {
-    console.log(newValue);
     this.setState({
       modal_statement: newValue,
     });
@@ -174,10 +172,8 @@ class SelfServiceModal extends Component {
     const jsonEditor = this.buildMonacoEditor(modal_statement);
 
     return (
-      <Modal
-        closeIcon
-        trigger={<a>Advanced Editor</a>}
-      >
+      // TODO: Resolve lint error with the following line
+      <Modal closeIcon trigger={<a>Advanced Editor</a>}>
         <Header>Advanced Editor</Header>
         <Message info>
           <Message.Header>Edit your permissions in JSON format.</Message.Header>
