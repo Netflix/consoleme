@@ -11,7 +11,6 @@ import {
   List,
   Header,
   Segment,
-  TextArea,
   Message,
 } from "semantic-ui-react";
 import SelfServiceComponent from "./SelfServiceComponent";
@@ -26,14 +25,11 @@ class SelfServiceStep2 extends Component {
     this.state = {
       service: DEFAULT_AWS_SERVICE,
       activeIndex: 0,
-      custom_statement: "",
       isError: false,
       isLoading: false,
       isSuccess: false,
-      justification: "",
       messages: [],
       requestId: null,
-      statement: "",
       admin_bypass_approval_enabled: this.props.admin_bypass_approval_enabled,
       export_to_terraform_enabled: this.props.export_to_terraform_enabled,
       admin_auto_approve: false,
@@ -41,21 +37,12 @@ class SelfServiceStep2 extends Component {
     };
 
     this.inlinePolicyEditorRef = React.createRef();
-    this.terraformPolicyExporterRef = React.createRef();
-    this.onChange = this.onChange.bind(this);
-    // this.handleJustificationChange = this.handleJustificationChange.bind(this);
-    // this.handleSubmit = this.handleSubmit.bind(this);
-    // this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
   }
 
-  updateStatement() {
+  updateStatement(value) {
     console.log("statement");
-  }
-
-  onChange(newValue, e) {
-    this.setState({
-      custom_statement: newValue,
-    });
+    this.props.updateEditor(value);
+    console.log(value);
   }
 
   handleServiceTypeChange(e, { value }) {
@@ -82,24 +69,6 @@ class SelfServiceStep2 extends Component {
     this.props.handleExcludeAccountsUpdate(excludeAccounts);
   }
 
-  handlePayloadPermissionsAdd(permission) {
-    const { permissions } = this.props;
-
-    for (let i = 0, l = permissions.length; i < l; i++) {
-      let arn = permission.resource_arn;
-      let actions = permission.actions;
-
-      if (arn === permissions[i].resource_arn) {
-        console.log(`duplicate arn`);
-        let permissionsActions = permissions[i].actions;
-
-        permissions.splice(i, 1);
-        permissions.push(permission);
-      }
-    }
-    this.props.handlePermissionsUpdate(permissions);
-  }
-
   handlePermissionAdd(permission) {
     this.setState(
       {
@@ -117,6 +86,84 @@ class SelfServiceStep2 extends Component {
     const { permissions } = this.props;
     _.remove(permissions, (permission) => _.isEqual(target, permission));
     this.props.handlePermissionsUpdate(permissions);
+  }
+
+  async createNewPolicy() {
+    const { role, permissions, editor } = this.props;
+    const payload = {
+      changes: [],
+    };
+    console.log(`editor === ${editor}`);
+    let editorChange = '';
+
+    if (editor !== '') {
+      editorChange = `{
+        principal: {
+          principal_arn: ${role.arn},
+          principal_type: "AwsResource",
+        },
+        generator_type: "custom_iam",
+        policy: ${editor}
+      }`
+    } else {
+      console.log("empty");
+    }
+
+    console.log(`editor changed is === ${editorChange}`);
+
+    payload.changes = permissions.map((permission) => {
+      const change = {
+        principal: {
+          principal_arn: role.arn,
+          principal_type: "AwsResource",
+        },
+        generator_type: permission.service,
+        action_groups: permission.actions,
+        condition: permission.condition,
+        effect: "Allow",
+        ...permission,
+      };
+      delete change.service;
+      delete change.actions;
+      return change;
+    });
+
+    if (editorChange !== '') {
+      payload.changes.push(editorChange);
+    }
+
+    console.log(`payload === ${payload}`);
+
+    const response = await this.props.sendRequestCommon(
+      payload,
+      "/api/v2/generate_changes"
+    );
+    if (response.status != null && response.status === 400) {
+      return this.setState({
+        isError: true,
+        messages: [response.message],
+      });
+    }
+
+    if ("changes" in response && response.changes.length > 0) {
+      const policy_name = response.changes[0].policy_name;
+      const statement = JSON.stringify(
+        response.changes[0].policy.policy_document,
+        null,
+        4
+      );
+      return this.setState({
+        custom_statement: statement,
+        isError: false,
+        messages: [],
+        policy_name,
+        statement,
+      });
+    }
+    return this.setState({
+      isError: true,
+      messages: ["Unknown Exception raised. Please reach out for support"],
+    });
   }
 
   getPermissionItems() {
@@ -181,22 +228,12 @@ class SelfServiceStep2 extends Component {
   }
 
   render() {
-    const { config, role, services } = this.props;
+    const { config, role, services, editor } = this.props;
     const { service } = this.state;
     const {
-      admin_bypass_approval_enabled,
-      custom_statement,
-      export_to_terraform_enabled,
-      isError,
-      isLoading,
-      isSuccess,
-      justification,
       messages,
-      requestId,
-      statement,
     } = this.state;
 
-    const active = custom_statement !== statement;
     const messagesToShow =
       messages.length > 0 ? (
         <Message negative>
@@ -268,14 +305,11 @@ class SelfServiceStep2 extends Component {
                   config={config}
                   role={role}
                   service={service}
+                  editor={editor}
                   updatePermission={this.handlePermissionAdd.bind(this)}
                   updateExtraActions={this.handleExtraActionsAdd.bind(this)}
-                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(
-                    this
-                  )}
-                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(
-                    this
-                  )}
+                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(this)}
+                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(this)}
                   {...this.props}
                 />
               ) : null}
@@ -292,21 +326,14 @@ class SelfServiceStep2 extends Component {
               <Header>
                 You must add at least one resource to continue or choose{" "}
                 <SelfServiceModal
-                  custom_statement={custom_statement}
                   key={service}
                   config={config}
                   role={role}
                   service={service}
-                  updatePayloadPermissions={this.handlePayloadPermissionsAdd.bind(
-                    this
-                  )}
+                  updateStatement={this.updateStatement.bind(this)}
                   updateExtraActions={this.handleExtraActionsAdd.bind(this)}
-                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(
-                    this
-                  )}
-                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(
-                    this
-                  )}
+                  updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(this)}
+                  updateExcludeAccounts={this.handleExcludeAccountsAdd.bind(this)}
                   {...this.props}
                 />{" "}
                 to override permissions.

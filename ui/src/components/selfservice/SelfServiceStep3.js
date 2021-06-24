@@ -85,10 +85,14 @@ class SelfServiceStep3 extends Component {
   }
 
   async componentDidMount() {
-    const { role, permissions } = this.props;
+    const { role, permissions, editor } = this.props;
     const payload = {
       changes: [],
     };
+    let editorChange = {};
+
+    console.log(`editor === ${editor}`);
+
     payload.changes = permissions.map((permission) => {
       const change = {
         principal: {
@@ -105,6 +109,24 @@ class SelfServiceStep3 extends Component {
       delete change.actions;
       return change;
     });
+
+
+    if (editor !== '') {
+      editorChange = {
+        "principal": {
+          "principal_arn": role.arn,
+          "principal_type": "AwsResource"
+        },
+        "generator_type": "custom_iam",
+        "policy": editor
+      }
+    } else {
+      console.log("empty");
+    }
+
+    console.log(`editor changed is === ${editorChange}`);
+
+    console.log(`payload === type ${payload.changes[0].principal.principal_type}`);
 
     const response = await this.props.sendRequestCommon(
       payload,

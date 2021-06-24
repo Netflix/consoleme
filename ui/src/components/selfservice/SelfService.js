@@ -26,6 +26,7 @@ class SelfService extends Component {
       extraActions: [],
       includeAccounts: [],
       excludeAccounts: [],
+      editor: "",
     };
   }
 
@@ -170,6 +171,13 @@ class SelfService extends Component {
     });
   }
 
+  updateEditor(value){
+    this.setState({
+      editor: value,
+    });
+    console.log(`editor == ${value}`);
+  }
+
   handleRoleUpdate(role) {
     this.setState({ role });
   }
@@ -203,6 +211,7 @@ class SelfService extends Component {
       permissions,
       role,
       services,
+      editor,
     } = this.state;
 
     let SelfServiceStep = null;
@@ -224,14 +233,12 @@ class SelfService extends Component {
             role={role}
             services={services}
             permissions={permissions}
+            editor={editor}
+            updateEditor={this.updateEditor.bind(this)}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
             handleExtraActionsUpdate={this.handleExtraActionsUpdate.bind(this)}
-            handleIncludeAccountsUpdate={this.handleIncludeAccountsUpdate.bind(
-              this
-            )}
-            handleExcludeAccountsUpdate={this.handleExcludeAccountsUpdate.bind(
-              this
-            )}
+            handleIncludeAccountsUpdate={this.handleIncludeAccountsUpdate.bind(this)}
+            handleExcludeAccountsUpdate={this.handleExcludeAccountsUpdate.bind(this)}
             {...this.props}
           />
         );
@@ -243,6 +250,7 @@ class SelfService extends Component {
             role={role}
             services={services}
             permissions={permissions}
+            editor={editor}
             admin_bypass_approval_enabled={admin_bypass_approval_enabled}
             export_to_terraform_enabled={export_to_terraform_enabled}
             {...this.props}
