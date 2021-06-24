@@ -143,9 +143,9 @@ class BaseDynamoHandler:
             if str(obj) == "":
                 obj = DYNAMO_EMPTY_STRING
             elif type(obj) in [float, int]:
-                obj = Decimal(obj)
+                obj = Decimal(str(obj))
             elif isinstance(obj, datetime):
-                obj = Decimal(obj.timestamp())
+                obj = Decimal(str(obj.timestamp()))
             return obj
 
     def parallel_write_table(self, table, data, overwrite_by_pkeys=None):
