@@ -340,6 +340,22 @@ paths:
           description: OK
         default:
           $ref: "#/components/responses/DefaultErrorResponse"
+    get:
+      summary: get details about a role (mtls apps/users only)
+      tags:
+        - roles
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtendedRoleModel"
+        default:
+          $ref: "#/components/responses/DefaultErrorResponse"
   /policies/check:
     post:
       summary: check a policy document
@@ -1163,6 +1179,23 @@ components:
         event_call:
           type: string
           example: sqs:CreateQueue
+        resource:
+          type: string
+          example: arn:aws:iam::123456789012:role/roleName
+        generated_policy:
+          type: object
+          example:
+            {
+              "Version": "2012-10-17",
+              "Statement":
+                [
+                  {
+                    "Resource": ["arn:aws:iam::123456789012:role/roleName"],
+                    "Action": ["sts:AssumeRole"],
+                    "Effect": "Allow",
+                  },
+                ],
+            }
         count:
           type: integer
           example: 5

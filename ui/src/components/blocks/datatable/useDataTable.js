@@ -64,7 +64,7 @@ const useDataTable = (config) => {
           let isMatched = true;
           Object.keys(filters).forEach((key) => {
             const filter = filters[key];
-            const re = new RegExp(filter, "g");
+            const re = new RegExp(filter, "gi");
             if (item[key] && !re.test(item[key])) {
               isMatched = false;
             }
