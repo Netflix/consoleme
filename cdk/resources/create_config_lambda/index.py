@@ -65,8 +65,8 @@ def on_create(event, context):
             Bucket=bucket_name, Key=s3_path, Body=encoded_config
         )
         cfnresponse.send(event, context, cfnresponse.SUCCESS, result)
-    except Exception as e:
-        cfnresponse.send(event, context, cfnresponse.FAILED, result)
+    except Exception as ex:
+        cfnresponse.send(event, context, cfnresponse.FAILED, str(ex))
 
 
 def on_delete(event, context):
