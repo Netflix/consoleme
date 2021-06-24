@@ -1,0 +1,115 @@
+---
+
+url: https://{issuer}
+
+tornado:
+  debug: false
+  port: 8081
+  xsrf: true
+  xsrf_cookie_kwargs:
+    samesite: strict
+
+auth:
+  require_jwt: true
+  set_auth_cookie: true
+  get_user_by_oidc: true
+
+oidc_secrets:
+  client_id: {oidc_client_id}
+  secret: {oidc_client_secret}
+  client_scope:
+    - email
+    - openid
+jwt_secret: {jwt_secret}
+
+get_user_by_oidc_settings:
+  metadata_url: {oidc_metadata_url}
+  jwt_groups_key: 'cognito:groups'
+  grant_type: authorization_code
+  id_token_response_key: id_token
+  access_token_response_key: access_token
+  access_token_audience: null
+
+redis:
+  host:
+    global: {redis_host}
+
+celery:
+  broker:
+    global: redis://{redis_host}:6379/2
+  active_region: {aws_region}
+
+ses:
+  region: {aws_region}
+  consoleme:
+    name: ConsoleMe
+    sender: consoleme_admin@{issuer}
+  support_reference: >-
+    Please contact us at consoleme_admin@{issuer} if you have any
+    questions or concerns.
+  arn: {ses_identity_arn}
+  support_chat_url: {support_chat_url}
+  documentation_page: https://hawkins.gitbook.io/consoleme/
+
+cloud_credential_authorization_mapping:
+  role_tags:
+    enabled: true
+    authorized_groups_tags:
+      - consoleme-authorized
+    authorized_groups_cli_only_tags:
+      - consoleme-owner-dl
+      - consoleme-authorized-cli-only
+  dynamic_config:
+    enabled: true
+  internal_plugin:
+    enabled: false
+
+application_admin: {application_admin}
+
+groups:
+  can_admin:
+    - consoleme_admins
+  can_edit_config:
+    - consoleme_admins
+  can_admin_policies:
+    - consoleme_admins
+
+aws:
+  account_number: {account_number}
+  region: {aws_region}
+  issuer: {issuer}
+  session_duration: 900
+
+get_eligible_roles:
+  from_config: true
+  from_prefix: false
+
+headers:
+  group_access:
+    enabled: true
+  policies:
+    enabled: true
+  config:
+    enabled: true
+
+enable_self_service: true
+
+user_role_creator:
+  default_trust_policy:
+    Version: '2012-10-17'
+    Statement:
+      - Effect: Allow
+        Principal:
+          AWS:
+            - arn:aws:iam::{account_number}:root
+        Action: sts:AssumeRole
+
+challenge_url:
+  enabled: true
+
+{spoke_accounts_objects_list_yaml}
+
+policies:
+  role_name: ConsolemeTrustRole
+
+support_contact: consoleme_admin@{issuer}
