@@ -77,5 +77,5 @@ def on_delete(event, context):
     try:
         result = s3_client.delete_object(Bucket=bucket_name, Key=s3_path)
         cfnresponse.send(event, context, cfnresponse.SUCCESS, result)
-    except Exception as e:
-        cfnresponse.send(event, context, cfnresponse.FAILED, result)
+    except Exception as ex:
+        cfnresponse.send(event, context, cfnresponse.FAILED, str(ex))
