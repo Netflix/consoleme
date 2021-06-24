@@ -1,3 +1,4 @@
+import base64
 import re
 import sys
 import time
@@ -6,14 +7,15 @@ from collections import defaultdict
 from typing import Dict, List
 
 import ujson as json
-from asgiref.sync import sync_to_async
-from botocore.exceptions import ClientError
-from cloudaux.aws.sts import boto3_cached_conn
 from deepdiff import DeepDiff
 from policy_sentry.util.actions import get_service_from_action
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import InvalidRequestParameter
+from consoleme.exceptions.exceptions import (
+    InvalidRequestParameter,
+    MissingConfigurationValue,
+    ResourceNotFound,
+)
 from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import (
     get_region_from_arn,
@@ -30,7 +32,7 @@ from consoleme.lib.ses import (
 from consoleme.models import ExtendedRequestModel, RequestStatus
 
 log = config.get_logger()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 async def invalid_characters_in_policy(policy_value):
@@ -243,7 +245,7 @@ async def can_move_back_to_pending_v2(
 
 async def can_update_requests(request, user, groups):
     # Users can update their own requests
-    can_update = True if user in request["username"] else False
+    can_update = user in request["username"]
 
     # Allow admins to return requests back to pending state
     if not can_update:
@@ -255,7 +257,7 @@ async def can_update_requests(request, user, groups):
 
 async def can_update_cancel_requests_v2(requester_username, user, groups):
     # Users can update their own requests
-    can_update = True if user == requester_username else False
+    can_update = user == requester_username
 
     # Allow admins to update / cancel requests
     if not can_update:
@@ -263,150 +265,6 @@ async def can_update_cancel_requests_v2(requester_username, user, groups):
             return True
 
     return can_update
-
-
-async def update_resource_policy(
-    arn: str,
-    resource_type: str,
-    account_id: str,
-    region: str,
-    policy_changes: dict,
-    resource_details: dict,
-):
-    # TODO: Prevent race conditions by ensuring policy hasn't been changed since user loaded existing policy
-    function = f"{__name__}.{sys._getframe().f_code.co_name}"
-
-    stats.count(
-        function,
-        tags={
-            "arn": arn,
-            "resource_type": resource_type,
-            "account_id": account_id,
-            "region": region,
-        },
-    )
-
-    log_data = {
-        "function": function,
-        "arn": arn,
-        "resource_type": resource_type,
-        "account_id": account_id,
-        "region": region,
-        "policy_changes": policy_changes,
-        "resource_details": resource_details,
-    }
-
-    log.debug(log_data)
-
-    result = {"status": "success"}
-
-    client = await sync_to_async(boto3_cached_conn)(
-        resource_type,
-        service_type="client",
-        future_expiration_minutes=15,
-        account_number=account_id,
-        assume_role=config.get("policies.role_name"),
-        region=region or config.region,
-        session_name="ConsoleMe",
-        arn_partition="aws",
-    )
-
-    resource = await sync_to_async(boto3_cached_conn)(
-        resource_type,
-        service_type="resource",
-        future_expiration_minutes=15,
-        account_number=account_id,
-        assume_role=config.get("policies.role_name"),
-        region=region or config.region,
-        session_name="ConsoleMe",
-        arn_partition="aws",
-    )
-
-    changes: bool = False
-
-    resource_name: str = arn.split(":")[5]
-    for change in policy_changes:
-        try:
-            if change.get("type") == "ResourcePolicy":
-                proposed_policy = change["value"]
-                changes = True
-                if resource_details.get("Policy"):
-                    if json.loads(proposed_policy) == resource_details["Policy"]:
-                        result = {
-                            "status": "error",
-                            "message": "No changes were found between the updated and existing policy.",
-                        }
-                        return result
-                if resource_type == "s3":
-                    await sync_to_async(client.put_bucket_policy)(
-                        Bucket=resource_name, Policy=proposed_policy
-                    )
-                elif resource_type == "sqs":
-                    queue = await sync_to_async(resource.get_queue_by_name)(
-                        QueueName=resource_name
-                    )
-                    await sync_to_async(queue.set_attributes)(
-                        Attributes={"Policy": proposed_policy}
-                    )
-                elif resource_type == "sns":
-                    topic = await sync_to_async(resource.Topic)(arn)
-                    await sync_to_async(topic.set_attributes)(
-                        AttributeName="Policy", AttributeValue=proposed_policy
-                    )
-            elif change.get("type") == "update_tag":
-                changes = True
-                if resource_type == "s3":
-                    resource_details["TagSet"].append(
-                        {"Key": change["name"], "Value": change["value"]}
-                    )
-                    await sync_to_async(client.put_bucket_tagging)(
-                        Bucket=resource_name,
-                        Tagging={"TagSet": resource_details["TagSet"]},
-                    )
-                elif resource_type == "sqs":
-                    await sync_to_async(client.tag_queue)(
-                        QueueUrl=resource_details["QueueUrl"],
-                        Tags={change["name"]: change["value"]},
-                    )
-                elif resource_type == "sns":
-                    await sync_to_async(client.tag_resource)(
-                        ResourceArn=resource_details["TopicArn"],
-                        Tags=[{"Key": change["name"], "Value": change["value"]}],
-                    )
-            elif change.get("type") == "delete_tag":
-                changes = True
-                if resource_type == "s3":
-                    resulting_tagset = []
-
-                    for tag in resource_details["TagSet"]:
-                        if tag.get("Key") != change["name"]:
-                            resulting_tagset.append(tag)
-
-                    resource_details["TagSet"] = resulting_tagset
-                    await sync_to_async(client.put_bucket_tagging)(
-                        Bucket=resource_name,
-                        Tagging={"TagSet": resource_details["TagSet"]},
-                    )
-                elif resource_type == "sqs":
-                    await sync_to_async(client.untag_queue)(
-                        QueueUrl=resource_details["QueueUrl"], TagKeys=[change["name"]]
-                    )
-                elif resource_type == "sns":
-                    await sync_to_async(client.untag_resource)(
-                        ResourceArn=resource_details["TopicArn"],
-                        TagKeys=[change["name"]],
-                    )
-        except ClientError as e:
-            log_data["message"] = "Error"
-            log_data["error"] = e
-            log.error(log_data, exc_info=True)
-            result["status"] = "error"
-            result["error"] = str(e)
-            return result
-    if not changes:
-        result = {"status": "error", "message": "No changes detected."}
-        return result
-    return result
 
 
 async def update_role_policy(events):
@@ -531,7 +389,7 @@ def get_actions_for_resource(resource_arn: str, statement: Dict) -> List[str]:
 
 
 async def get_formatted_policy_changes(account_id, arn, request):
-    aws = get_plugin_by_name(config.get("plugins.aws"))()
+    aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
     existing_role: dict = await aws.fetch_iam_role(account_id, arn, force_refresh=True)
     policy_changes: list = json.loads(request.get("policy_changes"))
     formatted_policy_changes = []
@@ -628,17 +486,11 @@ async def get_formatted_policy_changes(account_id, arn, request):
                         "name": "ResourcePolicy",
                         "old": existing_policy_document,
                         "new": new_policy_document,
-                        "new_policy": False if existing_policy_document else True,
+                        "new_policy": not existing_policy_document,
                         "diff": diff,
                     }
                 )
     return {"changes": formatted_policy_changes, "role": existing_role}
-
-
-async def should_auto_approve_policy(events, user, user_groups):
-    aws = get_plugin_by_name(config.get("plugins.aws"))()
-    result = await aws.should_auto_approve_policy(events, user, user_groups)
-    return result
 
 
 async def should_auto_approve_policy_v2(
@@ -648,7 +500,7 @@ async def should_auto_approve_policy_v2(
     This uses your fancy internal logic to determine if a request should be auto-approved or not. The default plugin
     set included in ConsoleMe OSS will return False.
     """
-    aws = get_plugin_by_name(config.get("plugins.aws"))()
+    aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
     return await aws.should_auto_approve_policy_v2(extended_request, user, user_groups)
 
 
@@ -703,8 +555,20 @@ async def get_resource_name_for_arn(arn: str) -> str:
     return resource_name
 
 
+async def get_resource_sub_type_for_arn(arn: str) -> str:
+    resource_name = arn.split(":")[5]
+    if "/" in resource_name:
+        return resource_name.split("/")[0]
+    return ""
+
+
 async def get_url_for_resource(
-    arn, resource_type=None, account_id=None, region=None, resource_name=None
+    arn,
+    resource_type=None,
+    account_id=None,
+    region=None,
+    resource_name=None,
+    resource_sub_type=None,
 ):
     if not resource_type:
         resource_type = await get_resource_type_for_arn(arn)
@@ -714,147 +578,214 @@ async def get_url_for_resource(
         region = await get_region_for_arn(arn)
     if not resource_name:
         resource_name = await get_resource_name_for_arn(arn)
+    if not resource_sub_type:
+        resource_sub_type = await get_resource_sub_type_for_arn(arn)
+
+    # If account id is not found
+    if not account_id:
+        raise ResourceNotFound("The account for the given ARN could not be determined")
     url = ""
-    if resource_type == "iam":
+    if resource_type == "iam" and resource_sub_type == "role":
         resource_name = arn.split("/")[-1]
         url = f"/policies/edit/{account_id}/iamrole/{resource_name}"
     elif resource_type == "s3":
         url = f"/policies/edit/{account_id}/s3/{resource_name}"
     elif resource_type in ["sqs", "sns"]:
         url = f"/policies/edit/{account_id}/{resource_type}/{region}/{resource_name}"
-    elif resource_type == "AWS::CloudFormation::Stack":
+    elif (resource_type == "AWS::CloudFormation::Stack") or (
+        resource_type == "cloudformation" and resource_sub_type == "stack"
+    ):
         url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/cloudformation/home?region={region}#/stacks/"
-    elif resource_type == "AWS::CloudFront::Distribution":
+    elif resource_type == "AWS::CloudFront::Distribution" or (
+        resource_type == "cloudfront" and resource_sub_type == "distribution"
+    ):
         url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/cloudfront/home?%23distribution-settings:{resource_name}"
-    elif resource_type == "AWS::CloudTrail::Trail":
+    elif resource_type == "AWS::CloudTrail::Trail" or (
+        resource_type == "cloudtrail" and resource_sub_type == "trail"
+    ):
         url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/cloudtrail/home?region={region}%23/configuration"
-    elif resource_type == "AWS::CloudWatch::Alarm":
+    elif resource_type == "AWS::CloudWatch::Alarm" or (
+        resource_type == "cloudwatch" and arn.split(":")[5] == "alarm"
+    ):
         url = (
             f"/role/{account_id}?redirect=https://console.aws.amazon.com/cloudwatch/home"
             f"?region={region}%23alarmsV2:"
         )
-    elif resource_type == "AWS::CodeBuild::Project":
+    elif resource_type == "AWS::CodeBuild::Project" or (
+        resource_type == "codebuild" and resource_sub_type == "project"
+    ):
         url = (
             f"/role/{account_id}?redirect=https://console.aws.amazon.com/codesuite/codebuild/"
             f"{account_id}/projects/{resource_name}/history?region={region}"
         )
-    elif resource_type == "AWS::CodePipeline::Pipeline":
+    elif (
+        resource_type == "AWS::CodePipeline::Pipeline"
+        or resource_type == "codepipeline"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             "https://console.aws.amazon.com/codesuite/codepipeline/pipelines/"
             f"{resource_name}/view?region={region}"
         )
-    elif resource_type == "AWS::DynamoDB::Table":
+    elif resource_type == "AWS::DynamoDB::Table" or (
+        resource_type == "dynamodb" and resource_sub_type == "table"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/dynamodb/home?region={region}%23tables:selected={resource_name}"
         )
-    elif resource_type == "AWS::EC2::CustomerGateway":
+    elif resource_type == "AWS::EC2::CustomerGateway" or (
+        resource_type == "ec2" and resource_sub_type == "customer-gateway"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23CustomerGateways:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::InternetGateway":
+    elif resource_type == "AWS::EC2::InternetGateway" or (
+        resource_type == "ec2" and resource_sub_type == "internet-gateway"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23igws:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::NatGateway":
+    elif resource_type == "AWS::EC2::NatGateway" or (
+        resource_type == "ec2" and resource_sub_type == "natgateway"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23NatGateways:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::NetworkAcl":
+    elif resource_type == "AWS::EC2::NetworkAcl" or (
+        resource_type == "ec2" and resource_sub_type == "network-acl"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23acls:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::RouteTable":
+    elif resource_type == "AWS::EC2::RouteTable" or (
+        resource_type == "ec2" and resource_sub_type == "route-table"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23RouteTables:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::SecurityGroup":
+    elif resource_type == "AWS::EC2::SecurityGroup" or (
+        resource_type == "ec2" and resource_sub_type == "security-group"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/ec2/v2/home?region={region}%23SecurityGroup:groupId={resource_name}"
         )
-    elif resource_type == "AWS::EC2::Subnet":
+    elif resource_type == "AWS::EC2::Subnet" or (
+        resource_type == "ec2" and resource_sub_type == "subnet"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23subnets:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::VPC":
+    elif resource_type == "AWS::EC2::VPC" or (
+        resource_type == "ec2" and resource_sub_type == "vpc"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23vpcs:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::VPCEndpoint":
+    elif resource_type == "AWS::EC2::VPCEndpoint" or (
+        resource_type == "ec2" and resource_sub_type == "vpc-endpoint"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23Endpoints:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::VPCEndpointService":
+    elif resource_type == "AWS::EC2::VPCEndpointService" or (
+        resource_type == "ec2" and resource_sub_type == "vpc-endpoint-service"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23EndpointServices:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::VPCPeeringConnection":
+    elif resource_type == "AWS::EC2::VPCPeeringConnection" or (
+        resource_type == "ec2" and resource_sub_type == "vpc-peering-connection"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23PeeringConnections:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::VPNConnection":
+    elif resource_type == "AWS::EC2::VPNConnection" or (
+        resource_type == "ec2" and resource_sub_type == "vpn-connection"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23VpnConnections:search={resource_name}"
         )
-    elif resource_type == "AWS::EC2::VPNGateway":
+    elif resource_type == "AWS::EC2::VPNGateway" or (
+        resource_type == "ec2" and resource_sub_type == "vpn-gateway"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/vpc/home?region={region}%23VpnGateways:search={resource_name}"
         )
-    elif resource_type == "AWS::ElasticBeanstalk::Application":
+    elif resource_type == "AWS::ElasticBeanstalk::Application" or (
+        resource_type == "elasticbeanstalk" and resource_sub_type == "application"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/elasticbeanstalk/home?region={region}%23/applications"
         )
-    elif resource_type == "AWS::ElasticBeanstalk::ApplicationVersion":
+    elif resource_type == "AWS::ElasticBeanstalk::ApplicationVersion" or (
+        resource_type == "elasticbeanstalk"
+        and resource_sub_type == "applicationversion"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/elasticbeanstalk/home?region={region}%23/applications"
         )
-    elif resource_type == "AWS::ElasticBeanstalk::Environment":
+    elif resource_type == "AWS::ElasticBeanstalk::Environment" or (
+        resource_type == "elasticbeanstalk" and resource_sub_type == "environment"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/elasticbeanstalk/home?region={region}%23/environments"
         )
-    elif resource_type == "AWS::ElasticLoadBalancing::LoadBalancer":
+    elif resource_type == "AWS::ElasticLoadBalancing::LoadBalancer" or (
+        resource_type == "elasticloadbalancing"
+        and resource_sub_type == "loadbalancer"
+        and "/app/" not in arn
+    ):
         url = (
             f"/role/{account_id}?redirect="
             "https://console.aws.amazon.com"
             f"/ec2/v2/home?region={region}%23LoadBalancers:search={resource_name}"
         )
-    elif resource_type == "AWS::ElasticLoadBalancingV2::LoadBalancer":
-        resource_name = arn.split("/")[2]
+    elif resource_type == "AWS::ElasticLoadBalancingV2::LoadBalancer" or (
+        resource_type == "elasticloadbalancing" and resource_sub_type == "loadbalancer"
+    ):
+        if "/" in resource_name:
+            resource_name = arn.split("/")[2]
         url = (
             f"/role/{account_id}?redirect="
             "https://console.aws.amazon.com"
             f"/ec2/v2/home?region={region}%23LoadBalancers:search={resource_name}"
         )
-    elif resource_type == "AWS::Elasticsearch::Domain":
+    elif resource_type == "AWS::Elasticsearch::Domain" or (
+        resource_type == "es" and resource_sub_type == "domain"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             "https://console.aws.amazon.com"
             f"/es/home?region={region}%23domain:resource={resource_name};action=dashboard;tab=undefined"
         )
-    elif resource_type == "AWS::Lambda::Function":
+    elif resource_type == "AWS::Lambda::Function" or (
+        resource_type == "lambda" and arn.split(":")[5] == "function"
+    ):
         resource_name = arn.split(":")[6]
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/lambda/home?region={region}%23/functions/{resource_name}"
         )
-    elif resource_type == "AWS::RDS::DBSnapshot":
+    elif resource_type == "AWS::RDS::DBSnapshot" or (
+        resource_type == "rds" and arn.split(":")[5] == "snapshot"
+    ):
         resource_name = arn.split(":")[6]
         url = (
             f"/role/{account_id}?redirect="
@@ -866,37 +797,51 @@ async def get_url_for_resource(
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/rds/home?region={region}%23db-snapshot:id={resource_name}"
         )
-    elif resource_type == "AWS::IAM::Policy":
+    elif resource_type == "AWS::IAM::Policy" or (
+        resource_type == "iam" and resource_sub_type == "policy"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/iam/home?%23/policies/{arn}$serviceLevelSummary"
         )
-    elif resource_type == "AWS::IAM::User":
+    elif resource_type == "AWS::IAM::User" or (
+        resource_type == "iam" and resource_sub_type == "user"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/iam/home?%23/users/{resource_name}"
         )
-    elif resource_type == "AWS::IAM::Group":
+    elif resource_type == "AWS::IAM::Group" or (
+        resource_type == "iam" and resource_sub_type == "group"
+    ):
         url = f"/role/{account_id}?redirect=https://console.aws.amazon.com/iam/home?%23/groups/{resource_name}"
     elif resource_type == "AWS::Shield::Protection":
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/wafv2/shield%23/tedx"
         )
-    elif resource_type == "AWS::ShieldRegional::Protection":
+    elif resource_type == "AWS::ShieldRegional::Protection" or (
+        resource_type == "shield" and resource_sub_type == "protection"
+    ):
         url = (
             f"/role/{account_id}?redirect="
             f"https://console.aws.amazon.com/wafv2/shield%23/tedx"
         )
-    elif resource_type in ["AWS::WAF::RateBasedRule", "AWS::WAF::Rule"]:
+    elif resource_type in ["AWS::WAF::RateBasedRule", "AWS::WAF::Rule"] or (
+        resource_type == "waf" and resource_sub_type in ["rule", "ratebasedrule"]
+    ):
         url = (
             f"/role/{account_id}?redirect=" f"https://console.aws.amazon.com/wafv2/home"
         )
-    elif resource_type == "AWS::WAF::RuleGroup":
+    elif resource_type == "AWS::WAF::RuleGroup" or (
+        resource_type in ["waf", "wafv2"] and "rulegroup/" in arn
+    ):
         url = (
             f"/role/{account_id}?redirect=" f"https://console.aws.amazon.com/wafv2/fms"
         )
-    elif resource_type == "AWS::WAF::WebACL":
+    elif resource_type == "AWS::WAF::WebACL" or (
+        resource_type in ["waf", "wafv2"] and "webacl/" in arn
+    ):
         url = (
             f"/role/{account_id}?redirect=" f"https://console.aws.amazon.com/wafv2/home"
         )
@@ -905,11 +850,35 @@ async def get_url_for_resource(
 
 
 async def get_aws_config_history_url_for_resource(
-    account_id, resource_id, technology, region="us-east-1"
+    account_id,
+    resource_id,
+    resource_name,
+    technology,
+    region=config.get("aws.region", "us-east-1"),
 ):
+    if config.get("get_aws_config_history_url_for_resource.generate_conglomo_url"):
+        return await get_conglomo_url_for_resource(
+            account_id, resource_id, technology, region
+        )
+
     encoded_redirect = urllib.parse.quote_plus(
-        f"https://{region}.console.aws.amazon.com/config/home?#/timeline/{technology}/{resource_id}/configuration"
+        f"https://{region}.console.aws.amazon.com/config/home?#/resources/timeline?"
+        f"resourceId={resource_id}&resourceName={resource_name}&resourceType={technology}"
     )
 
     url = f"/role/{account_id}?redirect={encoded_redirect}"
     return url
+
+
+async def get_conglomo_url_for_resource(
+    account_id, resource_id, technology, region="global"
+):
+    conglomo_url = config.get("get_aws_config_history_url_for_resource.conglomo_url")
+    if not conglomo_url:
+        raise MissingConfigurationValue(
+            "Unable to find conglomo URL in configuration: `get_aws_config_history_url_for_resource.conglomo_url`"
+        )
+    encoded_resource_id = base64.urlsafe_b64encode(resource_id.encode("utf-8")).decode(
+        "utf-8"
+    )
+    return f"{conglomo_url}/resource/{account_id}/{region}/{technology}/{encoded_resource_id}"

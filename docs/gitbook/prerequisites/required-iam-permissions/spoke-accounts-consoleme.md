@@ -17,6 +17,7 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
         "config:BatchGet*",
         "config:List*",
         "config:Select*",
+        "ec2:describeregions",
         "ec2:DescribeSubnets",
         "ec2:describevpcendpoints",
         "ec2:DescribeVpcs",
@@ -56,7 +57,7 @@ Assume Role Policy Document:
 {
   "Statement": [
     {
-      "Action": "sts:AssumeRole",
+      "Action": ["sts:AssumeRole", "sts:TagSession"],
       "Effect": "Allow",
       "Principal": {
         "AWS": "arn:aws:iam::1243456789012:role/consolemeInstanceProfile"
@@ -66,6 +67,4 @@ Assume Role Policy Document:
   "Version": "2012-10-17"
 }
 ```
-
-#### 
 

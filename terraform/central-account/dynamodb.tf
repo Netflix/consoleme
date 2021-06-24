@@ -8,6 +8,10 @@ resource "aws_dynamodb_table" "consoleme_audit_global" {
   hash_key         = "uuid"
   range_key        = "group"
 
+  point_in_time_recovery {
+    enabled = true
+  }
+
   attribute {
     name = "uuid"
     type = "S"
@@ -33,6 +37,10 @@ resource "aws_dynamodb_table" "consoleme_config_global" {
   write_capacity   = 5
   hash_key         = "id"
 
+  point_in_time_recovery {
+    enabled = true
+  }
+
   attribute {
     name = "id"
     type = "S"
@@ -55,6 +63,10 @@ resource "aws_dynamodb_table" "consoleme_iamroles_global" {
   write_capacity   = 5
   hash_key         = "arn"
   range_key        = "accountId"
+
+  point_in_time_recovery {
+    enabled = true
+  }
 
   attribute {
     name = "arn"
@@ -81,6 +93,10 @@ resource "aws_dynamodb_table" "consoleme_policy_requests" {
   write_capacity   = 5
   hash_key         = "request_id"
 
+  point_in_time_recovery {
+    enabled = true
+  }
+
   attribute {
     name = "request_id"
     type = "S"
@@ -102,6 +118,10 @@ resource "aws_dynamodb_table" "consoleme_requests_global" {
   write_capacity   = 5
   hash_key         = "request_id"
 
+  point_in_time_recovery {
+    enabled = true
+  }
+
   attribute {
     name = "request_id"
     type = "S"
@@ -122,6 +142,10 @@ resource "aws_dynamodb_table" "consoleme_resource_cache" {
   write_capacity   = 5
   hash_key         = "resourceId"
   range_key        = "resourceType"
+
+  point_in_time_recovery {
+    enabled = true
+  }
 
   attribute {
     name = "resourceId"
@@ -148,6 +172,10 @@ resource "aws_dynamodb_table" "consoleme_users_global" {
   read_capacity    = 5
   write_capacity   = 5
   hash_key         = "username"
+
+  point_in_time_recovery {
+    enabled = true
+  }
 
   attribute {
     name = "username"

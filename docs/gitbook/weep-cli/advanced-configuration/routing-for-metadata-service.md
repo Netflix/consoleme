@@ -9,10 +9,10 @@ Run commands:
 ```bash
 sudo ifconfig lo0 169.254.169.254 alias
 
-echo "rdr pass on lo0 inet proto tcp from any to 169.254.169.254 port 80 -> 127.0.0.1 port 9090" | sudo pfctl -ef -
+echo "rdr pass on lo0 inet proto tcp from any to 169.254.169.254 port 80 -> 127.0.0.1 port 9091" | sudo pfctl -ef -
 ```
 
-Alternatively to persist the settings above on a Mac, [download the plists](https://drive.google.com/drive/folders/1Z038jaI1e21t48f94bfCwAjDazYQjTNd) and place them in `/Library/LaunchDaemons` and reboot or issue the following commands:
+Alternatively to persist the settings above on a Mac, [download the plists](https://github.com/Netflix/weep/tree/master/extras) and place them in `/Library/LaunchDaemons` and reboot or issue the following commands:
 
 ```bash
 launchctl load /Library/LaunchDaemons/com.user.weep.plist
@@ -29,7 +29,7 @@ Create a text file at the location of your choosing with the following contents:
 :INPUT ACCEPT [0:0]
 :OUTPUT ACCEPT [1:216]
 :POSTROUTING ACCEPT [1:216]
--A OUTPUT -d 169.254.169.254/32 -p tcp -m tcp --dport 80 -j DNAT --to-destination 127.0.0.1:9090
+-A OUTPUT -d 169.254.169.254/32 -p tcp -m tcp --dport 80 -j DNAT --to-destination 127.0.0.1:9091
 COMMIT
 ```
 

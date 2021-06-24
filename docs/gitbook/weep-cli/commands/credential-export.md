@@ -1,4 +1,4 @@
-# Credential Export
+# Export
 
 Weep can generate a command to export credentials to [environment variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html) in your shell.
 
@@ -33,7 +33,6 @@ eval $(weep export test_account_user)
 
 {% tab title="Fish" %}
 ```bash
-
 eval (weep export test_account_user)
 ```
 {% endtab %}

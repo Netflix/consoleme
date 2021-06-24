@@ -12,6 +12,7 @@ from consoleme.exceptions.exceptions import (
     MissingConfigurationValue,
 )
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.defaults import SELF_SERVICE_IAM_DEFAULTS
 from consoleme.lib.generic import generate_random_string, iterate_and_format_dict
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import (
@@ -25,8 +26,14 @@ from consoleme.models import (
     Status,
 )
 
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
+group_mapping = get_plugin_by_name(
+    config.get("plugins.group_mapping", "default_group_mapping")
+)()
 ALL_ACCOUNTS = None
+
+self_service_iam_config: dict = config.get(
+    "self_service_iam", SELF_SERVICE_IAM_DEFAULTS
+)
 
 
 async def _generate_policy_statement(
@@ -177,7 +184,11 @@ async def _generate_s3_inline_policy_statement_from_mapping(
     :param generator: ChangeGeneratorModel
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
-    permissions_map = config.get("self_service_iam.permissions_map.s3.action_map")
+    permissions_map = (
+        self_service_iam_config.get("permissions_map", {})
+        .get("s3", {})
+        .get("action_map")
+    )
     if not permissions_map:
         raise MissingConfigurationValue(
             "Unable to find applicable action map configuration."
@@ -229,8 +240,10 @@ async def _generate_inline_policy_statement_from_mapping(
     generator_type = generator.generator_type
     if not isinstance(generator_type, str):
         generator_type = generator.generator_type.value
-    permissions_map = config.get(
-        f"self_service_iam.permissions_map.{generator_type}.action_map"
+    permissions_map = (
+        self_service_iam_config.get("permissions_map", {})
+        .get(generator_type, {})
+        .get("action_map")
     )
     if not permissions_map:
         raise MissingConfigurationValue(
@@ -263,8 +276,10 @@ async def _generate_inline_policy_statement_from_policy_sentry(
     :param generator: ChangeGeneratorModel
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
-    permissions_map = config.get(
-        "self_service_iam.permissions_map.crud_lookup.action_map"
+    permissions_map = (
+        self_service_iam_config.get("permissions_map", {})
+        .get("crud_lookup", {})
+        .get("action_map")
     )
     if not permissions_map:
         raise MissingConfigurationValue(
@@ -319,12 +334,30 @@ async def _minimize_iam_policy_statements(
 
     for i in range(len(inline_iam_policy_statements)):
         inline_iam_policy_statement = inline_iam_policy_statements[i]
+        if i in exclude_ids:
+            # We've already combined this policy with another. Ignore it.
+            continue
         for j in range(i + 1, len(inline_iam_policy_statements)):
+            if j in exclude_ids:
+                # We've already combined this policy with another. Ignore it.
+                continue
             inline_iam_policy_statement_to_compare = inline_iam_policy_statements[j]
 
-            # Check to see if policy statements are identical except for Resources,
-            # then except for Actions, and merge if possible
-            for element in ["Resource", "Action"]:
+            # Check to see if policy statements are identical except for a given element. Merge the policies
+            # if possible.
+            for element in [
+                "Resource",
+                "Action",
+                "NotAction",
+                "NotResource",
+                "NotPrincipal",
+            ]:
+                if not (
+                    inline_iam_policy_statement.get(element)
+                    or inline_iam_policy_statement_to_compare.get(element)
+                ):
+                    # This function won't handle `Condition`.
+                    continue
                 diff = DeepDiff(
                     inline_iam_policy_statement,
                     inline_iam_policy_statement_to_compare,

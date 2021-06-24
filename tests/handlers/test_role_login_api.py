@@ -5,8 +5,6 @@ import sys
 import ujson as json
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.config import config
-
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(APP_ROOT, ".."))
 
@@ -18,6 +16,8 @@ class TestRoleLoginApi(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     def test_role_api_fail(self):
+        from consoleme.config import config
+
         headers = {
             config.get("auth.user_header_name"): "user@example.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -34,23 +34,27 @@ class TestRoleLoginApi(AsyncHTTPTestCase):
         )
 
     def test_role_api_fail_multiple_matching_roles(self):
+        from consoleme.config import config
+
         headers = {
             config.get("auth.user_header_name"): "userwithmultipleroles@example.com",
             config.get("auth.groups_header_name"): "group9,group3",
         }
 
         response = self.fetch("/api/v2/role_login/role", headers=headers)
-        self.assertEqual(response.code, 300)
+        self.assertEqual(response.code, 200)
         response_j = json.loads(response.body)
         self.assertEqual(
             response_j["message"],
             "You have more than one role matching your query. Please select one.",
         )
-        self.assertEqual(response_j["reason"], "error")
+        self.assertEqual(response_j["reason"], "multiple_roles")
         self.assertEqual(response_j["type"], "redirect")
         self.assertIn("/?arn=role&warningMessage=", response_j["redirect_url"])
 
     def test_role_api_success(self):
+        from consoleme.config import config
+
         headers = {
             config.get("auth.user_header_name"): "userwithrole@example.com",
             config.get("auth.groups_header_name"): "groupa@example.com",

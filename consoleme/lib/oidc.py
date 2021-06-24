@@ -6,11 +6,15 @@ import jwt
 import pytz
 import tornado.httpclient
 import ujson as json
-from jwt.algorithms import RSAAlgorithm
+from jwt.algorithms import ECAlgorithm, RSAAlgorithm
+from jwt.exceptions import DecodeError
 from tornado import httputil
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import MissingConfigurationValue
+from consoleme.exceptions.exceptions import (
+    MissingConfigurationValue,
+    UnableToAuthenticate,
+)
 from consoleme.lib.generic import should_force_redirect
 from consoleme.lib.jwt import generate_jwt_token
 
@@ -50,27 +54,39 @@ async def populate_oidc_config():
         raise MissingConfigurationValue("Missing OIDC Secrets")
     oidc_config["client_id"] = client_id
     oidc_config["client_secret"] = client_secret
-    # Fetch jwks_uri for jwt validation
-    res = await http_client.fetch(
-        oidc_config["jwks_uri"],
-        method="GET",
-        headers={
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "application/json",
-        },
-    )
-    oidc_config["jwks_data"] = json.loads(res.body)
-    oidc_config["jwt_keys"] = {
-        k["kid"]: RSAAlgorithm.from_jwk(json.dumps(k))
-        for k in oidc_config["jwks_data"]["keys"]
-    }
-
+    oidc_config["jwt_keys"] = {}
+    jwks_uris = [oidc_config["jwks_uri"]]
+    jwks_uris.extend(config.get("get_user_by_oidc_settings.extra_jwks_uri", []))
+    for jwks_uri in jwks_uris:
+        # Fetch jwks_uri for jwt validation
+        res = await http_client.fetch(
+            jwks_uri,
+            method="GET",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json",
+            },
+        )
+        jwks_data = json.loads(res.body)
+        for k in jwks_data["keys"]:
+            key_type = k["kty"]
+            key_id = k["kid"]
+            if key_type == "RSA":
+                oidc_config["jwt_keys"][key_id] = RSAAlgorithm.from_jwk(json.dumps(k))
+            elif key_type == "EC":
+                oidc_config["jwt_keys"][key_id] = ECAlgorithm.from_jwk(json.dumps(k))
+            else:
+                raise MissingConfigurationValue(
+                    f"OIDC/OAuth2 key type not recognized. Detected key type: {key_type}."
+                )
     return oidc_config
 
 
 async def authenticate_user_by_oidc(request):
+    email = None
+    groups = []
+    decoded_access_token = {}
     oidc_config = await populate_oidc_config()
-
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     log_data = {"function": function}
     code = request.get_argument("code", None)
@@ -159,40 +175,109 @@ async def authenticate_user_by_oidc(request):
                 "get_user_by_oidc_settings.access_token_response_key", "access_token"
             )
         )
-        jwt_verify = config.get("get_user_by_oidc_settings.jwt_verify")
+
+        jwt_verify = config.get("get_user_by_oidc_settings.jwt_verify", True)
         if jwt_verify:
             header = jwt.get_unverified_header(id_token)
             key_id = header["kid"]
             algorithm = header["alg"]
+            if algorithm == "none" or not algorithm:
+                raise UnableToAuthenticate(
+                    "ID Token header does not specify a signing algorithm."
+                )
             pub_key = oidc_config["jwt_keys"][key_id]
             # This will raises errors if the audience isn't right or if the token is expired or has other errors.
             decoded_id_token = jwt.decode(
                 id_token,
                 pub_key,
                 audience=oidc_config["client_id"],
-                algorithm=algorithm,
+                algorithms=algorithm,
             )
 
-            header = jwt.get_unverified_header(access_token)
-            key_id = header["kid"]
-            algorithm = header["alg"]
-            pub_key = oidc_config["jwt_keys"][key_id]
-            # This will raises errors if the audience isn't right or if the token is expired or has other errors.
-            decoded_access_token = jwt.decode(
-                access_token,
-                pub_key,
-                audience=config.get("get_user_by_oidc_settings.access_token_audience"),
-                algorithm=algorithm,
+            email = decoded_id_token.get(
+                config.get("get_user_by_oidc_settings.jwt_email_key", "email")
             )
+
+            # For google auth, the access_token does not contain JWT-parsable claims.
+            if config.get(
+                "get_user_by_oidc_settings.get_groups_from_access_token", True
+            ):
+                try:
+                    header = jwt.get_unverified_header(access_token)
+                    key_id = header["kid"]
+                    algorithm = header["alg"]
+                    if algorithm == "none" or not algorithm:
+                        raise UnableToAuthenticate(
+                            "Access Token header does not specify a signing algorithm."
+                        )
+                    pub_key = oidc_config["jwt_keys"][key_id]
+                    # This will raises errors if the audience isn't right or if the token is expired or has other
+                    # errors.
+                    decoded_access_token = jwt.decode(
+                        access_token,
+                        pub_key,
+                        audience=config.get(
+                            "get_user_by_oidc_settings.access_token_audience"
+                        ),
+                        algorithms=algorithm,
+                    )
+                except (DecodeError, KeyError) as e:
+                    # This exception occurs when the access token is opaque or otherwise not JWT-parsable.
+                    # It is expected with some IdPs.
+                    log.debug(
+                        {
+                            **log_data,
+                            "message": (
+                                "Unable to derive user's groups from access_token. Attempting to get groups through "
+                                "userinfo endpoint. "
+                            ),
+                            "error": e,
+                            "user": email,
+                        }
+                    )
+                    log.debug(log_data, exc_info=True)
+                    groups = []
         else:
             decoded_id_token = jwt.decode(id_token, verify=jwt_verify)
             decoded_access_token = jwt.decode(access_token, verify=jwt_verify)
-        email = decoded_id_token.get(
+
+        email = email or decoded_id_token.get(
             config.get("get_user_by_oidc_settings.jwt_email_key", "email")
         )
-        groups = decoded_access_token.get(
-            config.get("get_user_by_oidc_settings.jwt_groups_key", "groups")
+
+        if not email:
+            raise UnableToAuthenticate("Unable to determine user from ID Token")
+
+        groups = (
+            groups
+            or decoded_access_token.get(
+                config.get("get_user_by_oidc_settings.jwt_groups_key", "groups"),
+            )
+            or decoded_id_token.get(
+                config.get("get_user_by_oidc_settings.jwt_groups_key", "groups"), []
+            )
         )
+
+        if (
+            not groups
+            and oidc_config.get("userinfo_endpoint")
+            and config.get(
+                "get_user_by_oidc_settings.get_groups_from_userinfo_endpoint", True
+            )
+        ):
+            user_info = await http_client.fetch(
+                oidc_config["userinfo_endpoint"],
+                method="GET",
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Authorization": "Bearer %s" % access_token,
+                    "Accept": "application/json",
+                },
+            )
+            groups = json.loads(user_info.body).get(
+                config.get("get_user_by_oidc_settings.user_info_groups_key", "groups"),
+                [],
+            )
 
         if config.get("auth.set_auth_cookie"):
             expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
@@ -205,7 +290,7 @@ async def authenticate_user_by_oidc(request):
                 expires=expiration,
                 secure=config.get(
                     "auth.cookie.secure",
-                    True if "https://" in config.get("url") else False,
+                    "https://" in config.get("url"),
                 ),
                 httponly=config.get("auth.cookie.httponly", True),
                 samesite=config.get("auth.cookie.samesite", True),

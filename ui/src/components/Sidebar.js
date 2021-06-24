@@ -6,7 +6,7 @@ import { useAuth } from "../auth/AuthProviderDefault";
 
 const localStorageRecentRolesKey = "consoleMeLocalStorage";
 
-const listRecentRoles = (recentRoles) => {
+const listRecentRoles = (recentRoles, user) => {
   const arnRegex = /^arn:aws:iam::(\d{12}):role\/(.+)$/;
   return recentRoles.map((role) => {
     const match = role.match(arnRegex);
@@ -14,21 +14,21 @@ const listRecentRoles = (recentRoles) => {
       return null;
     }
     const [, accountNumber, roleName] = match;
+    const accountName = user?.accounts[accountNumber];
     return (
       <Menu.Item as={NavLink} name={role} key={role} to={"/role/" + role}>
         <Header
-          as="a"
-          color="yellow"
+          color="blue"
           style={{
-            fontSize: "11px",
+            fontSize: "14px",
           }}
         >
           <Header.Content>
-            {accountNumber}
+            {accountName ? accountName : accountNumber}
             <Header.Subheader
-              as="a"
               style={{
-                fontSize: "11px",
+                fontSize: "14px",
+                color: "grey",
               }}
             >
               {roleName}
@@ -68,77 +68,105 @@ const ConsoleMeSidebar = () => {
       inverted
       vertical
       style={{
-        paddingTop: "10px",
+        paddingTop: "82px",
         width: "240px",
-        marginTop: "72px",
-        minHeight: "700px",
+        zIndex: "100",
       }}
     >
-      <Menu.Item>
-        <Label>{recentRoles.length}</Label>
-        <Menu.Header>Recent Roles</Menu.Header>
-        <Menu.Menu>{listRecentRoles(recentRoles)}</Menu.Menu>
-      </Menu.Item>
-      <Menu.Item>
-        <Menu.Header>Help</Menu.Header>
-        <Menu.Menu>
-          <Menu.Item
-            as="a"
-            name="documentation"
-            href={documentation_url || ""}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Icon name="file" />
-            Documentation
-          </Menu.Item>
-          <Menu.Item
-            as="a"
-            name="email"
-            href={support_contact ? "mailto:" + support_contact : "/"}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Icon name="send" />
-            Email us
-          </Menu.Item>
-          <Menu.Item
-            as="a"
-            name="slack"
-            href={support_chat_url || "/"}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Icon name="slack" />
-            Find us on Slack
-          </Menu.Item>
-        </Menu.Menu>
-      </Menu.Item>
-      <Menu.Menu
+      <div
         style={{
-          position: "absolute",
-          bottom: "70px",
-          left: "0",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          justifyContent: "space-between",
+          overflowY: "auto",
         }}
       >
-        <Menu.Item>
-          {consoleme_logo && (
-            <a href={"/"} rel="noopener noreferrer" target="_blank">
-              <Image size="medium" src={consoleme_logo} />
-            </a>
-          )}
-          <br />
-          {security_logo && (
-            <a
-              href={security_url || "/"}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <Image size="medium" src={security_logo} />
-            </a>
-          )}
-        </Menu.Item>
-      </Menu.Menu>
+        <div>
+          <Menu.Item>
+            <Label>{recentRoles.length}</Label>
+            <Menu.Header>Recent Roles</Menu.Header>
+            <Menu.Menu>{listRecentRoles(recentRoles, user)}</Menu.Menu>
+          </Menu.Item>
+          <Menu.Item>
+            <Menu.Header>Help</Menu.Header>
+            <Menu.Menu>
+              {documentation_url ? (
+                <Menu.Item
+                  as="a"
+                  name="documentation"
+                  href={documentation_url}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  <Icon name="file" />
+                  Documentation
+                </Menu.Item>
+              ) : null}
+              {support_contact ? (
+                <Menu.Item
+                  as="a"
+                  name="email"
+                  href={"mailto:" + support_contact}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  <Icon name="send" />
+                  Email us
+                </Menu.Item>
+              ) : null}
+              {support_chat_url ? (
+                <Menu.Item
+                  as="a"
+                  name="slack"
+                  href={support_chat_url || "/"}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  style={{
+                    fontSize: "14px",
+                  }}
+                >
+                  <Icon name="slack" />
+                  Chat with us
+                </Menu.Item>
+              ) : null}
+            </Menu.Menu>
+          </Menu.Item>
+        </div>
+        <div>
+          <Menu.Menu>
+            <Menu.Item>
+              {consoleme_logo && (
+                <a href={"/"} rel="noopener noreferrer" target="_blank">
+                  <Image
+                    style={{
+                      height: "250px",
+                      margin: "auto",
+                    }}
+                    src={consoleme_logo}
+                  />
+                </a>
+              )}
+              <br />
+              {security_logo && (
+                <a
+                  href={security_url || "/"}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <Image size="medium" src={security_logo} />
+                </a>
+              )}
+            </Menu.Item>
+          </Menu.Menu>
+        </div>
+      </div>
     </Menu>
   );
 };

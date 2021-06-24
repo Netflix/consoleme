@@ -1,0 +1,38 @@
+name: Create and publish docker image on ECR
+on:
+  push:
+    branches: master
+jobs:
+  ecr_public:
+    runs-on: ubuntu-latest
+    name: ECR public action
+    if: github.repository == 'Netflix/consoleme'
+    steps:
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+
+      - name: Install AWS CLI
+        run: |-
+          pip install awscli
+
+      - name: Check out the repo
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1.1.1
+
+      - name: Login to Public ECR
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.CONSOLEME_DEMO_USER_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.CONSOLEME_DEMO_USER_SECRET_ACCESS_KEY }}
+        run: |
+          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+      - name: Build ConsoleMe
+        run: |
+          docker build -t consoleme .
+      - name: Tag, and push image to Amazon ECR
+        run: |
+          docker tag consoleme:latest public.ecr.aws/consoleme/consoleme:latest
+          docker push public.ecr.aws/consoleme/consoleme:latest

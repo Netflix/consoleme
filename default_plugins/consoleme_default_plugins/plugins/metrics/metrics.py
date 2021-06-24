@@ -1,23 +1,17 @@
-from typing import Dict, Optional, Union
+from consoleme.config import config
+from consoleme.lib.plugins import import_class_by_name
 
+desired_metric_plugin = config.get(
+    "metrics.metrics_plugin",
+    "consoleme_default_plugins.plugins.metrics.default_metrics.DefaultMetric",
+)
 
-class Metric:
-    def count(self, metric_name, tags=None):
-        # TODO(ccastrapel): Having Cloudwatch, Graphite, or other configurtable default metric sources here would be a
-        # good idea.
-        pass
-
-    def gauge(self, metric_name, metric_value, tags=None):
-        pass
-
-    def timer(
-        self,
-        metric_name: str,
-        tags: Optional[Union[Dict[str, Union[str, bool]], Dict[str, str]]] = None,
-    ) -> None:
-        pass
+try:
+    Metric = import_class_by_name(desired_metric_plugin)
+except ImportError:
+    raise
 
 
 def init():
     """Initialize metrics plugin."""
-    return Metric()
+    return Metric

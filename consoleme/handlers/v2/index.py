@@ -1,15 +1,15 @@
 import tornado.web
-import ujson as json
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.loader import WebpackLoader
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.models import DataTableResponse
 
 log = config.get_logger()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 # TODO, move followings to util file
@@ -88,9 +88,13 @@ class EligibleRoleHandler(BaseHandler):
 
         # Default sort by account name
         roles = sorted(roles, key=lambda i: i.get("account_name", 0))
+        total_count = len(roles)
 
         self.set_header("Content-Type", "application/json")
-        self.write(json.dumps(roles, escape_forward_slashes=False))
+        res = DataTableResponse(
+            totalCount=total_count, filteredCount=total_count, data=roles
+        )
+        self.write(res.json())
         await self.finish()
 
 
@@ -118,14 +122,9 @@ class EligibleRolePageConfigHandler(BaseHandler):
                 "totalRows": 1000,
                 "rowsPerPage": 50,
                 "serverSideFiltering": False,
+                "allowCsvExport": False,
+                "allowJsonExport": False,
                 "columns": [
-                    {
-                        "placeholder": "Account Name",
-                        "key": "account_name",
-                        "type": "input",
-                    },
-                    {"placeholder": "Account ID", "key": "account_id", "type": "input"},
-                    {"placeholder": "Role Name", "key": "role_name", "type": "link"},
                     {
                         "placeholder": "AWS Console Sign-In",
                         "key": "redirect_uri",
@@ -133,7 +132,15 @@ class EligibleRolePageConfigHandler(BaseHandler):
                         "icon": "sign-in",
                         "content": "Sign-In",
                         "onClick": {"action": "redirect"},
+                        "style": {"maxWidth": "300px"},
                     },
+                    {
+                        "placeholder": "Account Name",
+                        "key": "account_name",
+                        "type": "input",
+                    },
+                    {"placeholder": "Role Name", "key": "role_name", "type": "link"},
+                    {"placeholder": "Account ID", "key": "account_id", "type": "input"},
                 ],
             },
         }

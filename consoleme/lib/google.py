@@ -17,6 +17,7 @@ from consoleme.exceptions.exceptions import (
     BackgroundCheckNotPassedException,
     BulkAddPrevented,
     DifferentUserGroupDomainException,
+    MissingConfigurationValue,
     NoCredentialSubjectException,
     NoGroupsException,
     NotAMemberException,
@@ -29,10 +30,10 @@ from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.groups import does_group_require_bg_check
 from consoleme.lib.plugins import get_plugin_by_name
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 log = config.get_logger()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 
 
 async def add_user_to_group_task(
@@ -197,13 +198,27 @@ async def get_service(service_name: str, service_path: str, group: str) -> Resou
         "message": f"Building service connection for {service_name} / {service_path}",
     }
     log.debug(log_data)
-    admin_credentials = service_account.Credentials.from_service_account_file(
-        config.get("google.service_key_file"),
-        scopes=config.get(
-            "google.admin_scopes",
-            "[https://www.googleapis.com/auth/admin.directory.group]",
-        ),
-    )
+    if config.get("google.service_key_file"):
+        admin_credentials = service_account.Credentials.from_service_account_file(
+            config.get("google.service_key_file"),
+            scopes=config.get(
+                "google.admin_scopes",
+                ["https://www.googleapis.com/auth/admin.directory.group"],
+            ),
+        )
+    elif config.get("google.service_key_dict"):
+        admin_credentials = service_account.Credentials.from_service_account_info(
+            config.get("google.service_key_dict"),
+            scopes=config.get(
+                "google.admin_scopes",
+                ["https://www.googleapis.com/auth/admin.directory.group"],
+            ),
+        )
+    else:
+        raise MissingConfigurationValue(
+            "Missing configuration for Google. You must configure either `google.service_key_file` "
+            "or `google.service_key_dict`."
+        )
 
     # Change credential subject based on group domain
     credential_subjects = config.get("google.credential_subject")
@@ -326,8 +341,10 @@ async def raise_if_requires_bgcheck_and_no_bgcheck(user: str, group_info: Any) -
     if user_info.passed_background_check:
         return True
     raise BackgroundCheckNotPassedException(
-        f"User {user} has not passed background check. "
-        f"Group {group_info.name} requires a background check. Please contact Nerds"
+        config.get(
+            "google.background_check_fail_message",
+            "User {user} has not passed background check Group {group_name} requires a background check.",
+        ).format(user=user, group_name=group_info.name)
     )
 
 
@@ -353,8 +370,10 @@ async def raise_if_not_same_domain(user: str, group_info: Any) -> None:
 
     if user.split("@")[1] != group_info.name.split("@")[1]:
         raise DifferentUserGroupDomainException(
-            f"Unable to add user to a group that is in a different domain. "
-            f"Please contact #nerds for assistance. User: {user}. Group: {group_info.name}"
+            config.get(
+                "google.different_domain_fail_message",
+                "Unable to add user to a group that is in a different domain. User: {user}. Group: {group_name}",
+            ).format(user=user, group_name=group_info.name)
         )
 
 
@@ -369,7 +388,7 @@ async def raise_if_restricted(user: str, group_info: Any) -> None:
         "user": user,
         "group": group_info.name,
         "restricted": group_info.restricted,
-        "compliance_retricted": group_info.compliance_restricted,
+        "compliance_restricted": group_info.compliance_restricted,
     }
     log.debug(log_data)
     if group_info.restricted:
@@ -391,9 +410,10 @@ async def raise_if_bulk_add_disabled_and_no_request(
     stats.count(function)
     log_data = {"function": function, "group": group_info.name, "request": str(request)}
     log.debug(log_data)
-    error = (
-        "Group has attribute to prevent manually adding users to it. Users must manually request "
-        "access to this group. Please contact Nerds in #nerds if this is not the expected behavior."
+    error = config.get(
+        "google.bulk_add_disabled_fail_message",
+        "Group {group_name} has an attribute to prevent manually adding users to it. "
+        "Users must manually request access to it".format(group_name=group_info.name),
     )
     if not group_info.prevent_bulk_add:
         return True

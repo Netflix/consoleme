@@ -21,12 +21,14 @@ from consoleme.models import (
     S3ErrorArray,
 )
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 crypto = Crypto()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
-internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+internal_policies = get_plugin_by_name(
+    config.get("plugins.internal_policies", "default_policies")
+)()
 red = RedisHandler().redis_sync()
 
 
@@ -34,7 +36,7 @@ async def get_config_timeline_url_for_role(role, account_id):
     resource_id = role.get("resourceId")
     if resource_id:
         config_history_url = await get_aws_config_history_url_for_resource(
-            account_id, resource_id, "AWS::IAM::Role"
+            account_id, resource_id, role["arn"], "AWS::IAM::Role"
         )
         return config_history_url
 
@@ -55,9 +57,15 @@ async def get_cloudtrail_details_for_role(arn: str):
 
     ct_errors = []
 
-    for event_call, value in errors_unformatted.items():
+    for event_string, value in errors_unformatted.items():
+        event_call, resource = event_string.split("|||")
         ct_errors.append(
-            CloudTrailError(event_call=event_call, count=value.get("count", 0))
+            CloudTrailError(
+                event_call=event_call,
+                resource=resource,
+                generated_policy=value.get("generated_policy"),
+                count=value.get("count", 0),
+            )
         )
 
     return CloudTrailDetailsModel(
@@ -149,8 +157,12 @@ async def get_role_details(
             apps=await get_app_details_for_role(arn),
             managed_policies=role["policy"]["AttachedManagedPolicies"],
             tags=role["policy"]["Tags"],
-            templated=True if template else False,
+            templated=bool(template),
             template_link=template,
+            created_time=role["policy"].get("CreateDate"),
+            last_used_time=role["policy"].get("RoleLastUsed", {}).get("LastUsedDate"),
+            description=role["policy"].get("Description"),
+            permissions_boundary=role["policy"].get("PermissionsBoundary", {}),
         )
     else:
         return RoleModel(

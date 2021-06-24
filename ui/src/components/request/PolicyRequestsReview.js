@@ -14,13 +14,9 @@ import {
 import CommentsFeedBlockComponent from "../blocks/CommentsFeedBlockComponent";
 import InlinePolicyChangeComponent from "../blocks/InlinePolicyChangeComponent";
 import ManagedPolicyChangeComponent from "../blocks/ManagedPolicyChangeComponent";
+import PermissionsBoundaryChangeComponent from "../blocks/PermissionsBoundaryChangeComponent";
 import AssumeRolePolicyChangeComponent from "../blocks/AssumeRolePolicyChangeComponent";
 import ResourcePolicyChangeComponent from "../blocks/ResourcePolicyChangeComponent";
-import {
-  sendProposedPolicy,
-  sendRequestCommon,
-  updateRequestStatus,
-} from "../../helpers/utils";
 import ResourceTagChangeComponent from "../blocks/ResourceTagChangeComponent";
 
 class PolicyRequestReview extends Component {
@@ -35,15 +31,126 @@ class PolicyRequestReview extends Component {
       lastUpdated: null,
       requestConfig: {},
       policyDocuments: {},
+      template: null,
     };
     this.reloadDataFromBackend = this.reloadDataFromBackend.bind(this);
     this.updatePolicyDocument = this.updatePolicyDocument.bind(this);
-    this.updateRequestStatus = updateRequestStatus.bind(this);
-    this.sendProposedPolicy = sendProposedPolicy.bind(this);
   }
 
   componentDidMount() {
     this.reloadDataFromBackend();
+  }
+
+  async sendProposedPolicy(command) {
+    const { change, newStatement, requestID } = this.state;
+    this.setState(
+      {
+        isLoading: true,
+      },
+      async () => {
+        const request = {
+          modification_model: {
+            command,
+            change_id: change.id,
+          },
+        };
+        if (newStatement) {
+          request.modification_model.policy_document = JSON.parse(newStatement);
+        }
+        this.props
+          .sendRequestCommon(request, "/api/v2/requests/" + requestID, "PUT")
+          .then((response) => {
+            if (!response) {
+              return;
+            }
+            if (
+              response.status === 403 ||
+              response.status === 400 ||
+              response.status === 500
+            ) {
+              // Error occurred making the request
+              this.setState({
+                isLoading: false,
+                buttonResponseMessage: [
+                  {
+                    status: "error",
+                    message: response.message,
+                  },
+                ],
+              });
+            } else {
+              // Successful request
+              this.setState({
+                isLoading: false,
+                buttonResponseMessage: response.action_results.reduce(
+                  (resultsReduced, result) => {
+                    if (result.visible === true) {
+                      resultsReduced.push(result);
+                    }
+                    return resultsReduced;
+                  },
+                  []
+                ),
+              });
+              this.reloadDataFromBackend();
+            }
+          });
+      }
+    );
+  }
+
+  async updateRequestStatus(command) {
+    const { requestID } = this.state;
+    this.setState(
+      {
+        isLoading: true,
+      },
+      async () => {
+        const request = {
+          modification_model: {
+            command,
+          },
+        };
+        await this.props
+          .sendRequestCommon(request, "/api/v2/requests/" + requestID, "PUT")
+          .then((response) => {
+            if (!response) {
+              return;
+            }
+            if (
+              response.status === 403 ||
+              response.status === 400 ||
+              response.status === 500
+            ) {
+              // Error occurred making the request
+              this.setState({
+                isLoading: false,
+                buttonResponseMessage: [
+                  {
+                    status: "error",
+                    message: response.message,
+                  },
+                ],
+              });
+            } else {
+              // Successful request
+              this.setState({
+                isLoading: false,
+                buttonResponseMessage: response.action_results.reduce(
+                  (resultsReduced, result) => {
+                    if (result.visible === true) {
+                      resultsReduced.push(result);
+                    }
+                    return resultsReduced;
+                  },
+                  []
+                ),
+              });
+              this.reloadDataFromBackend();
+            }
+          });
+      }
+    );
   }
 
   updatePolicyDocument(changeID, policyDocument) {
@@ -61,24 +168,33 @@ class PolicyRequestReview extends Component {
         loading: true,
       },
       () => {
-        sendRequestCommon(null, `/api/v2/requests/${requestID}`, "get").then(
-          (response) => {
+        this.props
+          .sendRequestCommon(null, `/api/v2/requests/${requestID}`, "get")
+          .then((response) => {
+            if (!response) {
+              return;
+            }
             if (response.status === 404 || response.status === 500) {
               this.setState({
                 loading: false,
                 messages: [response.message],
               });
             } else {
-              const { request, request_config, last_updated } = response;
+              const {
+                request,
+                request_config,
+                last_updated,
+                template,
+              } = response;
               this.setState({
                 extendedRequest: JSON.parse(request),
                 requestConfig: request_config,
                 lastUpdated: last_updated,
                 loading: false,
+                template: template,
               });
             }
-          }
-        );
+          });
       }
     );
   }
@@ -92,6 +208,7 @@ class PolicyRequestReview extends Component {
       requestConfig,
       loading,
       requestID,
+      template,
     } = this.state;
 
     // Checks whether extendedInfo is available for the requester or not, if it is, saves it as a variable
@@ -177,22 +294,22 @@ class PolicyRequestReview extends Component {
               {new Date(extendedRequest.timestamp).toLocaleString()}
             </Table.Cell>
           </Table.Row>
-          <Table.Row>
-            <Table.Cell>Title</Table.Cell>
-            <Table.Cell>
-              {extendedInfo ? (
+          {extendedInfo?.customAttributes?.title ? (
+            <Table.Row>
+              <Table.Cell>Title</Table.Cell>
+              <Table.Cell>
                 <p>
                   {(extendedInfo.customAttributes &&
                     extendedInfo.customAttributes.title) ||
                     ""}
                 </p>
-              ) : null}
-            </Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell>Manager</Table.Cell>
-            <Table.Cell>
-              {extendedInfo ? (
+              </Table.Cell>
+            </Table.Row>
+          ) : null}
+          {extendedInfo?.customAttributes?.manager ? (
+            <Table.Row>
+              <Table.Cell>Manager</Table.Cell>
+              <Table.Cell>
                 <p>
                   {(extendedInfo.customAttributes &&
                     `${extendedInfo.customAttributes.manager} - `) ||
@@ -205,9 +322,9 @@ class PolicyRequestReview extends Component {
                     </a>
                   ) : null}
                 </p>
-              ) : null}
-            </Table.Cell>
-          </Table.Row>
+              </Table.Cell>
+            </Table.Row>
+          ) : null}
           <Table.Row>
             <Table.Cell>User Justification</Table.Cell>
             <Table.Cell>{extendedRequest.justification}</Table.Cell>
@@ -266,12 +383,26 @@ class PolicyRequestReview extends Component {
         comments={extendedRequest.comments}
         reloadDataFromBackend={this.reloadDataFromBackend}
         requestID={requestID}
+        sendRequestCommon={this.props.sendRequestCommon}
       />
     ) : null;
 
     const requestReadOnly =
       extendedRequest.request_status === "rejected" ||
       extendedRequest.request_status === "cancelled";
+
+    const templateContent = template ? (
+      <Message negative>
+        <Message.Header>Templated Resource</Message.Header>
+        <p>
+          This is a templated resource. Any changes you make here may be
+          overwritten by the template. You may view the template{" "}
+          <a href={template} rel="noopener noreferrer" target="_blank">
+            here
+          </a>
+        </p>
+      </Message>
+    ) : null;
 
     const changesContent =
       extendedRequest.changes &&
@@ -288,6 +419,8 @@ class PolicyRequestReview extends Component {
                   updatePolicyDocument={this.updatePolicyDocument}
                   reloadDataFromBackend={this.reloadDataFromBackend}
                   requestID={requestID}
+                  sendProposedPolicy={this.sendProposedPolicy}
+                  sendRequestCommon={this.props.sendRequestCommon}
                 />
               );
             }
@@ -299,6 +432,21 @@ class PolicyRequestReview extends Component {
                   requestReadOnly={requestReadOnly}
                   reloadDataFromBackend={this.reloadDataFromBackend}
                   requestID={requestID}
+                  sendProposedPolicy={this.sendProposedPolicy}
+                  sendRequestCommon={this.props.sendRequestCommon}
+                />
+              );
+            }
+            if (change.change_type === "permissions_boundary") {
+              return (
+                <PermissionsBoundaryChangeComponent
+                  change={change}
+                  config={requestConfig}
+                  requestReadOnly={requestReadOnly}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
+                  sendProposedPolicy={this.sendProposedPolicy}
+                  sendRequestCommon={this.props.sendRequestCommon}
                 />
               );
             }
@@ -311,6 +459,8 @@ class PolicyRequestReview extends Component {
                   updatePolicyDocument={this.updatePolicyDocument}
                   reloadDataFromBackend={this.reloadDataFromBackend}
                   requestID={requestID}
+                  sendProposedPolicy={this.sendProposedPolicy}
+                  sendRequestCommon={this.props.sendRequestCommon}
                 />
               );
             }
@@ -326,7 +476,10 @@ class PolicyRequestReview extends Component {
                 />
               );
             }
-            if (change.change_type === "resource_policy") {
+            if (
+              change.change_type === "resource_policy" ||
+              change.change_type === "sts_resource_policy"
+            ) {
               return (
                 <ResourcePolicyChangeComponent
                   change={change}
@@ -335,6 +488,8 @@ class PolicyRequestReview extends Component {
                   updatePolicyDocument={this.updatePolicyDocument}
                   reloadDataFromBackend={this.reloadDataFromBackend}
                   requestID={requestID}
+                  sendProposedPolicy={this.sendProposedPolicy}
+                  sendRequestCommon={this.props.sendRequestCommon}
                 />
               );
             }
@@ -398,6 +553,7 @@ class PolicyRequestReview extends Component {
         <>
           <Header size="huge">Request Review for: {extendedRequest.arn}</Header>
           {requestDetails}
+          {templateContent}
           {descriptionContent}
           {changesContent}
           {commentsContent}

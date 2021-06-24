@@ -2,20 +2,22 @@ import ujson as json
 from mock import patch
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.config import config
 from tests.conftest import MockBaseHandler, MockBaseMtlsHandler, create_future
 
 
 class TestRolesHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.config import config
+
+        self.config = config
         from consoleme.routes import make_app
 
         return make_app(jwt_validator=lambda x: {})
 
     def test_get(self):
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch("/api/v2/roles", method="GET", headers=headers)
         self.assertEqual(response.code, 200)
@@ -52,7 +54,7 @@ class TestRolesHandler(AsyncHTTPTestCase):
         expected = {
             "status": 400,
             "title": "Bad Request",
-            "message": "Error validating input: 1 validation error for RoleCreationRequestModel\nrole_name\n"
+            "message": "Error validating input: 1 validation error for RoleCreationRequestModel\nRoleName\n"
             "  field required (type=value_error.missing)",
         }
         response = self.fetch(
@@ -93,6 +95,9 @@ class TestRolesHandler(AsyncHTTPTestCase):
 
 class TestAccountRolesHandler(AsyncHTTPTestCase):
     def get_app(self):
+        from consoleme.config import config
+
+        self.config = config
         from consoleme.routes import make_app
 
         return make_app(jwt_validator=lambda x: {})
@@ -104,8 +109,8 @@ class TestAccountRolesHandler(AsyncHTTPTestCase):
             "message": "Get roles by account",
         }
         headers = {
-            config.get("auth.user_header_name"): "user@github.com",
-            config.get("auth.groups_header_name"): "groupa,groupb,groupc",
+            self.config.get("auth.user_header_name"): "user@github.com",
+            self.config.get("auth.groups_header_name"): "groupa,groupb,groupc",
         }
         response = self.fetch(
             "/api/v2/roles/012345678901", method="GET", headers=headers
@@ -304,7 +309,7 @@ class TestRoleCloneHandler(AsyncHTTPTestCase):
         expected = {
             "status": 400,
             "title": "Bad Request",
-            "message": "Error validating input: 1 validation error for CloneRoleRequestModel\nrole_name\n  "
+            "message": "Error validating input: 1 validation error for CloneRoleRequestModel\nRoleName\n  "
             "field required (type=value_error.missing)",
         }
         response = self.fetch(

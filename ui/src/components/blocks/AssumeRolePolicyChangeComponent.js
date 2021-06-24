@@ -10,10 +10,7 @@ import {
   Segment,
 } from "semantic-ui-react";
 import MonacoDiffComponent from "./MonacoDiffComponent";
-import {
-  sendProposedPolicy,
-  sortAndStringifyNestedJSONObject,
-} from "../../helpers/utils";
+import { sortAndStringifyNestedJSONObject } from "../../helpers/utils";
 
 class AssumeRolePolicyChangeComponent extends Component {
   constructor(props) {
@@ -46,7 +43,6 @@ class AssumeRolePolicyChangeComponent extends Component {
     this.onLintError = this.onLintError.bind(this);
     this.onValueChange = this.onValueChange.bind(this);
     this.onSubmitChange = this.onSubmitChange.bind(this);
-    this.sendProposedPolicy = sendProposedPolicy.bind(this);
     this.updatePolicyDocument = props.updatePolicyDocument;
     this.reloadDataFromBackend = props.reloadDataFromBackend;
   }
@@ -110,7 +106,11 @@ class AssumeRolePolicyChangeComponent extends Component {
   }
 
   onSubmitChange() {
-    this.sendProposedPolicy("apply_change");
+    const applyChange = this.props.sendProposedPolicy.bind(
+      this,
+      "apply_change"
+    );
+    applyChange();
   }
 
   render() {
@@ -157,7 +157,7 @@ class AssumeRolePolicyChangeComponent extends Component {
             positive
             fluid
             disabled={isError || noChangesDetected}
-            onClick={sendProposedPolicy.bind(this, "update_change")}
+            onClick={this.props.sendProposedPolicy.bind(this, "update_change")}
           />
         </Grid.Column>
       ) : null;
@@ -172,7 +172,7 @@ class AssumeRolePolicyChangeComponent extends Component {
             negative
             fluid
             disabled={isError}
-            onClick={sendProposedPolicy.bind(this, "cancel_change")}
+            onClick={this.props.sendProposedPolicy.bind(this, "cancel_change")}
           />
         </Grid.Column>
       ) : null;

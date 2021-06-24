@@ -1,17 +1,15 @@
 import React from "react";
 import { Header, Segment } from "semantic-ui-react";
-import { usePolicyContext } from "./hooks/PolicyProvider";
 import useAssumeRolePolicy from "./hooks/useAssumeRolePolicy";
 import { PolicyMonacoEditor } from "./PolicyMonacoEditor";
 import { JustificationModal } from "./PolicyModals";
 
 const AssumeRolePolicy = () => {
-  const { resource = {} } = usePolicyContext();
   const {
     assumeRolePolicy = {},
     setAssumeRolePolicy,
     handleAssumeRolePolicySubmit,
-  } = useAssumeRolePolicy(resource);
+  } = useAssumeRolePolicy();
 
   return (
     <>
@@ -32,6 +30,7 @@ const AssumeRolePolicy = () => {
           context="assume_role_policy"
           policy={assumeRolePolicy}
           updatePolicy={setAssumeRolePolicy}
+          enableLinting={false}
         />
       </Segment>
       <JustificationModal handleSubmit={handleAssumeRolePolicySubmit} />

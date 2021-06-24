@@ -11,9 +11,11 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
   "Statement": [
     {
       "Action": [
+        "access-analyzer:*",
         "cloudtrail:*",
         "cloudwatch:*",
-        "config:*",
+        "config:SelectResourceConfig",
+        "config:SelectAggregateResourceConfig",
         "dynamodb:batchgetitem",
         "dynamodb:batchwriteitem",
         "dynamodb:deleteitem",
@@ -51,47 +53,67 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
       "Resource": "arn:aws:ses:*:123456789:identity/your_identity.example.com"
     },
     {
-      "Statement": [
-        {
-          "Action": [
-            "autoscaling:Describe*",
-            "cloudwatch:Get*",
-            "cloudwatch:List*",
-            "config:BatchGet*",
-            "config:List*",
-            "config:Select*",
-            "ec2:DescribeSubnets",
-            "ec2:describevpcendpoints",
-            "ec2:DescribeVpcs",
-            "iam:*",
-            "s3:GetBucketPolicy",
-            "s3:GetBucketTagging",
-            "s3:ListAllMyBuckets",
-            "s3:ListBucket",
-            "s3:PutBucketPolicy",
-            "s3:PutBucketTagging",
-            "sns:GetTopicAttributes",
-            "sns:ListTagsForResource",
-            "sns:ListTopics",
-            "sns:SetTopicAttributes",
-            "sns:TagResource",
-            "sns:UnTagResource",
-            "sqs:GetQueueAttributes",
-            "sqs:GetQueueUrl",
-            "sqs:ListQueues",
-            "sqs:ListQueueTags",
-            "sqs:SetQueueAttributes",
-            "sqs:TagQueue",
-            "sqs:UntagQueue"
-          ],
-          "Effect": "Allow",
-          "Resource": "*"
-        }
+      "Action": [
+        "autoscaling:Describe*",
+        "cloudwatch:Get*",
+        "cloudwatch:List*",
+        "config:BatchGet*",
+        "config:List*",
+        "config:Select*",
+        "ec2:DescribeSubnets",
+        "ec2:describevpcendpoints",
+        "ec2:DescribeVpcs",
+        "iam:GetAccountAuthorizationDetails",
+        "iam:ListAccountAliases",
+        "iam:ListAttachedRolePolicies",
+        "ec2:describeregions",
+        "s3:GetBucketPolicy",
+        "s3:GetBucketTagging",
+        "s3:ListAllMyBuckets",
+        "s3:ListBucket",
+        "s3:PutBucketPolicy",
+        "s3:PutBucketTagging",
+        "sns:GetTopicAttributes",
+        "sns:ListTagsForResource",
+        "sns:ListTopics",
+        "sns:SetTopicAttributes",
+        "sns:TagResource",
+        "sns:UnTagResource",
+        "sqs:GetQueueAttributes",
+        "sqs:GetQueueUrl",
+        "sqs:ListQueues",
+        "sqs:ListQueueTags",
+        "sqs:SetQueueAttributes",
+        "sqs:TagQueue",
+        "sqs:UntagQueue"
       ],
-      "Version": "2012-10-17"
+      "Effect": "Allow",
+      "Resource": "*"
     }
   ],
   "Version": "2012-10-17"
+}
+```
+
+You must also allow ConsoleMe to read/write to the bucket you've decided to use to cache data. Please replace `BUCKET_NAME` below with the name of the bucket you will cache data in. This bucket must be in the same account as this role, and it must also be defined in your ConsoleMe configuration under the `consoleme_s3_bucket` configuration key. You can add this as a new inline policy on your ConsoleMeInstanceProfile role, or append the statement to an existing inline policy.
+
+```text
+{
+	"Statement": [
+		{
+			"Action": [
+				"s3:ListBucket",
+				"s3:GetObject",
+				"s3:PutObject",
+				"s3:DeleteObject"
+			],
+			"Effect": "Allow",
+			"Resource": [
+				"arn:aws:s3:::BUCKET_NAME",
+				"arn:aws:s3:::BUCKET_NAME/*"
+			]
+		}
+	]
 }
 ```
 

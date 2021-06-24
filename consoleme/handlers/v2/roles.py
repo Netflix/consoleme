@@ -12,17 +12,22 @@ from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
 from consoleme.lib.auth import can_create_roles, can_delete_roles, can_delete_roles_app
 from consoleme.lib.aws import clone_iam_role, create_iam_role, delete_iam_role
 from consoleme.lib.crypto import Crypto
+from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 crypto = Crypto()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
-internal_policies = get_plugin_by_name(config.get("plugins.internal_policies"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+group_mapping = get_plugin_by_name(
+    config.get("plugins.group_mapping", "default_group_mapping")
+)()
+internal_policies = get_plugin_by_name(
+    config.get("plugins.internal_policies", "default_policies")
+)()
 
 
 class RoleConsoleLoginHandler(BaseAPIV2Handler):
@@ -38,7 +43,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
         arguments = {k: self.get_argument(k) for k in self.request.arguments}
         role = role.lower()
         selected_roles = await group_mapping.filter_eligible_roles(role, self)
-        region = arguments.get("r", "us-east-1")
+        region = arguments.get("r", config.get("aws.region", "us-east-1"))
         redirect = arguments.get("redirect")
         log_data = {
             "user": self.user,
@@ -60,7 +65,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                     "user": self.user,
                     "role": role,
                     "authorized": False,
-                    "redirect": True if redirect else False,
+                    "redirect": bool(redirect),
                 },
             )
             log_data[
@@ -77,7 +82,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 "user": self.user,
                 "role": role,
                 "authorized": True,
-                "redirect": True if redirect else False,
+                "redirect": bool(redirect),
             },
         )
 
@@ -89,14 +94,13 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                     "user": self.user,
                     "role": role,
                     "authorized": False,
-                    "redirect": True if redirect else False,
+                    "redirect": bool(redirect),
                 },
             )
             log_data[
                 "message"
             ] = "You have more than one role matching your query. Please select one."
             log.debug(log_data)
-            self.set_status(300)
             warning_message_arg = {
                 "warningMessage": base64.b64encode(log_data["message"].encode()).decode(
                     "utf-8"
@@ -112,7 +116,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
                 {
                     "type": "redirect",
                     "message": log_data["message"],
-                    "reason": "error",
+                    "reason": "multiple_roles",
                     "redirect_url": redirect_url.url,
                 }
             )
@@ -151,10 +155,9 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             log_data["error"] = str(e)
             log.error(log_data, exc_info=True)
             stats.count("index.post.exception")
-            self.set_status(403)
             self.write(
                 {
-                    "type": "error",
+                    "type": "console_url",
                     "message": log_data["message"],
                     "error": str(log_data["error"]),
                 }
@@ -312,16 +315,21 @@ class RoleDetailHandler(BaseAPIV2Handler):
             tags={"user": self.user, "account_id": account_id, "role_name": role_name},
         )
         log.debug(log_data)
+        force_refresh = str2bool(
+            self.request.arguments.get("force_refresh", [False])[0]
+        )
 
         error = ""
 
         try:
-            role_details = await get_role_details(account_id, role_name, extended=True)
+            role_details = await get_role_details(
+                account_id, role_name, extended=True, force_refresh=force_refresh
+            )
         except Exception as e:
             sentry_sdk.capture_exception()
             log.error({**log_data, "error": e}, exc_info=True)
             role_details = None
-            error = e
+            error = str(e)
 
         if not role_details:
             self.send_error(
@@ -413,10 +421,10 @@ class RoleDetailAppHandler(BaseMtlsHandler):
 
     """Handler for /api/v2/mtls/roles/{accountNumber}/{roleName}
 
-    Allows apps to delete a role
+    Allows apps to view or delete a role
     """
 
-    allowed_methods = ["DELETE"]
+    allowed_methods = ["DELETE", "GET"]
 
     def check_xsrf_cookie(self):
         pass
@@ -486,6 +494,53 @@ class RoleDetailAppHandler(BaseMtlsHandler):
             "account": account_id,
         }
         self.write(response_json)
+
+    async def get(self, account_id, role_name):
+        """
+        GET /api/v2/mtls/roles/{account_id}/{role_name}
+        """
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "ip": self.ip,
+            "message": "Retrieving role details",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "account_id": account_id,
+            "role_name": role_name,
+        }
+        app_name = self.requester.get("name") or self.requester.get("username")
+        stats.count(
+            "RoleDetailAppHandler.get",
+            tags={
+                "requester": app_name,
+                "account_id": account_id,
+                "role_name": role_name,
+            },
+        )
+        log.debug(log_data)
+        force_refresh = str2bool(
+            self.request.arguments.get("force_refresh", [False])[0]
+        )
+
+        error = ""
+
+        try:
+            role_details = await get_role_details(
+                account_id, role_name, extended=True, force_refresh=force_refresh
+            )
+        except Exception as e:
+            sentry_sdk.capture_exception()
+            log.error({**log_data, "error": e}, exc_info=True)
+            role_details = None
+            error = str(e)
+
+        if not role_details:
+            self.send_error(
+                404,
+                message=f"Unable to retrieve the specified role: {account_id}/{role_name}. {error}",
+            )
+            return
+        self.write(role_details.json())
 
 
 class RoleCloneHandler(BaseAPIV2Handler):

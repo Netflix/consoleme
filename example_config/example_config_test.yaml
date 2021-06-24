@@ -9,6 +9,8 @@ environment: test
 
 url: http://127.0.0.1:8081
 
+consoleme_s3_bucket: fakebucket
+
 tornado:
   debug: true
   port: 8081
@@ -25,10 +27,25 @@ auth:
   user_header_name: user_header
   require_mtls: true
   require_jwt: false
+  password_policy:
+    strength: null
 
 celery:
   test_account_ids:
     - "123456789012"
+  sync_regions:
+    - us-east-1
+    - us-west-2
+    - eu-west-1
+  trigger_credential_mapping_refresh_from_role_changes:
+    enabled: true
+  cache_cloudtrail_denies:
+    enabled: true
+event_bridge:
+  detect_role_changes_and_update_cache:
+    queue_arn: arn:aws:sqs:{region}:123456789012:consoleme-cloudtrail-role-events-test
+  detect_cloudtrail_denies_and_update_cache:
+    queue_arn: arn:aws:sqs:{region}:123456789012:consoleme-cloudtrail-access-deny-events-test
 redis:
   host:
     us-east-1: null
@@ -88,17 +105,6 @@ cloud_credential_authorization_mapping:
   internal_plugin:
     enabled: true
 
-cache_roles_across_accounts:
-  all_roles_combined:
-    s3:
-      bucket: fakebucket
-      file: test/all_roles_combined_v1.json
-
-cache_cloud_accounts:
-  s3:
-    bucket: fakebucket
-    file: test/cache_cloud_accounts_v1.json
-
 # You'll probably want to override FUNCTION to generate this data with your own business logic.
 application_settings:
   application_1:
@@ -116,3 +122,13 @@ application_settings:
 api_auth:
   valid_entities:
     - user@example.com
+
+cache_self_service_typeahead:
+  cache_resource_templates: true
+
+cache_resource_templates:
+  repositories:
+    - type: git
+      repo_url: http://github.example.com/fake_repo/
+      resource_formats:
+        - honeybee

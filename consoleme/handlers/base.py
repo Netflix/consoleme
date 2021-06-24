@@ -34,12 +34,22 @@ from consoleme.lib.saml import authenticate_user_by_saml
 from consoleme.lib.tracing import ConsoleMeTracer
 
 log = config.get_logger()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-group_mapping = get_plugin_by_name(config.get("plugins.group_mapping"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+group_mapping = get_plugin_by_name(
+    config.get("plugins.group_mapping", "default_group_mapping")
+)()
 
 
-class BaseJSONHandler(tornado.web.RequestHandler):
+class TornadoRequestHandler(tornado.web.RequestHandler):
+    def get_request_ip(self):
+        trusted_remote_ip_header = config.get("auth.remote_ip.trusted_remote_ip_header")
+        if trusted_remote_ip_header:
+            return self.request.headers[trusted_remote_ip_header].split(",")[0]
+        return self.request.remote_ip
+
+
+class BaseJSONHandler(TornadoRequestHandler):
     # These methods are returned in OPTIONS requests.
     # Default methods can be overridden by setting this variable in child classes.
     allowed_methods = ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"]
@@ -108,7 +118,7 @@ class BaseJSONHandler(tornado.web.RequestHandler):
             return tkn
 
 
-class BaseHandler(tornado.web.RequestHandler):
+class BaseHandler(TornadoRequestHandler):
     """Default BaseHandler."""
 
     def log_exception(self, *args, **kwargs):
@@ -175,11 +185,7 @@ class BaseHandler(tornado.web.RequestHandler):
             "http.host": config.hostname,
             "http.method": self.request.method.upper(),
             "http.path": self.request.path,
-            "ca": self.request.headers.get(
-                "X-Forwarded-For", self.request.remote_ip
-            ).split(",")[
-                0
-            ],  # Client IP
+            "ca": self.get_request_ip(),  # Client IP
             "http.url": self.request.full_url(),
         }
         tracer = await self.tracer.configure_tracing(
@@ -215,8 +221,37 @@ class BaseHandler(tornado.web.RequestHandler):
                 "response": responses,
             }
             with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
-                f.write(json.dumps(request_details))
+                f.write(json.dumps(request_details, reject_bytes=False))
         super(BaseHandler, self).on_finish()
+
+    async def attempt_sso_authn(self) -> bool:
+        """
+        ConsoleMe's configuration allows authenticating users by user/password, SSO, or both.
+        This function helps determine how ConsoleMe should authenticate a user. If user/password login is allowed,
+        users will be redirected to ConsoleMe's login page (/login). If SSO is also allowed, the Login page will present
+        a button allowing the user to sign in with SSO.
+
+        If user/password login is enabled, we don't want to give users the extra step of having to visit the login page,
+        so we just authenticate them through SSO directly.
+         allow authenticating users by a combination of user/password and SSO. In this case, we need to tell
+        Returns: boolean
+        """
+        if not config.get("auth.get_user_by_password", False):
+            return True
+
+        # force_use_sso indicates the user's intent to authenticate via SSO
+        force_use_sso = self.request.arguments.get("use_sso", [False])[0]
+        if force_use_sso:
+            return True
+        # It's a redirect from an SSO provider. Let it hit the SSO functionality
+        if (
+            "code" in self.request.query_arguments
+            and "state" in self.request.query_arguments
+        ):
+            return True
+        if self.request.path == "/saml/acs":
+            return True
+        return False
 
     async def authorization_flow(
         self, user: str = None, console_only: bool = True, refresh_cache: bool = False
@@ -228,6 +263,9 @@ class BaseHandler(tornado.web.RequestHandler):
         refresh_cache = (
             self.request.arguments.get("refresh_cache", [False])[0] or refresh_cache
         )
+        attempt_sso_authn = await self.attempt_sso_authn()
+
+        refreshed_user_roles_from_cache = False
 
         if not refresh_cache and config.get(
             "dynamic_config.role_cache.always_refresh_roles_cache", False
@@ -235,9 +273,7 @@ class BaseHandler(tornado.web.RequestHandler):
             refresh_cache = True
 
         self.red = await RedisHandler().redis()
-        self.ip = self.request.headers.get(
-            "X-Forwarded-For", self.request.remote_ip
-        ).split(",")[0]
+        self.ip = self.get_request_ip()
         self.user = user
         self.groups = None
         self.user_role_name = None
@@ -279,7 +315,7 @@ class BaseHandler(tornado.web.RequestHandler):
             # SAML flow. If user has a JWT signed by ConsoleMe, and SAML is enabled in configuration, user will go
             # through this flow.
 
-            if config.get("auth.get_user_by_saml", False):
+            if config.get("auth.get_user_by_saml", False) and attempt_sso_authn:
                 res = await authenticate_user_by_saml(self)
                 if not res:
                     if (
@@ -293,7 +329,7 @@ class BaseHandler(tornado.web.RequestHandler):
                     return
 
         if not self.user:
-            if config.get("auth.get_user_by_oidc", False):
+            if config.get("auth.get_user_by_oidc", False) and attempt_sso_authn:
                 res = await authenticate_user_by_oidc(self)
                 if not res:
                     raise SilentException(
@@ -312,6 +348,26 @@ class BaseHandler(tornado.web.RequestHandler):
                 if res and isinstance(res, dict):
                     self.user = res.get("user")
                     self.groups = res.get("groups")
+
+        if not self.user:
+            # Username/Password authn flow
+            if config.get("auth.get_user_by_password", False):
+                after_redirect_uri = self.request.arguments.get("redirect_url", [""])[0]
+                if after_redirect_uri and isinstance(after_redirect_uri, bytes):
+                    after_redirect_uri = after_redirect_uri.decode("utf-8")
+                self.set_status(403)
+                self.write(
+                    {
+                        "type": "redirect",
+                        "redirect_url": f"/login?redirect_after_auth={after_redirect_uri}",
+                        "reason": "unauthenticated",
+                        "message": "User is not authenticated. Redirect to authenticate",
+                    }
+                )
+                await self.finish()
+                raise SilentException(
+                    "Redirecting user to authenticate by username/password."
+                )
 
         if not self.user:
             try:
@@ -342,7 +398,7 @@ class BaseHandler(tornado.web.RequestHandler):
 
         self.contractor = config.config_plugin().is_contractor(self.user)
 
-        if not refresh_cache:
+        if config.get("auth.cache_user_info_server_side", True) and not refresh_cache:
             try:
                 cache_r = self.red.get(f"USER-{self.user}-CONSOLE-{console_only}")
             except redis.exceptions.ConnectionError:
@@ -355,7 +411,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 self.eligible_roles = cache.get("eligible_roles")
                 self.eligible_accounts = cache.get("eligible_accounts")
                 self.user_role_name = cache.get("user_role_name")
-                return
+                refreshed_user_roles_from_cache = True
 
         try:
             if not self.groups:
@@ -372,8 +428,7 @@ class BaseHandler(tornado.web.RequestHandler):
             log_data["message"] = "No groups detected. Check configuration."
             log.error(log_data)
 
-        # Set User Role Name
-
+        # Set Per-User Role Name (This logic is not used in OSS deployment)
         if (
             config.get("user_roles.opt_in_group")
             and config.get("user_roles.opt_in_group") in self.groups
@@ -392,22 +447,28 @@ class BaseHandler(tornado.web.RequestHandler):
             log.error(log_data)
         log_data["eligible_roles"] = len(self.eligible_roles)
 
-        try:
-            self.eligible_accounts = await group_mapping.get_eligible_accounts(
-                self.eligible_roles
-            )
-            log_data["eligible_accounts"] = len(self.eligible_accounts)
-            log_data["message"] = "Successfully authorized user."
-            log.debug(log_data)
-        except Exception:
-            stats.count("Basehandler.authorization_flow.exception")
-            log.error(log_data, exc_info=True)
-            raise
-        if self.groups and config.get("dynamic_config.role_cache.cache_roles", True):
+        if not self.eligible_accounts:
+            try:
+                self.eligible_accounts = await group_mapping.get_eligible_accounts(
+                    self.eligible_roles
+                )
+                log_data["eligible_accounts"] = len(self.eligible_accounts)
+                log_data["message"] = "Successfully authorized user."
+                log.debug(log_data)
+            except Exception:
+                stats.count("Basehandler.authorization_flow.exception")
+                log.error(log_data, exc_info=True)
+                raise
+        if (
+            config.get("auth.cache_user_info_server_side", True)
+            and self.groups
+            # Only set role cache if we didn't retrieve user's existing roles from cache
+            and not refreshed_user_roles_from_cache
+        ):
             try:
                 self.red.setex(
                     f"USER-{self.user}-CONSOLE-{console_only}",
-                    config.get("dynamic_config.role_cache.cache_expiration", 500),
+                    config.get("dynamic_config.role_cache.cache_expiration", 60),
                     json.dumps(
                         {
                             "groups": self.groups,
@@ -437,7 +498,7 @@ class BaseHandler(tornado.web.RequestHandler):
                 expires=expiration,
                 secure=config.get(
                     "auth.cookie.secure",
-                    True if "https://" in config.get("url") else False,
+                    "https://" in config.get("url"),
                 ),
                 httponly=config.get("auth.cookie.httponly", True),
                 samesite=config.get("auth.cookie.samesite", True),
@@ -554,9 +615,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
             raise MissingConfigurationValue("Unsupported authentication scheme.")
         if not hasattr(self, "requester"):
             raise tornado.web.HTTPError(403, "Unable to authenticate user.")
-        self.ip = self.request.headers.get(
-            "X-Forwarded-For", self.request.remote_ip
-        ).split(",")[0]
+        self.ip = self.get_request_ip()
         await self.configure_tracing()
 
     def write(self, chunk: Union[str, bytes, dict]) -> None:
@@ -580,7 +639,7 @@ class BaseMtlsHandler(BaseAPIV2Handler):
                 "response": self.responses,
             }
             with open(config.get("_security_risk_full_debugging.file"), "a+") as f:
-                f.write(json.dumps(request_details))
+                f.write(json.dumps(request_details, reject_bytes=False))
         super(BaseMtlsHandler, self).on_finish()
 
 

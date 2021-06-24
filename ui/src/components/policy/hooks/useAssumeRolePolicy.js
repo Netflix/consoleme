@@ -1,8 +1,9 @@
 import { useEffect, useReducer } from "react";
 import { initialState, reducer } from "./assumeRolePolicyReducer";
-import { sendRequestV2 } from "../../../helpers/utils";
+import { usePolicyContext } from "./PolicyProvider";
 
-const useAssumeRolePolicy = (resource) => {
+const useAssumeRolePolicy = () => {
+  const { resource, sendRequestV2 } = usePolicyContext();
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {

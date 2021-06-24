@@ -1,8 +1,10 @@
 import asyncio
+import os
 import sys
 import time
 import uuid
 import zlib
+from collections import defaultdict
 from datetime import datetime
 
 # used as a placeholder for empty SID to work around this:
@@ -10,27 +12,31 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Union
 
+import bcrypt
 import boto3
 import sentry_sdk
 import simplejson as json
 import yaml
-from asgiref.sync import async_to_sync, sync_to_async
+from asgiref.sync import sync_to_async
+from boto3.dynamodb.conditions import Key
 from boto3.dynamodb.types import Binary  # noqa
 from cloudaux import get_iso_string
-from cloudaux.aws.sts import boto3_cached_conn as boto3_cached_conn
+from cloudaux.aws.sts import boto3_cached_conn
 from retrying import retry
 from tenacity import Retrying, stop_after_attempt, wait_fixed
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
+    DataNotRetrievable,
     NoExistingRequest,
     NoMatchingRequest,
     PendingRequestAlreadyExists,
 )
 from consoleme.lib.crypto import Crypto
+from consoleme.lib.password import wait_after_authentication_failure
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
-from consoleme.models import ExtendedRequestModel
+from consoleme.models import AuthenticationResponse, ExtendedRequestModel
 
 DYNAMO_EMPTY_STRING = "---DYNAMO-EMPTY-STRING---"
 
@@ -43,7 +49,7 @@ POSSIBLE_STATUSES = config.get(
     ["pending", "approved", "rejected", "cancelled", "expired", "removed"],
 )
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger("consoleme")
 crypto = Crypto()
 red = RedisHandler().redis_sync()
@@ -73,8 +79,8 @@ class BaseDynamoHandler:
                     region=config.region,
                 )
             table = resource.Table(table_name)
-        except Exception:
-            log.error({"function": function}, exc_info=True)
+        except Exception as e:
+            log.error({"function": function, "error": e}, exc_info=True)
             stats.count(f"{function}.exception")
             return None
         else:
@@ -106,6 +112,8 @@ class BaseDynamoHandler:
         elif isinstance(obj, list):
             return [self._data_from_dynamo_replace(elem) for elem in obj]
         else:
+            if isinstance(obj, Binary):
+                obj = obj.value
             if str(obj) == DYNAMO_EMPTY_STRING:
                 obj = ""
             elif isinstance(obj, Decimal):
@@ -135,9 +143,9 @@ class BaseDynamoHandler:
             if str(obj) == "":
                 obj = DYNAMO_EMPTY_STRING
             elif type(obj) in [float, int]:
-                obj = Decimal(obj)
+                obj = Decimal(str(obj))
             elif isinstance(obj, datetime):
-                obj = Decimal(obj.timestamp())
+                obj = Decimal(str(obj.timestamp()))
             return obj
 
     def parallel_write_table(self, table, data, overwrite_by_pkeys=None):
@@ -149,9 +157,20 @@ class BaseDynamoHandler:
                     with attempt:
                         batch.put_item(Item=self._data_to_dynamo_replace(item))
 
-    def parallel_scan_table(self, table, total_threads=10, loop=None):
+    def parallel_scan_table(
+        self,
+        table,
+        total_threads=os.cpu_count(),
+        loop=None,
+        dynamodb_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        if not dynamodb_kwargs:
+            dynamodb_kwargs = {}
+
         async def _scan_segment(segment, total_segments):
-            response = table.scan(Segment=segment, TotalSegments=total_segments)
+            response = table.scan(
+                Segment=segment, TotalSegments=total_segments, **dynamodb_kwargs
+            )
             items = response.get("Items", [])
 
             while "LastEvaluatedKey" in response:
@@ -159,6 +178,7 @@ class BaseDynamoHandler:
                     ExclusiveStartKey=response["LastEvaluatedKey"],
                     Segment=segment,
                     TotalSegments=total_segments,
+                    **dynamodb_kwargs,
                 )
                 items.extend(self._data_from_dynamo_replace(response["Items"]))
 
@@ -209,6 +229,10 @@ class UserDynamoHandler(BaseDynamoHandler):
                     "aws.resource_cache_dynamo_table", "consoleme_resource_cache"
                 )
             )
+            self.cloudtrail_table = self._get_dynamo_table(
+                config.get("aws.cloudtrail_table", "consoleme_cloudtrail")
+            )
+
             if user_email:
                 self.user = self.get_or_create_user(user_email)
                 self.affected_user = self.user
@@ -255,7 +279,7 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     def get_dynamic_config_dict(self) -> dict:
         """Retrieve dynamic configuration dictionary that can be merged with primary configuration dictionary."""
-        current_config_yaml = async_to_sync(self.get_dynamic_config_yaml)()
+        current_config_yaml = asyncio.run(self.get_dynamic_config_yaml())
         config_d = yaml.safe_load(current_config_yaml)
         return config_d
 
@@ -332,11 +356,12 @@ class UserDynamoHandler(BaseDynamoHandler):
             await sync_to_async(self.api_health_roles_table.put_item)(
                 Item=self._data_to_dynamo_replace(request)
             )
-        except Exception:
+        except Exception as e:
             error: dict = {
                 "function": function,
                 "message": "Unable to update api_health_info request",
                 "request": request,
+                "error": str(e),
             }
             log.error(error, exc_info=True)
             raise Exception(error)
@@ -411,8 +436,8 @@ class UserDynamoHandler(BaseDynamoHandler):
                 await sync_to_async(self.policy_requests_table.put_item)(
                     Item=self._data_to_dynamo_replace(new_request)
                 )
-            except Exception:
-                error = f"Unable to add new policy request: {new_request}"
+            except Exception as e:
+                error = f"Unable to add new policy request: {new_request}: {str(e)}"
                 log.error(error, exc_info=True)
                 raise Exception(error)
         else:
@@ -475,8 +500,8 @@ class UserDynamoHandler(BaseDynamoHandler):
             await sync_to_async(self.policy_requests_table.put_item)(
                 Item=self._data_to_dynamo_replace(updated_request)
             )
-        except Exception:
-            error = f"Unable to add updated policy request: {updated_request}"
+        except Exception as e:
+            error = f"Unable to add updated policy request: {updated_request}: {str(e)}"
             log.error(error, exc_info=True)
             raise Exception(error)
 
@@ -565,27 +590,174 @@ class UserDynamoHandler(BaseDynamoHandler):
         :param user_entry:
         :return:
         """
-        try:
-            user_entry.pop("signature")
-        except KeyError:
-            pass
+        # Remove old signature if it exists
+        user_entry.pop("signature", None)
+        user_entry = self._data_from_dynamo_replace(user_entry)
         json_request = json.dumps(user_entry, sort_keys=True, use_decimal=True)
         sig = crypto.sign(json_request)
         user_entry["signature"] = sig
         return user_entry
 
-    def create_user(self, user_email):
-        timestamp = int(time.time())
-        user_entry = self.sign_request(
-            {"last_updated": timestamp, "username": user_email, "requests": []}
+    async def authenticate_user(self, login_attempt) -> AuthenticationResponse:
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
         )
+        log_data = {
+            "function": function,
+            "user_email": login_attempt.username,
+            "after_redirect_uri": login_attempt.after_redirect_uri,
+        }
+        user_entry = await sync_to_async(self.users_table.query)(
+            KeyConditionExpression="username = :un",
+            ExpressionAttributeValues={":un": login_attempt.username},
+        )
+        user = None
+
+        generic_error = ["User doesn't exist, or password is incorrect. "]
+
+        if user_entry and "Items" in user_entry and len(user_entry["Items"]) == 1:
+            user = user_entry["Items"][0]
+        if not user:
+            delay_error = await wait_after_authentication_failure(
+                login_attempt.username
+            )
+            error = f"Unable to find user: {login_attempt.username}"
+            log.error({**log_data, "message": error + delay_error})
+            return AuthenticationResponse(
+                authenticated=False, errors=generic_error + [delay_error]
+            )
+
+        if not user.get("password"):
+            delay_error = await wait_after_authentication_failure(
+                login_attempt.username
+            )
+            error = "User exists, but doesn't have a password stored in the database"
+            log.error({**log_data, "message": error + delay_error})
+            return AuthenticationResponse(
+                authenticated=False, errors=generic_error + [delay_error]
+            )
+
+        password_hash_matches = bcrypt.checkpw(
+            login_attempt.password.encode("utf-8"), user["password"].value
+        )
+        if not password_hash_matches:
+            delay_error = await wait_after_authentication_failure(
+                login_attempt.username
+            )
+            error = "Password does not match. "
+            log.error({**log_data, "message": error + delay_error})
+            return AuthenticationResponse(
+                authenticated=False, errors=generic_error + [delay_error]
+            )
+        return AuthenticationResponse(
+            authenticated=True, username=user["username"], groups=user["groups"]
+        )
+
+    def create_user(
+        self,
+        user_email,
+        password: Optional[str] = None,
+        groups: Optional[List[str]] = None,
+    ):
+        if not groups:
+            groups = []
+        timestamp = int(time.time())
+        unsigned_user_entry = {
+            "created": timestamp,
+            "last_updated": timestamp,
+            "username": user_email,
+            "requests": [],
+            "groups": groups,
+        }
+
+        if password:
+            pw = bytes(password, "utf-8")
+            salt = bcrypt.gensalt()
+            unsigned_user_entry["password"] = bcrypt.hashpw(pw, salt)
+
+        user_entry = self.sign_request(unsigned_user_entry)
         try:
             self.users_table.put_item(Item=self._data_to_dynamo_replace(user_entry))
-        except Exception:
-            error = f"Unable to add user submission: {user_entry}"
+        except Exception as e:
+            error = f"Unable to add user submission: {user_entry}: {str(e)}"
             log.error(error, exc_info=True)
             raise Exception(error)
         return user_entry
+
+    def update_user(
+        self,
+        user_email,
+        password: Optional[str] = None,
+        groups: Optional[List[str]] = None,
+    ):
+        if not groups:
+            groups = []
+
+        user_ddb = self.users_table.query(
+            KeyConditionExpression="username = :un",
+            ExpressionAttributeValues={":un": user_email},
+        )
+
+        user = None
+
+        if user_ddb and "Items" in user_ddb and len(user_ddb["Items"]) == 1:
+            user = user_ddb["Items"][0]
+
+        if not user:
+            raise DataNotRetrievable(f"Unable to find user: {user_email}")
+
+        timestamp = int(time.time())
+
+        if password:
+            pw = bytes(password, "utf-8")
+            salt = bcrypt.gensalt()
+            user["password"] = bcrypt.hashpw(pw, salt)
+
+        if groups:
+            user["groups"] = groups
+        user["last_updated"] = timestamp
+
+        user_entry = self.sign_request(user)
+        try:
+            self.users_table.put_item(Item=self._data_to_dynamo_replace(user_entry))
+        except Exception as e:
+            error = f"Unable to add user submission: {user_entry}: {str(e)}"
+            log.error(error, exc_info=True)
+            raise Exception(error)
+        return user_entry
+
+    def delete_user(self, user_email):
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
+        log_data = {"function": function, "user_email": user_email}
+        log.debug(log_data)
+        user_entry = {"username": user_email}
+        try:
+            self.users_table.delete_item(Key=self._data_to_dynamo_replace(user_entry))
+        except Exception as e:
+            error = f"Unable to delete user: {user_entry}: {str(e)}"
+            log.error(error, exc_info=True)
+            raise Exception(error)
+
+    async def get_user(
+        self, user_email: str
+    ) -> Optional[Dict[str, Union[Decimal, List[str], Binary, str]]]:
+        function: str = (
+            f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}"
+        )
+        log_data = {"function": function, "user_email": user_email}
+
+        log.debug(log_data)
+
+        user = self.users_table.query(
+            KeyConditionExpression="username = :un",
+            ExpressionAttributeValues={":un": user_email},
+        )
+
+        if user and "Items" in user and len(user["Items"]) == 1:
+            return user["Items"][0]
+        return None
 
     def get_or_create_user(
         self, user_email: str
@@ -725,8 +897,11 @@ class UserDynamoHandler(BaseDynamoHandler):
                 )
         try:
             self.requests_table.put_item(Item=self._data_to_dynamo_replace(new_request))
-        except Exception:
-            error = {"error": "Unable to add user request", "request": new_request}
+        except Exception as e:
+            error = {
+                "error": f"Unable to add user request: {str(e)}",
+                "request": new_request,
+            }
             log.error(error, exc_info=True)
             raise Exception(error)
 
@@ -838,8 +1013,8 @@ class UserDynamoHandler(BaseDynamoHandler):
                         self.requests_table.put_item(
                             Item=self._data_to_dynamo_replace(request)
                         )
-                    except Exception:
-                        error = f"Unable to add user request: {request}"
+                    except Exception as e:
+                        error = f"Unable to add user request: {request}: {str(e)}"
                         log.error(error, exc_info=True)
                         raise Exception(error)
                     updated = True
@@ -890,8 +1065,8 @@ class UserDynamoHandler(BaseDynamoHandler):
             modified_request = request
             try:
                 self.requests_table.put_item(Item=self._data_to_dynamo_replace(request))
-            except Exception:
-                error = f"Unable to add user request: {request}"
+            except Exception as e:
+                error = f"Unable to add user request: {request} : {str(e)}"
                 log.error(error, exc_info=True)
                 raise Exception(error)
         return modified_request
@@ -953,6 +1128,68 @@ class UserDynamoHandler(BaseDynamoHandler):
     async def get_all_pending_requests(self):
         return await self.get_all_requests(status="pending")
 
+    def batch_write_cloudtrail_events(self, items):
+        with self.cloudtrail_table.batch_writer(
+            overwrite_by_pkeys=["arn", "request_id"]
+        ) as batch:
+            for item in items:
+                batch.put_item(Item=self._data_to_dynamo_replace(item))
+        return True
+
+    async def get_top_cloudtrail_errors_by_arn(self, arn, n=5):
+        response: dict = await sync_to_async(self.cloudtrail_table.query)(
+            KeyConditionExpression=Key("arn").eq(arn)
+        )
+        items = response.get("Items", [])
+        aggregated_errors = defaultdict(dict)
+
+        for item in items:
+            if int(item["ttl"]) < int(time.time()):
+                continue
+            event_call = item["event_call"]
+            event_resource = item.get("resource", "")
+
+            event_string = f"{event_call}|||{event_resource}"
+            if not aggregated_errors.get(event_string):
+                aggregated_errors[event_string]["count"] = 0
+                aggregated_errors[event_string]["generated_policy"] = item.get(
+                    "generated_policy", {}
+                )
+            aggregated_errors[event_string]["count"] += 1
+
+        top_n_errors = {
+            k: v
+            for k, v in sorted(
+                aggregated_errors.items(),
+                key=lambda item: item[1]["count"],
+                reverse=True,
+            )[:n]
+        }
+
+        return top_n_errors
+
+    def count_arn_errors(self, error_count, items):
+        for item in items:
+            arn = item.get("arn")
+            if not error_count.get(arn):
+                error_count[arn] = 0
+            error_count[arn] += 1
+        return error_count
+
+    def count_cloudtrail_errors_by_arn(self):
+        error_count = {}
+        items = self.parallel_scan_table(
+            self.cloudtrail_table,
+            dynamodb_kwargs={
+                "Select": "SPECIFIC_ATTRIBUTES",
+                "ProjectionExpression": "arn",
+            },
+        )
+        error_count = self.count_arn_errors(
+            error_count, self._data_from_dynamo_replace(items)
+        )
+        return error_count
+
 
 class IAMRoleDynamoHandler(BaseDynamoHandler):
     def __init__(self) -> None:
@@ -1000,11 +1237,12 @@ class IAMRoleDynamoHandler(BaseDynamoHandler):
             # Unfortunately, DDB does not support batch updates :(... So, we need to update each item individually :/
             self._update_role_table_value(role_ddb)
 
-        except Exception:
+        except Exception as e:
             log_data = {
                 "message": "Error syncing Account's IAM roles to DynamoDB",
                 "account_id": role_ddb["accountId"],
                 "role_ddb": role_ddb,
+                "error": str(e),
             }
             log.error(log_data, exc_info=True)
             raise

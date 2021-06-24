@@ -5,8 +5,6 @@ import sys
 import ujson as json
 from tornado.testing import AsyncHTTPTestCase
 
-from consoleme.config import config
-
 APP_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(APP_ROOT, ".."))
 
@@ -18,6 +16,9 @@ class TestUserProfile(AsyncHTTPTestCase):
         return make_app(jwt_validator=lambda x: {})
 
     def test_profile(self):
+        from consoleme.config import config
+
+        self.maxDiff = None
         headers = {
             config.get("auth.user_header_name"): "user@example.com",
             config.get("auth.groups_header_name"): "groupa,groupb,groupc",
@@ -41,14 +42,24 @@ class TestUserProfile(AsyncHTTPTestCase):
                 },
                 "user": "user@example.com",
                 "is_contractor": False,
-                "employee_photo_url": None,
+                "employee_photo_url": "https://www.gravatar.com/avatar/b58996c504c5638798eb6b511e6f49af?d=mp",
                 "employee_info_url": None,
                 "authorization": {
                     "can_edit_policies": False,
                     "can_create_roles": False,
                     "can_delete_roles": False,
                 },
+                "can_logout": False,
                 "pages": {
+                    "header": {
+                        "custom_header_message_route": config.get(
+                            "example_config.routes"
+                        ),
+                        "custom_header_message_title": config.get(
+                            "example_config.title"
+                        ),
+                        "custom_header_message_text": config.get("example_config.text"),
+                    },
                     "groups": {"enabled": False},
                     "users": {"enabled": False},
                     "policies": {"enabled": True},
@@ -57,5 +68,6 @@ class TestUserProfile(AsyncHTTPTestCase):
                     "audit": {"enabled": False},
                     "config": {"enabled": False},
                 },
+                "accounts": {"123456789012": "default_account"},
             },
         )

@@ -11,7 +11,7 @@ from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 
-auth = get_plugin_by_name(config.get("plugins.auth"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 
 
 async def can_approve_reject_request(user, secondary_approvers, groups):
@@ -120,16 +120,21 @@ async def cache_all_policy_requests(
     if not redis_key:
         redis_key = config.get("cache_policy_requests.redis_key", "ALL_POLICY_REQUESTS")
     if not s3_bucket and not s3_key:
-        if config.region == config.get("celery.active_region") or config.get(
-            "environment"
-        ) in ["dev", "test"]:
+        if config.region == config.get(
+            "celery.active_region", config.region
+        ) or config.get("environment") in ["dev", "test"]:
             s3_bucket = config.get("cache_policy_requests.s3.bucket")
-            s3_key = config.get("cache_policy_requests.s3.file")
+            s3_key = config.get(
+                "cache_policy_requests.s3.file",
+                "policy_requests/all_policy_requests_v1.json.gz",
+            )
     requests = await get_all_policy_requests(user)
     requests_to_cache = []
     for request in requests:
         requests_to_cache.append(request)
-
+    requests_to_cache = sorted(
+        requests_to_cache, key=lambda i: i.get("request_time", 0), reverse=True
+    )
     await store_json_results_in_redis_and_s3(
         requests_to_cache, redis_key, s3_bucket=s3_bucket, s3_key=s3_key
     )

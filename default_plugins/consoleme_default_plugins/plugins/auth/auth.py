@@ -14,7 +14,7 @@ from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger("consoleme")
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 class Group(object):
@@ -151,11 +151,21 @@ class Auth:
         self, user: str, headers=None, get_header_groups=False, only_direct=True
     ):
         """Get the user's groups."""
+        groups_to_add_for_all_users = config.get("auth.groups_to_add_for_all_users", [])
         groups = []
         if get_header_groups or config.get("auth.get_groups_by_header"):
             header_groups = await self.get_groups_by_header(headers)
             if header_groups:
                 groups.extend(header_groups)
+        elif config.get("auth.get_groups_from_google"):
+            from consoleme.lib.google import get_group_memberships
+
+            google_groups = await get_group_memberships(user)
+            if google_groups:
+                groups.extend(google_groups)
+        if groups_to_add_for_all_users:
+            # Optionally consider ConsoleMe users a member of these additional groups
+            groups.extend(groups_to_add_for_all_users)
         if not groups:
             log.error(
                 {
@@ -163,6 +173,8 @@ class Auth:
                 },
                 exc_info=True,
             )
+        if config.get("auth.force_groups_lowercase", False):
+            groups = [x.lower() for x in groups]
         return list(set(groups))
 
     async def get_groups_by_header(self, headers: dict):
@@ -259,14 +271,14 @@ class Auth:
         :return:
         """
         return {
-            "domain": "example.com",
+            "domain": "",
             "userName": user,
             "name": {
-                "givenName": "First",
-                "familyName": "Last",
-                "fullName": "First Last",
+                "givenName": "",
+                "familyName": "",
+                "fullName": "",
             },
-            "primaryEmail": "user@example.com",
+            "primaryEmail": user,
         }
 
     async def get_group_info(self, group, members=True):

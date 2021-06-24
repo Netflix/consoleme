@@ -1,16 +1,20 @@
+import sys
+
+import tornado.escape
 import ujson as json
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import MustBeFte
+from consoleme.exceptions.exceptions import ResourceNotFound
 from consoleme.handlers.base import BaseAPIV2Handler, BaseHandler
-from consoleme.lib.aws import get_all_iam_managed_policies_for_account
+from consoleme.lib.aws import validate_iam_policy
 from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.generic import filter_table
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_url_for_resource
 from consoleme.lib.timeout import Timeout
+from consoleme.models import DataTableResponse
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 
 
@@ -35,6 +39,8 @@ class PoliciesPageConfigHandler(BaseHandler):
                 "totalRows": 1000,
                 "rowsPerPage": 50,
                 "serverSideFiltering": True,
+                "allowCsvExport": True,
+                "allowJsonExport": True,
                 "columns": [
                     {
                         "placeholder": "Account ID",
@@ -105,9 +111,14 @@ class PoliciesHandler(BaseAPIV2Handler):
         policies = await retrieve_json_data_from_redis_or_s3(
             redis_key=config.get("policies.redis_policies_key", "ALL_POLICIES"),
             s3_bucket=config.get("cache_policies_table_details.s3.bucket"),
-            s3_key=config.get("cache_policies_table_details.s3.file"),
+            s3_key=config.get(
+                "cache_policies_table_details.s3.file",
+                "policies_table/cache_policies_table_details_v1.json.gz",
+            ),
             default=[],
         )
+
+        total_count = len(policies)
 
         if filters:
             try:
@@ -128,13 +139,16 @@ class PoliciesHandler(BaseAPIV2Handler):
                 if "/" in resource_name:
                     resource_name = resource_name.split("/")[-1]
                 region = policy["arn"].split(":")[3]
-                url = await get_url_for_resource(
-                    policy["arn"],
-                    policy["technology"],
-                    policy["account_id"],
-                    region,
-                    resource_name,
-                )
+                try:
+                    url = await get_url_for_resource(
+                        policy["arn"],
+                        policy["technology"],
+                        policy["account_id"],
+                        region,
+                        resource_name,
+                    )
+                except ResourceNotFound:
+                    url = ""
                 if url:
                     policy["arn"] = f"[{policy['arn']}]({url})"
                 if not policy.get("templated"):
@@ -146,21 +160,29 @@ class PoliciesHandler(BaseAPIV2Handler):
                 policies_to_write.append(policy)
         else:
             policies_to_write = policies[0:limit]
-        self.write(json.dumps(policies_to_write))
+        filtered_count = len(policies_to_write)
+        res = DataTableResponse(
+            totalCount=total_count, filteredCount=filtered_count, data=policies_to_write
+        )
+        self.write(res.json())
         return
 
 
-class ManagedPoliciesHandler(BaseHandler):
-    async def get(self, account_id):
+class CheckPoliciesHandler(BaseAPIV2Handler):
+    async def post(self):
         """
-        Retrieve a list of managed policies for an account.
+        POST /api/v2/policies/check
         """
-        if config.get("policy_editor.disallow_contractors", True) and self.contractor:
-            if self.user not in config.get(
-                "groups.can_bypass_contractor_restrictions", []
-            ):
-                raise MustBeFte("Only FTEs are authorized to view this page.")
-        all_account_managed_policies = await get_all_iam_managed_policies_for_account(
-            account_id
-        )
-        self.write(json.dumps(all_account_managed_policies))
+        policy = tornado.escape.json_decode(self.request.body)
+        if isinstance(policy, dict):
+            policy = json.dumps(policy)
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user": self.user,
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+            "policy": policy,
+        }
+        findings = await validate_iam_policy(policy, log_data)
+        self.write(json.dumps(findings))
+        return

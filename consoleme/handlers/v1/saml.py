@@ -13,10 +13,10 @@ from consoleme.lib.saml import init_saml_auth, prepare_tornado_request_for_saml
 if config.get("auth.get_user_by_saml"):
     from onelogin.saml2.utils import OneLogin_Saml2_Utils
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 crypto = Crypto()
-auth = get_plugin_by_name(config.get("plugins.auth"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 
 
 class SamlHandler(BaseHandler):
@@ -63,7 +63,7 @@ class SamlHandler(BaseHandler):
                         expires=expiration,
                         secure=config.get(
                             "auth.cookie.secure",
-                            True if "https://" in config.get("url") else False,
+                            "https://" in config.get("url"),
                         ),
                         httponly=config.get("auth.cookie.httponly", True),
                         samesite=config.get("auth.cookie.samesite", True),

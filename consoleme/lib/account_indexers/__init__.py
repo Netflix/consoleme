@@ -15,8 +15,8 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import CloudAccountModelArray
 
 log = config.get_logger(__name__)
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 async def cache_cloud_accounts() -> CloudAccountModelArray:
@@ -48,11 +48,13 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
 
     s3_bucket = None
     s3_key = None
-    if config.region == config.get("celery.active_region") or config.get(
+    if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
         s3_bucket = config.get("cache_cloud_accounts.s3.bucket")
-        s3_key = config.get("cache_cloud_accounts.s3.file")
+        s3_key = config.get(
+            "cache_cloud_accounts.s3.file", "cache_cloud_accounts/accounts_v1.json.gz"
+        )
     # Store full mapping of the model
     # We want to pass a dict to store_json_results_in_redis_and_s3, but the problem is account_mapping.dict()
     # includes pydantic objects that cannot be dumped to json without passing a special JSON encoder for the
@@ -65,6 +67,28 @@ async def cache_cloud_accounts() -> CloudAccountModelArray:
     )
 
     return account_mapping
+
+
+async def get_cloud_account_model_array(
+    status="active", environment=None, force_sync=False
+):
+    redis_key = config.get(
+        "cache_cloud_accounts.redis.key.all_accounts_key", "ALL_AWS_ACCOUNTS"
+    )
+    accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default={})
+    if force_sync or not accounts or not accounts.get("accounts"):
+        # Force a re-sync and then retry
+        await cache_cloud_accounts()
+        accounts = await retrieve_json_data_from_redis_or_s3(redis_key, default={})
+    all_accounts = CloudAccountModelArray.parse_obj(accounts)
+    filtered_accounts = CloudAccountModelArray(accounts=[])
+    for account in all_accounts.accounts:
+        if status and account.status.value != status:
+            continue
+        if environment and account.environment.value != environment:
+            continue
+        filtered_accounts.accounts.append(account)
+    return filtered_accounts
 
 
 async def get_account_id_to_name_mapping(
@@ -80,7 +104,10 @@ async def get_account_id_to_name_mapping(
         accounts = await retrieve_json_data_from_redis_or_s3(
             redis_key,
             s3_bucket=config.get("cache_cloud_accounts.s3.bucket"),
-            s3_key=config.get("cache_cloud_accounts.s3.file"),
+            s3_key=config.get(
+                "cache_cloud_accounts.s3.file",
+                "cache_cloud_accounts/accounts_v1.json.gz",
+            ),
             default={},
         )
 

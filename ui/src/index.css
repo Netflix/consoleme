@@ -1,13 +1,48 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-  'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-  sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: auto;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-  monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+}
+
+.inner-container {
+  max-width: 1920px;
+  width: 100%;
+}
+
+/*
+  There are some layout issues with the Semantic UI vertical Tabs
+  component at lower resolutions, when used in combination with Labels.
+  This is our attempt at overriding some of this default behavior to
+  accommodate some more screen real estate.
+ */
+.vertical-tab-override,
+.vertical-tab-override .ui.grid {
+  min-height: 100vh;
+}
+
+.vertical-tab-override .ui.vertical.menu.fluid {
+  height: 100%;
+}
+
+.vertical-tab-override .ui.vertical.tabular.menu .item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.vertical-tab-override .ui.vertical.tabular.menu .item > .label {
+  margin: 0.5rem 0 0 0;
+}
+
+.vertical-tab-override .ui.attached.segment {
+  border: none;
+  padding: 0;
 }

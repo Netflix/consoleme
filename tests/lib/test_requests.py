@@ -4,17 +4,22 @@ from mock import patch
 from tornado.concurrent import Future
 from tornado.testing import AsyncTestCase
 
-from consoleme.config import config
-from consoleme.exceptions.exceptions import NoMatchingRequest
 from consoleme.lib.plugins import get_plugin_by_name
 from tests.conftest import create_future
 
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-
-Group = auth.Group
-
 
 class TestRequestsLibrary(AsyncTestCase):
+    def setUp(self) -> None:
+        from consoleme.config import config
+        from consoleme.exceptions.exceptions import NoMatchingRequest
+
+        self.NoMatchingRequest = NoMatchingRequest
+        auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+        self.Group = auth.Group
+
+    def tearDown(self) -> None:
+        pass
+
     @patch("consoleme.lib.requests.UserDynamoHandler")
     @patch("consoleme.lib.requests.auth")
     def test_get_user_requests(self, mock_auth, mock_user_dynamo_handler):
@@ -134,7 +139,7 @@ class TestRequestsLibrary(AsyncTestCase):
         from consoleme.lib.requests import get_request_by_id
 
         mock_user = "cnorris"
-        mock_requests = NoMatchingRequest("foo")
+        mock_requests = self.NoMatchingRequest("foo")
         mock_secondary_approver = ["group1"]
         mock_user_dynamo_handler.return_value.resolve_request_ids.side_effect = (
             mock_requests
@@ -157,7 +162,7 @@ class TestRequestsLibrary(AsyncTestCase):
         from consoleme.lib.requests import get_existing_pending_request
 
         mock_user = "cnorris"
-        group_info = Group(**{"name": "group1"})
+        group_info = self.Group(**{"name": "group1"})
         mock_requests = [
             {"username": mock_user, "status": "pending"},
             {"username": "edward", "group": "group1", "status": "pending"},
@@ -179,7 +184,7 @@ class TestRequestsLibrary(AsyncTestCase):
         from consoleme.lib.requests import get_existing_pending_request
 
         mock_user = "cnorris"
-        group_info = Group(**{"name": "group1"})
+        group_info = self.Group(**{"name": "group1"})
         mock_requests = [
             {"username": mock_user, "status": "pending"},
             {"username": "edward", "group": "group1", "status": "cancelled"},
@@ -201,7 +206,7 @@ class TestRequestsLibrary(AsyncTestCase):
         from consoleme.lib.requests import get_existing_pending_request
 
         mock_user = "cnorris"
-        group_info = Group(**{"name": "group1"})
+        group_info = self.Group(**{"name": "group1"})
         mock_requests = [
             {"username": mock_user, "status": "pending"},
             {"username": "edward", "group": "group5", "status": "pending"},

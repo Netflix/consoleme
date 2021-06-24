@@ -15,18 +15,23 @@ const ResourceDetail = () => {
     templated,
     template_link,
     config_timeline_url,
+    resource_details,
+    last_used_time,
+    description,
   } = resource;
+
+  const created_time = resource.created_time || resource_details?.created_time;
 
   return (
     <>
       <Table celled striped definition>
         <Table.Body>
           <Table.Row>
-            <Table.Cell collapsing>Account</Table.Cell>
+            <Table.Cell width={4}>Account</Table.Cell>
             <Table.Cell>{`${account_name} (${account_id}`})</Table.Cell>
           </Table.Row>
           <Table.Row>
-            <Table.Cell collapsing>Amazon Resource Name</Table.Cell>
+            <Table.Cell>Amazon Resource Name</Table.Cell>
             <Table.Cell>{arn}</Table.Cell>
           </Table.Row>
           <Table.Row>
@@ -37,6 +42,12 @@ const ResourceDetail = () => {
             <Table.Row>
               <Table.Cell>Resource name</Table.Cell>
               <Table.Cell>{name}</Table.Cell>
+            </Table.Row>
+          ) : null}
+          {description ? (
+            <Table.Row>
+              <Table.Cell>Description</Table.Cell>
+              <Table.Cell>{description}</Table.Cell>
             </Table.Row>
           ) : null}
           {s3_details && s3_details.error_url ? (
@@ -53,6 +64,12 @@ const ResourceDetail = () => {
               </Table.Cell>
             </Table.Row>
           ) : null}
+          {resource?.resource_details?.QueueUrl ? (
+            <Table.Row>
+              <Table.Cell>Queue Url</Table.Cell>
+              <Table.Cell>{resource.resource_details.QueueUrl}</Table.Cell>
+            </Table.Row>
+          ) : null}
           {config_timeline_url ? (
             <Table.Row>
               <Table.Cell>Config Timeline</Table.Cell>
@@ -67,16 +84,26 @@ const ResourceDetail = () => {
               </Table.Cell>
             </Table.Row>
           ) : null}
+          {created_time ? (
+            <Table.Row>
+              <Table.Cell>Created on</Table.Cell>
+              <Table.Cell>{created_time}</Table.Cell>
+            </Table.Row>
+          ) : null}
+          {last_used_time ? (
+            <Table.Row>
+              <Table.Cell>Last Used on</Table.Cell>
+              <Table.Cell>{last_used_time}</Table.Cell>
+            </Table.Row>
+          ) : null}
+          {resource_details?.updated_time ? (
+            <Table.Row>
+              <Table.Cell>Last Updated</Table.Cell>
+              <Table.Cell>{resource_details.updated_time}</Table.Cell>
+            </Table.Row>
+          ) : null}
           <Table.Row>
-            <Table.Cell collapsing>Created on</Table.Cell>
-            <Table.Cell>09/24/2020, 07:50:00 AM</Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell collapsing>Last updated</Table.Cell>
-            <Table.Cell>10/10/2020, 11:48:38 PM</Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell collapsing>Templated</Table.Cell>
+            <Table.Cell>Templated</Table.Cell>
             <Table.Cell>
               <span>
                 {`${templated ? "True" : "False"}`}

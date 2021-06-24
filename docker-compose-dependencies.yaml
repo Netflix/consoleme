@@ -17,3 +17,11 @@ services:
     restart: always
     volumes:
       - ./dynamodb-data:/data:delegated
+
+  consoleme-dynamodb_admin:
+    container_name: consoleme-dynamodb-admin
+    image: aaronshaf/dynamodb-admin:latest
+    environment:
+      - DYNAMO_ENDPOINT=http://consoleme-dynamodb:8005
+    ports:
+      - "8001:8001"

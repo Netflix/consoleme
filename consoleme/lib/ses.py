@@ -10,7 +10,7 @@ from consoleme.lib.groups import get_group_url
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import ExtendedRequestModel, RequestStatus
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 
 
@@ -19,7 +19,7 @@ async def send_email(
     subject: str,
     body: str,
     sending_app: str = "consoleme",
-    region: str = "us-west-2",
+    region: str = config.get("ses.region", "us-west-2"),
     charset: str = "UTF-8",
 ) -> None:
     client = boto3.client("ses", region_name=region)
@@ -81,7 +81,7 @@ async def send_email(
         log.error(log_data, exc_info=True)
     else:
         stats.count("lib.ses.success")
-        log_data["message"] = "Email sent succesfully"
+        log_data["message"] = "Email sent successfully"
         log_data["response"] = response["MessageId"]
         log.debug(log_data)
 
@@ -96,7 +96,7 @@ async def send_access_email_to_user(
     reviewer_comments: None = None,
     sending_app: str = "consoleme",
 ) -> None:
-    app_name = config.get(f"ses.{sending_app}.name")
+    app_name = config.get(f"ses.{sending_app}.name", sending_app)
     subject = f"{app_name}: Request for group {group} has been {status}"
     to_addresses = [user, updated_by]
     group_link = f"<a href={group_url}>{group}</a>"
@@ -127,7 +127,7 @@ async def send_access_email_to_user(
 async def send_request_created_to_user(
     user, group, updated_by, status, request_url, sending_app="consoleme"
 ):
-    app_name = config.get(f"ses.{sending_app}.name")
+    app_name = config.get(f"ses.{sending_app}.name", sending_app)
     subject = f"{app_name}: Request for group {group} has been created"
     to_addresses = [user, updated_by]
     message = f"Your request for group {group} has been created."
@@ -157,7 +157,7 @@ async def send_request_to_secondary_approvers(
     pending_requests_url,
     sending_app="consoleme",
 ):
-    app_name = config.get(f"ses.{sending_app}.name")
+    app_name = config.get(f"ses.{sending_app}.name", sending_app)
     subject = f"{app_name}: A request for group {group} requires your approval"
     to_addresses = secondary_approvers
     message = f"A request for group {group} requires your approval."
@@ -205,7 +205,7 @@ async def send_group_modification_notification(
     :param sending_app: name of application
     :type sending_app: str
     """
-    app_name = config.get(f"ses.{sending_app}.name")
+    app_name = config.get(f"ses.{sending_app}.name", sending_app)
     subject = f"{app_name}: Groups modified"
     message = f"""Groups modified in {app_name}.<br>
     You or a group you belong to are configured to receive a notification when new members are added to this group.<br>
@@ -238,7 +238,7 @@ async def send_group_modification_notification(
 async def send_new_aws_groups_notification(
     to_addresses, new_aws_groups, sending_app="consoleme"
 ):
-    app_name = config.get(f"ses.{sending_app}.name")
+    app_name = config.get(f"ses.{sending_app}.name", sending_app)
     subject = f"{app_name}: New AWS groups detected"
     message = """New AWS login groups were created.<br>
     ConsoleMe is configured to send notifications when new AWS-related google groups are detected.
@@ -268,7 +268,7 @@ async def send_new_aws_groups_notification(
 async def send_policy_request_to_approvers(
     request, policy_change_uri, pending_requests_url, sending_app="consoleme"
 ):
-    app_name = config.get(f"ses.{sending_app}.name")
+    app_name = config.get(f"ses.{sending_app}.name", sending_app)
     subject = f"{app_name}: A Policy change request for {request['arn']} requires your review."
     to_addresses = config.get("groups.can_admin_policies")
     if config.get("development"):
@@ -296,7 +296,7 @@ async def send_policy_request_to_approvers(
 async def send_policy_request_status_update(
     request, policy_change_uri, sending_app="consoleme"
 ):
-    app_name = config.get(f"ses.{sending_app}.name")
+    app_name = config.get(f"ses.{sending_app}.name", sending_app)
     subject = f"{app_name}: Policy change request for {request['arn']} has been {request['status']}"
     if request["status"] == "pending":
         subject = (
@@ -332,13 +332,15 @@ async def send_policy_request_status_update(
 async def send_policy_request_status_update_v2(
     extended_request: ExtendedRequestModel, policy_change_uri, sending_app="consoleme"
 ):
-    app_name = config.get(f"ses.{sending_app}.name")
-
+    app_name = config.get(f"ses.{sending_app}.name", sending_app)
+    to_addresses = [extended_request.requester_email]
     if extended_request.request_status == RequestStatus.pending:
         subject = f"{app_name}: Policy change request for {extended_request.arn} has been created"
         message = (
             f"A policy change request for {extended_request.arn} has been created."
         )
+        # This is a new request, also send email to application admins
+        to_addresses.append(config.get("application_admin"))
     else:
         subject = (
             f"{app_name}: Policy change request for {extended_request.arn} has been "
@@ -348,7 +350,6 @@ async def send_policy_request_status_update_v2(
             f"A policy change request for {extended_request.arn} "
             f"has been updated to {extended_request.request_status.value}"
         )
-    to_addresses = [extended_request.requester_email]
 
     if extended_request.request_status == RequestStatus.approved:
         message += " and committed"
@@ -378,7 +379,7 @@ async def send_new_comment_notification(
     policy_change_uri,
     sending_app="consoleme",
 ):
-    app_name = config.get(f"ses.{sending_app}.name")
+    app_name = config.get(f"ses.{sending_app}.name", sending_app)
     subject = f"{app_name}: A new comment has been added to Policy Change request for {extended_request.arn}"
     message = f"A new comment has been added to the policy change request for {extended_request.arn} by {user}"
     body = f"""<html>

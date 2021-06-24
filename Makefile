@@ -25,7 +25,7 @@ env_install:
 install: clean
 	make env_install
 	yarn --cwd ui
-	yarn --cwd ui build
+	yarn --cwd ui build:prod
 	make bootstrap
 
 .PHONY: bootstrap
@@ -50,7 +50,7 @@ redis:
 
 .PHONY: test
 test: clean
-	CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest)
+	ASYNC_TEST_TIMEOUT=60 CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest)
 
 .PHONY: bandit
 bandit: clean
@@ -58,7 +58,7 @@ bandit: clean
 
 .PHONY: testhtml
 testhtml: clean
-	CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest) $(html_report) && open htmlcov/index.html
+	ASYNC_TEST_TIMEOUT=60 CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest) $(html_report) && open htmlcov/index.html
 
 .PHONY: clean
 clean:
@@ -66,7 +66,9 @@ clean:
 	rm -rf build/
 	rm -rf *.egg-info
 	rm -f celerybeat-schedule.db
+	rm -f celerybeat-schedule
 	rm -rf consoleme.tar.gz
+	rm -rf ui/.npmrc ui/.yarnrc
 	find $(project) tests -name "*.pyc" -delete
 	find . -name '*.pyc' -delete
 	find . -name '*.pyo' -delete
@@ -105,7 +107,7 @@ up-reqs: clean
 	pip install --upgrade pip-tools
 	pip install --upgrade setuptools
 	pip-compile --output-file requirements.txt requirements.in -U --no-emit-index-url
-	pip-compile --output-file requirements-test.txt requirements-test.in -U --no-emit-index-url
+	pip-compile --output-file requirements-test.txt requirements-test.in requirements.txt -U --no-emit-index-url
 	pip-compile --output-file requirements-docs.txt requirements-docs.in -U --no-emit-index-url
 	@echo "--> Done updating Python requirements"
 	@echo "--> Installing new dependencies"
@@ -114,8 +116,9 @@ up-reqs: clean
 	pip install -r requirements-docs.txt
 	@echo "--> Done installing new dependencies"
 
-consoleme.tar.gz:
+consoleme.tar.gz: clean
 	# Tar contents of the current directory
+	touch consoleme.tar.gz
 	tar --exclude='consoleme.tar.gz' --exclude='build*' --exclude='.tox/*' --exclude='env*' --exclude-from='.gitignore' --exclude='venv*' --exclude='node_modules*' --exclude='terraform/*' --exclude='.git/*' --exclude='.run/*' --exclude='debian*' --exclude='staging*' -czf consoleme.tar.gz .
 
 .PHONY: create_ami

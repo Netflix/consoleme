@@ -3,43 +3,32 @@
 
 # ConsoleMe
 
-Check out our [documentation](https://hawkins.gitbook.io/consoleme/) and [feature videos](https://hawkins.gitbook.io/consoleme/feature-videos).
+Check out our [quick start guide](https://hawkins.gitbook.io/consoleme/quick-start), [documentation](https://hawkins.gitbook.io/consoleme/), [feature videos](https://hawkins.gitbook.io/consoleme/feature-videos), [ReInvent Talk](https://www.youtube.com/watch?v=fXNRYcNyw0c&t=5s), and [Blog Post](https://netflixtechblog.com/consoleme-a-central-control-plane-for-aws-permissions-and-access-fd09afdd60a8).
 
-ConsoleMe strives to be a multi-account AWS swiss-army knife, making AWS easier for your end-users and cloud administrators.
-It is designed to consolidate the management of multiple accounts into a single web interface. It allows your end-users
-and administrators to get credentials / console access to your different accounts, depending on their authorization
-level. It provides mechanisms for end-users and administrators to both request and manage permissions for IAM roles,
-S3 buckets, SQS queues, and SNS topics. A self-service wizard is also provided to guide users into requesting the
-permissions they desire.
+## Overview
 
-ConsoleMe is extensible and pluggable. We offer a set of basic plugins for authenticating users, determining their
-groups and eligible roles, and more through the use of default plugins (consoleme/default_plugins).
-If you need to link ConsoleMe with internal business logic, we recommend creating a new private repository
-based on the default_plugins directory and modifying the code as appropriate to handle that custom internal logic.
+ConsoleMe is a web service that makes AWS IAM permissions and credential management easier for end-users and cloud administrators.
 
-ConsoleMe uses [Celery](https://github.com/celery/celery/) to run tasks on a schedule or on-demand. Our implementation
-is also extensible through the usage of Python entry points. This means that you can also implement internal-only
-Celery tasks to handle some of your custom business logic if needed.
+ConsoleMe provides [**numerous ways**](https://hawkins.gitbook.io/consoleme/feature-videos/credentials/aws-console-login) to log in to the AWS Console.
 
-The celery tasks in this repo are generally used to cache resources across your AWS accounts (such as IAM roles),
-and report Celery metrics. We have tasks that perform the following:
+An [**IAM Self-Service Wizard**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/self-service-iam-wizard) lets users request IAM permissions in plain English. Cross-account resource policies will be automatically generated, and can be applied with a single click for certain resource types.
 
-- Cache IAM roles, SQS queues, SNS topics, and S3 buckets to Redis/DDB
-- Report Celery Last Success Metrics (Used for alerting on failed tasks)
-- Cache Cloudtrail Errors by ARN (This requires an internal celery task to aggregate Cloudtrail errors from your
-  preferred source)
+[Weep](https://github.com/Netflix/weep) (ConsoleMe’s CLI) supports [**5 different ways**](https://hawkins.gitbook.io/consoleme/weep-cli/cli) of serving AWS credentials locally.
 
-Netflix's internal celery tasks handle a variety of additional requirements that you may
-be interested in implementing. These include:
+Cloud administrators can [**create/clone IAM roles**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/role-creation-and-cloning) and [**manage IAM roles, S3 Buckets, SQS queues, and SNS topics**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/policy-editor-for-iam-sqs-sns-and-s3) across hundreds of accounts in a single interface.
 
-- Caching S3/Cloudtrail errors from our Hive / ElasticSearch databases. We expose these to end-users in ConsoleMe
-- Generating tags for our resources, which include the creator and owner of the resource, and any associated applications.
-- Generating an IAM managed policy unique for each account which (when attached to a role) prevents the usage of an IAM
-  role credential outside of the account. (This is used as a general credential theft and SSRF protection)
-- Cache Google Groups, Users and Account Settings from internal services at Netflix
+Users can access most of your cloud resources in the AWS Console with a [**single click**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/multi-account-policies-management).
+Cloud administrators can configure ConsoleMe to authenticate users through [**ALB Authentication**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/alb-auth), [**OIDC/OAuth2**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/oidc-oauth2-okta), or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/saml-auth0).
+
+… And more. Check out our [docs](https://hawkins.gitbook.io/consoleme/) to get started.
 
 ## Project resources
+
 - [Discord](https://discord.gg/nQVpNGGkYu)
 - [Docs](https://hawkins.gitbook.io/consoleme/)
+- [Weep (our CLI)](https://github.com/netflix/weep)
 - [Source Code](https://github.com/netflix/consoleme)
 - [Issue tracker](https://github.com/netflix/consoleme/issues)
+- [Blog Post](https://netflixtechblog.com/consoleme-a-central-control-plane-for-aws-permissions-and-access-fd09afdd60a8)
+- [ReInvent Talk](https://www.youtube.com/watch?v=fXNRYcNyw0c&t=5s)
+- [Anonymous Feedback Form](https://forms.gle/JVgmHVua3Tr7JVsr9)

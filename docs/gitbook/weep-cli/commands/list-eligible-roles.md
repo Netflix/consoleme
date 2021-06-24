@@ -1,4 +1,6 @@
-# List Eligible Roles
+# List
+
+The `list` command allows you to see all of the roles you have access to via ConsoleMe. By default, only your console roles will be shown. Using the `-a` / `--all` flag will also include application roles.
 
 ```bash
 weep list

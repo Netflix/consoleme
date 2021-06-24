@@ -11,10 +11,12 @@ data "aws_iam_policy_document" "ConsoleMeInstanceProfile" {
     effect    = "Allow"
     resources = ["*"]
     actions = [
+      "access-analyzer:*",
       "cloudtrail:*",
       "cloudwatch:*",
       "config:*",
       "dynamodb:*",
+      "ec2:describeregions",
       "iam:list*",
       "sns:*",
       "sqs:*",
@@ -44,6 +46,12 @@ resource "aws_iam_role_policy" "consoleme_target" {
   name   = "ConsoleMeInstanceProfilePolicy"
   role   = aws_iam_role.ConsoleMeInstanceProfile.id
   policy = data.aws_iam_policy_document.ConsoleMeInstanceProfile.json
+}
+
+# Allow SSM
+resource "aws_iam_role_policy_attachment" "ssm" {
+  role       = aws_iam_role.ConsoleMeInstanceProfile.id
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 

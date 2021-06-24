@@ -35,24 +35,24 @@ Usage:
   weep [command]
 
 Available Commands:
-  completion                         Generate completion script
-  credential_process                 Retrieve credentials and writes them in credential_process format
-  ecs_credential_provider            Run a local ECS Credential Provider endpoint that serves and caches credentials for roles on demand
-  export                             Retrieve credentials to be exported as environment variables
-  file                               Retrieve credentials and save them to a credentials file
-  generate_credential_process_config Write all of your eligible roles as profiles in your AWS Config to source credentials from Weep
-  help                               Help about any command
-  list                               List available roles
-  metadata                           Run a local Instance Metadata Service (IMDS) endpoint that serves credentials
-  setup                              Print setup information
-  version                            Print version information
+  credential_process Retrieve credentials on the fly via the AWS SDK
+  export             Retrieve credentials to be exported as environment variables
+  file               Retrieve credentials and save them to a credentials file
+  help               Help about any command
+  imds               Run a local Instance Metadata Service (IMDS) endpoint that serves credentials
+  list               List available roles
+  serve              Run a local ECS Credential Provider endpoint that serves and caches credentials for roles on demand
+  setup              Print setup information
+  version            Print version information
 
 Flags:
   -A, --assume-role strings   one or more roles to assume after retrieving credentials
   -c, --config string         config file (default is $HOME/.weep.yaml)
   -h, --help                  help for weep
+      --log-file string       log file path (default "tmp/weep.log")
       --log-format string     log format (json or tty)
       --log-level string      log level (debug, info, warn)
+  -n, --no-ip                 remove IP restrictions
 
 Use "weep [command] --help" for more information about a command.
 ```

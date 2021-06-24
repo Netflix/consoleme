@@ -8,6 +8,7 @@ import ujson as json
 from policy_sentry.util.arns import parse_arn
 from pydantic import ValidationError
 
+from consoleme.celery_tasks.celery_tasks import app as celery_app
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     InvalidRequestParameter,
@@ -29,7 +30,6 @@ from consoleme.lib.policies import (
     get_url_for_resource,
     should_auto_approve_policy_v2,
 )
-from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.timeout import Timeout
 from consoleme.lib.v2.requests import (
     generate_request_from_change_model_array,
@@ -40,6 +40,7 @@ from consoleme.lib.v2.requests import (
 )
 from consoleme.models import (
     CommentModel,
+    DataTableResponse,
     ExtendedRequestModel,
     PolicyRequestModificationRequestModel,
     RequestCreationModel,
@@ -47,9 +48,9 @@ from consoleme.models import (
     RequestStatus,
 )
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
-aws = get_plugin_by_name(config.get("plugins.aws"))()
+aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 
 
 class RequestHandler(BaseAPIV2Handler):
@@ -59,6 +60,16 @@ class RequestHandler(BaseAPIV2Handler):
     """
 
     allowed_methods = ["POST"]
+
+    def on_finish(self) -> None:
+        if self.request.method != "POST":
+            return
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_policy_requests"
+        )
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping"
+        )
 
     async def post(self):
         """
@@ -390,7 +401,6 @@ class RequestHandler(BaseAPIV2Handler):
         )
         self.write(response.json())
         await self.finish()
-        await cache_all_policy_requests()
         return
 
 
@@ -412,10 +422,14 @@ class RequestsHandler(BaseAPIV2Handler):
             "cache_all_policy_requests.redis_key", "ALL_POLICY_REQUESTS"
         )
         s3_bucket = config.get("cache_policy_requests.s3.bucket")
-        s3_key = config.get("cache_policy_requests.s3.file")
+        s3_key = config.get(
+            "cache_policy_requests.s3.file",
+            "policy_requests/all_policy_requests_v1.json.gz",
+        )
         arguments = json.loads(self.request.body)
         filters = arguments.get("filters")
-        sort = arguments.get("sort")
+        # TODO: Add server-side sorting
+        # sort = arguments.get("sort")
         limit = arguments.get("limit", 1000)
         tags = {"user": self.user}
         stats.count("RequestsHandler.post", tags=tags)
@@ -432,11 +446,9 @@ class RequestsHandler(BaseAPIV2Handler):
         requests = await retrieve_json_data_from_redis_or_s3(
             cache_key, s3_bucket=s3_bucket, s3_key=s3_key
         )
-        if not sort:
-            # Default sort of requests is by request_time descending.
-            requests = sorted(
-                requests, key=lambda i: i.get("request_time", 0), reverse=True
-            )
+
+        total_count = len(requests)
+
         if filters:
             try:
                 with Timeout(seconds=5):
@@ -483,7 +495,11 @@ class RequestsHandler(BaseAPIV2Handler):
                 requests_to_write.append(request)
         else:
             requests_to_write = requests[0:limit]
-        self.write(json.dumps(requests_to_write))
+        filtered_count = len(requests_to_write)
+        res = DataTableResponse(
+            totalCount=total_count, filteredCount=filtered_count, data=requests_to_write
+        )
+        self.write(res.json())
         return
 
 
@@ -494,6 +510,16 @@ class RequestDetailHandler(BaseAPIV2Handler):
     """
 
     allowed_methods = ["GET", "PUT"]
+
+    def on_finish(self) -> None:
+        if self.request.method != "PUT":
+            return
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_policy_requests"
+        )
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping"
+        )
 
     async def _get_extended_request(self, request_id, log_data):
         dynamo = UserDynamoHandler(self.user)
@@ -565,6 +591,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             populate_cross_account_resource_policies(extended_request, self.user),
         )
         extended_request = concurrent_results[0]
+
         populate_cross_account_resource_policies_result = concurrent_results[1]
 
         if populate_cross_account_resource_policies_result["changed"]:
@@ -591,10 +618,19 @@ class RequestDetailHandler(BaseAPIV2Handler):
             "can_move_back_to_pending": can_move_back_to_pending,
         }
 
+        template = None
+        # Force a refresh of the role in Redis/DDB
+        arn_parsed = parse_arn(extended_request.arn)
+        if arn_parsed["service"] == "iam" and arn_parsed["resource"] == "role":
+            iam_role = await aws.fetch_iam_role(
+                arn_parsed["account"], extended_request.arn
+            )
+            template = iam_role.get("templated")
         response = {
             "request": extended_request.json(),
             "last_updated": last_updated,
             "request_config": request_specific_config,
+            "template": template,
         }
 
         self.write(response)
@@ -661,7 +697,6 @@ class RequestDetailHandler(BaseAPIV2Handler):
             return
         self.write(response.json())
         await self.finish()
-        await cache_all_policy_requests()
         return
 
 
@@ -683,9 +718,11 @@ class RequestsPageConfigHandler(BaseHandler):
                 "expandableRows": True,
                 "dataEndpoint": "/api/v2/requests?markdown=true",
                 "sortable": False,
-                "totalRows": 1000,
+                "totalRows": 200,
                 "rowsPerPage": 50,
                 "serverSideFiltering": True,
+                "allowCsvExport": True,
+                "allowJsonExport": True,
                 "columns": [
                     {
                         "placeholder": "Username",
@@ -717,18 +754,6 @@ class RequestsPageConfigHandler(BaseHandler):
                         "type": "link",
                         "style": {"whiteSpace": "normal", "wordBreak": "break-all"},
                         "width": 2,
-                    },
-                    {
-                        "placeholder": "Policy Name",
-                        "key": "policy_name",
-                        "type": "input",
-                        "style": {"width": "110px"},
-                    },
-                    {
-                        "placeholder": "Last Updated By",
-                        "key": "updated_by",
-                        "type": "input",
-                        "style": {"width": "110px"},
                     },
                 ],
             },

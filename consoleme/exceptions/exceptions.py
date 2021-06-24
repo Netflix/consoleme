@@ -5,7 +5,7 @@ from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger("consoleme")
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 class BaseException(Exception):
@@ -374,6 +374,14 @@ class ResourceNotFound(BaseException):
 
     def __init__(self, msg=""):
         stats.count("ResourceNotFound")
+        super().__init__(msg)
+
+
+class UnableToAuthenticate(BaseException):
+    """Unable to authenticate user or app"""
+
+    def __init__(self, msg=""):
+        stats.count("UnableToAuthenticate")
         super().__init__(msg)
 
 

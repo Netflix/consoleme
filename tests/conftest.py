@@ -25,7 +25,6 @@ from tornado.concurrent import Future
 # This must be set before loading ConsoleMe's configuration
 
 os.environ["CONFIG_LOCATION"] = "example_config/example_config_test.yaml"
-from consoleme.config import config  # noqa: E402
 
 MOCK_ROLE = {
     "arn": "arn:aws:iam::123456789012:role/FakeRole",
@@ -155,8 +154,10 @@ class MockBaseMtlsHandler:
 
 class MockAuth:
     def __init__(
-        self, restricted=False, compliance_restricted=False, get_groups_val=[]
+        self, restricted=False, compliance_restricted=False, get_groups_val=None
     ):
+        if get_groups_val is None:
+            get_groups_val = []
         self.restricted = restricted
         self.compliance_restricted = compliance_restricted
         self.get_groups_val = get_groups_val
@@ -268,10 +269,11 @@ def sns(aws_credentials):
 def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
     from asgiref.sync import async_to_sync
 
+    from consoleme.config import config
     from consoleme.lib.cache import store_json_results_in_redis_and_s3
 
     global all_roles
-    buckets = [config.get("cache_roles_across_accounts.all_roles_combined.s3.bucket")]
+    buckets = [config.get("consoleme_s3_bucket")]
     for bucket in buckets:
         s3.create_bucket(Bucket=bucket)
 
@@ -284,7 +286,7 @@ def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
             s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
         )
         return
-    from consoleme.celery.celery_tasks import cache_roles_for_account
+    from consoleme.celery_tasks.celery_tasks import cache_roles_for_account
     from consoleme.lib.account_indexers import get_account_id_to_name_mapping
     from consoleme.lib.redis import RedisHandler
 
@@ -360,6 +362,144 @@ def iamrole_table(dynamodb):
     )
 
     yield dynamodb
+
+
+@pytest.fixture(autouse=True, scope="session")
+def sqs_queue(sqs):
+    sqs.create_queue(
+        QueueName="consoleme-cloudtrail-role-events-test",
+    )
+    sqs.create_queue(QueueName="consoleme-cloudtrail-access-deny-events-test")
+
+    queue_url = sqs.get_queue_url(QueueName="consoleme-cloudtrail-role-events-test")
+    message = json.dumps(
+        {
+            "Message": json.dumps(
+                {
+                    "version": "0",
+                    "id": "825688d9-11c0-e149-0ef0-7c996f7f1468",
+                    "detail-type": "AWS API Call via CloudTrail",
+                    "source": "aws.iam",
+                    "account": "123456789012",
+                    "time": "2021-06-15T18:51:57Z",
+                    "region": "us-east-1",
+                    "resources": [],
+                    "detail": {
+                        "eventVersion": "1.08",
+                        "userIdentity": {
+                            "type": "AssumedRole",
+                            "principalId": "ABC123:i-12345",
+                            "arn": "arn:aws:sts::123456789012:assumed-role/role1/3957",
+                            "accountId": "123456789012",
+                            "accessKeyId": "ACESSKEYID",
+                            "sessionContext": {
+                                "sessionIssuer": {
+                                    "type": "Role",
+                                    "principalId": "PRINCIPALID",
+                                    "arn": "arn:aws:iam::123456789012:role/role1",
+                                    "accountId": "123456789012",
+                                    "userName": "role1",
+                                },
+                                "webIdFederationData": {},
+                                "attributes": {
+                                    "creationDate": "2021-06-15T18:51:56Z",
+                                    "mfaAuthenticated": "false",
+                                },
+                            },
+                        },
+                        "eventTime": "2021-06-15T18:51:57Z",
+                        "eventSource": "iam.amazonaws.com",
+                        "eventName": "AttachRolePolicy",
+                        "awsRegion": "us-east-1",
+                        "sourceIPAddress": "1.2.3.4",
+                        "userAgent": "Botocore",
+                        "requestParameters": {
+                            "roleName": "role1",
+                            "policyArn": "arn:aws:iam::123456789012:policy/1",
+                        },
+                        "responseElements": None,
+                        "requestID": "22ba2e61-aae9-4a8f-80af-e1d20d3b07b5",
+                        "eventID": "2ee753fa-c79c-4b2a-9584-7a011d6fe763",
+                        "readOnly": False,
+                        "eventType": "AwsApiCall",
+                        "managementEvent": True,
+                        "recipientAccountId": "123456789012",
+                        "eventCategory": "Management",
+                    },
+                }
+            )
+        }
+    )
+    sqs.send_message(QueueUrl=queue_url["QueueUrl"], MessageBody=message)
+
+    queue_url = sqs.get_queue_url(
+        QueueName="consoleme-cloudtrail-access-deny-events-test"
+    )
+    message = json.dumps(
+        {
+            "Message": json.dumps(
+                {
+                    "version": "0",
+                    "id": "12345",
+                    "detail-type": "AWS API Call via CloudTrail",
+                    "source": "aws.sts",
+                    "account": "123456789012",
+                    "time": "2021-06-22T16:17:45Z",
+                    "region": "us-east-1",
+                    "resources": [],
+                    "detail": {
+                        "eventVersion": "1.08",
+                        "userIdentity": {
+                            "type": "AssumedRole",
+                            "principalId": "principalId",
+                            "arn": "arn:aws:sts::123456789012:assumed-role/roleA/instanceId",
+                            "accountId": "123456789012",
+                            "accessKeyId": "ASIASFT37IGO3U7IQ5RA",
+                            "sessionContext": {
+                                "sessionIssuer": {
+                                    "type": "Role",
+                                    "principalId": "principalId",
+                                    "arn": "arn:aws:iam::123456789012:role/roleA",
+                                    "accountId": "123456789012",
+                                    "userName": "roleA",
+                                },
+                                "webIdFederationData": {},
+                                "attributes": {
+                                    "creationDate": "2021-06-22T10:59:51Z",
+                                    "mfaAuthenticated": "false",
+                                },
+                                "ec2RoleDelivery": "2.0",
+                            },
+                        },
+                        "eventTime": "2021-06-22T16:17:45Z",
+                        "eventSource": "sts.amazonaws.com",
+                        "eventName": "AssumeRole",
+                        "awsRegion": "global",
+                        "sourceIPAddress": "1.2.3.4",
+                        "userAgent": "userAgent",
+                        "errorCode": "AccessDenied",
+                        "errorMessage": "User: arn:aws:sts::123456789012:assumed-role/roleA/instanceId is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::123456789012:role/roleB",
+                        "requestParameters": None,
+                        "responseElements": None,
+                        "requestID": "404804f0-0b62-4220-8766-0e145cb85be9",
+                        "eventID": "cfaf5898-f822-47ce-ba52-1b01aabc18f4",
+                        "readOnly": True,
+                        "eventType": "AwsApiCall",
+                        "managementEvent": True,
+                        "recipientAccountId": "123456789012",
+                        "eventCategory": "Management",
+                        "tlsDetails": {
+                            "tlsVersion": "TLSv1.2",
+                            "cipherSuite": "ECDHE-RSA-AES128-SHA",
+                            "clientProvidedHostHeader": "sts.amazonaws.com",
+                        },
+                    },
+                }
+            )
+        }
+    )
+    sqs.send_message(QueueUrl=queue_url["QueueUrl"], MessageBody=message)
+    yield sqs
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -665,6 +805,73 @@ def redis(session_mocker):
     return True
 
 
+class MockParliament:
+    def __init__(self, return_value=None):
+        self.return_value = return_value
+
+    @property
+    def findings(self):
+        return self.return_value
+
+
+class Finding:
+    issue = ""
+    detail = ""
+    location = {}
+    severity = ""
+    title = ""
+    description = ""
+
+    def __init__(
+        self,
+        issue,
+        detail,
+        location,
+        severity,
+        title,
+        description,
+    ):
+        self.issue = issue
+        self.detail = detail
+        self.location = location
+        self.severity = severity
+        self.title = title
+        self.description = description
+
+
+@pytest.fixture(scope="session")
+def parliament(session_mocker):
+    session_mocker.patch(
+        "parliament.analyze_policy_string",
+        return_value=MockParliament(
+            return_value=[
+                {
+                    "issue": "RESOURCE_MISMATCH",
+                    "title": "No resources match for the given action",
+                    "severity": "MEDIUM",
+                    "description": "",
+                    "detail": [
+                        {"action": "s3:GetObject", "required_format": "arn:*:s3:::*/*"}
+                    ],
+                    "location": {"line": 3, "column": 18, "filepath": "test.json"},
+                }
+            ]
+        ),
+    )
+
+    session_mocker.patch(
+        "parliament.enhance_finding",
+        return_value=Finding(
+            issue="RESOURCE_MISMATCH",
+            title="No resources match for the given action",
+            severity="MEDIUM",
+            description="",
+            detail="",
+            location={},
+        ),
+    )
+
+
 @pytest.fixture(scope="session")
 def user_iam_role(iamrole_table, www_user):
     from consoleme.lib.dynamo import IAMRoleDynamoHandler
@@ -691,7 +898,7 @@ def mock_exception_stats():
 
 @pytest.fixture(autouse=True, scope="session")
 def mock_celery_stats(mock_exception_stats):
-    p = patch("consoleme.celery.celery_tasks.stats")
+    p = patch("consoleme.celery_tasks.celery_tasks.stats")
 
     yield p.start()
 
@@ -726,10 +933,11 @@ def populate_caches(
     sqs,
     iam,
     www_user,
+    parliament,
 ):
     from asgiref.sync import async_to_sync
 
-    from consoleme.celery import celery_tasks as celery
+    from consoleme.celery_tasks import celery_tasks as celery
     from consoleme.lib.account_indexers import get_account_id_to_name_mapping
     from consoleme_default_plugins.plugins.celery_tasks import (
         celery_tasks as default_celery_tasks,
@@ -746,6 +954,9 @@ def populate_caches(
         celery.cache_sqs_queues_for_account(account_id)
         celery.cache_managed_policies_for_account(account_id)
         # celery.cache_resources_from_aws_config_for_account(account_id) # No select_resource_config in moto yet
+    # Running cache_roles_across_accounts ensures that all of the pre-existing roles in our role cache are stored in
+    # (mock) S3
+    celery.cache_roles_across_accounts()
     celery.cache_policies_table_details()
     celery.cache_policy_requests()
     celery.cache_credential_authorization_mapping()

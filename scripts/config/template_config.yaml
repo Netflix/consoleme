@@ -1,0 +1,486 @@
+# default question formatting
+default:
+  confirmation: Do you want to enable {friendly_name} ({friendly_description})?
+  file_path: What is the path for {friendly_name} ({friendly_description})?
+  email: Which email should be used for {friendly_name} ({friendly_description})?
+  text: What should the value be for {friendly_name} ({friendly_description})?
+  select: Which of the following should be used for {friendly_name} ({friendly_description})?
+  list: Please provide a comma-seperated list of {friendly_name} ({friendly_description})
+  list_dict: Please provide a comma-seperated list of {friendly_name} ({friendly_description})
+  no_question: This is not a question, but a placeholder for default value that is always chosen
+
+questions:
+  - config_variable: application_admin
+    friendly_name: Adminstrator of ConsoleMe
+    friendly_description: |-
+      Enter your team's (or just your) username/email here. This user (or members of the group) will have full admin capabilities in ConsoleMe,
+      and be used as the default approvers of IAM policy requests.
+    type: text
+    required: True
+  - config_variable: tornado.debug
+    friendly_name: Tornado Debug mode
+    friendly_description: "Warning: if running in production, don't set debug on!"
+    type: confirmation
+    default: False
+  # These 3 Tornado settings should be sane defaults - don't ask users these, just select them as values
+  - config_variable: tornado.port
+    friendly_name: Tornado Port
+    friendly_description: the port to run ConsoleMe's backend on
+    type: no_question
+    value: 8081
+  - config_variable: tornado.xsrf
+    friendly_name: Tornado XSRF
+    friendly_description: whether to turn on XSRF protection or not
+    type: no_question
+    value: true
+  - config_variable: tornado.xsrf_cookie_kwargs.samesite
+    type: no_question
+    value: strict
+  # Multi-account related settings
+  - config_variable: __accounts_choice
+    friendly_name: retrieving AWS accounts
+    friendly_description: knowledge about your AWS accounts is needed
+    type: select
+    choices:
+      - Single account mode (ConsoleMe only gathers information an permits changes to the account it has credentials for. No further configuration needed)
+      - Configuration File
+      - AWS Organizations
+      - Swag (https://github.com/Netflix-Skunkworks/swag-api)
+  - config_variable: account_ids_to_name
+    friendly_name: accounts IDs to name mapping
+    friendly_description: |-
+      this will be accounts that ConsoleMe should cache information for, for example: 1234: prod, 5678: test
+    type: list_dict
+    depends_on: __accounts_choice
+    depends_on_val:
+      - Configuration File
+    required: True
+  - config_variable: cache_accounts_from_aws_organizations.organizations_master_account_id
+    friendly_name: account ID for the organization
+    friendly_description: account ID of your AWS organizations master
+    type: text
+    depends_on: __accounts_choice
+    depends_on_val:
+      - AWS Organizations
+    required: True
+  - config_variable: cache_accounts_from_aws_organizations.organizations_master_role_to_assume
+    friendly_name: role for the organization master account
+    friendly_description: name of the role that consoleme will attempt to assume on your Organizations master account to retrieve account information
+    type: text
+    depends_on: __accounts_choice
+    depends_on_val:
+      - AWS Organizations
+    required: True
+  - config_variable: retrieve_accounts_from_swag.base_url
+    friendly_name: swag URL
+    friendly_description: Base URL for swag from where to retrieve account information
+    type: text
+    depends_on: __accounts_choice
+    depends_on_val:
+      - Swag (https://github.com/Netflix-Skunkworks/swag-api)
+    required: True
+  - config_variable: policies.role_name
+    friendly_name: multi-account support
+    friendly_description: |-
+      ConsoleMe's multi-account support works with a hub and spoke design. Your central (hub) AWS account will need an
+      IAM role on all of your (spoke) accounts that it can assume to gather resource information and make changes on the
+      account. (Yes, this role will be needed on the central account as well. If configured, ConsoleMe will always
+      attempt to assume a role when attempting operations on a different account).
+    type: text
+    depends_on: __accounts_choice
+    default: "ConsoleMe"
+    depends_on_val:
+      - Configuration File
+      - AWS Organizations
+      - Swag (https://github.com/Netflix-Skunkworks/swag-api)
+    required: True
+  - config_variable: __auth_choice
+    friendly_name: auth mechanism
+    friendly_description: method of Web App Authentication and Authorization
+    type: select
+    choices:
+      - ALB Auth - Cognito
+      - ALB Auth - Google
+      - ALB Auth - Okta
+      - ALB Auth - Generic
+      - OIDC/OAuth2 - Other
+      - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+  - config_variable: auth.require_jwt
+    type: no_question
+    value: true
+  # auth specific questions
+  ## Header Authentication ##
+  - config_variable: auth.get_user_by_header
+    friendly_name: Get user by header
+    friendly_description: Get username by a trusted header, post authentication
+    type: no_question
+    value: True
+    depends_on: __auth_choice
+    depends_on_val:
+      - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+    required: True
+  - config_variable: auth.get_groups_by_header
+    friendly_name: Get groups by header
+    friendly_description: Get comma-separated list of groups by a trusted header, post authentication
+    type: no_question
+    value: True
+    depends_on: __auth_choice
+    depends_on_val:
+      - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+    required: True
+  - config_variable: auth.user_header_name
+    friendly_name: Name of header specifying username
+    friendly_description: Name of trusted header specifying username
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+    required: True
+  - config_variable: auth.groups_header_name
+    friendly_name: Name of header specifying comma-separated list of user's groups
+    friendly_description: Name of trusted header specifying comma-separated list of user's groups
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - Header Authentication (I have trusted headers that identify the authenticated user and their groups)
+    required: True
+  ## ALB Auth - Cognito ##
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
+    friendly_name: cognito pool ID
+    friendly_description: Amazon Cognito user pool ID
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+    format_text: https://cognito-idp.us-east-1.amazonaws.com/{}/.well-known/openid-configuration
+    required: True
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
+    friendly_name: jwks_uri
+    friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
+    type: list
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+  - config_variable: get_user_by_aws_alb_auth_settings.jwt_groups_key
+    friendly_name: jwt_groups_key
+    friendly_description: jwt_groups_key
+    type: text
+    default: "cognito:groups"
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+    required: True
+  ## ALB Auth - Google ##
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
+    friendly_name: metadata URL
+    friendly_description: Google metadata URL
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Google
+    required: True
+    default: https://accounts.google.com/.well-known/openid-configuration
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
+    friendly_name: jwks_uri
+    friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
+    type: list
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Google
+  ## ALB Auth - Okta ##
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
+    friendly_name: Okta Domain
+    friendly_description: "the domain for your Okta, https://<DOMAIN>.okta.com, just enter the <DOMAIN> part"
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Okta
+    required: True
+    format_text: https://{}.okta.com/oauth2/default/.well-known/oauth-authorization-server
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri
+    friendly_name: jwks_uri
+    friendly_description: Only required if your metadata URL doesn't return jwks_uri within the JSON
+    type: list
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Okta
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.client_id
+    friendly_name: client ID
+    friendly_description: Okta Client ID
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Okta
+    required: True
+  ## ALB Auth - Generic ##
+  - config_variable: get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url
+    friendly_name: Metadata URL
+    friendly_description: |-
+      The URL to your IDP's .well-known/oauth-authorization-server or .well-known/openid-configuration file
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Generic
+    required: True
+  ## General Auth config - ALB Auth ##
+  - config_variable: get_user_by_aws_alb_auth_settings.jwt_email_key
+    friendly_name: jwt_email_key
+    friendly_description: jwt_email_key
+    type: text
+    default: email
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+      - ALB Auth - Google
+      - ALB Auth - Okta
+      - ALB Auth - Generic
+    required: True
+  - config_variable: get_user_by_aws_alb_auth_settings.jwt_groups_key
+    friendly_name: jwt_groups_key
+    friendly_description: jwt_groups_key
+    type: text
+    default: groups
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Google
+      - ALB Auth - Okta
+      - ALB Auth - Generic
+    required: True
+  - config_variable: auth.get_user_by_aws_alb_auth
+    type: no_question
+    value: True
+    depends_on: __auth_choice
+    depends_on_val:
+      - ALB Auth - Cognito
+      - ALB Auth - Google
+      - ALB Auth - Okta
+      - ALB Auth - Generic
+  - config_variable: auth.set_auth_cookie
+    type: no_question
+    value: True
+  ## OIDC/OAuth2 - Other ##
+  - config_variable: auth.get_user_by_oidc
+    type: no_question
+    value: True
+    depends_on: __auth_choice
+    depends_on_val:
+      - OIDC/OAuth2 - Other
+  - config_variable: get_user_by_oidc_settings.jwt_verify
+    type: no_question
+    value: True
+    depends_on: __auth_choice
+    depends_on_val:
+      - OIDC/OAuth2 - Other
+  - config_variable: get_user_by_oidc_settings.metadata_url
+    friendly_name: IDP metadata URL
+    friendly_description: |-
+      Your (not so) well-known IDP metadata URL. This can be tricky to find. Here are a few common ones we've seen:
+      Active Directory Azure - https://login.microsoftonline.com/<APP_OBJECT_ID>/v2.0/.well-known/openid-configuration
+      Google (User only) - https://accounts.google.com/.well-known/openid-configuration
+      Cognito - https://cognito-idp.us-east-1.amazonaws.com/{COGNITO_POOL_ID}/.well-known/openid-configuration
+      Okta - https://{YOURSERVER}.okta.com/oauth2/default/.well-known/oauth-authorization-server
+      Okta alternative: https://{YOURSERVER}.okta.com/oauth2/default/.well-known/openid-configuration
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - OIDC/OAuth2 - Other
+    required: True
+  - config_variable: get_user_by_oidc_settings.jwt_email_key
+    friendly_name: Email key in the ID token
+    friendly_description: |-
+      The key of the user's identity/email in the ID token JWT
+      Active Directory Azure - upn
+      Google (User only) - email
+      Cognito - email
+      Okta - email
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - OIDC/OAuth2 - Other
+    default: email
+    required: True
+  - config_variable: get_user_by_oidc_settings.jwt_groups_key
+    friendly_name: Groups key in either the ID or Access token
+    friendly_description: |-
+      The key of the user's groups in the ID or Access token JWT
+    type: text
+    depends_on: __auth_choice
+    depends_on_val:
+      - OIDC/OAuth2 - Other
+    default: groups
+    required: True
+  - config_variable: get_user_by_oidc_settings.get_groups_from_userinfo_endpoint
+    friendly_name: getting groups from OIDC userinfo endpoint?
+    friendly_description: |-
+      If we can't find the user's groups in their ID or Access tokens, we can try to get groups from the OIDC userinfo
+      endpoint. Should we? (We're desperate at this point!)
+    type: confirmation
+    depends_on: __auth_choice
+    depends_on_val:
+      - OIDC/OAuth2 - Other
+    default: True
+  - config_variable: get_user_by_oidc_settings.user_info_groups_key
+    friendly_name: What is the group key in the userinfo response?
+    friendly_description: |-
+      We got a lovely JSON response from the OIDC userinfo endpoint. What key, oh master, should I expect to find the
+      groups in?
+    type: text
+    depends_on: get_user_by_oidc_settings.get_groups_from_userinfo_endpoint
+    depends_on_val:
+      - True
+    required: True
+  - config_variable: consoleme_s3_bucket
+    friendly_name: ConsoleMe's S3 bucket name
+    friendly_description: |-
+      a (preferably versioned) S3 bucket name that I can cache and retrieve data from? The role that ConsoleMe runs
+      as must have access to this bucket
+    type: text
+    required: True
+  - config_variable: redis.host.global
+    friendly_name: |-
+      the redis host I can use? Elasticache Redis is preferred in production
+    friendly_description: |-
+      Don't use localhost in production, you monster!
+    type: text
+    default: localhost
+  - config_variable: celery.broker.global
+    friendly_name: |-
+      the redis host and database that ConsoleMe can use as the Celery broker? Elasticache Redis is preferred. This time, please enter a
+      fully qualified redis URL because Celery expects it.
+    friendly_description: |-
+      Is there a redis host ConsoleMe can use as the Celery backend? Fully qualified URL required this time. If you want to
+      reuse an existing endpoint, please select a different database than the one you used before (The default is /0,
+      so just add /1 to the end of your url)
+    type: text
+    default: redis://{redis-host-global}:6379/1
+  - config_variable: celery.broker.global
+    friendly_name: |-
+      Is there a redis host ConsoleMe can use as the Celery backend? Fully qualified URL required this time. If you want to
+      reuse an existing endpoint, please select a different database than the one you used before (change /1 to /2)
+    friendly_description: |-
+      Is there a redis host ConsoleMe can use as the Celery broker? Elasticache cluster preferred.
+    type: text
+    default: redis://{redis-host-global}:6379/2
+  - config_variable: celery.active_region
+    friendly_name: Celery active region
+    friendly_description: |-
+      Some celery jobs should only run in one region. You should define your primary region here.
+    type: text
+    default: us-west-2
+  - config_variable: challenge_url.enabled
+    friendly_name: Challenge URL authentication
+    friendly_description: |-
+      Challenge URL authentication is used to authenticate users from CLI clients (like Weep).
+    type: confirmation
+    default: True
+  - config_variable: ses.arn
+    friendly_name: SES ARN
+    friendly_description: |-
+      SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+      administrators and requesters about policy requests applicable to them.
+    type: text
+    required: True
+  - config_variable: ses.region
+    friendly_name: SES region
+    friendly_description: |-
+      SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+      administrators and requesters about policy requests applicable to them.
+    default: us-west-2
+    type: text
+    required: True
+  - config_variable: ses.consoleme.sender
+    friendly_name: the SES email address ConsoleMe sends mail from
+    friendly_description: |-
+      SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+      administrators and requesters about policy requests applicable to them.
+    type: email
+    required: True
+  - config_variable: ses.consoleme.name
+    friendly_name: SES Application Name
+    friendly_description: |-
+      When ConsoleMe sends e-mail, it will prefix the subject with this application name.
+    type: no_question
+    value: ConsoleMe
+  - config_variable: support_contact
+    friendly_name: the support contact
+    friendly_description: |-
+      This information is displayed in ConsoleMe's sidebar
+    type: email
+  - config_variable: support_chat_url
+    friendly_name: support chat URL
+    friendly_description: |-
+      This information is displayed in ConsoleMe's sidebar
+    type: text
+    default: https://www.example.com/slack/channel
+  - config_variable: ses.support_reference
+    friendly_name: support reference added to the bottom of ConsoleMe emails that are sent to end-users
+    friendly_description: |-
+      When ConsoleMe sends e-mail, the end of the message will contain this string.
+    type: text
+    default: Please contact us at {support_contact} if you have any questions or concerns.
+  - config_variable: documentation_page
+    friendly_name: documentation page for more information
+    friendly_description: |-
+      This information is displayed in ConsoleMe's sidebar
+    type: text
+    default: https://hawkins.gitbook.io/consoleme/
+  ## Metrics ##
+  - config_variable: __metrics_choice
+    friendly_name: Your Metrics Provider
+    friendly_description: Should we enable metrics
+    type: select
+    choices:
+      - No Metrics
+      - CloudWatch Metrics
+  - config_variable: metrics.metrics_plugin
+    friendly_name: Cloudwatch Metric Provider
+    friendly_description: Cloudwatch Metric Provider
+    type: no_question
+    value: consoleme_default_plugins.plugins.metrics.cloudwatch.CloudWatchMetric
+    depends_on: __metrics_choice
+    depends_on_val:
+      - CloudWatch Metrics
+  ## Cloud Credential Authorization Mapping ##
+  # TODO: questions for cloud_credential_authorization_mapping
+  - config_variable: cloud_credential_authorization_mapping.role_tags.enabled
+    friendly_name: |-
+      Should we use role tags to determine who is authorized to get CLI and/or AWS console access to a role?
+    friendly_description: |-
+      More details are here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/role-tagging-recommended
+    type: no_question
+    value: true
+  - config_variable: cloud_credential_authorization_mapping.dynamic_config.enabled
+    friendly_name: |-
+      Should we use ConsoleMe's dynamic configuration to determine who has access to an IAM role?
+    friendly_description: |-
+      More details are here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/dynamic-configuration-1
+    type: no_question
+    value: true
+  - config_variable: cloud_credential_authorization_mapping.internal_plugin.enabled
+    friendly_name: |-
+      Should we use a ConsoleMe internal plugin (you would write the plugin) to determine
+      who has access to an IAM role?
+    friendly_description: |-
+      More details are here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/custom-authorization-internal-plugin
+    type: no_question
+    value: false
+  - config_variable: cloud_credential_authorization_mapping.role_tags.authorized_groups_tags
+    friendly_name: |-
+      the tags on an IAM role that indicate the users/groups authorized to get credentials for a role
+      in both the ConsoleMe UI and via CLI. You must prevent non-administrative users from modifying
+      these tags via an AWS Service Control Policy on your Organizations Master account.
+    friendly_description: |-
+      ConsoleMe uses IAM role tags to determine who gets access to a role. Read more about this feature
+      here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/role-tagging-recommended
+    type: list
+    default: consoleme-authorized
+  - config_variable: cloud_credential_authorization_mapping.role_tags.authorized_groups_cli_only_tags
+    friendly_name: |-
+      the tags on an IAM role that indicate the users/groups authorized to get credentials for a role
+      via the CLI only. You must prevent non-administrative users from modifying
+      these tags via an AWS Service Control Policy on your Organizations Master account.
+    friendly_description: |-
+      ConsoleMe uses IAM role tags to determine who gets access to a role. Read more about this feature
+      here: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/role-tagging-recommended
+    type: list
+    default: consoleme-owner-dl,consoleme-authorized-cli-only

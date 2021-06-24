@@ -45,9 +45,30 @@ Since your fork is a copy of the repository, you have to keep it in sync with ou
 # From the consoleme repository root, check out your master branch
 git checkout master
 # Add a remote called upstream
-git remote add upstream git@github.com:your_username/consoleme.git
+git remote add upstream git@github.com:Netflix/consoleme.git
 # Pull changes from upstream
 git pull upstream master
 # Push changes to your fork
 git push origin master
 ```
+
+## Key Files
+
+Some of the key files/folders for you as a new developer on `consoleme`:
+
+- `consoleme/` - houses all our (Python/Tornado) API code
+  - `routes.py` - all our API routes, and what code they're mapped to
+  - `models.py` - Python classes for domain modeling
+  - `__main__.py` - runs our tornado web server
+  - `celery_tasks/celery_tasks.py` - contains code for our scheduled, asynchronous tasks
+  - `handlers/` - HTTP handlers that our routes are mapped to
+  - `exceptions/exceptions.py` - various domain specific exception classes we've created
+  - `lib` - actual business logic goes here. is the bulk of our backend code.
+- `ui/` - houses all our (React) UI code
+- `tests/` - tests for our python code
+- `terraform/` - Terraform config if you choose to [deploy consoleme using Terraform](https://hawkins.gitbook.io/consoleme/deployment-strategies)
+- `packer/` - Packer config if you choose to [deploy consoleme using a EC2 instance](https://hawkins.gitbook.io/consoleme/deployment-strategies)
+- `docs/gitbook/` - our documentation site, written in markdown, built using gitbook
+- `default_plugins/` - examples of plugins used to extend and customize ConsoleMe
+- `.github/workflows` - our CI config (using GitHub Actions)
+- `.run/` - configurations to run consoleme in JetBrains IDEs (i.e. PyCharm)

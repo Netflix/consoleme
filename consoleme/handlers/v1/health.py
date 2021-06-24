@@ -1,8 +1,8 @@
 """Health handler."""
-import tornado.web
+from consoleme.handlers.base import TornadoRequestHandler
 
 
-class HealthHandler(tornado.web.RequestHandler):
+class HealthHandler(TornadoRequestHandler):
     """Health handler."""
 
     async def get(self):

@@ -1,12 +1,14 @@
 aiozipkin
 asgiref # Allows sync_to_async call, executes synchronous code in its own threadpool.
+bcrypt # Used for password hash/verification
 bleach
 boto3
 cchardet
 celery[redis]
 cloudaux
 datamodel-code-generator
-deepdiff[murmur]
+decorator<5 # Internal requirement has decorator pinned to <5.
+deepdiff
 defusedxml
 ed25519
 elasticsearch
@@ -18,17 +20,19 @@ google-auth-httplib2
 google-cloud-storage
 gunicorn
 hiredis
-idna<2.9  # Required because moto has it pinned
+idna<3  # Required because moto has it pinned
 ipython
 isodate
 jmespath
 jsonschema
-kombu<5 # Unpin when new Celery is released: https://github.com/celery/celery/issues/6266
+kombu
 marshmallow
 logmatic-python
 lxml
 okta_jwt
-pandas<1 #  Internal plugin depends on Pandas < 1
+pandas
+parliament
+password_strength
 pkgconfig
 policy-sentry
 policyuniverse
@@ -38,19 +42,22 @@ pydantic
 pyjwt
 pylint
 python-dateutil
+python-json-logger==0.1.11 # Needed until this is merged and new version created: https://github.com/madzak/python-json-logger/pull/113
 python3-saml
 pytz
+questionary
 redis
+redislite
 requests
 retry
 retrying
 ruamel.yaml
-sentry-sdk==0.16.1 # Internal plugin depends on a library which depends on this version of sentry_sdk
+sentry-sdk
 simplejson
 six
 tenacity
 tornado
-ujson<3 # Unpin when this bug is fixed: https://github.com/ultrajson/ultrajson/issues/415
+ujson
 uvloop
 validate_email
 xmlsec

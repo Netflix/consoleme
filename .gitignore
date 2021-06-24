@@ -93,7 +93,7 @@ celerybeat-schedule
 *.sage.py
 
 # Environments
-.env
+.env*
 .venv
 env/
 venv/
@@ -121,6 +121,7 @@ venv.bak/
 dynamodb-data/
 redis-data/
 node_modules/
+staging/
 **/node_modules/
 tmp/*
 tmp*
@@ -130,7 +131,12 @@ tmp*
 webpack-stats.*.json
 package-lock.json
 **/package-lock.json
-yarn.lock
-**/yarn.lock
 .setupmeta.version
 consoleme/templates/*
+
+# Local Build Artifact
+consoleme.tar.gz
+
+# Config
+consoleme.yaml
+

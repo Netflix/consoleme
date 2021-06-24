@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Button, Form, Icon, Message, Segment } from "semantic-ui-react";
 import MonacoEditor from "react-monaco-editor";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
@@ -6,9 +6,9 @@ import {
   getMonacoCompletions,
   getMonacoTriggerCharacters,
 } from "../../helpers/utils";
-import templateOptions from "./policyTemplates";
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import { useAuth } from "../../auth/AuthProviderDefault";
+import "./PolicyMonacoEditor.css";
 
 monaco.languages.registerCompletionItemProvider("json", {
   triggerCharacters: getMonacoTriggerCharacters(),
@@ -25,6 +25,52 @@ const editorOptions = {
   },
   scrollBeyondLastLine: false,
   automaticLayout: true,
+};
+
+const lintingErrorMapping = {
+  MUTE: "infoError",
+  INFO: "infoError",
+  LOW: "infoError",
+  MEDIUM: "warningError",
+  HIGH: "criticalError",
+  CRITICAL: "criticalError",
+};
+
+const CHECK_POLICY_TIMEOUT = 500;
+
+const clearEditorDecorations = ({ editor }) => {
+  editor
+    .getModel()
+    .getAllDecorations()
+    .filter((el) =>
+      ["criticalError", "warningError", "infoError"].includes(
+        el.options.className
+      )
+    )
+    .map((el) => el.reset());
+};
+
+const addEditorDecorations = ({ editor, errors }) => {
+  editor.deltaDecorations(
+    [],
+    errors.map((error) => ({
+      range: new monaco.Range(
+        (error.location && error.location.line) || 1,
+        1,
+        (error.location && error.location.line) || 1,
+        // Hardcoded has we don't have the endline number
+        Number.MAX_VALUE
+      ),
+      options: {
+        isWholeLine: false,
+        className: lintingErrorMapping[error.severity] || "infoError",
+        marginClassName: "warningIcon",
+        hoverMessage: {
+          value: `[${error.severity}] ${error.title} - ${error.detail} - ${error.description}`,
+        },
+      },
+    }))
+  );
 };
 
 // Stub lint error callback, will be setup later
@@ -54,9 +100,12 @@ export const PolicyMonacoEditor = ({
   policy,
   updatePolicy,
   deletePolicy,
+  enableLinting = true,
 }) => {
-  const { user } = useAuth();
+  const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
+  const editorRef = useRef();
+  const timeout = useRef(null);
 
   const policyDocumentOriginal = JSON.stringify(
     policy.PolicyDocument,
@@ -65,6 +114,40 @@ export const PolicyMonacoEditor = ({
   );
   const [policyDocument, setPolicyDocument] = useState(policyDocumentOriginal);
   const [error, setError] = useState("");
+
+  const policyCheck = useCallback(
+    async (policy) => {
+      if (context === "inline_policy") {
+        const errors = await sendRequestCommon(
+          policy,
+          "/api/v2/policies/check",
+          "post"
+        );
+        if (errors && typeof errors == "object" && editorRef.current) {
+          // Clear all existing decorations otherwise they will add up
+          clearEditorDecorations({ editor: editorRef.current.editor });
+          addEditorDecorations({ editor: editorRef.current.editor, errors });
+        }
+      }
+    },
+    [sendRequestCommon, context]
+  );
+
+  useEffect(() => {
+    // Avoid linting errors if disabled
+    if (!enableLinting) {
+      return false;
+    }
+    timeout.current = setTimeout(() => {
+      if (policyDocument.length) {
+        policyCheck(policyDocument);
+      }
+    }, CHECK_POLICY_TIMEOUT);
+
+    return () => {
+      clearInterval(timeout.current);
+    };
+  }, [policyCheck, policyDocument, enableLinting]);
 
   useEffect(() => {
     setPolicyDocument(policyDocumentOriginal);
@@ -120,6 +203,7 @@ export const PolicyMonacoEditor = ({
         }}
       >
         <MonacoEditor
+          ref={editorRef}
           height="540px"
           language="json"
           theme="vs-dark"
@@ -160,7 +244,8 @@ export const PolicyMonacoEditor = ({
         />
         {
           // Show delete button for inline policies only
-          context === "inline_policy" ? (
+          context === "inline_policy" &&
+          user?.authorization?.can_edit_policies ? (
             <>
               <Button.Or />
               <Button
@@ -178,13 +263,20 @@ export const PolicyMonacoEditor = ({
 };
 
 export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
-  const { user } = useAuth();
+  const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
+  const editorRef = useRef();
+  const timeout = useRef(null);
 
   const [newPolicyName, setNewPolicyName] = useState("");
-  const [policyDocument, setPolicyDocument] = useState(
-    JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")
+  const [templateOptions, setTemplateOptions] = useState([
+    { key: "default", text: "", value: "{}" },
+  ]);
+  const [templateDefaultKey, setTemplateDefaultKey] = useState(
+    "Default Policy"
   );
+
+  const [policyDocument, setPolicyDocument] = useState("");
   const [error, setError] = useState("");
   const [policyNameError, setpolicyNameError] = useState(false);
   const policyNameRegex = /^[\w+=,.@-]+$/;
@@ -192,6 +284,52 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const onEditChange = (value) => {
     setPolicyDocument(value);
   };
+
+  const policyCheck = useCallback(
+    async (policy) => {
+      const errors = await sendRequestCommon(
+        policy,
+        "/api/v2/policies/check",
+        "post"
+      );
+      if (errors && typeof errors == "object" && editorRef.current) {
+        // Clear all existing decorations otherwise they will add up
+        clearEditorDecorations({ editor: editorRef.current.editor });
+        addEditorDecorations({ editor: editorRef.current.editor, errors });
+      }
+    },
+    [sendRequestCommon]
+  );
+
+  useEffect(() => {
+    timeout.current = setTimeout(() => {
+      if (policyDocument.length) {
+        policyCheck(policyDocument);
+      }
+    }, CHECK_POLICY_TIMEOUT);
+
+    return () => {
+      clearInterval(timeout.current);
+    };
+  }, [policyCheck, policyDocument]);
+
+  useEffect(() => {
+    (async () => {
+      const data = await sendRequestCommon(
+        null,
+        "/api/v2/permission_templates/",
+        "get"
+      );
+      if (!data) {
+        return;
+      }
+      setTemplateOptions(data.permission_templates);
+      setPolicyDocument(
+        JSON.stringify(JSON.parse(templateOptions[0].value), null, "\t")
+      );
+      setTemplateDefaultKey(templateOptions[0].key);
+    })();
+  }, []); // eslint-disable-line
 
   onLintError = (lintErrors) => {
     if (lintErrors.length > 0) {
@@ -228,6 +366,8 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   };
 
   const onTemplateChange = (e, { value }) => {
+    clearTimeout(timeout);
+    clearEditorDecorations({ editor: editorRef.current.editor });
     setPolicyDocument(JSON.stringify(JSON.parse(value || ""), null, "\t"));
   };
 
@@ -249,7 +389,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
               selection
               onChange={onTemplateChange}
               options={templateOptions}
-              defaultValue={templateOptions[0].key}
+              defaultValue={templateDefaultKey}
             />
           </Form.Group>
         </Form>
@@ -262,6 +402,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
         }}
       >
         <MonacoEditor
+          ref={editorRef}
           height="540px"
           language="json"
           theme="vs-dark"
@@ -300,6 +441,34 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
           onClick={() => setIsNewPolicy(false)}
         />
       </Button.Group>
+    </>
+  );
+};
+
+export const ReadOnlyPolicyMonacoEditor = ({ policy }) => {
+  const readOnlyEditorOptions = {
+    ...editorOptions,
+    readOnly: true,
+  };
+  return (
+    <>
+      <Segment
+        attached
+        style={{
+          border: 0,
+          padding: 0,
+        }}
+      >
+        <MonacoEditor
+          height="540px"
+          language="json"
+          theme="vs-dark"
+          value={JSON.stringify(policy, null, "\t")}
+          options={readOnlyEditorOptions}
+          editorDidMount={editorDidMount}
+          textAlign="center"
+        />
+      </Segment>
     </>
   );
 };

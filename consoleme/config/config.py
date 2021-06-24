@@ -5,23 +5,28 @@ import logging
 import os
 import socket
 import sys
+import threading
 import time
 from logging import LoggerAdapter, LogRecord
 from threading import Timer
 from typing import Any, Dict, List, Optional, Union
 
+import boto3
+import botocore.exceptions
 import logmatic
 import ujson as json
 import yaml
 from asgiref.sync import async_to_sync
 from pytz import timezone
 
+from consoleme.lib.aws_secret_manager import get_aws_secret
 from consoleme.lib.plugins import get_plugin_by_name
 
 config_plugin_entrypoint = os.environ.get(
     "CONSOLEME_CONFIG_ENTRYPOINT", "default_config"
 )
 config_plugin = get_plugin_by_name(config_plugin_entrypoint)
+main_exit_flag = threading.Event()
 
 
 def dict_merge(dct: dict, merge_dct: dict):
@@ -59,7 +64,48 @@ class Configuration(object):
         self.config = {}
         self.log = None
 
-    def load_config_from_dynamo(self):
+    @staticmethod
+    def raise_if_invalid_aws_credentials():
+        try:
+            boto3.client("sts").get_caller_identity()
+        except botocore.exceptions.NoCredentialsError:
+            raise Exception(
+                "We were unable to detect valid AWS credentials. ConsoleMe needs valid AWS credentials to "
+                "run.\n\n"
+                "For local development: Provide credentials via environment variables, in your "
+                "~/.aws/credentials file, or via Weep EC2 IMDS / ECS credential provider emulation.\n\n"
+                "For a production configuration, please attach an IAM role to your instance(s) or container(s) through"
+                "AWS.\n\n"
+                "For more information, see how the Python AWS SDK retrieves credentials here: "
+                "https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html#configuring-credentials"
+            )
+
+    def load_config_from_dynamo(self, ddb=None, red=None):
+        if not ddb:
+            from consoleme.lib.dynamo import UserDynamoHandler
+
+            ddb = UserDynamoHandler()
+        if not red:
+            from consoleme.lib.redis import RedisHandler
+
+            red = RedisHandler().redis_sync()
+
+        dynamic_config = refresh_dynamic_config(ddb)
+        if dynamic_config and dynamic_config != self.config.get("dynamic_config"):
+            red.set(
+                "DYNAMIC_CONFIG_CACHE",
+                json.dumps(dynamic_config),
+            )
+            self.get_logger("config").debug(
+                {
+                    "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+                    "message": "Dynamic configuration changes detected and loaded",
+                    "dynamic_config": dynamic_config,
+                }
+            )
+            self.config["dynamic_config"] = dynamic_config
+
+    def load_config_from_dynamo_bg_thread(self):
         """If enabled, we can load a configuration dynamically from Dynamo at a certain time interval. This reduces
         the need for code redeploys to make configuration changes"""
         from consoleme.lib.dynamo import UserDynamoHandler
@@ -68,40 +114,85 @@ class Configuration(object):
         ddb = UserDynamoHandler()
         red = RedisHandler().redis_sync()
 
-        while True:
-            dynamic_config = refresh_dynamic_config(ddb)
-            if dynamic_config and dynamic_config != self.config.get("dynamic_config"):
-                red.set(
-                    "DYNAMIC_CONFIG_CACHE",
-                    json.dumps(dynamic_config),
-                )
-                self.get_logger("config").debug(
-                    {
-                        "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
-                        "message": "Dynamic configuration changes detected and loaded",
-                        "dynamic_config": dynamic_config,
-                    }
-                )
-                self.config["dynamic_config"] = dynamic_config
-            time.sleep(self.get("dynamic_config.dynamo_load_interval", 60))
+        while threading.main_thread().is_alive():
+            self.load_config_from_dynamo(ddb, red)
+            # Wait till main exit flag is set OR a fixed timeout
+            if main_exit_flag.wait(
+                timeout=self.get("dynamic_config.dynamo_load_interval", 60)
+            ):
+                break
+
+    def __set_flag_on_main_exit(self):
+        # while main thread is active, do nothing
+        while threading.main_thread().is_alive():
+            time.sleep(1)
+        # Main thread exited, signal to other threads
+        main_exit_flag.set()
+
+    def purge_redislite_cache(self):
+        """
+        Purges redislite cache in primary DB periodically. This will force a cache refresh, and it is
+        convenient for cases where you cannot securely run shared Redis (ie: AWS AppRunner)
+        """
+        if not self.get("redis.use_redislite"):
+            return
+        from consoleme.lib.redis import RedisHandler
+
+        red = RedisHandler().redis_sync()
+        while threading.main_thread().is_alive():
+            red.flushdb()
+            # Wait till main exit flag is set OR a fixed timeout
+            if main_exit_flag.wait(
+                timeout=self.get("redis.purge_redislite_cache_interval", 1800)
+            ):
+                break
 
     async def merge_extended_paths(self, extends, dir_path):
         for s in extends:
-            try:
-                extend_path = os.path.join(dir_path, s)
-                with open(extend_path, "r") as ymlfile:
-                    extend_config = yaml.safe_load(ymlfile)
-                dict_merge(self.config, extend_config)
-                if extend_config.get("extends"):
-                    await self.merge_extended_paths(
-                        extend_config.get("extends"), dir_path
+            extend_config = {}
+            # This decode and YAML-load a string stored in AWS Secrets Manager
+            if s.startswith("AWS_SECRETS_MANAGER:"):
+                secret_name = "".join(s.split("AWS_SECRETS_MANAGER:")[1:])
+                extend_config = yaml.safe_load(
+                    get_aws_secret(
+                        secret_name, os.environ.get("EC2_REGION", "us-east-1")
                     )
-            except FileNotFoundError:
-                logging.error(f"Unable to open file: {s}", exc_info=True)
+                )
+            else:
+                try:
+                    extend_path = os.path.join(dir_path, s)
+                    with open(extend_path, "r") as ymlfile:
+                        extend_config = yaml.safe_load(ymlfile)
+                except FileNotFoundError:
+                    logging.error(f"Unable to open file: {s}", exc_info=True)
 
-    async def load_config(self):
+            dict_merge(self.config, extend_config)
+            if extend_config.get("extends"):
+                await self.merge_extended_paths(extend_config.get("extends"), dir_path)
+
+    def reload_config(self):
+        # We don't want to start additional background threads when we're reloading static configuration.
+        while threading.main_thread().is_alive():
+            async_to_sync(self.load_config)(
+                allow_automatically_reload_configuration=False,
+                allow_start_background_threads=False,
+            )
+            if not self.get("config.automatically_reload_configuration"):
+                break
+            # Wait till main exit flag is set OR a fixed timeout
+            if main_exit_flag.wait(
+                timeout=self.get("dynamic_config.reload_static_config_interval", 60)
+            ):
+                break
+
+    async def load_config(
+        self,
+        allow_automatically_reload_configuration=True,
+        allow_start_background_threads=True,
+    ):
         """Load configuration from the location given to us by config_plugin"""
         path = config_plugin.get_config_location()
+
         try:
             with open(path, "r") as ymlfile:
                 self.config = yaml.safe_load(ymlfile)
@@ -117,13 +208,33 @@ class Configuration(object):
         if extends:
             await self.merge_extended_paths(extends, dir_path)
 
-        if self.get("config.load_from_dynamo", True):
-            Timer(0, self.load_config_from_dynamo, ()).start()
+        if self.config.get("environment") != "test":
+            self.raise_if_invalid_aws_credentials()
 
-        if self.get("config.run_recurring_internal_tasks"):
-            Timer(
-                0, config_plugin.internal_functions, kwargs={"cfg": self.config}
-            ).start()
+        # We use different Timer intervals for our background threads to prevent logger objects from clashing, which
+        # could cause duplicate log entries.
+        if allow_start_background_threads:
+            Timer(0, self.__set_flag_on_main_exit, ()).start()
+
+        if allow_start_background_threads and self.get("redis.use_redislite"):
+            t = Timer(1, self.purge_redislite_cache, ())
+            t.start()
+
+        if allow_start_background_threads and self.get("config.load_from_dynamo", True):
+            t = Timer(2, self.load_config_from_dynamo_bg_thread, ())
+            t.start()
+
+        if allow_start_background_threads and self.get(
+            "config.run_recurring_internal_tasks"
+        ):
+            t = Timer(3, config_plugin.internal_functions, kwargs={"cfg": self.config})
+            t.start()
+
+        if allow_automatically_reload_configuration and self.get(
+            "config.automatically_reload_configuration"
+        ):
+            t = Timer(4, self.reload_config, ())
+            t.start()
 
     def get(
         self, key: str, default: Optional[Union[List[str], int, bool, str, Dict]] = None
@@ -223,9 +334,27 @@ class Configuration(object):
             "spectator.HttpClient": "WARNING",
             "spectator.Registry": "WARNING",
             "urllib3": "ERROR",
+            "redislite.client": "WARNING",
+            "redislite.configuration": "WARNING",
         }
         for logger, level in self.get("logging_levels", default_logging_levels).items():
             logging.getLogger(logger).setLevel(level)
+
+    def get_aws_region(self):
+        region_checks = [
+            # check if set through ENV vars
+            os.environ.get("EC2_REGION"),
+            os.environ.get("AWS_REGION"),
+            os.environ.get("AWS_DEFAULT_REGION"),
+            # else check if set in config or in boto already
+            boto3.DEFAULT_SESSION.region_name if boto3.DEFAULT_SESSION else None,
+            boto3.Session().region_name,
+            boto3.client("s3").meta.region_name,
+            "us-east-1",
+        ]
+        for region in region_checks:
+            if region:
+                return region
 
 
 class ContextFilter(logging.Filter):
@@ -248,7 +377,7 @@ get_logger = CONFIG.get_logger
 CONFIG.set_logging_levels()
 
 values = CONFIG.config
-region = os.environ.get("EC2_REGION", "us-east-1")
+region = CONFIG.get_aws_region()
 hostname = socket.gethostname()
 api_spec = {}
 dir_ref = dir

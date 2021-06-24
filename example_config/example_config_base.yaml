@@ -1,3 +1,7 @@
+# Warning: The following configuration file is an example, and it is insecure by default. Please carefully
+# review and change values accordingly before deploying to a production environment. You are responsible
+# for your deployment.
+
 # Enter your team's e-mail address here. This e-mail will be used as the default approvers of IAM policy requests
 application_admin: consoleme_admins@example.com
 
@@ -23,13 +27,21 @@ tornado:
 #  "123456789013": prod
 #  "123456789014": test
 
+# ConsoleMe can cache account, org structure, and SCPs from AWS Organizations in one or more accounts
 #cache_accounts_from_aws_organizations:
 #  # This is the account ID of your AWS organizations master
-#  organizations_master_account_id: "123456789012"
-#  # This is the name of the role that consoleme will attempt to assume on your Organizations master account to retrieve
-#  # account information. Ensure that ConsoleMe can assume this role, and that this role has the permission:
-#  # organizations:listaccounts
-#  organizations_master_role_to_assume: "ConsoleMe"
+#  - organizations_master_account_id: "123456789012"
+#    # This is the name of the role that consoleme will attempt to assume on your Organizations master account to retrieve
+#    # account information. Ensure that ConsoleMe can assume this role, and that this role has the permissions:
+#    # organizations:DescribeAccount
+#    # organizations:DescribeOrganizationalUnit
+#    # organizations:DescribePolicy
+#    # organizations:ListAccounts
+#    # organizations:ListChildren
+#    # organizations:ListPolicies
+#    # organizations:ListRoots
+#    # organizations:ListTargetsForPolicy
+#    organizations_master_role_to_assume: "ConsoleMe"
 
 #retrieve_accounts_from_swag:
 #  base_url: 'https://your_swag_url/'
@@ -55,15 +67,11 @@ cloud_credential_authorization_mapping:
 
 aws:
   issuer: YourCompany
+  region: "us-east-1"
 
 celery:
   # Some jobs should only run in one region. The `active_region` key should define your primary region.
   active_region: us-west-2
-  # celery.sync_regions specifies which regions to sync resources from, such as SQS queues and SNS topics
-  sync_regions:
-    - us-east-1
-    - us-west-2
-    - eu-west-1
 
 # If you want to retrieve credentials through mutual TLS, you'll need to use something fronting ConsoleMe to do the
 # certificate validation. It should pass down a "Success" header, and a header with the certificate. You'll need to
@@ -103,16 +111,18 @@ support_contact: consoleme-support@example.com
 support_chat_url: https://www.example.com/slack/channel
 documentation_page: https://github.com/Netflix/consoleme/
 
-plugins:
-  auth: default_auth
-  aws: default_aws
-  group_mapping: default_group_mapping
-  internal_celery_tasks: default_celery_tasks
-  internal_celery_tasks_functions: default_celery_tasks_functions
-  metrics: default_metrics
-  internal_config: config
-  internal_routes: default_internal_routes
-  internal_policies: default_policies
+# If you wish to override the entry-points to any of the default plugins with your own
+# plugin set that you `pip install`ed into ConsoleMe, you can modify this configuration to point to the applicable
+# entry point
+#plugins:
+#  auth: default_auth
+#  aws: default_aws
+#  group_mapping: default_group_mapping
+#  internal_celery_tasks: default_celery_tasks
+#  metrics: default_metrics
+#  internal_config: config
+#  internal_routes: default_internal_routes
+#  internal_policies: default_policies
 
 logging_levels:
   asyncio: WARNING
@@ -145,506 +155,33 @@ logging_levels:
 #          - https://provider.example.com
 
 # Note: Do not put anything sensitive in the self_service_iam key. This will be exposed to the frontend UI
-self_service_iam:
-  permissions_map:
-    s3:
-      text: S3 Bucket
-      description: S3 Permissions
-      inputs:
-        - name: resource_arn
-          type: typeahead_input
-          text: Bucket Name
-          required: true
-          typeahead_endpoint: /policies/typeahead?resource=s3&show_full_arn_for_s3_buckets=true&search={query}
-        - name: bucket_prefix
-          type: text_input
-          text: Prefix (Folder under S3 that you need access to).
-          required: true
-          default: /*
-      action_map:
-        - name: list
-          text: List
-          permissions:
-            - s3:ListBucket
-            - s3:ListBucketVersions
-        - name: get
-          text: Get
-          permissions:
-            - s3:GetObject
-            - s3:GetObjectTagging
-            - s3:GetObjectVersion
-            - s3:GetObjectVersionTagging
-            - s3:GetObjectAcl
-            - s3:GetObjectVersionAcl
-        - name: put
-          text: Put
-          permissions:
-            - s3:PutObject
-            - s3:PutObjectTagging
-            - s3:PutObjectVersionTagging
-            - s3:ListMultipartUploadParts*
-            - s3:AbortMultipartUpload
-        - name: delete
-          text: Delete
-          permissions:
-            - s3:DeleteObject
-            - s3:DeleteObjectTagging
-            - s3:DeleteObjectVersion
-            - s3:DeleteObjectVersionTagging
-    sqs:
-      text: SQS Queue
-      description: ""
-      inputs:
-        - name: resource_arn
-          type: typeahead_input
-          text: Queue ARN
-          required: true
-          typeahead_endpoint: /policies/typeahead?resource=sqs&search={query}
-      action_map:
-        - name: send_messages
-          text: Send Message (Queue Producer)
-          permissions:
-            - sqs:GetQueueAttributes
-            - sqs:GetQueueUrl
-            - sqs:SendMessage
-        - name: receive_messages
-          text: Receive/Delete Messages (Queue Consumer)
-          permissions:
-            - sqs:GetQueueAttributes
-            - sqs:GetQueueUrl
-            - sqs:ReceiveMessage
-            - sqs:DeleteMessage
-        - name: set_queue_attributes
-          text: Set Queue Attributes
-          permissions:
-            - sqs:SetQueueAttributes
-        - name: purge_messages
-          text: Purge Queue (You monster!)
-          permissions:
-            - sqs:PurgeQueue
-    sns:
-      text: SNS Topic
-      description: ""
-      inputs:
-        - name: resource_arn
-          type: typeahead_input
-          text: Topic ARN
-          required: true
-          typeahead_endpoint: /policies/typeahead?resource=sns&search={query}
-      action_map:
-        - name: get_topic_attributes
-          text: Get Topic Attributes
-          permissions:
-            - sns:GetEndpointAttributes
-            - sns:GetTopicAttributes
-        - name: publish
-          text: Publish
-          permissions:
-            - sns:Publish
-        - name: subscribe
-          text: Subscribe
-          permissions:
-            - sns:Subscribe
-            - sns:ConfirmSubscription
-        - name: unsubscribe
-          text: Unsubscribe
-          permissions:
-            - sns:Unsubscribe
-    rds:
-      text: RDS
-      description: ""
-      inputs:
-        - name: resource_arn
-          type: text_input
-          text: EC2 resource you need access to
-          required: true
-          default: "arn:aws:iam::{account_id}:role/rds-monitoring-role"
-      action_map:
-        - name: passrole
-          text: PassRole
-          permissions:
-            - iam:PassRole
-    ec2:
-      text: EC2
-      description: ""
-      inputs:
-        - name: resource_arn
-          type: text_input
-          text: EC2 resource you need access to
-          required: true
-          default: "*"
-      action_map:
-        - name: volmount
-          text: VolMount
-          permissions:
-            - ec2:attachvolume
-            - ec2:createvolume
-            - ec2:describelicenses
-            - ec2:describevolumes
-            - ec2:detachvolume
-            - ec2:reportinstancestatus
-            - ec2:resetsnapshotattribute
-        - name: ipv6
-          text: Enable IPv6
-          permissions:
-            - ec2:AssignIpv6Addresses
-    route53:
-      text: Route53
-      description: ""
-      inputs:
-        - name: resource_arn
-          type: text_input
-          text: Route53 Domain you need access to
-          required: true
-          default: "*"
-      action_map:
-        - name: list_records
-          text: List Records
-          permissions:
-            - route53:listresourcerecordsets
-        - name: change_records
-          text: Change Records
-          permissions:
-            - route53:changeresourcerecordsets
-    sts:
-      text: STS AssumeRole
-      description: ""
-      inputs:
-        - name: resource_arn
-          type: typeahead_input
-          text: Role ARN that you wish to assume
-          required: true
-          typeahead_endpoint: /policies/typeahead?resource=iam_arn&search={query}
-      action_map:
-        - name: assume_role
-          text: Assume Role
-          permissions:
-            - sts:AssumeRole
-    ses:
-      text: SES - Send Email
-      inputs:
-        - name: from_address
-          type: text_input
-          text: Email Address to send from
-          required: true
-          default: "emailaddress@example.com"
-        - name: resource_arn
-          type: text_input
-          text: ARN of the resource to send from
-          required: true
-      condition:
-        StringLike:
-          ses:FromAddress: "{from_address}"
-      action_map:
-        - name: send_email
-          text: Send Email
-          permissions:
-            - ses:SendEmail
-            - ses:SendRawEmail
-    crud_lookup:
-      text: Other
-      description: |-
-        Define the service (rds, route53, rekognition, etc), the resource (An ARN or a wildcard), and the list of actions
-        (List, Read, Write, Permissions Management, Tagging) that you need access to. If you know the specific IAM
-        permissions you need, use "Advanced Mode" from the dropdown instead.
-      inputs:
-        - name: service_name
-          type: typeahead_input
-          text: Service (s3, sqs, sns, rekognition, etc)
-          required: true
-          typeahead_endpoint: /api/v1/policyuniverse/autocomplete/?only_filter_services=true&prefix={query}
-        - name: resource_arn
-          type: text_input
-          text: Resource ARN or Wildcard (*)
-          required: true
-          default: "*"
-      action_map:
-        - name: list
-          text: List
-          permissions:
-            - List
-        - name: read
-          text: Read
-          permissions:
-            - Read
-        - name: write
-          text: Write
-          permissions:
-            - Write
-        - name: permissions-management
-          text: Permissions Management
-          permissions:
-            - Permissions management
-        - name: tagging
-          text: Tagging
-          permissions:
-            - Tagging
+#self_service_iam:
+#   Reference the default values provided in consoleme/lib/defaults.py as SELF_SERVICE_IAM_DEFAULTS
 
 # In your deployment, you'll probably want to move these to Dynamic Configuration at
 # https://YOUR_CONSOLEME_DOMAIN/config
-permission_templates:
-  default:
-    default: true
-    label: Default Template
-    policy: |-
-      {
-           "Statement":[
-               {
-                   "Action":[
-                       ""
-                   ],
-                   "Effect":"Allow",
-                   "Resource": [
-                       ""
-                   ]
-               }
-           ],
-           "Version":"2012-10-17"
-       }
-  s3write:
-    label: S3 Write Access
-    policy: |-
-      {
-          "Statement":[
-              {
-                  "Action":[
-                      "s3:ListBucket",
-                      "s3:GetObject",
-                      "s3:PutObject",
-                      "s3:DeleteObject"
-                  ],
-                  "Effect":"Allow",
-                  "Resource":[
-                      "arn:aws:s3:::BUCKET_NAME",
-                      "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/\*"
-                  ],
-                  "Sid":"s3readwrite"
-              }
-          ]
-      }
-  s3read:
-    label: S3 Read Access
-    policy: |-
-      {
-          "Statement":[
-              {
-                  "Action":[
-                      "s3:ListBucket",
-                      "s3:GetObject"
-                  ],
-                  "Effect":"Allow",
-                  "Resource":[
-                      "arn:aws:s3:::BUCKET_NAME",
-                      "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/\*"
-                  ],
-                  "Sid":"s3readonly"
-              }
-          ]
-      }
-  sqs:
-    label: SQS
-    policy: |-
-      {
-        "Statement": [
-          {
-            "Action": [
-              "sqs:ReceiveMessage",
-              "sqs:SendMessage",
-              "sqs:DeleteMessage",
-              "sqs:GetQueueUrl",
-              "sqs:GetQueueAttributes"
-            ],
-            "Effect": "Allow",
-            "Resource": "QUEUE_ARN"
-          }
-        ]
-      }
-  sns:
-    label: SNS
-    policy: |-
-      {
-        "Statement": [
-          {
-            "Action": [
-              "sns:Publish",
-              "sns:Subscribe",
-              "sns:Unsubscribe"
-            ],
-            "Effect": "Allow",
-            "Resource": "TOPIC_ARN"
-          }
-        ]
-      }
-  rdspassrole:
-    label: RDS Monitoring PassRole
-    policy: |-
-      {
-        "Statement": [
-          {
-            "Action": [
-              "iam:PassRole"
-            ],
-            "Effect": "Allow",
-            "Resource": "arn:aws:iam::<ACCOUNTID>:role/rds-monitoring-role"
-          }
-        ]
-      }
-  ses:
-    label: SES
-    policy: |-
-      {
-          "Statement": [
-              {
-                  "Action": [
-                      "ses:SendEmail",
-                      "ses:SendRawEmail"
-                  ],
-                  "Effect": "Allow",
-                  "Resource": "arn:aws:ses:*:123456789012:identity/saasmail.netflix.com",
-                  "Condition": {
-                      "StringLike": {
-                          "ses:FromAddress": "SENDER@saasmail.netflix.com"
-                      }
-                  }
-              }
-          ]
-      }
-  sts:
-    label: STS - Assume role
-    policy: |-
-      {
-          "Statement": [
-              {
-                  "Action": [
-                      "sts:AssumeRole"
-                  ],
-                  "Effect": "Allow",
-                  "Resource": "arn:aws:iam::ACCOUNT_NUMBER:role/ROLE"
-              }
-          ]
-      }
-  route53:
-    label: Route53 List/Change Record Sets
-    policy: |-
-      {
-          "Statement": [
-              {
-                  "Action": [
-                      "route53:changeresourcerecordsets",
-                      "route53:listresourcerecordsets"
-                  ],
-                  "Resource": [
-                      "*"
-                  ],
-                  "Effect": "Allow"
-              }
-          ]
-      }
-  ec2_create_volume:
-    label: EC2 Volmount
-    policy: |-
-      {
-          "Statement": [
-              {
-                  "Action": [
-                      "ec2:attachvolume",
-                      "ec2:createvolume",
-                      "ec2:describelicenses",
-                      "ec2:describevolumes",
-                      "ec2:detachvolume",
-                      "ec2:reportinstancestatus",
-                      "ec2:resetsnapshotattribute"
-                  ],
-                  "Resource": [
-                      "*"
-                  ],
-                  "Effect": "Allow"
-              }
-          ]
-      }
-  put_cloudwatch_data:
-    label: Cloudwatch - putmetricdata
-    policy: |-
-      {
-          "Statement":[
-              {
-                  "Action":[
-                      "cloudwatch:putmetricdata"
-                  ],
-                  "Effect":"Allow",
-                  "Resource":[
-                      "*"
-                  ]
-              }
-          ],
-          "Version":"2012-10-17"
-      }
-  eni_auto_attach:
-    label: ENI - Auto attach
-    policy: |-
-      {
-          "Statement":[
-              {
-                  "Action":[
-                      "ec2:AttachNetworkInterface",
-                      "ec2:Describe*",
-                      "ec2:DetachNetworkInterface"
-                  ],
-                  "Effect":"Allow",
-                  "Resource":[
-                      "*"
-                  ],
-                  "Sid":"eniauto"
-              }
-          ],
-          "Version":"2012-10-17"
-      }
-  ec2_ipv6:
-    label: EC2 - AssignIpv6Addresses
-    policy: |-
-      {
-          "Statement":[
-              {
-                  "Action":[
-                      "ec2:AssignIpv6Addresses"
-                  ],
-                  "Effect":"Allow",
-                  "Resource":[
-                      "*"
-                  ]
-              }
-          ]
-      }
-  volmount:
-    label: EC2 - volmount
-    policy: |-
-      {
-          "Statement":[
-              {
-                  "Action":[
-                        "ec2:attachvolume",
-                        "ec2:createsnapshot",
-                        "ec2:createtags",
-                        "ec2:createvolume",
-                        "ec2:deletesnapshot",
-                        "ec2:describeinstances",
-                        "ec2:describetags",
-                        "ec2:describevolumes",
-                        "ec2:modifyinstanceattribute"
-                  ],
-                  "Effect":"Allow",
-                  "Resource":[
-                      "*"
-                  ]
-              }
-          ]
-      }
+#permission_templates:
+#   Reference the default values provided in consoleme/lib/defaults.py as PERMISSION_TEMPLATE_DEFAULTS
 
+# SES configuration is necessary for ConsoleMe to send e-mails to your users. ConsoleMe sends e-mails to notify
+# administrators and requesters about policy requests applicable to them.
 ses:
   support_reference: "Please contact us at consoleme@example.com if you have any questions or concerns."
   arn: "arn:aws:ses:us-east-1:123456789012:identity/example.com"
+  region: "us-west-2"
   consoleme:
     name: ConsoleMe
     sender: consoleme_test@example.com
+
+# Challenge URL authentication is used to authenticate users from CLI clients (like Weep).
 challenge_url:
   enabled: true
+
+# If you have read this far and modified the above config variables to production ready values
+# remove the below config variable, or switch it to false
+example_config:
+  is_example_config: true
+  title: "Warning:"
+  text: |-
+    This configuration has no authentication configured. Do not use in a production environment. Do not publicly expose this endpoint or your AWS environment will be compromised! Click [here](/generate_config) to generate a configuration.
+  routes: .*

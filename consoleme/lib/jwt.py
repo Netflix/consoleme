@@ -1,9 +1,21 @@
 from datetime import datetime, timedelta
+from secrets import token_urlsafe
 
 import jwt
 from asgiref.sync import sync_to_async
 
 from consoleme.config import config
+
+log = config.get_logger()
+
+jwt_secret = config.get("jwt_secret")
+if not jwt_secret:
+    jwt_secret = token_urlsafe(16)
+    log.error(
+        {
+            "message": "Configuration key `jwt.secret` is not set. Setting a random secret"
+        }
+    )
 
 
 async def generate_jwt_token(
@@ -13,9 +25,6 @@ async def generate_jwt_token(
     iat=datetime.utcnow(),
     exp=datetime.utcnow() + timedelta(hours=config.get("jwt.expiration_hours", 1)),
 ):
-    jwt_secret = config.get("jwt_secret")
-    if not jwt_secret:
-        raise Exception("'jwt_secret' configuration value is not set.")
     session = {
         "nbf": nbf,
         "iat": iat,
@@ -32,12 +41,8 @@ async def generate_jwt_token(
 
 
 async def validate_and_return_jwt_token(auth_cookie):
-    jwt_secret = config.get("jwt_secret")
-
-    if not jwt_secret:
-        raise Exception(f"{config.get('jwt_secret')} configuration value is not set.")
     try:
-        decoded_jwt = jwt.decode(auth_cookie, jwt_secret, algorithm="HS256")
+        decoded_jwt = jwt.decode(auth_cookie, jwt_secret, algorithms="HS256")
         email = decoded_jwt.get(config.get("jwt.attributes.email", "email"))
         groups = decoded_jwt.get(config.get("jwt.attributes.groups", "groups"), [])
         exp = decoded_jwt.get("exp")
@@ -48,6 +53,6 @@ async def validate_and_return_jwt_token(auth_cookie):
             "iat": decoded_jwt.get("iat"),
             "exp": exp,
         }
-    except (jwt.ExpiredSignatureError, jwt.InvalidSignatureError):
+    except (jwt.ExpiredSignatureError, jwt.InvalidSignatureError, jwt.DecodeError):
         # Force user to reauth.
         return False

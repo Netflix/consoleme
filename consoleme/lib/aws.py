@@ -3,37 +3,58 @@ import sys
 import time
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
+import boto3
 import pytz
 import sentry_sdk
 from asgiref.sync import sync_to_async
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 from cloudaux import CloudAux
 from cloudaux.aws.decorators import rate_limited
-from cloudaux.aws.s3 import get_bucket_policy, get_bucket_tagging
+from cloudaux.aws.s3 import (
+    get_bucket_location,
+    get_bucket_policy,
+    get_bucket_resource,
+    get_bucket_tagging,
+)
 from cloudaux.aws.sns import get_topic_attributes
 from cloudaux.aws.sqs import get_queue_attributes, get_queue_url, list_queue_tags
 from cloudaux.aws.sts import boto3_cached_conn
+from dateutil.parser import parse
 from deepdiff import DeepDiff
+from parliament import analyze_policy_string, enhance_finding
 from policy_sentry.util.arns import get_account_from_arn, parse_arn
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     BackgroundCheckNotPassedException,
+    InvalidInvocationArgument,
     MissingConfigurationValue,
 )
-from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
+from consoleme.lib.account_indexers.aws_organizations import (
+    retrieve_org_structure,
+    retrieve_scps_for_organization,
+)
+from consoleme.lib.cache import (
+    retrieve_json_data_from_redis_or_s3,
+    store_json_results_in_redis_and_s3,
+)
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hget
-from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
+from consoleme.models import (
+    CloneRoleRequestModel,
+    RoleCreationRequestModel,
+    ServiceControlPolicyArrayModel,
+    ServiceControlPolicyModel,
+)
 
 ALL_IAM_MANAGED_POLICIES: dict = {}
 ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
 
 log = config.get_logger(__name__)
-auth = get_plugin_by_name(config.get("plugins.auth"))()
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 @rate_limited()
@@ -158,9 +179,10 @@ async def get_all_iam_managed_policies_for_account(account_id):
         return json.loads(ALL_IAM_MANAGED_POLICIES.get(account_id, "[]"))
     else:
         s3_bucket = config.get("account_resource_cache.s3.bucket")
-        s3_key = config.get("account_resource_cache.s3.file", "").format(
-            resource_type="managed_policies", account_id=account_id
-        )
+        s3_key = config.get(
+            "account_resource_cache.s3.file",
+            "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+        ).format(resource_type="managed_policies", account_id=account_id)
         return await retrieve_json_data_from_redis_or_s3(
             s3_bucket=s3_bucket, s3_key=s3_key, default=[]
         )
@@ -186,9 +208,13 @@ async def get_resource_account(arn: str) -> str:
         await retrieve_json_data_from_redis_or_s3(
             redis_key=resources_from_aws_config_redis_key,
             s3_bucket=config.get("aws_config_cache_combined.s3.bucket"),
-            s3_key=config.get("aws_config_cache_combined.s3.file"),
+            s3_key=config.get(
+                "aws_config_cache_combined.s3.file",
+                "aws_config_cache_combined/aws_config_resource_cache_combined_v1.json.gz",
+            ),
             redis_data_type="hash",
         )
+
     resource_info = await redis_hget(resources_from_aws_config_redis_key, arn)
     if resource_info:
         return json.loads(resource_info).get("accountId", "")
@@ -260,7 +286,11 @@ async def get_resource_policies(
 
 
 async def generate_updated_resource_policy(
-    existing: Dict, principal_arn: str, resource_arns: List[str], actions: List[str]
+    existing: Dict,
+    principal_arn: str,
+    resource_arns: List[str],
+    actions: List[str],
+    include_resources: bool = True,
 ) -> Dict:
     """
 
@@ -268,6 +298,7 @@ async def generate_updated_resource_policy(
     :param principal_arn: the Principal ARN which wants access to the resource
     :param resource_arns: the Resource ARNs
     :param actions: The list of Actions to be added
+    :param include_resources: whether to include resources in the new statement or not
     :return: Dict: generated updated resource policy that includes a new statement for the listed actions
     """
     policy_dict = deepcopy(existing)
@@ -275,8 +306,9 @@ async def generate_updated_resource_policy(
         "Effect": "Allow",
         "Principal": {"AWS": [principal_arn]},
         "Action": list(set(actions)),
-        "Resource": resource_arns,
     }
+    if include_resources:
+        new_statement["Resource"] = resource_arns
     policy_dict["Statement"].append(new_statement)
     return policy_dict
 
@@ -308,12 +340,25 @@ async def fetch_assume_role_policy(role_arn: str) -> Optional[Dict]:
 
 
 async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> dict:
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
+    regions = await get_enabled_regions_for_account(account_id)
+    if region not in regions:
+        raise InvalidInvocationArgument(
+            f"Region '{region}' is not valid region on account '{account_id}'."
+        )
+
     arn: str = f"arn:aws:sns:{region}:{account_id}:{resource_name}"
     client = await sync_to_async(boto3_cached_conn)(
         "sns",
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=region,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        retry_max_attempts=2,
     )
 
     result: Dict = await sync_to_async(get_topic_attributes)(
@@ -321,21 +366,47 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
         assume_role=config.get("policies.role_name"),
         TopicArn=arn,
         region=region,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        retry_max_attempts=2,
     )
 
     tags: Dict = await sync_to_async(client.list_tags_for_resource)(ResourceArn=arn)
     result["TagSet"] = tags["Tags"]
     if not isinstance(result["Policy"], dict):
         result["Policy"] = json.loads(result["Policy"])
+
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        arn,
+        resource_name,
+        "AWS::SNS::Topic",
+        region=region,
+    )
     return result
 
 
 async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> dict:
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
+    regions = await get_enabled_regions_for_account(account_id)
+    if region not in regions:
+        raise InvalidInvocationArgument(
+            f"Region '{region}' is not valid region on account '{account_id}'."
+        )
+
     queue_url: str = await sync_to_async(get_queue_url)(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=region,
         QueueName=resource_name,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        retry_max_attempts=2,
     )
 
     result: Dict = await sync_to_async(get_queue_attributes)(
@@ -343,7 +414,12 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         assume_role=config.get("policies.role_name"),
         region=region,
         QueueUrl=queue_url,
-        AttributeNames=["Policy", "QueueArn"],
+        AttributeNames=["All"],
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        retry_max_attempts=2,
     )
 
     tags: Dict = await sync_to_async(list_queue_tags)(
@@ -351,13 +427,63 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         assume_role=config.get("policies.role_name"),
         region=region,
         QueueUrl=queue_url,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        retry_max_attempts=2,
     )
     result["TagSet"]: list = []
     result["QueueUrl"]: str = queue_url
     if tags:
         result["TagSet"] = [{"Key": k, "Value": v} for k, v in tags.items()]
-
+    if result.get("CreatedTimestamp"):
+        result["created_time"] = datetime.utcfromtimestamp(
+            int(result["CreatedTimestamp"])
+        ).isoformat()
+    if result.get("LastModifiedTimestamp"):
+        result["updated_time"] = datetime.utcfromtimestamp(
+            int(result["LastModifiedTimestamp"])
+        ).isoformat()
+    # Unfortunately, the queue_url we get from our `get_queue_url` call above doesn't match the ID of the queue in
+    # AWS Config, so we must hack our own.
+    queue_url_manual = (
+        f"https://sqs.{region}.amazonaws.com/{account_id}/{resource_name}"
+    )
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        queue_url_manual,
+        resource_name,
+        "AWS::SQS::Queue",
+        region=region,
+    )
     return result
+
+
+async def get_bucket_location_with_fallback(
+    bucket_name: str, account_id: str, fallback_region: str = config.region
+) -> str:
+    try:
+        bucket_location_res = await sync_to_async(get_bucket_location)(
+            Bucket=bucket_name,
+            account_number=account_id,
+            assume_role=config.get("policies.role_name"),
+            region=config.region,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
+            retry_max_attempts=2,
+        )
+        bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
+        if bucket_location == "EU":
+            bucket_location = "eu-west-1"
+        if bucket_location == "US":
+            bucket_location = "us-east-1"
+    except ClientError:
+        bucket_location = fallback_region
+        sentry_sdk.capture_exception()
+    return bucket_location
 
 
 async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
@@ -368,19 +494,48 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
     :return:
     """
 
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
     log_data: Dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "bucket_name": bucket_name,
         "account_id": account_id,
     }
     log.debug(log_data)
+    created_time = None
+    bucket_location = "us-east-1"
 
     try:
-        policy: Dict = await sync_to_async(get_bucket_policy)(
+        bucket_resource = await sync_to_async(get_bucket_resource)(
+            bucket_name,
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
+            retry_max_attempts=2,
+        )
+        created_time_stamp = bucket_resource.creation_date
+        if created_time_stamp:
+            created_time = created_time_stamp.isoformat()
+    except ClientError:
+        sentry_sdk.capture_exception()
+    try:
+        bucket_location = await get_bucket_location_with_fallback(
+            bucket_name, account_id
+        )
+        policy: Dict = await sync_to_async(get_bucket_policy)(
+            account_number=account_id,
+            assume_role=config.get("policies.role_name"),
+            region=bucket_location,
             Bucket=bucket_name,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
+            retry_max_attempts=2,
         )
     except ClientError as e:
         if "NoSuchBucketPolicy" in str(e):
@@ -391,8 +546,13 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
         tags: Dict = await sync_to_async(get_bucket_tagging)(
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
-            region=config.region,
+            region=bucket_location,
             Bucket=bucket_name,
+            sts_client_kwargs=dict(
+                region_name=config.region,
+                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            ),
+            retry_max_attempts=2,
         )
     except ClientError as e:
         if "NoSuchTagSet" in str(e):
@@ -400,7 +560,14 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
         else:
             raise
 
-    result: Dict = {**policy, **tags}
+    result: Dict = {**policy, **tags, "created_time": created_time}
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        bucket_name,
+        bucket_name,
+        "AWS::S3::Bucket",
+        region=bucket_location,
+    )
     result["Policy"] = json.loads(result["Policy"])
 
     return result
@@ -456,6 +623,7 @@ def apply_managed_policy_to_role(
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         session_name=session_name,
+        retry_max_attempts=2,
     )
 
     client.attach_role_policy(RoleName=role.get("RoleName"), PolicyArn=policy_arn)
@@ -535,6 +703,7 @@ async def fetch_role_details(account_id, role_name):
         region=config.region,
         assume_role=config.get("policies.role_name"),
         session_name="fetch_role_details",
+        retry_max_attempts=2,
     )
     try:
         iam_role = await sync_to_async(iam_resource.Role)(role_name)
@@ -569,7 +738,19 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
     }
     log.info(log_data)
 
-    default_trust_policy = config.get("user_role_creator.default_trust_policy")
+    default_trust_policy = config.get(
+        "user_role_creator.default_trust_policy",
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "ec2.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        },
+    )
     if default_trust_policy is None:
         raise MissingConfigurationValue(
             "Missing Default Assume Role Policy Configuration"
@@ -586,6 +767,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
         region=config.region,
         assume_role=config.get("policies.role_name"),
         session_name="create_role_" + username,
+        retry_max_attempts=2,
     )
     results = {"errors": 0, "role_created": "false", "action_results": []}
     try:
@@ -747,6 +929,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
         region=config.region,
         assume_role=config.get("policies.role_name"),
         session_name="clone_role_" + username,
+        retry_max_attempts=2,
     )
     results = {"errors": 0, "role_created": "false", "action_results": []}
     try:
@@ -965,7 +1148,8 @@ def role_newer_than_x_days(role: Dict, days: int) -> bool:
     :param days: number of days
     :return:
     """
-
+    if isinstance(role.get("CreateDate"), str):
+        role["CreateDate"] = parse(role.get("CreateDate"))
     role_age = datetime.now(tz=pytz.utc) - role.get("CreateDate")
     if role_age.days < days:
         return True
@@ -1005,3 +1189,320 @@ def get_service_from_arn(arn):
     """Given an ARN string, return the service """
     result = parse_arn(arn)
     return result["service"]
+
+
+async def get_enabled_regions_for_account(account_id: str) -> Set[str]:
+    """
+    Returns a list of regions enabled for an account based on an EC2 Describe Regions call. Can be overridden with a
+    global configuration of static regions (Configuration key: `celery.sync_regions`), or a configuration of specific
+    regions per account (Configuration key:  `get_enabled_regions_for_account.{account_id}`)
+    """
+    enabled_regions_for_account = config.get(
+        f"get_enabled_regions_for_account.{account_id}"
+    )
+    if enabled_regions_for_account:
+        return enabled_regions_for_account
+
+    celery_sync_regions = config.get("celery.sync_regions", [])
+    if celery_sync_regions:
+        return celery_sync_regions
+
+    client = await sync_to_async(boto3_cached_conn)(
+        "ec2",
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        read_only=True,
+        retry_max_attempts=2,
+    )
+
+    regions = await sync_to_async(client.describe_regions)()
+    return {r["RegionName"] for r in regions["Regions"]}
+
+
+async def access_analyzer_validate_policy(
+    policy: str, log_data, policy_type: str = "IDENTITY_POLICY"
+) -> List[Dict[str, Any]]:
+    try:
+        enhanced_findings = []
+        client = await sync_to_async(boto3.client)(
+            "accessanalyzer", region_name=config.region
+        )
+        access_analyzer_response = await sync_to_async(client.validate_policy)(
+            policyDocument=policy,
+            policyType=policy_type,  # ConsoleMe only supports identity policy analysis currently
+        )
+        for finding in access_analyzer_response.get("findings", []):
+            for location in finding.get("locations", []):
+                enhanced_findings.append(
+                    {
+                        "issue": finding.get("issueCode"),
+                        "detail": "",
+                        "location": {
+                            "line": location.get("span", {})
+                            .get("start", {})
+                            .get("line"),
+                            "column": location.get("span", {})
+                            .get("start", {})
+                            .get("column"),
+                            "filepath": None,
+                        },
+                        "severity": finding.get("findingType"),
+                        "title": finding.get("issueCode"),
+                        "description": finding.get("findingDetails"),
+                    }
+                )
+        return enhanced_findings
+    except (ParamValidationError, ClientError) as e:
+        log.error(
+            {
+                **log_data,
+                "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+                "message": "Error retrieving Access Analyzer data",
+                "policy": policy,
+                "error": str(e),
+            }
+        )
+        sentry_sdk.capture_exception()
+        return []
+
+
+async def parliament_validate_iam_policy(policy: str) -> List[Dict[str, Any]]:
+    analyzed_policy = await sync_to_async(analyze_policy_string)(policy)
+    findings = analyzed_policy.findings
+
+    enhanced_findings = []
+
+    for finding in findings:
+        enhanced_finding = await sync_to_async(enhance_finding)(finding)
+        enhanced_findings.append(
+            {
+                "issue": enhanced_finding.issue,
+                "detail": json.dumps(enhanced_finding.detail),
+                "location": enhanced_finding.location,
+                "severity": enhanced_finding.severity,
+                "title": enhanced_finding.title,
+                "description": enhanced_finding.description,
+            }
+        )
+    return enhanced_findings
+
+
+async def validate_iam_policy(policy: str, log_data: Dict):
+    parliament_findings: List = await parliament_validate_iam_policy(policy)
+    access_analyzer_findings: List = await access_analyzer_validate_policy(
+        policy, log_data, policy_type="IDENTITY_POLICY"
+    )
+    return parliament_findings + access_analyzer_findings
+
+
+async def get_all_scps(force_sync=False) -> Dict[str, List[ServiceControlPolicyModel]]:
+    """Retrieve a dictionary containing all Service Control Policies across organizations
+
+    Args:
+        force_sync: force a cache update
+    """
+    redis_key = config.get(
+        "cache_scps_across_organizations.redis.key.all_scps_key", "ALL_AWS_SCPS"
+    )
+    scps = await retrieve_json_data_from_redis_or_s3(
+        redis_key,
+        s3_bucket=config.get("cache_scps_across_organizations.s3.bucket"),
+        s3_key=config.get(
+            "cache_scps_across_organizations.s3.file", "scps/cache_scps_v1.json.gz"
+        ),
+        default={},
+        max_age=86400,
+    )
+    if force_sync or not scps:
+        scps = await cache_all_scps()
+    scp_models = {}
+    for account, org_scps in scps.items():
+        scp_models[account] = [ServiceControlPolicyModel(**scp) for scp in org_scps]
+    return scp_models
+
+
+async def cache_all_scps() -> Dict[str, Any]:
+    """Store a dictionary of all Service Control Policies across organizations in the cache"""
+    all_scps = {}
+    for organization in config.get("cache_accounts_from_aws_organizations", []):
+        org_account_id = organization.get("organizations_master_account_id")
+        role_to_assume = organization.get(
+            "organizations_master_role_to_assume", config.get("policies.role_name")
+        )
+        if not org_account_id:
+            raise MissingConfigurationValue(
+                "Your AWS Organizations Master Account ID is not specified in configuration. "
+                "Unable to sync accounts from "
+                "AWS Organizations"
+            )
+
+        if not role_to_assume:
+            raise MissingConfigurationValue(
+                "ConsoleMe doesn't know what role to assume to retrieve account information "
+                "from AWS Organizations. please set the appropriate configuration value."
+            )
+        org_scps = await retrieve_scps_for_organization(
+            org_account_id, role_to_assume=role_to_assume, region=config.region
+        )
+        all_scps[org_account_id] = org_scps
+    redis_key = config.get(
+        "cache_scps_across_organizations.redis.key.all_scps_key", "ALL_AWS_SCPS"
+    )
+    s3_bucket = None
+    s3_key = None
+    if config.region == config.get("celery.active_region", config.region) or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("cache_scps_across_organizations.s3.bucket")
+        s3_key = config.get(
+            "cache_scps_across_organizations.s3.file", "scps/cache_scps_v1.json.gz"
+        )
+    await store_json_results_in_redis_and_s3(
+        all_scps,
+        redis_key=redis_key,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+    )
+    return all_scps
+
+
+async def get_org_structure(force_sync=False) -> Dict[str, Any]:
+    """Retrieve a dictionary containing the organization structure
+
+    Args:
+        force_sync: force a cache update
+    """
+    redis_key = config.get(
+        "cache_organization_structure.redis.key.org_structure_key", "AWS_ORG_STRUCTURE"
+    )
+    org_structure = await retrieve_json_data_from_redis_or_s3(
+        redis_key,
+        s3_bucket=config.get("cache_organization_structure.s3.bucket"),
+        s3_key=config.get(
+            "cache_organization_structure.s3.file",
+            "scps/cache_org_structure_v1.json.gz",
+        ),
+        default={},
+    )
+    if force_sync or not org_structure:
+        org_structure = await cache_org_structure()
+    return org_structure
+
+
+async def cache_org_structure() -> Dict[str, Any]:
+    """Store a dictionary of the organization structure in the cache"""
+    all_org_structure = {}
+    for organization in config.get("cache_accounts_from_aws_organizations", []):
+        org_account_id = organization.get("organizations_master_account_id")
+        role_to_assume = organization.get(
+            "organizations_master_role_to_assume", config.get("policies.role_name")
+        )
+        if not org_account_id:
+            raise MissingConfigurationValue(
+                "Your AWS Organizations Master Account ID is not specified in configuration. "
+                "Unable to sync accounts from "
+                "AWS Organizations"
+            )
+
+        if not role_to_assume:
+            raise MissingConfigurationValue(
+                "ConsoleMe doesn't know what role to assume to retrieve account information "
+                "from AWS Organizations. please set the appropriate configuration value."
+            )
+        org_structure = await retrieve_org_structure(
+            org_account_id, region=config.region
+        )
+        all_org_structure.update(org_structure)
+    redis_key = config.get(
+        "cache_organization_structure.redis.key.org_structure_key", "AWS_ORG_STRUCTURE"
+    )
+    s3_bucket = None
+    s3_key = None
+    if config.region == config.get("celery.active_region", config.region) or config.get(
+        "environment"
+    ) in ["dev", "test"]:
+        s3_bucket = config.get("cache_organization_structure.s3.bucket")
+        s3_key = config.get(
+            "cache_organization_structure.s3.file",
+            "scps/cache_org_structure_v1.json.gz",
+        )
+    await store_json_results_in_redis_and_s3(
+        all_org_structure,
+        redis_key=redis_key,
+        s3_bucket=s3_bucket,
+        s3_key=s3_key,
+    )
+    return all_org_structure
+
+
+async def _is_member_of_ou(
+    identifier: str, ou: Dict[str, Any]
+) -> Tuple[bool, Set[str]]:
+    """Recursively walk org structure to determine if the account or OU is in the org and, if so, return all OUs of which the account or OU is a member
+
+    Args:
+        identifier: AWS account or OU ID
+        ou: dictionary representing the organization/organizational unit structure to search
+    """
+    found = False
+    ou_path = set()
+    for child in ou.get("Children", []):
+        if child.get("Id") == identifier:
+            found = True
+        elif child.get("Type") == "ORGANIZATIONAL_UNIT":
+            found, ou_path = await _is_member_of_ou(identifier, child)
+        if found:
+            ou_path.add(ou.get("Id"))
+            break
+    return found, ou_path
+
+
+async def get_organizational_units_for_account(identifier: str) -> Set[str]:
+    """Return a set of Organizational Unit IDs for a given account or OU ID
+
+    Args:
+        identifier: AWS account or OU ID
+    """
+    all_orgs = await get_org_structure()
+    organizational_units = set()
+    for org_id, org_structure in all_orgs.items():
+        found, organizational_units = await _is_member_of_ou(identifier, org_structure)
+        if found:
+            break
+    if not organizational_units:
+        log.warning("could not find account in organization")
+    return organizational_units
+
+
+async def _scp_targets_account_or_ou(
+    scp: ServiceControlPolicyModel, identifier: str, organizational_units: Set[str]
+) -> bool:
+    """Return True if the provided SCP targets the account or OU identifier provided
+
+    Args:
+        scp: Service Control Policy whose targets we check
+        identifier: AWS account or OU ID
+        organizational_units: set of IDs for OUs of which the identifier is a member
+    """
+    for target in scp.targets:
+        if target.target_id == identifier or target.target_id in organizational_units:
+            return True
+    return False
+
+
+async def get_scps_for_account_or_ou(identifier: str) -> ServiceControlPolicyArrayModel:
+    """Retrieve a list of Service Control Policies for the account or OU specified by the identifier
+
+    Args:
+        identifier: AWS account or OU ID
+    """
+    all_scps = await get_all_scps()
+    account_ous = await get_organizational_units_for_account(identifier)
+    scps_for_account = []
+    for org_account_id, scps in all_scps.items():
+        # Iterate through each org's SCPs and see if the provided account_id is in the targets
+        for scp in scps:
+            if await _scp_targets_account_or_ou(scp, identifier, account_ous):
+                scps_for_account.append(scp)
+    scps = ServiceControlPolicyArrayModel(__root__=scps_for_account)
+    return scps

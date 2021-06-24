@@ -27,6 +27,8 @@ const Issues = () => {
         <Table.Header>
           <Table.Row>
             <Table.HeaderCell>Error Call</Table.HeaderCell>
+            <Table.HeaderCell>Resource</Table.HeaderCell>
+            <Table.HeaderCell>Generated Policy</Table.HeaderCell>
             <Table.HeaderCell>Count</Table.HeaderCell>
           </Table.Row>
         </Table.Header>
@@ -36,6 +38,12 @@ const Issues = () => {
         rows.push(
           <Table.Row negative>
             <Table.Cell>{error.event_call}</Table.Cell>
+            <Table.Cell>{error.resource}</Table.Cell>
+            <Table.Cell>
+              {error.generated_policy
+                ? JSON.stringify(error.generated_policy)
+                : null}
+            </Table.Cell>
             <Table.Cell>{error.count}</Table.Cell>
           </Table.Row>
         );
@@ -66,7 +74,9 @@ const Issues = () => {
             Recent Permission Errors {errorLink()}
             <Header.Subheader>
               This section shows Cloudtrail permission errors discovered for
-              this resource in the last 24 hours.
+              this resource in the last 24 hours. If enabled, ConsoleMe will
+              generate a policy to try to resolve the issue. This is an alpha
+              feature.
             </Header.Subheader>
           </Header>
           <Table celled>

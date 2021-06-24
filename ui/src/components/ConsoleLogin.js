@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { Icon, Message } from "semantic-ui-react";
-import { delay, sendRequestCommon, setRecentRoles } from "../helpers/utils";
+import { delay, setRecentRoles } from "../helpers/utils";
+import { useAuth } from "../auth/AuthProviderDefault";
 
 const signOutUrl = "https://signin.aws.amazon.com/oauth?Action=logout";
 
@@ -9,6 +10,7 @@ const ConsoleLogin = () => {
   const { search } = useLocation();
   const { roleQuery } = useParams();
   const [errorMessage, setErrorMessage] = useState("");
+  const { sendRequestCommon } = useAuth();
 
   const onSignIn = useCallback(async () => {
     const roleData = await sendRequestCommon(
@@ -16,14 +18,20 @@ const ConsoleLogin = () => {
       "/api/v2/role_login/" + roleQuery + search,
       "get"
     );
+
+    if (!roleData) {
+      return;
+    }
+
     if (roleData.type === "redirect") {
       if (roleData.reason === "console_login") {
         setRecentRoles(roleData.role);
       }
       window.location.assign(roleData.redirect_url);
     }
+
     setErrorMessage(roleData.message);
-  }, [roleQuery, search]);
+  }, [roleQuery, search, sendRequestCommon]);
 
   useEffect(() => {
     (async () => {

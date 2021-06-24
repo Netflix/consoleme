@@ -7,14 +7,8 @@ import ujson as json
 from mock import patch
 from pydantic import ValidationError
 
-from consoleme.exceptions.exceptions import (
-    InvalidRequestParameter,
-    NoMatchingRequest,
-    Unauthorized,
-)
 from consoleme.models import (
     Action,
-    Action1,
     AssumeRolePolicyChangeModel,
     ChangeModelArray,
     Command,
@@ -22,6 +16,7 @@ from consoleme.models import (
     ExtendedRoleModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
+    PermissionsBoundaryChangeModel,
     PolicyRequestModificationRequestModel,
     PolicyRequestModificationResponseModel,
     RequestCreationResponse,
@@ -104,6 +99,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         await delete_iam_role("123456789012", role_name, "consoleme-unit-test")
 
     async def test_validate_inline_policy_change(self):
+        from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_inline_policy_change
 
         role = ExtendedRoleModel(
@@ -251,6 +247,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_validate_managed_policy_change(self):
+        from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_managed_policy_change
 
         role = ExtendedRoleModel(
@@ -284,7 +281,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Invalid characters were detected in the policy.", str(e))
 
         # Trying to detach a policy that is not attached
-        managed_policy_change_model.action = Action1.detach
+        managed_policy_change_model.action = Action.detach
         with pytest.raises(InvalidRequestParameter) as e:
             await validate_managed_policy_change(
                 managed_policy_change_model, "user@example.com", role
@@ -296,7 +293,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         # Trying to attach a policy that is already attached
         role.managed_policies = [{"PolicyArn": managed_policy_change_model.arn}]
-        managed_policy_change_model.action = Action1.attach
+        managed_policy_change_model.action = Action.attach
         with pytest.raises(InvalidRequestParameter) as e:
             await validate_managed_policy_change(
                 managed_policy_change_model, "user@example.com", role
@@ -312,19 +309,86 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         managed_policy_change_model.arn = (
             "arn:aws:iam::123456789012:policy/TestManagedPolicy2"
         )
-        managed_policy_change_model.action = Action1.attach
+        managed_policy_change_model.action = Action.attach
         await validate_managed_policy_change(
             managed_policy_change_model, "user@example.com", role
         )
 
         # Detach a managed policy that is attached to the role
         role.managed_policies = [{"PolicyArn": managed_policy_change_model.arn}]
-        managed_policy_change_model.action = Action1.detach
+        managed_policy_change_model.action = Action.detach
         await validate_managed_policy_change(
             managed_policy_change_model, "user@example.com", role
         )
 
+    async def test_validate_permissions_boundary_change(self):
+        from consoleme.exceptions.exceptions import InvalidRequestParameter
+        from consoleme.lib.v2.requests import validate_permissions_boundary_change
+
+        role = ExtendedRoleModel(
+            name="role_name",
+            account_id="123456789012",
+            account_name="friendly_name",
+            arn="arn:aws:iam::123456789012:role/role_name",
+            inline_policies=[],
+            assume_role_policy_document={},
+            managed_policies=[],
+            permissions_boundary={},
+            tags=[],
+        )
+        permissions_boundary_change = {
+            "principal_arn": "arn:aws:iam::123456789012:role/role_name",
+            "change_type": "permissions_boundary",
+            "policy_name": "invalid<html>characters",
+            "resources": [],
+            "status": "not_applied",
+            "action": "detach",
+            "arn": "arn:aws:iam::123456789012:policy/TestManagedPolicy",
+        }
+        permissions_boundary_change_model = PermissionsBoundaryChangeModel.parse_obj(
+            permissions_boundary_change
+        )
+
+        # Trying to update an managed policy with invalid characters
+        with pytest.raises(InvalidRequestParameter) as e:
+            await validate_permissions_boundary_change(
+                permissions_boundary_change_model, "user@example.com", role
+            )
+            self.assertIn("Invalid characters were detected in the policy.", str(e))
+
+        # Trying to detach a policy that is not attached
+        permissions_boundary_change_model.action = Action.detach
+        with pytest.raises(InvalidRequestParameter) as e:
+            await validate_permissions_boundary_change(
+                permissions_boundary_change_model, "user@example.com", role
+            )
+            self.assertIn(
+                f"{permissions_boundary_change_model.arn}  is not attached to this role as a permissions boundary",
+                str(e),
+            )
+
+        # Valid tests
+
+        # Attach a managed policy that is not attached
+        permissions_boundary_change_model.arn = (
+            "arn:aws:iam::123456789012:policy/TestManagedPolicy2"
+        )
+        permissions_boundary_change_model.action = Action.attach
+        await validate_permissions_boundary_change(
+            permissions_boundary_change_model, "user@example.com", role
+        )
+
+        # Detach a managed policy that is attached to the role
+        role.permissions_boundary = {
+            "PermissionsBoundaryArn": permissions_boundary_change_model.arn
+        }
+        permissions_boundary_change_model.action = Action.detach
+        await validate_permissions_boundary_change(
+            permissions_boundary_change_model, "user@example.com", role
+        )
+
     async def test_validate_assume_role_policy_change(self):
+        from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_assume_role_policy_change
 
         role = ExtendedRoleModel(
@@ -428,6 +492,30 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
                     "account_name": "",
                     "resource_type": "s3",
                 },
+                {
+                    "arn": "arn:aws:iam::123456789013:role/test_2",
+                    "name": "test_2",
+                    "account_id": "123456789013",
+                    "region": "global",
+                    "account_name": "",
+                    "resource_type": "iam",
+                },
+                {
+                    "arn": "arn:aws:iam::123456789012:role/test_3",
+                    "name": "test_3",
+                    "account_id": "123456789012",
+                    "region": "global",
+                    "account_name": "",
+                    "resource_type": "iam",
+                },
+                {
+                    "arn": "arn:aws:iam::123456789013:role/test_3",
+                    "name": "test_3",
+                    "account_id": "123456789013",
+                    "region": "global",
+                    "account_name": "",
+                    "resource_type": "iam",
+                },
             ],
             "version": 2.0,
             "status": "not_applied",
@@ -458,7 +546,25 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
                                 "arn:aws:S3:::test_bucket_2/*",
                             ],
                             "Sid": "sid_test",
-                        }
+                        },
+                        {
+                            "Action": ["sts:AssumeRole", "sts:TagSession"],
+                            "Effect": "Allow",
+                            "Resource": ["arn:aws:iam::123456789013:role/test_2"],
+                            "Sid": "assume_role_test_cross_account",
+                        },
+                        {
+                            "Action": "sts:AssumeRole",
+                            "Effect": "Allow",
+                            "Resource": ["arn:aws:iam::123456789012:role/test_3"],
+                            "Sid": "assume_role_test_same_account",
+                        },
+                        {
+                            "Action": "sts:TagSession",
+                            "Effect": "Allow",
+                            "Resource": ["arn:aws:iam::123456789013:role/test_3"],
+                            "Sid": "assume_role_test_cross_account_tag",
+                        },
                     ],
                 },
                 "policy_sha256": "55d03ad7a2a447e6e883c520edcd8e5e3083c2f83fa1c390cee3f7dbedf28533",
@@ -498,7 +604,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             comments=[],
         )
         len_before_call = len(extended_request.changes.changes)
-        number_of_resources = 2
+        number_of_resources = 4
         await generate_resource_policies(
             extended_request, extended_request.requester_email
         )
@@ -518,6 +624,8 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
 
         seen_resource_one = False
         seen_resource_two = False
+        seen_resource_three = False
+        seen_resource_four = False
         for change in extended_request.changes.changes:
             if (
                 change.change_type == "resource_policy"
@@ -525,15 +633,37 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             ):
                 seen_resource_one = True
                 self.assertTrue(change.autogenerated)
-            if (
+            elif (
                 change.change_type == "resource_policy"
-                and change.arn == inline_policy_change_model.resources[0].arn
+                and change.arn == inline_policy_change_model.resources[1].arn
             ):
                 seen_resource_two = True
                 self.assertTrue(change.autogenerated)
+            elif (
+                change.change_type == "sts_resource_policy"
+                and change.arn == inline_policy_change_model.resources[2].arn
+            ):
+                seen_resource_three = True
+                self.assertTrue(change.autogenerated)
+            elif (
+                change.change_type == "sts_resource_policy"
+                and change.arn == inline_policy_change_model.resources[4].arn
+            ):
+                seen_resource_four = True
+                self.assertTrue(change.autogenerated)
+            # Same account sts shouldn't be included
+            if (
+                change.change_type == "resource_policy"
+                or change.change_type == "sts_resource_policy"
+            ):
+                self.assertNotEqual(
+                    change.arn, inline_policy_change_model.resources[3].arn
+                )
 
         self.assertTrue(seen_resource_one)
         self.assertTrue(seen_resource_two)
+        self.assertTrue(seen_resource_three)
+        self.assertTrue(seen_resource_four)
         red.delete("AWSCONFIG_RESOURCE_CACHE")
 
     async def test_apply_changes_to_role_inline_policy(self):
@@ -738,7 +868,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         # Trying to attach a managed policy that doesn't exist
         response.action_results = []
         response.errors = 0
-        managed_policy_change_model.action = Action1.attach
+        managed_policy_change_model.action = Action.attach
         extended_request.changes = ChangeModelArray(
             changes=[managed_policy_change_model]
         )
@@ -781,7 +911,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         # Detaching the managed policy -> no errors
         response.action_results = []
         response.errors = 0
-        managed_policy_change_model.action = Action1.detach
+        managed_policy_change_model.action = Action.detach
         extended_request.changes = ChangeModelArray(
             changes=[managed_policy_change_model]
         )
@@ -1174,6 +1304,99 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         )
         self.assertIn("not supported", dict(response.action_results[0]).get("message"))
 
+    async def test_apply_resource_policy_change_iam(self):
+        from consoleme.lib.v2.requests import apply_resource_policy_change
+
+        resource_policy_change = {
+            "principal_arn": "arn:aws:iam::123456789012:role/test",
+            "change_type": "sts_resource_policy",
+            "id": "1234",
+            "source_change_id": "5678",
+            "supported": True,
+            "resources": [
+                {
+                    "arn": "arn:aws:iam::123456789012:role/test",
+                    "name": "test",
+                    "account_id": "123456789012",
+                    "resource_type": "iam",
+                }
+            ],
+            "version": 2,
+            "status": "not_applied",
+            "arn": "arn:aws:iam::123456789012:role/test_2",
+            "autogenerated": False,
+            "policy": {
+                "policy_document": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": ["sts:AssumeRole", "sts:TagSession"],
+                            "Effect": "Allow",
+                            "Principal": {
+                                "AWS": ["arn:aws:iam::123456789012:role/test"]
+                            },
+                        }
+                    ],
+                },
+                "policy_sha256": "8f907b489532ad56fb7c52f3acc89b27680ed51296bf03984ce78d2b7b96076a",
+            },
+        }
+        resource_policy_change_model = ResourcePolicyChangeModel.parse_obj(
+            resource_policy_change
+        )
+
+        extended_request = ExtendedRequestModel(
+            id="1234",
+            arn="arn:aws:iam::123456789012:role/test",
+            timestamp=int(time.time()),
+            justification="Test justification",
+            requester_email="user@example.com",
+            approvers=[],
+            request_status="pending",
+            changes=ChangeModelArray(changes=[resource_policy_change_model]),
+            requester_info=UserModel(email="user@example.com"),
+            comments=[],
+        )
+
+        response = PolicyRequestModificationResponseModel(errors=0, action_results=[])
+
+        # Role doesn't exist -> applying policy -> error
+        response = await apply_resource_policy_change(
+            extended_request,
+            resource_policy_change_model,
+            response,
+            extended_request.requester_email,
+        )
+
+        self.assertEqual(1, response.errors)
+        self.assertIn("Error", dict(response.action_results[0]).get("message"))
+        self.assertIn("NoSuchEntity", dict(response.action_results[0]).get("message"))
+        self.assertEqual(Status.not_applied, resource_policy_change_model.status)
+
+        client = boto3.client("iam", region_name="us-east-1")
+        role_name = "test_2"
+        client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
+        response.errors = 0
+        response.action_results = []
+
+        # No error
+        response = await apply_resource_policy_change(
+            extended_request,
+            resource_policy_change_model,
+            response,
+            extended_request.requester_email,
+        )
+        self.assertEqual(0, response.errors)
+        # Make sure it attached
+        role_details = client.get_role(RoleName=role_name)
+        self.assertDictEqual(
+            role_details.get("Role").get("AssumeRolePolicyDocument"),
+            resource_policy_change_model.policy.policy_document,
+        )
+
+        # Ensure the request got updated
+        self.assertEqual(Status.applied, resource_policy_change_model.status)
+
     async def test_apply_resource_policy_change_s3(self):
         from consoleme.lib.v2.requests import apply_resource_policy_change
 
@@ -1535,6 +1758,8 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_dynamo_write.return_value = create_future(None)
 
         # Trying to update while not being authorized
+        from consoleme.exceptions.exceptions import Unauthorized
+
         with pytest.raises(Unauthorized) as e:
             await parse_and_apply_policy_request_modification(
                 extended_request,
@@ -1546,6 +1771,8 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             self.assertIn("Unauthorized", str(e))
 
         # Trying to update a non-existent change
+        from consoleme.exceptions.exceptions import NoMatchingRequest
+
         with pytest.raises(NoMatchingRequest) as e:
             await parse_and_apply_policy_request_modification(
                 extended_request,
@@ -1581,6 +1808,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_populate_old_policies,
         mock_fetch_iam_role,
     ):
+        from consoleme.exceptions.exceptions import NoMatchingRequest, Unauthorized
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
         )
@@ -1679,6 +1907,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
     async def test_parse_and_apply_policy_request_modification_cancel_request(
         self, mock_dynamo_write, mock_send_email
     ):
+        from consoleme.exceptions.exceptions import (
+            InvalidRequestParameter,
+            Unauthorized,
+        )
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
         )
@@ -1746,6 +1978,10 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
     async def test_parse_and_apply_policy_request_modification_reject_and_move_back_to_pending_request(
         self, mock_dynamo_write, mock_move_back_to_pending, mock_send_email
     ):
+        from consoleme.exceptions.exceptions import (
+            InvalidRequestParameter,
+            Unauthorized,
+        )
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
         )
@@ -1854,6 +2090,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         from asgiref.sync import sync_to_async
         from cloudaux.aws.sts import boto3_cached_conn
 
+        from consoleme.exceptions.exceptions import Unauthorized
         from consoleme.lib.redis import RedisHandler
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,

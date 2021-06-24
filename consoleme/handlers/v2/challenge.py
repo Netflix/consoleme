@@ -3,13 +3,14 @@ import uuid
 from datetime import datetime, timedelta
 
 import pytz
-import tornado.web
+import tornado.escape
 import ujson as json
 from asgiref.sync import async_to_sync
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import MissingConfigurationValue
-from consoleme.handlers.base import BaseHandler
+from consoleme.handlers.base import BaseHandler, TornadoRequestHandler
+from consoleme.lib.challenge import delete_expired_challenges, retrieve_user_challenge
 from consoleme.lib.jwt import generate_jwt_token
 from consoleme.lib.redis import RedisHandler
 
@@ -17,7 +18,7 @@ log = config.get_logger()
 red = async_to_sync(RedisHandler().redis)()
 
 
-class ChallengeGeneratorHandler(tornado.web.RequestHandler):
+class ChallengeGeneratorHandler(TornadoRequestHandler):
     """
     Challenge URLs are an alternative to mutual TLS for authenticating CLI clients of ConsoleMe.
 
@@ -28,16 +29,18 @@ class ChallengeGeneratorHandler(tornado.web.RequestHandler):
     The ChallengeUrlGenerator endpoint must be unauthenticated because the CLI client will be requesting URLs
     """
 
+    def get_request_ip(self):
+        trusted_remote_ip_header = config.get("auth.remote_ip.trusted_remote_ip_header")
+        if trusted_remote_ip_header:
+            return self.request.headers[trusted_remote_ip_header].split(",")[0]
+        return self.request.remote_ip
+
     async def get(self, user):
         if not config.get("challenge_url.enabled", False):
             raise MissingConfigurationValue(
                 "Challenge URL Authentication is not enabled in ConsoleMe's configuration"
             )
-        ip = self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
-            ","
-        )
-        if isinstance(ip, list):
-            ip = ip[0]
+        ip = self.get_request_ip()
 
         token = str(uuid.uuid4())
         entry = {
@@ -88,108 +91,182 @@ class ChallengeValidatorHandler(BaseHandler):
             raise MissingConfigurationValue(
                 "Challenge URL Authentication is not enabled in ConsoleMe's configuration"
             )
-        endpoint = self.kwargs.get("type")
-        ip = self.request.headers.get("X-Forwarded-For", self.request.remote_ip).split(
-            ","
-        )
-        if isinstance(ip, list):
-            ip = ip[0]
         log_data = {
             "user": self.user,
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "requested_challenge_token": requested_challenge_token,
             "message": "Incoming request",
-            "ip": ip,
+            "ip": self.ip,
         }
         log.debug(log_data)
 
         all_challenges = red.hgetall(
             config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP")
         )
-        current_time = int(datetime.utcnow().replace(tzinfo=pytz.UTC).timestamp())
-        expired_challenge_tokens = []
-        # Delete expired tokens
-        if all_challenges:
-            for token, challenge_j in all_challenges.items():
-                challenge = json.loads(challenge_j)
-                if challenge.get("ttl", 0) < current_time:
-                    expired_challenge_tokens.append(token)
-            if expired_challenge_tokens:
-                red.hdel(
-                    config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
-                    *expired_challenge_tokens,
-                )
-        else:
+        if not all_challenges:
             message = (
                 "Unable to find a matching challenge URL. This usually means that it has expired. "
                 "Please try requesting a new challenge URL."
             )
-            if endpoint == "web":
-                self.write(message)
-            elif endpoint == "api":
-                self.write({"message": message})
+            self.write({"message": message})
             return
-        # Get fresh challenge for user's request
-        user_challenge_j = red.hget(
+
+        await delete_expired_challenges(all_challenges)
+
+        valid_user_challenge = await retrieve_user_challenge(
+            self, requested_challenge_token, log_data
+        )
+        if not valid_user_challenge:
+            return
+
+        if valid_user_challenge.get("visited"):
+            message = (
+                "This unique challenge URL has already been viewed. "
+                "Please try requesting a new challenge URL."
+            )
+            self.write({"message": message})
+            return
+
+        request_ip = self.get_request_ip()
+
+        # By default, the challenge URL requester IP must match the URL the challenge was created with. In some cases
+        # (i.e. IPv4 vs IPv6), the challenge may have been created with an IPv4 address, and the authenticated browser
+        # verification request may originate from an IPv6 one, or visa versa, in which case this configuration may
+        # need to be explicitly set to False.
+        if config.get(
+            "challenge_url.request_ip_must_match_challenge_creation_ip", True
+        ):
+            if request_ip != valid_user_challenge.get("ip"):
+                log.error(
+                    {
+                        **log_data,
+                        "request_ip": request_ip,
+                        "challenge_ip": valid_user_challenge.get("ip"),
+                        "message": "Request IP doesn't match challenge IP",
+                    }
+                )
+                self.write(
+                    {
+                        "message": (
+                            "Your originating IP doesn't match the IP the challenge was created with. "
+                            "If you are developing locally, this is probably because your CLI (Weep) made an IPv6 "
+                            "request, and your web browser made an IPv4 request. Or visa-versa. If this is the case, "
+                            "set the local configuration for "
+                            "**challenge_url.request_ip_must_match_challenge_creation_ip** to **false**."
+                        )
+                    }
+                )
+                return
+
+        valid_user_challenge["visited"] = True
+        valid_user_challenge["nonce"] = str(uuid.uuid4())
+        red.hset(
             config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
             requested_challenge_token,
+            json.dumps(valid_user_challenge),
         )
-        if user_challenge_j:
-            # Do a double-take check on the ttl
-            # Delete the token
-            user_challenge = json.loads(user_challenge_j)
-            if user_challenge.get("ttl", 0) < current_time:
-                message = "This challenge URL has expired. Please try requesting a new challenge URL."
-                if endpoint == "web":
-                    self.write(message)
-                elif endpoint == "api":
-                    self.write({"message": message})
-                return
-            if ip != user_challenge.get("ip"):
-                # Todo: Sometimes the request from the CLI will be IPv6, and the request from browser is ipv4. How
-                # can we reconcile this so that we can perform validation?
-                pass
-                # raise Exception("IP address used to generate challenge URL is different than IP you are using now.")
-            if self.user != user_challenge.get("user"):
-                log_data = {
-                    **log_data,
-                    "message": "Authenticated user is different then user that requested token",
-                    "authenticated_user": self.user,
-                    "challenge_user": user_challenge.get("user"),
-                }
-                log.error(log_data)
-                message = (
-                    "This challenge URL is associated with a different user. Ensure that your client"
-                    "configuration is specifying the correct user."
-                )
-                if endpoint == "web":
-                    self.write(message)
-                elif endpoint == "api":
-                    self.write({"message": message})
-                return
-            user_challenge["status"] = "success"
-            user_challenge["user"] = self.user
-            user_challenge["groups"] = self.groups
-            red.hset(
-                config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
-                requested_challenge_token,
-                json.dumps(user_challenge),
+
+        request_ip = valid_user_challenge["ip"]
+        request_user = valid_user_challenge["user"]
+        message = (
+            f"A user at **{request_ip}** has requested ConsoleMe credentials for **{request_user}**.\n\n"
+            f"You must approve this request for credentials to be provided. "
+            f"You will not be able to refresh or revisit this page after closing it.\n\n"
+            f"If you did not create this request, please report it to your security team."
+        )
+
+        self.write(
+            {
+                "message": message,
+                "nonce": valid_user_challenge["nonce"],
+                "show_approve_button": True,
+            }
+        )
+
+    async def post(self, requested_challenge_token):
+        if not config.get("challenge_url.enabled", False):
+            raise MissingConfigurationValue(
+                "Challenge URL Authentication is not enabled in ConsoleMe's configuration"
             )
-            message = "You've successfully authenticated to ConsoleMe and may now close this page."
-            if endpoint == "web":
-                self.write(message)
-            elif endpoint == "api":
-                self.write({"message": message})
-        else:
-            message = "The requested challenge URL was not found. Please try requesting a new challenge URL."
-            if endpoint == "web":
-                self.write(message)
-            elif endpoint == "api":
-                self.write({"message": message})
+        data = tornado.escape.json_decode(self.request.body)
+
+        log_data = {
+            "user": self.user,
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "requested_challenge_token": requested_challenge_token,
+            "message": "Incoming request",
+            "ip": self.ip,
+        }
+        log.debug(log_data)
+
+        all_challenges = red.hgetall(
+            config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP")
+        )
+        if not all_challenges:
+            message = (
+                "Unable to find a matching challenge URL. This usually means that it has expired. "
+                "Please try requesting a new challenge URL."
+            )
+            self.write({"message": message})
             return
 
+        await delete_expired_challenges(all_challenges)
 
-class ChallengePollerHandler(tornado.web.RequestHandler):
+        valid_user_challenge = await retrieve_user_challenge(
+            self, requested_challenge_token, log_data
+        )
+        if not valid_user_challenge:
+            message = (
+                "Unable to find a matching challenge URL. This usually means that it has expired. "
+                "Please try requesting a new challenge URL."
+            )
+            self.write({"message": message})
+            return
+
+        if data.get("nonce") != valid_user_challenge["nonce"]:
+            message = "Unable to validate challenge URL. The Nonce you've submitted is invalid."
+            log.error({**log_data, "message": message})
+            self.write({"message": message})
+            return
+
+        request_ip = self.get_request_ip()
+
+        # By default, the challenge URL requester IP must match the URL the challenge was created with. In some cases
+        # (i.e. IPv4 vs IPv6), the challenge may have been created with an IPv4 address, and the authenticated browser
+        # verification request may originate from an IPv6 one, or visa versa, in which case this configuration may
+        # need to be explicitly set to False.
+        if config.get(
+            "challenge_url.request_ip_must_match_challenge_creation_ip", True
+        ):
+            if request_ip != valid_user_challenge.get("ip"):
+                log.error(
+                    {
+                        **log_data,
+                        "request_ip": request_ip,
+                        "challenge_ip": valid_user_challenge.get("ip"),
+                        "message": "Request IP doesn't match challenge IP",
+                    }
+                )
+                self.write(
+                    {
+                        "message": "Your originating IP doesn't match the IP the challenge was created with."
+                    }
+                )
+                return
+
+        valid_user_challenge["status"] = "success"
+        valid_user_challenge["user"] = self.user
+        valid_user_challenge["groups"] = self.groups
+        red.hset(
+            config.get("challenge_url.redis_key", "TOKEN_CHALLENGES_TEMP"),
+            requested_challenge_token,
+            json.dumps(valid_user_challenge),
+        )
+        message = "You've successfully authenticated to ConsoleMe and may now close this page."
+        self.write({"message": message})
+
+
+class ChallengePollerHandler(TornadoRequestHandler):
     """
     This endpoint is an unauthenticated endpoint that the client uses to poll for successful challenge completion.
     If the challenge has been completed successfully, and the IP of the endpoint matches the IP used to generate the
@@ -221,6 +298,12 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
             self.write({"status": "expired"})
             return
 
+        ip = self.get_request_ip()
+
+        if ip != challenge.get("ip"):
+            self.write({"status": "unauthorized"})
+            return
+
         # Generate a jwt if user authentication was successful
         if challenge.get("status") == "success":
             jwt_expiration = datetime.utcnow().replace(tzinfo=pytz.UTC) + timedelta(
@@ -235,7 +318,7 @@ class ChallengePollerHandler(tornado.web.RequestHandler):
                     "status": challenge["status"],
                     "cookie_name": config.get("auth_cookie_name", "consoleme_auth"),
                     "expiration": int(jwt_expiration.timestamp()),
-                    "encoded_jwt": encoded_jwt.decode("utf-8"),
+                    "encoded_jwt": encoded_jwt,
                     "user": challenge["user"],
                 }
             )

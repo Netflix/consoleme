@@ -14,7 +14,6 @@ import {
   Icon,
   Feed,
 } from "semantic-ui-react";
-import { sendRequestCommon } from "../../helpers/utils";
 
 const clone_options = [
   { text: "Assume Role Policy Document", value: "assume_role_policy" },
@@ -29,28 +28,31 @@ const clone_default_selected_options = clone_options.map(
 );
 
 class CreateCloneFeature extends Component {
-  state = {
-    isLoading: false,
-    isLoadingAccount: false,
-    results: [],
-    resultsAccount: [],
-    value: "",
-    source_role: null,
-    source_role_value: "",
-    dest_account_id: null,
-    dest_account_id_value: "",
-    dest_role_name: "",
-    searchType: "",
-    description: "",
-    messages: null,
-    requestSent: false,
-    requestResults: [],
-    isSubmitting: false,
-    roleCreated: false,
-    options: clone_default_selected_options,
-    copy_description: true,
-    feature_type: "create",
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      isLoading: false,
+      isLoadingAccount: false,
+      results: [],
+      resultsAccount: [],
+      value: "",
+      source_role: null,
+      source_role_value: "",
+      dest_account_id: null,
+      dest_account_id_value: "",
+      dest_role_name: "",
+      searchType: "",
+      description: "",
+      messages: null,
+      requestSent: false,
+      requestResults: [],
+      isSubmitting: false,
+      roleCreated: false,
+      options: clone_default_selected_options,
+      copy_description: true,
+      feature_type: "create",
+    };
+  }
 
   handleSearchChange(event, { name, value }) {
     if (name === "source_role") {
@@ -94,19 +96,24 @@ class CreateCloneFeature extends Component {
       const TYPEAHEAD_API =
         "/policies/typeahead?resource=" + searchType + "&search=" + value;
 
-      sendRequestCommon(null, TYPEAHEAD_API, "get").then((source) => {
-        if (searchType === "account") {
-          this.setState({
-            isLoadingAccount: false,
-            resultsAccount: source.filter((result) => re.test(result.title)),
-          });
-        } else {
-          this.setState({
-            isLoading: false,
-            results: source.filter((result) => re.test(result.title)),
-          });
-        }
-      });
+      this.props
+        .sendRequestCommon(null, TYPEAHEAD_API, "get")
+        .then((source) => {
+          if (!source) {
+            return;
+          }
+          if (searchType === "account") {
+            this.setState({
+              isLoadingAccount: false,
+              resultsAccount: source.filter((result) => re.test(result.title)),
+            });
+          } else {
+            this.setState({
+              isLoading: false,
+              results: source.filter((result) => re.test(result.title)),
+            });
+          }
+        });
     }, 300);
   }
 
@@ -205,7 +212,7 @@ class CreateCloneFeature extends Component {
         isSubmitting: true,
       },
       async () => {
-        const response = await sendRequestCommon(payload, url);
+        const response = await this.props.sendRequestCommon(payload, url);
         const messages = [];
         let requestResults = [];
         let requestSent = false;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Button,
   Dropdown,
@@ -12,14 +12,15 @@ import {
 } from "semantic-ui-react";
 import useManagedPolicy from "./hooks/useManagedPolicy";
 import { JustificationModal } from "./PolicyModals";
-import { sendRequestCommon } from "../../helpers/utils";
 import { useAuth } from "../../auth/AuthProviderDefault";
+import MonacoEditor from "react-monaco-editor";
 
 const ManagedPolicy = () => {
-  const { user } = useAuth();
+  const { user, sendRequestCommon } = useAuth();
   const {
     accountID = "",
     managedPolicies = [],
+    resource,
     addManagedPolicy,
     deleteManagedPolicy,
     setModalWithAdminAutoApprove,
@@ -28,7 +29,11 @@ const ManagedPolicy = () => {
 
   const [availableManagedPolicies, setAvailableManagedPolicies] = useState([]);
   const [selected, setSelected] = useState(null);
-
+  const [
+    attachedManagedPolicyDetails,
+    setAttachedManagedPolicyDetails,
+  ] = useState(null);
+  const editorRef = useRef();
   // available managed policies are only used for rendering. so let's retrieve from here.
   useEffect(() => {
     (async () => {
@@ -37,9 +42,26 @@ const ManagedPolicy = () => {
         `/api/v2/managed_policies/${accountID}`,
         "get"
       );
+      if (!result) {
+        return;
+      }
       setAvailableManagedPolicies(result);
     })();
-  }, [accountID]);
+  }, [accountID, sendRequestCommon]);
+
+  useEffect(() => {
+    (async () => {
+      const result = await sendRequestCommon(
+        null,
+        `/api/v2/managed_policies_on_role/${accountID}/${resource?.name}`,
+        "get"
+      );
+      if (!result?.data) {
+        return;
+      }
+      setAttachedManagedPolicyDetails(result.data);
+    })();
+  }, [accountID, resource, sendRequestCommon]);
 
   const onManagePolicyChange = (e, { value }) => {
     addManagedPolicy(value);
@@ -65,6 +87,17 @@ const ManagedPolicy = () => {
         text: policy,
       };
     });
+
+  const editorOptions = {
+    readOnly: true,
+    selectOnLineNumbers: true,
+    quickSuggestions: true,
+    scrollbar: {
+      alwaysConsumeMouseWheel: false,
+    },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+  };
 
   return (
     <>
@@ -144,6 +177,30 @@ const ManagedPolicy = () => {
                 <List.Content>
                   <List.Header>{policy.PolicyName}</List.Header>
                   <List.Description as="a">{policy.PolicyArn}</List.Description>
+                  {attachedManagedPolicyDetails &&
+                  attachedManagedPolicyDetails[policy?.PolicyName] ? (
+                    <Segment
+                      attached
+                      style={{
+                        border: 10,
+                        padding: 10,
+                      }}
+                    >
+                      <MonacoEditor
+                        ref={editorRef}
+                        height="540px"
+                        language="json"
+                        theme="vs-dark"
+                        value={JSON.stringify(
+                          attachedManagedPolicyDetails[policy?.PolicyName],
+                          null,
+                          "\t"
+                        )}
+                        options={editorOptions}
+                        textAlign="center"
+                      />
+                    </Segment>
+                  ) : null}
                 </List.Content>
               </List.Item>
             );

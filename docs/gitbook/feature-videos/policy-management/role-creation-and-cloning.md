@@ -4,7 +4,5 @@ ConsoleMe allows your cloud administrators to create and clone roles across your
 
 ConsoleMe can clone a role's inline policies, managed policies, assume role policy document, tags, and description.
 
-
-
 ![](../../.gitbook/assets/image%20%286%29.png)
 

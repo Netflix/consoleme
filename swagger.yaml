@@ -20,6 +20,10 @@ tags:
     description: Policy Request endpoints
   - name: privileged
     description: Endpoints requiring elevated permissions
+  - name: policies
+    description: Policies endpoints
+  - name: apps
+    description: Endpoints used by apps (such as weep)
 paths:
   /request:
     post:
@@ -163,6 +167,35 @@ paths:
                 $ref: "#/components/schemas/CreateCloneRequestResponse"
         default:
           $ref: "#/components/responses/DefaultErrorResponse"
+  /managed_policies_on_role/{accountNumber}/{roleName}:
+    get:
+      summary: get details about managed policies attached to a role
+      tags:
+        - managed_policies
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
+  /service_control_policies/{accountNumberOrOuId}:
+    get:
+      summary: get details about service control policies targeting an account or organizational unit
+      tags:
+        - service_control_policies
+      parameters:
+        - $ref: "#/components/parameters/AccountOrOuId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
   /roles:
     get:
       summary: get a list of roles
@@ -307,6 +340,86 @@ paths:
           description: OK
         default:
           $ref: "#/components/responses/DefaultErrorResponse"
+    get:
+      summary: get details about a role (mtls apps/users only)
+      tags:
+        - roles
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtendedRoleModel"
+        default:
+          $ref: "#/components/responses/DefaultErrorResponse"
+  /policies/check:
+    post:
+      summary: check a policy document
+      tags:
+        - policies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyCheckModel"
+  /get_resource_url:
+    get:
+      summary: get a resource URL from an ARN
+      tags:
+        - apps
+      parameters:
+        - in: query
+          name: arn
+          schema:
+            type: string
+          description: The AWS ARN to get the resource URL for
+      responses:
+        "200":
+          description: OK - the URL was successfully generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
+        "404":
+          description: Missing or Malformed data, please check errors for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
+  /audit/roles/{account_id}/{role_name}/access:
+    get:
+      summary:
+      tags:
+        - audit
+        - privileged
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+        - $ref: "#/components/parameters/RoleName"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
+        "404":
+          description: Missing or Malformed data, please check errors for details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
 components:
   responses:
     DefaultErrorResponse:
@@ -324,6 +437,14 @@ components:
       schema:
         type: string
         pattern: '^\d{12}$'
+    AccountOrOuId:
+      name: account_or_ou_id
+      in: path
+      required: true
+      example: 012345678901
+      schema:
+        type: string
+        pattern: '^(\d{12}|ou-[0-9a-z]{4,32}-[a-z0-9]{8,32})$'
     RoleName:
       name: role_name
       in: path
@@ -364,6 +485,19 @@ components:
       schema:
         type: integer
   schemas:
+    ActionResult:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+    Action:
+      type: string
+      enum:
+        - attach
+        - detach
+      default: attach
     ResourceModel:
       type: object
       required:
@@ -776,11 +910,7 @@ components:
               default: true
               type: boolean
             action:
-              type: string
-              enum:
-                - attach
-                - detach
-              default: attach
+              $ref: "#/components/schemas/Action"
             change_type:
               type: string
               pattern: "inline_policy"
@@ -844,7 +974,7 @@ components:
           properties:
             change_type:
               type: string
-              pattern: "resource_policy"
+              pattern: "resource_policy|sts_resource_policy"
             arn:
               type: string
               pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
@@ -875,10 +1005,23 @@ components:
               type: string
               pattern: "managed_policy"
             action:
+              $ref: "#/components/schemas/Action"
+    PermissionsBoundaryChangeModel:
+      allOf:
+        - $ref: "#/components/schemas/ChangeModel"
+        - type: object
+          required:
+            - arn
+            - action
+          properties:
+            arn:
               type: string
-              enum:
-                - attach
-                - detach
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+            change_type:
+              type: string
+              pattern: "permissions_boundary"
+            action:
+              $ref: "#/components/schemas/Action"
     ChangeModelArray:
       type: object
       required:
@@ -890,6 +1033,7 @@ components:
             anyOf:
               - $ref: "#/components/schemas/InlinePolicyChangeModel"
               - $ref: "#/components/schemas/ManagedPolicyChangeModel"
+              - $ref: "#/components/schemas/PermissionsBoundaryChangeModel"
               - $ref: "#/components/schemas/ResourcePolicyChangeModel"
               - $ref: "#/components/schemas/AssumeRolePolicyChangeModel"
               - $ref: "#/components/schemas/ResourceTagChangeModel"
@@ -917,9 +1061,12 @@ components:
           type: string
           enum:
             - active # AKA: ready
+            - in-progress
+            - in-active
             - deleted
             - created
             - suspended
+            - deprecated
         type:
           type: string
           enum:
@@ -1032,6 +1179,23 @@ components:
         event_call:
           type: string
           example: sqs:CreateQueue
+        resource:
+          type: string
+          example: arn:aws:iam::123456789012:role/roleName
+        generated_policy:
+          type: object
+          example:
+            {
+              "Version": "2012-10-17",
+              "Statement":
+                [
+                  {
+                    "Resource": ["arn:aws:iam::123456789012:role/roleName"],
+                    "Action": ["sts:AssumeRole"],
+                    "Effect": "Allow",
+                  },
+                ],
+            }
         count:
           type: integer
           example: 5
@@ -1144,6 +1308,8 @@ components:
               type: array
               items:
                 type: object # TODO: make managed_policies schema
+            permissions_boundary:
+              type: object
             tags:
               type: array
               items:
@@ -1155,6 +1321,18 @@ components:
               type: boolean
               readOnly: true
             template_link:
+              type: string
+              readOnly: true
+            created_time:
+              type: string
+              readOnly: true
+            updated_time:
+              type: string
+              readOnly: true
+            last_used_time:
+              type: string
+              readOnly: true
+            description:
               type: string
               readOnly: true
     UserModel:
@@ -1231,12 +1409,7 @@ components:
         action_results:
           type: array
           items:
-            type: object
-            properties:
-              status:
-                type: string
-              message:
-                type: string
+            $ref: "#/components/schemas/ActionResult"
     RoleCreationRequestModel:
       type: object
       required:
@@ -1281,12 +1454,7 @@ components:
         action_results:
           type: array
           items:
-            type: object
-            properties:
-              status:
-                type: string
-              message:
-                type: string
+            $ref: "#/components/schemas/ActionResult"
     RequestModificationBaseModel:
       type: object
       required:
@@ -1405,3 +1573,171 @@ components:
               visible:
                 type: boolean
                 default: true
+    AuthenticationResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+        username:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+    UserManagementModel:
+      type: object
+      properties:
+        user_management_action:
+          type: string
+          enum:
+            - create
+            - update
+            - delete
+        username:
+          type: string
+        password:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+    LoginAttemptModel:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+        after_redirect_uri:
+          type: string
+    RegistrationAttemptModel:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    WebResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+            - error
+            - redirect
+        reason:
+          type: string
+          example:
+            - authenticated_redirect
+            - authentication_failure
+            - not_configured
+        redirect_url:
+          type: string
+        status_code:
+          type: integer
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+        data:
+          oneOf:
+            - type: object
+            - type: array
+    DataTableResponse:
+      type: object
+      required:
+        - totalCount
+        - filteredCount
+        - data
+      properties:
+        totalCount:
+          type: integer
+        filteredCount:
+          type: integer
+        data:
+          type: array
+          items:
+            type: object
+    PolicyCheckModel:
+      type: array
+      items:
+        type: object
+        properties:
+          issue:
+            type: string
+          detail:
+            type: string
+          location:
+            type: string
+          severity:
+            type: string
+          title:
+            type: string
+          description:
+            type: string
+    ServiceControlPolicyDetailsModel:
+      type: object
+      required:
+        - id
+        - arn
+        - name
+        - description
+        - aws_managed
+        - content
+      properties:
+        id:
+          type: string
+        arn:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+        aws_managed:
+          type: boolean
+        content:
+          type: string
+    ServiceControlPolicyTargetModel:
+      type: object
+      required:
+        - target_id
+        - arn
+        - name
+        - type
+      properties:
+        target_id:
+          type: string
+        arn:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+    ServiceControlPolicyModel:
+      type: object
+      required:
+        - targets
+        - policy
+      properties:
+        targets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceControlPolicyTargetModel"
+        policy:
+          $ref: "#/components/schemas/ServiceControlPolicyDetailsModel"
+    ServiceControlPolicyArrayModel:
+      type: array
+      items:
+        $ref: "#/components/schemas/ServiceControlPolicyModel"

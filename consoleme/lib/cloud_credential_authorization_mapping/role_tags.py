@@ -26,7 +26,10 @@ class RoleTagAuthorizationMappingGenerator(CredentialAuthzMappingGenerator):
             s3_bucket=config.get(
                 "cache_roles_across_accounts.all_roles_combined.s3.bucket"
             ),
-            s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+            s3_key=config.get(
+                "cache_roles_across_accounts.all_roles_combined.s3.file",
+                "account_resource_cache/cache_all_roles_v1.json.gz",
+            ),
         )
 
         required_trust_policy_entity = config.get(
@@ -54,6 +57,8 @@ class RoleTagAuthorizationMappingGenerator(CredentialAuthzMappingGenerator):
                 ):
                     splitted_groups = tag["Value"].split(":")
                     for group in splitted_groups:
+                        if config.get("auth.force_groups_lowercase", False):
+                            group = group.lower()
                         if not authorization_mapping.get(group):
                             authorization_mapping[group] = RoleAuthorizations.parse_obj(
                                 {
@@ -68,6 +73,8 @@ class RoleTagAuthorizationMappingGenerator(CredentialAuthzMappingGenerator):
                 ):
                     splitted_groups = tag["Value"].split(":")
                     for group in splitted_groups:
+                        if config.get("auth.force_groups_lowercase", False):
+                            group = group.lower()
                         if not authorization_mapping.get(group):
                             authorization_mapping[group] = RoleAuthorizations.parse_obj(
                                 {

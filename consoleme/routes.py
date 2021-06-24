@@ -23,6 +23,7 @@ from consoleme.handlers.v1.policies import (
 )
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
+from consoleme.handlers.v2.audit import RoleAccessHandler
 from consoleme.handlers.v2.challenge import (
     ChallengeGeneratorHandler,
     ChallengePollerHandler,
@@ -37,8 +38,14 @@ from consoleme.handlers.v2.index import (
     EligibleRolePageConfigHandler,
     FrontendHandler,
 )
-from consoleme.handlers.v2.policies import (
+from consoleme.handlers.v2.logout import LogOutHandler
+from consoleme.handlers.v2.managed_policies import (
+    ManagedPoliciesForAccountHandler,
     ManagedPoliciesHandler,
+    ManagedPoliciesOnRoleHandler,
+)
+from consoleme.handlers.v2.policies import (
+    CheckPoliciesHandler,
     PoliciesHandler,
     PoliciesPageConfigHandler,
 )
@@ -48,7 +55,7 @@ from consoleme.handlers.v2.requests import (
     RequestsHandler,
     RequestsPageConfigHandler,
 )
-from consoleme.handlers.v2.resources import ResourceDetailHandler
+from consoleme.handlers.v2.resources import GetResourceURLHandler, ResourceDetailHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
     RoleCloneHandler,
@@ -57,13 +64,29 @@ from consoleme.handlers.v2.roles import (
     RoleDetailHandler,
     RolesHandler,
 )
-from consoleme.handlers.v2.self_service import SelfServiceConfigHandler
-from consoleme.handlers.v2.typeahead import ResourceTypeAheadHandlerV2
+from consoleme.handlers.v2.self_service import (
+    PermissionTemplatesHandler,
+    SelfServiceConfigHandler,
+)
+from consoleme.handlers.v2.service_control_policy import ServiceControlPolicyHandler
+from consoleme.handlers.v2.templated_resources import TemplatedResourceDetailHandler
+from consoleme.handlers.v2.typeahead import (
+    ResourceTypeAheadHandlerV2,
+    SelfServiceStep1ResourceTypeahead,
+)
+from consoleme.handlers.v2.user import (
+    LoginConfigurationHandler,
+    LoginHandler,
+    UserManagementHandler,
+    UserRegistrationHandler,
+)
 from consoleme.handlers.v2.user_profile import UserProfileHandler
 from consoleme.lib.auth import mk_jwks_validator
 from consoleme.lib.plugins import get_plugin_by_name
 
-internal_routes = get_plugin_by_name(config.get("plugins.internal_routes"))()
+internal_routes = get_plugin_by_name(
+    config.get("plugins.internal_routes", "default_internal_routes")
+)()
 
 log = config.get_logger()
 
@@ -104,19 +127,40 @@ def make_app(jwt_validator=None):
         ),
         (r"/api/v1/get_credentials", GetCredentialsHandler),
         (r"/api/v1/get_roles", GetRolesHandler),
+        (r"/api/v2/get_resource_url", GetResourceURLHandler),
         # Used to autocomplete AWS permissions
         (r"/api/v1/policyuniverse/autocomplete/?", AutocompleteHandler),
         (r"/api/v2/user_profile/?", UserProfileHandler),
         (r"/api/v2/self_service_config/?", SelfServiceConfigHandler),
+        (r"/api/v2/permission_templates/?", PermissionTemplatesHandler),
         (r"/api/v1/myheaders/?", ApiHeaderHandler),
         (r"/api/v1/policies/typeahead", ApiResourceTypeAheadHandler),
+        (r"/api/v2/policies/check", CheckPoliciesHandler),
         (r"/api/v2/dynamic_config", DynamicConfigApiHandler),
         (r"/api/v2/eligible_roles", EligibleRoleHandler),
         (r"/api/v2/eligible_roles_page_config", EligibleRolePageConfigHandler),
         (r"/api/v2/policies_page_config", PoliciesPageConfigHandler),
         (r"/api/v2/requests_page_config", RequestsPageConfigHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
-        (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesHandler),
+        (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesForAccountHandler),
+        (r"/api/v2/managed_policies/(.*)", ManagedPoliciesHandler),
+        (
+            r"/api/v2/templated_resource/([a-zA-Z0-9_-]+)/(.*)",
+            TemplatedResourceDetailHandler,
+        ),
+        (
+            r"/api/v2/managed_policies_on_role/(\d{12})/(.*)",
+            ManagedPoliciesOnRoleHandler,
+        ),
+        (r"/api/v2/login", LoginHandler),
+        (r"/api/v2/login_configuration", LoginConfigurationHandler),
+        (r"/api/v2/logout", LogOutHandler),
+        (
+            r"/api/v2/typeahead/self_service_resources",
+            SelfServiceStep1ResourceTypeahead,
+        ),
+        (r"/api/v2/user", UserManagementHandler),
+        (r"/api/v2/user_registration", UserRegistrationHandler),
         (r"/api/v2/policies", PoliciesHandler),
         (r"/api/v2/request", RequestHandler),
         (r"/api/v2/requests", RequestsHandler),
@@ -128,6 +172,7 @@ def make_app(jwt_validator=None):
             r"/api/v2/resources/(\d{12})/(s3|sqs|sns)(?:/([a-z\-1-9]+))?/(.*)",
             ResourceDetailHandler,
         ),
+        (r"/api/v2/service_control_policies/(.*)", ServiceControlPolicyHandler),
         (r"/api/v2/mtls/roles/(\d{12})/(.*)", RoleDetailAppHandler),
         (r"/api/v2/clone/role", RoleCloneHandler),
         (r"/api/v2/generate_changes/?", GenerateChangesHandler),
@@ -139,10 +184,10 @@ def make_app(jwt_validator=None):
         (
             r"/api/v2/challenge_validator/([a-zA-Z0-9_-]+)",
             ChallengeValidatorHandler,
-            {"type": "api"},
         ),
         (r"/noauth/v1/challenge_generator/(.*)", ChallengeGeneratorHandler),
         (r"/noauth/v1/challenge_poller/([a-zA-Z0-9_-]+)", ChallengePollerHandler),
+        (r"/api/v2/audit/roles/(\d{12})/(.*)/access", RoleAccessHandler),
         (r"/api/v2/.*", V2NotFoundHandler),
         (
             r"/(.*)",
@@ -151,7 +196,7 @@ def make_app(jwt_validator=None):
         ),
     ]
 
-    # Prioritize internal routes before OSS routes so that OSS routes can be overrided if desired.
+    # Prioritize internal routes before OSS routes so that OSS routes can be overridden if desired.
     internal_route_list = internal_routes.get_internal_routes(
         make_jwt_validator, jwt_validator
     )

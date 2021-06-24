@@ -28,9 +28,9 @@ stopasgroup=true
 you'll want similar systemd/supervisor configurations for Celery scheduler and worker (commands incoming)
 
 ```bash
-/apps/consoleme/bin/celery -l DEBUG  -A consoleme.celery.celery_tasks beat --pidfile /tmp/celery.pid
+/apps/consoleme/bin/celery -A consoleme.celery_tasks.celery_tasks beat -l DEBUG --pidfile /tmp/celery.pid
 
-/apps/consoleme/bin/celery -l DEBUG -A consoleme.celery.celery_tasks worker -E --pidfile /tmp/celery.pid --max-memory-per-child=1000000 --max-tasks-per-child 50 --soft-time-limit 3600 --concurrency=10 -O fair
+/apps/consoleme/bin/celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -E --pidfile /tmp/celery.pid --max-memory-per-child=1000000 --max-tasks-per-child 50 --soft-time-limit 3600 --concurrency=10 -O fair
 ```
 
 (Only bring up one scheduler. You can bring up N workers and enable autoscaling if desired)

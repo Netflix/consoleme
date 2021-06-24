@@ -13,9 +13,11 @@ from consoleme.config import config
 
 
 def str2bool(v: Optional[Union[bool, str]]) -> bool:
+    if isinstance(v, bytes):
+        v = v.decode()
     if not v:
         return False
-    if type(v) == bool and v is True:
+    if type(v) is bool and v is True:
         return True
     return v.lower() in ["true", "True"]
 
@@ -166,7 +168,7 @@ async def get_random_security_logo():
     if config.get("consoleme_logo.image"):
         return config.get("consoleme_logo.image")
     month = datetime.now().month
-    summer = True if month in [6, 7, 8] else False
+    summer = month in [6, 7, 8]
 
     dir = "sunglasses" if summer else "nosunglasses"
     file = f"{randint(1, 3)}.png"  # nosec

@@ -1,9 +1,12 @@
 import sys
+from datetime import datetime
 from typing import Any, Dict, List, Union
 
 import boto3
+import pytz
 import ujson as json
 from asgiref.sync import sync_to_async
+from botocore.exceptions import ClientError
 from cloudaux import sts_conn
 from cloudaux.aws.decorators import rate_limited
 from cloudaux.aws.sts import boto3_cached_conn
@@ -12,7 +15,30 @@ from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger("consoleme")
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
+
+
+async def is_object_older_than_seconds(
+    bucket: str, key: str, older_than_seconds: int, s3_client=None
+) -> bool:
+    """
+    This function checks if an S3 object is older than the specified number of seconds. if the object doesn't
+    exist, this function will return True.
+    """
+    now = datetime.utcnow().replace(tzinfo=pytz.utc)
+    if not s3_client:
+        s3_client = boto3.client("s3")
+    try:
+        res = await sync_to_async(s3_client.head_object)(Bucket=bucket, Key=key)
+    except ClientError as e:
+        # If file is not found, we'll tell the user it's older than the specified time
+        if e.response.get("Error", {}).get("Code") == "404":
+            return True
+        raise
+    datetime_value = res["LastModified"]
+    if (now - datetime_value).total_seconds() > older_than_seconds:
+        return True
+    return False
 
 
 @rate_limited()
@@ -33,6 +59,7 @@ def get_object(**kwargs):
                 assume_role=assume_role,
                 session_name=kwargs.get("session_name", "ConsoleMe"),
                 region=kwargs.get("region", config.region),
+                retry_max_attempts=2,
             )
         else:
             client = boto3.client("s3")
@@ -76,6 +103,7 @@ def map_operation_to_api(operation, default):
         "REST.GET.BUCKETVERSIONS": "s3:GetBucketVersioning",
         "REST.GET.CORS": "s3:GetBucketCORS",
         "REST.GET.ENCRYPTION": "s3:GetEncryptionConfiguration",
+        "REST.GET.INTELLIGENT_TIERING": "REST.GET.INTELLIGENT_TIERING",
         "REST.GET.INVENTORY": "s3:GetInventoryConfiguration",
         "REST.GET.LIFECYCLE": "s3:GetLifecycleConfiguration",
         "REST.GET.LOCATION": "s3:GetBucketLocation",
@@ -96,6 +124,7 @@ def map_operation_to_api(operation, default):
         "REST.GET.WEBSITE": "s3:GetBucketWebsite",
         "REST.HEAD.BUCKET": "s3:ListBucket",
         "REST.HEAD.OBJECT": "s3:GetObject",
+        "REST.COPY.PART_GET": "s3:GetObject",
         "REST.POST.BUCKET": "REST.POST.BUCKET",
         "REST.POST.MULTI_OBJECT_DELETE": "s3:DeleteObject",
         "REST.POST.RESTORE": "s3:RestoreObject",
@@ -113,7 +142,7 @@ def map_operation_to_api(operation, default):
         "REST.PUT.PART": "s3:PutObject",
         "REST.PUT.PUBLIC_ACCESS_BLOCK": "s3:PutBucketPublicAccessBlock",
     }
-    api_call = operations_map.get(operation, None)
+    api_call = operations_map.get(operation)
     if api_call is None:
         stats.count(f"{function}.error")
         log.error(

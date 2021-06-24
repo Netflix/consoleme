@@ -2,6 +2,7 @@ import asyncio
 import ssl
 import sys
 from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
 
 import bleach
 import boto3
@@ -29,9 +30,10 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.dynamo import IAMRoleDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.policies import send_communications_policy_change_request_v2
 from consoleme.lib.redis import RedisHandler
 
-stats = get_plugin_by_name(config.get("plugins.metrics"))()
+stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 log = config.get_logger(__name__)
 
@@ -127,9 +129,68 @@ class Aws:
 
         return role
 
+    @staticmethod
+    def _get_iam_role_sync(account_id, role_name, conn) -> Optional[Dict[str, Any]]:
+        client = boto3_cached_conn(
+            "iam",
+            account_number=account_id,
+            assume_role=config.get("policies.role_name"),
+            read_only=True,
+            retry_max_attempts=2,
+        )
+        role = client.get_role(RoleName=role_name)["Role"]
+        role["ManagedPolicies"] = get_role_managed_policies(
+            {"RoleName": role_name}, **conn
+        )
+        role["InlinePolicies"] = get_role_inline_policies(
+            {"RoleName": role_name}, **conn
+        )
+        role["Tags"] = list_role_tags({"RoleName": role_name}, **conn)
+        return role
+
+    @staticmethod
+    async def _get_iam_role_async(
+        account_id, role_name, conn
+    ) -> Optional[Dict[str, Any]]:
+        tasks = []
+        client = await sync_to_async(boto3_cached_conn)(
+            "iam",
+            account_number=account_id,
+            assume_role=config.get("policies.role_name"),
+            read_only=True,
+            retry_max_attempts=2,
+        )
+        role_details = asyncio.ensure_future(
+            sync_to_async(client.get_role)(RoleName=role_name)
+        )
+        tasks.append(role_details)
+
+        all_tasks = [
+            get_role_managed_policies,
+            get_role_inline_policies,
+            list_role_tags,
+        ]
+
+        for t in all_tasks:
+            tasks.append(
+                asyncio.ensure_future(sync_to_async(t)({"RoleName": role_name}, **conn))
+            )
+
+        responses = asyncio.gather(*tasks)
+        async_task_result = await responses
+        role = async_task_result[0]["Role"]
+        role["ManagedPolicies"] = async_task_result[1]
+        role["InlinePolicies"] = async_task_result[2]
+        role["Tags"] = async_task_result[3]
+        return role
+
     async def fetch_iam_role(
-        self, account_id: str, role_arn: str, force_refresh: bool = False
-    ) -> dict:
+        self,
+        account_id: str,
+        role_arn: str,
+        force_refresh: bool = False,
+        run_sync=False,
+    ) -> Optional[Dict[str, Any]]:
         """Fetch the IAM Role template from Redis and/or Dynamo.
 
         :param account_id:
@@ -186,44 +247,16 @@ class Aws:
                 )
             log.debug(log_data)
             try:
-                tasks = []
                 role_name = role_arn.split("/")[-1]
-                # Instantiate a cached CloudAux client
-                client = await sync_to_async(boto3_cached_conn)(
-                    "iam",
-                    account_number=account_id,
-                    assume_role=config.get("policies.role_name"),
-                )
                 conn = {
                     "account_number": account_id,
                     "assume_role": config.get("policies.role_name"),
                     "region": config.region,
                 }
-
-                role_details = asyncio.ensure_future(
-                    sync_to_async(client.get_role)(RoleName=role_name)
-                )
-                tasks.append(role_details)
-
-                all_tasks = [
-                    get_role_managed_policies,
-                    get_role_inline_policies,
-                    list_role_tags,
-                ]
-
-                for t in all_tasks:
-                    tasks.append(
-                        asyncio.ensure_future(
-                            sync_to_async(t)({"RoleName": role_name}, **conn)
-                        )
-                    )
-
-                responses = asyncio.gather(*tasks)
-                result = await responses
-                role = result[0]["Role"]
-                role["ManagedPolicies"] = result[1]
-                role["InlinePolicies"] = result[2]
-                role["Tags"] = result[3]
+                if run_sync:
+                    role = self._get_iam_role_sync(account_id, role_name, conn)
+                else:
+                    role = await self._get_iam_role_async(account_id, role_name, conn)
 
             except ClientError as ce:
                 if ce.response["Error"]["Code"] == "NoSuchEntity":
@@ -254,6 +287,7 @@ class Aws:
                 "accountId": account_id,
                 "ttl": int((datetime.utcnow() + timedelta(hours=36)).timestamp()),
                 "policy": self.dynamo.convert_role_to_json(role),
+                "permissions_boundary": role.get("PermissionsBoundary", {}),
                 "templated": self.red.hget(
                     config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
                     role.get("Arn").lower(),
@@ -361,7 +395,11 @@ class Aws:
             "message": "Generating credentials",
         }
         session = boto3.Session()
-        client = session.client("sts", region_name=config.region)
+        client = session.client(
+            "sts",
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        )
 
         ip_restrictions = config.get("aws.ip_restrictions")
         stats.count("aws.get_credentials", tags={"role": role, "user": user})
@@ -395,7 +433,10 @@ class Aws:
                 )
 
                 credentials = await sync_to_async(client.assume_role)(
-                    RoleArn=role, RoleSessionName=user.lower(), Policy=policy
+                    RoleArn=role,
+                    RoleSessionName=user.lower(),
+                    Policy=policy,
+                    DurationSeconds=config.get("aws.session_duration", 3600),
                 )
                 credentials["Credentials"]["Expiration"] = int(
                     credentials["Credentials"]["Expiration"].timestamp()
@@ -422,7 +463,10 @@ class Aws:
                 )
 
                 credentials = await sync_to_async(client.assume_role)(
-                    RoleArn=role, RoleSessionName=user.lower(), Policy=policy
+                    RoleArn=role,
+                    RoleSessionName=user.lower(),
+                    Policy=policy,
+                    DurationSeconds=config.get("aws.session_duration", 3600),
                 )
                 credentials["Credentials"]["Expiration"] = int(
                     credentials["Credentials"]["Expiration"].timestamp()
@@ -430,7 +474,9 @@ class Aws:
                 return credentials
 
             credentials = await sync_to_async(client.assume_role)(
-                RoleArn=role, RoleSessionName=user.lower()
+                RoleArn=role,
+                RoleSessionName=user.lower(),
+                DurationSeconds=config.get("aws.session_duration", 3600),
             )
             credentials["Credentials"]["Expiration"] = int(
                 credentials["Credentials"]["Expiration"].timestamp()
@@ -551,19 +597,12 @@ class Aws:
         :param extended_request:
         :return:
         """
-        log_data: dict = {
-            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
-            "message": "Function is not configured.",
-        }
-        log.warning(log_data)
+        await send_communications_policy_change_request_v2(extended_request)
         return
 
     @staticmethod
     def handle_detected_role(role):
         pass
-
-    async def should_auto_approve_policy(self, events, user, user_groups):
-        return False
 
     async def should_auto_approve_policy_v2(self, extended_request, user, user_groups):
         return {"approved": False}

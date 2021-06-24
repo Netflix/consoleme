@@ -7,19 +7,52 @@ import {
   Form,
   Grid,
   Header,
+  Icon,
   Label,
   Message,
+  Popup,
   Tab,
   Table,
   TextArea,
 } from "semantic-ui-react";
-import AceEditor from "react-ace";
 import "brace";
-import ace from "brace";
-import { getCompletions, sendRequestCommon } from "../../helpers/utils";
 import "brace/ext/language_tools";
 import "brace/theme/monokai";
 import "brace/mode/json";
+import MonacoEditor from "react-monaco-editor";
+import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+
+const editor_options = {
+  selectOnLineNumbers: true,
+  readOnly: false,
+  quickSuggestions: true,
+  scrollbar: {
+    alwaysConsumeMouseWheel: false,
+  },
+  scrollBeyondLastLine: false,
+  automaticLayout: true,
+};
+
+const terraform_exporter_options = {
+  selectOnLineNumbers: true,
+  readOnly: true,
+  scrollbar: {
+    alwaysConsumeMouseWheel: false,
+  },
+  scrollBeyondLastLine: false,
+  automaticLayout: true,
+};
+
+const convert_to_terraform = (policy_name, policy_statement) => {
+  return `resource "aws_iam_policy" "${policy_name}" {
+  name        = "${policy_name}"
+  path        = "/"
+  description = "Policy generated through ConsoleMe"
+  policy      =  <<EOF
+${policy_statement}
+EOF
+}`;
+};
 
 class SelfServiceStep3 extends Component {
   constructor(props) {
@@ -35,17 +68,23 @@ class SelfServiceStep3 extends Component {
       requestId: null,
       statement: "",
       admin_bypass_approval_enabled: this.props.admin_bypass_approval_enabled,
+      export_to_terraform_enabled: this.props.export_to_terraform_enabled,
       admin_auto_approve: false,
+      policy_name: "",
     };
     this.inlinePolicyEditorRef = React.createRef();
+    this.terraformPolicyExporterRef = React.createRef();
+    this.onChange = this.onChange.bind(this);
+    this.editorDidMount = this.editorDidMount.bind(this);
+    this.copy_terraform_to_clipboard = this.copy_terraform_to_clipboard.bind(
+      this
+    );
     this.handleJustificationChange = this.handleJustificationChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
   }
 
   async componentDidMount() {
-    const langTools = ace.require("ace/ext/language_tools");
-    langTools.setCompleters([{ getCompletions }]);
     const { role, permissions } = this.props;
     const payload = {
       changes: [],
@@ -64,7 +103,7 @@ class SelfServiceStep3 extends Component {
       return change;
     });
 
-    const response = await sendRequestCommon(
+    const response = await this.props.sendRequestCommon(
       payload,
       "/api/v2/generate_changes"
     );
@@ -76,6 +115,7 @@ class SelfServiceStep3 extends Component {
     }
 
     if ("changes" in response && response.changes.length > 0) {
+      const policy_name = response.changes[0].policy_name;
       const statement = JSON.stringify(
         response.changes[0].policy.policy_document,
         null,
@@ -85,6 +125,7 @@ class SelfServiceStep3 extends Component {
         custom_statement: statement,
         isError: false,
         messages: [],
+        policy_name,
         statement,
       });
     }
@@ -94,57 +135,68 @@ class SelfServiceStep3 extends Component {
     });
   }
 
-  handleJSONEditorValidation(lintErrors) {
-    const { activeIndex } = this.state;
-    const messages = [];
-    if (lintErrors.length > 0) {
-      for (let i = 0; i < lintErrors.length; i++) {
-        messages.push(
-          "Lint Error - Row: " +
-            lintErrors[i].row +
-            ", Column: " +
-            lintErrors[i].column +
-            ", Error: " +
-            lintErrors[i].text
-        );
+  editorDidMount(editor) {
+    editor.onDidChangeModelDecorations(() => {
+      const model = editor.getModel();
+
+      if (model === null || model.getModeId() !== "json") {
+        return;
       }
-      this.setState({
-        isError: true,
-        messages,
-      });
-    } else if (activeIndex === 1) {
-      this.setState({
-        isError: false,
-        messages: [],
-      });
-    }
+
+      const owner = model.getModeId();
+      const uri = model.uri;
+      const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
+      this.onLintError(
+        markers.map(
+          (marker) =>
+            `Lint error on line ${marker.startLineNumber} columns ${marker.startColumn}-${marker.endColumn}: ${marker.message}`
+        )
+      );
+    });
   }
 
-  buildAceEditor(custom_statement) {
+  buildMonacoEditor(custom_statement) {
     return (
-      <AceEditor
-        mode="json"
-        theme="monokai"
+      <MonacoEditor
+        height="500px"
+        language="json"
         width="100%"
-        showPrintMargin={false}
-        ref={this.inlinePolicyEditorRef}
-        tabSize={4}
-        onChange={this.handleJSONEditorChange.bind(this)}
-        onValidate={this.handleJSONEditorValidation.bind(this)}
+        theme="vs-dark"
         value={custom_statement}
-        name="json_editor"
-        editorProps={{
-          $blockScrolling: true,
-        }}
-        setOptions={{
-          enableBasicAutocompletion: true,
-          enableLiveAutocompletion: true,
-          wrapBehavioursEnabled: true,
-          wrap: true,
-          useSoftTabs: true,
-        }}
+        onChange={this.onChange}
+        options={editor_options}
+        editorDidMount={this.editorDidMount}
+        textAlign="center"
       />
     );
+  }
+
+  buildTerraformMonacoExporter(custom_statement) {
+    const { policy_name } = this.state;
+    const terraform_statement = convert_to_terraform(
+      policy_name,
+      custom_statement
+    );
+    return (
+      <MonacoEditor
+        language="hcl"
+        width="100%"
+        height="500px"
+        theme="vs-dark"
+        ref={this.terraformPolicyExporterRef}
+        value={terraform_statement}
+        options={terraform_exporter_options}
+      />
+    );
+  }
+
+  copy_terraform_to_clipboard() {
+    const { policy_name, custom_statement } = this.state;
+    const terraform_statement = convert_to_terraform(
+      policy_name,
+      custom_statement
+    );
+    navigator.clipboard.writeText(terraform_statement);
   }
 
   buildPermissionsTable() {
@@ -244,7 +296,10 @@ class SelfServiceStep3 extends Component {
         isLoading: true,
       },
       async () => {
-        const response = await sendRequestCommon(requestV2, "/api/v2/request");
+        const response = await this.props.sendRequestCommon(
+          requestV2,
+          "/api/v2/request"
+        );
 
         const messages = [];
         if (response) {
@@ -278,23 +333,32 @@ class SelfServiceStep3 extends Component {
     });
   }
 
-  handleJSONEditorChange(custom_statement) {
-    const editor = this.inlinePolicyEditorRef.current.editor;
-    if (editor.completer && editor.completer.popup) {
-      const popup = editor.completer.popup;
-      popup.container.style.width = "600px";
-      popup.resize();
-    }
+  onChange(newValue, e) {
     this.setState({
-      custom_statement,
+      custom_statement: newValue,
     });
   }
+
+  onLintError = (lintErrors) => {
+    if (lintErrors.length > 0) {
+      this.setState({
+        messages: lintErrors,
+        isError: true,
+      });
+    } else {
+      this.setState({
+        messages: [],
+        isError: false,
+      });
+    }
+  };
 
   render() {
     const { role } = this.props;
     const {
       admin_bypass_approval_enabled,
       custom_statement,
+      export_to_terraform_enabled,
       isError,
       isLoading,
       isSuccess,
@@ -351,6 +415,49 @@ class SelfServiceStep3 extends Component {
         primary
       />
     );
+
+    const terraformExporterPane = export_to_terraform_enabled
+      ? {
+          menuItem: "Terraform Exporter",
+          render: () => {
+            const terraformExporter = this.buildTerraformMonacoExporter(
+              custom_statement
+            );
+            return (
+              <Tab.Pane loading={isLoading}>
+                <Header>
+                  Export Terraform permissions
+                  <Popup
+                    content="Copy Terraform Statement"
+                    trigger={
+                      <Icon
+                        link
+                        name="copy"
+                        onClick={this.copy_terraform_to_clipboard}
+                      />
+                    }
+                  />
+                </Header>
+                <br />
+                {terraformExporter}
+                <Divider />
+                <Header>Justification</Header>
+                <Form>
+                  <TextArea
+                    onChange={this.handleJustificationChange}
+                    placeholder="Your Justification"
+                    value={justification}
+                  />
+                </Form>
+                <Divider />
+                {messagesToShow}
+                {submission_buttons}
+              </Tab.Pane>
+            );
+          },
+        }
+      : null;
+
     const panes = [
       {
         menuItem: "Review",
@@ -401,7 +508,7 @@ class SelfServiceStep3 extends Component {
       {
         menuItem: "JSON Editor",
         render: () => {
-          const jsonEditor = this.buildAceEditor(custom_statement);
+          const jsonEditor = this.buildMonacoEditor(custom_statement);
           return (
             <Tab.Pane loading={isLoading}>
               <Header>Edit your permissions in JSON format.</Header>
@@ -423,6 +530,7 @@ class SelfServiceStep3 extends Component {
           );
         },
       },
+      terraformExporterPane,
     ];
 
     const tabContent = isSuccess ? (

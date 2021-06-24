@@ -1,8 +1,8 @@
-# SAML \(Tested with Auth0\)
+# SAML
 
-ConsoleMe can directly authenticate users against an SAML identity provider. We have an example configuration [here](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_saml.yaml). 
+ConsoleMe can directly authenticate users against an SAML identity provider. We have an example configuration [here](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_saml.yaml).
 
-The settings that must be defined for the SAML flow to work are as follows. You will want to have multiple configurations for your development, test, and production environments with the appropriate URLs for each. 
+The settings that must be defined for the SAML flow to work are as follows. You will want to have multiple configurations for your development, test, and production environments with the appropriate URLs for each.
 
 ```text
 auth:
@@ -71,7 +71,7 @@ get_user_by_saml_settings:
 These are the general steps to follow when configuring ConsoleMe as a SAML service provider:
 
 1. Update ConsoleMe's configuration with your configuration parameters \(Shown above\)
-2. Put your Service Provider certificate and private key in the location you specified in your
+2. Put your Service Provider certificate and private key in a subdirectory `certs` within the location you specified in your
 
    `get_user_by_saml_settings.saml_path` configuration value.
 
@@ -87,7 +87,7 @@ CONFIG_LOCATION=example_config/example_config_saml.yaml python consoleme/__main_
 
 ## Important configuration variables
 
-`get_user_by_saml_settings.idp_metadata_url`: The URL of the SAML Metadata that ConsoleMe can load SAML configuration from. 
+`get_user_by_saml_settings.idp_metadata_url`: The URL of the SAML Metadata that ConsoleMe can load SAML configuration from.
 
 `get_user_by_saml_settings.saml_path`: Location of SAML settings used by the OneLoginSaml2 library - You'll need to configure the entity ID, IdP Binding urls, and ACS urls in this file
 

@@ -1,13 +1,15 @@
 import React, { useContext, useEffect, useReducer } from "react";
 import { useParams } from "react-router-dom";
 import { initialState, reducer } from "./policyReducer";
-import { getResourceEndpoint, sendRequestCommon } from "../../../helpers/utils";
+import { getResourceEndpoint } from "../../../helpers/utils";
+import { useAuth } from "../../../auth/AuthProviderDefault";
 
 const PolicyContext = React.createContext(initialState);
 
 export const usePolicyContext = () => useContext(PolicyContext);
 
 export const PolicyProvider = ({ children }) => {
+  const { sendRequestCommon, sendRequestV2 } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
   const { accountID, serviceType, region, resourceName } = useParams();
 
@@ -19,6 +21,8 @@ export const PolicyProvider = ({ children }) => {
     dispatch({ type: "TOGGLE_LOADING", loading });
   const setToggleDeleteRole = (toggle) =>
     dispatch({ type: "TOGGLE_DELETE_ROLE", toggle });
+  const setToggleRefreshRole = (toggle) =>
+    dispatch({ type: "TOGGLE_REFRESH_ROLE", toggle });
   const setIsSuccess = (isSuccess) =>
     dispatch({ type: "SET_IS_SUCCESS", isSuccess });
 
@@ -27,7 +31,6 @@ export const PolicyProvider = ({ children }) => {
     (async () => {
       // store resource metadata from the url
       setParams({ accountID, region, resourceName, serviceType });
-
       // get the endpoint by corresponding service type e.g. s3, iamrole, sqs
       const endpoint = getResourceEndpoint(
         accountID,
@@ -35,17 +38,43 @@ export const PolicyProvider = ({ children }) => {
         region,
         resourceName
       );
-
       // set loader to start fetching resource from the backend.
       setIsPolicyEditorLoading(true);
-
-      // retrive resource from the endpoint and set resource state
+      // retrieve resource from the endpoint and set resource state
       const resource = await sendRequestCommon(null, endpoint, "get");
+      if (!resource) {
+        return;
+      }
       setResource(resource);
-
       setIsPolicyEditorLoading(false);
     })();
   }, [accountID, region, resourceName, serviceType, state.isSuccess]); //eslint-disable-line
+
+  useEffect(() => {
+    (async () => {
+      const endpoint = getResourceEndpoint(
+        accountID,
+        serviceType,
+        region,
+        resourceName
+      );
+      if (!state.toggleRefreshRole) {
+        return;
+      }
+      setIsPolicyEditorLoading(true);
+      const resource = await sendRequestCommon(
+        null,
+        `${endpoint}?force_refresh=true`,
+        "get"
+      );
+      if (!resource) {
+        return;
+      }
+      setResource(resource);
+      setIsPolicyEditorLoading(false);
+      setToggleRefreshRole(false);
+    })();
+  }, [state.toggleRefreshRole]); //eslint-disable-line
 
   // Mostly used for Justification Modal
   const setModalWithAdminAutoApprove = (approve) =>
@@ -70,10 +99,12 @@ export const PolicyProvider = ({ children }) => {
         setResource,
         setIsPolicyEditorLoading,
         setToggleDeleteRole,
+        setToggleRefreshRole,
         setIsSuccess,
         setTogglePolicyModal,
         setModalWithAdminAutoApprove,
         handleDeleteRole,
+        sendRequestV2,
       }}
     >
       {children}
