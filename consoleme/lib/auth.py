@@ -194,16 +194,6 @@ def can_delete_roles_app(app_name):
     return False
 
 
-def can_audit(app_name):
-    allowed = [
-        *config.get("groups.can_audit_apps", []),
-        *config.get("dynamic_config.groups.can_audit_apps", []),
-    ]
-    if app_name in allowed:
-        return True
-    return False
-
-
 def can_delete_roles(
     user: str,
     user_groups: List[str],
