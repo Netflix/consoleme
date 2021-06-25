@@ -47,12 +47,60 @@ class SelfServiceStep3 extends Component {
       export_to_terraform_enabled: this.props.export_to_terraform_enabled,
       admin_auto_approve: false,
       policy_name: "",
+      dry_run_policy: "",
+      old_policy: "",
+      new_policy: "",
     };
     this.inlinePolicyEditorRef = React.createRef();
     this.editorDidMount = this.editorDidMount.bind(this);
     this.handleJustificationChange = this.handleJustificationChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
+  }
+
+  async componentDidMount() {
+    const { role, updated_policy } = this.props;
+
+    const payload = {
+      dry_run: true,
+      changes: {
+        changes: [
+          {
+            principal: role.principal,
+            change_type: "inline_policy",
+            action: "attach",
+            policy: {
+              policy_document: JSON.parse(updated_policy),
+            }
+          }
+        ]
+      }
+    };
+
+    const response = await this.props.sendRequestCommon(
+      payload,
+      "/api/v2/request"
+    );
+
+    if (response.status != null && response.status === 400) {
+      return this.setState({
+        isError: true,
+        messages: [response.message],
+      });
+    }
+
+    if (response.extended_request != null) {
+      if (role.principal.principal_type === "HoneybeeAwsResourceTemplate") {
+        this.setState({
+          new_policy: response.extended_request.changes.changes[0].policy,
+          old_policy: response.extended_request.changes.changes[0].old_policy,
+        })
+      } else {
+        this.setState({
+          new_policy: JSON.stringify(response.extended_request.changes.changes[0].policy.policy_document, null, '\t'),
+        })
+      }
+    }
   }
 
   editorDidMount(editor) {
@@ -91,7 +139,8 @@ class SelfServiceStep3 extends Component {
   }
 
   buildMonacoEditor() {
-    const { oldValue, newValue, updated_policy } = this.props;
+    const {updated_policy} = this.props;
+    const {old_policy, new_policy} = this.state;
     const options = {
       selectOnLineNumbers: true,
       renderSideBySide: true,
@@ -108,18 +157,18 @@ class SelfServiceStep3 extends Component {
     const language = this.getStringFormat(updated_policy);
 
     return (
-      <MonacoDiffEditor
-        language={language}
-        width="100%"
-        height="500"
-        original={oldValue}
-        value={updated_policy}
-        editorWillMount={this.editorWillMount}
-        editorDidMount={this.editorDidMount}
-        options={options}
-        theme="vs-light"
-        alwaysConsumeMouseWheel={false}
-      />
+       <MonacoDiffEditor
+          language={language}
+          width="100%"
+          height="500"
+          original={old_policy}
+          value={new_policy}
+          editorWillMount={this.editorWillMount}
+          editorDidMount={this.editorDidMount}
+          options={options}
+          theme="vs-light"
+          alwaysConsumeMouseWheel={false}
+       />
     );
   }
 
@@ -189,29 +238,25 @@ class SelfServiceStep3 extends Component {
   }
 
   handleSubmit() {
-    const { role } = this.props;
-    const { custom_statement, justification, admin_auto_approve } = this.state;
+    const { role, updated_policy } = this.props;
+    const { justification, admin_auto_approve } = this.state;
     if (!justification) {
       return this.setState((state) => ({
         messages: ["No Justification is Given"],
       }));
     }
 
-    const { arn } = role;
     const requestV2 = {
       justification,
       admin_auto_approve,
       changes: {
         changes: [
           {
-            principal: {
-              principal_arn: arn,
-              principal_type: "AwsResource",
-            },
+            principal: role.principal,
             change_type: "inline_policy",
             action: "attach",
             policy: {
-              policy_document: JSON.parse(custom_statement),
+              policy_document: JSON.parse(updated_policy),
             },
           },
         ],
@@ -275,13 +320,10 @@ class SelfServiceStep3 extends Component {
   };
 
   render() {
-    const { role } = this.props;
     const {
       admin_bypass_approval_enabled,
       custom_statement,
-      export_to_terraform_enabled,
       isError,
-      isLoading,
       isSuccess,
       justification,
       messages,

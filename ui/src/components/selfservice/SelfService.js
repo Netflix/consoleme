@@ -216,6 +216,7 @@ class SelfService extends Component {
           <SelfServiceStep1
             config={config}
             role={role}
+            handleStepClick={this.handleStepClick.bind(this)}
             handleRoleUpdate={this.handleRoleUpdate.bind(this)}
             {...this.props}
           />
@@ -232,6 +233,7 @@ class SelfService extends Component {
             includeAccounts={includeAccounts}
             excludeAccounts={excludeAccounts}
             updated_policy={updated_policy}
+            handleStepClick={this.handleStepClick.bind(this)}
             updatePolicy={this.updatePolicy.bind(this)}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
             handleExtraActionsUpdate={this.handleExtraActionsUpdate.bind(this)}
@@ -294,6 +296,7 @@ class SelfService extends Component {
         <Step.Group fluid>
           <Step
             active={currStep === SelfServiceStepEnum.STEP1}
+            onClick={()=> this.setState({ currStep: SelfServiceStepEnum.STEP1})}
             className={`${
               currStep !== SelfServiceStepEnum.STEP1 ? "complete" : ""
             } step1`}
@@ -306,6 +309,7 @@ class SelfService extends Component {
           </Step>
           <Step
             active={currStep === SelfServiceStepEnum.STEP2}
+            onClick={()=> this.setState({ currStep: SelfServiceStepEnum.STEP2})}
             className={`${
               currStep === SelfServiceStepEnum.STEP3 ? "complete" : ""
             } step2`}
@@ -335,26 +339,6 @@ class SelfService extends Component {
         </Step.Group>
         {messagesToShow}
         {SelfServiceStep}
-        {currStep !== SelfServiceStepEnum.STEP1 ? (
-          <Button
-            disabled={currStep === SelfServiceStepEnum.STEP1}
-            floated="left"
-            primary
-            onClick={this.handleStepClick.bind(this, "previous")}
-          >
-            Previous
-          </Button>
-        ) : null}
-        {currStep !== SelfServiceStepEnum.STEP3 ? (
-          <Button
-            disabled={currStep === SelfServiceStepEnum.STEP3}
-            floated="right"
-            positive
-            onClick={this.handleStepClick.bind(this, "next")}
-          >
-            Next
-          </Button>
-        ) : null}
       </Segment>
     );
   }

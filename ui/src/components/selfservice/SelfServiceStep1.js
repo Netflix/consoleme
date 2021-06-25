@@ -1,6 +1,7 @@
 import _ from "lodash";
 import React, { Component } from "react";
 import {
+  Button,
   Divider,
   Form,
   Grid,
@@ -13,6 +14,7 @@ import {
 } from "semantic-ui-react";
 import RoleDetails from "../roles/RoleDetails";
 import "./SelfService.css";
+import {SelfServiceStepEnum} from "./SelfServiceEnums";
 
 const ARN_REGEX = /^arn:aws:iam::(?<accountId>\d{12}):role\/(?<roleName>.+)$/;
 
@@ -223,8 +225,8 @@ class SelfServiceStep1 extends Component {
                   </Form.Field>
                 </Form>
               </div>
-
-              <p>
+              <Grid.Row className={"helpContainer"}>
+              <p className={"help"}>
                 For Help, please visit{" "}
                 <a
                   href="http://go/selfserviceiamtldr"
@@ -234,6 +236,15 @@ class SelfServiceStep1 extends Component {
                   go/selfserviceiamtldr
                 </a>
               </p>
+                <Button
+                   size="massive"
+                  floated="right"
+                  positive
+                  onClick={this.props.handleStepClick.bind(this, "next")}
+                >
+                  Next
+                </Button>
+              </Grid.Row>
             </Grid.Column>
             <Grid.Column>
               <Header as="h4">Selected Role Information</Header>

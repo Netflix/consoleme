@@ -88,6 +88,7 @@ class SelfServiceStep2 extends Component {
       generator_type: permission.service,
       action_groups: permission.actions,
       condition: permission.condition,
+      extra_actions: ["s3:get*"],
       effect: "Allow",
       ...permission,
     };
@@ -168,8 +169,21 @@ class SelfServiceStep2 extends Component {
                   const inputConfig = _.find(inputs, { name: key });
                   return (
                     <List.Item>
-                      <List.Header>{inputConfig.text}</List.Header>
-                      {permission[key]}
+                      <Grid.Row style={{display: "flex"}}>
+                        {key === "resource_arn" ?
+                           <>
+                           <Icon name="users" /> <Header as={"h5"}>RESOURCE</Header>{permission[key]}
+                           </>
+                           : null}
+                      </Grid.Row>
+                      <Grid.Row style={{display: "flex"}}>
+                        {key === "bucket_prefix" ?
+                           <>
+                           <Icon name="folder open" /> <Header as={"h5"}>NAME/PREFIX</Header>{permission[key]}
+                           </>
+                           :
+                           null}
+                      </Grid.Row>
                     </List.Item>
                   );
                 })}
@@ -185,14 +199,15 @@ class SelfServiceStep2 extends Component {
                 Remove
                 <Icon name="right close" />
               </Button>
+              <Icon name="cogs" rotated={"clockwise"} className={"actions"}/>
               {permission.actions != null
                 ? permission.actions.map((action) => {
                     const actionDetail = _.find(found.actions, {
                       name: action,
                     });
                     return (
-                      <Label as="a" color="olive">
-                        <Icon name="caret right" />
+                      <Label as="a"
+                             style={{ border: "1px solid #babbbc", backgroundColor: "#ffffff", color: "rgba(0,0,0,.85)"}}>
                         {actionDetail.text}
                       </Label>
                     );
@@ -303,6 +318,7 @@ class SelfServiceStep2 extends Component {
                   The list of permission you have added in this request.
                 </Header.Subheader>
               </Header>
+              <Divider />
               <Item.Group divided>{this.getPermissionItems()}</Item.Group>
               <Divider />
               <Header>
@@ -324,6 +340,15 @@ class SelfServiceStep2 extends Component {
                 />{" "}
                 to override permissions.
               </Header>
+              <div style={{textAlign: "center"}}>
+                <Button
+                 size="massive"
+                 positive
+                 onClick={this.props.handleStepClick.bind(this, "next")}
+                >
+                  Next
+                </Button>
+              </div>
               {messagesToShow}
             </Grid.Column>
           </Grid.Row>

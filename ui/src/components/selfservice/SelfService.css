@@ -36,6 +36,23 @@
   display: none !important;
 }
 
+.helpContainer {
+  position: relative
+}
+
+.help {
+  display: inline-block;
+  margin-bottom: 0px;
+  position: absolute;
+  bottom: 0;
+}
+
+.ui.items>.item .extra> .cogs.icon.actions {
+  margin-bottom: 0px !important;
+  font-size: 1.25em;
+  color: rgba(0,0,0,.85);
+}
+
 /* In order to help read roles on smaller screens better, increased results grid width */
 @media (max-width: 1067px) {
   .ui.fluid.search .results {
