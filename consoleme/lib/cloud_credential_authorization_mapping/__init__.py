@@ -37,7 +37,6 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
         self.authorization_mapping_last_update = 0
         self.reverse_mapping = {}
         self.reverse_mapping_last_update = 0
-        self.data_last_update = 0
 
     async def retrieve_credential_authorization_mapping(self):
         if (
