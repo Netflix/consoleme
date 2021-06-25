@@ -32,8 +32,12 @@ class PermissionTemplatesHandler(BaseAPIV2Handler):
     allowed_methods = ["GET"]
 
     async def get(self):
+        permission_templates_dynamic_config_raw: dict = config.get(
+            "dynamic_config.permission_templates"
+        )
+
         permission_templates_dynamic_config: dict = [
-            config.get("dynamic_config.permission_templates")
+            value for _, value in permission_templates_dynamic_config_raw.items()
         ]
 
         permission_templates_config: dict = config.get(
