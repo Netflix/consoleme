@@ -32,10 +32,12 @@ log = config.get_logger("consoleme")
 
 class CredentialAuthorizationMapping(metaclass=Singleton):
     def __init__(self) -> None:
+        self._all_roles = []
         self.authorization_mapping = {}
         self.authorization_mapping_last_update = 0
         self.reverse_mapping = {}
         self.reverse_mapping_last_update = 0
+        self.data_last_update = 0
 
     async def retrieve_credential_authorization_mapping(self):
         if (
@@ -110,6 +112,13 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
                 )
                 return {}
         return self.reverse_mapping
+
+    async def all_roles(self):
+        if self._all_roles:
+            return self._all_roles
+        reverse_mapping = await self.retrieve_reverse_authorization_mapping()
+        self._all_roles = list(reverse_mapping.keys())
+        return self._all_roles
 
     async def determine_role_authorized_groups(self, account_id: str, role_name: str):
         arn = f"arn:aws:iam::{account_id}:role/{role_name.lower()}"
