@@ -2,25 +2,33 @@ import _ from "lodash";
 import React, { Component } from "react";
 import {
   Button,
-  Dimmer,
   Divider,
   Form,
   Grid,
   Header,
-  Icon,
   Label,
   Message,
-  Popup,
   Tab,
   Table,
   TextArea,
 } from "semantic-ui-react";
+import YAML from "yaml";
 import "brace";
 import "brace/ext/language_tools";
 import "brace/theme/monokai";
 import "brace/mode/json";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+import "monaco-yaml/lib/esm/monaco.contribution";
 import { MonacoDiffEditor } from "react-monaco-editor";
+
+window.MonacoEnvironment = {
+  getWorkerUrl(moduleId, label) {
+    if (label === "yaml") {
+      return "./yaml.worker.bundle.js";
+    }
+    return "./editor.worker.bundle.js";
+  },
+};
 
 class SelfServiceStep3 extends Component {
   constructor(props) {
@@ -41,7 +49,6 @@ class SelfServiceStep3 extends Component {
       policy_name: "",
     };
     this.inlinePolicyEditorRef = React.createRef();
-    this.onChange = this.onChange.bind(this);
     this.editorDidMount = this.editorDidMount.bind(this);
     this.handleJustificationChange = this.handleJustificationChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -71,8 +78,20 @@ class SelfServiceStep3 extends Component {
     });
   }
 
+  getStringFormat(str) {
+    try {
+      JSON.parse(str);
+      return "json";
+    } catch (e) {}
+    try {
+      YAML.parse(str);
+      return "yaml";
+    } catch (e) {}
+    return "";
+  }
+
   buildMonacoEditor() {
-    const { oldValue, newValue, readOnly, updated_policy } = this.props;
+    const { oldValue, newValue, updated_policy } = this.props;
     const options = {
       selectOnLineNumbers: true,
       renderSideBySide: true,
@@ -83,11 +102,14 @@ class SelfServiceStep3 extends Component {
       },
       scrollBeyondLastLine: false,
       automaticLayout: true,
-      readOnly,
+      readOnly: true,
     };
+
+    const language = this.getStringFormat(updated_policy);
+
     return (
       <MonacoDiffEditor
-        language="json"
+        language={language}
         width="100%"
         height="500"
         original={oldValue}
@@ -95,7 +117,6 @@ class SelfServiceStep3 extends Component {
         editorWillMount={this.editorWillMount}
         editorDidMount={this.editorDidMount}
         options={options}
-        onChange={this.onChange}
         theme="vs-light"
         alwaysConsumeMouseWheel={false}
       />
@@ -239,10 +260,6 @@ class SelfServiceStep3 extends Component {
     });
   }
 
-  onChange(newValue, e) {
-    this.onValueChange(newValue);
-  }
-
   onLintError = (lintErrors) => {
     if (lintErrors.length > 0) {
       this.setState({
@@ -322,23 +339,26 @@ class SelfServiceStep3 extends Component {
 
     const jsonEditor = this.buildMonacoEditor();
     return (
-       <div>
-         <Header size={'huge'}>Review Changes & Submit</Header>
-         <p>Use the following editor to review the changes you've modified before submitting for team review.</p>
-         {jsonEditor}
-         <Divider />
-         <Header>Justification</Header>
-         <Form>
-           <TextArea
-              onChange={this.handleJustificationChange}
-              placeholder="Your Justification"
-              value={justification}
-           />
-         </Form>
-         <Divider />
-         {messagesToShow}
-         {submission_buttons}
-       </div>
+      <div>
+        <Header size={"huge"}>Review Changes & Submit</Header>
+        <p>
+          Use the following editor to review the changes you've modified before
+          submitting for team review.
+        </p>
+        {jsonEditor}
+        <Divider />
+        <Header>Justification</Header>
+        <Form>
+          <TextArea
+            onChange={this.handleJustificationChange}
+            placeholder="Your Justification"
+            value={justification}
+          />
+        </Form>
+        <Divider />
+        {messagesToShow}
+        {submission_buttons}
+      </div>
     );
 
     const tabContent = isSuccess ? (

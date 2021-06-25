@@ -14,6 +14,7 @@
     "lodash": "^4.17.21",
     "monaco-editor": "0.21.3",
     "monaco-editor-webpack-plugin": "^2.1.0",
+    "monaco-yaml": "^2.5.1",
     "qs": "^6.9.6",
     "react": "^17.0.1",
     "react-ace": "^9.2.1",
@@ -27,7 +28,8 @@
     "react-semantic-ui-datepickers": "^2.12.0",
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-react": "^2.0.2",
-    "survey-react": "^1.8.49"
+    "survey-react": "^1.8.49",
+    "yaml": "^2.0.0-6"
   },
   "resolutions": {
     "**/monaco-editor": "0.21.3"
