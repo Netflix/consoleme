@@ -201,6 +201,9 @@ class SelfService extends Component {
       currStep,
       export_to_terraform_enabled,
       permissions,
+      extraActions,
+      includeAccounts,
+      excludeAccounts,
       role,
       services,
       updated_policy,
@@ -225,6 +228,9 @@ class SelfService extends Component {
             role={role}
             services={services}
             permissions={permissions}
+            extraActions={extraActions}
+            includeAccounts={includeAccounts}
+            excludeAccounts={excludeAccounts}
             updated_policy={updated_policy}
             updatePolicy={this.updatePolicy.bind(this)}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}

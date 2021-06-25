@@ -8,6 +8,7 @@ import "brace/mode/json";
 import MonacoEditor from "react-monaco-editor";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 
+
 const editor_options = {
   selectOnLineNumbers: true,
   readOnly: false,
