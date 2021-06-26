@@ -23,43 +23,60 @@ group_mapping:
       ....
 ```
 
-* We store IAM inline policy permission templates in dynamic configuration. This is where you can add templates that fit your organization's needs. Here's an example of what this looks like:
+* In addition to using role tags, you can authorize a user or groups to access a role in Dynamic configuration. The code that processes this is defined [here](https://github.com/Netflix/consoleme/blob/master/consoleme/lib/cloud_credential_authorization_mapping/dynamic_config.py). An example configuration is below
 
 ```text
-permission_templates:
-    default:
-        default: true
-        label: Default Template
-        policy: |-
+group_mapping:
+  groupA@example.com
+    cli_only_roles:
+      - 'arn:aws:iam::123456789012:role/role1InstanceProfile'
+    roles:
+      - 'arn:aws:iam::123456789012:role/role2'
+  userb@example.com:
+    cli_only_roles:
+      - 'arn:aws:iam::123456789012:role/role2'
+      ....
+```
+
+* We store IAM inline policy permission templates in dynamic configuration. This is where you can add templates that fit your organization's needs and it will show up in the dropdown menu for inline policy editor. Here's an example of how you can add templates to you dynamic config:
+
+```yaml
+permission_tempaltes:
+    -   key: default
+        text: Default Template
+        value: |-
             {
-                 "Statement":[
-                     {
-                         "Action":[
-                             ""
-                         ],
-                         "Effect":"Allow",
-                         "Resource": [
-                             ""
-                         ]
-                     }
-                 ],
-                 "Version":"2012-10-17"
-             }
-    s3read:
-        label: S3 Read Access
-        policy: |-
+                "Statement":[
+                    {
+                        "Action":[
+                            ""
+                        ],
+                        "Effect":"Allow",
+                        "Resource": [
+                            ""
+                        ]
+                    }
+                ],
+                "Version":"2012-10-17"
+            }
+    -   key: s3write
+        text: S3 Write Access
+        value: |-
             {
                 "Statement":[
                     {
                         "Action":[
                             "s3:ListBucket",
-                            "s3:GetObject"
+                            "s3:GetObject",
+                            "s3:PutObject",
+                            "s3:DeleteObject"
                         ],
                         "Effect":"Allow",
                         "Resource":[
                             "arn:aws:s3:::BUCKET_NAME",
-                            "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/\*",
-                        ]
+                            "arn:aws:s3:::BUCKET_NAME/OPTIONAL_PREFIX/*"
+                        ],
+                        "Sid":"s3readwrite"
                     }
                 ]
             }
