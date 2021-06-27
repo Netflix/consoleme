@@ -13,7 +13,39 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 credential_mapping = CredentialAuthorizationMapping()
 
 
-class RoleAccessHandler(BaseMtlsHandler):
+class AuditRolesHandler(BaseMtlsHandler):
+    """Handler for /api/v2/audit/roles
+
+    Returns a list of all roles known to ConsoleMe
+    """
+
+    allowed_methods = ["GET"]
+
+    def check_xsrf_cookie(self) -> None:
+        pass
+
+    async def get(self):
+        """
+        GET /api/v2/audit/roles
+        """
+        app_name = self.requester.get("name") or self.requester.get("username")
+        stats.count(
+            "AuditRoleHandler.get",
+            tags={
+                "requester": app_name,
+            },
+        )
+
+        roles = await credential_mapping.all_roles()
+
+        self.write(
+            WebResponse(status=Status2.success, status_code=200, data=roles).json(
+                exclude_unset=True
+            )
+        )
+
+
+class AuditRolesAccessHandler(BaseMtlsHandler):
     """Handler for /api/v2/audit/roles/{accountNumber}/{roleName}/access
 
     Returns a list of groups with access to the requested role
