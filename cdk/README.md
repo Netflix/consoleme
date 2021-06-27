@@ -4,11 +4,12 @@
 
 ConsoleMe is a web service that makes AWS IAM permissions and credential management easier for end-users and cloud administrators.
 
-Recently, I started to work on a new project and found the need to deploy ConsoleMe in a way that it would be available for multiple users, authenticating with the corporate authentication tools and scaled without managing servers.
+The CDK deployment was created to help more people deploy ConsoleMe easily, authenticating with corporate
+authentication tools and scaling without managing servers.
 
 ## Architecture
 
-The main idea is to use serverless services in order to remove the need from managing servers.
+The main idea is to use serverless services in order to remove the need to manage servers.
 
 ![ConsoleMe on ECS Architecture](architecture.png "ConsoleMe on ECS Architecture")
 
@@ -22,6 +23,10 @@ The main idea is to use serverless services in order to remove the need from man
   ```
   $ cp config.example.yaml config.yaml
   ```
+
+In the config.yaml file, set a strong random password for the `admin_temp_password` key, and a different strong random
+password for the `jwt_secret` key. You can use the following command to generate a strong random password:
+`openssl rand -base64 16`.
 
 - MacOS / Linux computer with Docker: https://docs.docker.com/get-docker/
 - NodeJS 12 or later AWS CDK command line interface installed on your computer.
@@ -45,8 +50,22 @@ The main idea is to use serverless services in order to remove the need from man
   $ pip install --upgrade pipenv
   ```
 
-- Bootstrapped CDK environment using the `modern` bootstrap template.
-  This is required to be done on each account in order to enable the `trust` functionality
+- Use Pipenv to create and activate your virutal environment:
+  To initiate the virtualenv on MacOS and Linux and install the required dependencies:
+
+  ```
+  $ pipenv install --dev
+  ```
+
+  After the init process completes, and the virtualenv is created, you can use the following
+  step to activate your virtualenv.
+
+  ```
+  $ pipenv shell
+  ```
+
+- Bootstrap the CDK environment using the `modern` bootstrap template.
+  This is required for each AWS account in order to enable the `trust` functionality
   which is required by the `cdk-assume-role-credential-plugin`.
 
   Main account bootstrapping:
@@ -62,19 +81,6 @@ The main idea is to use serverless services in order to remove the need from man
   ```
 
 ### Preparing the CDK Environment
-
-To initiate the virtualenv on MacOS and Linux and install the required dependencies:
-
-```
-$ pipenv install --dev
-```
-
-After the init process completes, and the virtualenv is created, you can use the following
-step to activate your virtualenv.
-
-```
-$ pipenv shell
-```
 
 At this point you can now synthesize the CloudFormation template for this code.
 
