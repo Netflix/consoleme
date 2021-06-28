@@ -1,13 +1,8 @@
 import "./SelfService.css";
 import { Button, Divider, Header, Message, Modal } from "semantic-ui-react";
 import React, { Component } from "react";
-import "brace";
-import "brace/ext/language_tools";
-import "brace/theme/monokai";
-import "brace/mode/json";
 import MonacoEditor from "react-monaco-editor";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-
 
 const editor_options = {
   selectOnLineNumbers: true,
@@ -160,7 +155,7 @@ class SelfServiceModal extends Component {
       </Modal.Actions>
     ) : (
       <Modal.Actions>
-        <Button onClick={() => this.setState({open:false})}>Cancel</Button>
+        <Button onClick={() => this.setState({ open: false })}>Cancel</Button>
         <Button
           content="Add to Policy"
           labelPosition="right"
@@ -175,8 +170,13 @@ class SelfServiceModal extends Component {
 
     return (
       // TODO: Resolve lint error with the following line
-      <Modal closeIcon onOpen={() => this.setState({open:true})} onClose={() => this.setState({open:false})}
-             open={this.state.open} trigger={<a>Advanced Editor</a>}>
+      <Modal
+        closeIcon
+        onOpen={() => this.setState({ open: true })}
+        onClose={() => this.setState({ open: false })}
+        open={this.state.open}
+        trigger={<a>Advanced Editor</a>}
+      >
         <Header>Advanced Editor</Header>
         <Message info>
           <Message.Header>Edit your permissions in JSON format.</Message.Header>

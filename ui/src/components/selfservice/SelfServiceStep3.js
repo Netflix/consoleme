@@ -1,4 +1,3 @@
-import _ from "lodash";
 import React, { Component } from "react";
 import {
   Button,
@@ -6,17 +5,11 @@ import {
   Form,
   Grid,
   Header,
-  Label,
   Message,
   Tab,
-  Table,
   TextArea,
 } from "semantic-ui-react";
 import YAML from "yaml";
-import "brace";
-import "brace/ext/language_tools";
-import "brace/theme/monokai";
-import "brace/mode/json";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import "monaco-yaml/lib/esm/monaco.contribution";
 import { MonacoDiffEditor } from "react-monaco-editor";
@@ -50,6 +43,7 @@ class SelfServiceStep3 extends Component {
       dry_run_policy: "",
       old_policy: "",
       new_policy: "",
+      role: this.props.role,
     };
     this.inlinePolicyEditorRef = React.createRef();
     this.editorDidMount = this.editorDidMount.bind(this);
@@ -71,10 +65,10 @@ class SelfServiceStep3 extends Component {
             action: "attach",
             policy: {
               policy_document: JSON.parse(updated_policy),
-            }
-          }
-        ]
-      }
+            },
+          },
+        ],
+      },
     };
 
     const response = await this.props.sendRequestCommon(
@@ -94,11 +88,15 @@ class SelfServiceStep3 extends Component {
         this.setState({
           new_policy: response.extended_request.changes.changes[0].policy,
           old_policy: response.extended_request.changes.changes[0].old_policy,
-        })
+        });
       } else {
         this.setState({
-          new_policy: JSON.stringify(response.extended_request.changes.changes[0].policy.policy_document, null, '\t'),
-        })
+          new_policy: JSON.stringify(
+            response.extended_request.changes.changes[0].policy.policy_document,
+            null,
+            "\t"
+          ),
+        });
       }
     }
   }
@@ -139,8 +137,8 @@ class SelfServiceStep3 extends Component {
   }
 
   buildMonacoEditor() {
-    const {updated_policy} = this.props;
-    const {old_policy, new_policy} = this.state;
+    const { updated_policy } = this.props;
+    const { old_policy, new_policy } = this.state;
     const options = {
       selectOnLineNumbers: true,
       renderSideBySide: true,
@@ -157,73 +155,19 @@ class SelfServiceStep3 extends Component {
     const language = this.getStringFormat(updated_policy);
 
     return (
-       <MonacoDiffEditor
-          language={language}
-          width="100%"
-          height="500"
-          original={old_policy}
-          value={new_policy}
-          editorWillMount={this.editorWillMount}
-          editorDidMount={this.editorDidMount}
-          options={options}
-          theme="vs-light"
-          alwaysConsumeMouseWheel={false}
-       />
+      <MonacoDiffEditor
+        language={language}
+        width="100%"
+        height="500"
+        original={old_policy}
+        value={new_policy}
+        editorWillMount={this.editorWillMount}
+        editorDidMount={this.editorDidMount}
+        options={options}
+        theme="vs-light"
+        alwaysConsumeMouseWheel={false}
+      />
     );
-  }
-
-  buildPermissionsTable() {
-    const { permissions, services } = this.props;
-    const permissionRows = permissions.map((permission) => {
-      const serviceDetail = _.find(services, { key: permission.service });
-      return (
-        <Table.Row>
-          <Table.Cell>{serviceDetail.text}</Table.Cell>
-          <Table.Cell collapsing textAlign="left">
-            {Object.keys(permission).map((key) => {
-              if (
-                key === "actions" ||
-                key === "service" ||
-                key === "condition"
-              ) {
-                return null;
-              }
-              return (
-                <Label as="a">
-                  {key}
-                  <Label.Detail>{permission[key]}</Label.Detail>
-                </Label>
-              );
-            })}
-          </Table.Cell>
-          <Table.Cell>
-            {permission.actions.map((action) => {
-              const actionDetail = _.find(serviceDetail.actions, {
-                name: action,
-              });
-              return (
-                <Label as="a" color="olive">
-                  {actionDetail.text}
-                </Label>
-              );
-            })}
-          </Table.Cell>
-        </Table.Row>
-      );
-    });
-
-    const permissionTable = (
-      <Table celled striped selectable>
-        <Table.Header>
-          <Table.HeaderCell>Service</Table.HeaderCell>
-          <Table.HeaderCell>Resource</Table.HeaderCell>
-          <Table.HeaderCell>Actions</Table.HeaderCell>
-        </Table.Header>
-        <Table.Body>{permissionRows}</Table.Body>
-      </Table>
-    );
-
-    return permissionTable;
   }
 
   handleAdminSubmit() {
@@ -329,6 +273,7 @@ class SelfServiceStep3 extends Component {
       messages,
       requestId,
       statement,
+      role,
     } = this.state;
 
     const active = custom_statement !== statement;
@@ -346,38 +291,41 @@ class SelfServiceStep3 extends Component {
         </Message>
       ) : null;
 
-    const submission_buttons = admin_bypass_approval_enabled ? (
-      <Grid columns={2}>
-        <Grid.Row>
-          <Grid.Column>
-            <Button
-              content="Submit and apply without approval"
-              disabled={isError}
-              onClick={this.handleAdminSubmit}
-              positive
-              fluid
-            />
-          </Grid.Column>
-          <Grid.Column>
-            <Button
-              content="Submit"
-              disabled={isError}
-              onClick={this.handleSubmit}
-              primary
-              fluid
-            />
-          </Grid.Column>
-        </Grid.Row>
-      </Grid>
-    ) : (
-      <Button
-        content="Submit"
-        disabled={isError}
-        fluid
-        onClick={this.handleSubmit}
-        primary
-      />
-    );
+    // Only allow admin approval on AwsResource requests and not templated requests
+    const submission_buttons =
+      admin_bypass_approval_enabled &&
+      role?.principal?.principal_type === "AwsResource" ? (
+        <Grid columns={2}>
+          <Grid.Row>
+            <Grid.Column>
+              <Button
+                content="Submit and apply without approval"
+                disabled={isError}
+                onClick={this.handleAdminSubmit}
+                positive
+                fluid
+              />
+            </Grid.Column>
+            <Grid.Column>
+              <Button
+                content="Submit"
+                disabled={isError}
+                onClick={this.handleSubmit}
+                primary
+                fluid
+              />
+            </Grid.Column>
+          </Grid.Row>
+        </Grid>
+      ) : (
+        <Button
+          content="Submit"
+          disabled={isError}
+          fluid
+          onClick={this.handleSubmit}
+          primary
+        />
+      );
 
     const jsonEditor = this.buildMonacoEditor();
     return (
