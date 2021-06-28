@@ -398,12 +398,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WebResponse"
-  /audit/roles/{account_id}/{role_name}/access:
+  /audit/roles:
     get:
-      summary:
+      summary: retrieve a list of IAM roles
       tags:
         - audit
-        - privileged
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebResponse"
+  /audit/roles/{account_id}/{role_name}/access:
+    get:
+      summary: retrieve a list of groups with access to the specified role
+      tags:
+        - audit
       parameters:
         - $ref: "#/components/parameters/AccountId"
         - $ref: "#/components/parameters/RoleName"
