@@ -11,7 +11,7 @@ from constants import SPOKE_BASE_NAME
 class ConsolemeSpokeAccountsStack(cdk.Stack):
     """
     Spoke accounts stack for running ConsoleMe on ECS
-    Granting the neccesary permissions for ConsoleMe main account role
+    Granting the necessary permissions for ConsoleMe main account role
     """
 
     def __init__(self, scope: cdk.Construct, id: str, **kwargs) -> None:
@@ -20,13 +20,13 @@ class ConsolemeSpokeAccountsStack(cdk.Stack):
         trusted_role_arn = (
             "arn:aws:iam::"
             + boto3.client("sts").get_caller_identity().get("Account")
-            + ":role/ConsolemeTaskRole"
+            + ":role/ConsoleMeTaskRole"
         )
 
         spoke_role = iam.Role(
             self,
             f"{SPOKE_BASE_NAME}TrustRole",
-            role_name="ConsolemeTrustRole",
+            role_name="ConsoleMeTrustRole",
             assumed_by=iam.ArnPrincipal(arn=trusted_role_arn),
         )
 

@@ -24,7 +24,7 @@ class VPCStack(cdk.NestedStack):
             self,
             "LBSG",
             vpc=vpc,
-            description="Consoleme ECS service load balancer security group",
+            description="ConsoleMe ECS service load balancer security group",
             allow_all_outbound=True,
         )
 
@@ -48,7 +48,7 @@ class VPCStack(cdk.NestedStack):
             self,
             "ECSG",
             vpc=vpc,
-            description="Consoleme Redis security group",
+            description="ConsoleMe Redis security group",
             allow_all_outbound=True,
         )
 

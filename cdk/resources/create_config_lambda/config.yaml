@@ -110,6 +110,6 @@ challenge_url:
 {spoke_accounts_objects_list_yaml}
 
 policies:
-  role_name: ConsolemeTrustRole
+  role_name: ConsoleMeTrustRole
 
 support_contact: consoleme_admin@{issuer}

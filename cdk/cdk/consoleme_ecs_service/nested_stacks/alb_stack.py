@@ -26,7 +26,7 @@ class ALBStack(cdk.NestedStack):
 
         consoleme_alb = lb.ApplicationLoadBalancer(
             self,
-            "ConsolemeALB",
+            "ConsoleMeALB",
             vpc=vpc,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
             internet_facing=True,
@@ -35,7 +35,7 @@ class ALBStack(cdk.NestedStack):
         consoleme_alb.add_security_group(
             ec2.SecurityGroup.from_security_group_id(
                 self,
-                "ImportedConsolemeLBSG",
+                "ImportedConsoleMeLBSG",
                 security_group_id=consoleme_sg.security_group_id,
                 mutable=False,
             )

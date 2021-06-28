@@ -8,8 +8,8 @@ config_yaml = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
 domain_prefix = config_yaml["domain_prefix"]
 
-BASE_NAME = "ConsolemeECS"
-SPOKE_BASE_NAME = "ConsolemeSpoke"
+BASE_NAME = "ConsoleMeECS"
+SPOKE_BASE_NAME = "ConsoleMeSpoke"
 
 APPLICATION_PREFIX = "consoleme-" + domain_prefix
 APPLICATION_SUFFIX = "secure".lower()

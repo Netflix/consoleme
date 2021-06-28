@@ -20,7 +20,7 @@ from cdk.consoleme_ecs_service.constants import BASE_NAME, SPOKE_BASE_NAME
 
 config_yaml = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 
-spoke_accounts = config_yaml["spoke_accounts"]
+spoke_accounts = config_yaml.get("spoke_accounts", [])
 
 main_environment = cdk.Environment(
     account=boto3.client("sts").get_caller_identity().get("Account"),
@@ -39,6 +39,6 @@ for spoke_account_id in spoke_accounts:
 
 consoleme_ecs_service_stack = ConsolemeEcsServiceStack(
     app, BASE_NAME, env=main_environment
-)  # Consoleme account
+)  # ConsoleMe account
 
 app.synth()

@@ -11,7 +11,7 @@ with open("../README.md") as fp:
 setuptools.setup(
     name="consoleme_ecs_service",
     version="0.0.1",
-    description="AWS CDK stack for Consoleme ECS service",
+    description="AWS CDK stack for ConsoleMe ECS service",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Avishay Bar",

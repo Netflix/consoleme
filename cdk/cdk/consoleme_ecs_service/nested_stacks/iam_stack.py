@@ -22,7 +22,7 @@ class IAMStack(cdk.NestedStack):
         ecs_task_role = iam.Role(
             self,
             "TaskRole",
-            role_name="ConsolemeTaskRole",
+            role_name="ConsoleMeTaskRole",
             assumed_by=iam.ServicePrincipal("ecs-tasks.amazonaws.com"),
         )
 
@@ -122,7 +122,7 @@ class IAMStack(cdk.NestedStack):
         trust_role = iam.Role(
             self,
             "TrustRole",
-            role_name="ConsolemeTrustRole",
+            role_name="ConsoleMeTrustRole",
             assumed_by=iam.ArnPrincipal(arn=ecs_task_role.role_arn),
         )
 

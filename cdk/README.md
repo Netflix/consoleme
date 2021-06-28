@@ -112,7 +112,7 @@ Also, the `aws-lambda-python` CDK construct is using docker to package the lambd
 
 ### ConsoleMe Admin User
 
-The CDK stack will provision the consoleme administrator user. The user name supplied with this template is `consoleme_admin`.
+The CDK stack will provision the ConsoleMe administrator user. The user name supplied with this template is `consoleme_admin`.
 You can set the user temporary password in the `config.yaml` file, login and update it afterwards (Cognito will ask you to do that).
 
 ## Security
@@ -132,5 +132,5 @@ You can set the user temporary password in the `config.yaml` file, login and upd
 
 - Allow adjusting compute sizes via configuration, such as Redis node size and containers CPU and RAM allocation.
 - Elasticache authentication, rather than relying only on security groups for increased security.
-- Separate task definitions for celery and consoleme applications.
+- Separate task definitions for celery and ConsoleMe applications.
 - Secret manager integration, instead of storing the secrets in clear text on the configuration file.

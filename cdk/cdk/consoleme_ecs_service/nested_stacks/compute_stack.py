@@ -49,7 +49,7 @@ class ComputeStack(cdk.NestedStack):
 
         consoleme_ecs_task_definition = ecs.FargateTaskDefinition(
             self,
-            "ConsolemeTaskDefinition",
+            "ConsoleMeTaskDefinition",
             cpu=2048,
             memory_limit_mib=4096,
             execution_role=imported_task_execution_role,
@@ -110,7 +110,7 @@ class ComputeStack(cdk.NestedStack):
         consoleme_imported_alb = (
             lb.ApplicationLoadBalancer.from_application_load_balancer_attributes(
                 self,
-                "ConsolemeImportedALB",
+                "ConsoleMeImportedALB",
                 load_balancer_arn=consoleme_alb.load_balancer_arn,
                 vpc=vpc,
                 security_group_id=consoleme_sg.security_group_id,
@@ -169,7 +169,7 @@ class ComputeStack(cdk.NestedStack):
         )
 
         consoleme_imported_alb.add_listener(
-            "ConsolemeALBListener",
+            "ConsoleMeALBListener",
             protocol=lb.ApplicationProtocol.HTTPS,
             port=443,
             certificates=[certificate],

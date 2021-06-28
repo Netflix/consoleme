@@ -34,7 +34,7 @@ class ConfigStack(cdk.NestedStack):
         super().__init__(scope, id, **kwargs)
 
         config_yaml = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
-        spoke_accounts = config_yaml["spoke_accounts"]
+        spoke_accounts = config_yaml.get("spoke_accounts", [])
 
         cognito_user_pool_client = cognito.UserPoolClient(
             self,
