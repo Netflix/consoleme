@@ -9,19 +9,7 @@ import {
   Tab,
   TextArea,
 } from "semantic-ui-react";
-import YAML from "yaml";
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-import "monaco-yaml/lib/esm/monaco.contribution";
-import { MonacoDiffEditor } from "react-monaco-editor";
-
-window.MonacoEnvironment = {
-  getWorkerUrl(moduleId, label) {
-    if (label === "yaml") {
-      return "./yaml.worker.bundle.js";
-    }
-    return "./editor.worker.bundle.js";
-  },
-};
+import MonacoDiffComponent from "../blocks/MonacoDiffComponent";
 
 class SelfServiceStep3 extends Component {
   constructor(props) {
@@ -102,7 +90,7 @@ class SelfServiceStep3 extends Component {
   }
 
   editorDidMount(editor) {
-    editor.modifiedEditor.onDidChangeModelDecorations(() => {
+    editor._modifiedEditor.onDidChangeModelDecorations(() => {
       const { modifiedEditor } = this.state;
       const model = modifiedEditor.getModel();
       if (model === null || model.getModeId() !== "json") {
@@ -111,7 +99,7 @@ class SelfServiceStep3 extends Component {
 
       const owner = model.getModeId();
       const uri = model.uri;
-      const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
+      const markers = editor.getModelMarkers({ owner, resource: uri });
       this.onLintError(
         markers.map(
           (marker) =>
@@ -120,52 +108,22 @@ class SelfServiceStep3 extends Component {
       );
     });
     this.setState({
-      modifiedEditor: editor.modifiedEditor,
+      modifiedEditor: editor._modifiedEditor,
     });
   }
 
-  getStringFormat(str) {
-    try {
-      JSON.parse(str);
-      return "json";
-    } catch (e) {}
-    try {
-      YAML.parse(str);
-      return "yaml";
-    } catch (e) {}
-    return "";
-  }
+  onValueChange() {}
 
   buildMonacoEditor() {
-    const { updated_policy } = this.props;
     const { old_policy, new_policy } = this.state;
-    const options = {
-      selectOnLineNumbers: true,
-      renderSideBySide: true,
-      enableSplitViewResizing: false,
-      quickSuggestions: true,
-      scrollbar: {
-        alwaysConsumeMouseWheel: false,
-      },
-      scrollBeyondLastLine: false,
-      automaticLayout: true,
-      readOnly: true,
-    };
-
-    const language = this.getStringFormat(updated_policy);
 
     return (
-      <MonacoDiffEditor
-        language={language}
-        width="100%"
-        height="500"
-        original={old_policy}
-        value={new_policy}
-        editorWillMount={this.editorWillMount}
-        editorDidMount={this.editorDidMount}
-        options={options}
-        theme="vs-light"
-        alwaysConsumeMouseWheel={false}
+      <MonacoDiffComponent
+        oldValue={old_policy}
+        newValue={new_policy}
+        readOnly={true}
+        onLintError={this.onLintError}
+        onValueChange={this.onValueChange}
       />
     );
   }
@@ -273,6 +231,8 @@ class SelfServiceStep3 extends Component {
       messages,
       requestId,
       statement,
+      old_policy,
+      new_policy,
       role,
     } = this.state;
 
@@ -327,7 +287,6 @@ class SelfServiceStep3 extends Component {
         />
       );
 
-    const jsonEditor = this.buildMonacoEditor();
     return (
       <div>
         <Header size={"huge"}>Review Changes & Submit</Header>
@@ -335,7 +294,13 @@ class SelfServiceStep3 extends Component {
           Use the following editor to review the changes you've modified before
           submitting for team review.
         </p>
-        {jsonEditor}
+        <MonacoDiffComponent
+          oldValue={old_policy}
+          newValue={new_policy}
+          readOnly={true}
+          onLintError={this.onLintError}
+          onValueChange={this.onValueChange}
+        />
         <Divider />
         <Header>Justification</Header>
         <Form>
