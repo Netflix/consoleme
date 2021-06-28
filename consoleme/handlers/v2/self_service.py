@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.auth import can_admin_policies
@@ -32,8 +34,32 @@ class PermissionTemplatesHandler(BaseAPIV2Handler):
     allowed_methods = ["GET"]
 
     async def get(self):
-        permission_templates_config: dict = config.get(
+        """
+        Returns permission templates.
+
+        Combines permission templates from dynamic configuration to the ones discovered in static configuration, with a
+        priority to the templates defined in dynamic configuration.
+
+        If no permission_templates are defined in static configuration, this function will substitute the static
+        configuration templates with PERMISSION_TEMPLATE_DEFAULTS.
+        """
+        permission_templates_dynamic_config: List[Dict[str, Any]] = config.get(
+            "dynamic_config.permission_templates", []
+        )
+
+        permission_templates_config: List[Dict[str, Any]] = config.get(
             "permission_templates", PERMISSION_TEMPLATE_DEFAULTS
         )
 
-        self.write({"permission_templates": permission_templates_config})
+        seen = set()
+        compiled_permission_templates = []
+        for item in [
+            *permission_templates_dynamic_config,
+            *permission_templates_config,
+        ]:
+            if item["key"] in seen:
+                continue
+            compiled_permission_templates.append(item)
+            seen.add(item["key"])
+
+        self.write({"permission_templates": compiled_permission_templates})

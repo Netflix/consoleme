@@ -157,9 +157,20 @@ class BaseDynamoHandler:
                     with attempt:
                         batch.put_item(Item=self._data_to_dynamo_replace(item))
 
-    def parallel_scan_table(self, table, total_threads=os.cpu_count(), loop=None):
+    def parallel_scan_table(
+        self,
+        table,
+        total_threads=os.cpu_count(),
+        loop=None,
+        dynamodb_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        if not dynamodb_kwargs:
+            dynamodb_kwargs = {}
+
         async def _scan_segment(segment, total_segments):
-            response = table.scan(Segment=segment, TotalSegments=total_segments)
+            response = table.scan(
+                Segment=segment, TotalSegments=total_segments, **dynamodb_kwargs
+            )
             items = response.get("Items", [])
 
             while "LastEvaluatedKey" in response:
@@ -167,6 +178,7 @@ class BaseDynamoHandler:
                     ExclusiveStartKey=response["LastEvaluatedKey"],
                     Segment=segment,
                     TotalSegments=total_segments,
+                    **dynamodb_kwargs,
                 )
                 items.extend(self._data_from_dynamo_replace(response["Items"]))
 
@@ -1158,8 +1170,6 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     def count_arn_errors(self, error_count, items):
         for item in items:
-            if int(item["ttl"]) < int(time.time()):
-                continue
             arn = item.get("arn")
             if not error_count.get(arn):
                 error_count[arn] = 0
@@ -1168,7 +1178,13 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     def count_cloudtrail_errors_by_arn(self):
         error_count = {}
-        items = self.parallel_scan_table(self.cloudtrail_table)
+        items = self.parallel_scan_table(
+            self.cloudtrail_table,
+            dynamodb_kwargs={
+                "Select": "SPECIFIC_ATTRIBUTES",
+                "ProjectionExpression": "arn",
+            },
+        )
         error_count = self.count_arn_errors(
             error_count, self._data_from_dynamo_replace(items)
         )

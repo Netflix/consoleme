@@ -2,7 +2,6 @@ import sys
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseMtlsHandler
-from consoleme.lib.auth import can_audit
 from consoleme.lib.cloud_credential_authorization_mapping import (
     CredentialAuthorizationMapping,
 )
@@ -14,7 +13,39 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 credential_mapping = CredentialAuthorizationMapping()
 
 
-class RoleAccessHandler(BaseMtlsHandler):
+class AuditRolesHandler(BaseMtlsHandler):
+    """Handler for /api/v2/audit/roles
+
+    Returns a list of all roles known to ConsoleMe
+    """
+
+    allowed_methods = ["GET"]
+
+    def check_xsrf_cookie(self) -> None:
+        pass
+
+    async def get(self):
+        """
+        GET /api/v2/audit/roles
+        """
+        app_name = self.requester.get("name") or self.requester.get("username")
+        stats.count(
+            "AuditRoleHandler.get",
+            tags={
+                "requester": app_name,
+            },
+        )
+
+        roles = await credential_mapping.all_roles()
+
+        self.write(
+            WebResponse(status=Status2.success, status_code=200, data=roles).json(
+                exclude_unset=True
+            )
+        )
+
+
+class AuditRolesAccessHandler(BaseMtlsHandler):
     """Handler for /api/v2/audit/roles/{accountNumber}/{roleName}/access
 
     Returns a list of groups with access to the requested role
@@ -36,25 +67,15 @@ class RoleAccessHandler(BaseMtlsHandler):
             "account_id": account_id,
             "role_name": role_name,
         }
-
         app_name = self.requester.get("name") or self.requester.get("username")
-        is_authorized = can_audit(app_name)
-
-        if not is_authorized:
-            stats.count(
-                f"{log_data['function']}.unauthorized",
-                tags={
-                    "app_name": app_name,
-                    "account_id": account_id,
-                    "role_name": role_name,
-                    "authorized": is_authorized,
-                },
-            )
-            log_data["message"] = "App is unauthorized to retrieve audit data"
-            log_data["app_name"] = app_name
-            log.error(log_data)
-            self.write_error(403, message="App is unauthorized to retrieve audit data")
-            return
+        stats.count(
+            "RoleAccessHandler.get",
+            tags={
+                "requester": app_name,
+                "account_id": account_id,
+                "role_name": role_name,
+            },
+        )
 
         groups = await credential_mapping.determine_role_authorized_groups(
             account_id, role_name
