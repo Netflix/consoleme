@@ -83,7 +83,7 @@ class MonacoDiffComponent extends React.Component {
         editorDidMount={this.editorDidMount}
         options={options}
         onChange={this.onChange}
-        theme="vs-dark"
+        theme="vs-light"
         alwaysConsumeMouseWheel={false}
       />
     );

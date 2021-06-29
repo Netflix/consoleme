@@ -2,9 +2,21 @@
   width: auto;
 }
 
+.ui.basic.segment {
+  width: 90%;
+}
+
+.ui.accordion, .ui.accordion .accordion {
+  margin-bottom: 1em;
+}
+
 .ui.steps .step:after,
 .ui.steps .active.step:after {
   display: none;
+}
+
+.ui.steps {
+  border: none;
 }
 
 .ui.steps .step {
@@ -12,8 +24,14 @@
   border-right: 0px;
 }
 
-.ui.steps .step.active {
+.ui.steps .step.active,
+.ui.steps:hover .step.active:hover
+{
   background: #ffffff;
+}
+
+.step1:hover, .step2:hover, .step3:hover {
+  background: #ffffff !important;
 }
 
 .ui.steps .step .description {
@@ -26,9 +44,6 @@
 
 .ui.modal > .message {
   margin-top: 0px;
-}
-.actions {
-  text-align: right;
 }
 
 .advancedOption > .menu.transition,
@@ -45,6 +60,28 @@
   margin-bottom: 0px;
   position: absolute;
   bottom: 0;
+}
+
+.ui.items {
+  border: 1px solid rgba(34,36,38,.15);
+  border-radius: .28571429rem;
+}
+
+
+.ui.divided.items>.item:first-child .button {
+  border-radius: 0px .28571429rem 0px 0px;
+}
+
+.ui.divided.items>.item:not(first-child) .button {
+  border-radius: 0px;
+}
+
+.ui.items>.item>.content>.header:not(.ui) {
+  width: 100%;
+}
+
+.ui.divided.items>.item:not(first-child) {
+  padding-top: 0px;
 }
 
 .ui.items>.item .extra> .cogs.icon.actions {
@@ -78,7 +115,7 @@
 .step2 > .icon {
   font-size: 4em;
   font-family: Step;
-  content: url("../../assets/icons/stepper2Complete.svg");
+  content: url("../../assets/icons/stepper2Pending.svg");
 }
 
 .active.step2 > .icon {
@@ -95,7 +132,7 @@
 .step3 > .icon {
   font-size: 4em;
   font-family: Step;
-  content: url("../../assets/icons/stepper3Complete.svg");
+  content: url("../../assets/icons/stepper3Pending.svg");
 }
 
 .active.step3 > .icon {

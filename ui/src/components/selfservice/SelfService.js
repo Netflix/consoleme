@@ -26,6 +26,7 @@ class SelfService extends Component {
       includeAccounts: [],
       excludeAccounts: [],
       updated_policy: "",
+      addPolicyMessage: false,
     };
   }
 
@@ -38,7 +39,7 @@ class SelfService extends Component {
     if (!config) {
       return;
     }
-    const { services } = this.state;
+    const { services, currStep } = this.state;
     Object.keys(config.permissions_map || []).forEach((name) => {
       const service = config.permissions_map[name];
       services.push({
@@ -174,6 +175,12 @@ class SelfService extends Component {
     });
   }
 
+  updatePolicyMessage(value) {
+      this.setState({
+      addPolicyMessage: value,
+    });
+  }
+
   handleRoleUpdate(role) {
     this.setState({ role });
   }
@@ -207,6 +214,7 @@ class SelfService extends Component {
       role,
       services,
       updated_policy,
+      addPolicyMessage,
     } = this.state;
 
     let SelfServiceStep = null;
@@ -233,6 +241,7 @@ class SelfService extends Component {
             includeAccounts={includeAccounts}
             excludeAccounts={excludeAccounts}
             updated_policy={updated_policy}
+            updatePolicyMessage={this.updatePolicyMessage.bind(this)}
             handleStepClick={this.handleStepClick.bind(this)}
             updatePolicy={this.updatePolicy.bind(this)}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
@@ -255,6 +264,8 @@ class SelfService extends Component {
             services={services}
             permissions={permissions}
             updated_policy={updated_policy}
+            handleStepClick={this.handleStepClick.bind(this)}
+            updatePolicyMessage={this.updatePolicyMessage.bind(this)}
             admin_bypass_approval_enabled={admin_bypass_approval_enabled}
             export_to_terraform_enabled={export_to_terraform_enabled}
             {...this.props}
@@ -290,8 +301,17 @@ class SelfService extends Component {
         </Message>
       ) : null;
 
+    const policyMessage =
+       this.state.addPolicyMessage === true ? (
+          <Message info>
+            <p>Your edit has been successfully saved to the policy. Add additional updates using the Advanced Editor
+              or choose "Next" to continue and review updates </p>
+          </Message>
+       ) : null;
+
     return (
       <Segment basic>
+        {policyMessage}
         {headerMessage}
         <Step.Group fluid>
           <Step
@@ -316,7 +336,6 @@ class SelfService extends Component {
           >
             <Icon
               name="search plus"
-              disabled={currStep === SelfServiceStepEnum.STEP1}
             />
             <Step.Content>
               <Step.Title>Modify Policy</Step.Title>
@@ -329,7 +348,6 @@ class SelfService extends Component {
           >
             <Icon
               name="handshake"
-              disabled={currStep !== SelfServiceStepEnum.STEP3}
             />
             <Step.Content>
               <Step.Title>Review and Submit</Step.Title>

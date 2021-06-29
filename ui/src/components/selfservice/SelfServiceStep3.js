@@ -1,11 +1,14 @@
 import React, { Component } from "react";
 import {
   Button,
+  Dimmer,
   Divider,
   Form,
   Grid,
   Header,
+  Loader,
   Message,
+  Segment,
   Tab,
   TextArea,
 } from "semantic-ui-react";
@@ -32,6 +35,8 @@ class SelfServiceStep3 extends Component {
       old_policy: "",
       new_policy: "",
       role: this.props.role,
+      active: true,
+      requestUrl: null,
     };
     this.inlinePolicyEditorRef = React.createRef();
     this.editorDidMount = this.editorDidMount.bind(this);
@@ -42,6 +47,9 @@ class SelfServiceStep3 extends Component {
 
   async componentDidMount() {
     const { role, updated_policy } = this.props;
+    this.setState({
+      messages: [],
+    });
 
     const payload = {
       dry_run: true,
@@ -76,6 +84,7 @@ class SelfServiceStep3 extends Component {
         this.setState({
           new_policy: response.extended_request.changes.changes[0].policy,
           old_policy: response.extended_request.changes.changes[0].old_policy,
+          active: false,
         });
       } else {
         this.setState({
@@ -84,9 +93,11 @@ class SelfServiceStep3 extends Component {
             null,
             "\t"
           ),
+          active: false,
         });
       }
     }
+    this.props.updatePolicyMessage(false);
   }
 
   editorDidMount(editor) {
@@ -177,13 +188,15 @@ class SelfServiceStep3 extends Component {
 
         const messages = [];
         if (response) {
-          const { request_created, request_id } = response;
+          const { request_created, request_id, request_url } = response;
           if (request_created === true) {
+            messages.push("success");
             return this.setState({
               isLoading: false,
               isSuccess: true,
               messages,
               requestId: request_id,
+              requestUrl: request_url,
             });
           }
           messages.push(
@@ -221,6 +234,39 @@ class SelfServiceStep3 extends Component {
     }
   };
 
+  getMessages() {
+    const { isSuccess, messages, requestUrl } = this.state;
+    if (messages.length > 0 && isSuccess === true) {
+      return (
+         <Message positive>
+          <Message.Header>Your request was successful.</Message.Header>
+          You can check your request status from{" "}
+          <a
+            href={requestUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            here
+          </a>
+          .
+          </Message>
+      );
+    } else if (messages.length > 0 && isSuccess === false) {
+      return (
+         <Message negative>
+           <Message.Header>
+            We found some problems for this request.
+           </Message.Header>
+           <Message.List>
+             {messages.map((message) => (
+                <Message.Item>{message}</Message.Item>
+              ))}
+           </Message.List>
+         </Message>
+      );
+    }
+  }
+
   render() {
     const {
       admin_bypass_approval_enabled,
@@ -234,22 +280,10 @@ class SelfServiceStep3 extends Component {
       old_policy,
       new_policy,
       role,
+      active,
     } = this.state;
 
-    const active = custom_statement !== statement;
-    const messagesToShow =
-      messages.length > 0 ? (
-        <Message negative>
-          <Message.Header>
-            We found some problems for this request.
-          </Message.Header>
-          <Message.List>
-            {messages.map((message) => (
-              <Message.Item>{message}</Message.Item>
-            ))}
-          </Message.List>
-        </Message>
-      ) : null;
+    const messagesToShow = this.getMessages();
 
     // Only allow admin approval on AwsResource requests and not templated requests
     const submission_buttons =
@@ -278,13 +312,28 @@ class SelfServiceStep3 extends Component {
           </Grid.Row>
         </Grid>
       ) : (
-        <Button
-          content="Submit"
-          disabled={isError}
-          fluid
-          onClick={this.handleSubmit}
-          primary
-        />
+         <Grid.Row style={{maxWidth: "30em"}}>
+           <Button
+              content={<div><h3 style={{marginBottom: "0px"}}>Go Back</h3>
+                <h3 style={{fontStyle: "italic", opacity: "70%", marginTop: "0px"}}>I need to make edits</h3></div>}
+              disabled={isError}
+              fluid
+              onClick={() => {this.props.handleStepClick("previous");}}
+              style={{width:"50%", display: "inline-block", textAlign: "center", backgroundColor: "#f8f8f9"}}
+              attached="left"
+           />
+           <Button
+              content={<div><h3 style={{marginBottom: "0px"}}>Submit for Review</h3>
+              <h3 style={{fontStyle: "italic", opacity: "70%", marginTop: "0px"}}>Everything looks good</h3></div>}
+              disabled={isError}
+              fluid
+              onClick={this.handleSubmit}
+              style={{width:"50%", display: "inline-block", textAlign: "center"}}
+              positive
+              attached="right"
+           />
+
+         </Grid.Row>
       );
 
     return (
@@ -294,13 +343,18 @@ class SelfServiceStep3 extends Component {
           Use the following editor to review the changes you've modified before
           submitting for team review.
         </p>
-        <MonacoDiffComponent
-          oldValue={old_policy}
-          newValue={new_policy}
-          readOnly={true}
-          onLintError={this.onLintError}
-          onValueChange={this.onValueChange}
-        />
+        <Segment>
+          <Dimmer active={active}>
+            <Loader>Loading</Loader>
+          </Dimmer>
+          <MonacoDiffComponent
+            oldValue={old_policy}
+            newValue={new_policy}
+            readOnly={true}
+            onLintError={this.onLintError}
+            onValueChange={this.onValueChange}
+          />
+        </Segment>
         <Divider />
         <Header>Justification</Header>
         <Form>
@@ -316,32 +370,6 @@ class SelfServiceStep3 extends Component {
       </div>
     );
 
-    const tabContent = isSuccess ? (
-      <Message positive>
-        <Message.Header>Your request was successful.</Message.Header>
-        You can check your request status from{" "}
-        <a
-          href={`/policies/request/${requestId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          here
-        </a>
-        .
-      </Message>
-    ) : (
-      <>
-        <Tab
-          onTabChange={(event, data) =>
-            this.setState({
-              activeIndex: data.activeIndex,
-            })
-          }
-        />
-        <br />
-      </>
-    );
-    return tabContent;
   }
 }
 

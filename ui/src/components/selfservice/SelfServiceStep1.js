@@ -225,7 +225,9 @@ class SelfServiceStep1 extends Component {
                   </Form.Field>
                 </Form>
               </div>
+              <Grid stackable columns={2}>
               <Grid.Row className={"helpContainer"}>
+                <Grid.Column>
               <p className={"help"}>
                 For Help, please visit{" "}
                 <a
@@ -236,15 +238,18 @@ class SelfServiceStep1 extends Component {
                   go/selfserviceiamtldr
                 </a>
               </p>
-                <Button
-                   size="massive"
+                </Grid.Column>
+                <Grid.Column>
+                <Button style={{fontSize: "1.25em", width: "11em", height: "3.5em"}}
                   floated="right"
                   positive
                   onClick={this.props.handleStepClick.bind(this, "next")}
                 >
                   Next
                 </Button>
+                </Grid.Column>
               </Grid.Row>
+              </Grid>
             </Grid.Column>
             <Grid.Column>
               <Header as="h4">Selected Role Information</Header>

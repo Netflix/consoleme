@@ -44,6 +44,10 @@ class SelfServiceStep2 extends Component {
     this.props.updatePolicy(value);
   }
 
+  updatePolicyMessage() {
+    this.props.updatePolicyMessage();
+  }
+
   handleServiceTypeChange(e, { value }) {
     this.setState({
       service: value,
@@ -154,10 +158,23 @@ class SelfServiceStep2 extends Component {
       const { inputs } = config.permissions_map[found.key];
       return (
         <Item key={idx}>
-          <Item.Content>
-            <Item.Header>{serviceName}</Item.Header>
+          <Item.Content style={{paddingLeft: "20px", paddingBottom: "20px"}}>
+            <Button
+               size="tiny"
+               color="red"
+               floated="right"
+               onClick={this.handlePermissionRemove.bind(this, permission)}
+            >
+              Remove
+            </Button>
+            <Item.Header style={{fontSize: "1.5em", marginBottom: "1em"}}>
+              <Grid.Row>
+              {serviceName}
+              </Grid.Row>
+            </Item.Header>
             <Item.Meta>
-              <List relaxed>
+              <Grid columns={2}>
+              <List relaxed style={{ width: "100%", marginTop: ".25em"}}>
                 {Object.keys(permission).map((key) => {
                   if (
                     key === "actions" ||
@@ -168,18 +185,30 @@ class SelfServiceStep2 extends Component {
                   }
                   const inputConfig = _.find(inputs, { name: key });
                   return (
-                    <List.Item>
-                      <Grid.Row style={{display: "flex"}}>
+                    <List.Item style={{ marginRight: "0px"}}>
+                      <Grid.Row style={{display: "flex", fontSize:"0.8750em"}}>
                         {key === "resource_arn" ?
                            <>
-                           <Icon name="users" /> <Header as={"h5"}>RESOURCE</Header>{permission[key]}
-                           </>
+                             <Grid.Column style={{width: "75%", display: "flex"}}>
+                           <Icon name="users" style={{fontSize: "1.5em", color: "black", marginRight: ".75em"}}/>
+                             <Header as={"h5"}>RESOURCE</Header>
+                               </Grid.Column>
+                             <Grid.Column style={{width: "100%"}}>
+                               {permission[key]}
+                             </Grid.Column>
+                             </>
                            : null}
                       </Grid.Row>
-                      <Grid.Row style={{display: "flex"}}>
+                      <Grid.Row style={{display: "flex", fontSize:"0.8750em", marginTop: ".15em"}}>
                         {key === "bucket_prefix" ?
                            <>
-                           <Icon name="folder open" /> <Header as={"h5"}>NAME/PREFIX</Header>{permission[key]}
+                             <Grid.Column style={{width: "75%", display: "flex"}}>
+                           <Icon name="folder open" style={{fontSize: "1.5em", color: "black", marginRight: ".75em"}}/>
+                             <Header as={"h5"}>NAME/PREFIX</Header>
+                             </Grid.Column>
+                             <Grid.Column style={{width: "100%"}}>
+                               {permission[key]}
+                             </Grid.Column>
                            </>
                            :
                            null}
@@ -188,18 +217,15 @@ class SelfServiceStep2 extends Component {
                   );
                 })}
               </List>
+              </Grid>
             </Item.Meta>
-            <Item.Extra>
-              <Button
-                size="tiny"
-                color="red"
-                floated="right"
-                onClick={this.handlePermissionRemove.bind(this, permission)}
-              >
-                Remove
-                <Icon name="right close" />
-              </Button>
-              <Icon name="cogs" rotated={"clockwise"} className={"actions"}/>
+            <Item.Extra style={{ display: "flex", marginTop: "1.75em"}}>
+              <Grid.Column style={{width: "70%", display: "flex"}}>
+              <Icon name="cogs" rotated={"clockwise"}
+                    style={{fontSize: "1.5em", marginLeft: "-4px", color: "black", marginRight: ".75em"}}/>
+              <Header as={"h5"} style={{paddingTop: ".25em", marginTop: "0px"}}>GROUP ACTIONS</Header>
+              </Grid.Column>
+              <Grid.Column style={{width: "100%"}}>
               {permission.actions != null
                 ? permission.actions.map((action) => {
                     const actionDetail = _.find(found.actions, {
@@ -207,12 +233,15 @@ class SelfServiceStep2 extends Component {
                     });
                     return (
                       <Label as="a"
-                             style={{ border: "1px solid #babbbc", backgroundColor: "#ffffff", color: "rgba(0,0,0,.85)"}}>
+                             style={{ border: "1px solid #babbbc",
+                               backgroundColor: "#ffffff", color: "rgba(0,0,0,.85)",
+                               fontSize:"0.8750em", lineHeight: "0.750em", width: "5em", textAlign: "center" }}>
                         {actionDetail.text}
                       </Label>
                     );
                   })
                 : null}
+              </Grid.Column>
             </Item.Extra>
           </Item.Content>
         </Item>
@@ -221,7 +250,7 @@ class SelfServiceStep2 extends Component {
   }
 
   render() {
-    const { config, role, services, updated_policy } = this.props;
+    const { config, role, services, updated_policy, permissions } = this.props;
     const { service } = this.state;
     const { messages } = this.state;
 
@@ -315,19 +344,19 @@ class SelfServiceStep2 extends Component {
               <Header>
                 Your Permissions
                 <Header.Subheader>
-                  The list of permission you have added in this request.
+                  The list of permissions you have added in this request.
                 </Header.Subheader>
               </Header>
-              <Divider />
               <Item.Group divided>{this.getPermissionItems()}</Item.Group>
-              <Divider />
               <Header>
-                You must add at least one resource to continue or choose{" "}
+                {permissions.length === 0 ? <span>You must add at least one resource to continue or choose </span> :
+                   <span>Choose </span>}
                 <SelfServiceModal
                   key={service}
                   config={config}
                   role={role}
                   service={service}
+                  updatePolicyMessage={this.updatePolicyMessage.bind(this)}
                   updateStatement={this.updateStatement.bind(this)}
                   updateExtraActions={this.handleExtraActionsAdd.bind(this)}
                   updateIncludeAccounts={this.handleIncludeAccountsAdd.bind(
@@ -342,9 +371,11 @@ class SelfServiceStep2 extends Component {
               </Header>
               <div style={{textAlign: "center"}}>
                 <Button
-                 size="massive"
+                 style={{fontSize: "1.25em", width: "11em", height: "3.5em"}}
                  positive
-                 onClick={this.props.handleStepClick.bind(this, "next")}
+                 onClick={() => {
+                 this.props.handleStepClick("next");
+                 }}
                 >
                   Next
                 </Button>

@@ -290,7 +290,7 @@ class SelfServiceComponent extends Component {
         <ReactMarkdown linkTarget="_blank" source={description} />
         {blocks}
         {advancedOptions}
-        <Divider />
+
         {messagesToShow}
         <Button
           fluid
