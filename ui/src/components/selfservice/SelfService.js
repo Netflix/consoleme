@@ -1,7 +1,7 @@
 import qs from "qs";
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
-import { Button, Icon, Message, Segment, Step } from "semantic-ui-react";
+import { Icon, Message, Segment, Step } from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
 import SelfServiceStep1 from "./SelfServiceStep1";
 import SelfServiceStep2 from "./SelfServiceStep2";
@@ -39,7 +39,7 @@ class SelfService extends Component {
     if (!config) {
       return;
     }
-    const { services, currStep } = this.state;
+    const { services } = this.state;
     Object.keys(config.permissions_map || []).forEach((name) => {
       const service = config.permissions_map[name];
       services.push({
@@ -176,7 +176,7 @@ class SelfService extends Component {
   }
 
   updatePolicyMessage(value) {
-      this.setState({
+    this.setState({
       addPolicyMessage: value,
     });
   }
@@ -214,7 +214,6 @@ class SelfService extends Component {
       role,
       services,
       updated_policy,
-      addPolicyMessage,
     } = this.state;
 
     let SelfServiceStep = null;
@@ -302,12 +301,15 @@ class SelfService extends Component {
       ) : null;
 
     const policyMessage =
-       this.state.addPolicyMessage === true ? (
-          <Message info>
-            <p>Your edit has been successfully saved to the policy. Add additional updates using the Advanced Editor
-              or choose "Next" to continue and review updates </p>
-          </Message>
-       ) : null;
+      this.state.addPolicyMessage === true ? (
+        <Message info>
+          <p>
+            Your edit has been successfully saved to the policy. Add additional
+            updates using the Advanced Editor or choose "Next" to continue and
+            review updates{" "}
+          </p>
+        </Message>
+      ) : null;
 
     return (
       <Segment basic>
@@ -316,7 +318,9 @@ class SelfService extends Component {
         <Step.Group fluid>
           <Step
             active={currStep === SelfServiceStepEnum.STEP1}
-            onClick={()=> this.setState({ currStep: SelfServiceStepEnum.STEP1})}
+            onClick={() =>
+              this.setState({ currStep: SelfServiceStepEnum.STEP1 })
+            }
             className={`${
               currStep !== SelfServiceStepEnum.STEP1 ? "complete" : ""
             } step1`}
@@ -329,14 +333,14 @@ class SelfService extends Component {
           </Step>
           <Step
             active={currStep === SelfServiceStepEnum.STEP2}
-            onClick={()=> this.setState({ currStep: SelfServiceStepEnum.STEP2})}
+            onClick={() =>
+              this.setState({ currStep: SelfServiceStepEnum.STEP2 })
+            }
             className={`${
               currStep === SelfServiceStepEnum.STEP3 ? "complete" : ""
             } step2`}
           >
-            <Icon
-              name="search plus"
-            />
+            <Icon name="search plus" />
             <Step.Content>
               <Step.Title>Modify Policy</Step.Title>
               <Step.Description>Provide Permission Details</Step.Description>
@@ -346,9 +350,7 @@ class SelfService extends Component {
             active={currStep === SelfServiceStepEnum.STEP3}
             className={"step3"}
           >
-            <Icon
-              name="handshake"
-            />
+            <Icon name="handshake" />
             <Step.Content>
               <Step.Title>Review and Submit</Step.Title>
               <Step.Description>Review and Submit Permissions</Step.Description>

@@ -14,7 +14,6 @@ import {
 } from "semantic-ui-react";
 import RoleDetails from "../roles/RoleDetails";
 import "./SelfService.css";
-import {SelfServiceStepEnum} from "./SelfServiceEnums";
 
 const ARN_REGEX = /^arn:aws:iam::(?<accountId>\d{12}):role\/(?<roleName>.+)$/;
 
@@ -226,29 +225,34 @@ class SelfServiceStep1 extends Component {
                 </Form>
               </div>
               <Grid stackable columns={2}>
-              <Grid.Row className={"helpContainer"}>
-                <Grid.Column>
-              <p className={"help"}>
-                For Help, please visit{" "}
-                <a
-                  href="http://go/selfserviceiamtldr"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  go/selfserviceiamtldr
-                </a>
-              </p>
-                </Grid.Column>
-                <Grid.Column>
-                <Button style={{fontSize: "1.25em", width: "11em", height: "3.5em"}}
-                  floated="right"
-                  positive
-                  onClick={this.props.handleStepClick.bind(this, "next")}
-                >
-                  Next
-                </Button>
-                </Grid.Column>
-              </Grid.Row>
+                <Grid.Row className={"helpContainer"}>
+                  <Grid.Column>
+                    <p className={"help"}>
+                      For Help, please visit{" "}
+                      <a
+                        href="http://go/selfserviceiamtldr"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        go/selfserviceiamtldr
+                      </a>
+                    </p>
+                  </Grid.Column>
+                  <Grid.Column>
+                    <Button
+                      style={{
+                        fontSize: "1.25em",
+                        width: "11em",
+                        height: "3.5em",
+                      }}
+                      floated="right"
+                      positive
+                      onClick={this.props.handleStepClick.bind(this, "next")}
+                    >
+                      Next
+                    </Button>
+                  </Grid.Column>
+                </Grid.Row>
               </Grid>
             </Grid.Column>
             <Grid.Column>

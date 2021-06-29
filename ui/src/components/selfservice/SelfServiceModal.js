@@ -92,7 +92,6 @@ class SelfServiceModal extends Component {
         options={editor_options}
         editorDidMount={this.editorDidMount}
         textAlign="center"
-        theme="vs-light"
       />
     );
   }
@@ -178,7 +177,7 @@ class SelfServiceModal extends Component {
         onOpen={() => this.setState({ open: true })}
         onClose={() => this.setState({ open: false })}
         open={this.state.open}
-        trigger={<a style={{ cursor: "pointer" }}>Advanced Editor</a>}
+        trigger={<button className="button-link">Advanced Editor</button>}
       >
         <Header>Advanced Editor</Header>
         <Message info>

@@ -6,7 +6,8 @@
   width: 90%;
 }
 
-.ui.accordion, .ui.accordion .accordion {
+.ui.accordion,
+.ui.accordion .accordion {
   margin-bottom: 1em;
 }
 
@@ -25,12 +26,13 @@
 }
 
 .ui.steps .step.active,
-.ui.steps:hover .step.active:hover
-{
+.ui.steps:hover .step.active:hover {
   background: #ffffff;
 }
 
-.step1:hover, .step2:hover, .step3:hover {
+.step1:hover,
+.step2:hover,
+.step3:hover {
   background: #ffffff !important;
 }
 
@@ -52,7 +54,7 @@
 }
 
 .helpContainer {
-  position: relative
+  position: relative;
 }
 
 .help {
@@ -63,31 +65,30 @@
 }
 
 .ui.items {
-  border: 1px solid rgba(34,36,38,.15);
-  border-radius: .28571429rem;
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  border-radius: 0.28571429rem;
 }
 
-
-.ui.divided.items>.item:first-child .button {
-  border-radius: 0px .28571429rem 0px 0px;
+.ui.divided.items > .item:first-child .button {
+  border-radius: 0px 0.28571429rem 0px 0px;
 }
 
-.ui.divided.items>.item:not(first-child) .button {
+.ui.divided.items > .item:not(first-child) .button {
   border-radius: 0px;
 }
 
-.ui.items>.item>.content>.header:not(.ui) {
+.ui.items > .item > .content > .header:not(.ui) {
   width: 100%;
 }
 
-.ui.divided.items>.item:not(first-child) {
+.ui.divided.items > .item:not(first-child) {
   padding-top: 0px;
 }
 
-.ui.items>.item .extra> .cogs.icon.actions {
+.ui.items > .item .extra > .cogs.icon.actions {
   margin-bottom: 0px !important;
   font-size: 1.25em;
-  color: rgba(0,0,0,.85);
+  color: rgba(0, 0, 0, 0.85);
 }
 
 /* In order to help read roles on smaller screens better, increased results grid width */

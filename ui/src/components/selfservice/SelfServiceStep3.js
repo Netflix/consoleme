@@ -9,7 +9,6 @@ import {
   Loader,
   Message,
   Segment,
-  Tab,
   TextArea,
 } from "semantic-ui-react";
 import MonacoDiffComponent from "../blocks/MonacoDiffComponent";
@@ -238,31 +237,27 @@ class SelfServiceStep3 extends Component {
     const { isSuccess, messages, requestUrl } = this.state;
     if (messages.length > 0 && isSuccess === true) {
       return (
-         <Message positive>
+        <Message positive>
           <Message.Header>Your request was successful.</Message.Header>
           You can check your request status from{" "}
-          <a
-            href={requestUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href={requestUrl} target="_blank" rel="noopener noreferrer">
             here
           </a>
           .
-          </Message>
+        </Message>
       );
     } else if (messages.length > 0 && isSuccess === false) {
       return (
-         <Message negative>
-           <Message.Header>
+        <Message negative>
+          <Message.Header>
             We found some problems for this request.
-           </Message.Header>
-           <Message.List>
-             {messages.map((message) => (
-                <Message.Item>{message}</Message.Item>
-              ))}
-           </Message.List>
-         </Message>
+          </Message.Header>
+          <Message.List>
+            {messages.map((message) => (
+              <Message.Item>{message}</Message.Item>
+            ))}
+          </Message.List>
+        </Message>
       );
     }
   }
@@ -270,13 +265,8 @@ class SelfServiceStep3 extends Component {
   render() {
     const {
       admin_bypass_approval_enabled,
-      custom_statement,
       isError,
-      isSuccess,
       justification,
-      messages,
-      requestId,
-      statement,
       old_policy,
       new_policy,
       role,
@@ -312,28 +302,62 @@ class SelfServiceStep3 extends Component {
           </Grid.Row>
         </Grid>
       ) : (
-         <Grid.Row style={{maxWidth: "30em"}}>
-           <Button
-              content={<div><h3 style={{marginBottom: "0px"}}>Go Back</h3>
-                <h3 style={{fontStyle: "italic", opacity: "70%", marginTop: "0px"}}>I need to make edits</h3></div>}
-              disabled={isError}
-              fluid
-              onClick={() => {this.props.handleStepClick("previous");}}
-              style={{width:"50%", display: "inline-block", textAlign: "center", backgroundColor: "#f8f8f9"}}
-              attached="left"
-           />
-           <Button
-              content={<div><h3 style={{marginBottom: "0px"}}>Submit for Review</h3>
-              <h3 style={{fontStyle: "italic", opacity: "70%", marginTop: "0px"}}>Everything looks good</h3></div>}
-              disabled={isError}
-              fluid
-              onClick={this.handleSubmit}
-              style={{width:"50%", display: "inline-block", textAlign: "center"}}
-              positive
-              attached="right"
-           />
-
-         </Grid.Row>
+        <Grid.Row style={{ maxWidth: "30em" }}>
+          <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Go Back</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  I need to make edits
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={() => {
+              this.props.handleStepClick("previous");
+            }}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+              backgroundColor: "#f8f8f9",
+            }}
+            attached="left"
+          />
+          <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Submit for Review</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  Everything looks good
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={this.handleSubmit}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+            }}
+            positive
+            attached="right"
+          />
+        </Grid.Row>
       );
 
     return (
@@ -369,7 +393,6 @@ class SelfServiceStep3 extends Component {
         {submission_buttons}
       </div>
     );
-
   }
 }
 
