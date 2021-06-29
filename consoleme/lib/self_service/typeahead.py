@@ -57,6 +57,7 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
                             principal_type="HoneybeeAwsResourceTemplate",
                             repository_name=resource_template.repository_name,
                             resource_identifier=resource_template.resource,
+                            resource_url=resource_template.web_path,
                         ),
                     )
                 )

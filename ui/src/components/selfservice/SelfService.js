@@ -91,30 +91,6 @@ class SelfService extends Component {
         },
         services,
       });
-    } else if (paramSearch.template_language === "honeybee") {
-      this.setState({
-        admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
-        export_to_terraform_enabled: config.export_to_terraform_enabled,
-        config,
-        currStep: SelfServiceStepEnum.STEP2,
-        // TODO: This needs cleanup
-        role: {
-          name: "ConsoleMe",
-          owner: "infrasec@netflix.com",
-          include_accounts: ["*"],
-          exclude_accounts: [],
-          number_of_accounts: 2,
-          resource: "iamrole/consoleme.yaml",
-          resource_type: "iam_role",
-          repository_name: "honeybee-templates",
-          template_language: "honeybee",
-          web_path:
-            "https://stash.corp.netflix.com/projects/CLDSEC/repos/honeybee-templates/browse/iamrole/consoleme.yaml",
-          file_path: "honeybee-templates/iamrole/consoleme.yaml",
-          content: null,
-        },
-        services,
-      });
     } else {
       this.setState({
         config,
@@ -297,7 +273,9 @@ class SelfService extends Component {
         <Step.Group fluid>
           <Step
             active={currStep === SelfServiceStepEnum.STEP1}
-            onClick={()=> this.setState({ currStep: SelfServiceStepEnum.STEP1})}
+            onClick={() =>
+              this.setState({ currStep: SelfServiceStepEnum.STEP1 })
+            }
             className={`${
               currStep !== SelfServiceStepEnum.STEP1 ? "complete" : ""
             } step1`}
@@ -310,7 +288,9 @@ class SelfService extends Component {
           </Step>
           <Step
             active={currStep === SelfServiceStepEnum.STEP2}
-            onClick={()=> this.setState({ currStep: SelfServiceStepEnum.STEP2})}
+            onClick={() =>
+              this.setState({ currStep: SelfServiceStepEnum.STEP2 })
+            }
             className={`${
               currStep === SelfServiceStepEnum.STEP3 ? "complete" : ""
             } step2`}

@@ -979,6 +979,7 @@ components:
             - resource_identifier
             - repository_name
             - principal_type
+            - resource_url
           properties:
             principal_type:
               type: string
@@ -991,6 +992,9 @@ components:
             resource_identifier:
               type: string
               example: path/to/template.yaml
+            resource_url:
+              type: string
+              example: https://example.com/resource
     ChangeModel:
       type: object
       required:

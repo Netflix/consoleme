@@ -506,34 +506,39 @@ class RequestsHandler(BaseAPIV2Handler):
         if markdown:
             requests_to_write = []
             for request in requests[0:limit]:
-                resource_name = request["arn"].split(":")[5]
+                principal_arn = request.get("principal", {}).get("principal_arn", "")
+                url = request.get("principal", {}).get("resource_url", "")
+                resource_name = principal_arn
                 if "/" in resource_name:
                     resource_name = resource_name.split("/")[-1]
-                region = request["arn"].split(":")[3]
-                service_type = request["arn"].split(":")[2]
-                account_id = request["arn"].split(":")[4]
-                try:
-                    url = await get_url_for_resource(
-                        request["arn"],
-                        service_type,
-                        account_id,
-                        region,
-                        resource_name,
+                if not resource_name:
+                    resource_name = request.get("principal", {}).get(
+                        "resource_identifier"
                     )
-                except ResourceNotFound:
-                    url = None
+
+                if principal_arn and principal_arn.count(":") == 5 and not url:
+
+                    region = principal_arn.split(":")[3]
+                    service_type = principal_arn.split(":")[2]
+                    account_id = principal_arn.split(":")[4]
+                    if request.get("principal", {}).get("principal_arn"):
+                        try:
+                            url = await get_url_for_resource(
+                                principal_arn,
+                                service_type,
+                                account_id,
+                                region,
+                                resource_name,
+                            )
+                        except ResourceNotFound:
+                            pass
                 # Convert request_id and role ARN to link
-                if request.get("version") == "2":
-                    request[
-                        "request_id"
-                    ] = f"[{request['request_id']}](/policies/request/{request['request_id']})"
-                # Legacy support for V1 requests. Pending removal.
-                else:
-                    request[
-                        "request_id"
-                    ] = f"[{request['request_id']}](/policies/request_v1/{request['request_id']})"
+                request_url = request.get("extended_request", {}).get("request_url")
+                if not request_url:
+                    request_url = f"[{request['request_id']}](/policies/request/{request['request_id']})"
+                request["request_id"] = f"[{request['request_id']}]({request_url})"
                 if url:
-                    request["arn"] = f"[{request['arn']}]({url})"
+                    request["arn"] = f"[{principal_arn or resource_name}]({url})"
                 requests_to_write.append(request)
         else:
             requests_to_write = requests[0:limit]

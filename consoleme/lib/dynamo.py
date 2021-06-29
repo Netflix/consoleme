@@ -535,8 +535,47 @@ class UserDynamoHandler(BaseDynamoHandler):
         matching_requests = []
         if requests["Items"]:
             items = self._data_from_dynamo_replace(requests["Items"])
+            items = await self.convert_policy_requests_to_v3(items)
             matching_requests.extend(items)
         return matching_requests
+
+    async def convert_policy_requests_to_v3(self, requests):
+        # Remove this function and calls to this function after a grace period of
+        changed = False
+        for request in requests:
+            if not request.get("version") in ["2"]:
+                continue
+            if request.get("extended_request") and not request.get("principal"):
+                principal_arn = request.pop("arn")
+                request["principal"] = {
+                    "principal_arn": principal_arn,
+                    "principal_type": "AwsResource",
+                }
+                request["extended_request"]["principal"] = {
+                    "principal_arn": principal_arn,
+                    "principal_type": "AwsResource",
+                }
+            request.pop("arn", None)
+            changes = (
+                request.get("extended_request", {})
+                .get("changes", {})
+                .get("changes", [])
+            )
+            for change in changes:
+                if not change.get("principal_arn"):
+                    continue
+                if not change.get("version") in ["2.0", 2]:
+                    continue
+                change["principal"] = {
+                    "principal_arn": change["principal_arn"],
+                    "principal_type": "AwsResource",
+                }
+                change.pop("principal_arn")
+                change["version"] = "3.0"
+                changed = True
+        if changed:
+            self.parallel_write_table(self.policy_requests_table, requests)
+        return requests
 
     async def get_all_policy_requests(
         self, status: Optional[str] = "pending"
@@ -550,6 +589,8 @@ class UserDynamoHandler(BaseDynamoHandler):
         requests = await sync_to_async(self.parallel_scan_table)(
             self.policy_requests_table
         )
+
+        requests = await self.convert_policy_requests_to_v3(requests)
 
         return_value = []
         if status:

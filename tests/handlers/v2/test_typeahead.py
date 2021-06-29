@@ -142,6 +142,7 @@ class TestTypeAheadHandler(AsyncHTTPTestCase):
                 "principal_type": "HoneybeeAwsResourceTemplate",
                 "repository_name": "fake_repo",
                 "resource_identifier": "path/to/file.yaml",
+                "resource_url": "http://example.com/fake_repo/path/to/file.yaml"
             },
         )
 
