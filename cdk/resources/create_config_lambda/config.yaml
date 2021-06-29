@@ -101,8 +101,10 @@ user_role_creator:
       - Effect: Allow
         Principal:
           AWS:
-            - arn:aws:iam::{account_number}:root
-        Action: sts:AssumeRole
+            - arn:aws:iam::{account_number}:role/ConsoleMeTaskRole
+        Action:
+          - sts:AssumeRole
+          - sts:TagSession
 
 challenge_url:
   enabled: true
