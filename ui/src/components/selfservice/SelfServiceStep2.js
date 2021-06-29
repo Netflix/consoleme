@@ -180,15 +180,16 @@ class SelfServiceStep2 extends Component {
       const serviceName = found.text;
       return (
         <Item key={idx}>
-          <Item.Content style={{ paddingLeft: "20px", paddingBottom: "20px" }}>
-            <Button
+          <Item.Content style={{ paddingLeft: "20px", paddingBottom: "20px", paddingTop: "20px" }}>
+            {/* // TODO(mrobison): Re-introduce this in V2 when generate_changes addresses removal of permissions.
+             <Button
               size="tiny"
               color="red"
               floated="right"
               onClick={this.handlePermissionRemove.bind(this, permission)}
             >
               Remove
-            </Button>
+            </Button> */}
             <Item.Header style={{ fontSize: "1.5em", marginBottom: "1em" }}>
               <Grid.Row>{serviceName}</Grid.Row>
             </Item.Header>
