@@ -51,7 +51,7 @@ class SelfServiceModal extends Component {
   addToPolicy() {
     const value = this.state.modal_statement;
     this.props.updateStatement(value);
-    this.setState({open:false});
+    this.setState({ open: false });
     this.props.updatePolicyMessage(true);
   }
 
@@ -86,7 +86,7 @@ class SelfServiceModal extends Component {
         height="500px"
         language="json"
         width="100%"
-        theme="vs-dark"
+        theme="vs-light"
         value={modal_statement}
         onChange={this.onChange}
         options={editor_options}
@@ -157,7 +157,7 @@ class SelfServiceModal extends Component {
         />
       </Modal.Actions>
     ) : (
-      <Modal.Actions style={{float: "right", marginBottom: "1em"}}>
+      <Modal.Actions style={{ float: "right", marginBottom: "1em" }}>
         <Button onClick={() => this.setState({ open: false })}>Cancel</Button>
         <Button
           content="Add to Policy"
@@ -178,7 +178,7 @@ class SelfServiceModal extends Component {
         onOpen={() => this.setState({ open: true })}
         onClose={() => this.setState({ open: false })}
         open={this.state.open}
-        trigger={<a style={{cursor: "pointer"}}>Advanced Editor</a>}
+        trigger={<a style={{ cursor: "pointer" }}>Advanced Editor</a>}
       >
         <Header>Advanced Editor</Header>
         <Message info>
