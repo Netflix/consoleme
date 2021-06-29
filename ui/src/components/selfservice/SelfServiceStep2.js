@@ -92,10 +92,30 @@ class SelfServiceStep2 extends Component {
       generator_type: permission.service,
       action_groups: permission.actions,
       condition: permission.condition,
-      extra_actions: ["s3:get*"],
       effect: "Allow",
       ...permission,
     };
+
+    if (this.props.extraActions.length > 0) {
+      change["extra_actions"] = [];
+      for (const action of this.props.extraActions) {
+        change["extra_actions"].push(action.value);
+      }
+    }
+    if (this.props.includeAccounts.length > 0) {
+      change["include_accounts"] = [];
+      for (const account of this.props.includeAccounts) {
+        change["include_accounts"].push(account.value);
+      }
+    }
+
+    if (this.props.excludeAccounts.length > 0) {
+      change["exclude_accounts"] = [];
+      for (const account of this.props.excludeAccounts) {
+        change["exclude_accounts"].push(account.value);
+      }
+    }
+
     delete change.service;
     delete change.actions;
 
@@ -151,96 +171,138 @@ class SelfServiceStep2 extends Component {
   }
 
   getPermissionItems() {
-    const { config, services } = this.props;
+    const { services } = this.props;
     return this.props.permissions.map((permission, idx) => {
       const found = _.find(services, { key: permission.service });
       const serviceName = found.text;
-      const { inputs } = config.permissions_map[found.key];
       return (
         <Item key={idx}>
-          <Item.Content style={{paddingLeft: "20px", paddingBottom: "20px"}}>
+          <Item.Content style={{ paddingLeft: "20px", paddingBottom: "20px" }}>
             <Button
-               size="tiny"
-               color="red"
-               floated="right"
-               onClick={this.handlePermissionRemove.bind(this, permission)}
+              size="tiny"
+              color="red"
+              floated="right"
+              onClick={this.handlePermissionRemove.bind(this, permission)}
             >
               Remove
             </Button>
-            <Item.Header style={{fontSize: "1.5em", marginBottom: "1em"}}>
-              <Grid.Row>
-              {serviceName}
-              </Grid.Row>
+            <Item.Header style={{ fontSize: "1.5em", marginBottom: "1em" }}>
+              <Grid.Row>{serviceName}</Grid.Row>
             </Item.Header>
             <Item.Meta>
               <Grid columns={2}>
-              <List relaxed style={{ width: "100%", marginTop: ".25em"}}>
-                {Object.keys(permission).map((key) => {
-                  if (
-                    key === "actions" ||
-                    key === "service" ||
-                    key === "condition"
-                  ) {
-                    return null;
-                  }
-                  const inputConfig = _.find(inputs, { name: key });
-                  return (
-                    <List.Item style={{ marginRight: "0px"}}>
-                      <Grid.Row style={{display: "flex", fontSize:"0.8750em"}}>
-                        {key === "resource_arn" ?
-                           <>
-                             <Grid.Column style={{width: "75%", display: "flex"}}>
-                           <Icon name="users" style={{fontSize: "1.5em", color: "black", marginRight: ".75em"}}/>
-                             <Header as={"h5"}>RESOURCE</Header>
-                               </Grid.Column>
-                             <Grid.Column style={{width: "100%"}}>
-                               {permission[key]}
-                             </Grid.Column>
-                             </>
-                           : null}
-                      </Grid.Row>
-                      <Grid.Row style={{display: "flex", fontSize:"0.8750em", marginTop: ".15em"}}>
-                        {key === "bucket_prefix" ?
-                           <>
-                             <Grid.Column style={{width: "75%", display: "flex"}}>
-                           <Icon name="folder open" style={{fontSize: "1.5em", color: "black", marginRight: ".75em"}}/>
-                             <Header as={"h5"}>NAME/PREFIX</Header>
-                             </Grid.Column>
-                             <Grid.Column style={{width: "100%"}}>
-                               {permission[key]}
-                             </Grid.Column>
-                           </>
-                           :
-                           null}
-                      </Grid.Row>
-                    </List.Item>
-                  );
-                })}
-              </List>
+                <List relaxed style={{ width: "100%", marginTop: ".25em" }}>
+                  {Object.keys(permission).map((key) => {
+                    if (
+                      key === "actions" ||
+                      key === "service" ||
+                      key === "condition"
+                    ) {
+                      return null;
+                    }
+                    return (
+                      <List.Item style={{ marginRight: "0px" }}>
+                        <Grid.Row
+                          style={{ display: "flex", fontSize: "0.8750em" }}
+                        >
+                          {key === "resource_arn" ? (
+                            <>
+                              <Grid.Column
+                                style={{ width: "75%", display: "flex" }}
+                              >
+                                <Icon
+                                  name="users"
+                                  style={{
+                                    fontSize: "1.5em",
+                                    color: "black",
+                                    marginRight: ".75em",
+                                  }}
+                                />
+                                <Header as={"h5"}>RESOURCE</Header>
+                              </Grid.Column>
+                              <Grid.Column style={{ width: "100%" }}>
+                                {permission[key]}
+                              </Grid.Column>
+                            </>
+                          ) : null}
+                        </Grid.Row>
+                        <Grid.Row
+                          style={{
+                            display: "flex",
+                            fontSize: "0.8750em",
+                            marginTop: ".15em",
+                          }}
+                        >
+                          {key === "bucket_prefix" ? (
+                            <>
+                              <Grid.Column
+                                style={{ width: "75%", display: "flex" }}
+                              >
+                                <Icon
+                                  name="folder open"
+                                  style={{
+                                    fontSize: "1.5em",
+                                    color: "black",
+                                    marginRight: ".75em",
+                                  }}
+                                />
+                                <Header as={"h5"}>NAME/PREFIX</Header>
+                              </Grid.Column>
+                              <Grid.Column style={{ width: "100%" }}>
+                                {permission[key]}
+                              </Grid.Column>
+                            </>
+                          ) : null}
+                        </Grid.Row>
+                      </List.Item>
+                    );
+                  })}
+                </List>
               </Grid>
             </Item.Meta>
-            <Item.Extra style={{ display: "flex", marginTop: "1.75em"}}>
-              <Grid.Column style={{width: "70%", display: "flex"}}>
-              <Icon name="cogs" rotated={"clockwise"}
-                    style={{fontSize: "1.5em", marginLeft: "-4px", color: "black", marginRight: ".75em"}}/>
-              <Header as={"h5"} style={{paddingTop: ".25em", marginTop: "0px"}}>GROUP ACTIONS</Header>
+            <Item.Extra style={{ display: "flex", marginTop: "1.75em" }}>
+              <Grid.Column style={{ width: "70%", display: "flex" }}>
+                <Icon
+                  name="cogs"
+                  rotated={"clockwise"}
+                  style={{
+                    fontSize: "1.5em",
+                    marginLeft: "-4px",
+                    color: "black",
+                    marginRight: ".75em",
+                  }}
+                />
+                <Header
+                  as={"h5"}
+                  style={{ paddingTop: ".25em", marginTop: "0px" }}
+                >
+                  GROUP ACTIONS
+                </Header>
               </Grid.Column>
-              <Grid.Column style={{width: "100%"}}>
-              {permission.actions != null
-                ? permission.actions.map((action) => {
-                    const actionDetail = _.find(found.actions, {
-                      name: action,
-                    });
-                    return (
-                      <Label as="a"
-                             style={{ border: "1px solid #babbbc",
-                               backgroundColor: "#ffffff", color: "rgba(0,0,0,.85)",
-                               fontSize:"0.8750em", lineHeight: "0.750em", width: "5em", textAlign: "center" }}>
-                        {actionDetail.text}
-                      </Label>
-                    );
-                  })
-                : null}
+              <Grid.Column style={{ width: "100%" }}>
+                {permission.actions != null
+                  ? permission.actions.map((action) => {
+                      const actionDetail = _.find(found.actions, {
+                        name: action,
+                      });
+                      return (
+                        <Label
+                          as="a"
+                          style={{
+                            border: "1px solid #babbbc",
+                            backgroundColor: "#ffffff",
+                            color: "rgba(0,0,0,.85)",
+                            fontSize: "0.8750em",
+                            lineHeight: "0.750em",
+                            width: "5em",
+                            textAlign: "center",
+                          }}
+                        >
+                          {actionDetail.text}
+                        </Label>
+                      );
+                    })
+                  : null}
               </Grid.Column>
             </Item.Extra>
           </Item.Content>
@@ -349,8 +411,13 @@ class SelfServiceStep2 extends Component {
               </Header>
               <Item.Group divided>{this.getPermissionItems()}</Item.Group>
               <Header>
-                {permissions.length === 0 ? <span>You must add at least one resource to continue or choose </span> :
-                   <span>Choose </span>}
+                {permissions.length === 0 ? (
+                  <span>
+                    You must add at least one resource to continue or choose{" "}
+                  </span>
+                ) : (
+                  <span>Choose </span>
+                )}
                 <SelfServiceModal
                   key={service}
                   config={config}
@@ -369,13 +436,13 @@ class SelfServiceStep2 extends Component {
                 />{" "}
                 to override permissions.
               </Header>
-              <div style={{textAlign: "center"}}>
+              <div style={{ textAlign: "center" }}>
                 <Button
-                 style={{fontSize: "1.25em", width: "11em", height: "3.5em"}}
-                 positive
-                 onClick={() => {
-                 this.props.handleStepClick("next");
-                 }}
+                  style={{ fontSize: "1.25em", width: "11em", height: "3.5em" }}
+                  positive
+                  onClick={() => {
+                    this.props.handleStepClick("next");
+                  }}
                 >
                   Next
                 </Button>
