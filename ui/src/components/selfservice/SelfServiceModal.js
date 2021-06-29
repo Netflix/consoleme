@@ -164,6 +164,7 @@ class SelfServiceModal extends Component {
           icon="checkmark"
           primary
           onClick={this.addToPolicy.bind(this)}
+          disabled={isError}
         />
       </Modal.Actions>
     );
@@ -180,7 +181,7 @@ class SelfServiceModal extends Component {
         trigger={<button className="button-link">Advanced Editor</button>}
       >
         <Header>Advanced Editor</Header>
-        <Message info>
+        <Message info color="blue">
           <Message.Header>Edit your permissions in JSON format.</Message.Header>
           <p>
             Helpful text about how to use the Advanced Editor, JSON syntax, etc.

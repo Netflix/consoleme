@@ -35,6 +35,7 @@ class SelfServiceStep2 extends Component {
       admin_auto_approve: false,
       policy_name: "",
       modal_policy: "",
+      addPolicyMessage: false,
     };
 
     this.inlinePolicyEditorRef = React.createRef();
@@ -44,8 +45,10 @@ class SelfServiceStep2 extends Component {
     this.props.updatePolicy(value);
   }
 
-  updatePolicyMessage() {
-    this.props.updatePolicyMessage();
+  updatePolicyMessage(value) {
+      this.setState({
+      addPolicyMessage: value,
+    });
   }
 
   handleServiceTypeChange(e, { value }) {
@@ -279,30 +282,32 @@ class SelfServiceStep2 extends Component {
                   GROUP ACTIONS
                 </Header>
               </Grid.Column>
-              <Grid.Column style={{ width: "100%" }}>
-                {permission.actions != null
-                  ? permission.actions.map((action) => {
-                      const actionDetail = _.find(found.actions, {
-                        name: action,
-                      });
-                      return (
-                        <Label
-                          as="a"
-                          style={{
-                            border: "1px solid #babbbc",
-                            backgroundColor: "#ffffff",
-                            color: "rgba(0,0,0,.85)",
-                            fontSize: "0.8750em",
-                            lineHeight: "0.750em",
-                            width: "5em",
-                            textAlign: "center",
-                          }}
-                        >
-                          {actionDetail.text}
-                        </Label>
-                      );
-                    })
-                  : null}
+              <Grid.Column style={{width: "100%"}}>
+              {permission.actions != null
+                ? permission.actions.map((action) => {
+                    const actionDetail = _.find(found.actions, {
+                      name: action,
+                    });
+                    return (
+                      <Label as="a"
+                             style={{ border: "1px solid #babbbc",
+                               backgroundColor: "#ffffff",
+                               color: "rgba(0,0,0,.85)",
+                               fontSize:"0.8750em",
+                               lineHeight: "0.750em",
+                               minWidth: "5em",
+                               maxWidth: "7em",
+                               textAlign: "center",
+                               whiteSpace: "nowrap",
+                               overflow: "hidden",
+                               textOverflow: "ellipsis",
+                             }}
+                      >
+                        {actionDetail.text}
+                      </Label>
+                    );
+                  })
+                : null}
               </Grid.Column>
             </Item.Extra>
           </Item.Content>
@@ -313,8 +318,7 @@ class SelfServiceStep2 extends Component {
 
   render() {
     const { config, role, services, updated_policy, permissions } = this.props;
-    const { service } = this.state;
-    const { messages } = this.state;
+    const { messages, addPolicyMessage, service } = this.state;
 
     const messagesToShow =
       messages.length > 0 ? (
@@ -329,6 +333,14 @@ class SelfServiceStep2 extends Component {
           </Message.List>
         </Message>
       ) : null;
+
+    const policyMessage =
+       this.state.addPolicyMessage === true ? (
+          <Message info color="blue">
+            <Message.Header>Advanced Editor has been modified</Message.Header>
+            <p>Your changes made in the Advanced Editor will override these permissions.</p>
+          </Message>
+       ) : null;
 
     // TODO(ccastrapel): The false condition for headerMessage needs to be updated. Maybe the backend should just
     // provide a link to the policy editor for a given principal, or the repository location?
@@ -410,6 +422,7 @@ class SelfServiceStep2 extends Component {
                 </Header.Subheader>
               </Header>
               <Item.Group divided>{this.getPermissionItems()}</Item.Group>
+              {policyMessage}
               <Header>
                 {permissions.length === 0 ? (
                   <span>

@@ -6,6 +6,7 @@ import {
   Form,
   Grid,
   Header,
+  Icon,
   Loader,
   Message,
   Segment,
@@ -96,7 +97,6 @@ class SelfServiceStep3 extends Component {
         });
       }
     }
-    this.props.updatePolicyMessage(false);
   }
 
   editorDidMount(editor) {
@@ -380,7 +380,7 @@ class SelfServiceStep3 extends Component {
           />
         </Segment>
         <Divider />
-        <Header>Justification</Header>
+        <Header>Justification<sup><Icon name="asterisk" style={{color: "red", fontSize: ".5em"}} /></sup>  </Header>
         <Form>
           <TextArea
             onChange={this.handleJustificationChange}

@@ -26,7 +26,6 @@ class SelfService extends Component {
       includeAccounts: [],
       excludeAccounts: [],
       updated_policy: "",
-      addPolicyMessage: false,
     };
   }
 
@@ -175,12 +174,6 @@ class SelfService extends Component {
     });
   }
 
-  updatePolicyMessage(value) {
-    this.setState({
-      addPolicyMessage: value,
-    });
-  }
-
   handleRoleUpdate(role) {
     this.setState({ role });
   }
@@ -240,7 +233,6 @@ class SelfService extends Component {
             includeAccounts={includeAccounts}
             excludeAccounts={excludeAccounts}
             updated_policy={updated_policy}
-            updatePolicyMessage={this.updatePolicyMessage.bind(this)}
             handleStepClick={this.handleStepClick.bind(this)}
             updatePolicy={this.updatePolicy.bind(this)}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
@@ -264,7 +256,6 @@ class SelfService extends Component {
             permissions={permissions}
             updated_policy={updated_policy}
             handleStepClick={this.handleStepClick.bind(this)}
-            updatePolicyMessage={this.updatePolicyMessage.bind(this)}
             admin_bypass_approval_enabled={admin_bypass_approval_enabled}
             export_to_terraform_enabled={export_to_terraform_enabled}
             {...this.props}
@@ -300,27 +291,13 @@ class SelfService extends Component {
         </Message>
       ) : null;
 
-    const policyMessage =
-      this.state.addPolicyMessage === true ? (
-        <Message info>
-          <p>
-            Your edit has been successfully saved to the policy. Add additional
-            updates using the Advanced Editor or choose "Next" to continue and
-            review updates{" "}
-          </p>
-        </Message>
-      ) : null;
-
     return (
       <Segment basic>
-        {policyMessage}
         {headerMessage}
         <Step.Group fluid>
           <Step
             active={currStep === SelfServiceStepEnum.STEP1}
-            onClick={() =>
-              this.setState({ currStep: SelfServiceStepEnum.STEP1 })
-            }
+            onClick={()=> this.setState({ currStep: SelfServiceStepEnum.STEP1})}
             className={`${
               currStep !== SelfServiceStepEnum.STEP1 ? "complete" : ""
             } step1`}
@@ -333,9 +310,7 @@ class SelfService extends Component {
           </Step>
           <Step
             active={currStep === SelfServiceStepEnum.STEP2}
-            onClick={() =>
-              this.setState({ currStep: SelfServiceStepEnum.STEP2 })
-            }
+            onClick={()=> this.setState({ currStep: SelfServiceStepEnum.STEP2})}
             className={`${
               currStep === SelfServiceStepEnum.STEP3 ? "complete" : ""
             } step2`}
