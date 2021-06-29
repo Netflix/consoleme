@@ -271,6 +271,7 @@ class SelfServiceStep3 extends Component {
       new_policy,
       role,
       active,
+      isLoading,
     } = this.state;
 
     const messagesToShow = this.getMessages();
@@ -320,9 +321,7 @@ class SelfServiceStep3 extends Component {
             }
             disabled={isError}
             fluid
-            onClick={() => {
-              this.props.handleStepClick("previous");
-            }}
+            onClick={() => {this.props.handleStepClick("previous");}}
             style={{
               width: "50%",
               display: "inline-block",
@@ -382,6 +381,9 @@ class SelfServiceStep3 extends Component {
         <Divider />
         <Header>Justification<sup><Icon name="asterisk" style={{color: "red", fontSize: ".5em"}} /></sup>  </Header>
         <Form>
+          <Dimmer active={isLoading}>
+            <Loader>Submitting Request</Loader>
+          </Dimmer>
           <TextArea
             onChange={this.handleJustificationChange}
             placeholder="Your Justification"

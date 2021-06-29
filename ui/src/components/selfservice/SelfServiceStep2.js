@@ -318,7 +318,7 @@ class SelfServiceStep2 extends Component {
 
   render() {
     const { config, role, services, updated_policy, permissions } = this.props;
-    const { messages, addPolicyMessage, service } = this.state;
+    const { messages, service } = this.state;
 
     const messagesToShow =
       messages.length > 0 ? (
