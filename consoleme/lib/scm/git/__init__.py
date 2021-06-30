@@ -6,6 +6,8 @@ from typing import Optional
 import git
 from asgiref.sync import sync_to_async
 
+from consoleme.config import config
+
 
 class Repository:
     def __init__(self, repo_url, repo_name):
@@ -25,6 +27,10 @@ class Repository:
             kwargs["depth"] = depth
         await sync_to_async(git.Git(self.tempdir).clone)(*args, **kwargs)
         self.repo = git.Repo(os.path.join(self.tempdir, self.repo_name))
+        self.repo.config_writer().set_value("user", "name", "ConsoleMe").release()
+        email = config.get("git.email")
+        if email:
+            self.repo.config_writer().set_value("user", "email", email).release()
         self.git = self.repo.git
         return self.repo
 
