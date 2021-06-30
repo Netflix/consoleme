@@ -535,7 +535,7 @@ class RequestsHandler(BaseAPIV2Handler):
                 # Convert request_id and role ARN to link
                 request_url = request.get("extended_request", {}).get("request_url")
                 if not request_url:
-                    request_url = f"[{request['request_id']}](/policies/request/{request['request_id']})"
+                    request_url = f"/policies/request/{request['request_id']}"
                 request["request_id"] = f"[{request['request_id']}]({request_url})"
                 if url:
                     request["arn"] = f"[{principal_arn or resource_name}]({url})"
