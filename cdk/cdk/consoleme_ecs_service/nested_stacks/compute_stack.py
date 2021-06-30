@@ -2,18 +2,17 @@
 Compute stack for running ConsoleMe on ECS
 """
 
-import yaml
 from aws_cdk import aws_applicationautoscaling as applicationautoscaling
 from aws_cdk import aws_certificatemanager as acm
 from aws_cdk import aws_ec2 as ec2
+from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_ecs_patterns as ecs_patterns
-from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_elasticloadbalancingv2 as lb
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_logs as logs
 from aws_cdk import core as cdk
-from constants import USE_PUBLIC_DOCKER_IMAGE, DOCKER_IMAGE, MIN_CAPACITY, MAX_CAPACITY
+from constants import DOCKER_IMAGE, MAX_CAPACITY, MIN_CAPACITY, USE_PUBLIC_DOCKER_IMAGE
 
 
 class ComputeStack(cdk.NestedStack):
@@ -43,9 +42,7 @@ class ComputeStack(cdk.NestedStack):
         else:
             docker_image = ecs.ContainerImage.from_docker_image_asset(
                 ecr_assets.DockerImageAsset(
-                    self,
-                    'ConsoleMeCustomImage',
-                    directory='../'
+                    self, "ConsoleMeCustomImage", directory="../"
                 )
             )
 
