@@ -49,7 +49,9 @@ async def generate_honeybee_request_from_change_model_array(
         for r in config.get("cache_resource_templates.repositories", []):
             if r["name"] == change.principal.repository_name:
                 repo_config = r
-                repo = Repository(r["repo_url"], r["name"])
+                repo = Repository(
+                    r["repo_url"], r["name"], r["authentication_settings"]["email"]
+                )
                 await repo.clone(depth=1)
                 git_client = repo.git
                 git_client.reset()
@@ -155,9 +157,13 @@ async def generate_honeybee_request_from_change_model_array(
         git_client.push(u=["origin", generated_branch_name])
         if repo_config["code_repository_provider"] == "bitbucket":
             bitbucket = BitBucket(
-                config.get("bitbucket.url"),
-                config.get("bitbucket.username"),
-                config.get("bitbucket.password"),
+                repo_config["code_repository_config"]["url"],
+                config.get(
+                    repo_config["code_repository_config"]["username_config_key"]
+                ),
+                config.get(
+                    repo_config["code_repository_config"]["password_config_key"]
+                ),
             )
             pull_request_url = await bitbucket.create_pull_request(
                 repo_config["project_key"],
