@@ -276,9 +276,15 @@ class SelfService extends Component {
         <Step.Group fluid>
           <Step
             active={currStep === SelfServiceStepEnum.STEP1}
-            onClick={() =>
-              this.setState({ currStep: SelfServiceStepEnum.STEP1 })
-            }
+            onClick={() => {
+              if (
+                [SelfServiceStepEnum.STEP2, SelfServiceStepEnum.STEP3].includes(
+                  currStep
+                )
+              ) {
+                this.setState({ currStep: SelfServiceStepEnum.STEP1 });
+              }
+            }}
             className={`${
               currStep !== SelfServiceStepEnum.STEP1 ? "complete" : ""
             } step1`}
@@ -291,9 +297,11 @@ class SelfService extends Component {
           </Step>
           <Step
             active={currStep === SelfServiceStepEnum.STEP2}
-            onClick={() =>
-              this.setState({ currStep: SelfServiceStepEnum.STEP2 })
-            }
+            onClick={() => {
+              if ([SelfServiceStepEnum.STEP3].includes(currStep)) {
+                this.setState({ currStep: SelfServiceStepEnum.STEP2 });
+              }
+            }}
             className={`${
               currStep === SelfServiceStepEnum.STEP3 ? "complete" : ""
             } step2`}
