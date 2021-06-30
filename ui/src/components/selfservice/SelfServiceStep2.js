@@ -375,17 +375,7 @@ class SelfServiceStep2 extends Component {
       <Header>
         Modify Policy
         <Header.Subheader>
-          You can choose the resource(s) you wish to modify and the actions you
-          wish to add. Advanced options include specified actions, include and
-          exclude accounts.
-          <a
-            href={`/policies/edit/${role.account_id}/iamrole/${role.owner}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {role.resource}
-          </a>
-          .&nbsp; You can also select multiple permissions.
+          Please choose the actions you wish to add.
         </Header.Subheader>
       </Header>
     );
@@ -430,7 +420,8 @@ class SelfServiceStep2 extends Component {
               <Header>
                 Your Permissions
                 <Header.Subheader>
-                  The list of permissions you have added in this request.
+                  The list of permissions you have added in this request. Please
+                  use the Advanced Editor to remove permissions.
                 </Header.Subheader>
               </Header>
               <Item.Group divided>{this.getPermissionItems()}</Item.Group>

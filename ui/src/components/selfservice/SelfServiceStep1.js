@@ -198,9 +198,8 @@ class SelfServiceStep1 extends Component {
                 <Header as="h1">
                   Search & Select a Role
                   <Header.Subheader>
-                    Search for the role(s) you want to modify the actions,
-                    effects, or resources to. You can refine your search using
-                    the advanced search options.
+                    Search for the role or template that you would like to add
+                    permissions to.
                   </Header.Subheader>
                 </Header>
                 <Form widths="equal">
@@ -219,7 +218,7 @@ class SelfServiceStep1 extends Component {
                       results={results}
                       resultRenderer={this.resultRenderer}
                       value={value}
-                      placeholder="Enter role name or search terms here"
+                      placeholder="Enter search terms here"
                     />
                   </Form.Field>
                 </Form>
@@ -256,13 +255,11 @@ class SelfServiceStep1 extends Component {
               </Grid>
             </Grid.Column>
             <Grid.Column>
-              <Header as="h4">Selected Role Information</Header>
+              <Header as="h4">Selected Principal</Header>
               <Header
                 as="h4"
                 style={{ marginTop: 0, color: "#686868", fontWeight: 400 }}
-              >
-                items to display
-              </Header>
+              ></Header>
               <Divider />
               {isRoleLoading ? (
                 <Loader active={isRoleLoading} />

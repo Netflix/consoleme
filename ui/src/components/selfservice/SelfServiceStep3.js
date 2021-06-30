@@ -397,8 +397,8 @@ class SelfServiceStep3 extends Component {
       <div>
         <Header size={"huge"}>Review Changes & Submit</Header>
         <p>
-          Use the following editor to review the changes you've modified before
-          submitting for team review.
+          Use the following editor to review changes before submitting for
+          review.
         </p>
         <Segment>
           <Dimmer active={active}>

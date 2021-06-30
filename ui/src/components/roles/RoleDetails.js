@@ -12,7 +12,7 @@ function RoleDetails(props) {
           <Grid.Column textAlign="center" verticalAlign="middle">
             <div>
               <Header as="h3">
-                Enter a role name or key term to search for a role.
+                Search a principal to modify to view details about it.
               </Header>
             </div>
           </Grid.Column>
