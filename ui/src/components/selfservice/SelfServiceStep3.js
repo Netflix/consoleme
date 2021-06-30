@@ -280,28 +280,60 @@ class SelfServiceStep3 extends Component {
     const submission_buttons =
       admin_bypass_approval_enabled &&
       role?.principal?.principal_type === "AwsResource" ? (
-        <Grid columns={2}>
-          <Grid.Row>
-            <Grid.Column>
-              <Button
-                content="Submit and apply without approval"
-                disabled={isError}
-                onClick={this.handleAdminSubmit}
-                positive
-                fluid
-              />
-            </Grid.Column>
-            <Grid.Column>
-              <Button
-                content="Submit"
-                disabled={isError}
-                onClick={this.handleSubmit}
-                primary
-                fluid
-              />
-            </Grid.Column>
-          </Grid.Row>
-        </Grid>
+        <Grid.Row style={{ maxWidth: "30em" }}>
+          <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Submit</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  And apply without approval
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={this.handleAdminSubmit}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+            }}
+            attached="left"
+            positive
+          />
+          <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Submit</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  Everything looks good
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={this.handleSubmit}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+            }}
+            primary
+            attached="right"
+          />
+        </Grid.Row>
       ) : (
         <Grid.Row style={{ maxWidth: "30em" }}>
           <Button
