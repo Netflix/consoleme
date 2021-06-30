@@ -25,7 +25,6 @@ git clone git@github.com:Netflix/consoleme.git ;
 
 ```yaml
 celery:
-  broker_url: redis://consoleme-redis:6379/1
   broker:
     us-east-1: redis://consoleme-redis:6379/1
     us-west-2: redis://consoleme-redis:6379/1
