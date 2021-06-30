@@ -117,7 +117,10 @@ class SelfService extends Component {
         }
         break;
       case SelfServiceStepEnum.STEP2:
-        if (dir === "next" && this.state.permissions.length > 0 || updated_policy != "") {
+        if (
+          (dir === "next" && this.state.permissions.length > 0) ||
+          updated_policy !== ""
+        ) {
           nextStep = SelfServiceStepEnum.STEP3;
         } else if (dir === "previous") {
           nextStep = SelfServiceStepEnum.STEP1;
@@ -249,7 +252,7 @@ class SelfService extends Component {
     const { currStep, messages, updated_policy } = this.state;
     const SelfServiceStep = this.getCurrentSelfServiceStep();
     const messagesToShow =
-      messages != null && updated_policy == "" ? (
+      messages != null && updated_policy === "" ? (
         <Message negative>
           <Message.Header>There are some missing parameters</Message.Header>
           <p>{messages}</p>

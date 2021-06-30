@@ -353,7 +353,9 @@ class SelfServiceStep3 extends Component {
             }
             disabled={isError}
             fluid
-            onClick={() => {this.props.handleStepClick("previous");}}
+            onClick={() => {
+              this.props.handleStepClick("previous");
+            }}
             style={{
               width: "50%",
               display: "inline-block",
@@ -411,7 +413,12 @@ class SelfServiceStep3 extends Component {
           />
         </Segment>
         <Divider />
-        <Header>Justification<sup><Icon name="asterisk" style={{color: "red", fontSize: ".5em"}} /></sup>  </Header>
+        <Header>
+          Justification
+          <sup>
+            <Icon name="asterisk" style={{ color: "red", fontSize: ".5em" }} />
+          </sup>{" "}
+        </Header>
         <Form>
           <Dimmer active={isLoading}>
             <Loader>Submitting Request</Loader>

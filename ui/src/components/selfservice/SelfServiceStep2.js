@@ -46,7 +46,7 @@ class SelfServiceStep2 extends Component {
   }
 
   updatePolicyMessage(value) {
-      this.setState({
+    this.setState({
       addPolicyMessage: value,
     });
   }
@@ -180,7 +180,13 @@ class SelfServiceStep2 extends Component {
       const serviceName = found.text;
       return (
         <Item key={idx}>
-          <Item.Content style={{ paddingLeft: "20px", paddingBottom: "20px", paddingTop: "20px" }}>
+          <Item.Content
+            style={{
+              paddingLeft: "20px",
+              paddingBottom: "20px",
+              paddingTop: "20px",
+            }}
+          >
             {/* // TODO(mrobison): Re-introduce this in V2 when generate_changes addresses removal of permissions.
              <Button
               size="tiny"
@@ -283,32 +289,34 @@ class SelfServiceStep2 extends Component {
                   GROUP ACTIONS
                 </Header>
               </Grid.Column>
-              <Grid.Column style={{width: "100%"}}>
-              {permission.actions != null
-                ? permission.actions.map((action) => {
-                    const actionDetail = _.find(found.actions, {
-                      name: action,
-                    });
-                    return (
-                      <Label as="a"
-                             style={{ border: "1px solid #babbbc",
-                               backgroundColor: "#ffffff",
-                               color: "rgba(0,0,0,.85)",
-                               fontSize:"0.8750em",
-                               lineHeight: "0.750em",
-                               minWidth: "5em",
-                               maxWidth: "7em",
-                               textAlign: "center",
-                               whiteSpace: "nowrap",
-                               overflow: "hidden",
-                               textOverflow: "ellipsis",
-                             }}
-                      >
-                        {actionDetail.text}
-                      </Label>
-                    );
-                  })
-                : null}
+              <Grid.Column style={{ width: "100%" }}>
+                {permission.actions != null
+                  ? permission.actions.map((action) => {
+                      const actionDetail = _.find(found.actions, {
+                        name: action,
+                      });
+                      return (
+                        <Label
+                          as="a"
+                          style={{
+                            border: "1px solid #babbbc",
+                            backgroundColor: "#ffffff",
+                            color: "rgba(0,0,0,.85)",
+                            fontSize: "0.8750em",
+                            lineHeight: "0.750em",
+                            minWidth: "5em",
+                            maxWidth: "7em",
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {actionDetail.text}
+                        </Label>
+                      );
+                    })
+                  : null}
               </Grid.Column>
             </Item.Extra>
           </Item.Content>
@@ -336,12 +344,15 @@ class SelfServiceStep2 extends Component {
       ) : null;
 
     const policyMessage =
-       this.state.addPolicyMessage === true ? (
-          <Message info color="blue">
-            <Message.Header>Advanced Editor has been modified</Message.Header>
-            <p>Your changes made in the Advanced Editor will override these permissions.</p>
-          </Message>
-       ) : null;
+      this.state.addPolicyMessage === true ? (
+        <Message info color="blue">
+          <Message.Header>Advanced Editor has been modified</Message.Header>
+          <p>
+            Your changes made in the Advanced Editor will override these
+            permissions.
+          </p>
+        </Message>
+      ) : null;
 
     // TODO(ccastrapel): The false condition for headerMessage needs to be updated. Maybe the backend should just
     // provide a link to the policy editor for a given principal, or the repository location?
