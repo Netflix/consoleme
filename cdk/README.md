@@ -96,8 +96,14 @@ command.
 
 You can now deploy all the CDK applications in all supported accounts:
 
+Deploy trust role to spoke accounts:
 ```
-$ cdk deploy --all
+$ cdk deploy ConsoleMeSpoke
+```
+
+Deploy ConsoleMe to main account:
+```
+$ cdk deploy ConsoleMeECS
 ```
 
 Don't forget to approve the template and security resources before the deployment.
