@@ -564,7 +564,7 @@ class UserDynamoHandler(BaseDynamoHandler):
             for change in changes:
                 if not change.get("principal_arn"):
                     continue
-                if not change.get("version") in ["2.0", 2]:
+                if not change.get("version") in ["2.0", "2", 2]:
                     continue
                 change["principal"] = {
                     "principal_arn": change["principal_arn"],
