@@ -337,7 +337,7 @@ class SelfServiceStep3 extends Component {
             primary
             attached="right"
           />
-                              <Button
+          <Button
             content={
               <div>
                 <h3 style={{ marginBottom: "0px" }}>Submit</h3>
