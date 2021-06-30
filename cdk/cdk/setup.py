@@ -26,6 +26,7 @@ setuptools.setup(
         "aws-cdk.aws_ec2>=1.107.0",
         "aws-cdk.aws_ecs>=1.107.0",
         "aws-cdk.aws-ecs-patterns>=1.107.0",
+        "aws-cdk.aws-ecr-assets>=1.107.0",
         "aws-cdk.aws_efs>=1.107.0",
         "aws_cdk.aws_certificatemanager>=1.107.0",
         "aws_cdk.aws_route53>=1.107.0",

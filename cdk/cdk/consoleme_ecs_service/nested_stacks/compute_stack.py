@@ -8,11 +8,12 @@ from aws_cdk import aws_certificatemanager as acm
 from aws_cdk import aws_ec2 as ec2
 from aws_cdk import aws_ecs as ecs
 from aws_cdk import aws_ecs_patterns as ecs_patterns
+from aws_cdk import aws_ecr_assets as ecr_assets
 from aws_cdk import aws_elasticloadbalancingv2 as lb
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_logs as logs
 from aws_cdk import core as cdk
-from constants import CONTAINER_IMAGE
+from constants import USE_PUBLIC_DOCKER_IMAGE, DOCKER_IMAGE, MIN_CAPACITY, MAX_CAPACITY
 
 
 class ComputeStack(cdk.NestedStack):
@@ -35,9 +36,18 @@ class ComputeStack(cdk.NestedStack):
     ) -> None:
         super().__init__(scope, id, **kwargs)
 
-        config_yaml = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
-
         # ECS Task definition and volumes
+
+        if USE_PUBLIC_DOCKER_IMAGE is True:
+            docker_image = ecs.ContainerImage.from_registry(DOCKER_IMAGE)
+        else:
+            docker_image = ecs.ContainerImage.from_docker_image_asset(
+                ecr_assets.DockerImageAsset(
+                    self,
+                    'ConsoleMeCustomImage',
+                    directory='../'
+                )
+            )
 
         imported_task_role = iam.Role.from_role_arn(
             self, "ImportedTaskRole", role_arn=task_role_arn
@@ -60,7 +70,7 @@ class ComputeStack(cdk.NestedStack):
 
         consoleme_ecs_task_definition.add_container(
             "Container",
-            image=ecs.ContainerImage.from_registry(CONTAINER_IMAGE),
+            image=docker_image,
             privileged=False,
             port_mappings=[
                 ecs.PortMapping(
@@ -85,7 +95,7 @@ class ComputeStack(cdk.NestedStack):
 
         consoleme_ecs_task_definition.add_container(
             "CeleryContainer",
-            image=ecs.ContainerImage.from_registry(CONTAINER_IMAGE),
+            image=docker_image,
             privileged=False,
             logging=ecs.LogDriver.aws_logs(
                 stream_prefix="CeleryContainerLogs-",
@@ -135,8 +145,8 @@ class ComputeStack(cdk.NestedStack):
         consoleme_ecs_service_scaling_target = applicationautoscaling.ScalableTarget(
             self,
             "AutoScalingGroup",
-            max_capacity=config_yaml["max_capacity"],
-            min_capacity=config_yaml["min_capacity"],
+            max_capacity=MAX_CAPACITY,
+            min_capacity=MIN_CAPACITY,
             resource_id="service/"
             + cluster.cluster_name
             + "/"
