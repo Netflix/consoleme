@@ -409,6 +409,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                         "principal_type": "HoneybeeAwsResourceTemplate",
                         "repository_name": "honeybee_templates",
                         "resource_identifier": "iamrole/abc.yaml",
+                        "resource_url": "http://example.com/fake_repo/path/to/file.yaml",
                     },
                     "generator_type": "s3",
                     "action_groups": ["list", "get"],
@@ -423,6 +424,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                         "principal_type": "HoneybeeAwsResourceTemplate",
                         "repository_name": "honeybee_templates",
                         "resource_identifier": "iamrole/abc.yaml",
+                        "resource_url": "http://example.com/fake_repo/path/to/file.yaml",
                     },
                     "generator_type": "custom_iam",
                     "policy": {
