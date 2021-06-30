@@ -280,11 +280,11 @@ class SelfServiceStep3 extends Component {
     const submission_buttons =
       admin_bypass_approval_enabled &&
       role?.principal?.principal_type === "AwsResource" ? (
-        <Grid.Row style={{ maxWidth: "30em" }}>
+        <Grid.Row>
           <Button
             content={
               <div>
-                <h3 style={{ marginBottom: "0px" }}>Submit</h3>
+                <h3 style={{ marginBottom: "0px" }}>Go Back</h3>
                 <h3
                   style={{
                     fontStyle: "italic",
@@ -292,20 +292,23 @@ class SelfServiceStep3 extends Component {
                     marginTop: "0px",
                   }}
                 >
-                  And apply without approval
+                  I need to make edits
                 </h3>
               </div>
             }
             disabled={isError}
             fluid
-            onClick={this.handleAdminSubmit}
+            onClick={() => {
+              this.props.handleStepClick("previous");
+            }}
             style={{
               width: "50%",
               display: "inline-block",
               textAlign: "center",
+              backgroundColor: "#f8f8f9",
+              maxWidth: "15em",
             }}
             attached="left"
-            positive
           />
           <Button
             content={
@@ -329,9 +332,37 @@ class SelfServiceStep3 extends Component {
               width: "50%",
               display: "inline-block",
               textAlign: "center",
+              maxWidth: "15em",
             }}
             primary
             attached="right"
+          />
+                              <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Submit</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  And apply without approval
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={this.handleAdminSubmit}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+              maxWidth: "20em",
+            }}
+            floated={"right"}
+            positive
           />
         </Grid.Row>
       ) : (
