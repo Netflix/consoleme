@@ -71,6 +71,7 @@ from consoleme.lib.event_bridge.access_denies import (
     detect_cloudtrail_denies_and_update_cache,
 )
 from consoleme.lib.event_bridge.role_updates import detect_role_changes_and_update_cache
+from consoleme.lib.generic import un_wrap_json_and_dump_values
 from consoleme.lib.git import store_iam_resources_in_git
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
@@ -1336,7 +1337,7 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
                 redis_result_set[result["arn"]] = json.dumps(result)
         if redis_result_set:
             async_to_sync(store_json_results_in_redis_and_s3)(
-                redis_result_set,
+                un_wrap_json_and_dump_values(redis_result_set),
                 redis_key=config.get(
                     "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
                 ),
