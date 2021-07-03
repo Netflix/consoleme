@@ -1,15 +1,22 @@
+import sys
+import time
+from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from threading import Lock
+from typing import Optional, Union, List, Dict, Any
 
+import sentry_sdk
 import ujson as json
 from asgiref.sync import sync_to_async
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler, redis_get
+from consoleme.lib.singleton import Singleton
 from consoleme.models import (
     CloudTrailDetailsModel,
     CloudTrailError,
@@ -30,6 +37,79 @@ internal_policies = get_plugin_by_name(
     config.get("plugins.internal_policies", "default_policies")
 )()
 red = RedisHandler().redis_sync()
+
+
+class RoleCache(metaclass=Singleton):
+    def __init__(self) -> None:
+        self._lock: Lock = Lock()
+        self._last_update: int = 0
+        self._all_roles: List[str] = []
+        self._roles_by_account: Dict[str, List[str]] = defaultdict(list)
+        self._roles_by_name: Dict[str, List[str]] = defaultdict(list)
+
+    async def all_roles(self) -> List[str]:
+        await self.populate()
+        return self._all_roles
+
+    async def roles_by_account(self) -> Dict[str, List[str]]:
+        await self.populate()
+        return self._roles_by_account
+
+    async def roles_by_name(self) -> Dict[str, List[str]]:
+        await self.populate()
+        return self._roles_by_name
+
+    async def roles_in_account(self, account: str) -> List[str]:
+        await self.populate()
+        return self._roles_by_account.get(account, [])
+
+    async def roles_with_name(self, name: str) -> List[str]:
+        await self.populate()
+        return self._roles_by_name.get(name, [])
+
+    def _update_mappings(self) -> None:
+        for role in self._all_roles:
+            account = role.split(":")[4]
+            name = role.split("/")[-1]
+            self._roles_by_account[account].append(role)
+            self._roles_by_name[name].append(role)
+
+    def _parse_roles(self, config_data: Dict[str, Any]) -> None:
+        for arn in config_data.keys():
+            if ':iam:' in arn and ':role/' in arn:
+                self._all_roles.append(arn)
+
+    async def populate(self) -> None:
+        if not self._all_roles or int(time.time()) - self._last_update > 60:
+            self._lock.acquire()
+            redis_topic = config.get(
+                "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+            )
+            s3_bucket = config.get("aws_config_cache_combined.s3.bucket")
+            s3_key = config.get(
+                "aws_config_cache_combined.s3.file",
+                "aws_config_cache_combined/aws_config_resource_cache_combined_v1.json.gz",
+            )
+            try:
+                config_data = await retrieve_json_data_from_redis_or_s3(
+                    # redis_topic,
+                    s3_bucket=s3_bucket,
+                    s3_key=s3_key,
+                )
+            except Exception as e:
+                sentry_sdk.capture_exception()
+                log.error(
+                    {
+                        "function": f"{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+                        "error": f"Error loading config data. Returning empty mapping: {e}",
+                    },
+                    exc_info=True,
+                )
+                self._lock.release()
+                return
+            self._parse_roles(config_data)
+            self._update_mappings()
+            self._lock.release()
 
 
 async def get_config_timeline_url_for_role(role, account_id):

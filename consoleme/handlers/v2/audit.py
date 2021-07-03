@@ -6,11 +6,13 @@ from consoleme.lib.cloud_credential_authorization_mapping import (
     CredentialAuthorizationMapping,
 )
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.v2.roles import RoleCache
 from consoleme.models import Status2, WebResponse
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 credential_mapping = CredentialAuthorizationMapping()
+role_cache = RoleCache()
 
 
 class AuditRolesHandler(BaseMtlsHandler):
@@ -36,7 +38,71 @@ class AuditRolesHandler(BaseMtlsHandler):
             },
         )
 
-        roles = await credential_mapping.all_roles()
+        roles = await role_cache.all_roles()
+
+        self.write(
+            WebResponse(status=Status2.success, status_code=200, data=roles).json(
+                exclude_unset=True
+            )
+        )
+
+
+class AuditRolesByAccountHandler(BaseMtlsHandler):
+    """Handler for /api/v2/audit/roles/{accountNumber}
+
+    Returns a list of all roles for an account
+    """
+
+    allowed_methods = ["GET"]
+
+    def check_xsrf_cookie(self) -> None:
+        pass
+
+    async def get(self, account_id):
+        """
+        GET /api/v2/audit/roles/account/{accountNumber}
+        """
+        app_name = self.requester.get("name") or self.requester.get("username")
+        stats.count(
+            "AuditRoleHandler.get",
+            tags={
+                "requester": app_name,
+            },
+        )
+
+        roles = await role_cache.roles_in_account(account_id)
+
+        self.write(
+            WebResponse(status=Status2.success, status_code=200, data=roles).json(
+                exclude_unset=True
+            )
+        )
+
+
+class AuditRolesByNameHandler(BaseMtlsHandler):
+    """Handler for /api/v2/audit/roles/name/{name}
+
+    Returns a list of all roles with the specified name across all accounts
+    """
+
+    allowed_methods = ["GET"]
+
+    def check_xsrf_cookie(self) -> None:
+        pass
+
+    async def get(self, name):
+        """
+        GET /api/v2/audit/roles/name/{name}
+        """
+        app_name = self.requester.get("name") or self.requester.get("username")
+        stats.count(
+            "AuditRoleHandler.get",
+            tags={
+                "requester": app_name,
+            },
+        )
+
+        roles = await role_cache.roles_with_name(name)
 
         self.write(
             WebResponse(status=Status2.success, status_code=200, data=roles).json(
