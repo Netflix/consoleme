@@ -2,7 +2,7 @@
 
 We provide a limited-functionality demo of ConsoleMe at [https://demo.consolemeoss.com](https://demo.consolemeoss.com).
 
-After signing in through Google OAuth, you'll be operating as an administrator but you'll be unable to write any changes. For example, you'll be unable to mutate permissions, submit policy requests, or modify dynamic configuration.
+After signing in through Google OAuth, you'll be operating as an administrator, but you'll be unable to write any changes. For example, you'll be unable to mutate permissions, submit policy requests, or modify the dynamic configuration.
 
 You can receive credentials for a few roles after logging in. Note that these roles do not have any permissions.
 
@@ -38,8 +38,8 @@ Authenticate to [https://demo.consolemeoss.com](https://demo.consolemeoss.com), 
 ![](.gitbook/assets/image%20%287%29.png)
 
 1. Click on one of the resource links.
-2. You should be redirected to a page with with an error stating that you're eligible for more than one role on the account, and presenting you with a list of roles to select on the account with the resource. Click **Sign**-**In** for one of these roles
-3. Voila! You've been taken to the resource, or as close to it as we can get. You won't be able to see much in the AWS console due to the limited permissions provided by the role.
+2. You should be redirected to a page with an error stating that you're eligible for more than one role on the account and presenting you with a list of roles to select on the resource. Click **Sign**-**In** for one of these roles
+3. Voila! You've been taken to the resource or as close to it as we can get. You won't see much in the AWS console due to the limited permissions provided by the role.
 
 ### Walk through ConsoleMe's Self-Service IAM flow
 
@@ -61,7 +61,7 @@ The "**Other**" option in the permissions selection dropdown will allow you to r
 
 1. Once you're satisfied with your selections, click **Next**
 2. Now you're at Step 3 of the wizard. Click on the **JSON Editor** to review the policy that ConsoleMe has generated for your request. Unfortunately, you won't see any auto-generated cross-account resource policies until the Policy Review page.
-3. The next step is to submit your policy for review. As an administrator, you could submit and apply the policy to your resources without an approval. In this restricted demo, neither of these buttons will work due to the limited permissions on the role that ConsoleMe is using.
+3. The next step is to submit your policy for review. As an administrator, you could submit and apply the policy to your resources without approval. In this restricted demo, neither of these buttons will work due to the limited permissions on the role that ConsoleMe is using.
 
 ### Walk through ConsoleMe's Role Cloning feature
 
@@ -73,7 +73,7 @@ The "**Other**" option in the permissions selection dropdown will allow you to r
 2. Type "usera" under the source role option. ConsoleMe will provide a typeahead based on the existing roles it knows about.
 3. Under "Account ID", start typing in the name or ID of an account ConsoleMe knows about
 4. Under "Role name", type in the name of the new role you'd like to create
-5. Submit, and rejoice as it spectacularly fails because ConsoleMe is operating in read-only mode. Imagine the feeling you would have gotten if that operation succeeded.
+5. Submit and rejoice as it spectacularly fails because ConsoleMe is operating in read-only mode. Imagine the feeling you would have gotten if that operation succeeded.
 
 ### Use ConsoleMe's policy editor on a role and resource
 
@@ -103,7 +103,7 @@ weep file -p default ConsoleMeAppA
 aws sts get-caller-identity
 ```
 
-Run Weep in ECS Credential Provider mode, and in another shell, retrieve credentials
+Run Weep in ECS Credential Provider mode, and in another shell, retrieve credentials.
 
 Shell 1:
 

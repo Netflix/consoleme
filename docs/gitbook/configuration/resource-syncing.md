@@ -1,6 +1,6 @@
 # AWS Resource Syncing
 
-ConsoleMe learns about the bulk of your AWS resources from **AWS Config**, but will also attempt to sync IAM roles, SQS queues, SNS topics, and S3 buckets from their respective APIs. If you haven't enabled AWS Config yet, learn how to set it up [here](https://docs.aws.amazon.com/config/latest/developerguide/gs-console.html). Also keep in mind that AWS Config is not free. Carefully decide which resource types to record.
+ConsoleMe learns about the bulk of your AWS resources from **AWS Config**, but will also attempt to sync IAM roles, SQS queues, SNS topics, and S3 buckets from their respective APIs. If you haven't enabled AWS Config yet, learn how to set it up [here](https://docs.aws.amazon.com/config/latest/developerguide/gs-console.html). Also, keep in mind that AWS Config is not free. Carefully decide which resource types to record.
 
 {% hint style="info" %}
 **Prerequisite** 

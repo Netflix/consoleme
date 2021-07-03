@@ -16,5 +16,5 @@ ConsoleMe has [example Terraform files ](https://github.com/Netflix/consoleme/tr
 
 ## Deploy to ECS with a Docker Image
 
-ConsoleMe has an example [docker-compose deployment file ](https://github.com/Netflix/consoleme/blob/master/docker-compose-deploy.yaml) that you can use to generate a docker image with for ConsoleMe. You'll need to craft your own ConsoleMe configuration
+ConsoleMe has an example [docker-compose deployment file ](https://github.com/Netflix/consoleme/blob/master/docker-compose-deploy.yaml) that you can use to generate a docker image with for ConsoleMe. You'll need to craft your own ConsoleMe configuration.
 
