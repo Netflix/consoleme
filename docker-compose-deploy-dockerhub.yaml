@@ -9,6 +9,7 @@ services:
     environment:
       - SETUPTOOLS_USE_DISTUTILS=stdlib
       - CONFIG_LOCATION=${CONFIG_LOCATION:-/apps/consoleme/example_config/example_config_docker_development.yaml}
+      - EC2_REGION=${EC2_REGION:-us-east-1}
     # Run commands to install Consoleme, run the service, and never exit in the event of failure (For dev debugging)
     command: >
       bash -c 'python consoleme/__main__.py'
@@ -17,6 +18,7 @@ services:
     environment:
       - SETUPTOOLS_USE_DISTUTILS=stdlib
       - CONFIG_LOCATION=${CONFIG_LOCATION:-/apps/consoleme/example_config/example_config_docker_development.yaml}
+      - EC2_REGION=${EC2_REGION:-us-east-1}
       - COLUMNS=80 # Needed for Celery: https://github.com/celery/celery/issues/5761
     # Run Redis with ConsoleMe configuration
     command: >
