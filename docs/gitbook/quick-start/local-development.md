@@ -42,7 +42,7 @@ git clone git@github.com:Netflix/consoleme.git ; cd consoleme
 
 **Start Redis and DynamoDB containers**
 
-A local set of Redis and DynamoDB \(local\) instances need to be set up. These are provided as Docker containers. In a separate terminal window, start the local redis and dynamodb instances:
+A local set of Redis and DynamoDB \(local\) instances need to be set up. These are provided as Docker containers. In a separate terminal window, start the local Redis and dynamodb instances:
 
 ```text
 docker-compose -f docker-compose-dependencies.yaml up -d

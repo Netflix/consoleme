@@ -33,7 +33,7 @@ retrieve_accounts_from_swag:
 
 ## **Sync Accounts from** Configuration
 
-You can also optionally provide configuration that explicitly provides ConsoleMe with a mapping of your account IDs to account names. You can provide this list either in your local configuration, or \(as an administrator\) your dynamic configuration at [https://your\_consoleme\_url/config](https://your_consoleme_url/config) .
+You can also optionally provide configuration that explicitly provides ConsoleMe with a mapping of your account IDs to account names. You can provide this list either in your local configuration, or \(as an administrator\) your dynamic configuration at [https://your\_consoleme\_url/config](https://your_consoleme_url/config).
 
 > Account IDs should be quoted in YAML so that they are interpreted as strings. Account IDs can start with the number 0, and the first number would be dropped if interpreted as an integer.
 
