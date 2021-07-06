@@ -49,7 +49,10 @@ redis:
 
 ```
 CONFIG_LOCATION=<S3-URI-of-the-config>
+EC2_REGION=<custom-AWS-region>
 ```
+
+> Note: EC2_REGION is an optional variable. This is only required if you want to use AWS managed dynamodb service and make the dynamodb tables in region other than us-east-1.
 
 {% hint style="info" %}
 **BEFORE RUNNING THE COMMAND BELOW**: We highly recommend that you put valid AWS credentials for your account in your `~/.aws/credentials` file under the `[default]` profile \([Instructions](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-where)\). The role you use should have the permissions outlined under [Central Account IAM Permissions](../prerequisites/required-iam-permissions/central-account-consolemeinstanceprofile.md). These credentials will be shared with the container, and when you run the second command to populate your Redis cache \(`make redis`\) command using docker exec, the command will attempt to populate your Redis cache with live resources from your account. This will only work if you have valid AWS credentials.
