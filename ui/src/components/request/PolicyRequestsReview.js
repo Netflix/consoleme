@@ -347,7 +347,7 @@ class PolicyRequestReview extends Component {
                   rel="noreferrer"
                 >
                   {" "}
-                  {extendedRequest.arn}
+                  {extendedRequest?.principal?.principal_arn}
                 </a>
               </Table.Cell>
             </Table.Row>
@@ -565,7 +565,9 @@ class PolicyRequestReview extends Component {
     const pageContent =
       messagesToShow === null ? (
         <>
-          <Header size="huge">Request Review for: {extendedRequest.arn}</Header>
+          <Header size="huge">
+            Request Review for: {extendedRequest?.principal?.principal_arn}
+          </Header>
           {requestDetails}
           {templateContent}
           {descriptionContent}

@@ -5,27 +5,13 @@ import boto3
 from asgiref.sync import sync_to_async
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import MissingRequestParameter
-from consoleme.lib.generic import generate_html
+from consoleme.lib.generic import generate_html, get_principal_friendly_name
 from consoleme.lib.groups import get_group_url
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.models import (
-    AwsResourcePrincipalModel,
-    ExtendedRequestModel,
-    HoneybeeAwsResourceTemplatePrincipalModel,
-    RequestStatus,
-)
+from consoleme.models import ExtendedRequestModel, RequestStatus
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
-
-
-async def get_principal_friendly_name(principal):
-    if isinstance(principal, HoneybeeAwsResourceTemplatePrincipalModel):
-        return principal.resource_identifier
-    if isinstance(principal, AwsResourcePrincipalModel):
-        return principal.principal_arn
-    raise MissingRequestParameter("Unable to determine principal")
 
 
 async def send_email(
