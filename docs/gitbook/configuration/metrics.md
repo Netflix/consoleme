@@ -1,6 +1,6 @@
 # Metrics
 
-ConsoleMe supports CloudWatch metrics, and other custom Metrics plugins should you wish to write one. 
+ConsoleMe supports CloudWatch metrics, and other custom Metrics plugins should you wish to write one.
 
 To enable CloudWatch Metrics, set this configuration entry:
 

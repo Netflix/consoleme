@@ -1,8 +1,10 @@
+# Retrieving Google Groups
+
 ConsoleMe can retrieve your google groups information and use it to authorize roles for an entire group. But unfortunately, google doesn't provide groups information via access tokens. To get google groups to work you will need to complete a few extra steps.
 
 > These steps have been tested to work with ALB auth + google workflow for ConsoleMe.
 
-### Setup a service account in GCP
+## Setup a service account in GCP
 
 1. Login to the google account in which the GCP app for consoleme was setup
 2. Go to the [service accounts](https://console.cloud.google.com/iam-admin/serviceaccounts) page and select your consoleme project
@@ -11,14 +13,14 @@ ConsoleMe can retrieve your google groups information and use it to authorize ro
 5. From the **Select a role** dropdown menu, choose the **owner** option
 6. Click **Done**
 
-### Enable Domain wide delegation for the service account
+## Enable Domain wide delegation for the service account
 
 1. Click on the name of the service account created above
 2. Check the box which says **Enable Google Domain-wide Delegation**
 
 This will assign a unique client ID for the service account which will be used in a later step.
 
-### Generate service account keys
+## Generate service account keys
 
 1. On the service account page, go to the **Keys** tab
 2. Click on **Create new key** under the **Add key** dropdown
@@ -28,7 +30,7 @@ This will generate a public-private key pair which will be used for establishing
 
 Sample structure is shown below:
 
-```JSON
+```javascript
 {
   "type": "service_account",
   "project_id": "<project-id>",
@@ -43,12 +45,12 @@ Sample structure is shown below:
 }
 ```
 
-### Enable Admin SDK API for ConsoleMe
+## Enable Admin SDK API for ConsoleMe
 
 1. Visit [Admin SDK](https://console.cloud.google.com/apis/library/admin.googleapis.com) link and select the consoleme project
 2. Enable the **Admin SDK API**
 
-### Delegate domain-wide authority to your service account
+## Delegate domain-wide authority to your service account
 
 > The following steps require google admin account access. This may/maynot be the google account that you have setup consoleme in.
 
@@ -63,7 +65,7 @@ https://www.googleapis.com/auth/admin.directory.group
 https://www.googleapis.com/auth/admin.reports.audit.readonly
 ```
 
-### ConsoleMe static config changes
+## ConsoleMe static config changes
 
 1. Add the contents of the key file that was downloaded while generating service account keys as a dictionary in your consoleme static config.
 
@@ -96,15 +98,16 @@ auth:
     - AWSELBAuthSessionCookie-0
 ```
 
-2. Re-deploy your consoleme instance (if you have **static config reload** option enabled then re-deployment is not needed)
-3. Clear your existing browser cookies.
+1. Re-deploy your consoleme instance \(if you have **static config reload** option enabled then re-deployment is not needed\)
+2. Clear your existing browser cookies.
 
 ConsoleMe should now be able to get groups info from Google IDP.
 
-### Check if group info is properly retrieved
+## Check if group info is properly retrieved
 
-One way to check is by decoding the JWT in the **consoleme_auth** cookie.
+One way to check is by decoding the JWT in the **consoleme\_auth** cookie.
 
-1. Copy the contents of the **consoleme_auth** cookie from your consoleme domain
-2. Go to [jwt.io](jwt.io) and paste in the contents of the cookie
+1. Copy the contents of the **consoleme\_auth** cookie from your consoleme domain
+2. Go to [jwt.io](https://github.com/Netflix/consoleme/tree/6423fcfc7f089b5f021608c48e7c04f9d1435221/docs/gitbook/configuration/authentication-and-authorization/jwt.io) and paste in the contents of the cookie
 3. It will decode the JWT and you can validate the groups information as seen by ConsoleMe
+
