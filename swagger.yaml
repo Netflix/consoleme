@@ -563,10 +563,8 @@ components:
     RequestModel:
       type: object
       required:
-        - id
-        - arn
+        - principal
         - timestamp
-        - justification
         - requester_email
         - approvers
         - request_status
@@ -574,11 +572,12 @@ components:
         id:
           type: string
           readOnly: true
-        arn:
+        request_url:
           type: string
-          description: ARN of principal being modified
-          example: arn:aws:iam::123456789012:role/super_awesome_admin
-          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        principal:
+          anyOf:
+            - $ref: "#/components/schemas/AwsResourcePrincipalModel"
+            - $ref: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
         timestamp:
           type: string
           format: date-time
@@ -642,21 +641,17 @@ components:
               - $ref: "#/components/schemas/SESChangeGeneratorModel"
               - $ref: "#/components/schemas/CrudChangeGeneratorModel"
               - $ref: "#/components/schemas/GenericChangeGeneratorModel"
+              - $ref: "#/components/schemas/CustomIamChangeGeneratorModel"
     ChangeGeneratorModel:
       type: object
       required:
         - generator_type
         - arn
-        - resource_arn
       properties:
-        principal_arn:
-          description: |-
-            The principal (Source ARN) associated with the Change. This is most commomly an IAM role ARN.
-            The principal ARN is associated with the entity whose policy will be modified if the change is
-            approved and successful.
-          example: arn:aws:iam::123456789012:role/exampleRole
-          type: string
-          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        principal:
+          anyOf:
+            - $ref: "#/components/schemas/AwsResourcePrincipalModel"
+            - $ref: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
         generator_type:
           type: string
           enum:
@@ -671,6 +666,7 @@ components:
             - sns
             - sqs
             - sts
+            - custom_iam
           discriminator:
             propertyName: generator_type
             mapping:
@@ -684,6 +680,7 @@ components:
               ses: "#/components/schemas/SESChangeGeneratorModel"
               sns: "#/components/schemas/SNSChangeGeneratorModel"
               sqs: "#/components/schemas/SQSChangeGeneratorModel"
+              custom_iam: "#/components/schemas/CustomIamChangeGeneratorModel"
         resource_arn:
           description: |-
             The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
@@ -729,7 +726,48 @@ components:
           type: string
         bucket_prefix:
           type: string
-
+        policy:
+          type: object
+          description: |-
+            Optional full policy statement provided by frontend
+          example: |-
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Action": [
+                          "s3:GetObject",
+                      "Effect": "Allow",
+                      "Resource": [
+                          "arn:aws:s3:::abc",
+                          "arn:aws:s3:::abc/*"
+                      ],
+                  }
+              ]
+            }
+        include_accounts:
+          type: array
+          example: [account_a, account_b, ...]
+          description: |-
+            An array of accounts to include this policy on. This is only relevant for templated
+            IAM roles. By default, the change will apply to all of the accounts the template is deployed to.
+          items:
+            type: string
+        exclude_accounts:
+          type: array
+          example: [account_a, account_b, ...]
+          description: |-
+            An array of accounts to explicitly exclude this policy on. This is only relevant for templated
+            IAM roles. By default, exclude_accounts is null and the change will apply to all of the accounts
+          items:
+            type: string
+        extra_actions:
+          type: array
+          example: ["*", "s3:getobject", "s3:list*"]
+          description: |-
+            An array with a list of extra actions the user wants appended to the policy
+          items:
+            type: string
     AdvancedChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
@@ -737,6 +775,7 @@ components:
           required:
             - action_groups
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string
@@ -754,11 +793,19 @@ components:
         - type: object
           required:
             - action_groups
+            - resource_arn
           properties:
             action_groups:
               type: array
               items:
                 type: string
+            resource_arn:
+              description: |-
+                The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
+                resource policy will need to be modified if the change is approved and successful.
+              example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
+              type: string
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|(^\*$)'
     CrudChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -768,6 +815,7 @@ components:
             - action_groups
             - service_name
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string
@@ -809,11 +857,19 @@ components:
               type: array
               items:
                 type: string
-    #                enum:
-    #                  - list
-    #                  - get
-    #                  - put
-    #                  - delete
+    CustomIamChangeGeneratorModel:
+      allOf:
+        - $ref: "#/components/schemas/ChangeGeneratorModel"
+        - type: object
+          required:
+            - policy
+            - generator_type
+          properties:
+            generator_type:
+              type: string
+              pattern: "custom_iam"
+            policy:
+              type: object
     SQSChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
@@ -821,6 +877,7 @@ components:
           required:
             - action_groups
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string
@@ -842,6 +899,7 @@ components:
           required:
             - action_groups
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string
@@ -863,6 +921,7 @@ components:
           required:
             - from_address
             - generator_type
+            - resource_arn
           properties:
             generator_type:
               type: string
@@ -876,15 +935,76 @@ components:
                 type: string
     #                enum:
     #                  - send_email
+    PrincipalModel:
+      type: object
+      required:
+        - principal_type
+      properties:
+        principal_type:
+          type: string
+          enum:
+            - AwsResource
+            - HoneybeeAwsResourceTemplate
+          discriminator:
+            propertyName: principal_type
+            mapping:
+              AwsResource: "#/components/schemas/AwsResourcePrincipalModel"
+              HoneybeeAwsResourceTemplate: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
+
+    AwsResourcePrincipalModel:
+      allOf:
+        - $ref: "#/components/schemas/PrincipalModel"
+        - type: object
+          required:
+            - principal_arn
+            - principal_type
+          properties:
+            principal_type:
+              type: string
+              pattern: "AwsResource"
+            principal_arn:
+              description: |-
+                The principal (Source ARN) associated with the Change. This is most commomly an IAM role ARN.
+                The principal ARN is associated with the entity whose policy will be modified if the change is
+                approved and successful.
+              example: arn:aws:iam::123456789012:role/exampleRole
+              type: string
+              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+
+    HoneybeeAwsResourceTemplatePrincipalModel:
+      allOf:
+        - $ref: "#/components/schemas/PrincipalModel"
+        - type: object
+          required:
+            - resource_identifier
+            - repository_name
+            - principal_type
+            - resource_url
+          properties:
+            principal_type:
+              type: string
+              pattern: "HoneybeeAwsResourceTemplate"
+            repository_name:
+              description: |-
+                The name of the repository for the template. This is specified in the configuration key
+                `cache_resource_templates.repositories[n].name`
+              type: string
+            resource_identifier:
+              type: string
+              example: path/to/template.yaml
+            resource_url:
+              type: string
+              example: https://example.com/resource
     ChangeModel:
       type: object
       required:
-        - principal_arn
+        - principal
         - change_type
       properties:
-        principal_arn:
-          type: string
-          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
+        principal:
+          anyOf:
+            - $ref: "#/components/schemas/AwsResourcePrincipalModel"
+            - $ref: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
         change_type:
           type: string
         resources:
@@ -894,7 +1014,7 @@ components:
             $ref: "#/components/schemas/ResourceModel"
         version:
           type: string
-          default: 2.0
+          default: 3.0
         status:
           type: string
           default: not_applied
@@ -910,6 +1030,31 @@ components:
           default: false
         updated_by:
           type: string
+    GenericFileChangeModel:
+      allOf:
+        - $ref: "#/components/schemas/ChangeModel"
+        - type: object
+          properties:
+            principal:
+              anyOf:
+                - $ref: "#/components/schemas/AwsResourcePrincipalModel"
+                - $ref: "#/components/schemas/HoneybeeAwsResourceTemplatePrincipalModel"
+            action:
+              $ref: "#/components/schemas/Action"
+            change_type:
+              type: string
+              pattern: "generic_file"
+            policy:
+              type: string
+            old_policy:
+              type: string
+            encoding:
+              type: string
+              enum:
+                - yaml
+                - json
+                - hcl
+                - text
     InlinePolicyChangeModel:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
@@ -1048,6 +1193,7 @@ components:
               - $ref: "#/components/schemas/ResourcePolicyChangeModel"
               - $ref: "#/components/schemas/AssumeRolePolicyChangeModel"
               - $ref: "#/components/schemas/ResourceTagChangeModel"
+              - $ref: "#/components/schemas/GenericFileChangeModel"
     ArnArray:
       type: array
       items:
@@ -1442,12 +1588,14 @@ components:
       type: object
       required:
         - changes
-        - justification
       properties:
         changes:
           $ref: "#/components/schemas/ChangeModelArray"
         justification:
           type: string
+        dry_run:
+          type: boolean
+          default: False
         admin_auto_approve:
           type: boolean
           default: False
@@ -1466,6 +1614,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ActionResult"
+        extended_request:
+          $ref: "#/components/schemas/ExtendedRequestModel"
     RequestModificationBaseModel:
       type: object
       required:

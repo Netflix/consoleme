@@ -1,3 +1,154 @@
 #new_policy_wizard .ui.category.search .results {
   width: auto;
 }
+
+.ui.basic.segment {
+  width: 90%;
+}
+
+.ui.accordion,
+.ui.accordion .accordion {
+  margin-bottom: 1em;
+}
+
+.ui.steps .step:after,
+.ui.steps .active.step:after {
+  display: none;
+}
+
+.ui.steps {
+  border: none;
+}
+
+.ui.steps .step {
+  background: #ffffff;
+  border-right: 0px;
+}
+
+.ui.steps .step.active,
+.ui.steps:hover .step.active:hover {
+  background: #ffffff;
+}
+
+.step1:hover,
+.step2:hover,
+.step3:hover {
+  background: #ffffff !important;
+}
+
+.ui.steps .step .description {
+  color: #686868;
+}
+
+.ui.modal > .header {
+  border-bottom: 0px;
+}
+
+.ui.modal > .message {
+  margin-top: 0px;
+}
+
+.advancedOption > .menu.transition,
+.advancedOption > i {
+  display: none !important;
+}
+
+.helpContainer {
+  position: relative;
+}
+
+.help {
+  display: inline-block;
+  margin-bottom: 0px;
+  position: absolute;
+  bottom: 0;
+}
+
+.ui.items {
+  border: 1px solid rgba(34, 36, 38, 0.15);
+  border-radius: 0.28571429rem;
+}
+
+.ui.divided.items > .item:first-child .button {
+  border-radius: 0px 0.28571429rem 0px 0px;
+}
+
+.ui.divided.items > .item:not(first-child) .button {
+  border-radius: 0px;
+}
+
+.ui.items > .item > .content > .header:not(.ui) {
+  width: 100%;
+}
+
+.ui.divided.items > .item:not(first-child) {
+  padding-top: 0px;
+}
+
+.ui.items > .item .extra > .cogs.icon.actions {
+  margin-bottom: 0px !important;
+  font-size: 1.25em;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* In order to help read roles on smaller screens better, increased results grid width */
+@media (max-width: 1067px) {
+  .ui.fluid.search .results {
+    width: 150%;
+  }
+}
+
+.ui.steps .step > .icon {
+  font-size: 4.5em;
+}
+
+.active.step1 > .icon {
+  font-family: Step;
+  content: url("../../assets/icons/stepper1Active.svg");
+}
+
+.complete.step1 > .icon {
+  font-size: 4em;
+  font-family: Step;
+  content: url("../../assets/icons/stepper1Complete.svg");
+}
+
+.step2 > .icon {
+  font-size: 4em;
+  font-family: Step;
+  content: url("../../assets/icons/stepper2Pending.svg");
+}
+
+.active.step2 > .icon {
+  font-family: Step;
+  content: url("../../assets/icons/stepper2Active.svg");
+}
+
+.complete.step2 > .icon {
+  font-size: 4em;
+  font-family: Step;
+  content: url("../../assets/icons/stepper2Complete.svg");
+}
+
+.step3 > .icon {
+  font-size: 4em;
+  font-family: Step;
+  content: url("../../assets/icons/stepper3Pending.svg");
+}
+
+.active.step3 > .icon {
+  font-size: 4em;
+  font-family: Step;
+  content: url("../../assets/icons/stepper3Active.svg");
+}
+
+.users.large.icon,
+.users.icon {
+  color: #286f85;
+}
+
+.ui.blue.label,
+.ui.blue.labels .label {
+  background-color: #286f85 !important;
+  border-color: #286f85 !important;
+}

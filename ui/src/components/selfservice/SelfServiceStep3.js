@@ -1,4 +1,3 @@
-import _ from "lodash";
 import React, { Component } from "react";
 import {
   Button,
@@ -8,51 +7,12 @@ import {
   Grid,
   Header,
   Icon,
-  Label,
+  Loader,
   Message,
-  Popup,
-  Tab,
-  Table,
+  Segment,
   TextArea,
 } from "semantic-ui-react";
-import "brace";
-import "brace/ext/language_tools";
-import "brace/theme/monokai";
-import "brace/mode/json";
-import MonacoEditor from "react-monaco-editor";
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-
-const editor_options = {
-  selectOnLineNumbers: true,
-  readOnly: false,
-  quickSuggestions: true,
-  scrollbar: {
-    alwaysConsumeMouseWheel: false,
-  },
-  scrollBeyondLastLine: false,
-  automaticLayout: true,
-};
-
-const terraform_exporter_options = {
-  selectOnLineNumbers: true,
-  readOnly: true,
-  scrollbar: {
-    alwaysConsumeMouseWheel: false,
-  },
-  scrollBeyondLastLine: false,
-  automaticLayout: true,
-};
-
-const convert_to_terraform = (policy_name, policy_statement) => {
-  return `resource "aws_iam_policy" "${policy_name}" {
-  name        = "${policy_name}"
-  path        = "/"
-  description = "Policy generated through ConsoleMe"
-  policy      =  <<EOF
-${policy_statement}
-EOF
-}`;
-};
+import MonacoDiffComponent from "../blocks/MonacoDiffComponent";
 
 class SelfServiceStep3 extends Component {
   constructor(props) {
@@ -71,42 +31,47 @@ class SelfServiceStep3 extends Component {
       export_to_terraform_enabled: this.props.export_to_terraform_enabled,
       admin_auto_approve: false,
       policy_name: "",
+      dry_run_policy: "",
+      old_policy: "",
+      new_policy: "",
+      role: this.props.role,
+      active: true,
+      requestUrl: null,
     };
     this.inlinePolicyEditorRef = React.createRef();
-    this.terraformPolicyExporterRef = React.createRef();
-    this.onChange = this.onChange.bind(this);
     this.editorDidMount = this.editorDidMount.bind(this);
-    this.copy_terraform_to_clipboard = this.copy_terraform_to_clipboard.bind(
-      this
-    );
     this.handleJustificationChange = this.handleJustificationChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
   }
 
   async componentDidMount() {
-    const { role, permissions } = this.props;
-    const payload = {
-      changes: [],
-    };
-    payload.changes = permissions.map((permission) => {
-      const change = {
-        principal_arn: role.arn,
-        generator_type: permission.service,
-        action_groups: permission.actions,
-        condition: permission.condition,
-        effect: "Allow",
-        ...permission,
-      };
-      delete change.service;
-      delete change.actions;
-      return change;
+    const { role, updated_policy } = this.props;
+    this.setState({
+      messages: [],
     });
+
+    const payload = {
+      dry_run: true,
+      changes: {
+        changes: [
+          {
+            principal: role.principal,
+            change_type: "inline_policy",
+            action: "attach",
+            policy: {
+              policy_document: JSON.parse(updated_policy),
+            },
+          },
+        ],
+      },
+    };
 
     const response = await this.props.sendRequestCommon(
       payload,
-      "/api/v2/generate_changes"
+      "/api/v2/request"
     );
+
     if (response.status != null && response.status === 400) {
       return this.setState({
         isError: true,
@@ -114,38 +79,37 @@ class SelfServiceStep3 extends Component {
       });
     }
 
-    if ("changes" in response && response.changes.length > 0) {
-      const policy_name = response.changes[0].policy_name;
-      const statement = JSON.stringify(
-        response.changes[0].policy.policy_document,
-        null,
-        4
-      );
-      return this.setState({
-        custom_statement: statement,
-        isError: false,
-        messages: [],
-        policy_name,
-        statement,
-      });
+    if (response.extended_request != null) {
+      if (role.principal.principal_type === "HoneybeeAwsResourceTemplate") {
+        this.setState({
+          new_policy: response.extended_request.changes.changes[0].policy,
+          old_policy: response.extended_request.changes.changes[0].old_policy,
+          active: false,
+        });
+      } else {
+        this.setState({
+          new_policy: JSON.stringify(
+            response.extended_request.changes.changes[0].policy.policy_document,
+            null,
+            "\t"
+          ),
+          active: false,
+        });
+      }
     }
-    return this.setState({
-      isError: true,
-      messages: ["Unknown Exception raised. Please reach out for support"],
-    });
   }
 
   editorDidMount(editor) {
-    editor.onDidChangeModelDecorations(() => {
-      const model = editor.getModel();
-
+    editor._modifiedEditor.onDidChangeModelDecorations(() => {
+      const { modifiedEditor } = this.state;
+      const model = modifiedEditor.getModel();
       if (model === null || model.getModeId() !== "json") {
         return;
       }
 
       const owner = model.getModeId();
       const uri = model.uri;
-      const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
+      const markers = editor.getModelMarkers({ owner, resource: uri });
       this.onLintError(
         markers.map(
           (marker) =>
@@ -153,104 +117,25 @@ class SelfServiceStep3 extends Component {
         )
       );
     });
-  }
-
-  buildMonacoEditor(custom_statement) {
-    return (
-      <MonacoEditor
-        height="500px"
-        language="json"
-        width="100%"
-        theme="vs-dark"
-        value={custom_statement}
-        onChange={this.onChange}
-        options={editor_options}
-        editorDidMount={this.editorDidMount}
-        textAlign="center"
-      />
-    );
-  }
-
-  buildTerraformMonacoExporter(custom_statement) {
-    const { policy_name } = this.state;
-    const terraform_statement = convert_to_terraform(
-      policy_name,
-      custom_statement
-    );
-    return (
-      <MonacoEditor
-        language="hcl"
-        width="100%"
-        height="500px"
-        theme="vs-dark"
-        ref={this.terraformPolicyExporterRef}
-        value={terraform_statement}
-        options={terraform_exporter_options}
-      />
-    );
-  }
-
-  copy_terraform_to_clipboard() {
-    const { policy_name, custom_statement } = this.state;
-    const terraform_statement = convert_to_terraform(
-      policy_name,
-      custom_statement
-    );
-    navigator.clipboard.writeText(terraform_statement);
-  }
-
-  buildPermissionsTable() {
-    const { permissions, services } = this.props;
-    const permissionRows = permissions.map((permission) => {
-      const serviceDetail = _.find(services, { key: permission.service });
-      return (
-        <Table.Row>
-          <Table.Cell>{serviceDetail.text}</Table.Cell>
-          <Table.Cell collapsing textAlign="left">
-            {Object.keys(permission).map((key) => {
-              if (
-                key === "actions" ||
-                key === "service" ||
-                key === "condition"
-              ) {
-                return null;
-              }
-              return (
-                <Label as="a">
-                  {key}
-                  <Label.Detail>{permission[key]}</Label.Detail>
-                </Label>
-              );
-            })}
-          </Table.Cell>
-          <Table.Cell>
-            {permission.actions.map((action) => {
-              const actionDetail = _.find(serviceDetail.actions, {
-                name: action,
-              });
-              return (
-                <Label as="a" color="olive">
-                  {actionDetail.text}
-                </Label>
-              );
-            })}
-          </Table.Cell>
-        </Table.Row>
-      );
+    this.setState({
+      modifiedEditor: editor._modifiedEditor,
     });
+  }
 
-    const permissionTable = (
-      <Table celled striped selectable>
-        <Table.Header>
-          <Table.HeaderCell>Service</Table.HeaderCell>
-          <Table.HeaderCell>Resource</Table.HeaderCell>
-          <Table.HeaderCell>Actions</Table.HeaderCell>
-        </Table.Header>
-        <Table.Body>{permissionRows}</Table.Body>
-      </Table>
+  onValueChange() {}
+
+  buildMonacoEditor() {
+    const { old_policy, new_policy } = this.state;
+
+    return (
+      <MonacoDiffComponent
+        oldValue={old_policy}
+        newValue={new_policy}
+        readOnly={true}
+        onLintError={this.onLintError}
+        onValueChange={this.onValueChange}
+      />
     );
-
-    return permissionTable;
   }
 
   handleAdminSubmit() {
@@ -265,26 +150,25 @@ class SelfServiceStep3 extends Component {
   }
 
   handleSubmit() {
-    const { role } = this.props;
-    const { custom_statement, justification, admin_auto_approve } = this.state;
+    const { role, updated_policy } = this.props;
+    const { justification, admin_auto_approve } = this.state;
     if (!justification) {
       return this.setState((state) => ({
         messages: ["No Justification is Given"],
       }));
     }
 
-    const { arn } = role;
     const requestV2 = {
       justification,
       admin_auto_approve,
       changes: {
         changes: [
           {
-            principal_arn: arn,
+            principal: role.principal,
             change_type: "inline_policy",
             action: "attach",
             policy: {
-              policy_document: JSON.parse(custom_statement),
+              policy_document: JSON.parse(updated_policy),
             },
           },
         ],
@@ -303,13 +187,15 @@ class SelfServiceStep3 extends Component {
 
         const messages = [];
         if (response) {
-          const { request_created, request_id } = response;
+          const { request_created, request_id, request_url } = response;
           if (request_created === true) {
+            messages.push("success");
             return this.setState({
               isLoading: false,
               isSuccess: true,
               messages,
               requestId: request_id,
+              requestUrl: request_url,
             });
           }
           messages.push(
@@ -333,12 +219,6 @@ class SelfServiceStep3 extends Component {
     });
   }
 
-  onChange(newValue, e) {
-    this.setState({
-      custom_statement: newValue,
-    });
-  }
-
   onLintError = (lintErrors) => {
     if (lintErrors.length > 0) {
       this.setState({
@@ -353,24 +233,21 @@ class SelfServiceStep3 extends Component {
     }
   };
 
-  render() {
-    const { role } = this.props;
-    const {
-      admin_bypass_approval_enabled,
-      custom_statement,
-      export_to_terraform_enabled,
-      isError,
-      isLoading,
-      isSuccess,
-      justification,
-      messages,
-      requestId,
-      statement,
-    } = this.state;
-
-    const active = custom_statement !== statement;
-    const messagesToShow =
-      messages.length > 0 ? (
+  getMessages() {
+    const { isSuccess, messages, requestUrl } = this.state;
+    if (messages.length > 0 && isSuccess === true) {
+      return (
+        <Message positive>
+          <Message.Header>Your request was successful.</Message.Header>
+          You can check your request status from{" "}
+          <a href={requestUrl} target="_blank" rel="noopener noreferrer">
+            here
+          </a>
+          .
+        </Message>
+      );
+    } else if (messages.length > 0 && isSuccess === false) {
+      return (
         <Message negative>
           <Message.Header>
             We found some problems for this request.
@@ -381,185 +258,213 @@ class SelfServiceStep3 extends Component {
             ))}
           </Message.List>
         </Message>
-      ) : null;
+      );
+    }
+  }
 
-    const submission_buttons = admin_bypass_approval_enabled ? (
-      <Grid columns={2}>
+  render() {
+    const {
+      admin_bypass_approval_enabled,
+      isError,
+      justification,
+      old_policy,
+      new_policy,
+      role,
+      active,
+      isLoading,
+    } = this.state;
+
+    const messagesToShow = this.getMessages();
+
+    // Only allow admin approval on AwsResource requests and not templated requests
+    const submission_buttons =
+      admin_bypass_approval_enabled &&
+      role?.principal?.principal_type === "AwsResource" ? (
         <Grid.Row>
-          <Grid.Column>
-            <Button
-              content="Submit and apply without approval"
-              disabled={isError}
-              onClick={this.handleAdminSubmit}
-              positive
-              fluid
-            />
-          </Grid.Column>
-          <Grid.Column>
-            <Button
-              content="Submit"
-              disabled={isError}
-              onClick={this.handleSubmit}
-              primary
-              fluid
-            />
-          </Grid.Column>
+          <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Go Back</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  I need to make edits
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={() => {
+              this.props.handleStepClick("previous");
+            }}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+              backgroundColor: "#f8f8f9",
+              maxWidth: "15em",
+            }}
+            attached="left"
+          />
+          <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Submit</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  Everything looks good
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={this.handleSubmit}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+              maxWidth: "15em",
+            }}
+            primary
+            attached="right"
+          />
+          <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Submit</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  And apply without approval
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={this.handleAdminSubmit}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+              maxWidth: "20em",
+            }}
+            floated={"right"}
+            positive
+          />
         </Grid.Row>
-      </Grid>
-    ) : (
-      <Button
-        content="Submit"
-        disabled={isError}
-        fluid
-        onClick={this.handleSubmit}
-        primary
-      />
+      ) : (
+        <Grid.Row style={{ maxWidth: "30em" }}>
+          <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Go Back</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  I need to make edits
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={() => {
+              this.props.handleStepClick("previous");
+            }}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+              backgroundColor: "#f8f8f9",
+            }}
+            attached="left"
+          />
+          <Button
+            content={
+              <div>
+                <h3 style={{ marginBottom: "0px" }}>Submit for Review</h3>
+                <h3
+                  style={{
+                    fontStyle: "italic",
+                    opacity: "70%",
+                    marginTop: "0px",
+                  }}
+                >
+                  Everything looks good
+                </h3>
+              </div>
+            }
+            disabled={isError}
+            fluid
+            onClick={this.handleSubmit}
+            style={{
+              width: "50%",
+              display: "inline-block",
+              textAlign: "center",
+            }}
+            positive
+            attached="right"
+          />
+        </Grid.Row>
+      );
+
+    return (
+      <div>
+        <Header size={"huge"}>Review Changes & Submit</Header>
+        <p>
+          Use the following editor to review changes before submitting for
+          review.
+        </p>
+        <Segment>
+          <Dimmer active={active}>
+            <Loader>Loading</Loader>
+          </Dimmer>
+          <MonacoDiffComponent
+            oldValue={old_policy}
+            newValue={new_policy}
+            readOnly={true}
+            onLintError={this.onLintError}
+            onValueChange={this.onValueChange}
+          />
+        </Segment>
+        <Divider />
+        <Header>
+          Justification
+          <sup>
+            <Icon name="asterisk" style={{ color: "red", fontSize: ".5em" }} />
+          </sup>{" "}
+        </Header>
+        <Form>
+          <Dimmer active={isLoading}>
+            <Loader>Submitting Request</Loader>
+          </Dimmer>
+          <TextArea
+            onChange={this.handleJustificationChange}
+            placeholder="Your Justification"
+            value={justification}
+          />
+        </Form>
+        <Divider />
+        {messagesToShow}
+        {submission_buttons}
+      </div>
     );
-
-    const terraformExporterPane = export_to_terraform_enabled
-      ? {
-          menuItem: "Terraform Exporter",
-          render: () => {
-            const terraformExporter = this.buildTerraformMonacoExporter(
-              custom_statement
-            );
-            return (
-              <Tab.Pane loading={isLoading}>
-                <Header>
-                  Export Terraform permissions
-                  <Popup
-                    content="Copy Terraform Statement"
-                    trigger={
-                      <Icon
-                        link
-                        name="copy"
-                        onClick={this.copy_terraform_to_clipboard}
-                      />
-                    }
-                  />
-                </Header>
-                <br />
-                {terraformExporter}
-                <Divider />
-                <Header>Justification</Header>
-                <Form>
-                  <TextArea
-                    onChange={this.handleJustificationChange}
-                    placeholder="Your Justification"
-                    value={justification}
-                  />
-                </Form>
-                <Divider />
-                {messagesToShow}
-                {submission_buttons}
-              </Tab.Pane>
-            );
-          },
-        }
-      : null;
-
-    const panes = [
-      {
-        menuItem: "Review",
-        render: () => (
-          <Tab.Pane loading={isLoading}>
-            <Header>
-              Please Review Permissions
-              <Header.Subheader>
-                You can customize your request using the JSON Editor for
-                advanced permissions.
-              </Header.Subheader>
-            </Header>
-            <p>
-              Your new permissions will be attached to the role{" "}
-              <a
-                href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {role.arn}
-              </a>{" "}
-              with the following statements:
-            </p>
-            <Dimmer.Dimmable dimmed={active}>
-              {this.buildPermissionsTable()}
-              <Dimmer active={active}>
-                <Header as="h2" inverted>
-                  Your changes made from the JSON Editor will override these
-                  permissions.
-                </Header>
-              </Dimmer>
-            </Dimmer.Dimmable>
-            <Divider />
-            <Header>Justification</Header>
-            <Form>
-              <TextArea
-                onChange={this.handleJustificationChange}
-                placeholder="Your Justification"
-                value={justification}
-              />
-            </Form>
-            <Divider />
-            {messagesToShow}
-            {submission_buttons}
-          </Tab.Pane>
-        ),
-      },
-      {
-        menuItem: "JSON Editor",
-        render: () => {
-          const jsonEditor = this.buildMonacoEditor(custom_statement);
-          return (
-            <Tab.Pane loading={isLoading}>
-              <Header>Edit your permissions in JSON format.</Header>
-              <br />
-              {jsonEditor}
-              <Divider />
-              <Header>Justification</Header>
-              <Form>
-                <TextArea
-                  onChange={this.handleJustificationChange}
-                  placeholder="Your Justification"
-                  value={justification}
-                />
-              </Form>
-              <Divider />
-              {messagesToShow}
-              {submission_buttons}
-            </Tab.Pane>
-          );
-        },
-      },
-      terraformExporterPane,
-    ];
-
-    const tabContent = isSuccess ? (
-      <Message positive>
-        <Message.Header>Your request was successful.</Message.Header>
-        You can check your request status from{" "}
-        <a
-          href={`/policies/request/${requestId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          here
-        </a>
-        .
-      </Message>
-    ) : (
-      <>
-        <Tab
-          onTabChange={(event, data) =>
-            this.setState({
-              activeIndex: data.activeIndex,
-            })
-          }
-          panes={panes}
-        />
-        <br />
-      </>
-    );
-    return tabContent;
   }
 }
 

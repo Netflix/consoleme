@@ -33,6 +33,7 @@ from consoleme.lib.policies import (
 from consoleme.lib.timeout import Timeout
 from consoleme.lib.v2.requests import (
     generate_request_from_change_model_array,
+    get_request_url,
     is_request_eligible_for_auto_approval,
     parse_and_apply_policy_request_modification,
     populate_cross_account_resource_policies,
@@ -81,7 +82,10 @@ class RequestHandler(BaseAPIV2Handler):
           "changes": {
             "changes": [
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "inline_policy",
                 "action": "attach",
                 "policy": {
@@ -129,7 +133,10 @@ class RequestHandler(BaseAPIV2Handler):
                 }
               },
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "assume_role_policy",
                 "policy": {
                   "policy_document": {
@@ -148,21 +155,30 @@ class RequestHandler(BaseAPIV2Handler):
                 }
               },
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "managed_policy",
                 "policy_name": "ApiProtect",
                 "action": "attach",
                 "arn": "arn:aws:iam::123456789012:policy/ApiProtect"
               },
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "managed_policy",
                 "policy_name": "TagProtect",
                 "action": "detach",
                 "arn": "arn:aws:iam::123456789012:policy/TagProtect"
               },
               {
-                "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                "principal": {
+                    "principal_arn": "arn:aws:iam::123456789012:role/curtisTestRole1",
+                    "principal_type": "AwsResource"
+                },
                 "change_type": "inline_policy",
                 "policy_name": "random_policy254",
                 "action": "attach",
@@ -238,85 +254,104 @@ class RequestHandler(BaseAPIV2Handler):
             )
             log_data["request"] = extended_request.dict()
             log.debug(log_data)
+
+            if changes.dry_run:
+                response = RequestCreationResponse(
+                    errors=0, request_created=False, extended_request=extended_request
+                )
+                self.write(response.json())
+                await self.finish()
+                return
+
             admin_approved = False
             approval_probe_approved = False
 
-            # TODO: Provide a note to the requester that admin_auto_approve will apply the requested policies only.
-            # It will not automatically apply generated policies. The administrative user will need to visit the policy
-            # Request page to do this manually.
-            if changes.admin_auto_approve:
-                # make sure user is allowed to use admin_auto_approve
-                can_manage_policy_request = (
-                    can_admin_policies(self.user, self.groups),
-                )
-                if can_manage_policy_request:
-                    extended_request.request_status = RequestStatus.approved
-                    admin_approved = True
-                    extended_request.reviewer = self.user
-                    self_approval_comment = CommentModel(
-                        id=str(uuid.uuid4()),
-                        timestamp=int(time.time()),
-                        user_email=self.user,
-                        user=extended_request.requester_info,
-                        last_modified=int(time.time()),
-                        text=f"Self-approved by admin: {self.user}",
+            if extended_request.principal.principal_type == "AwsResource":
+                # TODO: Provide a note to the requester that admin_auto_approve will apply the requested policies only.
+                # It will not automatically apply generated policies. The administrative user will need to visit
+                # the policy request page to do this manually.
+                if changes.admin_auto_approve:
+                    # make sure user is allowed to use admin_auto_approve
+                    can_manage_policy_request = (
+                        can_admin_policies(self.user, self.groups),
                     )
-                    extended_request.comments.append(self_approval_comment)
-                    log_data["admin_auto_approved"] = True
-                    log_data["request"] = extended_request.dict()
-                    log.debug(log_data)
-                    stats.count(
-                        f"{log_data['function']}.post.admin_auto_approved",
-                        tags={"user": self.user},
-                    )
-                else:
-                    # someone is trying to use admin bypass without being an admin, don't allow request to proceed
-                    stats.count(
-                        f"{log_data['function']}.post.unauthorized_admin_bypass",
-                        tags={"user": self.user},
-                    )
-                    log_data["message"] = "Unauthorized user trying to use admin bypass"
-                    log.error(log_data)
-                    await write_json_error("Unauthorized", obj=self)
-                    return
-            else:
-                # If admin auto approve is false, check for auto-approve probe eligibility
-                is_eligible_for_auto_approve_probe = (
-                    await is_request_eligible_for_auto_approval(
-                        extended_request, self.user
-                    )
-                )
-                # If we have only made requests that are eligible for auto-approval probe, check against them
-                if is_eligible_for_auto_approve_probe:
-                    should_auto_approve_request = await should_auto_approve_policy_v2(
-                        extended_request, self.user, self.groups
-                    )
-                    if should_auto_approve_request["approved"]:
+                    if can_manage_policy_request:
                         extended_request.request_status = RequestStatus.approved
-                        approval_probe_approved = True
-                        stats.count(
-                            f"{log_data['function']}.probe_auto_approved",
-                            tags={"user": self.user},
+                        admin_approved = True
+                        extended_request.reviewer = self.user
+                        self_approval_comment = CommentModel(
+                            id=str(uuid.uuid4()),
+                            timestamp=int(time.time()),
+                            user_email=self.user,
+                            user=extended_request.requester_info,
+                            last_modified=int(time.time()),
+                            text=f"Self-approved by admin: {self.user}",
                         )
-                        approving_probes = []
-                        for approving_probe in should_auto_approve_request[
-                            "approving_probes"
-                        ]:
-                            approving_probe_comment = CommentModel(
-                                id=str(uuid.uuid4()),
-                                timestamp=int(time.time()),
-                                user_email=f"Auto-Approve Probe: {approving_probe['name']}",
-                                last_modified=int(time.time()),
-                                text=f"Policy {approving_probe['policy']} auto-approved by probe: {approving_probe['name']}",
-                            )
-                            extended_request.comments.append(approving_probe_comment)
-                            approving_probes.append(approving_probe["name"])
-                        extended_request.reviewer = (
-                            f"Auto-Approve Probe: {','.join(approving_probes)}"
-                        )
-                        log_data["probe_auto_approved"] = True
+                        extended_request.comments.append(self_approval_comment)
+                        log_data["admin_auto_approved"] = True
                         log_data["request"] = extended_request.dict()
                         log.debug(log_data)
+                        stats.count(
+                            f"{log_data['function']}.post.admin_auto_approved",
+                            tags={"user": self.user},
+                        )
+                    else:
+                        # someone is trying to use admin bypass without being an admin, don't allow request to proceed
+                        stats.count(
+                            f"{log_data['function']}.post.unauthorized_admin_bypass",
+                            tags={"user": self.user},
+                        )
+                        log_data[
+                            "message"
+                        ] = "Unauthorized user trying to use admin bypass"
+                        log.error(log_data)
+                        await write_json_error("Unauthorized", obj=self)
+                        return
+                else:
+                    # If admin auto approve is false, check for auto-approve probe eligibility
+                    is_eligible_for_auto_approve_probe = (
+                        await is_request_eligible_for_auto_approval(
+                            extended_request, self.user
+                        )
+                    )
+                    # If we have only made requests that are eligible for auto-approval probe, check against them
+                    if is_eligible_for_auto_approve_probe:
+                        should_auto_approve_request = (
+                            await should_auto_approve_policy_v2(
+                                extended_request, self.user, self.groups
+                            )
+                        )
+                        if should_auto_approve_request["approved"]:
+                            extended_request.request_status = RequestStatus.approved
+                            approval_probe_approved = True
+                            stats.count(
+                                f"{log_data['function']}.probe_auto_approved",
+                                tags={"user": self.user},
+                            )
+                            approving_probes = []
+                            for approving_probe in should_auto_approve_request[
+                                "approving_probes"
+                            ]:
+                                approving_probe_comment = CommentModel(
+                                    id=str(uuid.uuid4()),
+                                    timestamp=int(time.time()),
+                                    user_email=f"Auto-Approve Probe: {approving_probe['name']}",
+                                    last_modified=int(time.time()),
+                                    text=(
+                                        f"Policy {approving_probe['policy']} auto-approved by probe: "
+                                        f"{approving_probe['name']}"
+                                    ),
+                                )
+                                extended_request.comments.append(
+                                    approving_probe_comment
+                                )
+                                approving_probes.append(approving_probe["name"])
+                            extended_request.reviewer = (
+                                f"Auto-Approve Probe: {','.join(approving_probes)}"
+                            )
+                            log_data["probe_auto_approved"] = True
+                            log_data["request"] = extended_request.dict()
+                            log.debug(log_data)
 
             dynamo = UserDynamoHandler(self.user)
             request = await dynamo.write_policy_request_v2(extended_request)
@@ -344,13 +379,16 @@ class RequestHandler(BaseAPIV2Handler):
                 raise
             return
 
+        request_url = await get_request_url(extended_request)
+
         # If here, request has been successfully created
         response = RequestCreationResponse(
             errors=0,
             request_created=True,
             request_id=extended_request.id,
-            request_url=f"/policies/request/{extended_request.id}",
+            request_url=request_url,
             action_results=[],
+            extended_request=extended_request,
         )
 
         # If approved is true due to an auto-approval probe or admin auto-approval, apply the non-autogenerated changes
@@ -383,13 +421,17 @@ class RequestHandler(BaseAPIV2Handler):
 
             # Update in dynamo
             await dynamo.write_policy_request_v2(extended_request)
-            account_id = await get_resource_account(extended_request.arn)
+            account_id = await get_resource_account(
+                extended_request.principal.principal_arn
+            )
 
             # Force a refresh of the role in Redis/DDB
-            arn_parsed = parse_arn(extended_request.arn)
+            arn_parsed = parse_arn(extended_request.principal.principal_arn)
             if arn_parsed["service"] == "iam" and arn_parsed["resource"] == "role":
                 await aws.fetch_iam_role(
-                    account_id, extended_request.arn, force_refresh=True
+                    account_id,
+                    extended_request.principal.principal_arn,
+                    force_refresh=True,
                 )
             log_data["request"] = extended_request.dict()
             log_data["message"] = "Applied changes based on approved request"
@@ -464,34 +506,39 @@ class RequestsHandler(BaseAPIV2Handler):
         if markdown:
             requests_to_write = []
             for request in requests[0:limit]:
-                resource_name = request["arn"].split(":")[5]
+                principal_arn = request.get("principal", {}).get("principal_arn", "")
+                url = request.get("principal", {}).get("resource_url", "")
+                resource_name = principal_arn
                 if "/" in resource_name:
                     resource_name = resource_name.split("/")[-1]
-                region = request["arn"].split(":")[3]
-                service_type = request["arn"].split(":")[2]
-                account_id = request["arn"].split(":")[4]
-                try:
-                    url = await get_url_for_resource(
-                        request["arn"],
-                        service_type,
-                        account_id,
-                        region,
-                        resource_name,
+                if not resource_name:
+                    resource_name = request.get("principal", {}).get(
+                        "resource_identifier"
                     )
-                except ResourceNotFound:
-                    url = None
+
+                if principal_arn and principal_arn.count(":") == 5 and not url:
+
+                    region = principal_arn.split(":")[3]
+                    service_type = principal_arn.split(":")[2]
+                    account_id = principal_arn.split(":")[4]
+                    if request.get("principal", {}).get("principal_arn"):
+                        try:
+                            url = await get_url_for_resource(
+                                principal_arn,
+                                service_type,
+                                account_id,
+                                region,
+                                resource_name,
+                            )
+                        except ResourceNotFound:
+                            pass
                 # Convert request_id and role ARN to link
-                if request.get("version") == "2":
-                    request[
-                        "request_id"
-                    ] = f"[{request['request_id']}](/policies/request/{request['request_id']})"
-                # Legacy support for V1 requests. Pending removal.
-                else:
-                    request[
-                        "request_id"
-                    ] = f"[{request['request_id']}](/policies/request_v1/{request['request_id']})"
+                request_url = request.get("extended_request", {}).get("request_url")
+                if not request_url:
+                    request_url = f"/policies/request/{request['request_id']}"
+                request["request_id"] = f"[{request['request_id']}]({request_url})"
                 if url:
-                    request["arn"] = f"[{request['arn']}]({url})"
+                    request["arn"] = f"[{principal_arn or resource_name}]({url})"
                 requests_to_write.append(request)
         else:
             requests_to_write = requests[0:limit]
@@ -620,10 +667,10 @@ class RequestDetailHandler(BaseAPIV2Handler):
 
         template = None
         # Force a refresh of the role in Redis/DDB
-        arn_parsed = parse_arn(extended_request.arn)
+        arn_parsed = parse_arn(extended_request.principal.principal_arn)
         if arn_parsed["service"] == "iam" and arn_parsed["resource"] == "role":
             iam_role = await aws.fetch_iam_role(
-                arn_parsed["account"], extended_request.arn
+                arn_parsed["account"], extended_request.principal.principal_arn
             )
             template = iam_role.get("templated")
         response = {

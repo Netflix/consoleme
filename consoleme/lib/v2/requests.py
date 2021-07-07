@@ -43,6 +43,9 @@ from consoleme.lib.policies import (
     send_communications_new_comment,
     send_communications_policy_change_request_v2,
 )
+from consoleme.lib.templated_resources.requests import (
+    generate_honeybee_request_from_change_model_array,
+)
 from consoleme.lib.v2.roles import get_role_details
 from consoleme.models import (
     Action,
@@ -99,7 +102,7 @@ async def generate_request_from_change_model_array(
     }
     log.info(log_data)
 
-    primary_principal_arn = None
+    primary_principal = None
     change_models = request_creation.changes
     if len(change_models.changes) < 1:
         log_data["message"] = "At least 1 change is required to create a request."
@@ -128,9 +131,9 @@ async def generate_request_from_change_model_array(
         incremental_change_id += 1
 
         # Enforce a maximum of one principal ARN per ChangeGeneratorModelArray (aka Policy Request)
-        if not primary_principal_arn:
-            primary_principal_arn = change.principal_arn
-        if primary_principal_arn != change.principal_arn:
+        if not primary_principal:
+            primary_principal = change.principal
+        if primary_principal != change.principal:
             log_data[
                 "message"
             ] = "We only support making changes to a single principal ARN per request."
@@ -179,96 +182,124 @@ async def generate_request_from_change_model_array(
             split_items[0][: (64 - (len(split_items[-1]) + 1))] + "@" + split_items[-1]
         )
 
-    account_id = await get_resource_account(primary_principal_arn)
-    arn_parsed = parse_arn(primary_principal_arn)
-    arn_type = arn_parsed["service"]
-    arn_name = arn_parsed["resource"]
-    arn_region = arn_parsed["region"]
-    try:
-        arn_url = await get_url_for_resource(
-            arn=primary_principal_arn,
-            resource_type=arn_type,
-            account_id=account_id,
-            region=arn_region,
-            resource_name=arn_name,
-        )
-    except ResourceNotFound:
-        # should never reach this case...
-        arn_url = ""
+    if primary_principal.principal_type == "AwsResource":
+        # TODO: Separate this out into another function
+        account_id = await get_resource_account(primary_principal.principal_arn)
+        arn_parsed = parse_arn(primary_principal.principal_arn)
+        arn_type = arn_parsed["service"]
+        arn_name = arn_parsed["resource"]
+        arn_region = arn_parsed["region"]
+        try:
+            arn_url = await get_url_for_resource(
+                arn=primary_principal.principal_arn,
+                resource_type=arn_type,
+                account_id=account_id,
+                region=arn_region,
+                resource_name=arn_name,
+            )
+        except ResourceNotFound:
+            # should never reach this case...
+            arn_url = ""
 
-    # Only one assume role policy change allowed per request
-    if len(assume_role_policy_changes) > 1:
-        log_data["message"] = "One one assume role policy change supported per request."
-        log.error(log_data)
-        raise InvalidRequestParameter(log_data["message"])
-
-    if (
-        len(inline_policy_changes) > 0
-        or len(managed_policy_changes) > 0
-        or len(assume_role_policy_changes) > 0
-        or len(permissions_boundary_changes) > 0
-    ):
-        # for inline/managed/assume role policies, principal arn must be a role
-        if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+        # Only one assume role policy change allowed per request
+        if len(assume_role_policy_changes) > 1:
             log_data[
                 "message"
-            ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
+            ] = "One one assume role policy change supported per request."
             log.error(log_data)
             raise InvalidRequestParameter(log_data["message"])
-        role_name = arn_parsed["resource_path"].split("/")[-1]
-        role = await get_role_details(account_id, role_name=role_name, extended=True)
-        for inline_policy_change in inline_policy_changes:
-            inline_policy_change.policy_name = await generate_policy_name(
-                inline_policy_change.policy_name, user
-            )
-            await validate_inline_policy_change(inline_policy_change, user, role)
-        for managed_policy_change in managed_policy_changes:
-            await validate_managed_policy_change(managed_policy_change, user, role)
-        for permissions_boundary_change in permissions_boundary_changes:
-            await validate_permissions_boundary_change(
-                permissions_boundary_change, user, role
-            )
-        for assume_role_policy_change in assume_role_policy_changes:
-            await validate_assume_role_policy_change(
-                assume_role_policy_change, user, role
-            )
-        for resource_tag_change in resource_tag_changes:
-            await validate_resource_tag_change(resource_tag_change, user, role)
 
-    # TODO: validate resource policy logic when we are ready to apply that
+        if (
+            len(inline_policy_changes) > 0
+            or len(managed_policy_changes) > 0
+            or len(assume_role_policy_changes) > 0
+            or len(permissions_boundary_changes) > 0
+        ):
+            # for inline/managed/assume role policies, principal arn must be a role
+            if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+                log_data[
+                    "message"
+                ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
+                log.error(log_data)
+                raise InvalidRequestParameter(log_data["message"])
+            role_name = arn_parsed["resource_path"].split("/")[-1]
+            role = await get_role_details(
+                account_id, role_name=role_name, extended=True
+            )
+            if not role:
+                log_data["message"] = "Principal not found"
+                log.error(log_data)
+                raise InvalidRequestParameter(log_data["message"])
+            for inline_policy_change in inline_policy_changes:
+                inline_policy_change.policy_name = await generate_policy_name(
+                    inline_policy_change.policy_name, user
+                )
+                await validate_inline_policy_change(inline_policy_change, user, role)
+            for managed_policy_change in managed_policy_changes:
+                await validate_managed_policy_change(managed_policy_change, user, role)
+            for permissions_boundary_change in permissions_boundary_changes:
+                await validate_permissions_boundary_change(
+                    permissions_boundary_change, user, role
+                )
+            for assume_role_policy_change in assume_role_policy_changes:
+                await validate_assume_role_policy_change(
+                    assume_role_policy_change, user, role
+                )
+            for resource_tag_change in resource_tag_changes:
+                await validate_resource_tag_change(resource_tag_change, user, role)
 
-    # If here, request is valid and can successfully be generated
-    request_changes = ChangeModelArray(
-        changes=inline_policy_changes
-        + managed_policy_changes
-        + resource_policy_changes
-        + assume_role_policy_changes
-        + resource_tag_changes
-        + permissions_boundary_changes
-    )
-    extended_request = ExtendedRequestModel(
-        admin_auto_approve=request_creation.admin_auto_approve,
-        id=extended_request_uuid,
-        arn=primary_principal_arn,
-        timestamp=int(time.time()),
-        justification=request_creation.justification,
-        requester_email=user,
-        approvers=[],  # TODO: approvers logic (future feature)
-        request_status=RequestStatus.pending,
-        changes=request_changes,
-        requester_info=UserModel(
-            email=user,
-            extended_info=await auth.get_user_info(user),
-            details_url=config.config_plugin().get_employee_info_url(user),
-            photo_url=config.config_plugin().get_employee_photo_url(user),
-        ),
-        comments=[],
-        cross_account=False,
-        arn_url=arn_url,
-    )
-    extended_request = await populate_old_policies(extended_request, user, role)
-    extended_request = await generate_resource_policies(extended_request, user)
+        # TODO: validate resource policy logic when we are ready to apply that
+
+        # If here, request is valid and can successfully be generated
+        request_changes = ChangeModelArray(
+            changes=inline_policy_changes
+            + managed_policy_changes
+            + resource_policy_changes
+            + assume_role_policy_changes
+            + resource_tag_changes
+            + permissions_boundary_changes
+        )
+        extended_request = ExtendedRequestModel(
+            admin_auto_approve=request_creation.admin_auto_approve,
+            id=extended_request_uuid,
+            principal=primary_principal,
+            timestamp=int(time.time()),
+            justification=request_creation.justification,
+            requester_email=user,
+            approvers=[],  # TODO: approvers logic (future feature)
+            request_status=RequestStatus.pending,
+            changes=request_changes,
+            requester_info=UserModel(
+                email=user,
+                extended_info=await auth.get_user_info(user),
+                details_url=config.config_plugin().get_employee_info_url(user),
+                photo_url=config.config_plugin().get_employee_photo_url(user),
+            ),
+            comments=[],
+            cross_account=False,
+            arn_url=arn_url,
+        )
+        extended_request = await populate_old_policies(extended_request, user, role)
+        extended_request = await generate_resource_policies(extended_request, user)
+
+    elif primary_principal.principal_type == "HoneybeeAwsResourceTemplate":
+        # TODO: Generate extended request from HB template
+        extended_request = await generate_honeybee_request_from_change_model_array(
+            request_creation, user, extended_request_uuid
+        )
+    else:
+        raise Exception("Unknown principal type")
+
     return extended_request
+
+
+async def get_request_url(extended_request: ExtendedRequestModel) -> str:
+    if extended_request.principal.principal_type == "AwsResource":
+        return f"/policies/request/{extended_request.id}"
+    elif extended_request.principal.principal_type == "HoneybeeAwsResourceTemplate":
+        return extended_request.request_url
+    else:
+        raise Exception("Unsupported principal type")
 
 
 async def is_request_eligible_for_auto_approval(
@@ -285,7 +316,7 @@ async def is_request_eligible_for_auto_approval(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": extended_request.arn,
+        "arn": extended_request.principal.principal_arn,
         "request": extended_request.dict(),
         "message": "Checking whether request is eligible for auto-approval probes",
     }
@@ -330,14 +361,12 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": extended_request.arn,
+        "principal": extended_request.principal,
         "request": extended_request.dict(),
         "message": "Generating resource policies",
     }
     log.debug(log_data)
 
-    role_account_id = await get_resource_account(extended_request.arn)
-    arn_parsed = parse_arn(extended_request.arn)
     supported_resource_policies = config.get(
         "policies.supported_resource_types_for_policy_application", ["s3", "sqs", "sns"]
     )
@@ -351,107 +380,112 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
         ],
     )
 
-    if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
-        log_data[
-            "message"
-        ] = "ARN type not supported for generating resource policy changes."
+    if extended_request.principal.principal_type == "AwsResource":
+        principal_arn = extended_request.principal.principal_arn
+        role_account_id = await get_resource_account(principal_arn)
+        arn_parsed = parse_arn(principal_arn)
+
+        if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+            log_data[
+                "message"
+            ] = "ARN type not supported for generating resource policy changes."
+            log.debug(log_data)
+            return extended_request
+
+        resource_policy = {"Version": "2012-10-17", "Statement": []}
+        resource_policy_sha = sha256(
+            json.dumps(resource_policy, escape_forward_slashes=False).encode()
+        ).hexdigest()
+        if not arn_parsed.get("resource_path") or not arn_parsed.get("service"):
+            return extended_request
+
+        primary_principal_resource_model = ResourceModel(
+            arn=principal_arn,
+            name=arn_parsed["resource_path"].split("/")[-1],
+            account_id=role_account_id,
+            resource_type=arn_parsed["service"],
+        )
+
+        auto_generated_resource_policy_changes = []
+        # Create resource policy stubs for current resources that are used
+        for policy_change in extended_request.changes.changes:
+            if policy_change.change_type == "inline_policy":
+                policy_change.resources = await get_resources_from_policy_change(
+                    policy_change
+                )
+                for resource in policy_change.resources:
+                    resource_account_id = await get_resource_account(resource.arn)
+                    if (
+                        resource_account_id != role_account_id
+                        and resource.resource_type != "iam"
+                        and resource.resource_type in supported_resource_policies
+                    ):
+                        # Cross account
+                        auto_generated_resource_policy_changes.append(
+                            ResourcePolicyChangeModel(
+                                arn=resource.arn,
+                                policy=PolicyModel(
+                                    policy_document=resource_policy,
+                                    policy_sha256=resource_policy_sha,
+                                ),
+                                change_type="resource_policy",
+                                principal=extended_request.principal,
+                                status=Status.not_applied,
+                                source_change_id=policy_change.id,
+                                id=str(uuid.uuid4()),
+                                resources=[primary_principal_resource_model],
+                                autogenerated=True,
+                            )
+                        )
+                    elif (
+                        resource_account_id != role_account_id
+                        and resource.resource_type == "iam"
+                    ):
+                        resource_added = False
+                        for statement in policy_change.policy.policy_document.get(
+                            "Statement", []
+                        ):
+                            if resource.arn in statement.get("Resource"):
+                                # check if action includes supported trust policy permissions
+                                statement_actions = statement.get("Action", [])
+                                statement_actions = (
+                                    statement_actions
+                                    if isinstance(statement_actions, list)
+                                    else [statement_actions]
+                                )
+                                for action in statement_actions:
+                                    if action in supported_trust_policy_permissions:
+                                        # Cross account sts policy
+                                        auto_generated_resource_policy_changes.append(
+                                            ResourcePolicyChangeModel(
+                                                arn=resource.arn,
+                                                policy=PolicyModel(
+                                                    policy_document=resource_policy,
+                                                    policy_sha256=resource_policy_sha,
+                                                ),
+                                                change_type="sts_resource_policy",
+                                                principal=extended_request.principal,
+                                                status=Status.not_applied,
+                                                source_change_id=policy_change.id,
+                                                id=str(uuid.uuid4()),
+                                                resources=[
+                                                    primary_principal_resource_model
+                                                ],
+                                                autogenerated=True,
+                                            )
+                                        )
+                                        resource_added = True
+                                        break
+                            if resource_added:
+                                break
+
+        extended_request.changes.changes.extend(auto_generated_resource_policy_changes)
+        if len(auto_generated_resource_policy_changes) > 0:
+            extended_request.cross_account = True
+        log_data["message"] = "Finished generating resource policies"
+        log_data["request"] = extended_request.dict()
         log.debug(log_data)
         return extended_request
-
-    resource_policy = {"Version": "2012-10-17", "Statement": []}
-    resource_policy_sha = sha256(
-        json.dumps(resource_policy, escape_forward_slashes=False).encode()
-    ).hexdigest()
-    if not arn_parsed.get("resource_path") or not arn_parsed.get("service"):
-        return extended_request
-
-    primary_principal_resource_model = ResourceModel(
-        arn=extended_request.arn,
-        name=arn_parsed["resource_path"].split("/")[-1],
-        account_id=role_account_id,
-        resource_type=arn_parsed["service"],
-    )
-
-    auto_generated_resource_policy_changes = []
-    # Create resource policy stubs for current resources that are used
-    for policy_change in extended_request.changes.changes:
-        if policy_change.change_type == "inline_policy":
-            policy_change.resources = await get_resources_from_policy_change(
-                policy_change
-            )
-            for resource in policy_change.resources:
-                resource_account_id = await get_resource_account(resource.arn)
-                if (
-                    resource_account_id != role_account_id
-                    and resource.resource_type != "iam"
-                    and resource.resource_type in supported_resource_policies
-                ):
-                    # Cross account
-                    auto_generated_resource_policy_changes.append(
-                        ResourcePolicyChangeModel(
-                            arn=resource.arn,
-                            policy=PolicyModel(
-                                policy_document=resource_policy,
-                                policy_sha256=resource_policy_sha,
-                            ),
-                            change_type="resource_policy",
-                            principal_arn=extended_request.arn,
-                            status=Status.not_applied,
-                            source_change_id=policy_change.id,
-                            id=str(uuid.uuid4()),
-                            resources=[primary_principal_resource_model],
-                            autogenerated=True,
-                        )
-                    )
-                elif (
-                    resource_account_id != role_account_id
-                    and resource.resource_type == "iam"
-                ):
-                    resource_added = False
-                    for statement in policy_change.policy.policy_document.get(
-                        "Statement", []
-                    ):
-                        if resource.arn in statement.get("Resource"):
-                            # check if action includes supported trust policy permissions
-                            statement_actions = statement.get("Action", [])
-                            statement_actions = (
-                                statement_actions
-                                if isinstance(statement_actions, list)
-                                else [statement_actions]
-                            )
-                            for action in statement_actions:
-                                if action in supported_trust_policy_permissions:
-                                    # Cross account sts policy
-                                    auto_generated_resource_policy_changes.append(
-                                        ResourcePolicyChangeModel(
-                                            arn=resource.arn,
-                                            policy=PolicyModel(
-                                                policy_document=resource_policy,
-                                                policy_sha256=resource_policy_sha,
-                                            ),
-                                            change_type="sts_resource_policy",
-                                            principal_arn=extended_request.arn,
-                                            status=Status.not_applied,
-                                            source_change_id=policy_change.id,
-                                            id=str(uuid.uuid4()),
-                                            resources=[
-                                                primary_principal_resource_model
-                                            ],
-                                            autogenerated=True,
-                                        )
-                                    )
-                                    resource_added = True
-                                    break
-                        if resource_added:
-                            break
-
-    extended_request.changes.changes.extend(auto_generated_resource_policy_changes)
-    if len(auto_generated_resource_policy_changes) > 0:
-        extended_request.cross_account = True
-    log_data["message"] = "Finished generating resource policies"
-    log_data["request"] = extended_request.dict()
-    log.debug(log_data)
-    return extended_request
 
 
 async def validate_inline_policy_change(
@@ -460,7 +494,7 @@ async def validate_inline_policy_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "policy_name": change.policy_name,
         "request": change.dict(),
         "message": "Validating inline policy change",
@@ -531,7 +565,7 @@ async def validate_permissions_boundary_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "request": change.dict(),
         "message": "Validating permissions boundary change",
     }
@@ -572,7 +606,7 @@ async def validate_managed_policy_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "request": change.dict(),
         "message": "Validating managed policy change",
     }
@@ -616,7 +650,7 @@ async def validate_resource_tag_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "request": change.dict(),
         "role": role,
         "message": "Validating resource tag change",
@@ -632,7 +666,7 @@ async def validate_assume_role_policy_change(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": change.principal_arn,
+        "principal": change.principal.dict(),
         "request": change.dict(),
         "message": "Validating assume role policy change",
     }
@@ -681,7 +715,7 @@ async def apply_changes_to_role(
     }
     log.info(log_data)
 
-    arn_parsed = parse_arn(extended_request.arn)
+    arn_parsed = parse_arn(extended_request.principal.principal_arn)
 
     # Principal ARN must be a role for this function
     if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
@@ -696,7 +730,7 @@ async def apply_changes_to_role(
         return
 
     role_name = arn_parsed["resource_path"].split("/")[-1]
-    account_id = await get_resource_account(extended_request.arn)
+    account_id = await get_resource_account(extended_request.principal.principal_arn)
     iam_client = await sync_to_async(boto3_cached_conn)(
         "iam",
         service_type="client",
@@ -1020,27 +1054,29 @@ async def populate_old_policies(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": extended_request.arn,
+        "principal": extended_request.principal,
         "request": extended_request.dict(),
         "message": "Populating old policies",
     }
     log.debug(log_data)
 
-    role_account_id = await get_resource_account(extended_request.arn)
-    arn_parsed = parse_arn(extended_request.arn)
+    if extended_request.principal.principal_type == "AwsResource":
+        principal_arn = extended_request.principal.principal_arn
+        role_account_id = await get_resource_account(principal_arn)
+        arn_parsed = parse_arn(principal_arn)
 
-    if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
-        log_data[
-            "message"
-        ] = "ARN type not supported for generating resource policy changes."
-        log.debug(log_data)
-        return extended_request
+        if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+            log_data[
+                "message"
+            ] = "ARN type not supported for generating resource policy changes."
+            log.debug(log_data)
+            return extended_request
 
-    role_name = arn_parsed["resource_path"].split("/")[-1]
-    if not role:
-        role = await get_role_details(
-            role_account_id, role_name=role_name, extended=True, force_refresh=True
-        )
+        role_name = arn_parsed["resource_path"].split("/")[-1]
+        if not role:
+            role = await get_role_details(
+                role_account_id, role_name=role_name, extended=True, force_refresh=True
+            )
 
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
@@ -1206,7 +1242,7 @@ async def populate_cross_account_resource_policy_for_change(
 
         new_policy = await generate_updated_resource_policy(
             existing=old_policy,
-            principal_arn=extended_request.arn,
+            principal_arn=extended_request.principal.principal_arn,
             resource_arns=list(set(resource_arns)),
             actions=actions,
             # since iam assume role policy documents can't include resources
@@ -1236,7 +1272,7 @@ async def populate_cross_account_resource_policies(
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
-        "arn": extended_request.arn,
+        "arn": extended_request.principal.principal_arn,
         "request": extended_request.dict(),
         "message": "Populating cross-account resource policies",
     }
@@ -1284,13 +1320,13 @@ async def apply_non_iam_resource_tag_change(
         "message": "Applying resource policy change changes",
         "request": extended_request.dict(),
     }
-    resource_arn_parsed = parse_arn(change.principal_arn)
+    resource_arn_parsed = parse_arn(change.principal.principal_arn)
     resource_type = resource_arn_parsed["service"]
     resource_name = resource_arn_parsed["resource"]
     resource_region = resource_arn_parsed["region"]
     resource_account = resource_arn_parsed["account"]
     if not resource_account:
-        resource_account = await get_resource_account(change.principal_arn)
+        resource_account = await get_resource_account(change.principal.principal_arn)
     if resource_type == "s3" and not resource_region:
         resource_region = await get_bucket_location_with_fallback(
             resource_name, resource_account
@@ -1305,7 +1341,7 @@ async def apply_non_iam_resource_tag_change(
         response.action_results.append(
             ActionResult(
                 status="error",
-                message=f"Cannot apply change to {change.principal_arn} as cannot determine resource account",
+                message=f"Cannot apply change to {change.principal.json()} as cannot determine resource account",
             )
         )
         return response
@@ -1321,7 +1357,7 @@ async def apply_non_iam_resource_tag_change(
         response.action_results.append(
             ActionResult(
                 status="error",
-                message=f"Cannot apply change to {change.principal_arn} as it's not supported",
+                message=f"Cannot apply change to {change.principal.json()} as it's not supported",
             )
         )
         return response
@@ -1398,18 +1434,18 @@ async def apply_non_iam_resource_tag_change(
         elif resource_type == "sns":
             if change.tag_action in [TagAction.create, TagAction.update]:
                 await sync_to_async(client.tag_resource)(
-                    ResourceArn=change.principal_arn,
+                    ResourceArn=change.principal.principal_arn,
                     Tags=[{"Key": change.key, "Value": change.value}],
                 )
                 # Renaming a key
                 if change.original_key and change.original_key != change.key:
                     await sync_to_async(client.untag_resource)(
-                        ResourceArn=change.principal_arn,
+                        ResourceArn=change.principal.principal_arn,
                         TagKeys=[change.original_key],
                     )
             elif change.tag_action == TagAction.delete:
                 await sync_to_async(client.untag_resource)(
-                    ResourceArn=change.principal_arn,
+                    ResourceArn=change.principal.principal_arn,
                     TagKeys=[change.key],
                 )
         elif resource_type == "sqs":
@@ -1431,7 +1467,7 @@ async def apply_non_iam_resource_tag_change(
         response.action_results.append(
             ActionResult(
                 status="success",
-                message=f"Successfully updated resource policy for {change.principal_arn}",
+                message=f"Successfully updated resource policy for {change.principal.principal_arn}",
             )
         )
         change.status = Status.applied
@@ -1445,7 +1481,7 @@ async def apply_non_iam_resource_tag_change(
         response.action_results.append(
             ActionResult(
                 status="error",
-                message=f"Error occurred changing resource tags for {change.principal_arn}"
+                message=f"Error occurred changing resource tags for {change.principal.principal_arn}"
                 + str(e),
             )
         )
@@ -1724,10 +1760,12 @@ async def maybe_approve_reject_request(
             visible=False,
         )
         await send_communications_policy_change_request_v2(extended_request)
-        account_id = await get_resource_account(extended_request.arn)
-        if extended_request.arn.startswith("aws:aws:iam::"):
+        account_id = await get_resource_account(
+            extended_request.principal.principal_arn
+        )
+        if extended_request.principal.principal_arn.startswith("aws:aws:iam::"):
             await aws.fetch_iam_role(
-                account_id, extended_request.arn, force_refresh=True
+                account_id, extended_request.principal.principal_arn, force_refresh=True
             )
     return response
 
@@ -1909,7 +1947,9 @@ async def parse_and_apply_policy_request_modification(
                 )
             elif (
                 specific_change.change_type == "resource_tag"
-                and not specific_change.principal_arn.startswith("arn:aws:iam::")
+                and not specific_change.principal.principal_arn.startswith(
+                    "arn:aws:iam::"
+                )
             ):
                 response = await apply_non_iam_resource_tag_change(
                     extended_request, specific_change, response, user
@@ -1920,9 +1960,13 @@ async def parse_and_apply_policy_request_modification(
                 await apply_changes_to_role(
                     extended_request, response, user, specific_change.id
                 )
-                account_id = await get_resource_account(extended_request.arn)
+                account_id = await get_resource_account(
+                    extended_request.principal.principal_arn
+                )
                 await aws.fetch_iam_role(
-                    account_id, extended_request.arn, force_refresh=True
+                    account_id,
+                    extended_request.principal.principal_arn,
+                    force_refresh=True,
                 )
             if specific_change.status == Status.applied:
                 # Change was successful, update in dynamo
@@ -2070,8 +2114,12 @@ async def parse_and_apply_policy_request_modification(
             visible=False,
         )
         await send_communications_policy_change_request_v2(extended_request)
-        account_id = await get_resource_account(extended_request.arn)
-        await aws.fetch_iam_role(account_id, extended_request.arn, force_refresh=True)
+        account_id = await get_resource_account(
+            extended_request.principal.principal_arn
+        )
+        await aws.fetch_iam_role(
+            account_id, extended_request.principal.principal_arn, force_refresh=True
+        )
 
     response = await maybe_approve_reject_request(
         extended_request, user, log_data, response

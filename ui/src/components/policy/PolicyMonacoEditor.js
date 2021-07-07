@@ -206,7 +206,7 @@ export const PolicyMonacoEditor = ({
           ref={editorRef}
           height="540px"
           language="json"
-          theme="vs-dark"
+          theme="vs-light"
           value={policyDocument}
           onChange={onEditChange}
           options={editorOptions}
@@ -405,7 +405,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
           ref={editorRef}
           height="540px"
           language="json"
-          theme="vs-dark"
+          theme="vs-light"
           value={policyDocument}
           onChange={onEditChange}
           options={editorOptions}
@@ -462,7 +462,7 @@ export const ReadOnlyPolicyMonacoEditor = ({ policy }) => {
         <MonacoEditor
           height="540px"
           language="json"
-          theme="vs-dark"
+          theme="vs-light"
           value={JSON.stringify(policy, null, "\t")}
           options={readOnlyEditorOptions}
           editorDidMount={editorDidMount}

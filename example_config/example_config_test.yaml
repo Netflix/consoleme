@@ -105,6 +105,10 @@ cloud_credential_authorization_mapping:
   internal_plugin:
     enabled: true
 
+logging:
+  json_formatter:
+    indent: 2
+
 # You'll probably want to override FUNCTION to generate this data with your own business logic.
 application_settings:
   application_1:
@@ -126,9 +130,39 @@ api_auth:
 cache_self_service_typeahead:
   cache_resource_templates: true
 
+bitbucket:
+  url: https://fakerepo.example.com
+
 cache_resource_templates:
   repositories:
     - type: git
-      repo_url: http://github.example.com/fake_repo/
+      code_repository_provider: bitbucket
+      name: honeybee_templates
+      project_key: project_name
+      repo_url: ssh://git@fakerepo.example.com:7999/project_name/honeybee_templates.git
+      web_path: https://fakerepo.example.com/projects/project_name/repos/honeybee_templates/browse/{relative_path}
+      create_pr_api: https://fakerepo.example.com/rest/api/1.0/projects/project_name/repos/honeybee_templates/pull-requests
+      main_branch_name: master
+      authentication_settings:
+        email: consoleme_admins@example.com
+      commit_settings:
+        create_pr: false # If true, ConsoleMe will show you the PR location and not allow policy review within consoleme
+        commit_to_branch_on_approval: master # If set, will push to this branch on approval
       resource_formats:
         - honeybee
+      resource_type_parser:
+        honeybee:
+          iam_role:
+            - path_prefix: honeybee_templates/iamrole/ # must begin with
+              path_suffix: ".yaml" # must end with
+              file_content:
+                includes:
+                  - AssumeRolePolicyDocument
+          managed_policy:
+            - path_prefix: honeybee_templates/iammanagedpolicy/
+              path_suffix: ".yaml"
+          service_control_policy:
+            - path_prefix: honeybee_templates/servicecontrolpolicy/
+              path_suffix: ".yaml"
+          other:
+            - path_suffix: ".yaml"

@@ -1,7 +1,7 @@
 import qs from "qs";
 import React, { Component } from "react";
 import ReactDOM from "react-dom";
-import { Button, Icon, Message, Segment, Step } from "semantic-ui-react";
+import { Icon, Message, Segment, Step } from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
 import SelfServiceStep1 from "./SelfServiceStep1";
 import SelfServiceStep2 from "./SelfServiceStep2";
@@ -22,6 +22,10 @@ class SelfService extends Component {
       services: [],
       admin_bypass_approval_enabled: false,
       export_to_terraform_enabled: false,
+      extraActions: [],
+      includeAccounts: [],
+      excludeAccounts: [],
+      updated_policy: "",
     };
   }
 
@@ -98,7 +102,7 @@ class SelfService extends Component {
   }
 
   handleStepClick(dir) {
-    const { currStep } = this.state;
+    const { currStep, updated_policy } = this.state;
 
     let nextStep = null;
     switch (currStep) {
@@ -113,7 +117,10 @@ class SelfService extends Component {
         }
         break;
       case SelfServiceStepEnum.STEP2:
-        if (dir === "next" && this.state.permissions.length > 0) {
+        if (
+          (dir === "next" && this.state.permissions.length > 0) ||
+          updated_policy !== ""
+        ) {
           nextStep = SelfServiceStepEnum.STEP3;
         } else if (dir === "previous") {
           nextStep = SelfServiceStepEnum.STEP1;
@@ -140,8 +147,26 @@ class SelfService extends Component {
     });
   }
 
+  updatePolicy(value) {
+    this.setState({
+      updated_policy: value,
+    });
+  }
+
   handleRoleUpdate(role) {
     this.setState({ role });
+  }
+
+  handleExtraActionsUpdate(extraActions) {
+    this.setState({ extraActions });
+  }
+
+  handleIncludeAccountsUpdate(includeAccounts) {
+    this.setState({ includeAccounts });
+  }
+
+  handleExcludeAccountsUpdate(excludeAccounts) {
+    this.setState({ excludeAccounts });
   }
 
   handlePermissionsUpdate(permissions) {
@@ -155,8 +180,12 @@ class SelfService extends Component {
       currStep,
       export_to_terraform_enabled,
       permissions,
+      extraActions,
+      includeAccounts,
+      excludeAccounts,
       role,
       services,
+      updated_policy,
     } = this.state;
 
     let SelfServiceStep = null;
@@ -166,6 +195,7 @@ class SelfService extends Component {
           <SelfServiceStep1
             config={config}
             role={role}
+            handleStepClick={this.handleStepClick.bind(this)}
             handleRoleUpdate={this.handleRoleUpdate.bind(this)}
             {...this.props}
           />
@@ -178,7 +208,20 @@ class SelfService extends Component {
             role={role}
             services={services}
             permissions={permissions}
+            extraActions={extraActions}
+            includeAccounts={includeAccounts}
+            excludeAccounts={excludeAccounts}
+            updated_policy={updated_policy}
+            handleStepClick={this.handleStepClick.bind(this)}
+            updatePolicy={this.updatePolicy.bind(this)}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
+            handleExtraActionsUpdate={this.handleExtraActionsUpdate.bind(this)}
+            handleIncludeAccountsUpdate={this.handleIncludeAccountsUpdate.bind(
+              this
+            )}
+            handleExcludeAccountsUpdate={this.handleExcludeAccountsUpdate.bind(
+              this
+            )}
             {...this.props}
           />
         );
@@ -190,6 +233,8 @@ class SelfService extends Component {
             role={role}
             services={services}
             permissions={permissions}
+            updated_policy={updated_policy}
+            handleStepClick={this.handleStepClick.bind(this)}
             admin_bypass_approval_enabled={admin_bypass_approval_enabled}
             export_to_terraform_enabled={export_to_terraform_enabled}
             {...this.props}
@@ -204,10 +249,10 @@ class SelfService extends Component {
   }
 
   render() {
-    const { currStep, messages } = this.state;
+    const { currStep, messages, updated_policy } = this.state;
     const SelfServiceStep = this.getCurrentSelfServiceStep();
     const messagesToShow =
-      messages != null ? (
+      messages != null && updated_policy === "" ? (
         <Message negative>
           <Message.Header>There are some missing parameters</Message.Header>
           <p>{messages}</p>
@@ -229,50 +274,57 @@ class SelfService extends Component {
       <Segment basic>
         {headerMessage}
         <Step.Group fluid>
-          <Step active={currStep === SelfServiceStepEnum.STEP1}>
-            <Icon name="search" />
+          <Step
+            active={currStep === SelfServiceStepEnum.STEP1}
+            onClick={() => {
+              if (
+                [SelfServiceStepEnum.STEP2, SelfServiceStepEnum.STEP3].includes(
+                  currStep
+                )
+              ) {
+                this.setState({ currStep: SelfServiceStepEnum.STEP1 });
+              }
+            }}
+            className={`${
+              currStep !== SelfServiceStepEnum.STEP1 ? "complete" : ""
+            } step1`}
+          >
+            <Icon name="handshake" />
             <Step.Content>
-              <Step.Title>Step 1.</Step.Title>
-              <Step.Description>Search and Select Resource</Step.Description>
+              <Step.Title>Select Role</Step.Title>
+              <Step.Description>Search and Select Role</Step.Description>
             </Step.Content>
           </Step>
-          <Step active={currStep === SelfServiceStepEnum.STEP2}>
+          <Step
+            active={currStep === SelfServiceStepEnum.STEP2}
+            onClick={() => {
+              if ([SelfServiceStepEnum.STEP3].includes(currStep)) {
+                this.setState({ currStep: SelfServiceStepEnum.STEP2 });
+              }
+            }}
+            className={`${
+              currStep === SelfServiceStepEnum.STEP3 ? "complete" : ""
+            } step2`}
+          >
             <Icon name="search plus" />
             <Step.Content>
-              <Step.Title>Step 2.</Step.Title>
+              <Step.Title>Modify Policy</Step.Title>
               <Step.Description>Provide Permission Details</Step.Description>
             </Step.Content>
           </Step>
-          <Step active={currStep === SelfServiceStepEnum.STEP3}>
+          <Step
+            active={currStep === SelfServiceStepEnum.STEP3}
+            className={"step3"}
+          >
             <Icon name="handshake" />
             <Step.Content>
-              <Step.Title>Step 3.</Step.Title>
-              <Step.Description>Review and Submit</Step.Description>
+              <Step.Title>Review and Submit</Step.Title>
+              <Step.Description>Review and Submit Permissions</Step.Description>
             </Step.Content>
           </Step>
         </Step.Group>
         {messagesToShow}
         {SelfServiceStep}
-        {currStep !== SelfServiceStepEnum.STEP1 ? (
-          <Button
-            disabled={currStep === SelfServiceStepEnum.STEP1}
-            floated="left"
-            primary
-            onClick={this.handleStepClick.bind(this, "previous")}
-          >
-            Previous
-          </Button>
-        ) : null}
-        {currStep !== SelfServiceStepEnum.STEP3 ? (
-          <Button
-            disabled={currStep === SelfServiceStepEnum.STEP3}
-            floated="right"
-            primary
-            onClick={this.handleStepClick.bind(this, "next")}
-          >
-            Next
-          </Button>
-        ) : null}
       </Segment>
     );
   }

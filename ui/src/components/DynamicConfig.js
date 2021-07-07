@@ -93,7 +93,7 @@ function ConsoleMeDynamicConfig() {
           <MonacoEditor
             height="1000"
             language="yaml"
-            theme="vs-dark"
+            theme="vs-light"
             value={config}
             onChange={onChange}
             options={options}
