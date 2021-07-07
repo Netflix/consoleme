@@ -23,6 +23,19 @@ The main idea is to use serverless services in order to remove the need to manag
   ```
   $ cp config.example.yaml config.yaml
   ```
+Here is a table with list of configuration keys:
+
+| Configuration Parameter | Type   | Required | Description                                                                                |
+| ----------------------- | ------ | -------- | ------------------------------------------------------------------------------------------ |
+| domain_prefix           | string | True     | Used to segregate different environments                                                   |
+| spoke_accounts          | list   | False    | List of AWS child accounts that ConsoleMe manages                                          |
+| hosted_zone_id          | string | True     | Route53 hosted zone ID used to generate HTTPS certs and serve ConsoleMe                    |
+| hosted_zone_name        | string | True     | Route53 hosted zone name used to generate HTTPS certs and serve ConsoleMe                  |
+| use_public_docker_image | bool   | True     | Whether to pull the official ConsoleMe docker image or to build it from the current branch |
+| min_capacity            | int    | True     | Minimum number of tasks that ECS will scale from                                           |
+| max_capacity            | int    | True     | Maximum number of tasks that ECS will scale to                                             |
+| admin_temp_password     | string | True     | Initial password for Cognito admin user (You'll be asked to change it on the first login ) |
+| jwt_secret              | string | True     | A url-safe secret that ConsoleMe use to generates authentication cookie                    |
 
 In the config.yaml file, set a strong random password for the `admin_temp_password` key, and a different strong random
 password for the `jwt_secret` key. You can use the following command to generate a strong random password:
