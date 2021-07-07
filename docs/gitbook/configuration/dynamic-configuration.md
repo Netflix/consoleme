@@ -1,6 +1,6 @@
 # Dynamic Configuration
 
-ConsoleMe's dynamic configuration endpoint \([https://your-consoleme-url/config\](https://your-consoleme-url/config\)\) allows **administrators** to make changes that will be loaded by all running ConsoleMe instances and Celery hosts in up to 60 seconds.
+ConsoleMe's dynamic configuration endpoint \([https://your-consoleme-url/config\](https://your-consoleme-url/config%29\) allows **administrators** to make changes that will be loaded by all running ConsoleMe instances and Celery hosts in up to 60 seconds.
 
 This configuration is stored as a compressed yaml file in DynamoDB. It is versioned, and tagged by the user who updated it last, when it was last updated, and a compressed form of the configuration.
 
@@ -38,7 +38,7 @@ group_mapping:
       ....
 ```
 
-* We store IAM inline policy permission templates in dynamic configuration. This is where you can add templates that fit your organization's needs and it will show up in the dropdown menu for inline policy editor. Here's an example of how you can add templates to you dynamic config:
+* We store IAM inline policy permission templates in dynamic configuration. This is where you can add templates that fit your organization's needs, and it will show up in the dropdown menu for the inline policy editor. Here's an example of how you can add templates to your dynamic config:
 
 ```yaml
 permission_tempaltes:

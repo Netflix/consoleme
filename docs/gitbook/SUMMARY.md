@@ -24,6 +24,7 @@
   * [Web App Authentication and Authorization](configuration/authentication-and-authorization/README.md)
     * [Local Development \(Auth bypass\)](configuration/authentication-and-authorization/local-development-auth-bypass.md)
     * [ALB Auth \(Recommended\)](configuration/authentication-and-authorization/alb-auth.md)
+    * [Retrieving Google Groups](configuration/authentication-and-authorization/google-groups-support.md)
     * [OIDC/OAuth2](configuration/authentication-and-authorization/oidc-oauth2-okta/README.md)
       * [Cognito](configuration/authentication-and-authorization/oidc-oauth2-okta/cognito.md)
       * [Okta](configuration/authentication-and-authorization/oidc-oauth2-okta/okta.md)

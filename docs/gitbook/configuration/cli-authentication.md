@@ -4,7 +4,7 @@ ConsoleMe's CLI \([Weep](https://github.com/Netflix/weep)\) authenticates to the
 
 The challenge authentication flow is as follows:
 
-1. Client sends a GET request to ConsoleMe's unauthenticated challenge endpoint. Server generates and stores a temporary token for the authentication request. Token is scoped to the username sent in the request and expires after a couple of minutes. ConsoleMe tells the client where the user should authenticate at in their browser \(`challenge_url`\), and where to poll \(`polling_url`\).
+1. Client sends a GET request to ConsoleMe's unauthenticated challenge endpoint. The server generates and stores a temporary token for the authentication request. A token is scoped to the username sent in the request and expires after a couple of minutes. ConsoleMe tells the client where the user should authenticate it in their browser \(`challenge_url`\), and where to poll \(`polling_url`\).
 2. Client starts polling the unauthenticated **polling\_url** every couple of seconds until the token expires after a couple of minutes.
 3. The user is redirected to the **Challenge Validator** endpoint, which will authenticate them. After they've been successfully authenticated, the ConsoleMe backend will mark the user's request as successful in its cache.
 4. After the user has authenticated, the client \(which is polling the `challenge_poller` endpoint every couple of seconds\) should receive a success status with the super secret encoded JWT that it can use to authenticate the user for credential requests to ConsoleMe.
@@ -50,7 +50,7 @@ Challenge Poller
 {% endapi-method-summary %}
 
 {% api-method-description %}
-Endpoint that the CLI polls every few seconds to determine if the user has successfully authenticated. While the challenge is pending, `status` is the only attribute returned in the response.Once the user has successfully authenticated to the Challenge Validator endpoint, `status` will be updated and the rest of the attributes will be returned in the next response.
+Endpoint that the CLI polls every few seconds to determine if the user has successfully authenticated. While the challenge is pending, `status` is the only attribute returned in the response. Once the user has successfully authenticated to the Challenge Validator endpoint, `status` will be updated, and the rest of the attributes will be returned in the next response.
 {% endapi-method-description %}
 
 {% api-method-spec %}
@@ -107,7 +107,7 @@ Endpoint that user visits in their browser to authenticate to ConsoleMe through 
 {% endapi-method-response-example-description %}
 
 ```text
-You've successfully authenticated to ConsoleMe and may now close this page
+You've successfully authenticated to ConsoleMe and may now close this page.
 ```
 {% endapi-method-response-example %}
 {% endapi-method-response %}
