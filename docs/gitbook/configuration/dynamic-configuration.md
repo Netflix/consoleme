@@ -1,6 +1,6 @@
 # Dynamic Configuration
 
-ConsoleMe's dynamic configuration endpoint \([https://your-consoleme-url/config\](https://your-consoleme-url/config\)\) allows **administrators** to make changes that will be loaded by all running ConsoleMe instances and Celery hosts in up to 60 seconds.
+ConsoleMe's dynamic configuration endpoint \([https://your-consoleme-url/config\](https://your-consoleme-url/config%29\) allows **administrators** to make changes that will be loaded by all running ConsoleMe instances and Celery hosts in up to 60 seconds.
 
 This configuration is stored as a compressed yaml file in DynamoDB. It is versioned, and tagged by the user who updated it last, when it was last updated, and a compressed form of the configuration.
 
