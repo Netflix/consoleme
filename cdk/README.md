@@ -21,7 +21,7 @@ The main idea is to use serverless services in order to remove the need to manag
   Please collect this information and fill the `config.yaml` file with the hosted zone name and hosted zone id from Route 53.
 
   ```
-  $ cp config.example.yaml config.yaml
+  $ cp config.yaml.example config.yaml
   ```
 Here is a table with list of configuration keys:
 
