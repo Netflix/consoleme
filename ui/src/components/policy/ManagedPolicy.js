@@ -190,7 +190,7 @@ const ManagedPolicy = () => {
                         ref={editorRef}
                         height="540px"
                         language="json"
-                        theme="vs-dark"
+                        theme="vs-light"
                         value={JSON.stringify(
                           attachedManagedPolicyDetails[policy?.PolicyName],
                           null,

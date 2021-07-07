@@ -192,7 +192,7 @@ function GenerateConfig() {
           height="700px"
           language="yaml"
           width="100%"
-          theme="vs-dark"
+          theme="vs-light"
           value={yaml.dump(results, 4)}
           options={generated_config_editor_options}
           textAlign="center"

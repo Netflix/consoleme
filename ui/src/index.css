@@ -46,3 +46,14 @@ code {
   border: none;
   padding: 0;
 }
+
+.button-link {
+  background: none !important;
+  border: none;
+  padding: 0 !important;
+  /*optional*/
+  /*input has OS specific font-family*/
+  color: #4183c4;
+  cursor: pointer;
+  font-weight: 700;
+}

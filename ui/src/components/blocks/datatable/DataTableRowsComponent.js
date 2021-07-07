@@ -157,7 +157,12 @@ const DataTableRowsComponent = ({
           // TODO, provide an option not to send markdown format
           const value =
             entry[column.key] != null && entry[column.key].toString();
-          const found = value.match(/\[(.+?)\]\((.+?)\)/);
+          let found = null;
+          try {
+            found = value.match(/\[(.+?)\]\((.+?)\)/);
+          } catch (e) {
+            console.log(e);
+          }
           if (found) {
             cells.push(
               <Table.Cell
@@ -165,7 +170,13 @@ const DataTableRowsComponent = ({
                 collapsing
                 style={column.style}
               >
-                <Link to={found[2]}>{found[1]}</Link>
+                {found[2].startsWith("/") ? (
+                  <Link to={found[2]}>{found[1]}</Link>
+                ) : (
+                  <a href={found[2]} target="_blank" rel="noreferrer">
+                    {found[1]}
+                  </a>
+                )}
               </Table.Cell>
             );
           } else {

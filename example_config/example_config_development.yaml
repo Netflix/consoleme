@@ -8,6 +8,9 @@ extends:
 environment: dev
 development: true
 
+tornado:
+  xsrf: false # So you can test POST requests with Postman
+
 # A development configuration can specify a specific user to impersonate locally.
 _development_user_override: consoleme_admin@example.com
 

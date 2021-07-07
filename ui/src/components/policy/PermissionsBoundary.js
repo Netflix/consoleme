@@ -223,7 +223,7 @@ const PermissionsBoundary = () => {
                     ref={editorRef}
                     height="540px"
                     language="json"
-                    theme="vs-dark"
+                    theme="vs-light"
                     value={JSON.stringify(
                       attachedPermissionsBoundaryDetails,
                       null,

@@ -1,7 +1,11 @@
 import tornado
 from tornado.testing import AsyncTestCase
 
-from consoleme.models import InlinePolicyChangeModel, ResourceModel
+from consoleme.models import (
+    AwsResourcePrincipalModel,
+    InlinePolicyChangeModel,
+    ResourceModel,
+)
 
 
 class TestChangeRequestLib(AsyncTestCase):
@@ -114,7 +118,10 @@ class TestChangeRequestLib(AsyncTestCase):
 
         is_new = True
         policy_name = None
-        principal_arn = "arn:aws:iam::123456789012:role/roleName"
+        principal = AwsResourcePrincipalModel(
+            principal_arn="arn:aws:iam::123456789012:role/roleName",
+            principal_type="AwsResource",
+        )
         resources = [
             ResourceModel(
                 arn="arn:aws:s3:::123456789012-bucket",
@@ -232,6 +239,6 @@ class TestChangeRequestLib(AsyncTestCase):
         ]
         user = "username@example.com"
         result = await _generate_inline_policy_change_model(
-            principal_arn, resources, statements, user, is_new, policy_name
+            principal, resources, statements, user, is_new, policy_name
         )
         self.assertIsInstance(result, InlinePolicyChangeModel)

@@ -4,10 +4,10 @@ from mock import Mock, patch
 from tornado.testing import AsyncHTTPTestCase
 
 from consoleme.lib.self_service.models import (
-    SelfServiceResourceType,
     SelfServiceTypeaheadModel,
     SelfServiceTypeaheadModelArray,
 )
+from consoleme.models import AwsResourcePrincipalModel
 from tests.conftest import MockBaseHandler, create_future
 
 
@@ -138,7 +138,12 @@ class TestTypeAheadHandler(AsyncHTTPTestCase):
             display_text="fake_test_template_1",
             icon="users",
             number_of_affected_resources=1,
-            resource_type="HoneybeeAwsIamRoleTemplate",
+            principal={
+                "principal_type": "HoneybeeAwsResourceTemplate",
+                "repository_name": "fake_repo",
+                "resource_identifier": "path/to/file.yaml",
+                "resource_url": "http://github.example.com/fake_repo/browse/master/path/to/file.yaml",
+            },
         )
 
         patch_cache_resource_templates_for_repository = patch(
@@ -172,8 +177,10 @@ class TestTypeAheadHandler(AsyncHTTPTestCase):
             display_text="RoleNumber5",
             icon="user",
             number_of_affected_resources=1,
-            resource_identifier="arn:aws:iam::123456789012:role/RoleNumber5",
-            resource_type=SelfServiceResourceType.AwsIamRole,
+            principal=AwsResourcePrincipalModel(
+                principal_type="AwsResource",
+                principal_arn="arn:aws:iam::123456789012:role/RoleNumber5",
+            ),
         )
         # Pre-existing role is in results
         self.assertIn(expected_entry, result.typeahead_entries)

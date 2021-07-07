@@ -11,6 +11,7 @@ from ruamel.yaml import YAML
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.lib.generic import sort_dict
 
 
 def clone_repo(git_url: str, tempdir):
@@ -19,30 +20,6 @@ def clone_repo(git_url: str, tempdir):
     """Clone the honeybee-templates repo to an ephemeral directory and return the git.Repo reference."""
     git.Git(tempdir).clone(git_url)
     return git.Repo(os.path.join(tempdir, git_url.split("/")[-1].replace(".git", "")))
-
-
-def sort_dict(original):
-    """Recursively sorts dictionary keys and dictionary values in alphabetical order"""
-    if isinstance(original, dict):
-        res = (
-            dict()
-        )  # Make a new "ordered" dictionary. No need for Collections in Python 3.7+
-        for k, v in sorted(original.items()):
-            res[k] = v
-        d = res
-    else:
-        d = original
-    for k in d:
-        if isinstance(d[k], str):
-            continue
-        if isinstance(d[k], list) and len(d[k]) > 1 and isinstance(d[k][0], str):
-            d[k] = sorted(d[k])
-        if isinstance(d[k], dict):
-            d[k] = sort_dict(d[k])
-        if isinstance(d[k], list) and len(d[k]) >= 1 and isinstance(d[k][0], dict):
-            for i in range(len(d[k])):
-                d[k][i] = sort_dict(d[k][i])
-    return d
 
 
 def store_iam_resources_in_git(
@@ -60,7 +37,7 @@ def store_iam_resources_in_git(
     try:
         repo = clone_repo(git_url, tempdir)
         repo.config_writer().set_value("user", "name", "ConsoleMe").release()
-        email = config.get("cache_iam_resources_for_account.store_in_get.email")
+        email = config.get("cache_iam_resources_for_account.store_in_git.email")
         if email:
             repo.config_writer().set_value("user", "email", email).release()
 

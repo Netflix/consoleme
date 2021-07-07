@@ -1,3 +1,4 @@
+import fnmatch
 import json
 import sys
 import time
@@ -40,6 +41,7 @@ from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
     store_json_results_in_redis_and_s3,
 )
+from consoleme.lib.generic import sort_dict
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler, redis_hget
 from consoleme.models import (
@@ -1506,3 +1508,114 @@ async def get_scps_for_account_or_ou(identifier: str) -> ServiceControlPolicyArr
                 scps_for_account.append(scp)
     scps = ServiceControlPolicyArrayModel(__root__=scps_for_account)
     return scps
+
+
+async def minimize_iam_policy_statements(
+    inline_iam_policy_statements: List[Dict], disregard_sid=True
+) -> List[Dict]:
+    """
+    Minimizes a list of inline IAM policy statements.
+
+    1. Policies that are identical except for the resources will have the resources merged into a single statement
+    with the same actions, effects, conditions, etc.
+
+    2. Policies that have an identical resource, but different actions, will be combined if the rest of the policy
+    is identical.
+    :param inline_iam_policy_statements: A list of IAM policy statement dictionaries
+    :return: A potentially more compact list of IAM policy statement dictionaries
+    """
+    exclude_ids = []
+    minimized_statements = []
+
+    inline_iam_policy_statements = await normalize_policies(
+        inline_iam_policy_statements
+    )
+
+    for i in range(len(inline_iam_policy_statements)):
+        inline_iam_policy_statement = inline_iam_policy_statements[i]
+        if disregard_sid:
+            inline_iam_policy_statement.pop("Sid", None)
+        if i in exclude_ids:
+            # We've already combined this policy with another. Ignore it.
+            continue
+        for j in range(i + 1, len(inline_iam_policy_statements)):
+            if j in exclude_ids:
+                # We've already combined this policy with another. Ignore it.
+                continue
+            inline_iam_policy_statement_to_compare = inline_iam_policy_statements[j]
+            if disregard_sid:
+                inline_iam_policy_statement_to_compare.pop("Sid", None)
+            # Check to see if policy statements are identical except for a given element. Merge the policies
+            # if possible.
+            for element in [
+                "Resource",
+                "Action",
+                "NotAction",
+                "NotResource",
+                "NotPrincipal",
+            ]:
+                if not (
+                    inline_iam_policy_statement.get(element)
+                    or inline_iam_policy_statement_to_compare.get(element)
+                ):
+                    # This function won't handle `Condition`.
+                    continue
+                diff = DeepDiff(
+                    inline_iam_policy_statement,
+                    inline_iam_policy_statement_to_compare,
+                    ignore_order=True,
+                    exclude_paths=[f"root['{element}']"],
+                )
+                if not diff:
+                    exclude_ids.append(j)
+                    # Policy can be minimized
+                    inline_iam_policy_statement[element] = sorted(
+                        list(
+                            set(
+                                inline_iam_policy_statement[element]
+                                + inline_iam_policy_statement_to_compare[element]
+                            )
+                        )
+                    )
+                    break
+
+    for i in range(len(inline_iam_policy_statements)):
+        if i not in exclude_ids:
+            inline_iam_policy_statements[i] = sort_dict(inline_iam_policy_statements[i])
+            minimized_statements.append(inline_iam_policy_statements[i])
+    # TODO(cccastrapel): Intelligently combine actions and/or resources if they include wildcards
+    minimized_statements = await normalize_policies(minimized_statements)
+    return minimized_statements
+
+
+async def normalize_policies(policies: List[Any]) -> List[Any]:
+    """
+    Normalizes policy statements to ensure appropriate AWS policy elements are lists (such as actions and resources),
+    lowercase, and sorted. It will remove duplicate entries and entries that are superseded by other elements.
+    """
+
+    for policy in policies:
+        for element in [
+            "Resource",
+            "Action",
+            "NotAction",
+            "NotResource",
+            "NotPrincipal",
+        ]:
+            if not policy.get(element):
+                continue
+            if isinstance(policy.get(element), str):
+                policy[element] = [policy[element]]
+            policy[element] = list(set([x.lower() for x in policy[element]]))
+            modified_elements = set()
+            for i in range(len(policy[element])):
+                matched = False
+                # Sorry for the magic. this is iterating through all elements of a list that aren't the current element
+                for compare_value in policy[element][:i] + policy[element][(i + 1) :]:
+                    if fnmatch.fnmatch(policy[element][i], compare_value):
+                        matched = True
+                        break
+                if not matched:
+                    modified_elements.add(policy[element][i])
+            policy[element] = sorted(modified_elements)
+    return policies
