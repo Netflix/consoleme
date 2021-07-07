@@ -4,7 +4,7 @@ description: Provides instructions for getting ConsoleMe up and running locally.
 
 # Local
 
-ConsoleMe requires Python 3.8 or above. Install [**git**](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), [**docker**](https://docs.docker.com/get-docker/), and [**docker-compose**](https://docs.docker.com/compose/install/) _\*\*_on your system, consider following [Docker's post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/), then clone ConsoleMe locally in a directory of your choosing via HTTP or SSH:
+ConsoleMe requires Python 3.8 or above. Install [**git**](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git), [**docker**](https://docs.docker.com/get-docker/), and [**docker-compose**](https://docs.docker.com/compose/install/) \_\*\*\_on your system, consider following [Docker's post-installation steps for Linux](https://docs.docker.com/engine/install/linux-postinstall/), then clone ConsoleMe locally in a directory of your choosing via HTTP or SSH:
 
 ## MacOS
 
@@ -42,7 +42,7 @@ git clone git@github.com:Netflix/consoleme.git ; cd consoleme
 
 **Start Redis and DynamoDB containers**
 
-A local set of Redis and DynamoDB \(local\) instances need to be set up. These are provided as Docker containers. In a separate terminal window, start the local redis and dynamodb instances:
+A local set of Redis and DynamoDB \(local\) instances need to be set up. These are provided as Docker containers. In a separate terminal window, start the local Redis and dynamodb instances:
 
 ```text
 docker-compose -f docker-compose-dependencies.yaml up -d
