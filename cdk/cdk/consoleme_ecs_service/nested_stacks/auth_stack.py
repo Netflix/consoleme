@@ -69,13 +69,32 @@ class AuthStack(cdk.NestedStack):
                     "UserPoolId": cognito_user_pool.user_pool_id,
                     "GroupName": "consoleme_admins",
                 },
-                physical_resource_id=cr.PhysicalResourceId.of(
-                    cognito_user_pool.user_pool_id
+                physical_resource_id=cr.PhysicalResourceId.from_response(
+                    response_path="Group.GroupName"
                 ),
             ),
         )
 
-        cognito_assign_admin_gruop = cr.AwsCustomResource(
+        cr.AwsCustomResource(
+            self,
+            "UserPoolUserGroupResource",
+            policy=cr.AwsCustomResourcePolicy.from_sdk_calls(
+                resources=cr.AwsCustomResourcePolicy.ANY_RESOURCE
+            ),
+            on_create=cr.AwsSdkCall(
+                service="CognitoIdentityServiceProvider",
+                action="createGroup",
+                parameters={
+                    "UserPoolId": cognito_user_pool.user_pool_id,
+                    "GroupName": "consoleme_users",
+                },
+                physical_resource_id=cr.PhysicalResourceId.from_response(
+                    response_path="Group.GroupName"
+                ),
+            ),
+        )
+
+        cognito_assign_admin_group = cr.AwsCustomResource(
             self,
             "UserPoolAssignAdminGroupResource",
             policy=cr.AwsCustomResourcePolicy.from_sdk_calls(
@@ -89,13 +108,13 @@ class AuthStack(cdk.NestedStack):
                     "GroupName": "consoleme_admins",
                     "Username": "consoleme_admin",
                 },
-                physical_resource_id=cr.PhysicalResourceId.of(
-                    cognito_user_pool.user_pool_id
+                physical_resource_id=cr.PhysicalResourceId.from_response(
+                    response_path="Username"
                 ),
             ),
         )
 
-        cognito_assign_admin_gruop.node.add_dependency(cognito_admin_user)
-        cognito_assign_admin_gruop.node.add_dependency(cognito_admin_group)
+        cognito_assign_admin_group.node.add_dependency(cognito_admin_user)
+        cognito_assign_admin_group.node.add_dependency(cognito_admin_group)
 
         self.cognito_user_pool = cognito_user_pool
