@@ -69,7 +69,9 @@ class AuthStack(cdk.NestedStack):
                     "UserPoolId": cognito_user_pool.user_pool_id,
                     "GroupName": "consoleme_admins",
                 },
-                physical_resource_id='UserPoolAdminGroupResource'
+                physical_resource_id=cr.PhysicalResourceId.of(
+                    id="UserPoolAdminGroupResource"
+                ),
             ),
         )
 
@@ -86,7 +88,9 @@ class AuthStack(cdk.NestedStack):
                     "UserPoolId": cognito_user_pool.user_pool_id,
                     "GroupName": "consoleme_users",
                 },
-                physical_resource_id='UserPoolUserGroupResource'
+                physical_resource_id=cr.PhysicalResourceId.of(
+                    id="UserPoolUserGroupResource"
+                ),
             ),
         )
 
@@ -104,7 +108,9 @@ class AuthStack(cdk.NestedStack):
                     "GroupName": "consoleme_admins",
                     "Username": "consoleme_admin",
                 },
-                physical_resource_id='UserPoolAssignAdminGroupResource'
+                physical_resource_id=cr.PhysicalResourceId.of(
+                    id="UserPoolAssignAdminGroupResource"
+                ),
             ),
         )
 

@@ -23,7 +23,8 @@ The main idea is to use serverless services in order to remove the need to manag
   ```
   $ cp config.yaml.example config.yaml
   ```
-Here is a table with list of configuration keys:
+
+  Here is a table with list of configuration keys:
 
 | Configuration Parameter | Type   | Required | Description                                                                                |
 | ----------------------- | ------ | -------- | ------------------------------------------------------------------------------------------ |
