@@ -14,8 +14,22 @@ spec:
       {{- include "consoleme.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+        checksum/configmap-base: {{ include (print $.Template.BasePath "/configmap-base.yaml") . | sha256sum }}
+        checksum/configmap-dynamo: {{ include (print $.Template.BasePath "/configmap-dynamo.yaml") . | sha256sum }}
+        checksum/configmap-redis: {{ include (print $.Template.BasePath "/configmap-redis.yaml") . | sha256sum }}
+        checksum/secrets: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+        {{- if (eq "saml" .Values.authentication.type) }}
+        checksum/secrets-certs: {{ include (print $.Template.BasePath "/secrets-certs.yaml") . | sha256sum }}
+        checksum/configmap-auth-saml: {{ include (print $.Template.BasePath "/configmap-auth-saml.yaml") . | sha256sum }}
+        {{- else if (eq "header" .Values.authentication.type) }}
+        checksum/configmap-auth-header: {{ include (print $.Template.BasePath "/configmap-auth-header.yaml") . | sha256sum }}
+        {{- else if (eq "oidc" .Values.authentication.type) }}
+        checksum/configmap-auth-oidc: {{ include (print $.Template.BasePath "/configmap-auth-oidc.yaml") . | sha256sum }}
+        {{- else if (eq "alb" .Values.authentication.type) }}
+        checksum/configmap-auth-alb: {{ include (print $.Template.BasePath "/configmap-auth-alb.yaml") . | sha256sum }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
