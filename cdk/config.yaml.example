@@ -1,0 +1,19 @@
+---
+
+# Example configuration file. You should take it and customize according to your needs
+
+domain_prefix: 'dev'
+
+main_account: '987654321987'
+spoke_accounts:
+  - '123456789123'
+
+hosted_zone_id: 'XXXXXXXXXXXXXXXXXXXXX'
+hosted_zone_name: 'domain.com'
+
+use_public_docker_image: True
+min_capacity: 2
+max_capacity: 10
+
+admin_temp_password: '1Qaz2wsx!'
+jwt_secret: 'pg0zf7P5qoNoPYsSVO1Y'
