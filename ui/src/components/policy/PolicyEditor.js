@@ -54,7 +54,9 @@ const PolicyEditor = () => {
     }
   };
 
-  const EditPolicy = serviceType === "iamrole" ? IAMRolePolicy : ResourcePolicy;
+  const EditPolicy = ["iamrole", "iamuser"].includes(serviceType)
+    ? IAMRolePolicy
+    : ResourcePolicy;
 
   return (
     <Dimmer.Dimmable as={Segment} dimmed={isPolicyEditorLoading}>
