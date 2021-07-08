@@ -11,6 +11,11 @@ import ujson as json
 from dateutil import parser
 
 from consoleme.config import config
+from consoleme.exceptions.exceptions import MissingRequestParameter
+from consoleme.models import (
+    AwsResourcePrincipalModel,
+    HoneybeeAwsResourceTemplatePrincipalModel,
+)
 
 
 def str2bool(v: Optional[Union[bool, str]]) -> bool:
@@ -331,6 +336,14 @@ def un_wrap_json_and_dump_values(json_obj: Any) -> Any:
     for k, v in json_obj.items():
         json_obj[k] = json.dumps(v)
     return json_obj
+
+
+async def get_principal_friendly_name(principal):
+    if isinstance(principal, HoneybeeAwsResourceTemplatePrincipalModel):
+        return principal.resource_identifier
+    if isinstance(principal, AwsResourcePrincipalModel):
+        return principal.principal_arn
+    raise MissingRequestParameter("Unable to determine principal")
 
 
 class Struct:

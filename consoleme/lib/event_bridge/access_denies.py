@@ -25,7 +25,7 @@ async def get_resource_from_cloudtrail_deny(ct_event):
     Cloudtrail message, we return `*`.
     """
     resource = "*"
-    if "on resource: arn:aws" in ct_event["error_message"]:
+    if "on resource: arn:aws" in ct_event.get("error_message", ""):
         resource_re = re.match(
             r"^.* on resource: (arn:aws:.*?$)", ct_event["error_message"]
         )
