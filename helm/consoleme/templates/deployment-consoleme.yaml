@@ -79,16 +79,20 @@ spec:
               name: consoleme-config-dynamo
               readOnly: true
               subPath: config_dynamo.yaml
+            {{- if (eq "saml" .Values.authentication.type) }}
             - mountPath: /etc/consoleme/certs
               name: consoleme-certs
               readOnly: true
+            {{- end }}
       volumes:
         - name: consoleme-secrets
           secret:
             secretName: {{ include "consoleme.fullname" . }}-secrets
+        {{- if (eq "saml" .Values.authentication.type) }}
         - name: consoleme-certs
           secret:
             secretName: {{ include "consoleme.fullname" . }}-certs
+        {{- end }}
         - name: consoleme-config
           configMap:
             name: {{ include "consoleme.fullname" . }}-config
