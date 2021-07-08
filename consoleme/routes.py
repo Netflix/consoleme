@@ -24,6 +24,7 @@ from consoleme.handlers.v1.policies import (
 from consoleme.handlers.v1.roles import GetRolesHandler
 from consoleme.handlers.v1.saml import SamlHandler
 from consoleme.handlers.v2.audit import AuditRolesAccessHandler, AuditRolesHandler
+from consoleme.handlers.v2.aws_iam_users import UserDetailHandler
 from consoleme.handlers.v2.challenge import (
     ChallengeGeneratorHandler,
     ChallengePollerHandler,
@@ -168,6 +169,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/roles/?", RolesHandler),
         (r"/api/v2/roles/(\d{12})", AccountRolesHandler),
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
+        (r"/api/v2/users/(\d{12})/(.*)", UserDetailHandler),
         (
             r"/api/v2/resources/(\d{12})/(s3|sqs|sns)(?:/([a-z\-1-9]+))?/(.*)",
             ResourceDetailHandler,

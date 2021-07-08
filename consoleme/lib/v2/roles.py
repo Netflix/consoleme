@@ -129,6 +129,50 @@ async def get_role_template(arn: str):
     )
 
 
+async def get_user_details(
+    account_id: str, user_name: str, extended: bool = False, force_refresh: bool = False
+) -> Optional[Union[ExtendedRoleModel, RoleModel]]:
+    # TODO: Change the model we are returning?
+    account_ids_to_name = await get_account_id_to_name_mapping()
+    arn = f"arn:aws:iam::{account_id}:user/{user_name}"
+    user = await aws.fetch_iam_user(account_id, arn)
+    # requested user doesn't exist
+    if not user:
+        return None
+    if extended:
+        return ExtendedRoleModel(
+            name=user_name,
+            account_id=account_id,
+            account_name=account_ids_to_name.get(account_id, None),
+            arn=arn,
+            inline_policies=user["InlinePolicies"],
+            config_timeline_url=await get_config_timeline_url_for_role(
+                user, account_id
+            ),
+            cloudtrail_details=await get_cloudtrail_details_for_role(arn),
+            s3_details=await get_s3_details_for_role(
+                account_id=account_id, role_name=user_name
+            ),
+            apps=await get_app_details_for_role(arn),
+            managed_policies=user["ManagedPolicies"],
+            groups=user["Groups"],
+            tags=user["Tags"]["Tags"],
+            templated=False,
+            template_link=None,
+            created_time=user.get("CreateDate"),
+            last_used_time=user.get("RoleLastUsed", {}).get("LastUsedDate"),
+            description=user.get("Description"),
+            permissions_boundary=user.get("PermissionsBoundary", {}),
+        )
+    else:
+        return RoleModel(
+            name=user_name,
+            account_id=account_id,
+            account_name=account_ids_to_name.get(account_id, None),
+            arn=arn,
+        )
+
+
 async def get_role_details(
     account_id: str, role_name: str, extended: bool = False, force_refresh: bool = False
 ) -> Optional[Union[ExtendedRoleModel, RoleModel]]:

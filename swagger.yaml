@@ -520,7 +520,6 @@ components:
           description: resource ARN
           type: string
           readOnly: true
-          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|^\*$'
         name:
           description: Resource Name
           type: string
@@ -687,7 +686,6 @@ components:
             resource policy will need to be modified if the change is approved and successful.
           example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
           type: string
-          pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|(^\*$)'
         version:
           description: Version
           type: string
