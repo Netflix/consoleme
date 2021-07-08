@@ -10,6 +10,7 @@ domain_prefix = config_yaml["domain_prefix"]
 
 BASE_NAME = "ConsoleMeECS"
 SPOKE_BASE_NAME = "ConsoleMeSpoke"
+MAIN_ACCOUNT_ID = config_yaml["main_account"]
 
 APPLICATION_PREFIX = "consoleme-" + domain_prefix
 APPLICATION_SUFFIX = "secure".lower()

@@ -4,6 +4,7 @@
 
 domain_prefix: 'dev'
 
+main_account: '987654321987'
 spoke_accounts:
   - '123456789123'
 

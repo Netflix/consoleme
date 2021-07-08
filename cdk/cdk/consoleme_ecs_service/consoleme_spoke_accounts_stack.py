@@ -2,10 +2,9 @@
 Spoke accounts stack for running ConsoleMe on ECS
 """
 
-import boto3
 from aws_cdk import aws_iam as iam
 from aws_cdk import core as cdk
-from constants import SPOKE_BASE_NAME
+from constants import SPOKE_BASE_NAME, MAIN_ACCOUNT_ID
 
 
 class ConsolemeSpokeAccountsStack(cdk.Stack):
@@ -17,11 +16,7 @@ class ConsolemeSpokeAccountsStack(cdk.Stack):
     def __init__(self, scope: cdk.Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
 
-        trusted_role_arn = (
-            "arn:aws:iam::"
-            + boto3.client("sts").get_caller_identity().get("Account")
-            + ":role/ConsoleMeTaskRole"
-        )
+        trusted_role_arn = "arn:aws:iam::" + MAIN_ACCOUNT_ID + ":role/ConsoleMeTaskRole"
 
         spoke_role = iam.Role(
             self,

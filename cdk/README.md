@@ -29,6 +29,7 @@ The main idea is to use serverless services in order to remove the need to manag
 | Configuration Parameter | Type   | Required | Description                                                                                |
 | ----------------------- | ------ | -------- | ------------------------------------------------------------------------------------------ |
 | domain_prefix           | string | True     | Used to segregate different environments                                                   |
+| main_account            | string | True     | ConsoleMe main account ID                                                                  |
 | spoke_accounts          | list   | False    | List of AWS child accounts that ConsoleMe manages                                          |
 | hosted_zone_id          | string | True     | Route53 hosted zone ID used to generate HTTPS certs and serve ConsoleMe                    |
 | hosted_zone_name        | string | True     | Route53 hosted zone name used to generate HTTPS certs and serve ConsoleMe                  |
