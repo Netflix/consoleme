@@ -49,13 +49,6 @@ password for the `jwt_secret` key. You can use the following command to generate
   $ npm install -g aws-cdk
   ```
 
-- AWS CDK assume role credential plugin. we're using this plugin in order to ease the deployment on a multi-account environment.
-  You can easily install AWS CDK assume role credential plugin globally using `npm`:
-
-  ```
-  $ npm install -g cdk-assume-role-credential-plugin
-  ```
-
 - Python 3.6 and up with Pipenv dependencies & virtual environment management framework.
   You can easily install Pipenv command line interface it using `pip`:
 
@@ -78,19 +71,11 @@ password for the `jwt_secret` key. You can use the following command to generate
   ```
 
 - Bootstrap the CDK environment using the `modern` bootstrap template.
-  This is required for each AWS account in order to enable the `trust` functionality
-  which is required by the `cdk-assume-role-credential-plugin`.
-
-  Main account bootstrapping:
+  This is required for each AWS account separately in order to work with `cdk`.
+  If you bootstrapped CDK before on the AWS region and every AWS account you wish to deploy ConsoleMe, this step is not required.
 
   ```
-  $ cdk bootstrap --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess --plugin cdk-assume-role-credential-plugin --context bootstrap=true
-  ```
-
-  Spoke accounts bootstrapping, trusting the main account bootstrapping:
-
-  ```
-  $ cdk bootstrap --trust $MAIN_AWS_ACCOUNT_ID --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess --plugin cdk-assume-role-credential-plugin --context bootstrap=true
+  $ cdk bootstrap --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess
   ```
 
 ### Preparing the CDK Environment
@@ -109,16 +94,18 @@ command.
 
 You can now deploy all the CDK applications in all supported accounts:
 
-Deploy trust role to spoke accounts:
-
-```
-$ cdk deploy ConsoleMeSpoke
-```
-
-Deploy ConsoleMe to main account:
+First, deploy ConsoleMe to the main account.
+While logged in to the main account, deploy `ConsoleMeECS` stack:
 
 ```
 $ cdk deploy ConsoleMeECS
+```
+
+Then, deploy the trust role to the spoke accounts.
+While logged in to each spoke account, deploy `ConsoleMeSpoke` stack:
+
+```
+$ cdk deploy ConsoleMeSpoke
 ```
 
 Don't forget to approve the template and security resources before the deployment.
