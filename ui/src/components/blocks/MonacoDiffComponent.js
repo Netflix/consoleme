@@ -1,9 +1,11 @@
 import React from "react";
 import { MonacoDiffEditor } from "react-monaco-editor";
 import PropTypes from "prop-types";
-import { getMonacoTriggerCharacters } from "../../helpers/utils";
+import {
+  getMonacoTriggerCharacters,
+  getStringFormat,
+} from "../../helpers/utils";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
-
 // This is a global setting, no need to do this multiple times - right now PolicyMonacoEditor.js already sets it
 // Setting it multiple times will result in duplicate results and requests made to the backend
 // monaco.languages.registerCompletionItemProvider("json", {
@@ -33,7 +35,7 @@ class MonacoDiffComponent extends React.Component {
   }
 
   editorDidMount(editor) {
-    editor.modifiedEditor.onDidChangeModelDecorations(() => {
+    editor._modifiedEditor.onDidChangeModelDecorations(() => {
       const { modifiedEditor } = this.state;
       const model = modifiedEditor.getModel();
       if (model === null || model.getModeId() !== "json") {
@@ -51,7 +53,7 @@ class MonacoDiffComponent extends React.Component {
       );
     });
     this.setState({
-      modifiedEditor: editor.modifiedEditor,
+      modifiedEditor: editor._modifiedEditor,
     });
   }
 
@@ -69,9 +71,10 @@ class MonacoDiffComponent extends React.Component {
       automaticLayout: true,
       readOnly,
     };
+    const language = getStringFormat(newValue);
     return (
       <MonacoDiffEditor
-        language="json"
+        language={language}
         width="100%"
         height="500"
         original={oldValue}
@@ -80,7 +83,7 @@ class MonacoDiffComponent extends React.Component {
         editorDidMount={this.editorDidMount}
         options={options}
         onChange={this.onChange}
-        theme="vs-dark"
+        theme="vs-light"
         alwaysConsumeMouseWheel={false}
       />
     );

@@ -347,7 +347,7 @@ class PolicyRequestReview extends Component {
                   rel="noreferrer"
                 >
                   {" "}
-                  {extendedRequest.arn}
+                  {extendedRequest?.principal?.principal_arn}
                 </a>
               </Table.Cell>
             </Table.Row>
@@ -410,6 +410,20 @@ class PolicyRequestReview extends Component {
       extendedRequest.changes.changes.length > 0 ? (
         <>
           {extendedRequest.changes.changes.map((change) => {
+            if (change.change_type === "generic_file") {
+              return (
+                <InlinePolicyChangeComponent
+                  change={change}
+                  config={requestConfig}
+                  requestReadOnly={requestReadOnly}
+                  updatePolicyDocument={this.updatePolicyDocument}
+                  reloadDataFromBackend={this.reloadDataFromBackend}
+                  requestID={requestID}
+                  sendProposedPolicy={this.sendProposedPolicy}
+                  sendRequestCommon={this.props.sendRequestCommon}
+                />
+              );
+            }
             if (change.change_type === "inline_policy") {
               return (
                 <InlinePolicyChangeComponent
@@ -551,7 +565,9 @@ class PolicyRequestReview extends Component {
     const pageContent =
       messagesToShow === null ? (
         <>
-          <Header size="huge">Request Review for: {extendedRequest.arn}</Header>
+          <Header size="huge">
+            Request Review for: {extendedRequest?.principal?.principal_arn}
+          </Header>
           {requestDetails}
           {templateContent}
           {descriptionContent}

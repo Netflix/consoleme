@@ -1,11 +1,12 @@
 ### Terraform ###
-# Local .terraform directories
+# Local deployment directories (.terraform, cdk)
 **/.terraform/*
 *.tfstate
 *.tfstate.*
 crash.log
 terraform.tfvars
 state.tf
+cdk.out/
 consoleme.tar.gz
 consoleme.zip
 
@@ -139,4 +140,4 @@ consoleme.tar.gz
 
 # Config
 consoleme.yaml
-
+cdk/config.yaml

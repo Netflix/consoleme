@@ -1,7 +1,15 @@
 import _ from "lodash";
 import React, { Component } from "react";
 import ReactMarkdown from "react-markdown";
-import { Button, Form, Header, Message } from "semantic-ui-react";
+import {
+  Accordion,
+  Button,
+  Divider,
+  Dropdown,
+  Form,
+  Header,
+  Message,
+} from "semantic-ui-react";
 import DropDownBlockComponent from "../blocks/DropDownBlockComponent";
 import TextInputBlockComponent from "../blocks/TextInputBlockComponent";
 import TypeaheadBlockComponent from "../blocks/TypeaheadBlockComponent";
@@ -12,8 +20,50 @@ class SelfServiceComponent extends Component {
     this.state = {
       messages: [],
       values: {},
+      activeIndex: 1,
+      extraAction: [],
+      includeAccount: [],
+      excludeAccount: [],
+      currentExtraActionValues: [],
+      currentIncludeAccountValues: [],
+      currentExcludeAccountValues: [],
     };
   }
+
+  handleExtraActionAddition = (e, { value }) => {
+    this.setState((prevState) => ({
+      extraAction: [{ text: value, value }, ...prevState.extraAction],
+    }));
+  };
+
+  handleIncludeAccountAddition = (e, { value }) => {
+    this.setState((prevState) => ({
+      includeAccount: [{ text: value, value }, ...prevState.includeAccount],
+    }));
+  };
+
+  handleExcludeAccountAddition = (e, { value }) => {
+    this.setState((prevState) => ({
+      excludeAccount: [{ text: value, value }, ...prevState.excludeAccount],
+    }));
+  };
+
+  handleExtraActionChange = (e, { value }) =>
+    this.setState({ currentExtraActionValues: value });
+
+  handleIncludeAccountChange = (e, { value }) =>
+    this.setState({ currentIncludeAccountValues: value });
+
+  handleExcludeAccountChange = (e, { value }) =>
+    this.setState({ currentExcludeAccountValues: value });
+
+  handleClick = (e, titleProps) => {
+    const { index } = titleProps;
+    const { activeIndex } = this.state;
+    const newIndex = activeIndex === index ? -1 : index;
+
+    this.setState({ activeIndex: newIndex });
+  };
 
   handleInputUpdate(context, value) {
     const { values } = this.state;
@@ -28,7 +78,7 @@ class SelfServiceComponent extends Component {
 
   handleSubmit() {
     const { config, role, service } = this.props;
-    const { values } = this.state;
+    const { values, extraAction, includeAccount, excludeAccount } = this.state;
     const { inputs, condition } = config.permissions_map[service];
 
     const default_values = { condition };
@@ -45,7 +95,7 @@ class SelfServiceComponent extends Component {
       }
     });
 
-    // Exception Hanlding for inputs
+    // Exception Handling for inputs
     const messages = [];
     Object.keys(inputs).forEach((idx) => {
       const input = inputs[idx];
@@ -62,6 +112,18 @@ class SelfServiceComponent extends Component {
       return this.setState({ messages });
     }
 
+    if (extraAction.length > 0) {
+      this.props.updateExtraActions(extraAction);
+    }
+
+    if (includeAccount.length > 0) {
+      this.props.updateIncludeAccounts(includeAccount);
+    }
+
+    if (excludeAccount.length > 0) {
+      this.props.updateExcludeAccounts(excludeAccount);
+    }
+
     const permission = {
       service,
       ...result,
@@ -71,8 +133,8 @@ class SelfServiceComponent extends Component {
         messages: [],
         values: {},
       },
-      () => {
-        this.props.updatePermission(permission);
+      async () => {
+        await this.props.updatePermission(permission);
       }
     );
   }
@@ -105,7 +167,7 @@ class SelfServiceComponent extends Component {
         case "typeahead_input":
           return (
             <TypeaheadBlockComponent
-              defaultValue={defaultValue}
+              defaultValue={defaultValue + 1}
               handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
               required={input.required || false}
               typeahead={input.typeahead_endpoint}
@@ -130,10 +192,82 @@ class SelfServiceComponent extends Component {
     return blocks;
   }
 
+  buildAdvancedOptions() {
+    const { role } = this.props;
+    const { activeIndex } = this.state;
+    const { currentExtraActionValues } = this.state;
+    const { currentIncludeAccountValues } = this.state;
+    const { currentExcludeAccountValues } = this.state;
+
+    return (
+      <div>
+        <Divider />
+        <Accordion>
+          <Accordion.Title
+            active={activeIndex === 0}
+            index={0}
+            onClick={this.handleClick}
+          >
+            <span style={{ color: "#4183c4" }}>Advanced Options</span>
+          </Accordion.Title>
+          <Accordion.Content active={activeIndex === 0}>
+            <label>Extra Actions (example: s3:get*)</label>
+            <Dropdown
+              options={this.state.extraAction}
+              placeholder="Press Enter after typing each extra action"
+              search
+              selection
+              fluid
+              multiple
+              allowAdditions
+              value={currentExtraActionValues}
+              onAddItem={this.handleExtraActionAddition}
+              onChange={this.handleExtraActionChange}
+              style={{ marginBottom: "1em" }}
+              className={"advancedOption"}
+            />
+            {role.template_language === "honeybee" ? (
+              <>
+                <label>Include Accounts</label>
+                <Dropdown
+                  options={this.state.includeAccount}
+                  placeholder="Press Enter after typing each included account"
+                  search
+                  selection
+                  fluid
+                  multiple
+                  allowAdditions
+                  value={currentIncludeAccountValues}
+                  onAddItem={this.handleIncludeAccountAddition}
+                  onChange={this.handleIncludeAccountChange}
+                  style={{ marginBottom: "1em" }}
+                  className={"advancedOption"}
+                />
+                <label>Exclude Accounts</label>
+                <Dropdown
+                  options={this.state.excludeAccount}
+                  placeholder="Press Enter after typing each excluded account"
+                  search
+                  selection
+                  fluid
+                  multiple
+                  allowAdditions
+                  value={currentExcludeAccountValues}
+                  onAddItem={this.handleExcludeAccountAddition}
+                  onChange={this.handleExcludeAccountChange}
+                  className={"advancedOption"}
+                />
+              </>
+            ) : null}
+          </Accordion.Content>
+        </Accordion>
+      </div>
+    );
+  }
+
   render() {
     const { config, service } = this.props;
     const { description, text } = config.permissions_map[service];
-
     const { messages } = this.state;
     const messagesToShow =
       messages.length > 0 ? (
@@ -148,12 +282,15 @@ class SelfServiceComponent extends Component {
       ) : null;
 
     const blocks = this.buildInputBlocks();
+    const advancedOptions = this.buildAdvancedOptions();
 
     return (
       <Form>
         <Header as="h3">{text}</Header>
         <ReactMarkdown linkTarget="_blank" source={description} />
         {blocks}
+        {advancedOptions}
+
         {messagesToShow}
         <Button
           fluid
@@ -161,7 +298,7 @@ class SelfServiceComponent extends Component {
           primary
           type="submit"
         >
-          Add Permission
+          {this.props.role.arn ? "Add Permission" : "Add to Policy"}
         </Button>
       </Form>
     );

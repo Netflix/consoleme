@@ -293,7 +293,11 @@ class Configuration(object):
                 from consoleme.lib.elasticsearch import ESHandler
 
                 handler = ESHandler(es, index_name)
-                handler.setFormatter(logmatic.JsonFormatter())
+                handler.setFormatter(
+                    logmatic.JsonFormatter(
+                        json_indent=self.get("logging.json_formatter.indent")
+                    )
+                )
                 handler.setLevel(self.get("logging.elasticsearch.level", "INFO"))
                 logger.addHandler(handler)
             except Exception:
@@ -304,7 +308,11 @@ class Configuration(object):
         if self.get("logging.stdout_enabled", True):
             logger.propagate = False
             handler = logging.StreamHandler(sys.stdout)
-            handler.setFormatter(logmatic.JsonFormatter())
+            handler.setFormatter(
+                logmatic.JsonFormatter(
+                    json_indent=self.get("logging.json_formatter.indent")
+                )
+            )
             handler.setLevel(self.get("logging.stdout.level", "DEBUG"))
             logger.addHandler(handler)
             logging_file = self.get("logging.file")
@@ -313,7 +321,11 @@ class Configuration(object):
                     logging_file = os.path.expanduser(logging_file)
                 os.makedirs(os.path.dirname(logging_file), exist_ok=True)
                 file_handler = logging.FileHandler(logging_file)
-                file_handler.setFormatter(logmatic.JsonFormatter())
+                file_handler.setFormatter(
+                    logmatic.JsonFormatter(
+                        json_indent=self.get("logging.json_formatter.indent")
+                    )
+                )
                 logger.addHandler(file_handler)
         self.log = logging.LoggerAdapter(logger, extra)
         return self.log

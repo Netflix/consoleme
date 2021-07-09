@@ -11,6 +11,11 @@ import ujson as json
 from dateutil import parser
 
 from consoleme.config import config
+from consoleme.exceptions.exceptions import MissingRequestParameter
+from consoleme.models import (
+    AwsResourcePrincipalModel,
+    HoneybeeAwsResourceTemplatePrincipalModel,
+)
 
 
 def str2bool(v: Optional[Union[bool, str]]) -> bool:
@@ -252,6 +257,30 @@ async def should_force_redirect(req):
     return True
 
 
+def sort_dict(original):
+    """Recursively sorts dictionary keys and dictionary values in alphabetical order"""
+    if isinstance(original, dict):
+        res = (
+            dict()
+        )  # Make a new "ordered" dictionary. No need for Collections in Python 3.7+
+        for k, v in sorted(original.items()):
+            res[k] = v
+        d = res
+    else:
+        d = original
+    for k in d:
+        if isinstance(d[k], str):
+            continue
+        if isinstance(d[k], list) and len(d[k]) > 1 and isinstance(d[k][0], str):
+            d[k] = sorted(d[k])
+        if isinstance(d[k], dict):
+            d[k] = sort_dict(d[k])
+        if isinstance(d[k], list) and len(d[k]) >= 1 and isinstance(d[k][0], dict):
+            for i in range(len(d[k])):
+                d[k][i] = sort_dict(d[k][i])
+    return d
+
+
 def un_wrap_json(json_obj: Any) -> Any:
     """Helper function to unwrap nested JSON in the AWS Config resource configuration."""
     # pylint: disable=C0103,W0703,R0911
@@ -307,6 +336,14 @@ def un_wrap_json_and_dump_values(json_obj: Any) -> Any:
     for k, v in json_obj.items():
         json_obj[k] = json.dumps(v)
     return json_obj
+
+
+async def get_principal_friendly_name(principal):
+    if isinstance(principal, HoneybeeAwsResourceTemplatePrincipalModel):
+        return principal.resource_identifier
+    if isinstance(principal, AwsResourcePrincipalModel):
+        return principal.principal_arn
+    raise MissingRequestParameter("Unable to determine principal")
 
 
 class Struct:

@@ -1,156 +1,295 @@
 import React from "react";
-import { Header, Icon, List, Segment } from "semantic-ui-react";
+import { Grid, Header, Icon, Label, Segment, Table } from "semantic-ui-react";
+import { zip } from "lodash";
 
 function RoleDetails(props) {
   const role = props.role;
+
   if (!role) {
     return (
-      <Segment placeholder>
-        <Header icon>
-          <Icon name="braille" />
-          No Role is selected for display.
-        </Header>
-      </Segment>
+      <Grid style={{ height: "100%" }}>
+        <Grid.Row>
+          <Grid.Column textAlign="center" verticalAlign="middle">
+            <div>
+              <Header as="h3">
+                Search a principal to modify to view details about it.
+              </Header>
+            </div>
+          </Grid.Column>
+        </Grid.Row>
+      </Grid>
+    );
+  }
+
+  // TODO: swap out `template_language` for `templated` Boolean
+  // once the API has changed.
+  if (role.template_language === "honeybee") {
+    // Zip the include and exclude accounts for display in a Table format.
+    const includeExcludeAccounts = zip(
+      role.include_accounts,
+      role.exclude_accounts
+    );
+    return (
+      <>
+        <Segment basic style={{ borderTop: "1px solid rgba(34,36,38,.15)" }}>
+          <Label
+            color="blue"
+            attached="top left"
+            style={{
+              borderTopLeftRadius: "0",
+              paddingLeft: "40px",
+              paddingRight: "40px",
+            }}
+          >
+            Templated Role
+          </Label>
+        </Segment>
+        <div style={{ display: "flex" }}>
+          <Icon
+            name="users"
+            style={{ flexShrink: 0, width: "40px" }}
+            size="large"
+          />
+          <div>
+            <Header as="h3">{role.name}</Header>
+            <Grid relaxed="very">
+              <Grid.Row>
+                <Grid.Column width={16}>
+                  <Header as="h5">
+                    PATH
+                    <Header.Subheader>
+                      <a
+                        href={role.web_path}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {role.file_path}
+                      </a>
+                    </Header.Subheader>
+                  </Header>
+                </Grid.Column>
+              </Grid.Row>
+              <Grid.Row>
+                <Grid.Column width={8}>
+                  <Header as="h5">
+                    OWNER
+                    <Header.Subheader>{role.owner}</Header.Subheader>
+                  </Header>
+                </Grid.Column>
+                <Grid.Column width={8}>
+                  <Header as="h5">
+                    TEMPLATE LANGUAGE
+                    <Header.Subheader>
+                      {role.template_language}
+                    </Header.Subheader>
+                  </Header>
+                </Grid.Column>
+              </Grid.Row>
+              <Grid.Row>
+                <Grid.Column width={8}>
+                  <Header as="h5" style={{ marginBottom: 0 }}>
+                    NUMBER OF AFFECTED ACCOUNTS
+                  </Header>
+                  <Label circular style={{ marginTop: 3, marginBottom: 4 }}>
+                    {role.number_of_accounts}
+                  </Label>{" "}
+                  Affected Accounts
+                </Grid.Column>
+                <Grid.Column width={8}>
+                  <Header as="h5">
+                    RESOURCE TYPE
+                    <Header.Subheader>{role.resource_type}</Header.Subheader>
+                  </Header>
+                </Grid.Column>
+              </Grid.Row>
+              {includeExcludeAccounts.length > 0 ? (
+                <Grid.Row>
+                  <Grid.Column width={16}>
+                    <Header as="h5" style={{ marginBottom: 0 }}>
+                      ACCOUNTS
+                    </Header>
+                    <Table
+                      basic="very"
+                      compact="very"
+                      striped
+                      size="small"
+                      style={{ marginTop: 0 }}
+                    >
+                      <Table.Header>
+                        <Table.Row>
+                          <Table.HeaderCell
+                            width={8}
+                            style={{ paddingLeft: "1.5em", paddingBottom: 0 }}
+                          >
+                            INCLUDED
+                          </Table.HeaderCell>
+                          <Table.HeaderCell
+                            width={8}
+                            style={{ paddingLeft: "1.5em", paddingBottom: 0 }}
+                          >
+                            EXCLUDED
+                          </Table.HeaderCell>
+                        </Table.Row>
+                      </Table.Header>
+                      <Table.Body>
+                        {includeExcludeAccounts.map((accts, index) => {
+                          return (
+                            <Table.Row key={`accts${index}`}>
+                              <Table.Cell style={{ paddingLeft: "1.5em" }}>
+                                {accts[0] ? accts[0] : ""}
+                              </Table.Cell>
+                              <Table.Cell style={{ paddingLeft: "1.5em" }}>
+                                {accts[1] ? accts[1] : ""}
+                              </Table.Cell>
+                            </Table.Row>
+                          );
+                        })}
+                      </Table.Body>
+                    </Table>
+                  </Grid.Column>
+                </Grid.Row>
+              ) : null}
+            </Grid>
+          </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <List divided relaxed="very">
-      <List.Item>
-        <List.Icon name="key" />
-        <List.Content>
-          <List.Header>Account</List.Header>
-          <List.Description>
-            {`${role.account_name} (${role.account_id})`}
-          </List.Description>
-        </List.Content>
-      </List.Item>
-      <List.Item>
-        <List.Icon name="code" />
-        <List.Content>
-          <List.Header>Application</List.Header>
-          <List.List>
-            {role.apps.app_details.map((app) => (
-              <List.Item>
-                <List.Icon name="file code" />
-                <List.Content>
-                  <List.Header>
+    <>
+      <div style={{ display: "flex" }}>
+        <Icon
+          name="user"
+          style={{ flexShrink: 0, width: "40px" }}
+          size="large"
+        />
+        <div>
+          <Header as="h3">{role.name}</Header>
+          <Grid relaxed="very">
+            <Grid.Row>
+              <Grid.Column width={16}>
+                <Header as="h5">
+                  ARN
+                  <Header.Subheader>
                     <a
                       target="_blank"
-                      href={app.app_url}
                       rel="noopener noreferrer"
+                      href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
                     >
-                      {app.name}
+                      {role.arn}
                     </a>
-                  </List.Header>
-                  <List.Description>{app.owner}</List.Description>
-                </List.Content>
-              </List.Item>
-            ))}
-          </List.List>
-        </List.Content>
-      </List.Item>
-      <List.Item>
-        <List.Icon name="edit" />
-        <List.Content>
-          <List.Header>Role</List.Header>
-          <List.List>
-            <List.Item>
-              <List.Icon name="file" />
-              <List.Content>
-                <List.Header>NAME</List.Header>
-                <List.Description>{role.name}</List.Description>
-              </List.Content>
-            </List.Item>
-            <List.Item>
-              <List.Icon name="file alternate" />
-              <List.Content>
-                <List.Header>ARN</List.Header>
-                <List.Description>
-                  <a
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
-                  >
-                    {role.arn}
-                  </a>
-                </List.Description>
-              </List.Content>
-            </List.Item>
-            <List.Item>
-              <List.Icon name="tags" />
-              <List.Content>
-                <List.Header>TAGS</List.Header>
-                <List.List>
-                  {role.tags.map((tag) => (
-                    <List.Item>
-                      <List.Icon name="tag" />
-                      <List.Content>
-                        <List.Header>{tag.Key}</List.Header>
-                        <List.Description>{tag.Value}</List.Description>
-                      </List.Content>
-                    </List.Item>
-                  ))}
-                </List.List>
-              </List.Content>
-            </List.Item>
-            <List.Item>
-              <List.Icon name="clone" />
-              <List.Content>
-                <List.Header>Template</List.Header>
-                <List.Description>
-                  {role.templated
-                    ? "This role is templated"
-                    : "There is no template for this role"}
-                </List.Description>
-              </List.Content>
-            </List.Item>
-          </List.List>
-        </List.Content>
-      </List.Item>
-      <List.Item>
-        <List.Icon name="history" />
-        <List.Content>
-          <List.Header>Activity</List.Header>
-          <List.List>
-            <List.Item>
-              <List.Icon name="cloud" />
-              <List.Content>
-                <List.Header>Cloud Trails</List.Header>
-                <List.Description>
-                  There are{" "}
-                  <a
-                    href={role.cloudtrail_details.error_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  </Header.Subheader>
+                </Header>
+              </Grid.Column>
+            </Grid.Row>
+            <Grid.Row>
+              <Grid.Column width={8}>
+                <Header as="h5">
+                  ACCOUNT
+                  <Header.Subheader>
+                    <strong>{role.account_name}</strong>
+                    <br />
+                    {role.account_id}
+                  </Header.Subheader>
+                </Header>
+              </Grid.Column>
+              <Grid.Column width={8}>
+                <Header as="h5">
+                  APPLICATION
+                  <Header.Subheader>
+                    {role.apps.app_details.map((app) => (
+                      <div key={app.name}>
+                        <a
+                          target="_blank"
+                          href={app.app_url}
+                          rel="noopener noreferrer"
+                        >
+                          {app.name}
+                        </a>
+                        {app.owner}
+                      </div>
+                    ))}
+                  </Header.Subheader>
+                </Header>
+              </Grid.Column>
+            </Grid.Row>
+            <Grid.Row>
+              <Grid.Column width={8}>
+                <Header as="h5" style={{ marginBottom: 0 }}>
+                  ACTIVITY
+                </Header>
+                <div style={{ marginTop: 3, marginBottom: 4 }}>
+                  <Label circular>
                     {role.cloudtrail_details.errors.cloudtrail_errors.length}
-                  </a>{" "}
-                  errors.
-                </List.Description>
-              </List.Content>
-            </List.Item>
-            <List.Item>
-              <List.Icon name="bitbucket" />
-              <List.Content>
-                <List.Header>S3 Access Logs</List.Header>
-                <List.Description>
-                  There are{" "}
-                  <a
-                    href={role.s3_details.error_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  </Label>{" "}
+                  Cloud Trails Errors
+                </div>
+                <div>
+                  <Label circular>
                     {role.s3_details.errors.s3_errors.length}
-                  </a>{" "}
-                  errors.
-                </List.Description>
-              </List.Content>
-            </List.Item>
-          </List.List>
-        </List.Content>
-      </List.Item>
-    </List>
+                  </Label>{" "}
+                  S3 Access Log Errors
+                </div>
+              </Grid.Column>
+              <Grid.Column width={8}>
+                <Header as="h5" style={{ marginBottom: 0 }}>
+                  RESOURCE TYPE
+                </Header>
+                <div>{role.resource_type}</div>
+              </Grid.Column>
+            </Grid.Row>
+            {role.tags.length > 0 ? (
+              <Grid.Row>
+                <Grid.Column width={16}>
+                  <Header as="h5" style={{ marginBottom: 0 }}>
+                    TAGS
+                  </Header>
+                  <Table
+                    basic="very"
+                    compact="very"
+                    striped
+                    size="small"
+                    style={{ marginTop: 0 }}
+                  >
+                    <Table.Header>
+                      <Table.Row>
+                        <Table.HeaderCell
+                          width={8}
+                          style={{ paddingLeft: "1.5em", paddingBottom: 0 }}
+                        >
+                          NAME
+                        </Table.HeaderCell>
+                        <Table.HeaderCell
+                          width={8}
+                          style={{ paddingLeft: "1.5em", paddingBottom: 0 }}
+                        >
+                          VALUE
+                        </Table.HeaderCell>
+                      </Table.Row>
+                    </Table.Header>
+                    <Table.Body>
+                      {role.tags.map((tag) => {
+                        return (
+                          <Table.Row key={tag.Key}>
+                            <Table.Cell style={{ paddingLeft: "1.5em" }}>
+                              {tag.Key}
+                            </Table.Cell>
+                            <Table.Cell style={{ paddingLeft: "1.5em" }}>
+                              {tag.Value}
+                            </Table.Cell>
+                          </Table.Row>
+                        );
+                      })}
+                    </Table.Body>
+                  </Table>
+                </Grid.Column>
+              </Grid.Row>
+            ) : null}
+          </Grid>
+        </div>
+      </div>
+    </>
   );
 }
 

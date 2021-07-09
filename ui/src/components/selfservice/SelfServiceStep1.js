@@ -1,9 +1,12 @@
 import _ from "lodash";
 import React, { Component } from "react";
 import {
+  Button,
+  Divider,
   Form,
   Grid,
   Header,
+  Icon,
   Loader,
   Message,
   Search,
@@ -23,47 +26,35 @@ class SelfServiceStep1 extends Component {
       messages: [],
       results: [],
       value: "",
+      count: [],
+      principal: {},
     };
   }
 
-  componentDidMount() {
-    const { role } = this.props;
-    if (role) {
-      this.fetchRoleDetail(role.arn);
-    }
-  }
-
-  fetchRoleDetail(value) {
-    let {
-      groups: { accountId, roleName },
-    } = ARN_REGEX.exec(value);
-
-    roleName = roleName.split("/").splice(-1, 1)[0];
-    this.props
-      .sendRequestCommon(null, `/api/v2/roles/${accountId}/${roleName}`, "get")
-      .then((response) => {
-        if (!response) {
-          return;
-        }
-        // if the given role doesn't exist.
-        if (response.status === 404) {
-          this.props.handleRoleUpdate(null);
-          this.setState({
-            isLoading: false,
-            isRoleLoading: false,
-            messages: [response.message],
-          });
-        } else {
-          const role = response;
-          this.props.handleRoleUpdate(role);
-          this.setState({
-            isLoading: false,
-            isRoleLoading: false,
-            value: role.arn,
-            messages: [],
-          });
-        }
-      });
+  fetchRoleDetail(endpoint) {
+    const { principal } = this.state;
+    this.props.sendRequestCommon(null, endpoint, "get").then((response) => {
+      if (!response) {
+        return;
+      }
+      // if the given role doesn't exist.
+      if (response.status === 404) {
+        this.props.handleRoleUpdate(null);
+        this.setState({
+          isLoading: false,
+          isRoleLoading: false,
+          messages: [response.message],
+        });
+      } else {
+        response.principal = principal;
+        this.props.handleRoleUpdate(response);
+        this.setState({
+          isLoading: false,
+          isRoleLoading: false,
+          messages: [],
+        });
+      }
+    });
   }
 
   handleSearchChange(event, { value }) {
@@ -101,26 +92,25 @@ class SelfServiceStep1 extends Component {
         });
       }
 
-      const re = new RegExp(_.escapeRegExp(value), "i");
-      const isMatch = (result) => re.test(result.title);
-      const TYPEAHEAD_API = "/policies/typeahead?resource=app&search=" + value;
+      const TYPEAHEAD_API = `/api/v2/typeahead/self_service_resources?typeahead=${value}`;
       this.props
         .sendRequestCommon(null, TYPEAHEAD_API, "get")
-        .then((source) => {
-          const filteredResults = _.reduce(
-            source,
-            (memo, data, name) => {
-              const results = _.filter(data.results, isMatch);
-              if (results.length) {
-                memo[name] = { name, results };
-              }
-              return memo;
-            },
-            {}
-          );
+        .then((results) => {
+          // The Semantic UI Search component is quite opinionated
+          // as it expects search results data to be in a specific format
+          // and will throw an error when this is not the case.
+          // A way to get around the error is to add a key to each search result
+          // that is expected - `title` in our use case.
+          const reformattedResults = results.map((res, idx) => {
+            return {
+              id: idx,
+              title: res.display_text,
+              ...res,
+            };
+          });
           this.setState({
             isLoading: false,
-            results: filteredResults,
+            results: reformattedResults,
           });
         });
     }, 300);
@@ -132,13 +122,47 @@ class SelfServiceStep1 extends Component {
       {
         value,
         isRoleLoading: true,
+        principal: result.principal,
       },
       () => {
-        const match = ARN_REGEX.exec(result.title);
-        if (match) {
-          this.fetchRoleDetail(value);
-        }
+        this.fetchRoleDetail(result.details_endpoint);
       }
+    );
+  }
+
+  resultRenderer(result) {
+    return (
+      <Grid>
+        <Grid.Row verticalAlign="middle">
+          <Grid.Column width={10}>
+            <div style={{ display: "flex" }}>
+              <Icon
+                name={result.icon}
+                style={{ flexShrink: 0, width: "30px" }}
+              />
+              <strong
+                style={{
+                  display: "inline-block",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {result.icon === "users" ? (
+                  <span style={{ color: "#286f85" }}>
+                    {result.display_text}
+                  </span>
+                ) : (
+                  <span>{result.display_text}</span>
+                )}
+              </strong>
+            </div>
+          </Grid.Column>
+          <Grid.Column width={6} textAlign="right">
+            {result.account ? result.account : null}
+          </Grid.Column>
+        </Grid.Row>
+      </Grid>
     );
   }
 
@@ -161,48 +185,82 @@ class SelfServiceStep1 extends Component {
     return (
       <Segment>
         {messagesToShow}
-        <Grid columns={2} divided>
+        <Grid columns={2} divided style={{ minHeight: "400px" }}>
           <Grid.Row>
-            <Grid.Column>
-              <Header>
-                Select a Role
-                <Header.Subheader>
-                  Please search for your role where you want to attach new
-                  permissions.
-                </Header.Subheader>
-              </Header>
-              <p>
-                For Help, please visit{" "}
-                <a
-                  href="http://go/selfserviceiamtldr"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  go/selfserviceiamtldr
-                </a>
-              </p>
-              <Form widths="equal">
-                <Form.Field required>
-                  <label>Search Your Application Roles</label>
-                  <Search
-                    category
-                    loading={isLoading}
-                    onResultSelect={this.handleResultSelect.bind(this)}
-                    onSearchChange={_.debounce(
-                      this.handleSearchChange.bind(this),
-                      500,
-                      {
-                        leading: true,
-                      }
-                    )}
-                    results={results}
-                    value={value}
-                  />
-                </Form.Field>
-              </Form>
+            <Grid.Column
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+              }}
+            >
+              <div>
+                <Header as="h1">
+                  Search & Select a Role
+                  <Header.Subheader>
+                    Search for the role or template that you would like to add
+                    permissions to.
+                  </Header.Subheader>
+                </Header>
+                <Form widths="equal">
+                  <Form.Field required>
+                    <Search
+                      fluid
+                      loading={isLoading}
+                      onResultSelect={this.handleResultSelect.bind(this)}
+                      onSearchChange={_.debounce(
+                        this.handleSearchChange.bind(this),
+                        500,
+                        {
+                          leading: true,
+                        }
+                      )}
+                      results={results}
+                      resultRenderer={this.resultRenderer}
+                      value={value}
+                      placeholder="Enter search terms here"
+                    />
+                  </Form.Field>
+                </Form>
+              </div>
+              <Grid stackable columns={2}>
+                <Grid.Row className={"helpContainer"}>
+                  <Grid.Column>
+                    <p className={"help"}>
+                      For Help, please visit{" "}
+                      <a
+                        href="http://go/selfserviceiamtldr"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        go/selfserviceiamtldr
+                      </a>
+                    </p>
+                  </Grid.Column>
+                  <Grid.Column>
+                    <Button
+                      style={{
+                        fontSize: "1.25em",
+                        width: "11em",
+                        height: "3.5em",
+                      }}
+                      floated="right"
+                      positive
+                      onClick={this.props.handleStepClick.bind(this, "next")}
+                    >
+                      Next
+                    </Button>
+                  </Grid.Column>
+                </Grid.Row>
+              </Grid>
             </Grid.Column>
             <Grid.Column>
-              <Header>Selected Role Information</Header>
+              <Header as="h4">Selected Principal</Header>
+              <Header
+                as="h4"
+                style={{ marginTop: 0, color: "#686868", fontWeight: 400 }}
+              ></Header>
+              <Divider />
               {isRoleLoading ? (
                 <Loader active={isRoleLoading} />
               ) : (

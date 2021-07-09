@@ -1,3 +1,5 @@
+import YAML from "yaml";
+
 const ALPHABET =
   "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -225,5 +227,17 @@ export const setRecentRoles = (role) => {
     JSON.stringify(recentRoles)
   );
 };
+
+export function getStringFormat(str) {
+  try {
+    JSON.parse(str);
+    return "json";
+  } catch (e) {}
+  try {
+    YAML.parse(str);
+    return "yaml";
+  } catch (e) {}
+  return "plaintext";
+}
 
 export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

@@ -297,6 +297,8 @@ async def get_policy_request_uri(request):
 
 
 async def get_policy_request_uri_v2(extended_request: ExtendedRequestModel):
+    if extended_request.request_url:
+        return extended_request.request_url
     return f"{config.get('url')}/policies/request/{extended_request.id}"
 
 

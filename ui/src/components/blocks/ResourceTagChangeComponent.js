@@ -194,7 +194,7 @@ const ResourceTagChangeComponent = (props) => {
         </Table.Row>
         <Table.Row>
           <Table.Cell>ARN</Table.Cell>
-          <Table.Cell>{change.principal_arn}</Table.Cell>
+          <Table.Cell>{change.principal.principal_arn}</Table.Cell>
         </Table.Row>
       </Table.Body>
     </Table>

@@ -5,7 +5,7 @@ import boto3
 from asgiref.sync import sync_to_async
 
 from consoleme.config import config
-from consoleme.lib.generic import generate_html
+from consoleme.lib.generic import generate_html, get_principal_friendly_name
 from consoleme.lib.groups import get_group_url
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import ExtendedRequestModel, RequestStatus
@@ -265,34 +265,6 @@ async def send_new_aws_groups_notification(
     await send_email(to_addresses, subject, body, sending_app=sending_app)
 
 
-async def send_policy_request_to_approvers(
-    request, policy_change_uri, pending_requests_url, sending_app="consoleme"
-):
-    app_name = config.get(f"ses.{sending_app}.name", sending_app)
-    subject = f"{app_name}: A Policy change request for {request['arn']} requires your review."
-    to_addresses = config.get("groups.can_admin_policies")
-    if config.get("development"):
-        to_addresses = config.get("groups.developement_notification_emails")
-    message = f"A policy change request for {request['arn']} requires your review."
-    body = f"""<html>
-        <head>
-        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-        <title>Policy Change Request Status</title>
-        </head>
-        <body>
-        {message} <br>
-        <br>
-        See the request here: {policy_change_uri}.<br>
-        <br>
-        You can find all pending requests waiting your approval here: {pending_requests_url}. <br>
-        <br>
-        {config.get('ses.support_reference', '')}
-        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-        </body>
-        </html>"""
-    await send_email(to_addresses, subject, body, sending_app=sending_app)
-
-
 async def send_policy_request_status_update(
     request, policy_change_uri, sending_app="consoleme"
 ):
@@ -334,20 +306,20 @@ async def send_policy_request_status_update_v2(
 ):
     app_name = config.get(f"ses.{sending_app}.name", sending_app)
     to_addresses = [extended_request.requester_email]
+    principal = await get_principal_friendly_name(extended_request.principal)
+
     if extended_request.request_status == RequestStatus.pending:
-        subject = f"{app_name}: Policy change request for {extended_request.arn} has been created"
-        message = (
-            f"A policy change request for {extended_request.arn} has been created."
-        )
+        subject = f"{app_name}: Policy change request for {principal} has been created"
+        message = f"A policy change request for {principal} has been created."
         # This is a new request, also send email to application admins
         to_addresses.append(config.get("application_admin"))
     else:
         subject = (
-            f"{app_name}: Policy change request for {extended_request.arn} has been "
+            f"{app_name}: Policy change request for {principal} has been "
             f"updated to {extended_request.request_status.value}"
         )
         message = (
-            f"A policy change request for {extended_request.arn} "
+            f"A policy change request for {principal} "
             f"has been updated to {extended_request.request_status.value}"
         )
 
@@ -380,8 +352,9 @@ async def send_new_comment_notification(
     sending_app="consoleme",
 ):
     app_name = config.get(f"ses.{sending_app}.name", sending_app)
-    subject = f"{app_name}: A new comment has been added to Policy Change request for {extended_request.arn}"
-    message = f"A new comment has been added to the policy change request for {extended_request.arn} by {user}"
+    principal = await get_principal_friendly_name(extended_request.principal)
+    subject = f"{app_name}: A new comment has been added to Policy Change request for {principal}"
+    message = f"A new comment has been added to the policy change request for {principal} by {user}"
     body = f"""<html>
                 <head>
                 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
