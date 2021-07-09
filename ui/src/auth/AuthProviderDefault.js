@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer } from "react";
 import { getCookie } from "../helpers/utils";
+import ReactGA from "react-ga";
 
 const initialAuthState = {
   user: null, // user profile data
@@ -62,6 +63,18 @@ export const AuthProvider = ({ children }) => {
 
       // User is now authenticated so retrieve user profile.
       const user = await sendRequestCommon(null, "/api/v2/user_profile", "get");
+
+      // If backend Consoleme is configured with google analytics, let's set it up here
+      if (user?.site_config?.google_analytics?.tracking_id) {
+        ReactGA.initialize(
+          user.site_config.google_analytics.tracking_id,
+          user.site_config.google_analytics.options
+        );
+        user.google_analytics_initialized = true;
+      } else {
+        user.google_analytics_initialized = false;
+      }
+
       dispatch({
         type: "LOGIN",
         user,
