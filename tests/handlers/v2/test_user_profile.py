@@ -33,7 +33,7 @@ class TestUserProfile(AsyncHTTPTestCase):
             response_j,
             {
                 "site_config": {
-                    "google_tracking_uri": None,
+                    "google_analytics": {"tracking_id": None, "options": {}},
                     "documentation_url": "https://github.com/Netflix/consoleme/",
                     "support_contact": "consoleme-support@example.com",
                     "support_chat_url": "https://www.example.com/slack/channel",
