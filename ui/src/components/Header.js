@@ -119,13 +119,6 @@ const ConsoleMeHeader = () => {
     return null;
   };
 
-  // const settingsModal = () => {
-  //   if(settingsOpen){
-  //     return <SettingsModal />;
-  //   }
-  //   return null;
-  // }
-
   return (
     <>
       <Menu

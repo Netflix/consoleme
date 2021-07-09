@@ -281,10 +281,10 @@ export const getLocalStorageSettings = (specificSetting = "") => {
   return "";
 };
 
-// export const setLocalStorageSettings = (settings) => {
-//   const localStorageSettingsKey = "consoleMeUserSettings";
-//   window.localStorage.setItem(
-//     localStorageRecentRolesKey,
-//     JSON.stringify(recentRoles)
-//   );
-// }
+export const setLocalStorageSettings = (settings) => {
+  const localStorageSettingsKey = "consoleMeUserSettings";
+  window.localStorage.setItem(
+    localStorageSettingsKey,
+    JSON.stringify(settings)
+  );
+};
