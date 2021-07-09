@@ -27,11 +27,19 @@ class MonacoDiffComponent extends React.Component {
       debounceWait: 300,
       modifiedEditor: null,
       triggerCharacters: getMonacoTriggerCharacters(),
+      language: "json",
     };
   }
 
   onChange(newValue, e) {
     this.onValueChange(newValue);
+  }
+
+  componentDidMount() {
+    const { newValue } = this.props;
+    this.setState({
+      language: getStringFormat(newValue),
+    });
   }
 
   editorDidMount(editor) {
@@ -71,10 +79,9 @@ class MonacoDiffComponent extends React.Component {
       automaticLayout: true,
       readOnly,
     };
-    const language = getStringFormat(newValue);
     return (
       <MonacoDiffEditor
-        language={language}
+        language={this.state.language}
         width="100%"
         height="500"
         original={oldValue}
