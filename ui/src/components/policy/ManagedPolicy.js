@@ -14,6 +14,7 @@ import useManagedPolicy from "./hooks/useManagedPolicy";
 import { JustificationModal } from "./PolicyModals";
 import { useAuth } from "../../auth/AuthProviderDefault";
 import MonacoEditor from "react-monaco-editor";
+import { getLocalStorageSettings } from "../../helpers/utils";
 
 const ManagedPolicy = () => {
   const { user, sendRequestCommon } = useAuth();
@@ -34,6 +35,7 @@ const ManagedPolicy = () => {
     setAttachedManagedPolicyDetails,
   ] = useState(null);
   const editorRef = useRef();
+  const editorTheme = getLocalStorageSettings("editorTheme");
   // available managed policies are only used for rendering. so let's retrieve from here.
   useEffect(() => {
     (async () => {
@@ -190,7 +192,7 @@ const ManagedPolicy = () => {
                         ref={editorRef}
                         height="540px"
                         language="json"
-                        theme="vs-light"
+                        theme={editorTheme}
                         value={JSON.stringify(
                           attachedManagedPolicyDetails[policy?.PolicyName],
                           null,
