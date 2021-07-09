@@ -1,0 +1,12 @@
+[[source]]
+url = 'https://pypi.python.org/simple'
+verify_ssl = true
+
+[dev-packages]
+consoleme_ecs_service = {editable = true,path = "cdk"}
+
+[packages]
+boto3 = "*"
+
+[requires]
+python_version = "3"

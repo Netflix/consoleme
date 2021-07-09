@@ -1,2 +1,5 @@
 # Ignore all HTML files:
 *.html
+
+# Ignore config lambda yaml file:
+cdk/resources/create_config_lambda/config.yaml
