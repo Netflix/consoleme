@@ -16,6 +16,7 @@ const IAMRolePolicy = () => {
     cloudtrail_details = {},
     inline_policies = [],
     s3_details = {},
+    assume_role_policy_document = null,
   } = resource;
 
   const tabs = [
@@ -37,7 +38,9 @@ const IAMRolePolicy = () => {
         );
       },
     },
-    {
+  ];
+  if (assume_role_policy_document) {
+    tabs.push({
       menuItem: {
         key: "assume_role_policy",
         content: "Assume Role Policy",
@@ -49,7 +52,9 @@ const IAMRolePolicy = () => {
           </Tab.Pane>
         );
       },
-    },
+    });
+  }
+  tabs.push.apply(tabs, [
     {
       menuItem: {
         key: "managed_policy",
@@ -154,7 +159,7 @@ const IAMRolePolicy = () => {
         );
       },
     },
-  ];
+  ]);
 
   return (
     <Tab
