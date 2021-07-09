@@ -26,7 +26,10 @@ class UserProfileHandler(BaseAPIV1Handler):
         is_contractor = config.config_plugin().is_contractor(self.user)
         site_config = {
             "consoleme_logo": await get_random_security_logo(),
-            "google_tracking_uri": config.get("google_analytics.tracking_url"),
+            "google_analytics": {
+                "tracking_id": config.get("google_analytics.tracking_id"),
+                "options": config.get("google_analytics.options", {}),
+            },
             "documentation_url": config.get(
                 "documentation_page", "https://hawkins.gitbook.io/consoleme/"
             ),
