@@ -77,12 +77,7 @@ const SettingsModal = (props) => {
           onClick={saveSettings}
           positive
         />
-        <Button
-          content="Cancel"
-          onClick={closeSettings}
-          icon="cancel"
-          negative
-        />
+        <Button content="Close" onClick={closeSettings} icon="cancel" />
       </Modal.Actions>
     </Modal>
   );
