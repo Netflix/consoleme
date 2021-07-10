@@ -1,12 +1,14 @@
 import React, { useEffect } from "react";
 import { useAuth } from "./AuthProviderDefault";
-import { Route, useRouteMatch } from "react-router-dom";
+import { Route, useLocation, useRouteMatch } from "react-router-dom";
 import { Segment } from "semantic-ui-react";
 import ConsoleMeHeader from "../components/Header";
 import ConsoleMeSidebar from "../components/Sidebar";
+import ReactGA from "react-ga";
 
 const ProtectedRoute = (props) => {
   const auth = useAuth();
+  const location = useLocation();
   const { login, user, isSessionExpired } = auth;
   const match = useRouteMatch(props);
   const { component: Component, ...rest } = props;
@@ -52,6 +54,11 @@ const ProtectedRoute = (props) => {
     }
   }
 
+  if (user?.google_analytics_initialized) {
+    const currentPath = location.pathname + location.search;
+    ReactGA.set({ page: currentPath });
+    ReactGA.pageview(currentPath);
+  }
   return (
     <>
       <ConsoleMeHeader />

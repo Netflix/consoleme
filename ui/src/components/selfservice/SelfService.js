@@ -58,7 +58,6 @@ class SelfService extends Component {
     if (arnRegex.test(paramSearch.arn)) {
       const match = arnRegex.exec(paramSearch.arn);
       const { accountId, roleName } = match.groups;
-
       this.setState({
         admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
         export_to_terraform_enabled: config.export_to_terraform_enabled,
@@ -72,6 +71,10 @@ class SelfService extends Component {
             app_details: [],
           },
           arn: `arn:aws:iam::${accountId}:role/${roleName}`,
+          principal: {
+            principal_type: "AwsResource",
+            principal_arn: `arn:aws:iam::${accountId}:role/${roleName}`,
+          },
           name: roleName,
           owner: "",
           tags: [],

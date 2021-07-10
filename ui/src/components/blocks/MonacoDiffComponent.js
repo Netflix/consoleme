@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import {
   getMonacoTriggerCharacters,
   getStringFormat,
+  getLocalStorageSettings,
 } from "../../helpers/utils";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 // This is a global setting, no need to do this multiple times - right now PolicyMonacoEditor.js already sets it
@@ -27,11 +28,20 @@ class MonacoDiffComponent extends React.Component {
       debounceWait: 300,
       modifiedEditor: null,
       triggerCharacters: getMonacoTriggerCharacters(),
+      language: "json",
+      theme: getLocalStorageSettings("editorTheme"),
     };
   }
 
   onChange(newValue, e) {
     this.onValueChange(newValue);
+  }
+
+  componentDidMount() {
+    const { newValue } = this.props;
+    this.setState({
+      language: getStringFormat(newValue),
+    });
   }
 
   editorDidMount(editor) {
@@ -71,10 +81,9 @@ class MonacoDiffComponent extends React.Component {
       automaticLayout: true,
       readOnly,
     };
-    const language = getStringFormat(newValue);
     return (
       <MonacoDiffEditor
-        language={language}
+        language={this.state.language}
         width="100%"
         height="500"
         original={oldValue}
@@ -83,7 +92,7 @@ class MonacoDiffComponent extends React.Component {
         editorDidMount={this.editorDidMount}
         options={options}
         onChange={this.onChange}
-        theme="vs-light"
+        theme={this.state.theme}
         alwaysConsumeMouseWheel={false}
       />
     );

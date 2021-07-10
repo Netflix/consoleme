@@ -198,10 +198,10 @@ export const getResourceEndpoint = (
   return endpoint;
 };
 
-export const parseLocalStorageCache = (key) => {
+export const parseLocalStorageCache = (key, default_return = []) => {
   const value = window.localStorage.getItem(key);
   if (value == null) {
-    return [];
+    return default_return;
   }
   try {
     return JSON.parse(value);
@@ -241,3 +241,50 @@ export function getStringFormat(str) {
 }
 
 export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Editor theme support
+
+export const editor_themes = [
+  {
+    key: "vs-light",
+    text: "vs-light",
+    value: "vs-light",
+  },
+  {
+    key: "vs-dark",
+    text: "vs-dark",
+    value: "vs-dark",
+  },
+  {
+    key: "hc-black",
+    text: "hc-black",
+    value: "hc-black",
+  },
+];
+
+const default_user_settings = {
+  editorTheme: "vs-light",
+};
+
+export const getLocalStorageSettings = (specificSetting = "") => {
+  const localStorageSettingsKey = "consoleMeUserSettings";
+  let localSettings = parseLocalStorageCache(
+    localStorageSettingsKey,
+    default_user_settings
+  );
+  if (specificSetting === "") {
+    return localSettings;
+  }
+  if (localSettings.hasOwnProperty(specificSetting)) {
+    return localSettings[specificSetting];
+  }
+  return "";
+};
+
+export const setLocalStorageSettings = (settings) => {
+  const localStorageSettingsKey = "consoleMeUserSettings";
+  window.localStorage.setItem(
+    localStorageSettingsKey,
+    JSON.stringify(settings)
+  );
+};
