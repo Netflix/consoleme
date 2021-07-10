@@ -6,6 +6,7 @@ import MonacoEditor from "react-monaco-editor";
 import yaml from "js-yaml";
 import { Header, Icon, Message, Popup, Segment } from "semantic-ui-react";
 import "./GenerateConfig.css";
+import { getLocalStorageSettings } from "../../helpers/utils";
 
 const generated_config_editor_options = {
   selectOnLineNumbers: true,
@@ -21,6 +22,7 @@ function GenerateConfig() {
   const [complete, setComplete] = useState(false);
   const [results, setResults] = useState({});
   const [messages, setMessages] = useState([]);
+  const editorTheme = getLocalStorageSettings("editorTheme");
   const getSpecialTypes = (questions) => {
     const specialTypes = {};
     const formatTypes = {};
@@ -192,7 +194,7 @@ function GenerateConfig() {
           height="700px"
           language="yaml"
           width="100%"
-          theme="vs-light"
+          theme={editorTheme}
           value={yaml.dump(results, 4)}
           options={generated_config_editor_options}
           textAlign="center"

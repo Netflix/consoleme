@@ -10,12 +10,14 @@ import {
   Divider,
 } from "semantic-ui-react";
 import { useAuth } from "../auth/AuthProviderDefault";
+import { getLocalStorageSettings } from "../helpers/utils";
 
 function ConsoleMeDynamicConfig() {
   const [config, setConfig] = useState("");
   const [configSha256, setConfigSha256] = useState("");
   const [statusMessage, setStatusMessage] = useState(null);
   const { sendRequestCommon } = useAuth();
+  const editorTheme = getLocalStorageSettings("editorTheme");
 
   useEffect(() => {
     async function fetchDynamicConfig() {
@@ -93,7 +95,7 @@ function ConsoleMeDynamicConfig() {
           <MonacoEditor
             height="1000"
             language="yaml"
-            theme="vs-light"
+            theme={editorTheme}
             value={config}
             onChange={onChange}
             options={options}
