@@ -60,6 +60,7 @@ from consoleme.lib.aws import (
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
+    retrieve_json_data_from_s3_bulk,
     store_json_results_in_redis_and_s3,
 )
 from consoleme.lib.cloud_credential_authorization_mapping import (
@@ -499,7 +500,7 @@ def _add_role_to_redis(redis_key: str, role_entry: Dict) -> None:
         red.hset(redis_key, str(role_entry["arn"]), str(json.dumps(role_entry)))
     except Exception as e:  # noqa
         stats.count(
-            "cache_roles_for_account.error",
+            "_add_role_to_redis.error",
             tags={"redis_key": redis_key, "error": str(e), "role_entry": role_entry},
         )
         log_data = {
@@ -539,8 +540,17 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
 
 @app.task(soft_time_limit=1800)
 def cache_policies_table_details() -> bool:
-    iam_role_redis_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
-    all_iam_roles = red.hgetall(iam_role_redis_key)
+    all_iam_roles = async_to_sync(retrieve_json_data_from_redis_or_s3)(
+        redis_key=config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"),
+        redis_data_type="hash",
+        s3_bucket=config.get(
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
+        ),
+        s3_key=config.get(
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
+            "account_resource_cache/cache_all_roles_v1.json.gz",
+        ),
+    )
     items = []
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()
 
@@ -705,7 +715,7 @@ def cache_policies_table_details() -> bool:
 
 
 @app.task(soft_time_limit=2700, **default_retry_kwargs)
-def cache_roles_for_account(account_id: str) -> bool:
+def cache_iam_resources_for_account(account_id: str) -> bool:
     # Get the DynamoDB handler:
     dynamo = IAMRoleDynamoHandler()
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
@@ -758,14 +768,36 @@ def cache_roles_for_account(account_id: str) -> bool:
         )
 
         iam_roles = all_iam_resources["RoleDetailList"]
+        iam_users = all_iam_resources["UserDetailList"]
+        iam_groups = all_iam_resources["GroupDetailList"]
 
         async_to_sync(store_json_results_in_redis_and_s3)(
             iam_roles,
-            s3_bucket=config.get("cache_roles_for_account.s3.bucket"),
+            s3_bucket=config.get("cache_iam_resources_for_account.iam_roles.s3.bucket"),
             s3_key=config.get(
-                "cache_roles_for_account.s3.file",
+                "cache_iam_resources_for_account.iam_roles.s3.file",
                 "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
             ).format(resource_type="iam_roles", account_id=account_id),
+        )
+
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            iam_users,
+            s3_bucket=config.get("cache_iam_resources_for_account.iam_users.s3.bucket"),
+            s3_key=config.get(
+                "cache_iam_resources_for_account.iam_users.s3.file",
+                "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+            ).format(resource_type="iam_users", account_id=account_id),
+        )
+
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            iam_groups,
+            s3_bucket=config.get(
+                "cache_iam_resources_for_account.iam_groups.s3.bucket"
+            ),
+            s3_key=config.get(
+                "cache_iam_resources_for_account.iam_groups.s3.file",
+                "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+            ).format(resource_type="iam_groups", account_id=account_id),
         )
 
         ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
@@ -797,19 +829,21 @@ def cache_roles_for_account(account_id: str) -> bool:
         if config.get("cache_iam_resources_for_account.store_in_git.enabled"):
             store_iam_resources_in_git(all_iam_resources, account_id)
 
-    stats.count("cache_roles_for_account.success", tags={"account_id": account_id})
+    stats.count(
+        "cache_iam_resources_for_account.success", tags={"account_id": account_id}
+    )
     return True
 
 
 @app.task(soft_time_limit=3600)
-def cache_roles_across_accounts(
+def cache_iam_resources_across_accounts(
     run_subtasks: bool = True, wait_for_subtask_completion: bool = True
 ) -> Dict:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
-    cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
+    iam_role_cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
 
-    log_data = {"function": function, "cache_key": cache_key}
+    log_data = {"function": function, "iam_role_cache_key": iam_role_cache_key}
     accounts_d: Dict[str, str] = async_to_sync(get_account_id_to_name_mapping)()
     tasks = []
     if config.region == config.get("celery.active_region", config.region) or config.get(
@@ -819,10 +853,10 @@ def cache_roles_across_accounts(
         # Second, call tasks to enumerate all the roles across all accounts
         for account_id in accounts_d.keys():
             if config.get("environment") in ["prod", "dev"]:
-                tasks.append(cache_roles_for_account.s(account_id))
+                tasks.append(cache_iam_resources_for_account.s(account_id))
             else:
                 if account_id in config.get("celery.test_account_ids", []):
-                    tasks.append(cache_roles_for_account.s(account_id))
+                    tasks.append(cache_iam_resources_for_account.s(account_id))
         if run_subtasks:
             results = group(*tasks).apply_async()
             if wait_for_subtask_completion:
@@ -833,33 +867,54 @@ def cache_roles_across_accounts(
         # In non-active regions, we just want to sync DDB data to Redis
         roles = dynamo.fetch_all_roles()
         for role_entry in roles:
-            _add_role_to_redis(cache_key, role_entry)
+            _add_role_to_redis(iam_role_cache_key, role_entry)
 
     # Delete roles in Redis cache with expired TTL
-    all_roles = red.hgetall(cache_key)
+    all_roles = red.hgetall(iam_role_cache_key)
     roles_to_delete_from_cache = []
     for arn, role_entry_j in all_roles.items():
         role_entry = json.loads(role_entry_j)
         if datetime.fromtimestamp(role_entry["ttl"]) < datetime.utcnow():
             roles_to_delete_from_cache.append(arn)
     if roles_to_delete_from_cache:
-        red.hdel(cache_key, *roles_to_delete_from_cache)
+        red.hdel(iam_role_cache_key, *roles_to_delete_from_cache)
         for arn in roles_to_delete_from_cache:
             all_roles.pop(arn, None)
     log_data["num_roles"] = len(all_roles)
     # Store full list of roles in a single place. This list will be ~30 minutes out of date.
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_roles,
-        redis_key=cache_key,
+        redis_key=iam_role_cache_key,
         redis_data_type="hash",
         s3_bucket=config.get(
-            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
         ),
         s3_key=config.get(
-            "cache_roles_across_accounts.all_roles_combined.s3.file",
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
             "account_resource_cache/cache_all_roles_v1.json.gz",
         ),
     )
+
+    # IAM Users
+    resource_type = "iam_users"
+    iam_user_s3_keys = []
+
+    for account_id in accounts_d.keys():
+        iam_user_s3_keys.append(
+            f"account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz"
+        )
+    all_iam_users = async_to_sync(retrieve_json_data_from_s3_bulk)(
+        s3_keys=iam_user_s3_keys, max_age=86400
+    )
+    print(all_iam_users)
+    # IAM Groups
+    resource_type = "iam_groups"
+    iam_groups_s3_keys = []
+
+    for account_id in accounts_d.keys():
+        iam_groups_s3_keys.append(
+            f"account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz"
+        )
 
     stats.count(f"{function}.success")
     log_data["num_accounts"] = len(accounts_d)
@@ -1839,3 +1894,5 @@ if config.get("celery.clear_tasks_for_development", False):
 
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"
+
+cache_iam_resources_across_accounts.delay()

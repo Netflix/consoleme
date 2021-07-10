@@ -44,7 +44,7 @@ if args.use_celery:
     # run this locally with the following command:
     # `celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=8`
 
-    celery.cache_roles_across_accounts()
+    celery.cache_iam_resources_across_accounts()
     celery.cache_s3_buckets_across_accounts()
     celery.cache_sns_topics_across_accounts()
     celery.cache_sqs_queues_across_accounts()
@@ -64,7 +64,7 @@ else:
     for account_id in accounts_d.keys():
         futures.extend(
             [
-                executor.submit(celery.cache_roles_for_account, account_id),
+                executor.submit(celery.cache_iam_resources_for_account, account_id),
                 executor.submit(celery.cache_s3_buckets_for_account, account_id),
                 executor.submit(celery.cache_sns_topics_for_account, account_id),
                 executor.submit(celery.cache_sqs_queues_for_account, account_id),
@@ -84,7 +84,7 @@ else:
     celery.cache_policy_requests()
     celery.cache_credential_authorization_mapping()
     # Forces writing config to S3
-    celery.cache_roles_across_accounts(
+    celery.cache_iam_resources_across_accounts(
         wait_for_subtask_completion=False, run_subtasks=False
     )
     celery.cache_s3_buckets_across_accounts(

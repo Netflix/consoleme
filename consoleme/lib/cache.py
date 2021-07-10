@@ -12,6 +12,7 @@ from consoleme.exceptions.exceptions import (
     ExpiredData,
     UnsupportedRedisDataType,
 )
+from consoleme.lib.asyncio import run_in_parallel
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -179,3 +180,44 @@ async def retrieve_json_data_from_redis_or_s3(
     if default is not None:
         return default
     raise DataNotRetrievable("Unable to retrieve expected data.")
+
+
+async def retrieve_json_data_from_s3_bulk(
+    s3_bucket: str = None,
+    s3_keys: Optional[List[str]] = None,
+    max_age: Optional[int] = None,
+    json_object_hook: Optional = None,
+    json_encoder: Optional = None):
+    """
+   Retrieve data from multiple S3 keys in the same bucket, and combine the data. Useful for combining output of
+   disparate resource caching functions (ex: combining the output of functions that determine IAM users on each of your
+   accounts)
+
+   :param s3_bucket: S3 bucket to retrieve data from
+   :param s3_keys: S3 keys to retrieve data from
+   :return:
+   """
+    tasks = []
+    for s3_key in s3_keys:
+        tasks.append(
+            {
+                "fn": retrieve_json_data_from_redis_or_s3,
+                "kwargs": {
+                    "s3_bucket": s3_bucket,
+                    "s3_key": s3_key,
+                    "max_age": max_age,
+                    "json_object_hook": json_object_hook,
+                    "json_encoder": json_encoder
+                }
+            }
+        )
+    parallelized_task_results = await run_in_parallel(tasks, sync=False)
+
+    all_function_results = []
+    for parallelized_task_result in parallelized_task_results:
+        all_function_results.append(parallelized_task_result["result"])
+
+    for result in all_function_results:
+
+
+    print(results)

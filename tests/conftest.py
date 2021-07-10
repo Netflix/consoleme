@@ -286,7 +286,7 @@ def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
             s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
         )
         return
-    from consoleme.celery_tasks.celery_tasks import cache_roles_for_account
+    from consoleme.celery_tasks.celery_tasks import cache_iam_resources_for_account
     from consoleme.lib.account_indexers import get_account_id_to_name_mapping
     from consoleme.lib.redis import RedisHandler
 
@@ -294,7 +294,7 @@ def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
 
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()
     for account_id in accounts_d.keys():
-        cache_roles_for_account(account_id)
+        cache_iam_resources_for_account(account_id)
 
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
     all_roles = red.hgetall(cache_key)
@@ -948,7 +948,7 @@ def populate_caches(
     default_celery_tasks.cache_application_information()
 
     for account_id in accounts_d.keys():
-        celery.cache_roles_for_account(account_id)
+        celery.cache_iam_resources_for_account(account_id)
         celery.cache_s3_buckets_for_account(account_id)
         celery.cache_sns_topics_for_account(account_id)
         celery.cache_sqs_queues_for_account(account_id)
@@ -956,7 +956,7 @@ def populate_caches(
         # celery.cache_resources_from_aws_config_for_account(account_id) # No select_resource_config in moto yet
     # Running cache_roles_across_accounts ensures that all of the pre-existing roles in our role cache are stored in
     # (mock) S3
-    celery.cache_roles_across_accounts()
+    celery.cache_iam_resources_across_accounts()
     celery.cache_policies_table_details()
     celery.cache_policy_requests()
     celery.cache_credential_authorization_mapping()

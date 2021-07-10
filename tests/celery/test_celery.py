@@ -43,7 +43,7 @@ class TestCelerySync(TestCase):
         # Clear out the existing cache from Redis:
         red.delete("test_cache_roles_for_account")
         # Run it:
-        self.celery.cache_roles_for_account("123456789012")
+        self.celery.cache_iam_resources_for_account("123456789012")
 
         # Verify that everything is there:
         dynamo = IAMRoleDynamoHandler()
@@ -84,7 +84,7 @@ class TestCelerySync(TestCase):
         red.delete("test_cache_roles_for_account")
 
         # This should spin off extra fake celery tasks
-        res = self.celery.cache_roles_across_accounts()
+        res = self.celery.cache_iam_resources_across_accounts()
         self.assertEqual(
             res,
             {
@@ -94,7 +94,7 @@ class TestCelerySync(TestCase):
                 "num_accounts": 1,
             },
         )  # This should spin off extra fake celery tasks
-        res = self.celery.cache_roles_across_accounts()
+        res = self.celery.cache_iam_resources_across_accounts()
         self.assertEqual(
             res,
             {
