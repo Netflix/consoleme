@@ -187,16 +187,17 @@ async def retrieve_json_data_from_s3_bulk(
     s3_keys: Optional[List[str]] = None,
     max_age: Optional[int] = None,
     json_object_hook: Optional = None,
-    json_encoder: Optional = None):
+    json_encoder: Optional = None,
+):
     """
-   Retrieve data from multiple S3 keys in the same bucket, and combine the data. Useful for combining output of
-   disparate resource caching functions (ex: combining the output of functions that determine IAM users on each of your
-   accounts)
+    Retrieve data from multiple S3 keys in the same bucket, and combine the data. Useful for combining output of
+    disparate resource caching functions (ex: combining the output of functions that determine IAM users on each of your
+    accounts)
 
-   :param s3_bucket: S3 bucket to retrieve data from
-   :param s3_keys: S3 keys to retrieve data from
-   :return:
-   """
+    :param s3_bucket: S3 bucket to retrieve data from
+    :param s3_keys: S3 keys to retrieve data from
+    :return:
+    """
     tasks = []
     for s3_key in s3_keys:
         tasks.append(
@@ -207,8 +208,8 @@ async def retrieve_json_data_from_s3_bulk(
                     "s3_key": s3_key,
                     "max_age": max_age,
                     "json_object_hook": json_object_hook,
-                    "json_encoder": json_encoder
-                }
+                    "json_encoder": json_encoder,
+                },
             }
         )
     parallelized_task_results = await run_in_parallel(tasks, sync=False)
@@ -216,8 +217,7 @@ async def retrieve_json_data_from_s3_bulk(
     all_function_results = []
     for parallelized_task_result in parallelized_task_results:
         all_function_results.append(parallelized_task_result["result"])
-
+    results = []
     for result in all_function_results:
-
-
-    print(results)
+        results.extend(result)
+    return results

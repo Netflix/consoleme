@@ -716,6 +716,15 @@ def cache_policies_table_details() -> bool:
 
 @app.task(soft_time_limit=2700, **default_retry_kwargs)
 def cache_iam_resources_for_account(account_id: str) -> bool:
+    iam_role_cache_key_temp = config.get(
+        "aws.iamroles_redis_key_temp", "IAM_ROLE_CACHE_TEMP"
+    )
+    iam_user_cache_key_temp = config.get(
+        "aws.iamusers_redis_key_temp", "IAM_USER_CACHE_TEMP"
+    )
+    iam_group_cache_key_temp = config.get(
+        "aws.iamgroups_redis_key_temp", "IAM_GROUP_CACHE_TEMP"
+    )
     # Get the DynamoDB handler:
     dynamo = IAMRoleDynamoHandler()
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
@@ -771,6 +780,10 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
         iam_users = all_iam_resources["UserDetailList"]
         iam_groups = all_iam_resources["GroupDetailList"]
 
+        # TODO: STORE RESULTS IN A TEMPORARY KEY NAME CREATED BY ACROSS_ACCOUNTS TASK
+        # THEN `RENAME` KEY TO NEW KEY WHEN IT IS COMPLETE
+        # CT EVENT BRIDGE SHOULD ALSO MODIFY TEMPORARY KEY
+
         async_to_sync(store_json_results_in_redis_and_s3)(
             iam_roles,
             s3_bucket=config.get("cache_iam_resources_for_account.iam_roles.s3.bucket"),
@@ -825,6 +838,38 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
             # Run internal function on role. This can be used to inspect roles, add managed policies, or other actions
             aws().handle_detected_role(role)
 
+        for user in iam_users:
+            user_entry = {
+                "arn": user.get("Arn"),
+                "name": user.get("UserName"),
+                "resourceId": user.get("UserId"),
+                "accountId": account_id,
+                "ttl": ttl,
+                "policy": dynamo.convert_role_to_json(user),
+                "templated": False,  # Templates not supported for IAM users at this time
+            }
+            red.hset(
+                iam_user_cache_key_temp,
+                str(user_entry["arn"]),
+                str(json.dumps(user_entry)),
+            )
+
+        for g in iam_groups:
+            group_entry = {
+                "arn": g.get("Arn"),
+                "name": g.get("GroupName"),
+                "resourceId": g.get("GroupId"),
+                "accountId": account_id,
+                "ttl": ttl,
+                "policy": dynamo.convert_role_to_json(g),
+                "templated": False,  # Templates not supported for IAM groups at this time
+            }
+            red.hset(
+                iam_group_cache_key_temp,
+                str(group_entry["arn"]),
+                str(json.dumps(group_entry)),
+            )
+
         # Maybe store all resources in git
         if config.get("cache_iam_resources_for_account.store_in_git.enabled"):
             store_iam_resources_in_git(all_iam_resources, account_id)
@@ -842,6 +887,22 @@ def cache_iam_resources_across_accounts(
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
     iam_role_cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
+    iam_user_cache_key = config.get("aws.iamusers_redis_key", "IAM_USER_CACHE")
+    iam_group_cache_key = config.get("aws.iamgroups_redis_key", "IAM_GROUP_CACHE")
+
+    iam_role_cache_key_temp = config.get(
+        "aws.iamroles_redis_key_temp", "IAM_ROLE_CACHE_TEMP"
+    )
+    iam_user_cache_key_temp = config.get(
+        "aws.iamusers_redis_key_temp", "IAM_USER_CACHE_TEMP"
+    )
+    iam_group_cache_key_temp = config.get(
+        "aws.iamgroups_redis_key_temp", "IAM_GROUP_CACHE_TEMP"
+    )
+
+    red.delete(
+        [iam_role_cache_key_temp, iam_user_cache_key_temp, iam_group_cache_key_temp]
+    )
 
     log_data = {"function": function, "iam_role_cache_key": iam_role_cache_key}
     accounts_d: Dict[str, str] = async_to_sync(get_account_id_to_name_mapping)()
@@ -863,6 +924,7 @@ def cache_iam_resources_across_accounts(
                 # results.join() forces function to wait until all tasks are complete
                 results.join(disable_sync_subtasks=False)
     else:
+        # TODO: Fetch other IAM resources from S3
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
         roles = dynamo.fetch_all_roles()
@@ -906,7 +968,20 @@ def cache_iam_resources_across_accounts(
     all_iam_users = async_to_sync(retrieve_json_data_from_s3_bulk)(
         s3_keys=iam_user_s3_keys, max_age=86400
     )
-    print(all_iam_users)
+
+    async_to_sync(store_json_results_in_redis_and_s3)(
+        all_iam_users,
+        redis_key=iam_user_cache_key,
+        redis_data_type="hash",
+        s3_bucket=config.get(
+            "cache_iam_resources_across_accounts.all_users_combined.s3.bucket"
+        ),
+        s3_key=config.get(
+            "cache_iam_resources_across_accounts.all_users_combined.s3.file",
+            "account_resource_cache/cache_all_users_v1.json.gz",
+        ),
+    )
+
     # IAM Groups
     resource_type = "iam_groups"
     iam_groups_s3_keys = []
@@ -915,6 +990,23 @@ def cache_iam_resources_across_accounts(
         iam_groups_s3_keys.append(
             f"account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz"
         )
+
+    all_iam_groups = async_to_sync(retrieve_json_data_from_s3_bulk)(
+        s3_keys=iam_groups_s3_keys, max_age=86400
+    )
+
+    async_to_sync(store_json_results_in_redis_and_s3)(
+        all_iam_groups,
+        redis_key=iam_group_cache_key,
+        redis_data_type="hash",
+        s3_bucket=config.get(
+            "cache_iam_resources_across_accounts.all_groups_combined.s3.bucket"
+        ),
+        s3_key=config.get(
+            "cache_iam_resources_across_accounts.all_groups_combined.s3.file",
+            "account_resource_cache/cache_all_groups_v1.json.gz",
+        ),
+    )
 
     stats.count(f"{function}.success")
     log_data["num_accounts"] = len(accounts_d)
