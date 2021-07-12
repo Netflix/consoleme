@@ -23,6 +23,7 @@ Redis Helm Chart when the option redis.deployLocal = true
 
 ## Prerequisites
 
+- Helm 3+
 - Kubernetes 1.16+
 
 ## Required Configuration
@@ -79,7 +80,7 @@ The following table lists the main configurable parameters of the ConsoleMe char
 
 ## Deploying
 
-To perform a dry-run execution of the deployment:
+To perform a dry-run execution of the deployment (helm version 3+):
 
 ```bash
 helm install -f values.yaml --name my-consoleme . --dry-run --debug
