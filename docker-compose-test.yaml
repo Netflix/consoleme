@@ -3,7 +3,9 @@ version: "3"
 # Run with docker-compose -f docker-compose-test.yaml up
 services:
   python-tests:
-    build: .
+    build:
+      context: .
+      target: development
     environment:
       - CONFIG_LOCATION=/apps/consoleme/example_config/example_config_test.yaml
       - SETUPTOOLS_USE_DISTUTILS=stdlib

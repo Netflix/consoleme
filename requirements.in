@@ -6,6 +6,7 @@ bleach
 boto3
 cchardet
 celery[redis]
+cryptography
 cloudaux
 datamodel-code-generator
 decorator<5 # Internal requirement has decorator pinned to <5.

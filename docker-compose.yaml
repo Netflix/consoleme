@@ -2,7 +2,9 @@ version: "3"
 # Never use this in a production environment.
 services:
   consoleme:
-    build: .
+    build:
+      context: .
+      target: development
     ports:
       - "3000:3000"
     tty: true
@@ -38,7 +40,9 @@ services:
       - consoleme-redis
       - consoleme-dynamodb
   consoleme-celery:
-    build: .
+    build:
+      context: .
+      target: development
     tty: true
     stdin_open: true
     volumes:
