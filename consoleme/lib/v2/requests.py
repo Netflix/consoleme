@@ -2086,6 +2086,7 @@ async def parse_and_apply_policy_request_modification(
         )
         # We only support updating inline policies, assume role policy documents and resource policies that haven't
         # applied already
+        # TODO: add support for managed policy
         if (
             specific_change
             and specific_change.change_type
@@ -2127,6 +2128,7 @@ async def parse_and_apply_policy_request_modification(
         specific_change = await _get_specific_change(
             extended_request.changes, apply_change_model.change_id
         )
+        # TODO: add support for managed policy
         if specific_change and specific_change.status == Status.not_applied:
             # Update the policy doc locally for supported changes, if it needs to be updated
             if apply_change_model.policy_document and specific_change.change_type in [
