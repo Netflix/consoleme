@@ -636,6 +636,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
         concurrent_results = await asyncio.gather(
             populate_old_policies(extended_request, self.user),
             populate_cross_account_resource_policies(extended_request, self.user),
+            # TODO: populate_old_managed_policies(extended_request, self.user)
         )
         extended_request = concurrent_results[0]
 

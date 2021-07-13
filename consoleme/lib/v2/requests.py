@@ -354,6 +354,8 @@ async def generate_request_from_change_model_array(
         )
         extended_request = await populate_old_policies(extended_request, user, role)
         extended_request = await generate_resource_policies(extended_request, user)
+        if len(managed_policy_resource_changes) > 0:
+            await populate_old_managed_policies(extended_request, user)
 
     elif primary_principal.principal_type == "HoneybeeAwsResourceTemplate":
         # TODO: Generate extended request from HB template
@@ -1225,6 +1227,88 @@ async def populate_old_policies(
     log_data["request"] = extended_request.dict()
     log.debug(log_data)
     return extended_request
+
+
+async def populate_old_managed_policies(
+    extended_request: ExtendedRequestModel,
+    user: str,
+) -> bool:
+    """
+    Populates the old policies for a managed policy resource change.
+
+    :param extended_request: ExtendedRequestModel
+    :param user: username
+    :return ExtendedRequestModel
+    """
+
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "principal": extended_request.principal,
+        "request": extended_request.dict(),
+        "message": "Populating old managed policies",
+    }
+    log.debug(log_data)
+    managed_policy_resource = None
+    extended_request_changed = False
+
+    if extended_request.principal.principal_type == "AwsResource":
+        principal_arn = extended_request.principal.principal_arn
+        arn_parsed = parse_arn(principal_arn)
+
+        if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "policy":
+            log_data[
+                "message"
+            ] = "ARN type not supported for populating old policy changes."
+            log.debug(log_data)
+            return extended_request_changed
+
+        try:
+            managed_policy_resource = await sync_to_async(get_managed_policy_document)(
+                policy_arn=principal_arn,
+                account_number=arn_parsed["account"],
+                assume_role=config.get("policies.role_name"),
+                region=config.region,
+                retry_max_attempts=2,
+            )
+        except ClientError as e:
+            if e.response["Error"]["Code"] == "NoSuchEntity":
+                # Could be a new managed policy, hence not found, in this case there are no old policies
+                return extended_request_changed
+    else:
+        return extended_request_changed
+    for change in extended_request.changes.changes:
+        if change.status == Status.applied:
+            # Skip changing any old policies that are saved for historical record (already applied)
+            continue
+        if managed_policy_resource:
+            old_policy_sha256 = sha256(
+                json.dumps(
+                    managed_policy_resource, escape_forward_slashes=False
+                ).encode()
+            ).hexdigest()
+            if (
+                change.old_policy
+                and old_policy_sha256 == change.old_policy.policy_sha256
+            ):
+                # Old policy hasn't changed since last refresh of page, no need to generate resource policy again
+                continue
+
+            extended_request_changed = True
+            change.old_policy = PolicyModel(
+                policy_sha256=sha256(
+                    json.dumps(
+                        managed_policy_resource,
+                        escape_forward_slashes=False,
+                    ).encode()
+                ).hexdigest(),
+                policy_document=managed_policy_resource,
+            )
+
+    log_data["message"] = "Done populating old policies"
+    log_data["request"] = extended_request.dict()
+    log.debug(log_data)
+    return extended_request_changed
 
 
 async def populate_cross_account_resource_policy_for_change(
