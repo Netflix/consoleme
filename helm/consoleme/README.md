@@ -83,7 +83,7 @@ The following table lists the main configurable parameters of the ConsoleMe char
 To perform a dry-run execution of the deployment (helm version 3+):
 
 ```bash
-helm install -f values.yaml --name my-consoleme . --dry-run --debug
+helm install my-consoleme -f values.yaml . --dry-run --debug
 ```
 
 To preview the template generated:
@@ -95,5 +95,5 @@ helm template . --dry-run --debug -f values.yaml
 To install the helm chart:
 
 ```bash
-helm install -f values.yaml --name my-consoleme .
+helm install my-consoleme -f values.yaml my-consoleme .
 ```
