@@ -2086,7 +2086,6 @@ async def parse_and_apply_policy_request_modification(
         )
         # We only support updating inline policies, assume role policy documents and resource policies that haven't
         # applied already
-        # TODO: add support for managed policy
         if (
             specific_change
             and specific_change.change_type
@@ -2095,6 +2094,7 @@ async def parse_and_apply_policy_request_modification(
                 "resource_policy",
                 "sts_resource_policy",
                 "assume_role_policy",
+                "managed_policy_resource",
             ]
             and specific_change.status == Status.not_applied
         ):
