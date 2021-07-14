@@ -60,7 +60,6 @@ from consoleme.lib.aws import (
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
-    retrieve_json_data_from_s3_bulk,
     store_json_results_in_redis_and_s3,
 )
 from consoleme.lib.cloud_credential_authorization_mapping import (
@@ -586,7 +585,7 @@ def cache_policies_table_details() -> bool:
                 "account_id": account_id,
                 "account_name": account_name,
                 "arn": arn,
-                "technology": "iam",
+                "technology": "AWS::IAM::Role",
                 "templated": red.hget(
                     config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
                     arn.lower(),
@@ -597,6 +596,46 @@ def cache_policies_table_details() -> bool:
                 )(account_id, resource_id, arn, "AWS::IAM::Role"),
             }
         )
+
+    # IAM users
+    all_iam_users = async_to_sync(retrieve_json_data_from_redis_or_s3)(
+        redis_key=config.get("aws.iamusers_redis_key", "IAM_USER_CACHE"),
+        redis_data_type="hash",
+        s3_bucket=config.get(
+            "cache_iam_resources_across_accounts.all_users_combined.s3.bucket"
+        ),
+        s3_key=config.get(
+            "cache_iam_resources_across_accounts.all_users_combined.s3.file",
+            "account_resource_cache/cache_all_users_v1.json.gz",
+        ),
+    )
+
+    for arn, details_j in all_iam_users.items():
+        details = ujson.loads(details_j)
+        error_count = cloudtrail_errors.get(arn, 0)
+        s3_errors_for_arn = s3_errors.get(arn, [])
+        for error in s3_errors_for_arn:
+            error_count += int(error.get("count"))
+        account_id = arn.split(":")[4]
+        account_name = accounts_d.get(str(account_id), "Unknown")
+        resource_id = details.get("resourceId")
+        items.append(
+            {
+                "account_id": account_id,
+                "account_name": account_name,
+                "arn": arn,
+                "technology": "AWS::IAM::User",
+                "templated": red.hget(
+                    config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
+                    arn.lower(),
+                ),
+                "errors": error_count,
+                "config_history_url": async_to_sync(
+                    get_aws_config_history_url_for_resource
+                )(account_id, resource_id, arn, "AWS::IAM::User"),
+            }
+        )
+
     s3_bucket_key: str = config.get("redis.s3_bucket_key", "S3_BUCKETS")
     s3_accounts = red.hkeys(s3_bucket_key)
     if s3_accounts:
@@ -616,7 +655,7 @@ def cache_policies_table_details() -> bool:
                         "account_id": account,
                         "account_name": account_name,
                         "arn": f"arn:aws:s3:::{bucket}",
-                        "technology": "s3",
+                        "technology": "AWS::S3::Bucket",
                         "templated": None,
                         "errors": error_count,
                     }
@@ -636,7 +675,7 @@ def cache_policies_table_details() -> bool:
                         "account_id": account,
                         "account_name": account_name,
                         "arn": topic,
-                        "technology": "sns",
+                        "technology": "AWS::SNS::Topic",
                         "templated": None,
                         "errors": error_count,
                     }
@@ -656,7 +695,7 @@ def cache_policies_table_details() -> bool:
                         "account_id": account,
                         "account_name": account_name,
                         "arn": queue,
-                        "technology": "sqs",
+                        "technology": "AWS::SQS::Queue",
                         "templated": None,
                         "errors": error_count,
                     }
@@ -716,15 +755,28 @@ def cache_policies_table_details() -> bool:
 
 @app.task(soft_time_limit=2700, **default_retry_kwargs)
 def cache_iam_resources_for_account(account_id: str) -> bool:
-    iam_role_cache_key_temp = config.get(
-        "aws.iamroles_redis_key_temp", "IAM_ROLE_CACHE_TEMP"
-    )
-    iam_user_cache_key_temp = config.get(
-        "aws.iamusers_redis_key_temp", "IAM_USER_CACHE_TEMP"
-    )
-    iam_group_cache_key_temp = config.get(
-        "aws.iamgroups_redis_key_temp", "IAM_GROUP_CACHE_TEMP"
-    )
+    cache_keys = {
+        "iam_roles": {
+            "temp_cache_key": config.get(
+                "aws.iamroles_redis_key_temp", "IAM_ROLE_CACHE_TEMP"
+            )
+        },
+        "iam_users": {
+            "temp_cache_key": config.get(
+                "aws.iamusers_redis_key_temp", "IAM_USER_CACHE_TEMP"
+            )
+        },
+        "iam_groups": {
+            "temp_cache_key": config.get(
+                "aws.iamgroups_redis_key_temp", "IAM_GROUP_CACHE_TEMP"
+            )
+        },
+        "iam_policies": {
+            "temp_cache_key": config.get(
+                "aws.iampolicies_redis_key_temp", "IAM_POLICIES_CACHE_TEMP"
+            )
+        },
+    }
     # Get the DynamoDB handler:
     dynamo = IAMRoleDynamoHandler()
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
@@ -779,10 +831,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
         iam_roles = all_iam_resources["RoleDetailList"]
         iam_users = all_iam_resources["UserDetailList"]
         iam_groups = all_iam_resources["GroupDetailList"]
-
-        # TODO: STORE RESULTS IN A TEMPORARY KEY NAME CREATED BY ACROSS_ACCOUNTS TASK
-        # THEN `RENAME` KEY TO NEW KEY WHEN IT IS COMPLETE
-        # CT EVENT BRIDGE SHOULD ALSO MODIFY TEMPORARY KEY
+        iam_policies = all_iam_resources["Policies"]
 
         async_to_sync(store_json_results_in_redis_and_s3)(
             iam_roles,
@@ -813,6 +862,17 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
             ).format(resource_type="iam_groups", account_id=account_id),
         )
 
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            iam_policies,
+            s3_bucket=config.get(
+                "cache_iam_resources_for_account.iam_policies.s3.bucket"
+            ),
+            s3_key=config.get(
+                "cache_iam_resources_for_account.iam_policies.s3.file",
+                "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+            ).format(resource_type="iam_policies", account_id=account_id),
+        )
+
         ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
         # Save them:
         for role in iam_roles:
@@ -822,7 +882,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                 "resourceId": role.get("RoleId"),
                 "accountId": account_id,
                 "ttl": ttl,
-                "policy": dynamo.convert_role_to_json(role),
+                "policy": dynamo.convert_iam_resource_to_json(role),
                 "templated": red.hget(
                     config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
                     role.get("Arn").lower(),
@@ -845,11 +905,11 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                 "resourceId": user.get("UserId"),
                 "accountId": account_id,
                 "ttl": ttl,
-                "policy": dynamo.convert_role_to_json(user),
+                "policy": dynamo.convert_iam_resource_to_json(user),
                 "templated": False,  # Templates not supported for IAM users at this time
             }
             red.hset(
-                iam_user_cache_key_temp,
+                cache_keys["iam_users"]["temp_cache_key"],
                 str(user_entry["arn"]),
                 str(json.dumps(user_entry)),
             )
@@ -861,11 +921,27 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                 "resourceId": g.get("GroupId"),
                 "accountId": account_id,
                 "ttl": ttl,
-                "policy": dynamo.convert_role_to_json(g),
+                "policy": dynamo.convert_iam_resource_to_json(g),
                 "templated": False,  # Templates not supported for IAM groups at this time
             }
             red.hset(
-                iam_group_cache_key_temp,
+                cache_keys["iam_groups"]["temp_cache_key"],
+                str(group_entry["arn"]),
+                str(json.dumps(group_entry)),
+            )
+
+        for policy in iam_policies:
+            group_entry = {
+                "arn": policy.get("Arn"),
+                "name": policy.get("PolicyName"),
+                "resourceId": policy.get("PolicyId"),
+                "accountId": account_id,
+                "ttl": ttl,
+                "policy": dynamo.convert_iam_resource_to_json(policy),
+                "templated": False,  # Templates not supported for IAM policies at this time
+            }
+            red.hset(
+                cache_keys["iam_policies"]["temp_cache_key"],
                 str(group_entry["arn"]),
                 str(json.dumps(group_entry)),
             )
@@ -886,25 +962,43 @@ def cache_iam_resources_across_accounts(
 ) -> Dict:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
 
-    iam_role_cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
-    iam_user_cache_key = config.get("aws.iamusers_redis_key", "IAM_USER_CACHE")
-    iam_group_cache_key = config.get("aws.iamgroups_redis_key", "IAM_GROUP_CACHE")
+    cache_keys = {
+        "iam_roles": {
+            "cache_key": config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"),
+            "temp_cache_key": config.get(
+                "aws.iamroles_redis_key_temp", "IAM_ROLE_CACHE_TEMP"
+            ),
+        },
+        "iam_users": {
+            "cache_key": config.get("aws.iamusers_redis_key", "IAM_USER_CACHE"),
+            "temp_cache_key": config.get(
+                "aws.iamusers_redis_key_temp", "IAM_USER_CACHE_TEMP"
+            ),
+        },
+        "iam_groups": {
+            "cache_key": config.get("aws.iamgroups_redis_key", "IAM_GROUP_CACHE"),
+            "temp_cache_key": config.get(
+                "aws.iamgroups_redis_key_temp", "IAM_GROUP_CACHE_TEMP"
+            ),
+        },
+        "iam_policies": {
+            "cache_key": config.get("aws.iampolicies_redis_key", "IAM_POLICY_CACHE"),
+            "temp_cache_key": config.get(
+                "aws.iampolicies_redis_key_temp", "IAM_POLICIES_CACHE_TEMP"
+            ),
+        },
+    }
 
-    iam_role_cache_key_temp = config.get(
-        "aws.iamroles_redis_key_temp", "IAM_ROLE_CACHE_TEMP"
-    )
-    iam_user_cache_key_temp = config.get(
-        "aws.iamusers_redis_key_temp", "IAM_USER_CACHE_TEMP"
-    )
-    iam_group_cache_key_temp = config.get(
-        "aws.iamgroups_redis_key_temp", "IAM_GROUP_CACHE_TEMP"
-    )
+    log_data = {"function": function, "cache_keys": cache_keys}
+    if is_task_already_running(function, []):
+        log_data["message"] = "Skipping task: An identical task is currently running"
+        log.debug(log_data)
+        return log_data
 
-    red.delete(
-        [iam_role_cache_key_temp, iam_user_cache_key_temp, iam_group_cache_key_temp]
-    )
+    for k, v in cache_keys.items():
+        temp_cache_key = v["temp_cache_key"]
+        red.delete(temp_cache_key)
 
-    log_data = {"function": function, "iam_role_cache_key": iam_role_cache_key}
     accounts_d: Dict[str, str] = async_to_sync(get_account_id_to_name_mapping)()
     tasks = []
     if config.region == config.get("celery.active_region", config.region) or config.get(
@@ -929,24 +1023,24 @@ def cache_iam_resources_across_accounts(
         # In non-active regions, we just want to sync DDB data to Redis
         roles = dynamo.fetch_all_roles()
         for role_entry in roles:
-            _add_role_to_redis(iam_role_cache_key, role_entry)
+            _add_role_to_redis(cache_keys["iam_roles"]["cache_key"], role_entry)
 
     # Delete roles in Redis cache with expired TTL
-    all_roles = red.hgetall(iam_role_cache_key)
+    all_roles = red.hgetall(cache_keys["iam_roles"]["cache_key"])
     roles_to_delete_from_cache = []
     for arn, role_entry_j in all_roles.items():
         role_entry = json.loads(role_entry_j)
         if datetime.fromtimestamp(role_entry["ttl"]) < datetime.utcnow():
             roles_to_delete_from_cache.append(arn)
     if roles_to_delete_from_cache:
-        red.hdel(iam_role_cache_key, *roles_to_delete_from_cache)
+        red.hdel(cache_keys["iam_roles"]["cache_key"], *roles_to_delete_from_cache)
         for arn in roles_to_delete_from_cache:
             all_roles.pop(arn, None)
-    log_data["num_roles"] = len(all_roles)
+    log_data["num_iam_roles"] = len(all_roles)
     # Store full list of roles in a single place. This list will be ~30 minutes out of date.
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_roles,
-        redis_key=iam_role_cache_key,
+        redis_key=cache_keys["iam_roles"]["cache_key"],
         redis_data_type="hash",
         s3_bucket=config.get(
             "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
@@ -957,21 +1051,12 @@ def cache_iam_resources_across_accounts(
         ),
     )
 
-    # IAM Users
-    resource_type = "iam_users"
-    iam_user_s3_keys = []
-
-    for account_id in accounts_d.keys():
-        iam_user_s3_keys.append(
-            f"account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz"
-        )
-    all_iam_users = async_to_sync(retrieve_json_data_from_s3_bulk)(
-        s3_keys=iam_user_s3_keys, max_age=86400
-    )
+    all_iam_users = red.hgetall(cache_keys["iam_users"]["temp_cache_key"])
+    log_data["num_iam_users"] = len(all_iam_users)
 
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_iam_users,
-        redis_key=iam_user_cache_key,
+        redis_key=cache_keys["iam_users"]["cache_key"],
         redis_data_type="hash",
         s3_bucket=config.get(
             "cache_iam_resources_across_accounts.all_users_combined.s3.bucket"
@@ -983,21 +1068,12 @@ def cache_iam_resources_across_accounts(
     )
 
     # IAM Groups
-    resource_type = "iam_groups"
-    iam_groups_s3_keys = []
-
-    for account_id in accounts_d.keys():
-        iam_groups_s3_keys.append(
-            f"account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz"
-        )
-
-    all_iam_groups = async_to_sync(retrieve_json_data_from_s3_bulk)(
-        s3_keys=iam_groups_s3_keys, max_age=86400
-    )
+    all_iam_groups = red.hgetall(cache_keys["iam_groups"]["temp_cache_key"])
+    log_data["num_iam_groups"] = len(all_iam_groups)
 
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_iam_groups,
-        redis_key=iam_group_cache_key,
+        redis_key=cache_keys["iam_groups"]["cache_key"],
         redis_data_type="hash",
         s3_bucket=config.get(
             "cache_iam_resources_across_accounts.all_groups_combined.s3.bucket"
@@ -1005,6 +1081,23 @@ def cache_iam_resources_across_accounts(
         s3_key=config.get(
             "cache_iam_resources_across_accounts.all_groups_combined.s3.file",
             "account_resource_cache/cache_all_groups_v1.json.gz",
+        ),
+    )
+
+    # IAM Policies
+    all_iam_policies = red.hgetall(cache_keys["iam_policies"]["temp_cache_key"])
+    log_data["num_iam_policies"] = len(all_iam_groups)
+
+    async_to_sync(store_json_results_in_redis_and_s3)(
+        all_iam_policies,
+        redis_key=cache_keys["iam_policies"]["cache_key"],
+        redis_data_type="hash",
+        s3_bucket=config.get(
+            "cache_iam_resources_across_accounts.all_policies_combined.s3.bucket"
+        ),
+        s3_key=config.get(
+            "cache_iam_resources_across_accounts.all_policies_combined.s3.file",
+            "account_resource_cache/cache_all_policies_v1.json.gz",
         ),
     )
 
@@ -1977,7 +2070,6 @@ schedule = {
     },
 }
 
-
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
 
@@ -1986,5 +2078,3 @@ if config.get("celery.clear_tasks_for_development", False):
 
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"
-
-cache_iam_resources_across_accounts.delay()

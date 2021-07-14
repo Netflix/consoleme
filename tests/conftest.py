@@ -882,7 +882,7 @@ def user_iam_role(iamrole_table, www_user):
         "name": www_user.pop("RoleName"),
         "accountId": "123456789012",
         "ttl": int((datetime.utcnow() + timedelta(hours=36)).timestamp()),
-        "policy": ddb.convert_role_to_json(www_user),
+        "policy": ddb.convert_iam_resource_to_json(www_user),
     }
     ddb.sync_iam_role_for_account(role_entry)
 

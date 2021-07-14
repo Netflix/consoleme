@@ -14,6 +14,8 @@ from botocore.exceptions import ClientError
 from cloudaux.aws.iam import (
     get_role_inline_policies,
     get_role_managed_policies,
+    get_user_inline_policies,
+    get_user_managed_policies,
     list_role_tags,
 )
 from cloudaux.aws.sts import boto3_cached_conn
@@ -130,6 +132,75 @@ class Aws:
         return role
 
     @staticmethod
+    def _get_iam_user_sync(account_id, user_name, conn) -> Optional[Dict[str, Any]]:
+        client = boto3_cached_conn(
+            "iam",
+            account_number=account_id,
+            assume_role=config.get("policies.role_name"),
+            read_only=True,
+            retry_max_attempts=2,
+        )
+        user = client.get_user(UserName=user_name)["User"]
+        user["ManagedPolicies"] = get_user_managed_policies(
+            {"UserName": user_name}, **conn
+        )
+        user["InlinePolicies"] = get_user_inline_policies(
+            {"UserName": user_name}, **conn
+        )
+        user["Tags"] = client.list_user_tags(UserName=user_name)
+        user["Groups"] = client.list_groups_for_user(UserName=user_name)
+        return user
+
+    @staticmethod
+    async def _get_iam_user_async(
+        account_id, user_name, conn
+    ) -> Optional[Dict[str, Any]]:
+        tasks = []
+        client = await sync_to_async(boto3_cached_conn)(
+            "iam",
+            account_number=account_id,
+            assume_role=config.get("policies.role_name"),
+            read_only=True,
+            retry_max_attempts=2,
+        )
+        user_details = asyncio.ensure_future(
+            sync_to_async(client.get_user)(UserName=user_name)
+        )
+        tasks.append(user_details)
+
+        all_tasks = [
+            get_user_managed_policies,
+            get_user_inline_policies,
+        ]
+
+        for t in all_tasks:
+            tasks.append(
+                asyncio.ensure_future(sync_to_async(t)({"UserName": user_name}, **conn))
+            )
+
+        user_tag_details = asyncio.ensure_future(
+            sync_to_async(client.list_user_tags)(UserName=user_name)
+        )
+        tasks.append(user_tag_details)
+
+        user_group_details = asyncio.ensure_future(
+            sync_to_async(client.list_groups_for_user)(UserName=user_name)
+        )
+        tasks.append(user_group_details)
+
+        responses = asyncio.gather(*tasks)
+        async_task_result = await responses
+        user = async_task_result[0]["User"]
+        user["ManagedPolicies"] = async_task_result[1]
+        inline_policies = []
+        for name, policy in async_task_result[2].items():
+            inline_policies.append({"PolicyName": name, "PolicyDocument": policy})
+        user["InlinePolicies"] = inline_policies
+        user["Tags"] = async_task_result[3].get("Tags", [])
+        user["Groups"] = async_task_result[4].get("Groups", [])
+        return user
+
+    @staticmethod
     def _get_iam_role_sync(account_id, role_name, conn) -> Optional[Dict[str, Any]]:
         client = boto3_cached_conn(
             "iam",
@@ -183,6 +254,58 @@ class Aws:
         role["InlinePolicies"] = async_task_result[2]
         role["Tags"] = async_task_result[3]
         return role
+
+    async def fetch_iam_user(
+        self,
+        account_id: str,
+        user_arn: str,
+        run_sync=False,
+    ) -> Optional[Dict[str, Any]]:
+        """Fetch the IAM User template from Redis and/or Dynamo.
+
+        :param account_id:
+        :param user_arn:
+        :return:
+        """
+        log_data: dict = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user_arn": user_arn,
+            "account_id": account_id,
+        }
+
+        try:
+            user_name = user_arn.split("/")[-1]
+            conn = {
+                "account_number": account_id,
+                "assume_role": config.get("policies.role_name"),
+                "region": config.region,
+            }
+            if run_sync:
+                user = self._get_iam_user_sync(account_id, user_name, conn)
+            else:
+                user = await self._get_iam_user_async(account_id, user_name, conn)
+
+        except ClientError as ce:
+            if ce.response["Error"]["Code"] == "NoSuchEntity":
+                # The user does not exist:
+                log_data["message"] = "User does not exist in AWS."
+                log.error(log_data)
+                stats.count(
+                    "aws.fetch_iam_user.missing_in_aws",
+                    tags={"account_id": account_id, "user_arn": user_arn},
+                )
+                return None
+
+            else:
+                log_data["message"] = f"Some other error: {ce.response}"
+                log.error(log_data)
+                stats.count(
+                    "aws.fetch_iam_user.aws_connection_problem",
+                    tags={"account_id": account_id, "user_arn": user_arn},
+                )
+                raise
+
+        return user
 
     async def fetch_iam_role(
         self,
@@ -286,7 +409,7 @@ class Aws:
                 "resourceId": role.pop("RoleId"),
                 "accountId": account_id,
                 "ttl": int((datetime.utcnow() + timedelta(hours=36)).timestamp()),
-                "policy": self.dynamo.convert_role_to_json(role),
+                "policy": self.dynamo.convert_iam_resource_to_json(role),
                 "permissions_boundary": role.get("PermissionsBoundary", {}),
                 "templated": self.red.hget(
                     config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),

@@ -1271,7 +1271,7 @@ class IAMRoleDynamoHandler(BaseDynamoHandler):
     def fetch_iam_role(self, role_arn: str, account_id: str):
         return self.role_table.get_item(Key={"arn": role_arn, "accountId": account_id})
 
-    def convert_role_to_json(self, role: dict) -> str:
+    def convert_iam_resource_to_json(self, role: dict) -> str:
         return json.dumps(role, default=self._json_encode_timestamps)
 
     def _json_encode_timestamps(self, field: datetime) -> str:
