@@ -1694,6 +1694,133 @@ async def apply_non_iam_resource_tag_change(
     return response
 
 
+async def apply_managed_policy_resource_change(
+    extended_request: ExtendedRequestModel,
+    change: ManagedPolicyResourceChangeModel,
+    response: PolicyRequestModificationResponseModel,
+    user: str,
+) -> PolicyRequestModificationResponseModel:
+    """
+    Applies resource policy change for managed policies
+
+    Caution: this method applies changes blindly... meaning it assumes before calling this method,
+    you have validated the changes being made are authorized.
+
+    :param change: ResourcePolicyChangeModel
+    :param extended_request: ExtendedRequestModel
+    :param user: Str - requester's email address
+    :param response: RequestCreationResponse
+
+    """
+
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "change": change.dict(),
+        "message": "Applying managed policy resource change",
+        "request": extended_request.dict(),
+    }
+    log.info(log_data)
+
+    arn_parsed = parse_arn(extended_request.principal.principal_arn)
+    resource_type = arn_parsed["service"]
+    resource_name = arn_parsed["resource"]
+    resource_account = arn_parsed["account"]
+    if resource_type != "iam" or resource_name != "policy" or resource_account == "aws":
+        log_data[
+            "message"
+        ] = "ARN type not supported for managed policy resource changes."
+        log.error(log_data)
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(status="error", message=log_data["message"])
+        )
+        return response
+
+    if not resource_account:
+        # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
+        # we can't apply this change
+        log_data["message"] = "Resource account not found"
+        log.warn(log_data)
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Cannot apply change to {extended_request.principal.principal_arn} as cannot determine resource account",
+            )
+        )
+        return response
+
+    iam_client = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        service_type="client",
+        account_number=resource_account,
+        region=config.region,
+        assume_role=config.get("policies.role_name"),
+        session_name="managed-policy-v2-" + user,
+        retry_max_attempts=2,
+    )
+    policy_name = arn_parsed["resource_path"].split("/")[-1]
+    if change.new:
+        # create new policy
+        try:
+            await sync_to_async(iam_client.create_policy)(
+                PolicyName=policy_name,
+                PolicyDocument=json.dumps(
+                    change.policy.policy_document, escape_forward_slashes=False
+                ),
+            )
+            response.action_results.append(
+                ActionResult(
+                    status="success",
+                    message=f"Successfully created managed policy {extended_request.principal.principal_arn}",
+                )
+            )
+            change.status = Status.applied
+        except Exception as e:
+            log_data["message"] = "Exception occurred creating managed policy"
+            log_data["error"] = str(e)
+            log.error(log_data, exc_info=True)
+            sentry_sdk.capture_exception()
+            response.errors += 1
+            response.action_results.append(
+                ActionResult(
+                    status="error",
+                    message=f"Error occurred creating managed policy: {str(e)}",
+                )
+            )
+    else:
+        # TODO: deal with max policy versions
+        try:
+            await sync_to_async(iam_client.create_policy_version)(
+                PolicyArn=extended_request.principal.principal_arn,
+                PolicyDocument=json.dumps(
+                    change.policy.policy_document, escape_forward_slashes=False
+                ),
+                SetAsDefault=True,
+            )
+            response.action_results.append(
+                ActionResult(
+                    status="success",
+                    message=f"Successfully updated managed policy {extended_request.principal.principal_arn}",
+                )
+            )
+            change.status = Status.applied
+        except Exception as e:
+            log_data["message"] = "Exception occurred updating managed policy"
+            log_data["error"] = str(e)
+            log.error(log_data, exc_info=True)
+            sentry_sdk.capture_exception()
+            response.errors += 1
+            response.action_results.append(
+                ActionResult(
+                    status="error",
+                    message=f"Error occurred creating updating policy: {str(e)}",
+                )
+            )
+    return response
+
+
 async def apply_resource_policy_change(
     extended_request: ExtendedRequestModel,
     change: ResourcePolicyChangeModel,
@@ -2128,7 +2255,6 @@ async def parse_and_apply_policy_request_modification(
         specific_change = await _get_specific_change(
             extended_request.changes, apply_change_model.change_id
         )
-        # TODO: add support for managed policy
         if specific_change and specific_change.status == Status.not_applied:
             # Update the policy doc locally for supported changes, if it needs to be updated
             if apply_change_model.policy_document and specific_change.change_type in [
@@ -2136,6 +2262,7 @@ async def parse_and_apply_policy_request_modification(
                 "resource_policy",
                 "sts_resource_policy",
                 "assume_role_policy",
+                "managed_policy_resource",
             ]:
                 specific_change.policy.policy_document = (
                     apply_change_model.policy_document
@@ -2154,6 +2281,10 @@ async def parse_and_apply_policy_request_modification(
                 )
             ):
                 response = await apply_non_iam_resource_tag_change(
+                    extended_request, specific_change, response, user
+                )
+            elif specific_change.change_type == "managed_policy_resource":
+                response = await apply_managed_policy_resource_change(
                     extended_request, specific_change, response, user
                 )
             else:
