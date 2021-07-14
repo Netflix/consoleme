@@ -3,6 +3,7 @@ import { Button, Form, Icon, Message, Segment } from "semantic-ui-react";
 import MonacoEditor from "react-monaco-editor";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
 import {
+  getLocalStorageSettings,
   getMonacoCompletions,
   getMonacoTriggerCharacters,
 } from "../../helpers/utils";
@@ -105,6 +106,7 @@ export const PolicyMonacoEditor = ({
   const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
   const editorRef = useRef();
+  const editorTheme = getLocalStorageSettings("editorTheme");
   const timeout = useRef(null);
 
   const policyDocumentOriginal = JSON.stringify(
@@ -206,7 +208,7 @@ export const PolicyMonacoEditor = ({
           ref={editorRef}
           height="540px"
           language="json"
-          theme="vs-light"
+          theme={editorTheme}
           value={policyDocument}
           onChange={onEditChange}
           options={editorOptions}
@@ -266,6 +268,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
   const editorRef = useRef();
+  const editorTheme = getLocalStorageSettings("editorTheme");
   const timeout = useRef(null);
 
   const [newPolicyName, setNewPolicyName] = useState("");
@@ -405,7 +408,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
           ref={editorRef}
           height="540px"
           language="json"
-          theme="vs-light"
+          theme={editorTheme}
           value={policyDocument}
           onChange={onEditChange}
           options={editorOptions}
@@ -450,6 +453,7 @@ export const ReadOnlyPolicyMonacoEditor = ({ policy }) => {
     ...editorOptions,
     readOnly: true,
   };
+  const editorTheme = getLocalStorageSettings("editorTheme");
   return (
     <>
       <Segment
@@ -462,7 +466,7 @@ export const ReadOnlyPolicyMonacoEditor = ({ policy }) => {
         <MonacoEditor
           height="540px"
           language="json"
-          theme="vs-light"
+          theme={editorTheme}
           value={JSON.stringify(policy, null, "\t")}
           options={readOnlyEditorOptions}
           editorDidMount={editorDidMount}

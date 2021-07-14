@@ -3,6 +3,7 @@ import { Button, Divider, Header, Message, Modal } from "semantic-ui-react";
 import React, { Component } from "react";
 import MonacoEditor from "react-monaco-editor";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+import { getLocalStorageSettings } from "../../helpers/utils";
 
 const editor_options = {
   selectOnLineNumbers: true,
@@ -42,6 +43,7 @@ class SelfServiceModal extends Component {
       payloadPermissions: [],
       modal_statement: this.props.updated_policy,
       open: false,
+      editorTheme: getLocalStorageSettings("editorTheme"),
     };
     this.inlinePolicyEditorRef = React.createRef();
     this.onChange = this.onChange.bind(this);
@@ -86,7 +88,7 @@ class SelfServiceModal extends Component {
         height="500px"
         language="json"
         width="100%"
-        theme="vs-light"
+        theme={this.state.editorTheme}
         value={modal_statement}
         onChange={this.onChange}
         options={editor_options}

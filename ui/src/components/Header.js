@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Dropdown, Menu, Image, Message } from "semantic-ui-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthProviderDefault";
 import ReactMarkdown from "react-markdown";
+import SettingsModal from "./SettingsModal";
 
 const ConsoleMeHeader = () => {
   const { user } = useAuth();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const generatePoliciesDropDown = () => {
     const canCreateRoles = user?.authorization?.can_create_roles;
@@ -49,6 +51,14 @@ const ConsoleMeHeader = () => {
     return null;
   };
 
+  const openSettings = () => {
+    setSettingsOpen(true);
+  };
+
+  const closeSettings = () => {
+    setSettingsOpen(false);
+  };
+
   const getAvatarImage = () => {
     let dropdownOptions = [
       {
@@ -56,6 +66,11 @@ const ConsoleMeHeader = () => {
         text: user.user,
         value: user.user,
         image: { avatar: true, src: user?.employee_photo_url },
+      },
+      {
+        key: "settings",
+        text: "Settings",
+        onClick: openSettings,
       },
     ];
     if (user?.can_logout) {
@@ -145,6 +160,7 @@ const ConsoleMeHeader = () => {
         </Menu.Menu>
       </Menu>
       {headerMessage()}
+      <SettingsModal isOpen={settingsOpen} closeSettings={closeSettings} />
     </>
   );
 };
