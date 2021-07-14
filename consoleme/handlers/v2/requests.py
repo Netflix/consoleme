@@ -37,6 +37,7 @@ from consoleme.lib.v2.requests import (
     is_request_eligible_for_auto_approval,
     parse_and_apply_policy_request_modification,
     populate_cross_account_resource_policies,
+    populate_old_managed_policies,
     populate_old_policies,
 )
 from consoleme.models import (
@@ -636,7 +637,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
         concurrent_results = await asyncio.gather(
             populate_old_policies(extended_request, self.user),
             populate_cross_account_resource_policies(extended_request, self.user),
-            # TODO: populate_old_managed_policies(extended_request, self.user)
+            populate_old_managed_policies(extended_request, self.user),
         )
         extended_request = concurrent_results[0]
 
@@ -646,6 +647,15 @@ class RequestDetailHandler(BaseAPIV2Handler):
             extended_request = populate_cross_account_resource_policies_result[
                 "extended_request"
             ]
+            # Update in dynamo with the latest resource policy changes
+            dynamo = UserDynamoHandler(self.user)
+            updated_request = await dynamo.write_policy_request_v2(extended_request)
+            last_updated = updated_request.get("last_updated")
+
+        populate_old_managed_policies_result = concurrent_results[2]
+
+        if populate_old_managed_policies_result["changed"]:
+            extended_request = populate_old_managed_policies_result["extended_request"]
             # Update in dynamo with the latest resource policy changes
             dynamo = UserDynamoHandler(self.user)
             updated_request = await dynamo.write_policy_request_v2(extended_request)

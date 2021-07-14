@@ -25,6 +25,7 @@ from consoleme.exceptions.exceptions import (
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.auth import can_admin_policies
 from consoleme.lib.aws import (
+    create_or_update_managed_policy,
     fetch_resource_details,
     generate_updated_resource_policy,
     get_bucket_location_with_fallback,
@@ -1232,7 +1233,7 @@ async def populate_old_policies(
 async def populate_old_managed_policies(
     extended_request: ExtendedRequestModel,
     user: str,
-) -> bool:
+) -> Dict:
     """
     Populates the old policies for a managed policy resource change.
 
@@ -1250,7 +1251,7 @@ async def populate_old_managed_policies(
     }
     log.debug(log_data)
     managed_policy_resource = None
-    extended_request_changed = False
+    result = {"changed": False}
 
     if extended_request.principal.principal_type == "AwsResource":
         principal_arn = extended_request.principal.principal_arn
@@ -1261,7 +1262,7 @@ async def populate_old_managed_policies(
                 "message"
             ] = "ARN type not supported for populating old policy changes."
             log.debug(log_data)
-            return extended_request_changed
+            return result
 
         try:
             managed_policy_resource = await sync_to_async(get_managed_policy_document)(
@@ -1274,9 +1275,10 @@ async def populate_old_managed_policies(
         except ClientError as e:
             if e.response["Error"]["Code"] == "NoSuchEntity":
                 # Could be a new managed policy, hence not found, in this case there are no old policies
-                return extended_request_changed
+                return result
     else:
-        return extended_request_changed
+        # Honeybee template, no support for managed policies for v1?
+        return result
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
             # Skip changing any old policies that are saved for historical record (already applied)
@@ -1294,7 +1296,7 @@ async def populate_old_managed_policies(
                 # Old policy hasn't changed since last refresh of page, no need to generate resource policy again
                 continue
 
-            extended_request_changed = True
+            result["changed"] = True
             change.old_policy = PolicyModel(
                 policy_sha256=sha256(
                     json.dumps(
@@ -1308,7 +1310,8 @@ async def populate_old_managed_policies(
     log_data["message"] = "Done populating old policies"
     log_data["request"] = extended_request.dict()
     log.debug(log_data)
-    return extended_request_changed
+    result["extended_request"] = extended_request
+    return result
 
 
 async def populate_cross_account_resource_policy_for_change(
@@ -1751,24 +1754,32 @@ async def apply_managed_policy_resource_change(
         )
         return response
 
-    iam_client = await sync_to_async(boto3_cached_conn)(
-        "iam",
-        service_type="client",
-        account_number=resource_account,
-        region=config.region,
-        assume_role=config.get("policies.role_name"),
-        session_name="managed-policy-v2-" + user,
-        retry_max_attempts=2,
+    # iam_client = await sync_to_async(boto3_cached_conn)(
+    #     "iam",
+    #     service_type="client",
+    #     account_number=resource_account,
+    #     region=config.region,
+    #     assume_role=config.get("policies.role_name"),
+    #     session_name="managed-policy-v2-" + user,
+    #     retry_max_attempts=2,
+    # )
+    # Save current policy by populating "old" policies at the time of application for historical record
+    populate_old_managed_policies_results = await populate_old_managed_policies(
+        extended_request, user
     )
+    if populate_old_managed_policies_results["changed"]:
+        extended_request = populate_old_managed_policies_results["extended_request"]
+
     policy_name = arn_parsed["resource_path"].split("/")[-1]
     if change.new:
+        description = f"Managed Policy created using ConsoleMe by {user}"
         # create new policy
         try:
-            await sync_to_async(iam_client.create_policy)(
-                PolicyName=policy_name,
-                PolicyDocument=json.dumps(
-                    change.policy.policy_document, escape_forward_slashes=False
-                ),
+            await create_or_update_managed_policy(
+                new_policy=change.policy.policy_document,
+                policy_name=policy_name,
+                policy_arn=extended_request.principal.principal_arn,
+                description=description,
             )
             response.action_results.append(
                 ActionResult(
@@ -1790,14 +1801,13 @@ async def apply_managed_policy_resource_change(
                 )
             )
     else:
-        # TODO: deal with max policy versions
         try:
-            await sync_to_async(iam_client.create_policy_version)(
-                PolicyArn=extended_request.principal.principal_arn,
-                PolicyDocument=json.dumps(
-                    change.policy.policy_document, escape_forward_slashes=False
-                ),
-                SetAsDefault=True,
+            await create_or_update_managed_policy(
+                new_policy=change.policy.policy_document,
+                policy_name=policy_name,
+                policy_arn=extended_request.principal.principal_arn,
+                description="",
+                existing_policy=True,
             )
             response.action_results.append(
                 ActionResult(
