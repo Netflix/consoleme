@@ -16,7 +16,7 @@ class TestCelerySync(TestCase):
 
         self.celery = celery
 
-    def test_cache_roles_for_account(self):
+    def cache_iam_resources_for_account(self):
         from consoleme.config.config import CONFIG
         from consoleme.lib.dynamo import IAMRoleDynamoHandler
         from consoleme.lib.redis import RedisHandler
@@ -29,19 +29,19 @@ class TestCelerySync(TestCase):
             **CONFIG.config,
             "aws": {
                 **CONFIG.config.get("aws", {}),
-                "iamroles_redis_key": "test_cache_roles_for_account",
+                "iamroles_redis_key": "cache_iam_resources_for_account",
             },
             "cache_roles_across_accounts": {
                 "all_roles_combined": {
                     "s3": {
-                        "file": "test_cache_roles_for_account.json.gz",
+                        "file": "cache_iam_resources_for_account.json.gz",
                     }
                 }
             },
         }
 
         # Clear out the existing cache from Redis:
-        red.delete("test_cache_roles_for_account")
+        red.delete("cache_iam_resources_for_account")
         # Run it:
         self.celery.cache_iam_resources_for_account("123456789012")
 
@@ -59,7 +59,7 @@ class TestCelerySync(TestCase):
         ] + [f"arn:aws:iam::123456789012:role/RoleNumber{num}" for num in range(0, 10)]
 
         self.assertEqual(results["Count"], len(remaining_roles))
-        self.assertEqual(results["Count"], red.hlen("test_cache_roles_for_account"))
+        self.assertEqual(results["Count"], red.hlen("cache_iam_resources_for_account"))
 
         for i in results["Items"]:
             remaining_roles.remove(i["arn"])
@@ -67,7 +67,7 @@ class TestCelerySync(TestCase):
             self.assertGreater(int(i["ttl"]), 0)
             self.assertIsNotNone(json.loads(i["policy"]))
             self.assertEqual(
-                json.loads(red.hget("test_cache_roles_for_account", i["arn"]))[
+                json.loads(red.hget("cache_iam_resources_for_account", i["arn"]))[
                     "policy"
                 ],
                 i["policy"],
@@ -81,7 +81,7 @@ class TestCelerySync(TestCase):
         self.celery.config.region = "us-east-1"
 
         # Clear out the existing cache from Redis:
-        red.delete("test_cache_roles_for_account")
+        red.delete("cache_iam_resources_for_account")
 
         # This should spin off extra fake celery tasks
         res = self.celery.cache_iam_resources_across_accounts()
@@ -89,7 +89,7 @@ class TestCelerySync(TestCase):
             res,
             {
                 "function": "consoleme.celery_tasks.celery_tasks.cache_roles_across_accounts",
-                "cache_key": "test_cache_roles_for_account",
+                "cache_key": "cache_iam_resources_for_account",
                 "num_roles": 15,
                 "num_accounts": 1,
             },
@@ -99,7 +99,7 @@ class TestCelerySync(TestCase):
             res,
             {
                 "function": "consoleme.celery_tasks.celery_tasks.cache_roles_across_accounts",
-                "cache_key": "test_cache_roles_for_account",
+                "cache_key": "cache_iam_resources_for_account",
                 "num_roles": 15,
                 "num_accounts": 1,
             },
@@ -118,13 +118,13 @@ class TestCelerySync(TestCase):
         self.celery.REDIS_IAM_COUNT = 3
 
         # Clear out the existing cache from Redis:
-        red.delete("test_cache_roles_for_account_expiration")
+        red.delete("cache_iam_resources_for_account_expiration")
 
         # Set the config value for the redis cache location
         old_value = CONFIG.config["aws"].pop("iamroles_redis_key", None)
         CONFIG.config["aws"][
             "iamroles_redis_key"
-        ] = "test_cache_roles_for_account_expiration"
+        ] = "cache_iam_resources_for_account_expiration"
 
         # Add in some dummy IAM roles with a TTL that is more than 6 hours old:
         old_ttl = int((datetime.utcnow() - timedelta(hours=6, seconds=5)).timestamp())
@@ -139,7 +139,7 @@ class TestCelerySync(TestCase):
                 "policy": "{}",
             }
             self.celery._add_role_to_redis(
-                "test_cache_roles_for_account_expiration", role_entry
+                "cache_iam_resources_for_account_expiration", role_entry
             )
 
         # Add a role with a current TTL -- this should not be cleaned up:
@@ -151,7 +151,7 @@ class TestCelerySync(TestCase):
             "policy": "{}",
         }
         self.celery._add_role_to_redis(
-            "test_cache_roles_for_account_expiration", role_entry
+            "cache_iam_resources_for_account_expiration", role_entry
         )
 
         # Nothing should happen if we are not in us-west-2:
@@ -159,23 +159,23 @@ class TestCelerySync(TestCase):
         self.celery.config.region = "us-east-1"
 
         self.celery.clear_old_redis_iam_cache()
-        self.assertEqual(red.hlen("test_cache_roles_for_account_expiration"), 14)
+        self.assertEqual(red.hlen("cache_iam_resources_for_account_expiration"), 14)
 
         # With the proper region:
         self.celery.config.region = "us-west-2"
         self.celery.clear_old_redis_iam_cache()
 
         # Verify:
-        self.assertEqual(red.hlen("test_cache_roles_for_account_expiration"), 1)
+        self.assertEqual(red.hlen("cache_iam_resources_for_account_expiration"), 1)
         self.assertIsNotNone(
             red.hget(
-                "test_cache_roles_for_account_expiration",
+                "cache_iam_resources_for_account_expiration",
                 "arn:aws:iam::123456789012:role/RoleNumber99",
             )
         )
 
         # Clear out the existing cache from Redis:
-        red.delete("test_cache_roles_for_account_expiration")
+        red.delete("cache_iam_resources_for_account_expiration")
 
         # Reset the config values:
         self.celery.config.region = old_conf_region

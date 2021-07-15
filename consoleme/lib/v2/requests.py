@@ -803,7 +803,7 @@ async def apply_changes_to_role(
                             status="success",
                             message=(
                                 f"Successfully applied inline policy {change.policy_name} to principal: "
-                                f"{principal_name}",
+                                f"{principal_name}"
                             ),
                         )
                     )
@@ -838,7 +838,7 @@ async def apply_changes_to_role(
                             status="success",
                             message=(
                                 f"Successfully deleted inline policy {change.policy_name} from principal: "
-                                f"{principal_name}",
+                                f"{principal_name}"
                             ),
                         )
                     )
@@ -854,7 +854,7 @@ async def apply_changes_to_role(
                             status="error",
                             message=(
                                 f"Error occurred deleting inline policy {change.policy_name} from principal: "
-                                f"{principal_name} " + str(e),
+                                f"{principal_name} " + str(e)
                             ),
                         )
                     )
@@ -874,7 +874,7 @@ async def apply_changes_to_role(
                             status="success",
                             message=(
                                 f"Successfully attached permissions boundary {change.arn} to principal: "
-                                f"{principal_name}",
+                                f"{principal_name}"
                             ),
                         )
                     )
@@ -892,7 +892,7 @@ async def apply_changes_to_role(
                             status="error",
                             message=(
                                 f"Error occurred attaching permissions boundary {change.arn} to principal: "
-                                f"{principal_name}: " + str(e),
+                                f"{principal_name}: " + str(e)
                             ),
                         )
                     )
@@ -911,7 +911,7 @@ async def apply_changes_to_role(
                             status="success",
                             message=(
                                 f"Successfully detached permissions boundary {change.arn} from principal: "
-                                f"{principal_name}",
+                                f"{principal_name}"
                             ),
                         )
                     )
@@ -929,7 +929,7 @@ async def apply_changes_to_role(
                             status="error",
                             message=(
                                 f"Error occurred detaching permissions boundary {change.arn} "
-                                f"from principal: {principal_name}: " + str(e),
+                                f"from principal: {principal_name}: " + str(e)
                             ),
                         )
                     )
@@ -948,7 +948,7 @@ async def apply_changes_to_role(
                         ActionResult(
                             status="success",
                             message=(
-                                f"Successfully attached managed policy {change.arn} to principal: {principal_name}",
+                                f"Successfully attached managed policy {change.arn} to principal: {principal_name}"
                             ),
                         )
                     )
@@ -964,7 +964,7 @@ async def apply_changes_to_role(
                             status="error",
                             message=(
                                 f"Error occurred attaching managed policy {change.arn} to principal: "
-                                "{principal_name}: " + str(e),
+                                "{principal_name}: " + str(e)
                             ),
                         )
                     )
@@ -982,7 +982,7 @@ async def apply_changes_to_role(
                         ActionResult(
                             status="success",
                             message=(
-                                f"Successfully detached managed policy {change.arn} from principal: {principal_name}",
+                                f"Successfully detached managed policy {change.arn} from principal: {principal_name}"
                             ),
                         )
                     )
@@ -998,7 +998,7 @@ async def apply_changes_to_role(
                             status="error",
                             message=(
                                 f"Error occurred detaching managed policy {change.arn} from principal: "
-                                f"{principal_name}: " + str(e),
+                                f"{principal_name}: " + str(e)
                             ),
                         )
                     )

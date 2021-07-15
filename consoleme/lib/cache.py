@@ -5,6 +5,7 @@ import time
 from typing import Any, Dict, List, Optional, Union
 
 from asgiref.sync import sync_to_async
+from botocore.exceptions import ClientError
 
 from consoleme.config import config
 from consoleme.exceptions.exceptions import (
@@ -155,7 +156,16 @@ async def retrieve_json_data_from_redis_or_s3(
 
     # Fall back to S3 if there's no data
     if not data and s3_bucket and s3_key:
-        s3_object = get_object(Bucket=s3_bucket, Key=s3_key)
+        try:
+            s3_object = get_object(Bucket=s3_bucket, Key=s3_key)
+        except ClientError as e:
+            if (
+                str(e)
+                == "An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist."
+            ):
+                if default is not None:
+                    return default
+            raise
         s3_object_content = await sync_to_async(s3_object["Body"].read)()
         if s3_key.endswith(".gz"):
             s3_object_content = gzip.decompress(s3_object_content)

@@ -549,6 +549,7 @@ def cache_policies_table_details() -> bool:
             "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
             "account_resource_cache/cache_all_roles_v1.json.gz",
         ),
+        default={},
     )
     items = []
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()
@@ -608,6 +609,7 @@ def cache_policies_table_details() -> bool:
             "cache_iam_resources_across_accounts.all_users_combined.s3.file",
             "account_resource_cache/cache_all_users_v1.json.gz",
         ),
+        default={},
     )
 
     for arn, details_j in all_iam_users.items():
@@ -833,45 +835,53 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
         iam_groups = all_iam_resources["GroupDetailList"]
         iam_policies = all_iam_resources["Policies"]
 
-        async_to_sync(store_json_results_in_redis_and_s3)(
-            iam_roles,
-            s3_bucket=config.get("cache_iam_resources_for_account.iam_roles.s3.bucket"),
-            s3_key=config.get(
-                "cache_iam_resources_for_account.iam_roles.s3.file",
-                "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
-            ).format(resource_type="iam_roles", account_id=account_id),
-        )
+        if iam_roles:
+            async_to_sync(store_json_results_in_redis_and_s3)(
+                iam_roles,
+                s3_bucket=config.get(
+                    "cache_iam_resources_for_account.iam_roles.s3.bucket"
+                ),
+                s3_key=config.get(
+                    "cache_iam_resources_for_account.iam_roles.s3.file",
+                    "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+                ).format(resource_type="iam_roles", account_id=account_id),
+            )
 
-        async_to_sync(store_json_results_in_redis_and_s3)(
-            iam_users,
-            s3_bucket=config.get("cache_iam_resources_for_account.iam_users.s3.bucket"),
-            s3_key=config.get(
-                "cache_iam_resources_for_account.iam_users.s3.file",
-                "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
-            ).format(resource_type="iam_users", account_id=account_id),
-        )
+        if iam_users:
+            async_to_sync(store_json_results_in_redis_and_s3)(
+                iam_users,
+                s3_bucket=config.get(
+                    "cache_iam_resources_for_account.iam_users.s3.bucket"
+                ),
+                s3_key=config.get(
+                    "cache_iam_resources_for_account.iam_users.s3.file",
+                    "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+                ).format(resource_type="iam_users", account_id=account_id),
+            )
 
-        async_to_sync(store_json_results_in_redis_and_s3)(
-            iam_groups,
-            s3_bucket=config.get(
-                "cache_iam_resources_for_account.iam_groups.s3.bucket"
-            ),
-            s3_key=config.get(
-                "cache_iam_resources_for_account.iam_groups.s3.file",
-                "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
-            ).format(resource_type="iam_groups", account_id=account_id),
-        )
+        if iam_groups:
+            async_to_sync(store_json_results_in_redis_and_s3)(
+                iam_groups,
+                s3_bucket=config.get(
+                    "cache_iam_resources_for_account.iam_groups.s3.bucket"
+                ),
+                s3_key=config.get(
+                    "cache_iam_resources_for_account.iam_groups.s3.file",
+                    "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+                ).format(resource_type="iam_groups", account_id=account_id),
+            )
 
-        async_to_sync(store_json_results_in_redis_and_s3)(
-            iam_policies,
-            s3_bucket=config.get(
-                "cache_iam_resources_for_account.iam_policies.s3.bucket"
-            ),
-            s3_key=config.get(
-                "cache_iam_resources_for_account.iam_policies.s3.file",
-                "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
-            ).format(resource_type="iam_policies", account_id=account_id),
-        )
+        if iam_policies:
+            async_to_sync(store_json_results_in_redis_and_s3)(
+                iam_policies,
+                s3_bucket=config.get(
+                    "cache_iam_resources_for_account.iam_policies.s3.bucket"
+                ),
+                s3_key=config.get(
+                    "cache_iam_resources_for_account.iam_policies.s3.file",
+                    "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
+                ).format(resource_type="iam_policies", account_id=account_id),
+            )
 
         ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
         # Save them:
@@ -1038,68 +1048,72 @@ def cache_iam_resources_across_accounts(
             all_roles.pop(arn, None)
     log_data["num_iam_roles"] = len(all_roles)
     # Store full list of roles in a single place. This list will be ~30 minutes out of date.
-    async_to_sync(store_json_results_in_redis_and_s3)(
-        all_roles,
-        redis_key=cache_keys["iam_roles"]["cache_key"],
-        redis_data_type="hash",
-        s3_bucket=config.get(
-            "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
-        ),
-        s3_key=config.get(
-            "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
-            "account_resource_cache/cache_all_roles_v1.json.gz",
-        ),
-    )
+    if all_roles:
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            all_roles,
+            redis_key=cache_keys["iam_roles"]["cache_key"],
+            redis_data_type="hash",
+            s3_bucket=config.get(
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
+            ),
+            s3_key=config.get(
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
+                "account_resource_cache/cache_all_roles_v1.json.gz",
+            ),
+        )
 
     all_iam_users = red.hgetall(cache_keys["iam_users"]["temp_cache_key"])
     log_data["num_iam_users"] = len(all_iam_users)
 
-    async_to_sync(store_json_results_in_redis_and_s3)(
-        all_iam_users,
-        redis_key=cache_keys["iam_users"]["cache_key"],
-        redis_data_type="hash",
-        s3_bucket=config.get(
-            "cache_iam_resources_across_accounts.all_users_combined.s3.bucket"
-        ),
-        s3_key=config.get(
-            "cache_iam_resources_across_accounts.all_users_combined.s3.file",
-            "account_resource_cache/cache_all_users_v1.json.gz",
-        ),
-    )
+    if all_iam_users:
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            all_iam_users,
+            redis_key=cache_keys["iam_users"]["cache_key"],
+            redis_data_type="hash",
+            s3_bucket=config.get(
+                "cache_iam_resources_across_accounts.all_users_combined.s3.bucket"
+            ),
+            s3_key=config.get(
+                "cache_iam_resources_across_accounts.all_users_combined.s3.file",
+                "account_resource_cache/cache_all_users_v1.json.gz",
+            ),
+        )
 
     # IAM Groups
     all_iam_groups = red.hgetall(cache_keys["iam_groups"]["temp_cache_key"])
     log_data["num_iam_groups"] = len(all_iam_groups)
 
-    async_to_sync(store_json_results_in_redis_and_s3)(
-        all_iam_groups,
-        redis_key=cache_keys["iam_groups"]["cache_key"],
-        redis_data_type="hash",
-        s3_bucket=config.get(
-            "cache_iam_resources_across_accounts.all_groups_combined.s3.bucket"
-        ),
-        s3_key=config.get(
-            "cache_iam_resources_across_accounts.all_groups_combined.s3.file",
-            "account_resource_cache/cache_all_groups_v1.json.gz",
-        ),
-    )
+    if all_iam_groups:
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            all_iam_groups,
+            redis_key=cache_keys["iam_groups"]["cache_key"],
+            redis_data_type="hash",
+            s3_bucket=config.get(
+                "cache_iam_resources_across_accounts.all_groups_combined.s3.bucket"
+            ),
+            s3_key=config.get(
+                "cache_iam_resources_across_accounts.all_groups_combined.s3.file",
+                "account_resource_cache/cache_all_groups_v1.json.gz",
+            ),
+        )
 
     # IAM Policies
     all_iam_policies = red.hgetall(cache_keys["iam_policies"]["temp_cache_key"])
     log_data["num_iam_policies"] = len(all_iam_groups)
 
-    async_to_sync(store_json_results_in_redis_and_s3)(
-        all_iam_policies,
-        redis_key=cache_keys["iam_policies"]["cache_key"],
-        redis_data_type="hash",
-        s3_bucket=config.get(
-            "cache_iam_resources_across_accounts.all_policies_combined.s3.bucket"
-        ),
-        s3_key=config.get(
-            "cache_iam_resources_across_accounts.all_policies_combined.s3.file",
-            "account_resource_cache/cache_all_policies_v1.json.gz",
-        ),
-    )
+    if all_iam_policies:
+        async_to_sync(store_json_results_in_redis_and_s3)(
+            all_iam_policies,
+            redis_key=cache_keys["iam_policies"]["cache_key"],
+            redis_data_type="hash",
+            s3_bucket=config.get(
+                "cache_iam_resources_across_accounts.all_policies_combined.s3.bucket"
+            ),
+            s3_key=config.get(
+                "cache_iam_resources_across_accounts.all_policies_combined.s3.file",
+                "account_resource_cache/cache_all_policies_v1.json.gz",
+            ),
+        )
 
     stats.count(f"{function}.success")
     log_data["num_accounts"] = len(accounts_d)
