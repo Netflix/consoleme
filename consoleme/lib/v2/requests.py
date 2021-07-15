@@ -1754,15 +1754,6 @@ async def apply_managed_policy_resource_change(
         )
         return response
 
-    # iam_client = await sync_to_async(boto3_cached_conn)(
-    #     "iam",
-    #     service_type="client",
-    #     account_number=resource_account,
-    #     region=config.region,
-    #     assume_role=config.get("policies.role_name"),
-    #     session_name="managed-policy-v2-" + user,
-    #     retry_max_attempts=2,
-    # )
     # Save current policy by populating "old" policies at the time of application for historical record
     populate_old_managed_policies_results = await populate_old_managed_policies(
         extended_request, user
