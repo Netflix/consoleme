@@ -1,22 +1,14 @@
-import base64
 import sys
 from typing import Optional
-from urllib.parse import parse_qs, urlencode, urlparse
-
-import sentry_sdk
-import ujson as json
-from furl import furl
-from pydantic import ValidationError
 
 from consoleme.config import config
-from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
-from consoleme.lib.auth import can_create_roles, can_delete_roles, can_delete_roles_app
-from consoleme.lib.aws import clone_iam_role, create_iam_role, delete_iam_role
+from consoleme.handlers.base import BaseAPIV2Handler
+from consoleme.lib.auth import can_delete_roles
+from consoleme.lib.aws import delete_iam_role
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.v2.roles import get_role_details, get_user_details
-from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
+from consoleme.lib.v2.roles import get_user_details
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
