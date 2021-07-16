@@ -1,9 +1,11 @@
 import sentry_sdk
+import tornado.escape
 import ujson as json
 from asgiref.sync import sync_to_async
 from cloudaux.aws.iam import (
     get_managed_policy_document,
     get_role_managed_policy_documents,
+    get_user_managed_policy_documents,
 )
 
 from consoleme.config import config
@@ -15,19 +17,29 @@ from consoleme.models import Status2, WebResponse
 log = config.get_logger()
 
 
-class ManagedPoliciesOnRoleHandler(BaseAPIV2Handler):
+class ManagedPoliciesOnPrincipalHandler(BaseAPIV2Handler):
     """
-    Handler for /api/v2/managed_policies_on_role/{accountNumber}/{roleName}
+    Handler for /api/v2/managed_policies_on_principal/{arn}
 
-    Returns managed policy and latest policy version information for a role
+    Returns managed policy and latest policy version information for a principal
     """
 
-    async def get(self, account_id, role_name):
+    async def get(self, arn):
         if config.get("policy_editor.disallow_contractors", True) and self.contractor:
             if self.user not in config.get(
                 "groups.can_bypass_contractor_restrictions", []
             ):
                 raise MustBeFte("Only FTEs are authorized to view this page.")
+
+        errors = []
+        if not arn.startswith("arn:aws:iam::"):
+            errors.append("ARN must start with 'arn:aws:iam::'")
+
+        principal_name = tornado.escape.xhtml_escape(arn.split("/")[-1])
+        principal_type = tornado.escape.xhtml_escape(arn.split(":")[5].split("/")[0])
+        account_id = tornado.escape.xhtml_escape(arn.split(":")[4])
+        if principal_type not in ["role", "user"]:
+            errors.append(f"Principal type must be role or user. not {principal_type}")
 
         log_data = {
             "function": "ManagedPoliciesOnRoleHandler.get",
@@ -37,18 +49,46 @@ class ManagedPoliciesOnRoleHandler(BaseAPIV2Handler):
             "user-agent": self.request.headers.get("User-Agent"),
             "request_id": self.request_uuid,
             "account_id": account_id,
-            "role_name": role_name,
+            "principal_name": principal_name,
+            "principal_type": principal_type,
         }
 
         log.debug(log_data)
+        if errors:
+            log.error(
+                {**log_data, "errors": errors, "message": "Unable to process request"}
+            )
+            res = WebResponse(
+                status=Status2.error,
+                reason="bad_request",
+                status_code=400,
+                errors=errors,
+            )
+            self.write(res.json())
+            return
 
-        managed_policy_details = await sync_to_async(get_role_managed_policy_documents)(
-            {"RoleName": role_name},
-            account_number=account_id,
-            assume_role=config.get("policies.role_name"),
-            region=config.region,
-            retry_max_attempts=2,
-        )
+        if principal_type == "role":
+            managed_policy_details = await sync_to_async(
+                get_role_managed_policy_documents
+            )(
+                {"RoleName": principal_name},
+                account_number=account_id,
+                assume_role=config.get("policies.role_name"),
+                region=config.region,
+                retry_max_attempts=2,
+            )
+        elif principal_type == "user":
+            managed_policy_details = await sync_to_async(
+                get_user_managed_policy_documents
+            )(
+                {"UserName": principal_name},
+                account_number=account_id,
+                assume_role=config.get("policies.role_name"),
+                region=config.region,
+                retry_max_attempts=2,
+            )
+        else:
+            raise Exception("Invalid principal type")
         res = WebResponse(
             status=Status2.success,
             status_code=200,

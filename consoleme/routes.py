@@ -43,7 +43,7 @@ from consoleme.handlers.v2.logout import LogOutHandler
 from consoleme.handlers.v2.managed_policies import (
     ManagedPoliciesForAccountHandler,
     ManagedPoliciesHandler,
-    ManagedPoliciesOnRoleHandler,
+    ManagedPoliciesOnPrincipalHandler,
 )
 from consoleme.handlers.v2.policies import (
     CheckPoliciesHandler,
@@ -150,8 +150,8 @@ def make_app(jwt_validator=None):
             TemplatedResourceDetailHandler,
         ),
         (
-            r"/api/v2/managed_policies_on_role/(\d{12})/(.*)",
-            ManagedPoliciesOnRoleHandler,
+            r"/api/v2/managed_policies_on_principal/(.*)",
+            ManagedPoliciesOnPrincipalHandler,
         ),
         (r"/api/v2/login", LoginHandler),
         (r"/api/v2/login_configuration", LoginConfigurationHandler),

@@ -1,6 +1,7 @@
 import sys
 from typing import Optional
 
+import sentry_sdk
 import tornado.escape
 
 from consoleme.config import config
@@ -62,18 +63,15 @@ class UserDetailHandler(BaseAPIV2Handler):
 
         error = ""
 
-        user_details = await get_user_details(
-            account_id, user_name, extended=True, force_refresh=force_refresh
-        )
-        # try:
-        #     user_details = await get_user_details(
-        #         account_id, user_name, extended=True, force_refresh=force_refresh
-        #     )
-        # except Exception as e:
-        #     sentry_sdk.capture_exception()
-        #     log.error({**log_data, "error": e}, exc_info=True)
-        #     user_details = None
-        #     error = str(e)
+        try:
+            user_details = await get_user_details(
+                account_id, user_name, extended=True, force_refresh=force_refresh
+            )
+        except Exception as e:
+            sentry_sdk.capture_exception()
+            log.error({**log_data, "error": e}, exc_info=True)
+            user_details = None
+            error = str(e)
 
         if not user_details:
             self.send_error(
