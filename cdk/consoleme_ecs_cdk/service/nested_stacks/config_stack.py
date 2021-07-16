@@ -12,7 +12,8 @@ from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
 from aws_cdk import core as cdk
 from aws_cdk import custom_resources as cr
-from helpers import create_dependencies_layer
+
+from consoleme_ecs_cdk.service.helpers import create_dependencies_layer
 
 
 class ConfigStack(cdk.NestedStack):

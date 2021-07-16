@@ -12,7 +12,13 @@ from aws_cdk import aws_elasticloadbalancingv2 as lb
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_logs as logs
 from aws_cdk import core as cdk
-from constants import DOCKER_IMAGE, MAX_CAPACITY, MIN_CAPACITY, USE_PUBLIC_DOCKER_IMAGE
+
+from consoleme_ecs_cdk.service.constants import (
+    DOCKER_IMAGE,
+    MAX_CAPACITY,
+    MIN_CAPACITY,
+    USE_PUBLIC_DOCKER_IMAGE,
+)
 
 
 class ComputeStack(cdk.NestedStack):

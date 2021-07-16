@@ -10,7 +10,12 @@ from aws_cdk import aws_route53 as route53
 from aws_cdk import aws_route53_targets as route53_targets
 from aws_cdk import core as cdk
 from aws_cdk import custom_resources as cr
-from constants import APPLICATION_PREFIX, HOSTED_ZONE_ID, HOSTED_ZONE_NAME
+
+from consoleme_ecs_cdk.service.constants import (
+    APPLICATION_PREFIX,
+    HOSTED_ZONE_ID,
+    HOSTED_ZONE_NAME,
+)
 
 
 class DomainStack(cdk.NestedStack):
