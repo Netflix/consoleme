@@ -1,6 +1,8 @@
 import sys
 from typing import Optional
 
+import tornado.escape
+
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.auth import can_delete_roles
@@ -99,6 +101,9 @@ class UserDetailHandler(BaseAPIV2Handler):
         """
         DELETE /api/v2/roles/{account_id}/{role_name}
         """
+        account_id = tornado.escape.xhtml_escape(account_id)
+        role_name = tornado.escape.xhtml_escape(role_name)
+
         if not self.user:
             self.write_error(403, message="No user detected")
             return

@@ -110,6 +110,7 @@ def map_operation_to_api(operation, default):
         "REST.COPY.OBJECT": "s3:PutObject",
         "REST.COPY.OBJECT_GET": "REST.COPY.OBJECT_GET",
         "REST.COPY.PART": "s3:PutObject",
+        "REST.DELETE.BUCKET": "s3:DeleteBucket",
         "REST.DELETE.OBJECT": "s3:DeleteObject",
         "REST.DELETE.UPLOAD": "s3:DeleteObject",
         "REST.GET.ACCELERATE": "s3:GetAccelerateConfiguration",
@@ -159,6 +160,7 @@ def map_operation_to_api(operation, default):
         "REST.PUT.OBJECT_TAGGING": "s3:PutObjectTagging",
         "REST.PUT.PART": "s3:PutObject",
         "REST.PUT.PUBLIC_ACCESS_BLOCK": "s3:PutBucketPublicAccessBlock",
+        "REST.PUT.VERSIONING": "REST.PUT.VERSIONING",
     }
     api_call = operations_map.get(operation)
     if api_call is None:
