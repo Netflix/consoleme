@@ -14,8 +14,15 @@ def create_dependencies_layer(self, function_name: str) -> lambda_.LayerVersion:
     output_dir = f"{base_path}/build/{function_name}"
     if not os.environ.get("SKIP_PIP"):
         build_folder = Path(f"{base_path}/build")
+        requirements_file = Path(f"{base_path}/requirements.txt")
+        # Remove build folder from previous runs
         if build_folder.is_dir():
             subprocess.check_call(f"rm -rf {base_path}/build".split())
+        # Remove requirements file from previous runs
+        if requirements_file.is_file():
+            subprocess.check_call(f"rm -rf {base_path}/requirements.txt".split())
+        # Create requirements file using pipreqs
+        subprocess.check_call(f"pipreqs {base_path}".split())
         requirements_file = Path(f"{base_path}/requirements.txt")
         if requirements_file.is_file():
             subprocess.check_call(

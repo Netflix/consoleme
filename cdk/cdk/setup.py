@@ -40,6 +40,7 @@ setuptools.setup(
         "aws_cdk.aws_lambda>=1.107.0",
         "aws_cdk.aws-applicationautoscaling>=1.107.0",
         "PyYAML>=5.3.1",
+        "pipreqs>=0.4.10",
     ],
     python_requires=">=3.6",
     classifiers=[
