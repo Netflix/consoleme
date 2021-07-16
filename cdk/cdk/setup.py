@@ -39,7 +39,6 @@ setuptools.setup(
         "aws_cdk.custom_resources>=1.107.0",
         "aws_cdk.aws_lambda>=1.107.0",
         "aws_cdk.aws-applicationautoscaling>=1.107.0",
-        "aws-cdk.aws-lambda-python>=1.107.0",
         "PyYAML>=5.3.1",
     ],
     python_requires=">=3.6",

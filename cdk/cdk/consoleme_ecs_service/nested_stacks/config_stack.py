@@ -12,7 +12,7 @@ from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
 from aws_cdk import core as cdk
 from aws_cdk import custom_resources as cr
-from aws_cdk.aws_lambda_python import PythonFunction as lambda_python
+from helpers import create_dependencies_layer
 
 
 class ConfigStack(cdk.NestedStack):
@@ -94,11 +94,13 @@ class ConfigStack(cdk.NestedStack):
 
         jwt_secret = config_yaml["jwt_secret"]
 
-        create_configuration_lambda = lambda_python(
+        create_configuration_lambda = lambda_.Function(
             self,
             "CreateConfigurationFileLambda",
-            entry="resources/create_config_lambda",
+            code=lambda_.Code.from_asset("resources/create_config_lambda"),
+            handler="index.handler",
             timeout=cdk.Duration.seconds(30),
+            layers=[create_dependencies_layer(self, "create_config_lambda")],
             runtime=lambda_.Runtime.PYTHON_3_8,
             role=imported_create_configuration_lambda_role,
             environment={
