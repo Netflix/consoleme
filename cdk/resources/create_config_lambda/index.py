@@ -42,9 +42,6 @@ def on_create(event, context):
 
     config_yaml = config_yaml.format(
         issuer=os.getenv("ISSUER"),
-        jwt_secret=os.getenv("JWT_SECRET"),
-        oidc_client_id=os.getenv("OIDC_CLIENT_ID"),
-        oidc_client_secret=os.getenv("OIDC_CLIENT_SECRET"),
         oidc_metadata_url=os.getenv("OIDC_METADATA_URL"),
         redis_host=os.getenv("REDIS_HOST"),
         aws_region=os.getenv("AWS_REGION"),
