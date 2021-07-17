@@ -34,6 +34,7 @@ RUN yarn --cwd ui build:prod
 
 # Run ConsoleMe tornado server using configuration
 COPY consoleme /apps/consoleme/consoleme/
+COPY scripts /apps/consoleme/scripts/
 CMD python scripts/retrieve_or_decode_configuration.py ; python /apps/consoleme/consoleme/__main__.py
 
 EXPOSE 8081
