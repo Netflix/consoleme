@@ -13,6 +13,7 @@ from aws_cdk import aws_logs as logs
 from aws_cdk import core as cdk
 from aws_cdk import custom_resources as cr
 from aws_cdk.aws_lambda_python import PythonFunction as lambda_python
+
 from cdk.consoleme_ecs_service.constants import CONFIG_SECRET_NAME
 
 
