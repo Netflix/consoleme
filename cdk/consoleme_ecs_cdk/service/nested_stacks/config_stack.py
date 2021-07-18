@@ -13,9 +13,8 @@ from aws_cdk import aws_logs as logs
 from aws_cdk import core as cdk
 from aws_cdk import custom_resources as cr
 
-from consoleme_ecs_cdk.service.helpers import create_dependencies_layer
-
 from cdk.consoleme_ecs_service.constants import CONFIG_SECRET_NAME
+from consoleme_ecs_cdk.service.helpers import create_dependencies_layer
 
 
 class ConfigStack(cdk.NestedStack):
