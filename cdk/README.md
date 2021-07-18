@@ -136,10 +136,10 @@ You can set the user temporary password in the `config.yaml` file, login and upd
 - TLS termination are being done on the application load balancer using A SSL certificate generated on the deployment time by CDK, with DNS record validation on the configured hosted zone.
 - Permanent resources, such as CMK, and Cognito User Pool are defined to be destroyed when the stack is deleted.
 - Log groups retention are set to one week.
+- Secret manager integration, instead of storing secrets like `jwt_secret` and `oidc_secrets` in clear text on the configuration file.
 
 ## Issues / Todo
 
 - Allow adjusting compute sizes via configuration, such as Redis node size and containers CPU and RAM allocation.
 - Elasticache authentication, rather than relying only on security groups for increased security.
 - Separate task definitions for celery and ConsoleMe applications.
-- Secret manager integration, instead of storing the secrets in clear text on the configuration file.

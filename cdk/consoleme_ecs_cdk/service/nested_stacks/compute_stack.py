@@ -87,6 +87,7 @@ class ComputeStack(cdk.NestedStack):
             environment={
                 "SETUPTOOLS_USE_DISTUTILS": "stdlib",
                 "CONSOLEME_CONFIG_S3": "s3://" + s3_bucket_name + "/config.yaml",
+                "EC2_REGION": self.region,
             },
             working_directory="/apps/consoleme",
             command=[
@@ -108,6 +109,7 @@ class ComputeStack(cdk.NestedStack):
                 "SETUPTOOLS_USE_DISTUTILS": "stdlib",
                 "CONSOLEME_CONFIG_S3": "s3://" + s3_bucket_name + "/config.yaml",
                 "COLUMNS": "80",
+                "EC2_REGION": self.region,
             },
             command=[
                 "bash",

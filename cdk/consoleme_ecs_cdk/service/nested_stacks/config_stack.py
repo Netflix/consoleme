@@ -15,6 +15,8 @@ from aws_cdk import custom_resources as cr
 
 from consoleme_ecs_cdk.service.helpers import create_dependencies_layer
 
+from cdk.consoleme_ecs_service.constants import CONFIG_SECRET_NAME
+
 
 class ConfigStack(cdk.NestedStack):
     """
@@ -95,6 +97,58 @@ class ConfigStack(cdk.NestedStack):
 
         jwt_secret = config_yaml["jwt_secret"]
 
+        config_secret_dict = {
+            "oidc_secrets": {
+                "client_id": cognito_user_pool_client.user_pool_client_id,
+                "secret": cognito_user_pool_client_secret,
+                "client_scope": ["email", "openid"],
+            },
+            "jwt_secret": jwt_secret,
+        }
+
+        config_secret_yaml = yaml.dump(
+            config_secret_dict,
+            explicit_start=True,
+            default_flow_style=False,
+        )
+
+        config_secret = cr.AwsCustomResource(
+            self,
+            "ConfigSecretResource",
+            policy=cr.AwsCustomResourcePolicy.from_sdk_calls(
+                resources=cr.AwsCustomResourcePolicy.ANY_RESOURCE
+            ),
+            on_update=cr.AwsSdkCall(
+                service="SecretsManager",
+                action="updateSecret",
+                parameters={
+                    "SecretId": CONFIG_SECRET_NAME,
+                    "SecretString": config_secret_yaml,
+                },
+                physical_resource_id=cr.PhysicalResourceId.from_response("Name"),
+            ),
+            on_create=cr.AwsSdkCall(
+                service="SecretsManager",
+                action="createSecret",
+                parameters={
+                    "Name": CONFIG_SECRET_NAME,
+                    "Description": "Sensitive configuration parameters for ConsoleMe",
+                    "SecretString": config_secret_yaml,
+                },
+                physical_resource_id=cr.PhysicalResourceId.from_response("Name"),
+            ),
+            on_delete=cr.AwsSdkCall(
+                service="SecretsManager",
+                action="deleteSecret",
+                parameters={
+                    "SecretId": CONFIG_SECRET_NAME,
+                    "ForceDeleteWithoutRecovery": True,
+                },
+            ),
+            install_latest_aws_sdk=True,
+            log_retention=logs.RetentionDays.ONE_WEEK,
+        )
+
         create_configuration_lambda = lambda_.Function(
             self,
             "CreateConfigurationFileLambda",
@@ -106,9 +160,6 @@ class ConfigStack(cdk.NestedStack):
             role=imported_create_configuration_lambda_role,
             environment={
                 "DEPLOYMENT_BUCKET": s3_bucket_name,
-                "JWT_SECRET": jwt_secret,
-                "OIDC_CLIENT_ID": cognito_user_pool_client.user_pool_client_id,
-                "OIDC_CLIENT_SECRET": cognito_user_pool_client_secret,
                 "OIDC_METADATA_URL": "https://cognito-idp."
                 + self.region
                 + ".amazonaws.com/"
@@ -126,6 +177,7 @@ class ConfigStack(cdk.NestedStack):
                 "ACCOUNT_NUMBER": self.account,
                 "ISSUER": domain_name,
                 "SPOKE_ACCOUNTS": ",".join(spoke_accounts),
+                "CONFIG_SECRET_NAME": CONFIG_SECRET_NAME,
             },
         )
 
@@ -136,10 +188,12 @@ class ConfigStack(cdk.NestedStack):
             log_retention=logs.RetentionDays.ONE_WEEK,
         )
 
-        cdk.CustomResource(
+        create_configuration_lambda_resource = cdk.CustomResource(
             self,
             "CreateConfigurationFile",
             service_token=create_configuration_resource_provider.service_token,
             removal_policy=cdk.RemovalPolicy.DESTROY,
             properties={"UUID": str(uuid4())},
         )
+
+        create_configuration_lambda_resource.node.add_dependency(config_secret)
