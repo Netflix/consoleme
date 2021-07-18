@@ -21,3 +21,4 @@ USE_PUBLIC_DOCKER_IMAGE = config_yaml["use_public_docker_image"]
 DOCKER_IMAGE = "consoleme/consoleme"
 MIN_CAPACITY = config_yaml["min_capacity"]
 MAX_CAPACITY = config_yaml["max_capacity"]
+CONFIG_SECRET_NAME = "ConsoleMeConfigSecret"

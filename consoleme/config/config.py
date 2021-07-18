@@ -151,15 +151,13 @@ class Configuration(object):
         for s in extends:
             extend_config = {}
             # This decode and YAML-load a string stored in AWS Secrets Manager
-            secrets_manager_key = "AWS_SECRETS_MANAGER"
-            if isinstance(s, dict):
-                if secrets_manager_key in s:
-                    secret_name = s.get(secrets_manager_key)
-                    extend_config = yaml.safe_load(
-                        get_aws_secret(
-                            secret_name, os.environ.get("EC2_REGION", "us-east-1")
-                        )
+            if s.startswith("AWS_SECRETS_MANAGER:"):
+                secret_name = "".join(s.split("AWS_SECRETS_MANAGER:")[1:])
+                extend_config = yaml.safe_load(
+                    get_aws_secret(
+                        secret_name, os.environ.get("EC2_REGION", "us-east-1")
                     )
+                )
             else:
                 try:
                     extend_path = os.path.join(dir_path, s)

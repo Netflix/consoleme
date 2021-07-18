@@ -13,6 +13,7 @@ from aws_cdk import aws_logs as logs
 from aws_cdk import core as cdk
 from aws_cdk import custom_resources as cr
 from aws_cdk.aws_lambda_python import PythonFunction as lambda_python
+from cdk.consoleme_ecs_service.constants import CONFIG_SECRET_NAME
 
 
 class ConfigStack(cdk.NestedStack):
@@ -119,7 +120,7 @@ class ConfigStack(cdk.NestedStack):
                 service="SecretsManager",
                 action="updateSecret",
                 parameters={
-                    "SecretId": "ConsoleMeConfigSecret",
+                    "SecretId": CONFIG_SECRET_NAME,
                     "SecretString": config_secret_yaml,
                 },
                 physical_resource_id=cr.PhysicalResourceId.from_response("Name"),
@@ -128,7 +129,7 @@ class ConfigStack(cdk.NestedStack):
                 service="SecretsManager",
                 action="createSecret",
                 parameters={
-                    "Name": "ConsoleMeConfigSecret",
+                    "Name": CONFIG_SECRET_NAME,
                     "Description": "Sensitive configuration parameters for ConsoleMe",
                     "SecretString": config_secret_yaml,
                 },
@@ -138,7 +139,7 @@ class ConfigStack(cdk.NestedStack):
                 service="SecretsManager",
                 action="deleteSecret",
                 parameters={
-                    "SecretId": "ConsoleMeConfigSecret",
+                    "SecretId": CONFIG_SECRET_NAME,
                     "ForceDeleteWithoutRecovery": True,
                 },
             ),
@@ -172,6 +173,7 @@ class ConfigStack(cdk.NestedStack):
                 "ACCOUNT_NUMBER": self.account,
                 "ISSUER": domain_name,
                 "SPOKE_ACCOUNTS": ",".join(spoke_accounts),
+                "CONFIG_SECRET_NAME": CONFIG_SECRET_NAME,
             },
         )
 

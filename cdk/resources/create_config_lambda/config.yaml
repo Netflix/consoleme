@@ -10,7 +10,7 @@ tornado:
     samesite: strict
 
 extends:
-  - AWS_SECRETS_MANAGER: ConsoleMeConfigSecret
+  - AWS_SECRETS_MANAGER:arn:aws:secretsmanager:{aws_region}:{account_number}:{config_secret_name}
 
 auth:
   require_jwt: true
