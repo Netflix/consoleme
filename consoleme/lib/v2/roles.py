@@ -145,7 +145,7 @@ async def get_user_details(
             account_id=account_id,
             account_name=account_ids_to_name.get(account_id, None),
             arn=arn,
-            inline_policies=user["InlinePolicies"],
+            inline_policies=user.get("UserPolicyList", []),
             config_timeline_url=await get_config_timeline_url_for_role(
                 user, account_id
             ),
@@ -154,7 +154,7 @@ async def get_user_details(
                 account_id=account_id, role_name=user_name
             ),
             apps=await get_app_details_for_role(arn),
-            managed_policies=user["ManagedPolicies"],
+            managed_policies=user["AttachedManagedPolicies"],
             groups=user["Groups"],
             tags=user["Tags"],
             templated=False,
@@ -189,7 +189,9 @@ async def get_role_details(
             account_id=account_id,
             account_name=account_ids_to_name.get(account_id, None),
             arn=arn,
-            inline_policies=role["policy"]["RolePolicyList"],
+            inline_policies=role["policy"].get(
+                "RolePolicyList", role["policy"].get("UserPolicyList", [])
+            ),
             assume_role_policy_document=role["policy"]["AssumeRolePolicyDocument"],
             config_timeline_url=await get_config_timeline_url_for_role(
                 role, account_id

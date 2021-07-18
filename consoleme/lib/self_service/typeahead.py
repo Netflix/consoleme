@@ -93,6 +93,50 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
             )
         )
 
+    user_data = await retrieve_json_data_from_redis_or_s3(
+        redis_key=config.get("aws.iamroles_redis_key", "IAM_USER_CACHE"),
+        redis_data_type="hash",
+        s3_bucket=config.get(
+            "cache_iam_resources_across_accounts.all_users_combined.s3.bucket"
+        ),
+        s3_key=config.get(
+            "cache_iam_resources_across_accounts.all_users_combined.s3.file",
+            "account_resource_cache/cache_all_users_v1.json.gz",
+        ),
+        default={},
+    )
+
+    for user, details_j in user_data.items():
+        account_id = user.split(":")[4]
+        account_name = accounts_d.get(account_id, account_id)
+        details = json.loads(details_j)
+        policy = json.loads(details["policy"])
+        user_name = policy.get("UserName", policy["Arn"].split("/")[-1])
+        app_name = None
+        app_url = None
+        if app_name_tag:
+            for tag in policy.get("Tags", []):
+                if tag["Key"] != app_name_tag:
+                    continue
+                app_name = tag["Value"]
+                app_url = config.get("cache_self_service_typeahead.app_url", "").format(
+                    app_name=app_name
+                )
+        typeahead_entries.append(
+            SelfServiceTypeaheadModel(
+                icon="user",
+                number_of_affected_resources=1,
+                display_text=user_name,
+                account=account_name,
+                application_name=app_name,
+                application_url=app_url,
+                principal=AwsResourcePrincipalModel(
+                    principal_type="AwsResource", principal_arn=policy["Arn"]
+                ),
+                details_endpoint=f"/api/v2/users/{account_id}/{user_name}",
+            )
+        )
+
     typeahead_data = SelfServiceTypeaheadModelArray(typeahead_entries=typeahead_entries)
     await store_json_results_in_redis_and_s3(
         json.loads(typeahead_data.json()),
