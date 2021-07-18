@@ -9,18 +9,13 @@ tornado:
   xsrf_cookie_kwargs:
     samesite: strict
 
+extends:
+  - AWS_SECRETS_MANAGER:{config_secret_name}
+
 auth:
   require_jwt: true
   set_auth_cookie: true
   get_user_by_oidc: true
-
-oidc_secrets:
-  client_id: {oidc_client_id}
-  secret: {oidc_client_secret}
-  client_scope:
-    - email
-    - openid
-jwt_secret: {jwt_secret}
 
 get_user_by_oidc_settings:
   metadata_url: {oidc_metadata_url}
