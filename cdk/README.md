@@ -118,7 +118,6 @@ You can control scaling of the ECS tasks amount on the `config.yaml` configurati
 
 In order for the service to run, the ECS service containers will pull the compatible container image and provision containers according to the desired capacity.
 For your convenience, by default we use the official `consoleme` docker image. However, you can configure the CDK deployment to build the current branch of `consoleme` and package it as a docker image hosted on ECR by modifying the `use_public_docker_image` parameter.
-Also, the `aws-lambda-python` CDK construct is using docker to package the lambda function with all it's dependencies as a lambda layer.
 
 ### ConsoleMe Admin User
 

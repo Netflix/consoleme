@@ -1,0 +1,48 @@
+{{- if .Values.dynamodb.deployLocal -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "consoleme.fullname" . }}-dynamodb
+  labels:
+    {{- include "consoleme.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "consoleme.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app: {{ include "consoleme.fullname" . }}-dynamodb
+        {{- include "consoleme.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "consoleme.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-dynamodb
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.dynamodb.image.repository }}:{{ .Values.dynamodb.image.tag }}"
+          imagePullPolicy: {{ .Values.dynamodb.image.pullPolicy }}
+          command: ["/bin/bash","-c", "{{ .Values.dynamodb.command }} -port {{ .Values.dynamodb.port }}"]
+          ports:
+            - name: {{ .Values.dynamodb.port_name }}
+              containerPort: {{ .Values.dynamodb.port }}
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /data
+              name: data
+      volumes:
+        - name: data
+          emptyDir: {}
+{{- end }}

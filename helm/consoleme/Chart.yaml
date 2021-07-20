@@ -1,0 +1,15 @@
+apiVersion: v2
+name: consoleme
+description: A Helm chart to install ConsoleMe
+maintainers:
+  - email: ccastrapel@netflix.com
+    name: Curtis Castrapel
+type: application
+version: 0.1.0
+appVersion: "1.16.0"
+
+dependencies:
+  - name: redis
+    repository: https://charts.bitnami.com/bitnami
+    version: 14.3.1
+    condition: redis.deployLocal

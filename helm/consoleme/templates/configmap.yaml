@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "consoleme.fullname" . }}-config
+  labels:
+    {{- include "consoleme.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    extends:
+      - config_base.yaml
+      - config_dynamo.yaml
+      - config_redis.yaml
+      - config_auth.yaml
+      - secrets/secrets.yaml

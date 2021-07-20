@@ -1,0 +1,18 @@
+{{- if (eq "header" .Values.authentication.type) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "consoleme.fullname" . }}-config-auth
+  labels:
+    {{- include "consoleme.labels" . | nindent 4 }}
+data:
+  config_auth.yaml: |
+    {{- with .Values.authentication.header_config }}
+    auth:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    development: {{ .Values.consoleme.development }}
+    url: {{ .Values.consoleme.url }}
+
+{{- end }}

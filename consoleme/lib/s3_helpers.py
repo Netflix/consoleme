@@ -43,8 +43,7 @@ async def is_object_older_than_seconds(
 
 async def does_object_exist(bucket: str, key: str, s3_client=None) -> bool:
     """
-    This function checks if an S3 object is older than the specified number of seconds. if the object doesn't
-    exist, this function will return True.
+    This function checks if an S3 object exists.
     """
     if not s3_client:
         s3_client = boto3.client("s3")
