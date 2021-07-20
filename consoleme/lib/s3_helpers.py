@@ -41,6 +41,22 @@ async def is_object_older_than_seconds(
     return False
 
 
+async def does_object_exist(bucket: str, key: str, s3_client=None) -> bool:
+    """
+    This function checks if an S3 object exists.
+    """
+    if not s3_client:
+        s3_client = boto3.client("s3")
+    try:
+        await sync_to_async(s3_client.head_object)(Bucket=bucket, Key=key)
+    except ClientError as e:
+        # If file is not found, we'll tell the user it's older than the specified time
+        if e.response.get("Error", {}).get("Code") == "404":
+            return False
+        raise
+    return True
+
+
 @rate_limited()
 @sts_conn("s3")
 def put_object(client=None, **kwargs):

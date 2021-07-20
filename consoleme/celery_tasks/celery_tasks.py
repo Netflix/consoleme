@@ -465,6 +465,8 @@ def is_task_already_running(fun, args):
     log.debug(task_id)
 
     active_tasks = app.control.inspect()._request("active")
+    if not active_tasks:
+        return False
     for _, tasks in active_tasks.items():
         for task in tasks:
             if task.get("id") == task_id:

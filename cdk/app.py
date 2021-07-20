@@ -10,13 +10,13 @@ import boto3
 import yaml
 from aws_cdk import core as cdk
 
-from cdk.consoleme_ecs_service.consoleme_ecs_service_stack import (
+from consoleme_ecs_cdk.service.consoleme_ecs_service_stack import (
     ConsolemeEcsServiceStack,
 )
-from cdk.consoleme_ecs_service.consoleme_spoke_accounts_stack import (
+from consoleme_ecs_cdk.service.consoleme_spoke_accounts_stack import (
     ConsolemeSpokeAccountsStack,
 )
-from cdk.consoleme_ecs_service.constants import BASE_NAME, SPOKE_BASE_NAME
+from consoleme_ecs_cdk.service.constants import BASE_NAME, SPOKE_BASE_NAME
 
 config_yaml = yaml.load(open("config.yaml"), Loader=yaml.FullLoader)
 

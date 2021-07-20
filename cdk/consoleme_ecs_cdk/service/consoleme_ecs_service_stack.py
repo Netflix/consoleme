@@ -3,7 +3,6 @@ Main account stack for running ConsoleMe on ECS
 """
 
 from aws_cdk import core as cdk
-from constants import BASE_NAME
 from nested_stacks.alb_stack import ALBStack
 from nested_stacks.auth_stack import AuthStack
 from nested_stacks.cache_stack import CacheStack
@@ -14,6 +13,8 @@ from nested_stacks.domain_stack import DomainStack
 from nested_stacks.iam_stack import IAMStack
 from nested_stacks.shared_stack import SharedStack
 from nested_stacks.vpc_stack import VPCStack
+
+from consoleme_ecs_cdk.service.constants import BASE_NAME
 
 
 class ConsolemeEcsServiceStack(cdk.Stack):
