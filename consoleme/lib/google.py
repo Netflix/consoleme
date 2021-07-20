@@ -188,6 +188,7 @@ async def remove_user_from_group_task(
 
 async def get_service(service_name: str, service_path: str, group: str) -> Resource:
     """Get service connection."""
+    # TODO: Put a comment here with an example, and a link of where to generate this
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     stats.count(function)
     log_data = {
