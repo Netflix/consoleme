@@ -42,9 +42,6 @@ def on_create(event, context):
 
     config_yaml = config_yaml.format(
         issuer=os.getenv("ISSUER"),
-        jwt_secret=os.getenv("JWT_SECRET"),
-        oidc_client_id=os.getenv("OIDC_CLIENT_ID"),
-        oidc_client_secret=os.getenv("OIDC_CLIENT_SECRET"),
         oidc_metadata_url=os.getenv("OIDC_METADATA_URL"),
         redis_host=os.getenv("REDIS_HOST"),
         aws_region=os.getenv("AWS_REGION"),
@@ -53,6 +50,7 @@ def on_create(event, context):
         application_admin=os.getenv("APPLICATION_ADMIN"),
         account_number=os.getenv("ACCOUNT_NUMBER"),
         spoke_accounts_objects_list_yaml=spoke_accounts_objects_list_yaml,
+        config_secret_name=os.getenv("CONFIG_SECRET_NAME"),
     )
     encoded_config = config_yaml.encode("utf-8")
 
