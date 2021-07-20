@@ -1,0 +1,62 @@
+{{- if (eq "saml" .Values.authentication.type) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "consoleme.fullname" . }}-config-auth
+  labels:
+    {{- include "consoleme.labels" . | nindent 4 }}
+data:
+  config_auth.yaml: |
+    auth:
+      get_user_by_saml: true
+      set_auth_cookie: true
+
+    get_user_by_saml_settings:
+      idp_metadata_url: {{ .Values.authentication.saml_config.idp_metadata_url }}
+      saml_path: /etc/consoleme
+      jwt:
+        expiration_hours: 1
+        email_key: email
+        groups_key: groups
+      attributes:
+        user: user
+        groups: groups
+        email: email
+      saml_settings:
+        debug: false
+        sp:
+          NameIDFormat: urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress
+          assertionConsumerService:
+            binding: urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST
+            url: {{ .Values.consoleme.url }}/saml/acs
+          entityId: {{ .Values.consoleme.url }}
+          singleLogoutService:
+            binding: urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect
+            url: {{ .Values.consoleme.url }}/saml/sls
+        strict: false
+        {{- with .Values.authentication.saml_config.support }}
+        support:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.authentication.saml_config.organization }}
+        organization:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        security:
+          authnRequestsSigned: true
+          digestAlgorithm: http://www.w3.org/2000/09/xmldsig#sha1
+          logoutRequestSigned: true
+          logoutResponseSigned: true
+          nameIdEncrypted: true
+          signMetadata: true
+          signatureAlgorithm: http://www.w3.org/2000/09/xmldsig#rsa-sha1
+          wantAssertionsEncrypted: true
+          wantAssertionsSigned: true
+          wantMessagesSigned: true
+          wantNameId: true
+          wantNameIdEncrypted: false
+
+    development: {{ .Values.consoleme.development }}
+    url: {{ .Values.consoleme.url }}
+
+{{- end }}

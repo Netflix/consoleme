@@ -1,0 +1,17 @@
+{{- if .Values.dynamodb.deployLocal -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "consoleme.fullname" . }}-dynamodb
+  labels:
+    {{- include "consoleme.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.dynamodb.port }}
+      targetPort: {{ .Values.dynamodb.port }}
+      protocol: TCP
+      name: {{ .Values.dynamodb.port_name }}
+  selector:
+    app: {{ include "consoleme.fullname" . }}-dynamodb
+{{- end }}
