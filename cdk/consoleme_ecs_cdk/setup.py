@@ -9,14 +9,14 @@ with open("../README.md") as fp:
 
 
 setuptools.setup(
-    name="consoleme_ecs_service",
+    name="consoleme_ecs_cdk",
     version="0.0.1",
     description="AWS CDK stack for ConsoleMe ECS service",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Avishay Bar",
-    package_dir={"": "consoleme_ecs_service"},
-    packages=setuptools.find_packages(where="consoleme_ecs_service"),
+    package_dir={"": "service"},
+    packages=setuptools.find_packages(where="service"),
     install_requires=[
         "aws-cdk.core>=1.107.0",
         "aws-cdk.aws_s3>=1.107.0",
@@ -39,8 +39,8 @@ setuptools.setup(
         "aws_cdk.custom_resources>=1.107.0",
         "aws_cdk.aws_lambda>=1.107.0",
         "aws_cdk.aws-applicationautoscaling>=1.107.0",
-        "aws-cdk.aws-lambda-python>=1.107.0",
         "PyYAML>=5.3.1",
+        "pipreqs>=0.4.10",
     ],
     python_requires=">=3.6",
     classifiers=[

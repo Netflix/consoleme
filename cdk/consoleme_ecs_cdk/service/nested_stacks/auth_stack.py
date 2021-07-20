@@ -5,7 +5,12 @@ Authentication stack for running ConsoleMe on ECS
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import core as cdk
 from aws_cdk import custom_resources as cr
-from constants import ADMIN_TEMP_PASSWORD, APPLICATION_PREFIX, APPLICATION_SUFFIX
+
+from consoleme_ecs_cdk.service.constants import (
+    ADMIN_TEMP_PASSWORD,
+    APPLICATION_PREFIX,
+    APPLICATION_SUFFIX,
+)
 
 
 class AuthStack(cdk.NestedStack):
