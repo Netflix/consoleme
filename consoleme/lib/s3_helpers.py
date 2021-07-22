@@ -1,6 +1,6 @@
 import sys
 from datetime import datetime
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import boto3
 import pytz
@@ -12,6 +12,7 @@ from cloudaux.aws.decorators import rate_limited
 from cloudaux.aws.sts import boto3_cached_conn
 
 from consoleme.config import config
+from consoleme.exceptions.exceptions import MissingConfigurationValue
 from consoleme.lib.plugins import get_plugin_by_name
 
 log = config.get_logger("consoleme")
@@ -19,12 +20,19 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 async def is_object_older_than_seconds(
-    bucket: str, key: str, older_than_seconds: int, s3_client=None
+    bucket: Optional[str], key: str, older_than_seconds: int, s3_client=None
 ) -> bool:
     """
     This function checks if an S3 object is older than the specified number of seconds. if the object doesn't
     exist, this function will return True.
     """
+    if not bucket:
+        bucket = config.get("consoleme_s3_bucket")
+    if not bucket:
+        raise MissingConfigurationValue(
+            "`bucket` not defined, and we can't find the default bucket in "
+            "the configuration key `consoleme_s3_bucket`."
+        )
     now = datetime.utcnow().replace(tzinfo=pytz.utc)
     if not s3_client:
         s3_client = boto3.client("s3")
