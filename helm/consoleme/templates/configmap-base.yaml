@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "consoleme.fullname" . }}-config-base
+  labels:
+    {{- include "consoleme.labels" . | nindent 4 }}
+data:
+  config_base.yaml: |-
+    application_admin: {{ .Values.consoleme.application_admin }}
+
+    environment: {{ .Values.consoleme.environment }}
+
+    {{- with .Values.tornado }}
+    tornado:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    {{- with .Values.account_ids_to_name }}
+    account_ids_to_name:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    {{- with .Values.cloud_credential_authorization_mapping }}
+    cloud_credential_authorization_mapping:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    aws:
+      issuer: {{ .Values.aws.issuer  }}
+      account_number: {{ .Values.aws.account_number  }}
+      region: {{ .Values.aws.region  }}
+
+    celery:
+      active_region: {{ .Values.consoleme.celery.region  }}
+
+    {{- with .Values.cli_auth }}
+    cli_auth:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    jwt:
+      email_key: email
+
+    {{- with .Values.groups }}
+    groups:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    support_contact: {{ .Values.support_contact }}
+    support_chat_url: {{ .Values.support_chat_url }}
+    documentation_page: {{ .Values.documentation_page }}
+
+    export_to_terraform_enabled: {{ .Values.consoleme.export_to_terraform_enabled }}
+
+    {{- with .Values.logging_levels }}
+    logging_levels:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    {{- with .Values.policies }}
+    policies:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    user_role_creator:
+      {{- with .Values.user_role_creator.default_trust_policy }}
+      default_trust_policy:
+        {{- . | nindent 8 }}
+     {{- end }}
+
+    {{- with .Values.ses }}
+    ses:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    {{- with .Values.challenge_url }}
+    challenge_url:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    {{- with .Values.self_service_iam }}
+    self_service_iam:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    {{- with .Values.permission_templates }}
+    permission_templates:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+

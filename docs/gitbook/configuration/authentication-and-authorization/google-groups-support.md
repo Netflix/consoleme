@@ -68,6 +68,8 @@ https://www.googleapis.com/auth/admin.reports.audit.readonly
 ## ConsoleMe static config changes
 
 1. Add the contents of the key file that was downloaded while generating service account keys as a dictionary in your consoleme static config.
+2. There are newline characters in the private_key inside the service account key. You have to split the line on the newline character when you paste it into the YAML file.
+3. If you're using the Google Workspace then make sure that credential_subject is the email of workspace admin.
 
 Your static config should look similar to this:
 

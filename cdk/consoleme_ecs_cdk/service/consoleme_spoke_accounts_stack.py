@@ -4,7 +4,8 @@ Spoke accounts stack for running ConsoleMe on ECS
 
 from aws_cdk import aws_iam as iam
 from aws_cdk import core as cdk
-from constants import MAIN_ACCOUNT_ID, SPOKE_BASE_NAME
+
+from consoleme_ecs_cdk.service.constants import MAIN_ACCOUNT_ID, SPOKE_BASE_NAME
 
 
 class ConsolemeSpokeAccountsStack(cdk.Stack):
