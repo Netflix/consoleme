@@ -271,7 +271,7 @@ async def generate_request_from_change_model_array(
                     log_data[
                         "message"
                     ] = "Exception raised while getting managed policy"
-                    log.error(log_data)
+                    log.error(log_data, exc_info=True)
                     raise InvalidRequestParameter(log_data["message"] + ": " + str(e))
 
             for managed_policy_resource_change in managed_policy_resource_changes:
@@ -1260,7 +1260,7 @@ async def populate_old_managed_policies(
         if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "policy":
             log_data[
                 "message"
-            ] = "ARN type not supported for populating old policy changes."
+            ] = "ARN type not supported for populating old managed policy changes."
             log.debug(log_data)
             return result
 
@@ -1276,8 +1276,9 @@ async def populate_old_managed_policies(
             if e.response["Error"]["Code"] == "NoSuchEntity":
                 # Could be a new managed policy, hence not found, in this case there are no old policies
                 return result
+            raise
     else:
-        # Honeybee template, no support for managed policies for v1?
+        # TODO: Add Honeybee Support for editing managed policies
         return result
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
@@ -1307,7 +1308,7 @@ async def populate_old_managed_policies(
                 policy_document=managed_policy_resource,
             )
 
-    log_data["message"] = "Done populating old policies"
+    log_data["message"] = "Done populating old managed policies"
     log_data["request"] = extended_request.dict()
     log.debug(log_data)
     result["extended_request"] = extended_request
@@ -1754,6 +1755,12 @@ async def apply_managed_policy_resource_change(
         )
         return response
 
+    conn_details = {
+        "account_number": resource_account,
+        "assume_role": config.get("policies.role_name"),
+        "session_name": f"ConsoleMe_MP_{user}",
+    }
+
     # Save current policy by populating "old" policies at the time of application for historical record
     populate_old_managed_policies_results = await populate_old_managed_policies(
         extended_request, user
@@ -1771,6 +1778,7 @@ async def apply_managed_policy_resource_change(
                 policy_name=policy_name,
                 policy_arn=extended_request.principal.principal_arn,
                 description=description,
+                **conn_details,
             )
             response.action_results.append(
                 ActionResult(
@@ -1799,6 +1807,7 @@ async def apply_managed_policy_resource_change(
                 policy_arn=extended_request.principal.principal_arn,
                 description="",
                 existing_policy=True,
+                **conn_details,
             )
             response.action_results.append(
                 ActionResult(
