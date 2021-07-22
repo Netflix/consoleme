@@ -226,8 +226,7 @@ consoleme:
     replicaCount: 1
     # Not using the script retrieve_or_decode_configuration
     command: >
-      "FORCE_COLOR=true yarn --cwd /apps/consoleme/ui/ build:prod;
-      watchmedo auto-restart --recursive --pattern='*.py;*.yaml' --directory='.' python consoleme/__main__.py"
+      "python consoleme/__main__.py"
     containerPort: 8081
     livenessProbe:
       path: /
