@@ -20,7 +20,7 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 async def is_object_older_than_seconds(
-    bucket: Optional[str], key: str, older_than_seconds: int, s3_client=None
+    key: str, older_than_seconds: int, bucket: Optional[str] = None, s3_client=None
 ) -> bool:
     """
     This function checks if an S3 object is older than the specified number of seconds. if the object doesn't
