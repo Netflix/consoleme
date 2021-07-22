@@ -13,7 +13,7 @@ from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError, ParamValidationError
 from cloudaux import CloudAux
 from cloudaux.aws.decorators import rate_limited
-from cloudaux.aws.iam import get_managed_policy_document
+from cloudaux.aws.iam import get_managed_policy_document, get_policy
 from cloudaux.aws.s3 import (
     get_bucket_location,
     get_bucket_policy,
@@ -352,8 +352,15 @@ async def fetch_managed_policy_details(
         region=config.region,
         retry_max_attempts=2,
     )
-    # TODO: the actual tags
-    result["TagSet"] = []
+    policy_details = await sync_to_async(get_policy)(
+        policy_arn=policy_arn,
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        region=config.region,
+        retry_max_attempts=2,
+    )
+
+    result["TagSet"] = policy_details["Policy"]["Tags"]
     result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
         account_id,
         policy_arn,
