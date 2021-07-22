@@ -100,7 +100,6 @@ class Configuration(object):
                 {
                     "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
                     "message": "Dynamic configuration changes detected and loaded",
-                    "dynamic_config": dynamic_config,
                 }
             )
             self.config["dynamic_config"] = dynamic_config
