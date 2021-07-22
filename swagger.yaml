@@ -1162,6 +1162,21 @@ components:
               pattern: "managed_policy"
             action:
               $ref: "#/components/schemas/Action"
+    ManagedPolicyResourceChangeModel:
+      allOf:
+        - $ref: "#/components/schemas/ChangeModel"
+        - type: object
+          properties:
+            new:
+              default: true
+              type: boolean
+            change_type:
+              type: string
+              pattern: "managed_policy_resource"
+            policy:
+              $ref: "#/components/schemas/PolicyModel"
+            old_policy:
+              $ref: "#/components/schemas/PolicyModel"
     PermissionsBoundaryChangeModel:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
@@ -1194,6 +1209,7 @@ components:
               - $ref: "#/components/schemas/AssumeRolePolicyChangeModel"
               - $ref: "#/components/schemas/ResourceTagChangeModel"
               - $ref: "#/components/schemas/GenericFileChangeModel"
+              - $ref: "#/components/schemas/ManagedPolicyResourceChangeModel"
     ArnArray:
       type: array
       items:

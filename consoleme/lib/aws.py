@@ -105,15 +105,22 @@ async def update_managed_policy(cloudaux, policy_name, new_policy, policy_arn):
     versions = await sync_to_async(cloudaux.call)(
         "iam.client.list_policy_versions", PolicyArn=policy_arn
     )
+    oldest_policy_version = -1
+    oldest_timestamp = None
     for i, version in enumerate(versions.get("Versions", [])):
         if version["IsDefaultVersion"]:
             default_policy_index = i
         current_policy_versions.append(version)
+        if oldest_policy_version == -1 or oldest_timestamp > version["CreateDate"]:
+            oldest_policy_version = i
+            oldest_timestamp = version["CreateDate"]
 
     if len(current_policy_versions) == 5:
-        # Want to make sure we don't pop the default version so arbitrarily set position to 1 if default ends
-        # up being the last index position
-        pop_position = 1 if default_policy_index == 4 else 4
+        pop_position = oldest_policy_version
+        # Want to make sure we don't pop the default version so arbitrarily set position to oldest + 1 mod N
+        # if default is also the oldest
+        if default_policy_index == oldest_policy_version:
+            pop_position = (oldest_policy_version + 1) % len(current_policy_versions)
         await sync_to_async(cloudaux.call)(
             "iam.client.delete_policy_version",
             PolicyArn=policy_arn,
