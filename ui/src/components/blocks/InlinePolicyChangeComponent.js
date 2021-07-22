@@ -133,7 +133,8 @@ class InlinePolicyChangeComponent extends Component {
 
     const headerContent = (
       <Header size="large">
-        Inline Policy Change - {change.policy_name} {newPolicy}
+        {change.change_type === "inline_policy" ? "Inline" : "Managed"} Policy
+        Change - {change.policy_name} {newPolicy}
       </Header>
     );
 

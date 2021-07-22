@@ -197,7 +197,11 @@ async def generate_request_from_change_model_array(
         account_id = await get_resource_account(primary_principal.principal_arn)
         arn_parsed = parse_arn(primary_principal.principal_arn)
         arn_type = arn_parsed["service"]
-        arn_name = arn_parsed["resource"]
+        arn_name = (
+            arn_parsed["resource_path"]
+            if arn_parsed["resource_path"]
+            else arn_parsed["resource"]
+        )
         arn_region = arn_parsed["region"]
         try:
             arn_url = await get_url_for_resource(
