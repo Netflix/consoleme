@@ -13,6 +13,7 @@ from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError, ParamValidationError
 from cloudaux import CloudAux
 from cloudaux.aws.decorators import rate_limited
+from cloudaux.aws.iam import get_managed_policy_document
 from cloudaux.aws.s3 import (
     get_bucket_location,
     get_bucket_policy,
@@ -331,9 +332,37 @@ async def fetch_resource_details(
         return await fetch_sqs_queue(account_id, region, resource_name)
     elif resource_type == "sns":
         return await fetch_sns_topic(account_id, region, resource_name)
-
+    elif resource_type == "managed_policy":
+        return await fetch_managed_policy_details(account_id, resource_name)
     else:
         return {}
+
+
+async def fetch_managed_policy_details(
+    account_id: str, resource_name: str
+) -> Optional[Dict]:
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
+    policy_arn: str = f"arn:aws:iam::{account_id}:policy/{resource_name}"
+    result: Dict = {}
+    result["Policy"] = await sync_to_async(get_managed_policy_document)(
+        policy_arn=policy_arn,
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        region=config.region,
+        retry_max_attempts=2,
+    )
+    # TODO: the actual tags
+    result["TagSet"] = []
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        policy_arn,
+        resource_name,
+        "AWS::IAM::ManagedPolicy",
+        region=config.region,
+    )
+
+    return result
 
 
 async def fetch_assume_role_policy(role_arn: str) -> Optional[Dict]:

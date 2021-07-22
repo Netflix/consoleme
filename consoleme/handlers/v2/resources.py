@@ -48,7 +48,8 @@ class ResourceDetailHandler(BaseAPIV2Handler):
         if resource_type == "s3":
             account_id_for_arn = ""
         arn = f"arn:aws:{resource_type}:{region or ''}:{account_id_for_arn}:{resource_name}"
-
+        if resource_type == "managed_policy":
+            arn = f"arn:aws:iam::{account_id}:policy/{resource_name}"
         stats.count(
             "ResourcePolicyEditHandler.get", tags={"user": self.user, "arn": arn}
         )
