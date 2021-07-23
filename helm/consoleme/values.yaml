@@ -210,9 +210,9 @@ aws:
 #   required_headers:
 #     - RequiredMTLSHeader: RequiredMTLSHeaderValue
 
-challenge_url:
-  enabled: true
-  request_ip_must_match_challenge_creation_ip: false
+# challenge_url:
+#   enabled: true
+#   request_ip_must_match_challenge_creation_ip: false
 
 consoleme:
   # Whether to show terraform exporter tab or not
