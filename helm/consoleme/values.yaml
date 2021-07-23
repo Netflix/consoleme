@@ -363,6 +363,7 @@ service:
 
 ingress:
   enabled: false
+  apiVersion: extensions/v1beta1
   annotations: {}
   hosts:
     - host: <ConsoleMe URL>
