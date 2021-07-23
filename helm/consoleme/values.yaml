@@ -38,7 +38,7 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
-# sentry:
+sentry: {}
 #   dsn: <Sentry project DSN>
 
 tornado:
