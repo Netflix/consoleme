@@ -22,7 +22,7 @@ serviceAccount:
   name: ""
 
 # If you're using Kube2iam: Role to be assumed by the pods
-# podAnnotations:
+podAnnotations: {}
 #   iam.amazonaws.com/role: arn:aws:iam::<AWS account number>:role/ConsoleMeInstanceProfile
 
 podSecurityContext:
@@ -196,7 +196,7 @@ cloud_credential_authorization_mapping:
     internal_plugin:
       enabled: false
 
-# account_ids_to_name:
+account_ids_to_name: {}
 #   "<First AWS account number>": <First AWS account name>
 #   "<Second AWS account number>": <Second AWS account name>
 
@@ -205,12 +205,12 @@ aws:
   account_number: "<Main AWS account number>"
   region: us-east-1
 
-# cli_auth:
+cli_auth: {}
 #   certificate_header: certificate_header
 #   required_headers:
 #     - RequiredMTLSHeader: RequiredMTLSHeaderValue
 
-# challenge_url:
+challenge_url: {}
 #   enabled: true
 #   request_ip_must_match_challenge_creation_ip: false
 
