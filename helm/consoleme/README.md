@@ -80,6 +80,10 @@ The following table lists the main configurable parameters of the ConsoleMe char
 
 ## Deploying
 
+### Local Chart Deployments
+
+If you have access to this helm chart locally, here are some useful deployment commands.
+
 To perform a dry-run execution of the deployment (helm version 3+):
 
 ```bash
@@ -96,4 +100,26 @@ To install the helm chart:
 
 ```bash
 helm install my-consoleme -f values.yaml my-consoleme .
+```
+
+### Remote Chart Deployments
+
+If you want to reference this helm chart remotely, here are some useful deployment commands.
+
+First, add [the `helm-git` plugin](https://github.com/aslafy-z/helm-git):
+
+```bash
+helm plugin install https://github.com/aslafy-z/helm-git --version 0.10.0
+```
+
+Now, add consoleme chart to your local helm repos:
+
+```bash
+helm repo add consoleme "git+ssh://git@github.com/Netflix/consoleme@helm?ref=master"
+```
+
+Now, deploy consoleme:
+
+```bash
+helm install my-consoleme consoleme/consoleme
 ```
