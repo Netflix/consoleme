@@ -1571,6 +1571,65 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             managed_policy_resource_change.policy.policy_document,
         )
 
+    # TODO: tag_policy hasn't been implemented in moto3 yet (https://github.com/spulec/moto/blob/master/IMPLEMENTATION_COVERAGE.md)
+    # This test will have to wait until it has been implemented
+    # async def test_apply_managed_policy_resource_tag_change(self):
+    #     from consoleme.lib.v2.requests import apply_managed_policy_resource_tag_change
+    #
+    #     client = boto3.client("iam", region_name="us-east-1")
+    #
+    #     managed_policy_resource_tag_change = {
+    #         "principal": {
+    #             "principal_arn": f"arn:aws:iam::123456789012:policy/policy-one",
+    #             "principal_type": "AwsResource",
+    #         },
+    #         "change_type": "resource_tag",
+    #         "resources": [],
+    #         "version": 2.0,
+    #         "status": "not_applied",
+    #         "key": "testkey",
+    #         "value": "testvalue",
+    #         "tag_action": "create"
+    #     }
+    #     managed_policy_resource_tag_change_model = ResourceTagChangeModel.parse_obj(
+    #         managed_policy_resource_tag_change
+    #     )
+    #
+    #     extended_request = ExtendedRequestModel(
+    #         id="1234",
+    #         principal=dict(
+    #             principal_type="AwsResource",
+    #             principal_arn=f"arn:aws:iam::123456789012:policy/policy-one",
+    #         ),
+    #         timestamp=int(time.time()),
+    #         justification="Test justification",
+    #         requester_email="user@example.com",
+    #         approvers=[],
+    #         request_status="pending",
+    #         changes=ChangeModelArray(changes=[managed_policy_resource_tag_change_model]),
+    #         requester_info=UserModel(email="user@example.com"),
+    #         comments=[],
+    #     )
+    #     response = PolicyRequestModificationResponseModel(errors=0, action_results=[])
+    #
+    #     # should add a new tag to managed policy
+    #     response = await apply_managed_policy_resource_tag_change(
+    #         extended_request,
+    #         managed_policy_resource_tag_change_model,
+    #         response,
+    #         "test@example.com",
+    #     )
+    #
+    #     self.assertEqual(0, response.errors)
+    #     self.assertIn(
+    #         "created or updated tag", dict(response.action_results[0]).get("message")
+    #     )
+    #     # ensure that it has been created in AWS
+    #     policy_response = client.get_policy(
+    #         PolicyArn=extended_request.principal.principal_arn
+    #     )["TagSet"]
+    #     self.assertEqual(1, len(policy_response))
+
     async def test_apply_resource_policy_change_unsupported(self):
         from consoleme.lib.v2.requests import apply_resource_policy_change
 

@@ -360,7 +360,10 @@ async def fetch_managed_policy_details(
         retry_max_attempts=2,
     )
 
-    result["TagSet"] = policy_details["Policy"]["Tags"]
+    try:
+        result["TagSet"] = policy_details["Policy"]["Tags"]
+    except KeyError:
+        result["TagSet"] = []
     result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
         account_id,
         policy_arn,

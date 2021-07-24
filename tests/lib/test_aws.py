@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timedelta
 from unittest import TestCase
 
+import pytest
 import pytz
 import ujson as json
 from mock import patch
@@ -212,3 +213,27 @@ class TestAwsLib(TestCase):
             _scp_targets_account_or_ou(fake_scp, "100", fake_ous)
         )
         self.assertFalse(result)
+
+    def test_fetch_managed_policy_details(self):
+        from consoleme.lib.aws import fetch_managed_policy_details
+
+        loop = asyncio.get_event_loop()
+
+        result = loop.run_until_complete(
+            fetch_managed_policy_details("123456789012", "policy-one")
+        )
+        self.assertDictEqual(
+            result["Policy"],
+            {
+                "Statement": [{"Effect": "Deny", "Action": "*", "Resource": "*"}],
+                "Version": "2012-10-17",
+            },
+        )
+        self.assertListEqual(result["TagSet"], [])
+
+        with pytest.raises(Exception) as e:
+            loop.run_until_complete(
+                fetch_managed_policy_details("123456789012", "policy-non-existent")
+            )
+
+        self.assertIn("NoSuchEntity", str(e))
