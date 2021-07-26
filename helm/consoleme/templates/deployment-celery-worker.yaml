@@ -44,7 +44,11 @@ spec:
         - name: {{ .Chart.Name }}-celery-worker
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if .Values.image.digest }}
+          image: "{{ .Values.image.repository }}@{{ .Values.image.digest}}"
+          {{- else }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/bin/bash","-c", {{ .Values.consoleme.celery_worker.command }}]
           resources:

@@ -22,8 +22,8 @@ serviceAccount:
   name: ""
 
 # If you're using Kube2iam: Role to be assumed by the pods
-podAnnotations:
-  iam.amazonaws.com/role: arn:aws:iam::<AWS account number>:role/ConsoleMeInstanceProfile
+podAnnotations: {}
+#   iam.amazonaws.com/role: arn:aws:iam::<AWS account number>:role/ConsoleMeInstanceProfile
 
 podSecurityContext:
   {}
@@ -38,8 +38,8 @@ securityContext:
   # runAsNonRoot: true
   # runAsUser: 1000
 
-sentry:
-  dsn: <Sentry project DSN>
+sentry: {}
+#   dsn: <Sentry project DSN>
 
 tornado:
   debug: false
@@ -184,8 +184,8 @@ documentation_page: https://github.com/Netflix/consoleme/
 # consoleme-authorized-cli-only=group3@example.com
 cloud_credential_authorization_mapping:
   role_tags:
-    enabled: True
-    required_trust_policy_entity: "arn:aws:iam::<AWS account number>:role/ConsoleMeInstanceProfile"
+    enabled: true
+    # required_trust_policy_entity: "arn:aws:iam::<AWS account number>:role/ConsoleMeInstanceProfile"
     authorized_groups_tags:
       - consoleme-authorized
     authorized_groups_cli_only_tags:
@@ -196,23 +196,23 @@ cloud_credential_authorization_mapping:
     internal_plugin:
       enabled: false
 
-account_ids_to_name:
-  "<First AWS account number>": <First AWS account name>
-  "<Second AWS account number>": <Second AWS account name>
+account_ids_to_name: {}
+#   "<First AWS account number>": <First AWS account name>
+#   "<Second AWS account number>": <Second AWS account name>
 
 aws:
   issuer: YourCompany
   account_number: "<Main AWS account number>"
   region: us-east-1
 
-cli_auth:
-  certificate_header: certificate_header
-  required_headers:
-    - RequiredMTLSHeader: RequiredMTLSHeaderValue
+cli_auth: {}
+#   certificate_header: certificate_header
+#   required_headers:
+#     - RequiredMTLSHeader: RequiredMTLSHeaderValue
 
-challenge_url:
-  enabled: true
-  request_ip_must_match_challenge_creation_ip: false
+challenge_url: {}
+#   enabled: true
+#   request_ip_must_match_challenge_creation_ip: false
 
 consoleme:
   # Whether to show terraform exporter tab or not
@@ -225,8 +225,7 @@ consoleme:
   web:
     replicaCount: 1
     # Not using the script retrieve_or_decode_configuration
-    command: >
-      "python consoleme/__main__.py"
+    command: "python consoleme/__main__.py"
     containerPort: 8081
     livenessProbe:
       path: /
@@ -290,8 +289,7 @@ consoleme:
     # In case you're deploying DynamoDB in this chart you should add this command at the beginning:
     #     python scripts/initialize_dynamodb_oss.py;
     # It'll create the necessary tables
-    command: >
-      "celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -E --pidfile /tmp/celery.pid --max-memory-per-child=1000000 --max-tasks-per-child 50 --soft-time-limit 3600 --concurrency=10 -O fair"
+    command: "celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -E --pidfile /tmp/celery.pid --max-memory-per-child=1000000 --max-tasks-per-child 50 --soft-time-limit 3600 --concurrency=10 -O fair"
     env:
       - name: EC2_REGION
         value: us-east-1
@@ -365,6 +363,7 @@ service:
 
 ingress:
   enabled: false
+  apiVersion: extensions/v1beta1
   annotations: {}
   hosts:
     - host: <ConsoleMe URL>
