@@ -1,7 +1,7 @@
 {{- if .Values.ingress.enabled -}}
 {{- $fullName := include "consoleme.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}
-apiVersion: extensions/v1beta1
+apiVersion: {{ .Values.ingress.apiVersion }}
 kind: Ingress
 metadata:
   name: {{ $fullName }}
