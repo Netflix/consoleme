@@ -324,7 +324,11 @@ async def generate_updated_resource_policy(
 
 
 async def fetch_resource_details(
-    account_id: str, resource_type: str, resource_name: str, region: str
+    account_id: str,
+    resource_type: str,
+    resource_name: str,
+    region: str,
+    path: str = None,
 ) -> dict:
     if resource_type == "s3":
         return await fetch_s3_bucket(account_id, resource_name)
@@ -333,16 +337,18 @@ async def fetch_resource_details(
     elif resource_type == "sns":
         return await fetch_sns_topic(account_id, region, resource_name)
     elif resource_type == "managed_policy":
-        return await fetch_managed_policy_details(account_id, resource_name)
+        return await fetch_managed_policy_details(account_id, resource_name, path)
     else:
         return {}
 
 
 async def fetch_managed_policy_details(
-    account_id: str, resource_name: str
+    account_id: str, resource_name: str, path: str = None
 ) -> Optional[Dict]:
     from consoleme.lib.policies import get_aws_config_history_url_for_resource
 
+    if path:
+        resource_name = path + "/" + resource_name
     policy_arn: str = f"arn:aws:iam::{account_id}:policy/{resource_name}"
     result: Dict = {}
     result["Policy"] = await sync_to_async(get_managed_policy_document)(

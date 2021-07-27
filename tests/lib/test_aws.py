@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime, timedelta
 from unittest import TestCase
 
+import boto3
 import pytest
 import pytz
 import ujson as json
@@ -237,3 +238,25 @@ class TestAwsLib(TestCase):
             )
 
         self.assertIn("NoSuchEntity", str(e))
+
+        # test paths
+        client = boto3.client("iam", region_name="us-east-1")
+        policy_name = "policy_with_paths"
+        policy_path = "/testpath/testpath2/"
+        client.create_policy(
+            PolicyName=policy_name,
+            Path=policy_path,
+            PolicyDocument=json.dumps(result["Policy"]),
+        )
+        result = loop.run_until_complete(
+            fetch_managed_policy_details(
+                "123456789012", policy_name, path="testpath/testpath2"
+            )
+        )
+        self.assertDictEqual(
+            result["Policy"],
+            {
+                "Statement": [{"Effect": "Deny", "Action": "*", "Resource": "*"}],
+                "Version": "2012-10-17",
+            },
+        )

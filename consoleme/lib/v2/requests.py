@@ -1926,11 +1926,13 @@ async def apply_managed_policy_resource_change(
         description = f"Managed Policy created using ConsoleMe by {user}"
         # create new policy
         try:
+            policy_path = "/" + arn_parsed["resource_path"].replace(policy_name, "")
             await create_or_update_managed_policy(
                 new_policy=change.policy.policy_document,
                 policy_name=policy_name,
                 policy_arn=extended_request.principal.principal_arn,
                 description=description,
+                policy_path=policy_path,
                 **conn_details,
             )
             response.action_results.append(

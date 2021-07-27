@@ -397,7 +397,7 @@ class TestRequestsHandler(AsyncHTTPTestCase):
                     {
                         "principal": {
                             "principal_type": "AwsResource",
-                            "principal_arn": "arn:aws:iam::123456789012:policy/testpolicy",
+                            "principal_arn": "arn:aws:iam::123456789012:policy/randompath/extra/testpolicy",
                         },
                         "change_type": "managed_policy_resource",
                         "new": True,
@@ -451,7 +451,7 @@ class TestRequestsHandler(AsyncHTTPTestCase):
                 "action_results": [
                     {
                         "status": "success",
-                        "message": "Successfully created managed policy arn:aws:iam::123456789012:policy/testpolicy",
+                        "message": "Successfully created managed policy arn:aws:iam::123456789012:policy/randompath/extra/testpolicy",
                     },
                     {
                         "status": "success",
@@ -466,21 +466,21 @@ class TestRequestsHandler(AsyncHTTPTestCase):
                     "request_url": None,
                     "principal": {
                         "principal_type": "AwsResource",
-                        "principal_arn": "arn:aws:iam::123456789012:policy/testpolicy",
+                        "principal_arn": "arn:aws:iam::123456789012:policy/randompath/extra/testpolicy",
                     },
                     "justification": None,
                     "requester_email": "consoleme_admins@example.com",
                     "approvers": [],
                     "request_status": "approved",
                     "cross_account": False,
-                    "arn_url": "/policies/edit/123456789012/managed_policy/testpolicy",
+                    "arn_url": "/policies/edit/123456789012/managed_policy/randompath/extra/testpolicy",
                     "admin_auto_approve": True,
                     "changes": {
                         "changes": [
                             {
                                 "principal": {
                                     "principal_type": "AwsResource",
-                                    "principal_arn": "arn:aws:iam::123456789012:policy/testpolicy",
+                                    "principal_arn": "arn:aws:iam::123456789012:policy/randompath/extra/testpolicy",
                                 },
                                 "change_type": "managed_policy_resource",
                                 "resources": [],

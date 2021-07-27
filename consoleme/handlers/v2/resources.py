@@ -48,8 +48,15 @@ class ResourceDetailHandler(BaseAPIV2Handler):
         if resource_type == "s3":
             account_id_for_arn = ""
         arn = f"arn:aws:{resource_type}:{region or ''}:{account_id_for_arn}:{resource_name}"
+        path = ""
         if resource_type == "managed_policy":
-            arn = f"arn:aws:iam::{account_id}:policy/{resource_name}"
+            # special case for managed policies
+            path = region or ""
+            if path:
+                arn = f"arn:aws:iam::{account_id}:policy/{path}/{resource_name}"
+            else:
+                arn = f"arn:aws:iam::{account_id}:policy/{resource_name}"
+
         stats.count(
             "ResourcePolicyEditHandler.get", tags={"user": self.user, "arn": arn}
         )
@@ -70,7 +77,7 @@ class ResourceDetailHandler(BaseAPIV2Handler):
 
         try:
             resource_details = await fetch_resource_details(
-                account_id, resource_type, resource_name, region
+                account_id, resource_type, resource_name, region, path
             )
         except Exception as e:
             sentry_sdk.capture_exception()
