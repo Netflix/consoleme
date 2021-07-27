@@ -9,9 +9,7 @@ ConsoleMe can retrieve your google groups information and use it to authorize ro
 1. Login to the google account in which the GCP app for consoleme was setup
 2. Go to the [service accounts](https://console.cloud.google.com/iam-admin/serviceaccounts) page and select your consoleme project
 3. Click on **create service account** option
-4. Fill in the details and click **create and continue**
-5. From the **Select a role** dropdown menu, choose the **owner** option
-6. Click **Done**
+4. Fill in the details and click **Done**
 
 ## Enable Domain wide delegation for the service account
 
