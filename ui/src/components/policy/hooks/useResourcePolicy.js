@@ -21,6 +21,7 @@ const useResourcePolicy = () => {
     adminAutoApprove,
     justification,
   }) => {
+    const isManagedPolicy = arn.includes(":policy/");
     const requestV2 = {
       justification,
       admin_auto_approve: adminAutoApprove,
@@ -32,11 +33,14 @@ const useResourcePolicy = () => {
               principal_type: "AwsResource",
             },
             arn,
-            change_type: "resource_policy",
+            change_type: isManagedPolicy
+              ? "managed_policy_resource"
+              : "resource_policy",
             policy: {
               policy_document:
                 state.resourcePolicy.PolicyDocument.PolicyDocument,
             },
+            ...(isManagedPolicy && { new: false }),
           },
         ],
       },

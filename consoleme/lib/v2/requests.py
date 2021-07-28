@@ -1,4 +1,5 @@
 import asyncio
+import re
 import sys
 import time
 import uuid
@@ -196,7 +197,11 @@ async def generate_request_from_change_model_array(
         account_id = await get_resource_account(primary_principal.principal_arn)
         arn_parsed = parse_arn(primary_principal.principal_arn)
         arn_type = arn_parsed["service"]
-        arn_name = arn_parsed["resource"]
+        arn_name = (
+            arn_parsed["resource_path"]
+            if arn_parsed["resource_path"]
+            else arn_parsed["resource"]
+        )
         arn_region = arn_parsed["region"]
         try:
             arn_url = await get_url_for_resource(
@@ -1281,7 +1286,10 @@ async def populate_old_managed_policies(
         # TODO: Add Honeybee Support for editing managed policies
         return result
     for change in extended_request.changes.changes:
-        if change.status == Status.applied:
+        if (
+            change.status == Status.applied
+            or change.change_type != "managed_policy_resource"
+        ):
             # Skip changing any old policies that are saved for historical record (already applied)
             continue
         if managed_policy_resource:
@@ -1497,6 +1505,151 @@ async def populate_cross_account_resource_policies(
     log_data["resource_policies_changed"] = resource_policies_changed
     log.debug(log_data)
     return {"changed": resource_policies_changed, "extended_request": extended_request}
+
+
+async def apply_managed_policy_resource_tag_change(
+    extended_request: ExtendedRequestModel,
+    change: ResourceTagChangeModel,
+    response: PolicyRequestModificationResponseModel,
+    user: str,
+) -> PolicyRequestModificationResponseModel:
+    """
+    Applies resource tagging changes for managed policies
+
+    Caution: this method applies changes blindly... meaning it assumes before calling this method,
+    you have validated the changes being made are authorized.
+
+    :param change: ResourcePolicyChangeModel
+    :param extended_request: ExtendedRequestModel
+    :param user: Str - requester's email address
+    :param response: RequestCreationResponse
+
+    """
+    log_data: dict = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "user": user,
+        "change": change.dict(),
+        "message": "Applying resource policy change changes",
+        "request": extended_request.dict(),
+    }
+    resource_arn_parsed = parse_arn(change.principal.principal_arn)
+    resource_type = resource_arn_parsed["service"]
+    resource_name = resource_arn_parsed["resource"]
+    resource_account = resource_arn_parsed["account"]
+    if not resource_account:
+        resource_account = await get_resource_account(change.principal.principal_arn)
+
+    if not resource_account:
+        # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
+        # we can't apply this change
+        log_data["message"] = "Resource account not found"
+        log.warn(log_data)
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Cannot apply change to {change.principal.json()} as cannot determine resource account",
+            )
+        )
+        return response
+
+    if resource_type != "iam" or resource_name != "policy" or resource_account == "aws":
+        # Not a managed policy, or a managed policy that is AWS owned
+        log_data["message"] = "Resource change not supported"
+        log.warn(log_data)
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Cannot apply change to {change.principal.json()} as it's not supported",
+            )
+        )
+        return response
+    iam_client = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        service_type="client",
+        account_number=resource_account,
+        region=config.region,
+        assume_role=config.get("policies.role_name"),
+        session_name="tag-updater-v2-" + user,
+        retry_max_attempts=2,
+    )
+    principal_arn = change.principal.principal_arn
+    if change.tag_action in [TagAction.create, TagAction.update]:
+        if change.original_key and not change.key:
+            change.key = change.original_key
+        if change.original_value and not change.value:
+            change.value = change.original_value
+        try:
+            await sync_to_async(iam_client.tag_policy)(
+                PolicyArn=principal_arn,
+                Tags=[{"Key": change.key, "Value": change.value}],
+            )
+            response.action_results.append(
+                ActionResult(
+                    status="success",
+                    message=f"Successfully created or updated tag for managed policy: {principal_arn}",
+                )
+            )
+            if change.original_key and change.original_key != change.key:
+                await sync_to_async(iam_client.untag_policy)(
+                    PolicyArn=principal_arn, TagKeys=[change.original_key]
+                )
+                response.action_results.append(
+                    ActionResult(
+                        status="success",
+                        message=f"Successfully renamed tag {change.original_key} to {change.key}.",
+                    )
+                )
+            change.status = Status.applied
+        except Exception as e:
+            log_data["message"] = "Exception occurred creating or updating tag"
+            log_data["error"] = str(e)
+            log.error(log_data, exc_info=True)
+            sentry_sdk.capture_exception()
+            response.errors += 1
+            response.action_results.append(
+                ActionResult(
+                    status="error",
+                    message=f"Error occurred updating tag for managed policy: {principal_arn}: "
+                    + str(e),
+                )
+            )
+    elif change.tag_action == TagAction.delete:
+        try:
+            await sync_to_async(iam_client.untag_policy)(
+                PolicyArn=principal_arn, TagKeys=[change.key]
+            )
+            response.action_results.append(
+                ActionResult(
+                    status="success",
+                    message=f"Successfully deleted tag for managed policy: {principal_arn}",
+                )
+            )
+            change.status = Status.applied
+        except Exception as e:
+            log_data["message"] = "Exception occurred deleting tag"
+            log_data["error"] = str(e)
+            log.error(log_data, exc_info=True)
+            sentry_sdk.capture_exception()
+            response.errors += 1
+            response.action_results.append(
+                ActionResult(
+                    status="error",
+                    message=f"Error occurred deleting tag for managed policy: {principal_arn}: "
+                    + str(e),
+                )
+            )
+    else:
+        response.errors += 1
+        response.action_results.append(
+            ActionResult(
+                status="error",
+                message=f"Unsupport change requested for tag {change.tag_action}",
+            )
+        )
+
+    return response
 
 
 async def apply_non_iam_resource_tag_change(
@@ -1773,11 +1926,13 @@ async def apply_managed_policy_resource_change(
         description = f"Managed Policy created using ConsoleMe by {user}"
         # create new policy
         try:
+            policy_path = "/" + arn_parsed["resource_path"].replace(policy_name, "")
             await create_or_update_managed_policy(
                 new_policy=change.policy.policy_document,
                 policy_name=policy_name,
                 policy_arn=extended_request.principal.principal_arn,
                 description=description,
+                policy_path=policy_path,
                 **conn_details,
             )
             response.action_results.append(
@@ -2277,6 +2432,7 @@ async def parse_and_apply_policy_request_modification(
                 specific_change.policy.policy_document = (
                     apply_change_model.policy_document
                 )
+            managed_policy_arn_regex = re.compile(r"^arn:aws:iam::\d{12}:policy/.+")
             if (
                 specific_change.change_type == "resource_policy"
                 or specific_change.change_type == "sts_resource_policy"
@@ -2291,6 +2447,15 @@ async def parse_and_apply_policy_request_modification(
                 )
             ):
                 response = await apply_non_iam_resource_tag_change(
+                    extended_request, specific_change, response, user
+                )
+            elif (
+                specific_change.change_type == "resource_tag"
+                and managed_policy_arn_regex.search(
+                    specific_change.principal.principal_arn
+                )
+            ):
+                response = await apply_managed_policy_resource_tag_change(
                     extended_request, specific_change, response, user
                 )
             elif specific_change.change_type == "managed_policy_resource":

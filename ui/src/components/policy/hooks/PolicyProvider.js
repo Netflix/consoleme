@@ -11,8 +11,20 @@ export const usePolicyContext = () => useContext(PolicyContext);
 export const PolicyProvider = ({ children }) => {
   const { sendRequestCommon, sendRequestV2 } = useAuth();
   const [state, dispatch] = useReducer(reducer, initialState);
-  const { accountID, serviceType, region, resourceName } = useParams();
-
+  const { accountID, serviceType } = useParams();
+  let { resourceName, region } = useParams();
+  const allParams = useParams();
+  if (allParams.hasOwnProperty("0") && serviceType === "managed_policy") {
+    // special case, managed policies can have a path, append to resourceName
+    // wildcard will be added as key "0"
+    resourceName = "/" + allParams["0"] + "/" + resourceName;
+  } else if (
+    allParams.hasOwnProperty("0") &&
+    (serviceType === "sns" || serviceType === "sqs")
+  ) {
+    // In the case of sns, sqs, the wildcard represents the region
+    region = allParams["0"];
+  }
   // PolicyEditor States Handlers
   const setParams = (params) => dispatch({ type: "UPDATE_PARAMS", params });
   const setResource = (resource) =>

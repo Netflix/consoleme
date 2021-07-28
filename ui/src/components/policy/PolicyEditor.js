@@ -81,7 +81,7 @@ const PolicyEditor = () => {
       </>
       <ResourceDetail />
       <Divider />
-      <EditPolicy />
+      <EditPolicy serviceType={serviceType} />
       <DeleteResourceModal />
       <Dimmer active={isPolicyEditorLoading} inverted>
         <Loader />
