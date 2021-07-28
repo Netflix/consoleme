@@ -62,8 +62,8 @@ from consoleme.models import (
     Command,
     CommentModel,
     CommentRequestModificationModel,
+    ExtendedAwsPrincipalModel,
     ExtendedRequestModel,
-    ExtendedRoleModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
     ManagedPolicyResourceChangeModel,
@@ -589,7 +589,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
 
 
 async def validate_inline_policy_change(
-    change: InlinePolicyChangeModel, user: str, role: ExtendedRoleModel
+    change: InlinePolicyChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -660,7 +660,7 @@ async def validate_inline_policy_change(
 
 
 async def validate_permissions_boundary_change(
-    change: PermissionsBoundaryChangeModel, user: str, role: ExtendedRoleModel
+    change: PermissionsBoundaryChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -701,7 +701,7 @@ async def validate_permissions_boundary_change(
 
 
 async def validate_managed_policy_change(
-    change: ManagedPolicyChangeModel, user: str, role: ExtendedRoleModel
+    change: ManagedPolicyChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -788,7 +788,7 @@ async def validate_managed_policy_resource_change(
 
 
 async def validate_resource_tag_change(
-    change: ResourceTagChangeModel, user: str, role: ExtendedRoleModel
+    change: ResourceTagChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -804,7 +804,7 @@ async def validate_resource_tag_change(
 
 
 async def validate_assume_role_policy_change(
-    change: AssumeRolePolicyChangeModel, user: str, role: ExtendedRoleModel
+    change: AssumeRolePolicyChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -1269,7 +1269,7 @@ async def apply_changes_to_role(
 async def populate_old_policies(
     extended_request: ExtendedRequestModel,
     user: str,
-    principal: Optional[ExtendedRoleModel] = None,
+    principal: Optional[ExtendedAwsPrincipalModel] = None,
 ) -> ExtendedRequestModel:
     """
     Populates the old policies for each inline policy.

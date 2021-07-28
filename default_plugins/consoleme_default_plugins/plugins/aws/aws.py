@@ -1,4 +1,5 @@
 import asyncio
+import copy
 import ssl
 import sys
 from datetime import datetime, timedelta
@@ -92,7 +93,7 @@ class Aws:
         # Pop out the fields that are not required:
         # Arn and RoleName/UserName will be popped off later:
         unrequired_fields = ["_version", "MaxSessionDuration"]
-
+        principal_type = principal["Arn"].split(":")[-1].split("/")[0]
         for uf in unrequired_fields:
             principal.pop(uf, None)
 
@@ -118,15 +119,21 @@ class Aws:
         principal["InstanceProfileList"] = principal.pop("InstanceProfiles", [])
 
         # Inline Policies:
-        principal["RolePolicyList"] = list(
-            map(
-                lambda name: {
-                    "PolicyName": name,
-                    "PolicyDocument": principal["InlinePolicies"][name],
-                },
-                principal.get("InlinePolicies", {}),
+        if principal_type == "role":
+
+            principal["RolePolicyList"] = list(
+                map(
+                    lambda name: {
+                        "PolicyName": name,
+                        "PolicyDocument": principal["InlinePolicies"][name],
+                    },
+                    principal.get("InlinePolicies", {}),
+                )
             )
-        )
+        else:
+            principal["UserPolicyList"] = copy.deepcopy(
+                principal.pop("InlinePolicies", [])
+            )
         principal.pop("InlinePolicies", None)
 
         return principal

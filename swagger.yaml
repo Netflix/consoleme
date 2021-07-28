@@ -209,7 +209,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/RoleModel"
+                  $ref: "#/components/schemas/AwsPrincipalModel"
     post:
       summary: create a role
       tags:
@@ -246,7 +246,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/RoleModel"
+                  $ref: "#/components/schemas/AwsPrincipalModel"
     post:
       summary: create a role
       tags:
@@ -259,14 +259,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ExtendedRoleModel"
+              $ref: "#/components/schemas/ExtendedAwsPrincipalModel"
       responses:
         "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExtendedRoleModel"
+                $ref: "#/components/schemas/ExtendedAwsPrincipalModel"
   /roles/{account_id}/{role_name}:
     get:
       summary: get details about a role
@@ -281,7 +281,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExtendedRoleModel"
+                $ref: "#/components/schemas/ExtendedAwsPrincipalModel"
     put:
       summary: update a role
       tags:
@@ -295,14 +295,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ExtendedRoleModel"
+              $ref: "#/components/schemas/ExtendedAwsPrincipalModel"
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExtendedRoleModel"
+                $ref: "#/components/schemas/ExtendedAwsPrincipalModel"
     delete:
       summary: delete a role
       tags:
@@ -353,7 +353,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ExtendedRoleModel"
+                $ref: "#/components/schemas/ExtendedAwsPrincipalModel"
         default:
           $ref: "#/components/responses/DefaultErrorResponse"
   /policies/check:
@@ -1320,7 +1320,7 @@ components:
           $ref: "#/components/schemas/UserModel"
         text:
           type: string
-    RoleModel:
+    AwsPrincipalModel:
       type: object
       required:
         - name
@@ -1453,9 +1453,9 @@ components:
           items:
             anyOf:
               - $ref: "#/components/schemas/AppDetailsModel"
-    ExtendedRoleModel:
+    ExtendedAwsPrincipalModel:
       allOf:
-        - $ref: "#/components/schemas/RoleModel"
+        - $ref: "#/components/schemas/AwsPrincipalModel"
         - type: object
           required:
             - inline_policies

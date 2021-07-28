@@ -11,11 +11,11 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler, redis_get
 from consoleme.models import (
+    AwsPrincipalModel,
     CloudTrailDetailsModel,
     CloudTrailError,
     CloudTrailErrorArray,
-    ExtendedRoleModel,
-    RoleModel,
+    ExtendedAwsPrincipalModel,
     S3DetailsModel,
     S3Error,
     S3ErrorArray,
@@ -131,7 +131,7 @@ async def get_role_template(arn: str):
 
 async def get_user_details(
     account_id: str, user_name: str, extended: bool = False, force_refresh: bool = False
-) -> Optional[Union[ExtendedRoleModel, RoleModel]]:
+) -> Optional[Union[ExtendedAwsPrincipalModel, AwsPrincipalModel]]:
     # TODO: Change the model we are returning?
     account_ids_to_name = await get_account_id_to_name_mapping()
     arn = f"arn:aws:iam::{account_id}:user/{user_name}"
@@ -141,7 +141,7 @@ async def get_user_details(
         return None
     if extended:
         # TODO: Rename to ExtendedAwsPrincipalModel
-        return ExtendedRoleModel(
+        return ExtendedAwsPrincipalModel(
             name=user_name,
             account_id=account_id,
             account_name=account_ids_to_name.get(account_id, None),
@@ -166,7 +166,7 @@ async def get_user_details(
             permissions_boundary=user.get("PermissionsBoundary", {}),
         )
     else:
-        return RoleModel(
+        return AwsPrincipalModel(
             name=user_name,
             account_id=account_id,
             account_name=account_ids_to_name.get(account_id, None),
@@ -176,7 +176,7 @@ async def get_user_details(
 
 async def get_role_details(
     account_id: str, role_name: str, extended: bool = False, force_refresh: bool = False
-) -> Optional[Union[ExtendedRoleModel, RoleModel]]:
+) -> Optional[Union[ExtendedAwsPrincipalModel, AwsPrincipalModel]]:
     account_ids_to_name = await get_account_id_to_name_mapping()
     arn = f"arn:aws:iam::{account_id}:role/{role_name}"
     role = await aws.fetch_iam_role(account_id, arn, force_refresh=force_refresh)
@@ -185,7 +185,7 @@ async def get_role_details(
         return None
     if extended:
         template = await get_role_template(arn)
-        return ExtendedRoleModel(
+        return ExtendedAwsPrincipalModel(
             name=role_name,
             account_id=account_id,
             account_name=account_ids_to_name.get(account_id, None),
@@ -212,7 +212,7 @@ async def get_role_details(
             permissions_boundary=role["policy"].get("PermissionsBoundary", {}),
         )
     else:
-        return RoleModel(
+        return AwsPrincipalModel(
             name=role_name,
             account_id=account_id,
             account_name=account_ids_to_name.get(account_id, None),
