@@ -132,7 +132,6 @@ async def get_role_template(arn: str):
 async def get_user_details(
     account_id: str, user_name: str, extended: bool = False, force_refresh: bool = False
 ) -> Optional[Union[ExtendedAwsPrincipalModel, AwsPrincipalModel]]:
-    # TODO: Change the model we are returning?
     account_ids_to_name = await get_account_id_to_name_mapping()
     arn = f"arn:aws:iam::{account_id}:user/{user_name}"
     user = await aws.fetch_iam_user(account_id, arn)
@@ -140,7 +139,6 @@ async def get_user_details(
     if not user:
         return None
     if extended:
-        # TODO: Rename to ExtendedAwsPrincipalModel
         return ExtendedAwsPrincipalModel(
             name=user_name,
             account_id=account_id,
