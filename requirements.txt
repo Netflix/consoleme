@@ -85,7 +85,7 @@ click==7.1.2
     #   click-repl
     #   policy-sentry
     #   presto-python-client
-cloudaux==1.9.4
+cloudaux==1.9.5
     # via -r requirements.in
 contextlib2==0.6.0.post1
     # via schema
