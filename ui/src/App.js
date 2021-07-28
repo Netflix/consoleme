@@ -53,12 +53,12 @@ function App() {
           component={ConsoleMeRequestTable}
         />
         <ProtectedRoute
-          key="iamrole_policy"
-          path="/policies/edit/:accountID/:serviceType/:region/:resourceName"
+          key="resource_policy"
+          path="/policies/edit/:accountID/:serviceType/*/:resourceName"
           component={PolicyEditor}
         />
         <ProtectedRoute
-          key="resource_policy"
+          key="iamrole_policy"
           path="/policies/edit/:accountID/:serviceType/:resourceName"
           component={PolicyEditor}
         />

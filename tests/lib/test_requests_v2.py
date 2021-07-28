@@ -16,6 +16,7 @@ from consoleme.models import (
     ExtendedRoleModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
+    ManagedPolicyResourceChangeModel,
     PermissionsBoundaryChangeModel,
     PolicyRequestModificationRequestModel,
     PolicyRequestModificationResponseModel,
@@ -331,6 +332,80 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         managed_policy_change_model.action = Action.detach
         await validate_managed_policy_change(
             managed_policy_change_model, "user@example.com", role
+        )
+
+    async def test_validate_managed_policy_resource_change(self):
+        from consoleme.exceptions.exceptions import InvalidRequestParameter
+        from consoleme.lib.v2.requests import validate_managed_policy_resource_change
+
+        managed_policy_change = {
+            "principal": {
+                "principal_arn": "arn:aws:iam::123456789012:policy/test",
+                "principal_type": "AwsResource",
+            },
+            "change_type": "managed_policy_resource",
+            "resources": [],
+            "version": 2.0,
+            "status": "not_applied",
+            "policy_name": "test_inline_policy_change",
+            "new": False,
+            "action": "attach",
+            "policy": {
+                "version": None,
+                "policy_document": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:ListBucket",
+                                "s3:ListBucketVersions",
+                                "s3:GetObject",
+                                "s3:GetObjectTagging",
+                                "s3:GetObjectVersion",
+                                "s3:GetObjectVersionTagging",
+                                "s3:GetObjectAcl",
+                                "s3:GetObjectVersionAcl",
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "arn:aws:s3:::test_bucket",
+                                "arn:aws:s3:::test_bucket/abc/*",
+                            ],
+                            "Sid": "sid_test",
+                        }
+                    ],
+                },
+                "policy_sha256": "55d03ad7a2a447e6e883c520edcd8e5e3083c2f83fa1c390cee3f7dbedf28533",
+            },
+            "old_policy": None,
+        }
+        managed_policy_change_model = ManagedPolicyResourceChangeModel.parse_obj(
+            managed_policy_change
+        )
+
+        # Trying to update a policy that doesn't exist
+        with pytest.raises(InvalidRequestParameter) as e:
+            await validate_managed_policy_resource_change(
+                managed_policy_change_model, "test", "user@example.com", None
+            )
+        self.assertIn("doesn't exist", str(e))
+
+        # Trying to update a policy with no changes
+        with pytest.raises(InvalidRequestParameter) as e:
+            await validate_managed_policy_resource_change(
+                managed_policy_change_model,
+                "test",
+                "user@example.com",
+                managed_policy_change_model.policy.policy_document,
+            )
+        self.assertIn("No changes detected", str(e))
+
+        # Valid, should pass
+        await validate_managed_policy_resource_change(
+            managed_policy_change_model,
+            "test",
+            "user@example.com",
+            {"Version": "2012-10-17", "Statement": []},
         )
 
     async def test_validate_permissions_boundary_change(self):
@@ -1308,6 +1383,267 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             existing_policy_document,
             extended_request.changes.changes[0].old_policy.policy_document,
         )
+
+    async def test_populate_old_managed_policies(self):
+        from consoleme.lib.v2.requests import populate_old_managed_policies
+
+        client = boto3.client("iam", region_name="us-east-1")
+        for path in ["/", "/testpath/test2/"]:
+            client.create_policy(
+                PolicyName=existing_policy_name + "managed",
+                PolicyDocument=json.dumps(
+                    existing_policy_document, escape_forward_slashes=False
+                ),
+                Path=path,
+            )
+            policy_name_and_path = path + existing_policy_name + "managed"
+            managed_policy_resource_change = {
+                "principal": {
+                    "principal_arn": f"arn:aws:iam::123456789012:policy{policy_name_and_path}",
+                    "principal_type": "AwsResource",
+                },
+                "change_type": "managed_policy_resource",
+                "resources": [],
+                "version": 2.0,
+                "status": "applied",
+                "new": False,
+                "policy": {
+                    "version": None,
+                    "policy_document": {},
+                    "policy_sha256": "55d03ad7a2a447e6e883c520edcd8e5e3083c2f83fa1c390cee3f7dbedf28533",
+                },
+                "old_policy": None,
+            }
+            managed_policy_resource_change = ManagedPolicyResourceChangeModel.parse_obj(
+                managed_policy_resource_change
+            )
+
+            extended_request = ExtendedRequestModel(
+                id="1234",
+                principal=dict(
+                    principal_type="AwsResource",
+                    principal_arn=f"arn:aws:iam::123456789012:policy{policy_name_and_path}",
+                ),
+                timestamp=int(time.time()),
+                justification="Test justification",
+                requester_email="user@example.com",
+                approvers=[],
+                request_status="pending",
+                changes=ChangeModelArray(changes=[managed_policy_resource_change]),
+                requester_info=UserModel(email="user@example.com"),
+                comments=[],
+            )
+
+            # assert before calling this function that old policy is None
+            self.assertEqual(None, extended_request.changes.changes[0].old_policy)
+
+            await populate_old_managed_policies(
+                extended_request, extended_request.requester_email
+            )
+
+            # assert after calling this function that old policy is None, we shouldn't modify changes that are already
+            # applied
+            self.assertEqual(None, extended_request.changes.changes[0].old_policy)
+
+            extended_request.changes.changes[0].status = Status.not_applied
+            # assert before calling this function that old policy is None
+            self.assertEqual(None, extended_request.changes.changes[0].old_policy)
+
+            await populate_old_managed_policies(
+                extended_request, extended_request.requester_email
+            )
+
+            # assert after calling the function that the old policies populated properly
+            self.assertDictEqual(
+                existing_policy_document,
+                extended_request.changes.changes[0].old_policy.policy_document,
+            )
+
+    async def test_apply_managed_policy_resource_change(self):
+        from consoleme.lib.v2.requests import apply_managed_policy_resource_change
+
+        client = boto3.client("iam", region_name="us-east-1")
+        for path in ["/", "/testpath/test2/"]:
+            policy_name_and_path = path + existing_policy_name + "managed2"
+            managed_policy_resource_change = {
+                "principal": {
+                    "principal_arn": f"arn:aws:iam::123456789012:policy{policy_name_and_path}",
+                    "principal_type": "AwsResource",
+                },
+                "change_type": "managed_policy_resource",
+                "resources": [],
+                "version": 2.0,
+                "status": "not_applied",
+                "new": True,
+                "policy": {
+                    "version": None,
+                    "policy_document": existing_policy_document,
+                    "policy_sha256": "55d03ad7a2a447e6e883c520edcd8e5e3083c2f83fa1c390cee3f7dbedf28533",
+                },
+                "old_policy": None,
+            }
+            managed_policy_resource_change = ManagedPolicyResourceChangeModel.parse_obj(
+                managed_policy_resource_change
+            )
+
+            extended_request = ExtendedRequestModel(
+                id="1234",
+                principal=dict(
+                    principal_type="AwsResource",
+                    principal_arn=f"arn:aws:iam::123456789012:policy{policy_name_and_path}",
+                ),
+                timestamp=int(time.time()),
+                justification="Test justification",
+                requester_email="user@example.com",
+                approvers=[],
+                request_status="pending",
+                changes=ChangeModelArray(changes=[managed_policy_resource_change]),
+                requester_info=UserModel(email="user@example.com"),
+                comments=[],
+            )
+            response = PolicyRequestModificationResponseModel(
+                errors=0, action_results=[]
+            )
+
+            # should create a new managed policy
+            response = await apply_managed_policy_resource_change(
+                extended_request,
+                managed_policy_resource_change,
+                response,
+                "test@example.com",
+            )
+
+            self.assertEqual(0, response.errors)
+            self.assertIn(
+                "created managed policy",
+                dict(response.action_results[0]).get("message"),
+            )
+            # ensure that it has been created in AWS
+            policy_response = client.get_policy(
+                PolicyArn=extended_request.principal.principal_arn
+            )["Policy"]
+            self.assertEqual(
+                policy_response["PolicyName"], existing_policy_name + "managed2"
+            )
+            self.assertEqual(policy_response["Path"], path)
+            policy_response_detailed = client.get_policy_version(
+                PolicyArn=extended_request.principal.principal_arn,
+                VersionId=policy_response["DefaultVersionId"],
+            )["PolicyVersion"]
+            self.assertDictEqual(
+                policy_response_detailed["Document"], existing_policy_document
+            )
+
+            # update existing policy document
+            managed_policy_resource_change.policy.policy_document = {
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": [
+                            "s3:ListBucket",
+                        ],
+                        "Effect": "Allow",
+                        "Resource": ["arn:aws:s3:::test_bucket"],
+                        "Sid": "sid_test23",
+                    }
+                ],
+            }
+            managed_policy_resource_change.status = Status.not_applied
+            managed_policy_resource_change.new = False
+            extended_request.changes = ChangeModelArray(
+                changes=[managed_policy_resource_change]
+            )
+            response = PolicyRequestModificationResponseModel(
+                errors=0, action_results=[]
+            )
+
+            response = await apply_managed_policy_resource_change(
+                extended_request,
+                managed_policy_resource_change,
+                response,
+                "test@example.com",
+            )
+
+            self.assertEqual(0, response.errors)
+            self.assertIn(
+                "updated managed policy",
+                dict(response.action_results[0]).get("message"),
+            )
+            # ensure that it has been updated in AWS
+            policy_response = client.get_policy(
+                PolicyArn=extended_request.principal.principal_arn
+            )["Policy"]
+            self.assertEqual(
+                policy_response["PolicyName"], existing_policy_name + "managed2"
+            )
+            self.assertEqual(policy_response["Path"], path)
+            policy_response_detailed = client.get_policy_version(
+                PolicyArn=extended_request.principal.principal_arn,
+                VersionId=policy_response["DefaultVersionId"],
+            )["PolicyVersion"]
+            self.assertDictEqual(
+                policy_response_detailed["Document"],
+                managed_policy_resource_change.policy.policy_document,
+            )
+
+    # TODO: tag_policy hasn't been implemented in moto3 yet (https://github.com/spulec/moto/blob/master/IMPLEMENTATION_COVERAGE.md)
+    # This test will have to wait until it has been implemented
+    # async def test_apply_managed_policy_resource_tag_change(self):
+    #     from consoleme.lib.v2.requests import apply_managed_policy_resource_tag_change
+    #
+    #     client = boto3.client("iam", region_name="us-east-1")
+    #
+    #     managed_policy_resource_tag_change = {
+    #         "principal": {
+    #             "principal_arn": f"arn:aws:iam::123456789012:policy/policy-one",
+    #             "principal_type": "AwsResource",
+    #         },
+    #         "change_type": "resource_tag",
+    #         "resources": [],
+    #         "version": 2.0,
+    #         "status": "not_applied",
+    #         "key": "testkey",
+    #         "value": "testvalue",
+    #         "tag_action": "create"
+    #     }
+    #     managed_policy_resource_tag_change_model = ResourceTagChangeModel.parse_obj(
+    #         managed_policy_resource_tag_change
+    #     )
+    #
+    #     extended_request = ExtendedRequestModel(
+    #         id="1234",
+    #         principal=dict(
+    #             principal_type="AwsResource",
+    #             principal_arn=f"arn:aws:iam::123456789012:policy/policy-one",
+    #         ),
+    #         timestamp=int(time.time()),
+    #         justification="Test justification",
+    #         requester_email="user@example.com",
+    #         approvers=[],
+    #         request_status="pending",
+    #         changes=ChangeModelArray(changes=[managed_policy_resource_tag_change_model]),
+    #         requester_info=UserModel(email="user@example.com"),
+    #         comments=[],
+    #     )
+    #     response = PolicyRequestModificationResponseModel(errors=0, action_results=[])
+    #
+    #     # should add a new tag to managed policy
+    #     response = await apply_managed_policy_resource_tag_change(
+    #         extended_request,
+    #         managed_policy_resource_tag_change_model,
+    #         response,
+    #         "test@example.com",
+    #     )
+    #
+    #     self.assertEqual(0, response.errors)
+    #     self.assertIn(
+    #         "created or updated tag", dict(response.action_results[0]).get("message")
+    #     )
+    #     # ensure that it has been created in AWS
+    #     policy_response = client.get_policy(
+    #         PolicyArn=extended_request.principal.principal_arn
+    #     )["TagSet"]
+    #     self.assertEqual(1, len(policy_response))
 
     async def test_apply_resource_policy_change_unsupported(self):
         from consoleme.lib.v2.requests import apply_resource_policy_change

@@ -159,9 +159,9 @@ async def retrieve_json_data_from_redis_or_s3(
         try:
             s3_object = get_object(Bucket=s3_bucket, Key=s3_key)
         except ClientError as e:
-            if (
-                str(e)
-                == "An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist."
+            if str(e) == (
+                "An error occurred (NoSuchKey) when calling the GetObject operation: "
+                "The specified key does not exist."
             ):
                 if default is not None:
                     return default

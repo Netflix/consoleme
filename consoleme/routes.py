@@ -171,7 +171,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/roles/(\d{12})/(.*)", RoleDetailHandler),
         (r"/api/v2/users/(\d{12})/(.*)", UserDetailHandler),
         (
-            r"/api/v2/resources/(\d{12})/(s3|sqs|sns)(?:/([a-z\-1-9]+))?/(.*)",
+            r"/api/v2/resources/(\d{12})/(s3|sqs|sns|managed_policy)(?:/([a-z\-1-9]+))?/(.*)",
             ResourceDetailHandler,
         ),
         (r"/api/v2/service_control_policies/(.*)", ServiceControlPolicyHandler),

@@ -704,6 +704,35 @@ def cache_policies_table_details() -> bool:
                         "errors": error_count,
                     }
                 )
+    managed_policies_key: str = config.get(
+        "redis.iam_managed_policies_key", "IAM_MANAGED_POLICIES"
+    )
+    managed_policies_accounts = red.hkeys(managed_policies_key)
+    if managed_policies_accounts:
+        for managed_policies_account in managed_policies_accounts:
+            account_name = accounts_d.get(str(managed_policies_account), "Unknown")
+            managed_policies_in_account = json.loads(
+                red.hget(managed_policies_key, managed_policies_account)
+            )
+
+            for policy_arn in managed_policies_in_account:
+                # managed policies that are managed by AWS shouldn't be added to the policies table for 2 reasons:
+                # 1. We don't manage them, can't edit them
+                # 2. There are a LOT of them and we would just end up spamming the policy table...
+                # TODO: discuss if this is okay
+                if str(managed_policies_account) not in policy_arn:
+                    continue
+                error_count = 0
+                items.append(
+                    {
+                        "account_id": managed_policies_account,
+                        "account_name": account_name,
+                        "arn": policy_arn,
+                        "technology": "managed_policy",
+                        "templated": None,
+                        "errors": error_count,
+                    }
+                )
 
     resources_from_aws_config_redis_key: str = config.get(
         "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
@@ -719,6 +748,7 @@ def cache_policies_table_details() -> bool:
                 "AWS::SQS::Queue",
                 "AWS::SNS::Topic",
                 "AWS::S3::Bucket",
+                "AWS::IAM::ManagedPolicy",
             ]:
                 continue
             account_id = arn.split(":")[4]

@@ -131,11 +131,17 @@ class InlinePolicyChangeComponent extends Component {
       <span style={{ color: "red" }}>- New Policy</span>
     ) : null;
 
-    const headerContent = (
-      <Header size="large">
-        Inline Policy Change - {change.policy_name} {newPolicy}
-      </Header>
-    );
+    const headerContent = () => {
+      if (change.change_type === "inline_policy") {
+        return (
+          <Header size="large">
+            Inline Policy Change - {change.policy_name} {newPolicy}
+          </Header>
+        );
+      } else {
+        return <Header size="large">Managed Policy Change</Header>;
+      }
+    };
 
     const applyChangesButton =
       config.can_approve_reject &&
@@ -305,7 +311,7 @@ class InlinePolicyChangeComponent extends Component {
         <Dimmer active={isLoading} inverted>
           <Loader />
         </Dimmer>
-        {headerContent}
+        {headerContent()}
         <Divider hidden />
         {policyChangeContent}
       </Segment>

@@ -8,6 +8,10 @@ data:
   config_base.yaml: |-
     application_admin: {{ .Values.consoleme.application_admin }}
 
+    {{- with .Values.consoleme_s3_bucket }}
+    consoleme_s3_bucket: {{ . }}
+    {{- end }}
+
     environment: {{ .Values.consoleme.environment }}
 
     {{- with .Values.tornado }}

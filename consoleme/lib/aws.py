@@ -13,6 +13,7 @@ from asgiref.sync import sync_to_async
 from botocore.exceptions import ClientError, ParamValidationError
 from cloudaux import CloudAux
 from cloudaux.aws.decorators import rate_limited
+from cloudaux.aws.iam import get_managed_policy_document, get_policy
 from cloudaux.aws.s3 import (
     get_bucket_location,
     get_bucket_policy,
@@ -105,15 +106,22 @@ async def update_managed_policy(cloudaux, policy_name, new_policy, policy_arn):
     versions = await sync_to_async(cloudaux.call)(
         "iam.client.list_policy_versions", PolicyArn=policy_arn
     )
+    oldest_policy_version = -1
+    oldest_timestamp = None
     for i, version in enumerate(versions.get("Versions", [])):
         if version["IsDefaultVersion"]:
             default_policy_index = i
         current_policy_versions.append(version)
+        if oldest_policy_version == -1 or oldest_timestamp > version["CreateDate"]:
+            oldest_policy_version = i
+            oldest_timestamp = version["CreateDate"]
 
     if len(current_policy_versions) == 5:
-        # Want to make sure we don't pop the default version so arbitrarily set position to 1 if default ends
-        # up being the last index position
-        pop_position = 1 if default_policy_index == 4 else 4
+        pop_position = oldest_policy_version
+        # Want to make sure we don't pop the default version so arbitrarily set position to oldest + 1 mod N
+        # if default is also the oldest
+        if default_policy_index == oldest_policy_version:
+            pop_position = (oldest_policy_version + 1) % len(current_policy_versions)
         await sync_to_async(cloudaux.call)(
             "iam.client.delete_policy_version",
             PolicyArn=policy_arn,
@@ -316,7 +324,11 @@ async def generate_updated_resource_policy(
 
 
 async def fetch_resource_details(
-    account_id: str, resource_type: str, resource_name: str, region: str
+    account_id: str,
+    resource_type: str,
+    resource_name: str,
+    region: str,
+    path: str = None,
 ) -> dict:
     if resource_type == "s3":
         return await fetch_s3_bucket(account_id, resource_name)
@@ -324,9 +336,49 @@ async def fetch_resource_details(
         return await fetch_sqs_queue(account_id, region, resource_name)
     elif resource_type == "sns":
         return await fetch_sns_topic(account_id, region, resource_name)
-
+    elif resource_type == "managed_policy":
+        return await fetch_managed_policy_details(account_id, resource_name, path)
     else:
         return {}
+
+
+async def fetch_managed_policy_details(
+    account_id: str, resource_name: str, path: str = None
+) -> Optional[Dict]:
+    from consoleme.lib.policies import get_aws_config_history_url_for_resource
+
+    if path:
+        resource_name = path + "/" + resource_name
+    policy_arn: str = f"arn:aws:iam::{account_id}:policy/{resource_name}"
+    result: Dict = {}
+    result["Policy"] = await sync_to_async(get_managed_policy_document)(
+        policy_arn=policy_arn,
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        region=config.region,
+        retry_max_attempts=2,
+    )
+    policy_details = await sync_to_async(get_policy)(
+        policy_arn=policy_arn,
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        region=config.region,
+        retry_max_attempts=2,
+    )
+
+    try:
+        result["TagSet"] = policy_details["Policy"]["Tags"]
+    except KeyError:
+        result["TagSet"] = []
+    result["config_timeline_url"] = await get_aws_config_history_url_for_resource(
+        account_id,
+        policy_arn,
+        resource_name,
+        "AWS::IAM::ManagedPolicy",
+        region=config.region,
+    )
+
+    return result
 
 
 async def fetch_assume_role_policy(role_arn: str) -> Optional[Dict]:

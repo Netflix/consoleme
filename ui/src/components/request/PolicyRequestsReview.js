@@ -424,7 +424,10 @@ class PolicyRequestReview extends Component {
                 />
               );
             }
-            if (change.change_type === "inline_policy") {
+            if (
+              change.change_type === "inline_policy" ||
+              change.change_type === "managed_policy_resource"
+            ) {
               return (
                 <InlinePolicyChangeComponent
                   change={change}

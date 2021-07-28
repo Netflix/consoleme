@@ -192,6 +192,9 @@ export const getResourceEndpoint = (
       case "sns": {
         return `/api/v2/resources/${accountID}/sns/${region}/${resourceName}`;
       }
+      case "managed_policy": {
+        return `/api/v2/resources/${accountID}/managed_policy/${resourceName}`;
+      }
       default: {
         throw new Error("No such service exist");
       }

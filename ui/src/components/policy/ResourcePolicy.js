@@ -4,7 +4,8 @@ import Issues from "./Issues";
 import ResourcePolicyEditor from "./ResourcePolicyEditor";
 import Tags from "./Tags";
 
-const ResourcePolicy = () => {
+const ResourcePolicy = (props) => {
+  const serviceType = props.serviceType;
   const tabs = [
     {
       menuItem: {
@@ -32,7 +33,11 @@ const ResourcePolicy = () => {
         );
       },
     },
-    {
+  ];
+
+  // Only include Issues tab if resource type is eligible. IAM roles are handled by a different pane
+  if (["s3"].includes(serviceType)) {
+    tabs.push({
       menuItem: {
         key: "issues",
         content: (() => {
@@ -46,8 +51,8 @@ const ResourcePolicy = () => {
           </Tab.Pane>
         );
       },
-    },
-  ];
+    });
+  }
 
   return (
     <>
