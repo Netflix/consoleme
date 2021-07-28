@@ -156,7 +156,7 @@ def map_operation_to_api(operation, default):
         "REST.POST.RESTORE": "s3:RestoreObject",
         "REST.POST.UPLOAD": "s3:PutObject",
         "REST.POST.UPLOADS": "s3:PutObject",
-        "REST.PUT.ACL": "s3:PutBucketAcl|s3:PutObjectAcl",
+        "REST.PUT.ACL": "s3:PutBucketAcl,s3:PutObjectAcl",
         "REST.PUT.BUCKET": "REST.PUT.BUCKET",
         "REST.PUT.BUCKETPOLICY": "s3:PutBucketPolicy",
         "REST.PUT.CORS": "s3:PutBucketCORS",
@@ -167,7 +167,7 @@ def map_operation_to_api(operation, default):
         "REST.PUT.OBJECT_TAGGING": "s3:PutObjectTagging",
         "REST.PUT.PART": "s3:PutObject",
         "REST.PUT.PUBLIC_ACCESS_BLOCK": "s3:PutBucketPublicAccessBlock",
-        "REST.PUT.VERSIONING": "REST.PUT.VERSIONING",
+        "REST.PUT.VERSIONING": "s3:putbucketversioning",
     }
     api_call = operations_map.get(operation)
     if api_call is None:

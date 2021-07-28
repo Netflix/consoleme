@@ -596,7 +596,7 @@ async def get_url_for_resource(
         resource_type == "iam" and resource_sub_type == "policy" and account_id != "aws"
     ):
         url = f"/policies/edit/{account_id}/managed_policy/{resource_name}"
-    elif resource_type == "s3" or resource_type == "AWS::S3::Bucket":
+    elif resource_type in ["s3", "AWS::S3::Bucket"]:
         url = f"/policies/edit/{account_id}/{resource_type}/{resource_name}"
     elif resource_type == "managed_policy":
         # managed policies can have a path

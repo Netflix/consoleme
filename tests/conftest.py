@@ -205,6 +205,22 @@ class AWSHelper:
         return str(random.randrange(100000000000, 999999999999))
 
 
+@pytest.fixture(autouse=True, scope="session")
+def redis_prereqs(redis):
+    from consoleme.lib.redis import RedisHandler
+
+    red = RedisHandler().redis_sync()
+    red.hmset(
+        "AWSCONFIG_RESOURCE_CACHE",
+        {
+            "arn:aws:ec2:us-west-2:123456789013:security-group/12345": "{}",
+            "arn:aws:sqs:us-east-1:123456789012:rolequeue": "{}",
+            "arn:aws:sns:us-east-1:123456789012:roletopic": "{}",
+            "arn:aws:iam::123456789012:role/role": "{}",
+        },
+    )
+
+
 @pytest.fixture(scope="session")
 def aws_credentials():
     """Mocked AWS Credentials for moto."""
