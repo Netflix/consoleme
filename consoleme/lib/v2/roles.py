@@ -140,6 +140,7 @@ async def get_user_details(
     if not user:
         return None
     if extended:
+        # TODO: Rename to ExtendedAwsPrincipalModel
         return ExtendedRoleModel(
             name=user_name,
             account_id=account_id,

@@ -2116,6 +2116,8 @@ schedule = {
     },
 }
 
+cache_iam_resources_across_accounts.delay()
+
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
 

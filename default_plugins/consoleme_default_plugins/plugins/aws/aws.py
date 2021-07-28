@@ -87,49 +87,49 @@ class Aws:
             Payload=payload,
         )
 
-    async def _cloudaux_to_aws(self, role):
-        """Convert the cloudaux get_role into the get_account_authorization_details equivalent."""
+    async def _cloudaux_to_aws(self, principal):
+        """Convert the cloudaux get_role/get_user into the get_account_authorization_details equivalent."""
         # Pop out the fields that are not required:
-        # Arn and RoleName will be popped off later:
+        # Arn and RoleName/UserName will be popped off later:
         unrequired_fields = ["_version", "MaxSessionDuration"]
 
         for uf in unrequired_fields:
-            role.pop(uf, None)
+            principal.pop(uf, None)
 
         # Fix the Managed Policies:
-        role["AttachedManagedPolicies"] = list(
+        principal["AttachedManagedPolicies"] = list(
             map(
                 lambda x: {"PolicyName": x["name"], "PolicyArn": x["arn"]},
-                role.get("ManagedPolicies", []),
+                principal.get("ManagedPolicies", []),
             )
         )
-        role.pop("ManagedPolicies", None)
+        principal.pop("ManagedPolicies", None)
 
         # Fix the tags:
-        if isinstance(role.get("Tags", {}), dict):
-            role["Tags"] = list(
+        if isinstance(principal.get("Tags", {}), dict):
+            principal["Tags"] = list(
                 map(
-                    lambda key: {"Key": key, "Value": role["Tags"][key]},
-                    role.get("Tags", {}),
+                    lambda key: {"Key": key, "Value": principal["Tags"][key]},
+                    principal.get("Tags", {}),
                 )
             )
 
         # Note: the instance profile list is verbose -- not transforming it (outside of renaming the field)!
-        role["InstanceProfileList"] = role.pop("InstanceProfiles", [])
+        principal["InstanceProfileList"] = principal.pop("InstanceProfiles", [])
 
         # Inline Policies:
-        role["RolePolicyList"] = list(
+        principal["RolePolicyList"] = list(
             map(
                 lambda name: {
                     "PolicyName": name,
-                    "PolicyDocument": role["InlinePolicies"][name],
+                    "PolicyDocument": principal["InlinePolicies"][name],
                 },
-                role.get("InlinePolicies", {}),
+                principal.get("InlinePolicies", {}),
             )
         )
-        role.pop("InlinePolicies", None)
+        principal.pop("InlinePolicies", None)
 
-        return role
+        return principal
 
     @staticmethod
     def _get_iam_user_sync(account_id, user_name, conn) -> Optional[Dict[str, Any]]:
@@ -304,7 +304,7 @@ class Aws:
                     tags={"account_id": account_id, "user_arn": user_arn},
                 )
                 raise
-
+        await self._cloudaux_to_aws(user)
         return user
 
     async def fetch_iam_role(
