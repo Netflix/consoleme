@@ -32,3 +32,14 @@ Cloud administrators can configure ConsoleMe to authenticate users through [**AL
 - [Blog Post](https://netflixtechblog.com/consoleme-a-central-control-plane-for-aws-permissions-and-access-fd09afdd60a8)
 - [ReInvent Talk](https://www.youtube.com/watch?v=fXNRYcNyw0c&t=5s)
 - [Anonymous Feedback Form](https://forms.gle/JVgmHVua3Tr7JVsr9)
+
+## Third Party Mentions
+
+- FollowAnalytics Blog Post: [Improving database security at FollowAnalytics with AWS IAM database authentication and ConsoleMe](https://medium.com/followanalytics/improving-database-security-at-followanalytics-with-aws-iam-database-authentication-and-consoleme-d00ea8a6edef)
+
+## Companies that use ConsoleMe
+
+- [Calm](https://www.calm.com/)
+- [FollowAnalytics](https://followanalytics.com/)
+- [AB180](https://en.ab180.co/)
+- Feel free to submit a PR or let us know in an [Issue](https://github.com/Netflix/consoleme/issues) if you'd like to add your company to this list.
