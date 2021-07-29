@@ -230,20 +230,9 @@ class SelfServiceStep1 extends Component {
                     {config?.help_message ? (
                       <ReactMarkdown
                         className={"help"}
-                        renderers={{
-                          link: (props) => (
-                            <a
-                              href={props.href}
-                              target="_blank"
-                              rel="nofollow noreferrer noopener"
-                            >
-                              {props.children}
-                            </a>
-                          ),
-                        }}
-                      >
-                        {config.help_message}
-                      </ReactMarkdown>
+                        linkTarget="_blank"
+                        source={config.help_message}
+                      />
                     ) : null}
                   </Grid.Column>
                   <Grid.Column>
