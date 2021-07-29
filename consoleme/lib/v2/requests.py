@@ -50,7 +50,7 @@ from consoleme.lib.policies import (
 from consoleme.lib.templated_resources.requests import (
     generate_honeybee_request_from_change_model_array,
 )
-from consoleme.lib.v2.roles import get_role_details, get_user_details
+from consoleme.lib.v2.aws_principals import get_role_details, get_user_details
 from consoleme.models import (
     Action,
     ActionResult,

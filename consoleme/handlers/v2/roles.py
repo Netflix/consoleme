@@ -9,12 +9,16 @@ from pydantic import ValidationError
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
-from consoleme.lib.auth import can_create_roles, can_delete_roles, can_delete_roles_app
+from consoleme.lib.auth import (
+    can_create_roles,
+    can_delete_iam_principals,
+    can_delete_iam_principals_app,
+)
 from consoleme.lib.aws import clone_iam_role, create_iam_role, delete_iam_role
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.v2.roles import get_role_details
+from consoleme.lib.v2.aws_principals import get_role_details
 from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
@@ -371,7 +375,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
             "role": role_name,
         }
 
-        can_delete_role = can_delete_roles(self.user, self.groups)
+        can_delete_role = can_delete_iam_principals(self.user, self.groups)
         if not can_delete_role:
             stats.count(
                 f"{log_data['function']}.unauthorized",
@@ -450,7 +454,7 @@ class RoleDetailAppHandler(BaseMtlsHandler):
             return
 
         app_name = self.requester.get("name")
-        can_delete_role = can_delete_roles_app(app_name)
+        can_delete_role = can_delete_iam_principals_app(app_name)
 
         if not can_delete_role:
             stats.count(

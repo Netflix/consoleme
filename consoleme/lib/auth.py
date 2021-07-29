@@ -185,7 +185,7 @@ def can_admin_policies(user: str, user_groups: List[str]) -> bool:
     return False
 
 
-def can_delete_roles_app(app_name):
+def can_delete_iam_principals_app(app_name):
     if app_name in [
         *config.get("groups.can_delete_roles_apps", []),
         *config.get("dynamic_config.groups.can_delete_roles_apps", []),
@@ -194,7 +194,7 @@ def can_delete_roles_app(app_name):
     return False
 
 
-def can_delete_roles(
+def can_delete_iam_principals(
     user: str,
     user_groups: List[str],
 ) -> bool:
@@ -204,8 +204,12 @@ def can_delete_roles(
         user,
         user_groups,
         [
+            # TODO: Officially deprecate groups.can_delete_roles config key
             *config.get("groups.can_delete_roles", []),
+            # TODO: Officially deprecate dynamic_config.groups.can_delete_roles config key
             *config.get("dynamic_config.groups.can_delete_roles", []),
+            *config.get("groups.can_delete_iam_principals", []),
+            *config.get("dynamic_config.groups.can_delete_iam_principals", []),
         ],
     ):
         return True

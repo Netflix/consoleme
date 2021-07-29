@@ -690,6 +690,49 @@ def apply_managed_policy_to_role(
     return True
 
 
+async def delete_iam_user(account_id, iam_user_name, username) -> bool:
+    # TODO: docstring and return
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "message": "Attempting to delete role",
+        "account_id": account_id,
+        "iam_user_name": iam_user_name,
+        "user": username,
+    }
+    log.info(log_data)
+    iam_user = await fetch_iam_user_details(account_id, iam_user_name)
+
+    # Detach managed policies
+    for policy in await sync_to_async(iam_user.attached_policies.all)():
+        await sync_to_async(policy.load)()
+        log.info(
+            {
+                **log_data,
+                "message": "Detaching managed policy from user",
+                "policy_arn": policy.arn,
+            }
+        )
+        await sync_to_async(policy.detach_user)(UserName=iam_user)
+
+    # Delete Inline policies
+    for policy in await sync_to_async(iam_user.policies.all)():
+        await sync_to_async(policy.load)()
+        log.info(
+            {
+                **log_data,
+                "message": "Deleting inline policy on user",
+                "policy_name": policy.name,
+            }
+        )
+        await sync_to_async(policy.delete)()
+
+    log.info({**log_data, "message": "Performing user deletion"})
+    await sync_to_async(iam_user.delete)()
+    stats.count(
+        f"{log_data['function']}.success", tags={"iam_user_name": iam_user_name}
+    )
+
+
 async def delete_iam_role(account_id, role_name, username) -> bool:
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -768,6 +811,43 @@ async def fetch_role_details(account_id, role_name):
         raise
     await sync_to_async(iam_role.load)()
     return iam_role
+
+
+async def fetch_iam_user_details(account_id, iam_user_name):
+    """
+    Fetches details about an IAM user from AWS. If `policies.role_name` configuration
+    is set, the hub (central) account ConsoleMeInstanceProfile role will assume the
+    configured role to perform the action.
+
+    :param account_id: account ID
+    :param iam_user_name: IAM user name
+    :return: iam_user resource
+    """
+    log_data = {
+        "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        "message": "Attempting to fetch role details",
+        "account": account_id,
+        "iam_user_name": iam_user_name,
+    }
+    log.info(log_data)
+    iam_resource = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        service_type="resource",
+        account_number=account_id,
+        region=config.region,
+        assume_role=config.get("policies.role_name"),
+        session_name="fetch_iam_user_details",
+        retry_max_attempts=2,
+    )
+    try:
+        iam_user = await sync_to_async(iam_resource.User)(iam_user_name)
+    except ClientError as ce:
+        if ce.response["Error"]["Code"] == "NoSuchEntity":
+            log_data["message"] = "Requested user doesn't exist"
+            log.error(log_data)
+        raise
+    await sync_to_async(iam_user.load)()
+    return iam_user
 
 
 async def create_iam_role(create_model: RoleCreationRequestModel, username):

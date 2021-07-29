@@ -282,7 +282,7 @@ def sns(aws_credentials):
 
 
 @pytest.fixture(autouse=True, scope="session")
-def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
+def create_default_resources(s3, iam, redis, iam_sync_principals, iamrole_table):
     from asgiref.sync import async_to_sync
 
     from consoleme.config import config
@@ -617,7 +617,7 @@ def dummy_users_data(users_table):
 
 
 @pytest.fixture(autouse=True, scope="session")
-def iam_sync_roles(iam):
+def iam_sync_principals(iam):
     statement_policy = json.dumps(
         {
             "Statement": [{"Effect": "Deny", "Action": "*", "Resource": "*"}],
@@ -654,6 +654,15 @@ def iam_sync_roles(iam):
     policy_two = iam.create_policy(
         PolicyName="policy-two", PolicyDocument=statement_policy
     )["Policy"]["Arn"]
+
+    iam.create_user(UserName="TestUser")
+    iam.put_user_policy(
+        UserName="TestUser",
+        PolicyName="SomePolicy",
+        PolicyDocument=statement_policy,
+    )
+
+    iam.attach_user_policy(UserName="TestUser", PolicyArn=policy_one)
 
     # Create 50 IAM roles for syncing:
     for x in range(0, 10):
@@ -938,7 +947,7 @@ def mock_async_http_client():
 def populate_caches(
     redis,
     user_iam_role,
-    iam_sync_roles,
+    iam_sync_principals,
     dummy_users_data,
     dummy_requests_data,
     policy_requests_table,
