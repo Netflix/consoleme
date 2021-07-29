@@ -41,24 +41,20 @@ class TestUserProfile(AsyncHTTPTestCase):
                     "security_url": None,
                 },
                 "user": "user@example.com",
+                "can_logout": False,
                 "is_contractor": False,
                 "employee_photo_url": "https://www.gravatar.com/avatar/b58996c504c5638798eb6b511e6f49af?d=mp",
                 "employee_info_url": None,
                 "authorization": {
                     "can_edit_policies": False,
                     "can_create_roles": False,
-                    "can_delete_roles": False,
+                    "can_delete_iam_principals": False,
                 },
-                "can_logout": False,
                 "pages": {
                     "header": {
-                        "custom_header_message_route": config.get(
-                            "example_config.routes"
-                        ),
-                        "custom_header_message_title": config.get(
-                            "example_config.title"
-                        ),
-                        "custom_header_message_text": config.get("example_config.text"),
+                        "custom_header_message_title": "Warning:",
+                        "custom_header_message_text": "This configuration has no authentication configured. Do not use in a production environment. Do not publicly expose this endpoint or your AWS environment will be compromised! Click [here](/generate_config) to generate a configuration.",
+                        "custom_header_message_route": ".*",
                     },
                     "groups": {"enabled": False},
                     "users": {"enabled": False},

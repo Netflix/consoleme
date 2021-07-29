@@ -58,7 +58,9 @@ class UserProfileHandler(BaseAPIV1Handler):
             "authorization": {
                 "can_edit_policies": can_admin_policies(self.user, self.groups),
                 "can_create_roles": can_create_roles(self.user, self.groups),
-                "can_delete_roles": can_delete_iam_principals(self.user, self.groups),
+                "can_delete_iam_principals": can_delete_iam_principals(
+                    self.user, self.groups
+                ),
             },
             "pages": {
                 "header": {

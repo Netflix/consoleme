@@ -726,6 +726,11 @@ async def delete_iam_user(account_id, iam_user_name, username) -> bool:
         )
         await sync_to_async(policy.delete)()
 
+    log.info({**log_data, "message": "Performing access key deletion"})
+    access_keys = iam_user.access_keys.all()
+    for access_key in access_keys:
+        access_key.delete()
+
     log.info({**log_data, "message": "Performing user deletion"})
     await sync_to_async(iam_user.delete)()
     stats.count(

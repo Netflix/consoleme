@@ -70,7 +70,8 @@ const PolicyEditor = () => {
           />
           Edit Policy for {`${resource.arn || ""}`}
         </Header>
-        {serviceType === "iamrole" && user?.authorization?.can_delete_roles ? (
+        {["iamrole", "iamuser"].includes(serviceType) &&
+        user?.authorization?.can_delete_iam_principals ? (
           <Label
             as="a"
             attached="top right"
