@@ -268,7 +268,7 @@ class Aws:
         user_arn: str,
         run_sync=False,
     ) -> Optional[Dict[str, Any]]:
-        """Fetch the IAM User template from Redis and/or Dynamo.
+        """Fetch the IAM User from AWS in threadpool if run_sync=False, otherwise synchronously.
 
         :param account_id:
         :param user_arn:
