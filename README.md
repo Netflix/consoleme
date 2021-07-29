@@ -54,8 +54,11 @@ or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-
 
 ## Third Party Mentions
 
-- FollowAnalytics Blog
-  Post: [Improving database security at FollowAnalytics with AWS IAM database authentication and ConsoleMe](https://medium.com/followanalytics/improving-database-security-at-followanalytics-with-aws-iam-database-authentication-and-consoleme-d00ea8a6edef)
+- [Netflix’s ConsoleMe local installation on Linux machine](https://kerneltalks.com/tools/netflixs-consoleme-local-installation-on-linux-machine/)
+- [Improving database security at FollowAnalytics with AWS IAM database authentication and ConsoleMe](https://medium.com/followanalytics/improving-database-security-at-followanalytics-with-aws-iam-database-authentication-and-consoleme-d00ea8a6edef)
+- [Awesome IAM Policy Tools](https://github.com/kdeldycke/awesome-iam#aws-policy-tools)
+- [Netflix on AWS Case Study](https://aws.amazon.com/solutions/case-studies/netflix/)
+- [Netflix Open Sources ConsoleMe to Manage Permissions and Access on AWS](infoq.com/news/2021/04/netflix-consoleme-aws/)
 
 ## Companies that use ConsoleMe (alphabetically sorted)
 
