@@ -39,7 +39,7 @@ Cloud administrators can configure ConsoleMe to authenticate users through [**AL
 
 ## Companies that use ConsoleMe
 
-- [Airbridge](https://www.airbridge.io/)
+- [AB180](https://en.ab180.co/)
 - [Calm](https://www.calm.com/)
 - [FollowAnalytics](https://followanalytics.com/)
 - Feel free to submit a PR or let us know in an [Issue](https://github.com/Netflix/consoleme/issues) if you'd like to add your company to this list.
