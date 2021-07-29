@@ -36,5 +36,6 @@ jobs:
         run: |
           export CONSOLEME_VERSION=$(python setup.py -q --version)
           docker tag consoleme:latest public.ecr.aws/consoleme/consoleme:latest
-          docker tag consoleme:$CONSOLEME_VERSION
+          docker tag consoleme:latest public.ecr.aws/consoleme/consoleme:$CONSOLEME_VERSION
           docker push public.ecr.aws/consoleme/consoleme:latest
+          docker push public.ecr.aws/consoleme/consoleme:$CONSOLEME_VERSION
