@@ -21,10 +21,14 @@ class SelfServiceConfigHandler(BaseAPIV2Handler):
             "self_service_iam", SELF_SERVICE_IAM_DEFAULTS
         )
 
+        # Help message can be configured with Markdown for link handling
+        help_message: str = config.get("self_service_iam_help_message")
+
         self.write(
             {
                 "admin_bypass_approval_enabled": admin_bypass_approval_enabled,
                 "export_to_terraform_enabled": export_to_terraform_enabled,
+                "help_message": help_message,
                 **self_service_iam_config,
             }
         )
