@@ -691,7 +691,15 @@ def apply_managed_policy_to_role(
 
 
 async def delete_iam_user(account_id, iam_user_name, username) -> bool:
-    # TODO: docstring and return
+    """
+    This function assumes the user has already been pre-authorized to delete an IAM user. it will detach all managed
+    policies, delete all inline policies, delete all access keys, and finally delete the IAM user.
+
+    :param account_id: Account ID that the IAM user is on
+    :param iam_user_name: name of IAM user to delete
+    :param username: actor's username
+    :return:
+    """
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "message": "Attempting to delete role",
@@ -736,6 +744,7 @@ async def delete_iam_user(account_id, iam_user_name, username) -> bool:
     stats.count(
         f"{log_data['function']}.success", tags={"iam_user_name": iam_user_name}
     )
+    return True
 
 
 async def delete_iam_role(account_id, role_name, username) -> bool:

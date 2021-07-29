@@ -81,7 +81,6 @@ class UserDetailHandler(BaseAPIV2Handler):
             return
         self.write(user_details.json())
 
-    # TODO: This needs to actually delete users
     async def delete(self, account_id, iam_user_name):
         """
         DELETE /api/v2/users/{account_id}/{iam_user_name}

@@ -1060,7 +1060,6 @@ def cache_iam_resources_across_accounts(
                 # results.join() forces function to wait until all tasks are complete
                 results.join(disable_sync_subtasks=False)
     else:
-        # TODO: Fetch other IAM resources from S3
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
         roles = dynamo.fetch_all_roles()
