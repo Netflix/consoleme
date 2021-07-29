@@ -34,5 +34,7 @@ jobs:
           docker build -t consoleme .
       - name: Tag, and push image to Amazon ECR
         run: |
+          export CONSOLEME_VERSION=$(python setup.py -q --version)
           docker tag consoleme:latest public.ecr.aws/consoleme/consoleme:latest
+          docker tag consoleme:$CONSOLEME_VERSION
           docker push public.ecr.aws/consoleme/consoleme:latest

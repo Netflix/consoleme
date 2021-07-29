@@ -17,12 +17,18 @@ jobs:
         with:
           username: ${{ secrets.CONSOLEME_DOCKERHUB_USERNAME }}
           password: ${{ secrets.CONSOLEME_DOCKERHUB_PASSWORD }}
+      - name: Get ConsoleMe version
+        id: consoleme_version
+        run: |-
+          export CONSOLEME_VERSION=$(python setup.py -q --version)
+          echo "::set-output name=consoleme_version::$(CONSOLEME_VERSION)"
+          echo ${{ steps.consoleme_version.outputs.consoleme_version }}
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: consoleme/consoleme:latest
+          tags: consoleme/consoleme:latest,consoleme/consoleme:${{ steps.consoleme_version.outputs.consoleme_version }}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
   deploy_consoleme_demo_site:
