@@ -15,7 +15,7 @@ An [**IAM Self-Service Wizard**](https://hawkins.gitbook.io/consoleme/feature-vi
 
 [Weep](https://github.com/Netflix/weep) (ConsoleMe’s CLI) supports [**5 different ways**](https://hawkins.gitbook.io/consoleme/weep-cli/cli) of serving AWS credentials locally.
 
-Cloud administrators can [**create/clone IAM roles**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/role-creation-and-cloning) and [**manage IAM roles, S3 Buckets, SQS queues, and SNS topics**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/policy-editor-for-iam-sqs-sns-and-s3) across hundreds of accounts in a single interface.
+Cloud administrators can [**create/clone IAM roles**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/role-creation-and-cloning) and [**manage IAM roles, IAM inline/managed policies, S3 Buckets, SQS queues, and SNS topics**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/policy-editor-for-iam-sqs-sns-and-s3) across hundreds of accounts in a single interface.
 
 Users can access most of your cloud resources in the AWS Console with a [**single click**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/multi-account-policies-management).
 Cloud administrators can configure ConsoleMe to authenticate users through [**ALB Authentication**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/alb-auth), [**OIDC/OAuth2**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/oidc-oauth2-okta), or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/saml-auth0).
@@ -39,7 +39,7 @@ Cloud administrators can configure ConsoleMe to authenticate users through [**AL
 
 ## Companies that use ConsoleMe
 
+- [Airbridge](https://www.airbridge.io/)
 - [Calm](https://www.calm.com/)
 - [FollowAnalytics](https://followanalytics.com/)
-- [AB180](https://en.ab180.co/)
 - Feel free to submit a PR or let us know in an [Issue](https://github.com/Netflix/consoleme/issues) if you'd like to add your company to this list.
