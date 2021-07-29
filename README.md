@@ -3,22 +3,41 @@
 
 # ConsoleMe
 
-Check out our [quick start guide](https://hawkins.gitbook.io/consoleme/quick-start), [documentation](https://hawkins.gitbook.io/consoleme/), [feature videos](https://hawkins.gitbook.io/consoleme/feature-videos), [ReInvent Talk](https://www.youtube.com/watch?v=fXNRYcNyw0c&t=5s), and [Blog Post](https://netflixtechblog.com/consoleme-a-central-control-plane-for-aws-permissions-and-access-fd09afdd60a8).
+Check out our [quick start guide](https://hawkins.gitbook.io/consoleme/quick-start)
+, [documentation](https://hawkins.gitbook.io/consoleme/)
+, [feature videos](https://hawkins.gitbook.io/consoleme/feature-videos)
+, [ReInvent Talk](https://www.youtube.com/watch?v=fXNRYcNyw0c&t=5s),
+and [Blog Post](https://netflixtechblog.com/consoleme-a-central-control-plane-for-aws-permissions-and-access-fd09afdd60a8)
+.
 
 ## Overview
 
-ConsoleMe is a web service that makes AWS IAM permissions and credential management easier for end-users and cloud administrators.
+ConsoleMe is a web service that makes AWS IAM permissions and credential management easier for end-users and cloud
+administrators.
 
-ConsoleMe provides [**numerous ways**](https://hawkins.gitbook.io/consoleme/feature-videos/credentials/aws-console-login) to log in to the AWS Console.
+ConsoleMe provides [**numerous
+ways**](https://hawkins.gitbook.io/consoleme/feature-videos/credentials/aws-console-login) to log in to the AWS Console.
 
-An [**IAM Self-Service Wizard**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/self-service-iam-wizard) lets users request IAM permissions in plain English. Cross-account resource policies will be automatically generated, and can be applied with a single click for certain resource types.
+An [**IAM Self-Service
+Wizard**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/self-service-iam-wizard) lets users
+request IAM permissions in plain English. Cross-account resource policies will be automatically generated, and can be
+applied with a single click for certain resource types.
 
-[Weep](https://github.com/Netflix/weep) (ConsoleMe’s CLI) supports [**5 different ways**](https://hawkins.gitbook.io/consoleme/weep-cli/cli) of serving AWS credentials locally.
+[Weep](https://github.com/Netflix/weep) (ConsoleMe’s CLI) supports [**5 different
+ways**](https://hawkins.gitbook.io/consoleme/weep-cli/cli) of serving AWS credentials locally.
 
-Cloud administrators can [**create/clone IAM roles**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/role-creation-and-cloning) and [**manage IAM roles, IAM inline/managed policies, S3 Buckets, SQS queues, and SNS topics**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/policy-editor-for-iam-sqs-sns-and-s3) across hundreds of accounts in a single interface.
+Cloud administrators can [**create/clone IAM
+roles**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/role-creation-and-cloning) and [**manage
+IAM roles, IAM inline/managed policies, S3 Buckets, SQS queues, and SNS
+topics**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/policy-editor-for-iam-sqs-sns-and-s3)
+across hundreds of accounts in a single interface.
 
-Users can access most of your cloud resources in the AWS Console with a [**single click**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/multi-account-policies-management).
-Cloud administrators can configure ConsoleMe to authenticate users through [**ALB Authentication**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/alb-auth), [**OIDC/OAuth2**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/oidc-oauth2-okta), or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/saml-auth0).
+Users can access most of your cloud resources in the AWS Console with a [**single
+click**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/multi-account-policies-management). Cloud
+administrators can configure ConsoleMe to authenticate users through [**ALB
+Authentication**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/alb-auth),
+[**OIDC/OAuth2**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/oidc-oauth2-okta),
+or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/saml-auth0).
 
 … And more. Check out our [docs](https://hawkins.gitbook.io/consoleme/) to get started.
 
@@ -35,11 +54,14 @@ Cloud administrators can configure ConsoleMe to authenticate users through [**AL
 
 ## Third Party Mentions
 
-- FollowAnalytics Blog Post: [Improving database security at FollowAnalytics with AWS IAM database authentication and ConsoleMe](https://medium.com/followanalytics/improving-database-security-at-followanalytics-with-aws-iam-database-authentication-and-consoleme-d00ea8a6edef)
+- FollowAnalytics Blog
+  Post: [Improving database security at FollowAnalytics with AWS IAM database authentication and ConsoleMe](https://medium.com/followanalytics/improving-database-security-at-followanalytics-with-aws-iam-database-authentication-and-consoleme-d00ea8a6edef)
 
-## Companies that use ConsoleMe
+## Companies that use ConsoleMe (alphabetically sorted)
 
 - [AB180](https://en.ab180.co/)
 - [Calm](https://www.calm.com/)
 - [FollowAnalytics](https://followanalytics.com/)
-- Feel free to submit a PR or let us know in an [Issue](https://github.com/Netflix/consoleme/issues) if you'd like to add your company to this list.
+- [National Center for Biotechnology Information](https://www.ncbi.nlm.nih.gov/)
+- Feel free to submit a PR or let us know in an [Issue](https://github.com/Netflix/consoleme/issues) if you'd like to
+  add your company to this list.
