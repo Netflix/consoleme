@@ -12,6 +12,7 @@ import {
   Search,
   Segment,
 } from "semantic-ui-react";
+import ReactMarkdown from "react-markdown";
 import RoleDetails from "../roles/RoleDetails";
 import "./SelfService.css";
 
@@ -167,7 +168,7 @@ class SelfServiceStep1 extends Component {
   }
 
   render() {
-    const role = this.props.role;
+    const { config, role } = this.props;
     const { isLoading, isRoleLoading, messages, results, value } = this.state;
     const messagesToShow =
       messages.length > 0 ? (
@@ -226,16 +227,13 @@ class SelfServiceStep1 extends Component {
               <Grid stackable columns={2}>
                 <Grid.Row className={"helpContainer"}>
                   <Grid.Column>
-                    <p className={"help"}>
-                      For Help, please visit{" "}
-                      <a
-                        href="http://go/selfserviceiamtldr"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        go/selfserviceiamtldr
-                      </a>
-                    </p>
+                    {config?.help_message ? (
+                      <ReactMarkdown
+                        className={"help"}
+                        linkTarget="_blank"
+                        source={config.help_message}
+                      />
+                    ) : null}
                   </Grid.Column>
                   <Grid.Column>
                     <Button
