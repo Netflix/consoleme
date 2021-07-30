@@ -122,7 +122,11 @@ class SelfServiceStep3 extends Component {
     });
   }
 
-  onValueChange() {}
+  onValueChange(newValue, e) {
+    this.setState({
+      new_policy: newValue,
+    });
+  }
 
   buildMonacoEditor() {
     const { old_policy, new_policy } = this.state;
@@ -131,7 +135,6 @@ class SelfServiceStep3 extends Component {
       <MonacoDiffComponent
         oldValue={old_policy}
         newValue={new_policy}
-        readOnly={true}
         onLintError={this.onLintError}
         onValueChange={this.onValueChange}
       />
@@ -150,8 +153,8 @@ class SelfServiceStep3 extends Component {
   }
 
   handleSubmit() {
-    const { role, updated_policy } = this.props;
-    const { justification, admin_auto_approve } = this.state;
+    const { role } = this.props;
+    const { justification, admin_auto_approve, new_policy } = this.state;
     if (!justification) {
       return this.setState((state) => ({
         messages: ["No Justification is Given"],
@@ -168,7 +171,7 @@ class SelfServiceStep3 extends Component {
             change_type: "inline_policy",
             action: "attach",
             policy: {
-              policy_document: JSON.parse(updated_policy),
+              policy_document: JSON.parse(new_policy),
             },
           },
         ],
