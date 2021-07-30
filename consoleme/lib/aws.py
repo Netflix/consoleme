@@ -1661,7 +1661,7 @@ async def normalize_policies(policies: List[Any]) -> List[Any]:
             # Policy elements can be lowercased, except for resources. Some resources
             # (such as IAM roles) are case sensitive
             if element in ["Resource", "NotResource"]:
-                policy[element] = list(set([x for x in policy[element]]))
+                policy[element] = list(set(policy[element]))
             else:
                 policy[element] = list(set([x.lower() for x in policy[element]]))
             modified_elements = set()
