@@ -43,6 +43,7 @@ class SelfServiceStep3 extends Component {
     this.handleJustificationChange = this.handleJustificationChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleAdminSubmit = this.handleAdminSubmit.bind(this);
+    this.onValueChange = this.onValueChange.bind(this);
   }
 
   async componentDidMount() {
@@ -441,7 +442,6 @@ class SelfServiceStep3 extends Component {
           <MonacoDiffComponent
             oldValue={old_policy}
             newValue={new_policy}
-            readOnly={true}
             onLintError={this.onLintError}
             onValueChange={this.onValueChange}
           />
