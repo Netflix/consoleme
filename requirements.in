@@ -7,7 +7,7 @@ boto3
 cchardet
 celery[redis]
 cloudaux
-cryptography # Dilbwag needed this
+cryptography
 datamodel-code-generator
 decorator<5 # Internal requirement has decorator pinned to <5.
 deepdiff
