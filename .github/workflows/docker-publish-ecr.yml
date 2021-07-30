@@ -2,6 +2,8 @@ name: Create and publish docker image on ECR
 on:
   push:
     branches: master
+    tags:
+      - "*"
 jobs:
   ecr_public:
     runs-on: ubuntu-latest
