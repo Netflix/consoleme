@@ -176,6 +176,18 @@ class SelfService extends Component {
     this.setState({ permissions });
   }
 
+  handleResetUserChoices() {
+    // This function is called after a user has added a permission set
+    // to their "shopping cart". It will reset advanced settings so they
+    // are not carried over to additional permission sets they add to their
+    // "shopping cart".
+    this.setState({
+      extraActions: [],
+      includeAccounts: [],
+      excludeAccounts: [],
+    });
+  }
+
   getCurrentSelfServiceStep() {
     const {
       admin_bypass_approval_enabled,
@@ -218,6 +230,7 @@ class SelfService extends Component {
             handleStepClick={this.handleStepClick.bind(this)}
             updatePolicy={this.updatePolicy.bind(this)}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
+            handleResetUserChoices={this.handleResetUserChoices.bind(this)}
             handleExtraActionsUpdate={this.handleExtraActionsUpdate.bind(this)}
             handleIncludeAccountsUpdate={this.handleIncludeAccountsUpdate.bind(
               this
