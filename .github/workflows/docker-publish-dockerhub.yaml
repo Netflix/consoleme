@@ -31,8 +31,7 @@ jobs:
           docker tag consoleme:latest consoleme/consoleme:$CONSOLEME_MAJOR
           docker tag consoleme:latest consoleme/consoleme:$CONSOLEME_MINOR
           docker tag consoleme:latest consoleme/consoleme:$CONSOLEME_PATCH
-          docker push consoleme/consoleme:latest
-          docker push consoleme/consoleme:$CONSOLEME_VERSION
+          docker push --all-tags consoleme/consoleme
   deploy_consoleme_demo_site:
     name: Deploy Demo Site
     if: github.repository == 'Netflix/consoleme'
