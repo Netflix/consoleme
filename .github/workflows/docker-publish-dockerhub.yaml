@@ -31,7 +31,7 @@ jobs:
           docker tag consoleme consoleme/consoleme:unstable
           docker push --all-tags consoleme/consoleme
       - name: Tag, and push versioned image to DockerHub on tag
-        if: github.event_name == 'create' && startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v')
         run: |
           export CONSOLEME_VERSION=$(python3 setup.py -q --version | sed -r 's/\+/\./g')
           export CONSOLEME_MAJOR=$(cut -d '.' -f 1 <<< "$CONSOLEME_VERSION")
