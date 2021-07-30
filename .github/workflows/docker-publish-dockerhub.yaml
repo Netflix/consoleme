@@ -24,20 +24,23 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
-      - name: Tag, and push image to DockerHub
+      - name: Tag, and push unstable image to DockerHub
+        run: |
+          docker tag consoleme consoleme/consoleme:unstable
+          docker push --all-tags consoleme/consoleme
+      - name: Tag, and push versioned image to DockerHub on tag
+        if: github.event_name == 'create' && startsWith(github.ref, 'refs/tags/v')
         run: |
           export CONSOLEME_VERSION=$(python3 setup.py -q --version | sed -r 's/\+/\./g')
           export CONSOLEME_MAJOR=$(cut -d '.' -f 1 <<< "$CONSOLEME_VERSION")
           export CONSOLEME_MINOR=$(cut -d '.' -f 1,2 <<< "$CONSOLEME_VERSION")
           export CONSOLEME_PATCH=$(cut -d '.' -f 1,2,3 <<< "$CONSOLEME_VERSION")
-          export CONSOLEME_DEV=$(cut -d '.' -f 1,2,3,4 <<< "$CONSOLEME_VERSION")
-          docker tag consoleme:latest consoleme/consoleme:latest
-          docker tag consoleme:latest consoleme/consoleme:$CONSOLEME_VERSION
-          docker tag consoleme:latest consoleme/consoleme:$CONSOLEME_MAJOR
-          docker tag consoleme:latest consoleme/consoleme:$CONSOLEME_MINOR
-          docker tag consoleme:latest consoleme/consoleme:$CONSOLEME_PATCH
-          docker tag consoleme:latest consoleme/consoleme:$CONSOLEME_DEV
+          docker tag consoleme consoleme/consoleme:$CONSOLEME_VERSION
+          docker tag consoleme consoleme/consoleme:$CONSOLEME_MAJOR
+          docker tag consoleme consoleme/consoleme:$CONSOLEME_MINOR
+          docker tag consoleme consoleme/consoleme:$CONSOLEME_PATCH
           docker push --all-tags consoleme/consoleme
+
   deploy_consoleme_demo_site:
     name: Deploy Demo Site
     if: github.repository == 'Netflix/consoleme'
