@@ -51,4 +51,5 @@ jobs:
           docker tag consoleme public.ecr.aws/consoleme/consoleme:$CONSOLEME_MAJOR
           docker tag consoleme public.ecr.aws/consoleme/consoleme:$CONSOLEME_MINOR
           docker tag consoleme public.ecr.aws/consoleme/consoleme:$CONSOLEME_PATCH
+          docker tag consoleme public.ecr.aws/consoleme/consoleme:latest
           docker push --all-tags public.ecr.aws/consoleme/consoleme

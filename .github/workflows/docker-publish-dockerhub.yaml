@@ -41,6 +41,7 @@ jobs:
           docker tag consoleme consoleme/consoleme:$CONSOLEME_MAJOR
           docker tag consoleme consoleme/consoleme:$CONSOLEME_MINOR
           docker tag consoleme consoleme/consoleme:$CONSOLEME_PATCH
+          docker tag consoleme consoleme/consoleme:latest
           docker push --all-tags consoleme/consoleme
 
   deploy_consoleme_demo_site:
