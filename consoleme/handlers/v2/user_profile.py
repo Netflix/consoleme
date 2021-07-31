@@ -39,6 +39,9 @@ class UserProfileHandler(BaseAPIV1Handler):
             ),
             "security_logo": config.get("security_logo.image"),
             "security_url": config.get("security_logo.url"),
+            # If site_config.landing_url is set, users will be redirected to the landing URL after authenticating
+            # on the frontend.
+            "landing_url": config.get("site_config.landing_url"),
         }
 
         custom_page_header: Dict[str, str] = await get_custom_page_header(
