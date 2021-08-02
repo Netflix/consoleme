@@ -39,6 +39,7 @@ class TestUserProfile(AsyncHTTPTestCase):
                     "support_chat_url": "https://www.example.com/slack/channel",
                     "security_logo": None,
                     "security_url": None,
+                    "landing_url": None,
                 },
                 "user": "user@example.com",
                 "is_contractor": False,

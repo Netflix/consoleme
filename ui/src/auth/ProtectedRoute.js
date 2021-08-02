@@ -1,6 +1,11 @@
 import React, { useEffect } from "react";
 import { useAuth } from "./AuthProviderDefault";
-import { Route, useLocation, useRouteMatch } from "react-router-dom";
+import {
+  Route,
+  useHistory,
+  useLocation,
+  useRouteMatch,
+} from "react-router-dom";
 import { Segment } from "semantic-ui-react";
 import ConsoleMeHeader from "../components/Header";
 import ConsoleMeSidebar from "../components/Sidebar";
@@ -8,6 +13,7 @@ import ReactGA from "react-ga";
 
 const ProtectedRoute = (props) => {
   const auth = useAuth();
+  let history = useHistory();
   const location = useLocation();
   const { login, user, isSessionExpired } = auth;
   const match = useRouteMatch(props);
@@ -27,10 +33,10 @@ const ProtectedRoute = (props) => {
 
     if (!user) {
       (async () => {
-        await login();
+        await login(history);
       })();
     }
-  }, [match, user, isSessionExpired, login]);
+  }, [match, user, isSessionExpired, login, history]);
 
   if (!user) {
     return null;
