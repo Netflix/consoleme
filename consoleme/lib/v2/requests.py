@@ -1517,6 +1517,16 @@ async def populate_cross_account_resource_policy_for_change(
                     extended=True,
                     force_refresh=True,
                 )
+                if not role:
+                    log.error(
+                        {
+                            **log_data,
+                            "message": (
+                                "Unable to retrieve role. Won't attempt to make cross-account policy."
+                            ),
+                        }
+                    )
+                    return
                 old_policy = role.assume_role_policy_document
 
         old_policy_sha256 = sha256(
