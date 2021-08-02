@@ -2013,8 +2013,8 @@ if config.get("development", False):
     schedule_5_minutes = dev_schedule
 
 schedule = {
-    "cache_roles_across_accounts": {
-        "task": "consoleme.celery_tasks.celery_tasks.cache_roles_across_accounts",
+    "cache_iam_resources_across_accounts": {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_iam_resources_across_accounts",
         "options": {"expires": 1000},
         "schedule": schedule_45_minute,
     },
