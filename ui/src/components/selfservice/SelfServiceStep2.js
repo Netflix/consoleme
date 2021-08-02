@@ -164,6 +164,8 @@ class SelfServiceStep2 extends Component {
           this.props.handlePermissionsUpdate(permissions);
         }
       );
+      // Reset extraActions, includeAccounts, and excludeAccounts
+      this.props.handleResetUserChoices();
     }
   }
 
