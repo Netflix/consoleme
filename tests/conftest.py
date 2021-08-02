@@ -22,6 +22,9 @@ from moto import (
 )
 from tornado.concurrent import Future
 
+# Unit tests will create mock resources in us-east-1
+os.environ["AWS_REGION"] = "us-east-1"
+
 # This must be set before loading ConsoleMe's configuration
 
 os.environ["CONFIG_LOCATION"] = "example_config/example_config_test.yaml"
