@@ -50,7 +50,7 @@ from consoleme.lib.policies import (
 from consoleme.lib.templated_resources.requests import (
     generate_honeybee_request_from_change_model_array,
 )
-from consoleme.lib.v2.roles import get_role_details
+from consoleme.lib.v2.aws_principals import get_role_details, get_user_details
 from consoleme.models import (
     Action,
     ActionResult,
@@ -62,8 +62,8 @@ from consoleme.models import (
     Command,
     CommentModel,
     CommentRequestModificationModel,
+    ExtendedAwsPrincipalModel,
     ExtendedRequestModel,
-    ExtendedRoleModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
     ManagedPolicyResourceChangeModel,
@@ -294,17 +294,26 @@ async def generate_request_from_change_model_array(
             or len(permissions_boundary_changes) > 0
         ):
             # for inline/managed/assume role policies, principal arn must be a role
-            if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+            if arn_parsed["service"] != "iam" or arn_parsed["resource"] not in [
+                "role",
+                "user",
+            ]:
                 log_data[
                     "message"
                 ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
                 log.error(log_data)
                 raise InvalidRequestParameter(log_data["message"])
-            role_name = arn_parsed["resource_path"].split("/")[-1]
-            role = await get_role_details(
-                account_id, role_name=role_name, extended=True
-            )
-            if not role:
+            principal_name = arn_parsed["resource_path"].split("/")[-1]
+            principal_details = None
+            if arn_parsed["resource"] == "role":
+                principal_details = await get_role_details(
+                    account_id, role_name=principal_name, extended=True
+                )
+            elif arn_parsed["resource"] == "user":
+                principal_details = await get_user_details(
+                    account_id, user_name=principal_name, extended=True
+                )
+            if not principal_details:
                 log_data["message"] = "Principal not found"
                 log.error(log_data)
                 raise InvalidRequestParameter(log_data["message"])
@@ -312,19 +321,29 @@ async def generate_request_from_change_model_array(
                 inline_policy_change.policy_name = await generate_policy_name(
                     inline_policy_change.policy_name, user
                 )
-                await validate_inline_policy_change(inline_policy_change, user, role)
+                await validate_inline_policy_change(
+                    inline_policy_change, user, principal_details
+                )
             for managed_policy_change in managed_policy_changes:
-                await validate_managed_policy_change(managed_policy_change, user, role)
+                await validate_managed_policy_change(
+                    managed_policy_change, user, principal_details
+                )
             for permissions_boundary_change in permissions_boundary_changes:
                 await validate_permissions_boundary_change(
-                    permissions_boundary_change, user, role
+                    permissions_boundary_change, user, principal_details
                 )
             for assume_role_policy_change in assume_role_policy_changes:
+                if arn_parsed["resource"] == "user":
+                    raise UnsupportedChangeType(
+                        "Unable to modify an assume role policy associated with an IAM user"
+                    )
                 await validate_assume_role_policy_change(
-                    assume_role_policy_change, user, role
+                    assume_role_policy_change, user, principal_details
                 )
             for resource_tag_change in resource_tag_changes:
-                await validate_resource_tag_change(resource_tag_change, user, role)
+                await validate_resource_tag_change(
+                    resource_tag_change, user, principal_details
+                )
 
         # TODO: validate resource policy logic when we are ready to apply that
 
@@ -570,7 +589,7 @@ async def generate_resource_policies(extended_request: ExtendedRequestModel, use
 
 
 async def validate_inline_policy_change(
-    change: InlinePolicyChangeModel, user: str, role: ExtendedRoleModel
+    change: InlinePolicyChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -641,7 +660,7 @@ async def validate_inline_policy_change(
 
 
 async def validate_permissions_boundary_change(
-    change: PermissionsBoundaryChangeModel, user: str, role: ExtendedRoleModel
+    change: PermissionsBoundaryChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -682,7 +701,7 @@ async def validate_permissions_boundary_change(
 
 
 async def validate_managed_policy_change(
-    change: ManagedPolicyChangeModel, user: str, role: ExtendedRoleModel
+    change: ManagedPolicyChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -769,7 +788,7 @@ async def validate_managed_policy_resource_change(
 
 
 async def validate_resource_tag_change(
-    change: ResourceTagChangeModel, user: str, role: ExtendedRoleModel
+    change: ResourceTagChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -785,7 +804,7 @@ async def validate_resource_tag_change(
 
 
 async def validate_assume_role_policy_change(
-    change: AssumeRolePolicyChangeModel, user: str, role: ExtendedRoleModel
+    change: AssumeRolePolicyChangeModel, user: str, role: ExtendedAwsPrincipalModel
 ):
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
@@ -829,7 +848,6 @@ async def apply_changes_to_role(
     :param specific_change_id: if this function is being used to apply only one specific change
             if not provided, all non-autogenerated, supported changes are applied
     """
-
     log_data: dict = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "user": user,
@@ -842,7 +860,7 @@ async def apply_changes_to_role(
     arn_parsed = parse_arn(extended_request.principal.principal_arn)
 
     # Principal ARN must be a role for this function
-    if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+    if arn_parsed["service"] != "iam" or arn_parsed["resource"] not in ["role", "user"]:
         log_data[
             "message"
         ] = "Resource not found, or ARN type not supported for inline/managed/assume role policy changes."
@@ -853,7 +871,7 @@ async def apply_changes_to_role(
         )
         return
 
-    role_name = arn_parsed["resource_path"].split("/")[-1]
+    principal_name = arn_parsed["resource_path"].split("/")[-1]
     account_id = await get_resource_account(extended_request.principal.principal_arn)
     iam_client = await sync_to_async(boto3_cached_conn)(
         "iam",
@@ -861,7 +879,7 @@ async def apply_changes_to_role(
         account_number=account_id,
         region=config.region,
         assume_role=config.get("policies.role_name"),
-        session_name="role-updater-v2-" + user,
+        session_name="principal-updater-v2-" + user,
         retry_max_attempts=2,
     )
     for change in extended_request.changes.changes:
@@ -881,17 +899,31 @@ async def apply_changes_to_role(
         if change.change_type == "inline_policy":
             if change.action == Action.attach:
                 try:
-                    await sync_to_async(iam_client.put_role_policy)(
-                        RoleName=role_name,
-                        PolicyName=change.policy_name,
-                        PolicyDocument=json.dumps(
-                            change.policy.policy_document, escape_forward_slashes=False
-                        ),
-                    )
+                    if arn_parsed["resource"] == "role":
+                        await sync_to_async(iam_client.put_role_policy)(
+                            RoleName=principal_name,
+                            PolicyName=change.policy_name,
+                            PolicyDocument=json.dumps(
+                                change.policy.policy_document,
+                                escape_forward_slashes=False,
+                            ),
+                        )
+                    elif arn_parsed["resource"] == "user":
+                        await sync_to_async(iam_client.put_user_policy)(
+                            UserName=principal_name,
+                            PolicyName=change.policy_name,
+                            PolicyDocument=json.dumps(
+                                change.policy.policy_document,
+                                escape_forward_slashes=False,
+                            ),
+                        )
                     response.action_results.append(
                         ActionResult(
                             status="success",
-                            message=f"Successfully applied inline policy {change.policy_name} to role: {role_name}",
+                            message=(
+                                f"Successfully applied inline policy {change.policy_name} to principal: "
+                                f"{principal_name}"
+                            ),
                         )
                     )
                     change.status = Status.applied
@@ -904,19 +936,29 @@ async def apply_changes_to_role(
                     response.action_results.append(
                         ActionResult(
                             status="error",
-                            message=f"Error occurred applying inline policy {change.policy_name} to role: {role_name}: "
-                            + str(e),
+                            message=(
+                                f"Error occurred applying inline policy {change.policy_name} to principal: "
+                                f"{principal_name}: " + str(e)
+                            ),
                         )
                     )
             elif change.action == Action.detach:
                 try:
-                    await sync_to_async(iam_client.delete_role_policy)(
-                        RoleName=role_name, PolicyName=change.policy_name
-                    )
+                    if arn_parsed["resource"] == "role":
+                        await sync_to_async(iam_client.delete_role_policy)(
+                            RoleName=principal_name, PolicyName=change.policy_name
+                        )
+                    elif arn_parsed["resource"] == "user":
+                        await sync_to_async(iam_client.delete_user_policy)(
+                            UserName=principal_name, PolicyName=change.policy_name
+                        )
                     response.action_results.append(
                         ActionResult(
                             status="success",
-                            message=f"Successfully deleted inline policy {change.policy_name} from role: {role_name}",
+                            message=(
+                                f"Successfully deleted inline policy {change.policy_name} from principal: "
+                                f"{principal_name}"
+                            ),
                         )
                     )
                     change.status = Status.applied
@@ -929,20 +971,30 @@ async def apply_changes_to_role(
                     response.action_results.append(
                         ActionResult(
                             status="error",
-                            message=f"Error occurred deleting inline policy {change.policy_name} from role: {role_name} "
-                            + str(e),
+                            message=(
+                                f"Error occurred deleting inline policy {change.policy_name} from principal: "
+                                f"{principal_name} " + str(e)
+                            ),
                         )
                     )
         elif change.change_type == "permissions_boundary":
             if change.action == Action.attach:
                 try:
-                    await sync_to_async(iam_client.put_role_permissions_boundary)(
-                        RoleName=role_name, PermissionsBoundary=change.arn
-                    )
+                    if arn_parsed["resource"] == "role":
+                        await sync_to_async(iam_client.put_role_permissions_boundary)(
+                            RoleName=principal_name, PermissionsBoundary=change.arn
+                        )
+                    elif arn_parsed["resource"] == "user":
+                        await sync_to_async(iam_client.put_user_permissions_boundary)(
+                            UserName=principal_name, PermissionsBoundary=change.arn
+                        )
                     response.action_results.append(
                         ActionResult(
                             status="success",
-                            message=f"Successfully attached permissions boundary {change.arn} to role: {role_name}",
+                            message=(
+                                f"Successfully attached permissions boundary {change.arn} to principal: "
+                                f"{principal_name}"
+                            ),
                         )
                     )
                     change.status = Status.applied
@@ -957,19 +1009,29 @@ async def apply_changes_to_role(
                     response.action_results.append(
                         ActionResult(
                             status="error",
-                            message=f"Error occurred attaching permissions boundary {change.arn} to role: {role_name}: "
-                            + str(e),
+                            message=(
+                                f"Error occurred attaching permissions boundary {change.arn} to principal: "
+                                f"{principal_name}: " + str(e)
+                            ),
                         )
                     )
             elif change.action == Action.detach:
                 try:
-                    await sync_to_async(iam_client.delete_role_permissions_boundary)(
-                        RoleName=role_name
-                    )
+                    if arn_parsed["resource"] == "role":
+                        await sync_to_async(
+                            iam_client.delete_role_permissions_boundary
+                        )(RoleName=principal_name)
+                    elif arn_parsed["resource"] == "user":
+                        await sync_to_async(
+                            iam_client.delete_user_permissions_boundary
+                        )(UserName=principal_name)
                     response.action_results.append(
                         ActionResult(
                             status="success",
-                            message=f"Successfully detached permissions boundary {change.arn} from role: {role_name}",
+                            message=(
+                                f"Successfully detached permissions boundary {change.arn} from principal: "
+                                f"{principal_name}"
+                            ),
                         )
                     )
                     change.status = Status.applied
@@ -986,20 +1048,27 @@ async def apply_changes_to_role(
                             status="error",
                             message=(
                                 f"Error occurred detaching permissions boundary {change.arn} "
-                                "from role: {role_name}: " + str(e),
+                                f"from principal: {principal_name}: " + str(e)
                             ),
                         )
                     )
         elif change.change_type == "managed_policy":
             if change.action == Action.attach:
                 try:
-                    await sync_to_async(iam_client.attach_role_policy)(
-                        RoleName=role_name, PolicyArn=change.arn
-                    )
+                    if arn_parsed["resource"] == "role":
+                        await sync_to_async(iam_client.attach_role_policy)(
+                            RoleName=principal_name, PolicyArn=change.arn
+                        )
+                    elif arn_parsed["resource"] == "user":
+                        await sync_to_async(iam_client.attach_user_policy)(
+                            UserName=principal_name, PolicyArn=change.arn
+                        )
                     response.action_results.append(
                         ActionResult(
                             status="success",
-                            message=f"Successfully attached managed policy {change.arn} to role: {role_name}",
+                            message=(
+                                f"Successfully attached managed policy {change.arn} to principal: {principal_name}"
+                            ),
                         )
                     )
                     change.status = Status.applied
@@ -1012,19 +1081,28 @@ async def apply_changes_to_role(
                     response.action_results.append(
                         ActionResult(
                             status="error",
-                            message=f"Error occurred attaching managed policy {change.arn} to role: {role_name}: "
-                            + str(e),
+                            message=(
+                                f"Error occurred attaching managed policy {change.arn} to principal: "
+                                "{principal_name}: " + str(e)
+                            ),
                         )
                     )
             elif change.action == Action.detach:
                 try:
-                    await sync_to_async(iam_client.detach_role_policy)(
-                        RoleName=role_name, PolicyArn=change.arn
-                    )
+                    if arn_parsed["resource"] == "role":
+                        await sync_to_async(iam_client.detach_role_policy)(
+                            RoleName=principal_name, PolicyArn=change.arn
+                        )
+                    elif arn_parsed["resource"] == "user":
+                        await sync_to_async(iam_client.detach_user_policy)(
+                            UserName=principal_name, PolicyArn=change.arn
+                        )
                     response.action_results.append(
                         ActionResult(
                             status="success",
-                            message=f"Successfully detached managed policy {change.arn} from role: {role_name}",
+                            message=(
+                                f"Successfully detached managed policy {change.arn} from principal: {principal_name}"
+                            ),
                         )
                     )
                     change.status = Status.applied
@@ -1037,14 +1115,20 @@ async def apply_changes_to_role(
                     response.action_results.append(
                         ActionResult(
                             status="error",
-                            message=f"Error occurred detaching managed policy {change.arn} from role: {role_name}: "
-                            + str(e),
+                            message=(
+                                f"Error occurred detaching managed policy {change.arn} from principal: "
+                                f"{principal_name}: " + str(e)
+                            ),
                         )
                     )
         elif change.change_type == "assume_role_policy":
+            if arn_parsed["resource"] == "user":
+                raise UnsupportedChangeType(
+                    "IAM users don't have assume role policies. Unable to process request."
+                )
             try:
                 await sync_to_async(iam_client.update_assume_role_policy)(
-                    RoleName=role_name,
+                    RoleName=principal_name,
                     PolicyDocument=json.dumps(
                         change.policy.policy_document, escape_forward_slashes=False
                     ),
@@ -1052,7 +1136,7 @@ async def apply_changes_to_role(
                 response.action_results.append(
                     ActionResult(
                         status="success",
-                        message=f"Successfully updated assume role policy policy for role: {role_name}",
+                        message=f"Successfully updated assume role policy for principal: {principal_name}",
                     )
                 )
                 change.status = Status.applied
@@ -1067,7 +1151,7 @@ async def apply_changes_to_role(
                 response.action_results.append(
                     ActionResult(
                         status="error",
-                        message=f"Error occurred updating assume role policy for role: {role_name}: "
+                        message=f"Error occurred updating assume role policy for principal: {principal_name}: "
                         + str(e),
                     )
                 )
@@ -1078,20 +1162,31 @@ async def apply_changes_to_role(
                 if change.original_value and not change.value:
                     change.value = change.original_value
                 try:
-                    await sync_to_async(iam_client.tag_role)(
-                        RoleName=role_name,
-                        Tags=[{"Key": change.key, "Value": change.value}],
-                    )
+                    if arn_parsed["resource"] == "role":
+                        await sync_to_async(iam_client.tag_role)(
+                            RoleName=principal_name,
+                            Tags=[{"Key": change.key, "Value": change.value}],
+                        )
+                    elif arn_parsed["resource"] == "user":
+                        await sync_to_async(iam_client.tag_user)(
+                            UserName=principal_name,
+                            Tags=[{"Key": change.key, "Value": change.value}],
+                        )
                     response.action_results.append(
                         ActionResult(
                             status="success",
-                            message=f"Successfully created or updated tag for role: {role_name}",
+                            message=f"Successfully created or updated tag for principal: {principal_name}",
                         )
                     )
                     if change.original_key and change.original_key != change.key:
-                        await sync_to_async(iam_client.untag_role)(
-                            RoleName=role_name, TagKeys=[change.original_key]
-                        )
+                        if arn_parsed["resource"] == "role":
+                            await sync_to_async(iam_client.untag_role)(
+                                RoleName=principal_name, TagKeys=[change.original_key]
+                            )
+                        elif arn_parsed["resource"] == "user":
+                            await sync_to_async(iam_client.untag_user)(
+                                UserName=principal_name, TagKeys=[change.original_key]
+                            )
                         response.action_results.append(
                             ActionResult(
                                 status="success",
@@ -1108,19 +1203,24 @@ async def apply_changes_to_role(
                     response.action_results.append(
                         ActionResult(
                             status="error",
-                            message=f"Error occurred updating tag for role: {role_name}: "
+                            message=f"Error occurred updating tag for principal: {principal_name}: "
                             + str(e),
                         )
                     )
             if change.tag_action == TagAction.delete:
                 try:
-                    await sync_to_async(iam_client.untag_role)(
-                        RoleName=role_name, TagKeys=[change.key]
-                    )
+                    if arn_parsed["resource"] == "role":
+                        await sync_to_async(iam_client.untag_role)(
+                            RoleName=principal_name, TagKeys=[change.key]
+                        )
+                    elif arn_parsed["resource"] == "user":
+                        await sync_to_async(iam_client.untag_user)(
+                            UserName=principal_name, TagKeys=[change.key]
+                        )
                     response.action_results.append(
                         ActionResult(
                             status="success",
-                            message=f"Successfully deleted tag for role: {role_name}",
+                            message=f"Successfully deleted tag for principal: {principal_name}",
                         )
                     )
                     change.status = Status.applied
@@ -1133,7 +1233,7 @@ async def apply_changes_to_role(
                     response.action_results.append(
                         ActionResult(
                             status="error",
-                            message=f"Error occurred deleting tag for role: {role_name}: "
+                            message=f"Error occurred deleting tag for principal: {principal_name}: "
                             + str(e),
                         )
                     )
@@ -1164,7 +1264,7 @@ async def apply_changes_to_role(
 async def populate_old_policies(
     extended_request: ExtendedRequestModel,
     user: str,
-    role: Optional[ExtendedRoleModel] = None,
+    principal: Optional[ExtendedAwsPrincipalModel] = None,
 ) -> ExtendedRequestModel:
     """
     Populates the old policies for each inline policy.
@@ -1189,18 +1289,32 @@ async def populate_old_policies(
         role_account_id = await get_resource_account(principal_arn)
         arn_parsed = parse_arn(principal_arn)
 
-        if arn_parsed["service"] != "iam" or arn_parsed["resource"] != "role":
+        if arn_parsed["service"] != "iam" or arn_parsed["resource"] not in [
+            "role",
+            "user",
+        ]:
             log_data[
                 "message"
             ] = "ARN type not supported for populating old policy changes."
             log.debug(log_data)
             return extended_request
 
-        role_name = arn_parsed["resource_path"].split("/")[-1]
-        if not role:
-            role = await get_role_details(
-                role_account_id, role_name=role_name, extended=True, force_refresh=True
-            )
+        principal_name = arn_parsed["resource_path"].split("/")[-1]
+        if not principal:
+            if arn_parsed["resource"] == "role":
+                principal = await get_role_details(
+                    role_account_id,
+                    role_name=principal_name,
+                    extended=True,
+                    force_refresh=True,
+                )
+            elif arn_parsed["resource"] == "user":
+                principal = await get_user_details(
+                    role_account_id,
+                    user_name=principal_name,
+                    extended=True,
+                    force_refresh=True,
+                )
 
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
@@ -1210,13 +1324,14 @@ async def populate_old_policies(
             change.old_policy = PolicyModel(
                 policy_sha256=sha256(
                     json.dumps(
-                        role.assume_role_policy_document, escape_forward_slashes=False
+                        principal.assume_role_policy_document,
+                        escape_forward_slashes=False,
                     ).encode()
                 ).hexdigest(),
-                policy_document=role.assume_role_policy_document,
+                policy_document=principal.assume_role_policy_document,
             )
         elif change.change_type == "inline_policy" and not change.new:
-            for existing_policy in role.inline_policies:
+            for existing_policy in principal.inline_policies:
                 if change.policy_name == existing_policy.get("PolicyName"):
                     change.old_policy = PolicyModel(
                         policy_sha256=sha256(

@@ -95,10 +95,14 @@ export const PolicyProvider = ({ children }) => {
     dispatch({ type: "TOGGLE_POLICY_MODAL", toggle });
 
   const handleDeleteRole = async () => {
-    const { accountID, resourceName } = state.params;
+    const { serviceType, accountID, resourceName } = state.params;
+    let api_endpoint = "roles";
+    if (serviceType === "iamuser") {
+      api_endpoint = "users";
+    }
     return await sendRequestCommon(
       null,
-      `/api/v2/roles/${accountID}/${resourceName}`,
+      `/api/v2/${api_endpoint}/${accountID}/${resourceName}`,
       "delete"
     );
   };

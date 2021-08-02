@@ -6,7 +6,7 @@ from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 from consoleme.lib.auth import (
     can_admin_policies,
     can_create_roles,
-    can_delete_roles,
+    can_delete_iam_principals,
     can_edit_dynamic_config,
 )
 from consoleme.lib.generic import get_random_security_logo, is_in_group
@@ -61,7 +61,9 @@ class UserProfileHandler(BaseAPIV1Handler):
             "authorization": {
                 "can_edit_policies": can_admin_policies(self.user, self.groups),
                 "can_create_roles": can_create_roles(self.user, self.groups),
-                "can_delete_roles": can_delete_roles(self.user, self.groups),
+                "can_delete_iam_principals": can_delete_iam_principals(
+                    self.user, self.groups
+                ),
             },
             "pages": {
                 "header": {

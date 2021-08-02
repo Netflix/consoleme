@@ -194,7 +194,9 @@ export const DeleteResourceModal = () => {
         <Modal.Description>
           <Dimmer.Dimmable dimmed={isPolicyEditorLoading}>
             <StatusMessage isSuccess={isSuccess} message={message} />
-            {!isSuccess && <p>Are you sure to delete this role?</p>}
+            {!isSuccess && (
+              <p>Are you sure you want to delete this principal?</p>
+            )}
             <Dimmer active={isPolicyEditorLoading} inverted>
               <Loader />
             </Dimmer>

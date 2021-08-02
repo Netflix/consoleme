@@ -6,8 +6,8 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
     @classmethod
     def setUpClass(cls):
         from consoleme.celery_tasks.celery_tasks import (
-            cache_roles_across_accounts,
-            cache_roles_for_account,
+            cache_iam_resources_across_accounts,
+            cache_iam_resources_for_account,
         )
         from consoleme.config.config import CONFIG
 
@@ -26,8 +26,8 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
                 }
             },
         }
-        cache_roles_for_account("123456789012")
-        cache_roles_across_accounts()
+        cache_iam_resources_for_account("123456789012")
+        cache_iam_resources_across_accounts()
         CONFIG.config = old_config
 
     def setUp(self):

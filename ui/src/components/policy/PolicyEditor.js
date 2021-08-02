@@ -54,7 +54,9 @@ const PolicyEditor = () => {
     }
   };
 
-  const EditPolicy = serviceType === "iamrole" ? IAMRolePolicy : ResourcePolicy;
+  const EditPolicy = ["iamrole", "iamuser"].includes(serviceType)
+    ? IAMRolePolicy
+    : ResourcePolicy;
 
   return (
     <Dimmer.Dimmable as={Segment} dimmed={isPolicyEditorLoading}>
@@ -68,7 +70,8 @@ const PolicyEditor = () => {
           />
           Edit Policy for {`${resource.arn || ""}`}
         </Header>
-        {serviceType === "iamrole" && user?.authorization?.can_delete_roles ? (
+        {["iamrole", "iamuser"].includes(serviceType) &&
+        user?.authorization?.can_delete_iam_principals ? (
           <Label
             as="a"
             attached="top right"

@@ -55,7 +55,7 @@ const ManagedPolicy = () => {
     (async () => {
       const result = await sendRequestCommon(
         null,
-        `/api/v2/managed_policies_on_role/${accountID}/${resource?.name}`,
+        `/api/v2/managed_policies_on_principal/${resource?.arn}`,
         "get"
       );
       if (!result?.data) {

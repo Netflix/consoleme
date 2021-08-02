@@ -155,15 +155,15 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
         "consoleme.handlers.v2.roles.RoleDetailHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
-    @patch("consoleme.handlers.v2.roles.can_delete_roles")
-    def test_delete_authorized_user_invalid_role(self, mock_can_delete_roles):
+    @patch("consoleme.handlers.v2.roles.can_delete_iam_principals")
+    def test_delete_authorized_user_invalid_role(self, mock_can_delete_iam_principals):
         expected = {
             "status": 500,
             "title": "Internal Server Error",
             "message": "Error occurred deleting role: An error occurred (NoSuchEntity) when calling the GetRole "
             "operation: Role fake_account_admin not found",
         }
-        mock_can_delete_roles.return_value = True
+        mock_can_delete_iam_principals.return_value = True
         response = self.fetch(
             "/api/v2/roles/012345678901/fake_account_admin", method="DELETE"
         )
@@ -174,8 +174,8 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
         "consoleme.handlers.v2.roles.RoleDetailHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
-    @patch("consoleme.handlers.v2.roles.can_delete_roles")
-    def test_delete_authorized_user_valid_role(self, mock_can_delete_roles):
+    @patch("consoleme.handlers.v2.roles.can_delete_iam_principals")
+    def test_delete_authorized_user_valid_role(self, mock_can_delete_iam_principals):
         import boto3
 
         client = boto3.client("iam", region_name="us-east-1")
@@ -189,7 +189,7 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
             "account": account_id,
         }
 
-        mock_can_delete_roles.return_value = True
+        mock_can_delete_iam_principals.return_value = True
 
         res = self.fetch(f"/api/v2/roles/{account_id}/{role_name}", method="DELETE")
         self.assertEqual(res.code, 200)
@@ -222,7 +222,7 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
         "consoleme.handlers.v2.roles.RoleDetailAppHandler.prepare",
         MockBaseMtlsHandler.authorization_flow_app,
     )
-    @patch("consoleme.handlers.v2.roles.can_delete_roles_app")
+    @patch("consoleme.handlers.v2.roles.can_delete_iam_principals_app")
     def test_delete_role_by_app(self, mock_can_delete_roles):
         import boto3
 

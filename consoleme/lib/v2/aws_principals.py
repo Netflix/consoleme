@@ -11,11 +11,11 @@ from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler, redis_get
 from consoleme.models import (
+    AwsPrincipalModel,
     CloudTrailDetailsModel,
     CloudTrailError,
     CloudTrailErrorArray,
-    ExtendedRoleModel,
-    RoleModel,
+    ExtendedAwsPrincipalModel,
     S3DetailsModel,
     S3Error,
     S3ErrorArray,
@@ -129,9 +129,52 @@ async def get_role_template(arn: str):
     )
 
 
+async def get_user_details(
+    account_id: str, user_name: str, extended: bool = False, force_refresh: bool = False
+) -> Optional[Union[ExtendedAwsPrincipalModel, AwsPrincipalModel]]:
+    account_ids_to_name = await get_account_id_to_name_mapping()
+    arn = f"arn:aws:iam::{account_id}:user/{user_name}"
+    user = await aws.fetch_iam_user(account_id, arn)
+    # requested user doesn't exist
+    if not user:
+        return None
+    if extended:
+        return ExtendedAwsPrincipalModel(
+            name=user_name,
+            account_id=account_id,
+            account_name=account_ids_to_name.get(account_id, None),
+            arn=arn,
+            inline_policies=user.get("UserPolicyList", []),
+            config_timeline_url=await get_config_timeline_url_for_role(
+                user, account_id
+            ),
+            cloudtrail_details=await get_cloudtrail_details_for_role(arn),
+            s3_details=await get_s3_details_for_role(
+                account_id=account_id, role_name=user_name
+            ),
+            apps=await get_app_details_for_role(arn),
+            managed_policies=user["AttachedManagedPolicies"],
+            groups=user["Groups"],
+            tags=user["Tags"],
+            templated=False,
+            template_link=None,
+            created_time=str(user.get("CreateDate", "")),
+            last_used_time=user.get("RoleLastUsed", {}).get("LastUsedDate"),
+            description=user.get("Description"),
+            permissions_boundary=user.get("PermissionsBoundary", {}),
+        )
+    else:
+        return AwsPrincipalModel(
+            name=user_name,
+            account_id=account_id,
+            account_name=account_ids_to_name.get(account_id, None),
+            arn=arn,
+        )
+
+
 async def get_role_details(
     account_id: str, role_name: str, extended: bool = False, force_refresh: bool = False
-) -> Optional[Union[ExtendedRoleModel, RoleModel]]:
+) -> Optional[Union[ExtendedAwsPrincipalModel, AwsPrincipalModel]]:
     account_ids_to_name = await get_account_id_to_name_mapping()
     arn = f"arn:aws:iam::{account_id}:role/{role_name}"
     role = await aws.fetch_iam_role(account_id, arn, force_refresh=force_refresh)
@@ -140,12 +183,14 @@ async def get_role_details(
         return None
     if extended:
         template = await get_role_template(arn)
-        return ExtendedRoleModel(
+        return ExtendedAwsPrincipalModel(
             name=role_name,
             account_id=account_id,
             account_name=account_ids_to_name.get(account_id, None),
             arn=arn,
-            inline_policies=role["policy"]["RolePolicyList"],
+            inline_policies=role["policy"].get(
+                "RolePolicyList", role["policy"].get("UserPolicyList", [])
+            ),
             assume_role_policy_document=role["policy"]["AssumeRolePolicyDocument"],
             config_timeline_url=await get_config_timeline_url_for_role(
                 role, account_id
@@ -165,7 +210,7 @@ async def get_role_details(
             permissions_boundary=role["policy"].get("PermissionsBoundary", {}),
         )
     else:
-        return RoleModel(
+        return AwsPrincipalModel(
             name=role_name,
             account_id=account_id,
             account_name=account_ids_to_name.get(account_id, None),

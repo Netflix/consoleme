@@ -208,6 +208,22 @@ class AWSHelper:
         return str(random.randrange(100000000000, 999999999999))
 
 
+@pytest.fixture(autouse=True, scope="session")
+def redis_prereqs(redis):
+    from consoleme.lib.redis import RedisHandler
+
+    red = RedisHandler().redis_sync()
+    red.hmset(
+        "AWSCONFIG_RESOURCE_CACHE",
+        {
+            "arn:aws:ec2:us-west-2:123456789013:security-group/12345": "{}",
+            "arn:aws:sqs:us-east-1:123456789012:rolequeue": "{}",
+            "arn:aws:sns:us-east-1:123456789012:roletopic": "{}",
+            "arn:aws:iam::123456789012:role/role": "{}",
+        },
+    )
+
+
 @pytest.fixture(scope="session")
 def aws_credentials():
     """Mocked AWS Credentials for moto."""
@@ -269,7 +285,7 @@ def sns(aws_credentials):
 
 
 @pytest.fixture(autouse=True, scope="session")
-def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
+def create_default_resources(s3, iam, redis, iam_sync_principals, iamrole_table):
     from asgiref.sync import async_to_sync
 
     from consoleme.config import config
@@ -289,7 +305,7 @@ def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
             s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
         )
         return
-    from consoleme.celery_tasks.celery_tasks import cache_roles_for_account
+    from consoleme.celery_tasks.celery_tasks import cache_iam_resources_for_account
     from consoleme.lib.account_indexers import get_account_id_to_name_mapping
     from consoleme.lib.redis import RedisHandler
 
@@ -297,7 +313,7 @@ def create_default_resources(s3, iam, redis, iam_sync_roles, iamrole_table):
 
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()
     for account_id in accounts_d.keys():
-        cache_roles_for_account(account_id)
+        cache_iam_resources_for_account(account_id)
 
     cache_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
     all_roles = red.hgetall(cache_key)
@@ -604,7 +620,7 @@ def dummy_users_data(users_table):
 
 
 @pytest.fixture(autouse=True, scope="session")
-def iam_sync_roles(iam):
+def iam_sync_principals(iam):
     statement_policy = json.dumps(
         {
             "Statement": [{"Effect": "Deny", "Action": "*", "Resource": "*"}],
@@ -641,6 +657,15 @@ def iam_sync_roles(iam):
     policy_two = iam.create_policy(
         PolicyName="policy-two", PolicyDocument=statement_policy
     )["Policy"]["Arn"]
+
+    iam.create_user(UserName="TestUser")
+    iam.put_user_policy(
+        UserName="TestUser",
+        PolicyName="SomePolicy",
+        PolicyDocument=statement_policy,
+    )
+
+    iam.attach_user_policy(UserName="TestUser", PolicyArn=policy_one)
 
     # Create 50 IAM roles for syncing:
     for x in range(0, 10):
@@ -885,7 +910,7 @@ def user_iam_role(iamrole_table, www_user):
         "name": www_user.pop("RoleName"),
         "accountId": "123456789012",
         "ttl": int((datetime.utcnow() + timedelta(hours=36)).timestamp()),
-        "policy": ddb.convert_role_to_json(www_user),
+        "policy": ddb.convert_iam_resource_to_json(www_user),
     }
     ddb.sync_iam_role_for_account(role_entry)
 
@@ -925,7 +950,7 @@ def mock_async_http_client():
 def populate_caches(
     redis,
     user_iam_role,
-    iam_sync_roles,
+    iam_sync_principals,
     dummy_users_data,
     dummy_requests_data,
     policy_requests_table,
@@ -951,7 +976,7 @@ def populate_caches(
     default_celery_tasks.cache_application_information()
 
     for account_id in accounts_d.keys():
-        celery.cache_roles_for_account(account_id)
+        celery.cache_iam_resources_for_account(account_id)
         celery.cache_s3_buckets_for_account(account_id)
         celery.cache_sns_topics_for_account(account_id)
         celery.cache_sqs_queues_for_account(account_id)
@@ -959,7 +984,7 @@ def populate_caches(
         # celery.cache_resources_from_aws_config_for_account(account_id) # No select_resource_config in moto yet
     # Running cache_roles_across_accounts ensures that all of the pre-existing roles in our role cache are stored in
     # (mock) S3
-    celery.cache_roles_across_accounts()
+    celery.cache_iam_resources_across_accounts()
     celery.cache_policies_table_details()
     celery.cache_policy_requests()
     celery.cache_credential_authorization_mapping()
