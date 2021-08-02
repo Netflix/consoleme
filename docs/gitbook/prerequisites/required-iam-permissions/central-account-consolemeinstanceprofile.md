@@ -27,6 +27,8 @@ Replace `arn:aws:iam::1243456789012:role/consolemeInstanceProfile` in the Assume
         "dynamodb:query",
         "dynamodb:scan",
         "dynamodb:updateitem",
+        "dynamodb:CreateTable",
+        "dynamodb:UpdateTimeToLive",
         "sns:createplatformapplication",
         "sns:createplatformendpoint",
         "sns:deleteendpoint",
@@ -140,4 +142,3 @@ Configure the trust policy with the following settings \(Yes, you'll want to giv
   "Version": "2012-10-17"
 }
 ```
-
