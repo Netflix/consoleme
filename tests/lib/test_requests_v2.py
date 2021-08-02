@@ -12,8 +12,8 @@ from consoleme.models import (
     AssumeRolePolicyChangeModel,
     ChangeModelArray,
     Command,
+    ExtendedAwsPrincipalModel,
     ExtendedRequestModel,
-    ExtendedRoleModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
     ManagedPolicyResourceChangeModel,
@@ -109,7 +109,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_inline_policy_change
 
-        role = ExtendedRoleModel(
+        role = ExtendedAwsPrincipalModel(
             name="role_name",
             account_id="123456789012",
             account_name="friendly_name",
@@ -260,7 +260,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_managed_policy_change
 
-        role = ExtendedRoleModel(
+        role = ExtendedAwsPrincipalModel(
             name="role_name",
             account_id="123456789012",
             account_name="friendly_name",
@@ -412,7 +412,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_permissions_boundary_change
 
-        role = ExtendedRoleModel(
+        role = ExtendedAwsPrincipalModel(
             name="role_name",
             account_id="123456789012",
             account_name="friendly_name",
@@ -481,7 +481,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         from consoleme.exceptions.exceptions import InvalidRequestParameter
         from consoleme.lib.v2.requests import validate_assume_role_policy_change
 
-        role = ExtendedRoleModel(
+        role = ExtendedAwsPrincipalModel(
             name="role_name",
             account_id="123456789012",
             account_name="friendly_name",
@@ -1343,7 +1343,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             comments=[],
         )
 
-        # role = ExtendedRoleModel(
+        # role = ExtendedAwsPrincipalModel(
         #     name="role_name",
         #     account_id="123456789012",
         #     account_name="friendly_name",

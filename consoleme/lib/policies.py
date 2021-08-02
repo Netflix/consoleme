@@ -587,20 +587,22 @@ async def get_url_for_resource(
     if not account_id:
         raise ResourceNotFound("The account for the given ARN could not be determined")
     url = ""
-    if resource_type == "iam" and resource_sub_type == "role":
+    if (
+        resource_type == "iam" and resource_sub_type == "role"
+    ) or resource_type == "AWS::IAM::Role":
         resource_name = arn.split("/")[-1]
         url = f"/policies/edit/{account_id}/iamrole/{resource_name}"
     elif (
         resource_type == "iam" and resource_sub_type == "policy" and account_id != "aws"
     ):
         url = f"/policies/edit/{account_id}/managed_policy/{resource_name}"
-    elif resource_type == "s3":
+    elif resource_type in ["s3", "AWS::S3::Bucket"]:
         url = f"/policies/edit/{account_id}/{resource_type}/{resource_name}"
     elif resource_type == "managed_policy":
         # managed policies can have a path
         resource_name_and_path = arn.split(":policy/")[-1]
         url = f"/policies/edit/{account_id}/{resource_type}/{resource_name_and_path}"
-    elif resource_type in ["sqs", "sns"]:
+    elif resource_type in ["sqs", "sns", "AWS::SNS::Topic", "AWS::SQS::Queue"]:
         url = f"/policies/edit/{account_id}/{resource_type}/{region}/{resource_name}"
     elif (resource_type == "AWS::CloudFormation::Stack") or (
         resource_type == "cloudformation" and resource_sub_type == "stack"
@@ -817,10 +819,8 @@ async def get_url_for_resource(
     elif resource_type == "AWS::IAM::User" or (
         resource_type == "iam" and resource_sub_type == "user"
     ):
-        url = (
-            f"/role/{account_id}?redirect="
-            f"https://console.aws.amazon.com/iam/home?%23/users/{resource_name}"
-        )
+        resource_name = arn.split("/")[-1]
+        url = f"/policies/edit/{account_id}/iamuser/{resource_name}"
     elif resource_type == "AWS::IAM::Group" or (
         resource_type == "iam" and resource_sub_type == "group"
     ):

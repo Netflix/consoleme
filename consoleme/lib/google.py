@@ -187,7 +187,33 @@ async def remove_user_from_group_task(
 
 
 async def get_service(service_name: str, service_path: str, group: str) -> Resource:
-    """Get service connection."""
+    """
+    Get a service connection to Google. You'll need to generate a GCP service account first from instructions here:
+    https://hawkins.gitbook.io/consoleme/configuration/authentication-and-authorization/google-groups-support
+
+    ConsoleMe requires that you either have a service key file with content like below,
+    and you've set the configuration for `google.service_key_file` to the full path of that file on disk,
+    or you've just put the json for this in your ConsoleMe configuration in the `google.service_key_dict` configuration
+    key.
+
+    There are sensitive secrets here, so if you want to
+    reference them directly in configuration, we encourage you to store these secrets in AWS Secrets Manager
+    https://hawkins.gitbook.io/consoleme/configuration/aws-secret-manager-integration
+        {
+          "type": "service_account",
+          "project_id": "cons...",
+          "private_key_id": "dc61.....",
+          "private_key": "-----BEGIN PRIVATE KEY-----\nMII.....",
+          "client_email": "cons...@cons....gserviceaccount.com",
+          "client_id": "1234....",
+          "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+          "token_uri": "https://oauth2.googleapis.com/token",
+          "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+          "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/consolem...."
+        }
+
+    """
+
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     stats.count(function)
     log_data = {

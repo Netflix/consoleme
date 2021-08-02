@@ -180,6 +180,9 @@ export const getResourceEndpoint = (
       case "iamrole": {
         return `/api/v2/roles/${accountID}/${resourceName}`;
       }
+      case "iamuser": {
+        return `/api/v2/users/${accountID}/${resourceName}`;
+      }
       case "s3": {
         return `/api/v2/resources/${accountID}/s3/${resourceName}`;
       }

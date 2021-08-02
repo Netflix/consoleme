@@ -74,7 +74,7 @@ class ResourceTypeAheadHandlerV2(BaseAPIV2Handler):
                     s3_bucket=s3_bucket, s3_key=s3_key
                 )
                 all_resource_arns = all_resources.keys()
-                await sync_to_async(red.hset)(resource_redis_cache_key, all_resources)
+                await sync_to_async(red.hmset)(resource_redis_cache_key, all_resources)
             except DataNotRetrievable:
                 sentry_sdk.capture_exception()
                 all_resource_arns = []
