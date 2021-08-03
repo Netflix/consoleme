@@ -1037,9 +1037,13 @@ def cache_iam_resources_across_accounts(
         log.debug(log_data)
         return log_data
 
-    for k, v in cache_keys.items():
-        temp_cache_key = v["temp_cache_key"]
-        red.delete(temp_cache_key)
+    # Remove stale temporary cache keys to ensure we receive fresh results. Don't remove stale cache keys if we're
+    # running this as a part of `make redis` (`scripts/initialize_redis_oss.py`) because these cache keys are already
+    # populated appropriately
+    if run_subtasks and wait_for_subtask_completion:
+        for k, v in cache_keys.items():
+            temp_cache_key = v["temp_cache_key"]
+            red.delete(temp_cache_key)
 
     accounts_d: Dict[str, str] = async_to_sync(get_account_id_to_name_mapping)()
     tasks = []
@@ -1145,6 +1149,11 @@ def cache_iam_resources_across_accounts(
                 "account_resource_cache/cache_all_policies_v1.json.gz",
             ),
         )
+
+    # Remove temporary cache keys that were populated by the `cache_iam_resources_for_account(account_id)` tasks
+    for k, v in cache_keys.items():
+        temp_cache_key = v["temp_cache_key"]
+        red.delete(temp_cache_key)
 
     stats.count(f"{function}.success")
     log_data["num_accounts"] = len(accounts_d)
