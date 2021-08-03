@@ -78,7 +78,8 @@ async def store_json_results_in_redis_and_s3(
                     redis_key, json.dumps(data, cls=SetEncoder, default=json_encoder)
                 )
         elif redis_data_type == "hash":
-            red.hmset(redis_key, data)
+            if data:
+                red.hmset(redis_key, data)
         else:
             raise UnsupportedRedisDataType("Unsupported redis_data_type passed")
         red.hset(last_updated_redis_key, redis_key, last_updated)
