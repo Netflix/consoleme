@@ -63,7 +63,6 @@ class SelfServiceStep1 extends Component {
         value,
       },
       () => {
-        // If the given ARN is not a valid one.
         this.setState(
           {
             isLoading: false,
