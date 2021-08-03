@@ -151,8 +151,15 @@ class SelfServiceStep1ResourceTypeahead(BaseAPIV2Handler):
                 matching.append(entry)
                 continue
             if (
-                entry.get("resource_identifier")
-                and type_ahead.lower() in entry["resource_identifier"].lower()
+                entry.get("principal", {}).get("resource_identifier")
+                and type_ahead.lower()
+                in entry["principal"]["resource_identifier"].lower()
+            ):
+                matching.append(entry)
+                continue
+            if (
+                entry.get("principal", {}).get("principal_arn")
+                and type_ahead.lower() in entry["principal"]["principal_arn"].lower()
             ):
                 matching.append(entry)
                 continue
