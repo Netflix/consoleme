@@ -8,7 +8,7 @@ import SelfServiceStep2 from "./SelfServiceStep2";
 import SelfServiceStep3 from "./SelfServiceStep3";
 import { SelfServiceStepEnum } from "./SelfServiceEnums";
 
-const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):role\/(.+\/)?(?<roleName>(.+))/;
+const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):(?<resourceType>(user|role))\/(.+\/)?(?<resourceName>(.+))/;
 
 class SelfService extends Component {
   constructor(props) {
@@ -57,7 +57,7 @@ class SelfService extends Component {
 
     if (arnRegex.test(paramSearch.arn)) {
       const match = arnRegex.exec(paramSearch.arn);
-      const { accountId, roleName } = match.groups;
+      const { accountId, resourceType, resourceName } = match.groups;
       this.setState({
         admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
         export_to_terraform_enabled: config.export_to_terraform_enabled,
@@ -70,12 +70,12 @@ class SelfService extends Component {
           apps: {
             app_details: [],
           },
-          arn: `arn:aws:iam::${accountId}:role/${roleName}`,
+          arn: `arn:aws:iam::${accountId}:${resourceType}/${resourceName}`,
           principal: {
             principal_type: "AwsResource",
-            principal_arn: `arn:aws:iam::${accountId}:role/${roleName}`,
+            principal_arn: `arn:aws:iam::${accountId}:${resourceType}/${resourceName}`,
           },
-          name: roleName,
+          name: resourceName,
           owner: "",
           tags: [],
           templated: false,
