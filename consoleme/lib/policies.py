@@ -597,13 +597,15 @@ async def get_url_for_resource(
     ):
         url = f"/policies/edit/{account_id}/managed_policy/{resource_name}"
     elif resource_type in ["s3", "AWS::S3::Bucket"]:
-        url = f"/policies/edit/{account_id}/{resource_type}/{resource_name}"
+        url = f"/policies/edit/{account_id}/s3/{resource_name}"
     elif resource_type == "managed_policy":
         # managed policies can have a path
         resource_name_and_path = arn.split(":policy/")[-1]
-        url = f"/policies/edit/{account_id}/{resource_type}/{resource_name_and_path}"
-    elif resource_type in ["sqs", "sns", "AWS::SNS::Topic", "AWS::SQS::Queue"]:
-        url = f"/policies/edit/{account_id}/{resource_type}/{region}/{resource_name}"
+        url = f"/policies/edit/{account_id}/managed_policy/{resource_name_and_path}"
+    elif resource_type in ["sns", "AWS::SNS::Topic"]:
+        url = f"/policies/edit/{account_id}/sns/{region}/{resource_name}"
+    elif resource_type in ["sqs", "AWS::SQS::Queue"]:
+        url = f"/policies/edit/{account_id}/sqs/{region}/{resource_name}"
     elif (resource_type == "AWS::CloudFormation::Stack") or (
         resource_type == "cloudformation" and resource_sub_type == "stack"
     ):
