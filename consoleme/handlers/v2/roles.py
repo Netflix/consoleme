@@ -335,6 +335,19 @@ class RoleDetailHandler(BaseAPIV2Handler):
             role_details = None
             error = str(e)
 
+        allowed = True
+
+        allowed_tags = config.get("roles.allowed_tags")
+        if allowed_tags and {"consoleme":"managed"} not in role_details.tags:
+            allowed = False
+
+        allowed_arns = config.get("roles.allowed_arns")
+        if allowed_arns and role_details.arn not in allowed_arns:
+            allowed = False
+
+        if not allowed:
+            role_details = None
+
         if not role_details:
             self.send_error(
                 404,

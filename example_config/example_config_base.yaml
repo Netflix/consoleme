@@ -177,6 +177,17 @@ ses:
 challenge_url:
   enabled: true
 
+# This section specifies which roles consoleme is allowed to pull, cache & display. There may still be workarounds via
+# cURL to create requests directly against consoleme. If you have to block cURL requests for requests against specific
+# roles, it's probably best to enforce IAM permissions for consoleme to only modify specific roles. You should only
+# need one or the other parameter defined below
+# Parameters:
+#  allowed_tags: bool: if true, consoleme will only consider roles tagged with key=consoleme value=managed
+#  allowed_arns: list[string]:  if non-empty, consoleme will only consider the role arns in this list
+roles:
+  allowed_tags: false
+  allowed_arns: []
+
 # If you have read this far and modified the above config variables to production ready values
 # remove the below config variable, or switch it to false
 example_config:

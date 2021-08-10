@@ -573,8 +573,22 @@ def cache_policies_table_details() -> bool:
     if all_s3_errors:
         s3_errors = json.loads(all_s3_errors)
 
+    allowed_tags = config.get("roles.allowed_tags")
+    allowed_arns = config.get("roles.allowed_arns")
     for arn, role_details_j in all_iam_roles.items():
         role_details = ujson.loads(role_details_j)
+
+        allowed = True
+
+        if allowed_tags and {"consoleme":"managed"} not in role_details.get("tags"):
+            allowed = False
+
+        if allowed_arns and arn not in allowed_arns:
+            allowed = False
+
+        if not allowed:
+            continue
+
         error_count = cloudtrail_errors.get(arn, 0)
         s3_errors_for_arn = s3_errors.get(arn, [])
         for error in s3_errors_for_arn:
