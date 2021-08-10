@@ -827,6 +827,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         paginator = client.get_paginator("get_account_authorization_details")
         response_iterator = paginator.paginate()
@@ -1167,6 +1168,7 @@ def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, 
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=config.region,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     all_policies: List = []
     for policy in managed_policies:
@@ -1409,6 +1411,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
 
         paginator = client.get_paginator("list_queues")
@@ -1463,6 +1466,7 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         for topic in topics:
             all_topics.add(topic["TopicArn"])
@@ -1502,6 +1506,7 @@ def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         assume_role=config.get("policies.role_name"),
         region=config.region,
         read_only=True,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     buckets: List = []
     for bucket in s3_buckets["Buckets"]:
@@ -1747,7 +1752,7 @@ def get_iam_role_limit() -> dict:
         "celery.active_region", config.region
     ) and config.get("environment") in ["prod", "dev"]:
 
-        @sts_conn("iam")
+        @sts_conn("iam", client_kwargs=config.get("boto3.client_kwargs", {}))
         def _get_delivery_channels(**kwargs) -> list:
             """Gets the delivery channels in the account/region -- calls are wrapped with CloudAux"""
             return kwargs.pop("client").get_account_summary(**kwargs)

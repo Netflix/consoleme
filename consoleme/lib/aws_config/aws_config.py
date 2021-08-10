@@ -20,7 +20,9 @@ def query(
 ) -> List:
     resources = []
     if use_aggregator:
-        config_client = boto3.client("config", region_name=config.region)
+        config_client = boto3.client(
+            "config", region_name=config.region, **config.get("boto3.client_kwargs", {})
+        )
         configuration_aggregator_name: str = config.get(
             "aws_config.configuration_aggregator.name"
         ).format(region=config.region)
@@ -61,6 +63,7 @@ def query(
                     region_name=config.region,
                     endpoint_url=f"https://sts.{config.region}.amazonaws.com",
                 ),
+                client_kwargs=config.get("boto3.client_kwargs", {}),
             )
             try:
                 response = config_client.select_resource_config(

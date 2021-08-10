@@ -76,6 +76,7 @@ class ManagedPoliciesOnPrincipalHandler(BaseAPIV2Handler):
                 assume_role=config.get("policies.role_name"),
                 region=config.region,
                 retry_max_attempts=2,
+                client_kwargs=config.get("boto3.client_kwargs", {}),
             )
         elif principal_type == "user":
             managed_policy_details = await sync_to_async(
@@ -86,6 +87,7 @@ class ManagedPoliciesOnPrincipalHandler(BaseAPIV2Handler):
                 assume_role=config.get("policies.role_name"),
                 region=config.region,
                 retry_max_attempts=2,
+                client_kwargs=config.get("boto3.client_kwargs", {}),
             )
         else:
             raise Exception("Invalid principal type")
@@ -133,6 +135,7 @@ class ManagedPoliciesHandler(BaseAPIV2Handler):
             assume_role=config.get("policies.role_name"),
             region=config.region,
             retry_max_attempts=2,
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         res = WebResponse(
             status=Status2.success,

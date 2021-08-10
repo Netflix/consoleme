@@ -357,6 +357,7 @@ async def fetch_managed_policy_details(
         assume_role=config.get("policies.role_name"),
         region=config.region,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     policy_details = await sync_to_async(get_policy)(
         policy_arn=policy_arn,
@@ -364,6 +365,7 @@ async def fetch_managed_policy_details(
         assume_role=config.get("policies.role_name"),
         region=config.region,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
 
     try:
@@ -412,6 +414,7 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
 
@@ -424,6 +427,7 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
 
@@ -460,6 +464,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
 
@@ -473,6 +478,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
 
@@ -485,6 +491,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
     result["TagSet"]: list = []
@@ -527,6 +534,7 @@ async def get_bucket_location_with_fallback(
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
         bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
@@ -569,6 +577,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
         created_time_stamp = bucket_resource.creation_date
@@ -589,6 +598,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
     except ClientError as e:
@@ -606,6 +616,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
     except ClientError as e:
@@ -678,6 +689,7 @@ def apply_managed_policy_to_role(
         assume_role=config.get("policies.role_name"),
         session_name=session_name,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
 
     client.attach_role_policy(RoleName=role.get("RoleName"), PolicyArn=policy_arn)
@@ -815,6 +827,7 @@ async def fetch_role_details(account_id, role_name):
         assume_role=config.get("policies.role_name"),
         session_name="fetch_role_details",
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     try:
         iam_role = await sync_to_async(iam_resource.Role)(role_name)
@@ -852,6 +865,7 @@ async def fetch_iam_user_details(account_id, iam_user_name):
         assume_role=config.get("policies.role_name"),
         session_name="fetch_iam_user_details",
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     try:
         iam_user = await sync_to_async(iam_resource.User)(iam_user_name)
@@ -916,6 +930,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
         assume_role=config.get("policies.role_name"),
         session_name="create_role_" + username,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     results = {"errors": 0, "role_created": "false", "action_results": []}
     try:
@@ -1078,6 +1093,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
         assume_role=config.get("policies.role_name"),
         session_name="clone_role_" + username,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     results = {"errors": 0, "role_created": "false", "action_results": []}
     try:
@@ -1361,6 +1377,7 @@ async def get_enabled_regions_for_account(account_id: str) -> Set[str]:
         assume_role=config.get("policies.role_name"),
         read_only=True,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
 
     regions = await sync_to_async(client.describe_regions)()
@@ -1373,7 +1390,9 @@ async def access_analyzer_validate_policy(
     try:
         enhanced_findings = []
         client = await sync_to_async(boto3.client)(
-            "accessanalyzer", region_name=config.region
+            "accessanalyzer",
+            region_name=config.region,
+            **config.get("boto3.client_kwargs", {}),
         )
         access_analyzer_response = await sync_to_async(client.validate_policy)(
             policyDocument=policy,

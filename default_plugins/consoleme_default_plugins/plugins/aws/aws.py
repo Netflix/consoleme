@@ -146,6 +146,7 @@ class Aws:
             assume_role=config.get("policies.role_name"),
             read_only=True,
             retry_max_attempts=2,
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         user = client.get_user(UserName=user_name)["User"]
         user["ManagedPolicies"] = get_user_managed_policies(
@@ -169,6 +170,7 @@ class Aws:
             assume_role=config.get("policies.role_name"),
             read_only=True,
             retry_max_attempts=2,
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         user_details = asyncio.ensure_future(
             sync_to_async(client.get_user)(UserName=user_name)
@@ -215,6 +217,7 @@ class Aws:
             assume_role=config.get("policies.role_name"),
             read_only=True,
             retry_max_attempts=2,
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         role = client.get_role(RoleName=role_name)["Role"]
         role["ManagedPolicies"] = get_role_managed_policies(
@@ -237,6 +240,7 @@ class Aws:
             assume_role=config.get("policies.role_name"),
             read_only=True,
             retry_max_attempts=2,
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         role_details = asyncio.ensure_future(
             sync_to_async(client.get_role)(RoleName=role_name)
@@ -286,6 +290,7 @@ class Aws:
                 "account_number": account_id,
                 "assume_role": config.get("policies.role_name"),
                 "region": config.region,
+                "client_kwargs": config.get("boto3.client_kwargs", {}),
             }
             if run_sync:
                 user = self._get_iam_user_sync(account_id, user_name, conn)
@@ -382,6 +387,7 @@ class Aws:
                     "account_number": account_id,
                     "assume_role": config.get("policies.role_name"),
                     "region": config.region,
+                    "client_kwargs": config.get("boto3.client_kwargs", {}),
                 }
                 if run_sync:
                     role = self._get_iam_role_sync(account_id, role_name, conn)
@@ -487,7 +493,9 @@ class Aws:
             }
         ).encode()
 
-        client = boto3.client("lambda", region_name=config.region)
+        client = boto3.client(
+            "lambda", region_name=config.region, **config.get("boto3.client_kwargs", {})
+        )
 
         lambda_result = await sync_to_async(self._invoke_lambda)(
             client,
