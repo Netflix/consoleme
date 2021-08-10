@@ -12,6 +12,20 @@ data:
     consoleme_s3_bucket: {{ . }}
     {{- end }}
 
+    {{- with .Values.self_service_iam_help_message }}
+    self_service_iam_help_message: {{ . }}
+    {{- end }}
+
+    {{- with .Values.site_config.landing_url }}
+    site_config:
+      landing_url: {{ . }}
+    {{- end }}
+
+    {{- with .Values.roles }}
+    roles:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
     environment: {{ .Values.consoleme.environment }}
 
     {{- with .Values.tornado }}
