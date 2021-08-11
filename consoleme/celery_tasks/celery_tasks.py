@@ -573,14 +573,15 @@ def cache_policies_table_details() -> bool:
     if all_s3_errors:
         s3_errors = json.loads(all_s3_errors)
 
-    allowed_tags = config.get("roles.allowed_tags")
-    allowed_arns = config.get("roles.allowed_arns")
+    allowed_tags = config.get("roles.allowed_tags", {})
+    allowed_arns = config.get("roles.allowed_arns", [])
     for arn, role_details_j in all_iam_roles.items():
         role_details = ujson.loads(role_details_j)
 
         allowed = True
 
-        if allowed_tags and {"consoleme":"managed"} not in role_details.get("tags"):
+        actual_tags = {k: v for d in role_details.get("tags") for k, v in d.items()} # Convert List[Dicts] to 1 Dict
+        if allowed_tags and not allowed_tags.items() <= actual_tags.items():
             allowed = False
 
         if allowed_arns and arn not in allowed_arns:
