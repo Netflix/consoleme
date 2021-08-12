@@ -184,9 +184,9 @@ challenge_url:
 # Parameters:
 #  allowed_tags: map[string]string: if non-empty, consoleme will only consider roles tags mapped here
 #  allowed_arns: list[string]:  if non-empty, consoleme will only consider the role arns in this list
-roles:
-  allowed_tags: {}
-  allowed_arns: []
+# roles:
+#   allowed_tags: {}
+#   allowed_arns: []
 
 # If you have read this far and modified the above config variables to production ready values
 # remove the below config variable, or switch it to false
