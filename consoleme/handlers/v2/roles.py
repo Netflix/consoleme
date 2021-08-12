@@ -335,19 +335,20 @@ class RoleDetailHandler(BaseAPIV2Handler):
             role_details = None
             error = str(e)
 
-        allowed = True
+        if role_details:
+            allowed = True
 
-        allowed_tags = config.get("roles.allowed_tags", {})
-        actual_tags = {k: v for d in role_details.tags for k, v in d.items()} # Convert List[Dicts] to 1 Dict
-        if allowed_tags and not allowed_tags.items() <= actual_tags.items():
-            allowed = False
+            allowed_tags = config.get("roles.allowed_tags", {})
+            actual_tags = {k: v for d in role_details.tags for k, v in d.items()} # Convert List[Dicts] to 1 Dict
+            if allowed_tags and not allowed_tags.items() <= actual_tags.items():
+                allowed = False
 
-        allowed_arns = config.get("roles.allowed_arns", [])
-        if allowed_arns and role_details.arn not in allowed_arns:
-            allowed = False
+            allowed_arns = config.get("roles.allowed_arns", [])
+            if allowed_arns and role_details.arn not in allowed_arns:
+                allowed = False
 
-        if not allowed:
-            role_details = None
+            if not allowed:
+                role_details = None
 
         if not role_details:
             self.send_error(
