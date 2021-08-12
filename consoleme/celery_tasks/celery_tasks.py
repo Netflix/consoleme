@@ -577,10 +577,11 @@ def cache_policies_table_details() -> bool:
     allowed_arns = config.get("roles.allowed_arns", [])
     for arn, role_details_j in all_iam_roles.items():
         role_details = ujson.loads(role_details_j)
+        role_details_policy = ujson.loads(role_details.get("policy"))
 
         allowed = True
 
-        actual_tags = {k: v for d in role_details.get("Tags") for k, v in d.items()} # Convert List[Dicts] to 1 Dict
+        actual_tags = {k: v for d in role_details_policy.get("Tags") for k, v in d.items()} # Convert List[Dicts] to 1 Dict
         if allowed_tags and not allowed_tags.items() <= actual_tags.items():
             allowed = False
 
