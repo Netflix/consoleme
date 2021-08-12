@@ -16,9 +16,9 @@ data:
     self_service_iam_help_message: {{ . }}
     {{- end }}
 
-    {{- with .Values.site_config.landing_url }}
+    {{- with .Values.site_config }}
     site_config:
-      landing_url: {{ . }}
+      {{- toYaml . | nindent 6 }}
     {{- end }}
 
     {{- with .Values.roles }}
