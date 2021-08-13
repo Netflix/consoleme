@@ -581,7 +581,9 @@ def cache_policies_table_details() -> bool:
 
         allowed = True
 
-        actual_tags = {k: v for d in role_details_policy.get("Tags") for k, v in d.items()}  # Convert List[Dicts] to 1 Dict
+        actual_tags = {
+            k: v for d in role_details_policy.get("Tags") for k, v in d.items()
+        }  # Convert List[Dicts] to 1 Dict
         if allowed_tags and not allowed_tags.items() <= actual_tags.items():
             allowed = False
 

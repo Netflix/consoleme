@@ -339,7 +339,9 @@ class RoleDetailHandler(BaseAPIV2Handler):
             allowed = True
 
             allowed_tags = config.get("roles.allowed_tags", {})
-            actual_tags = {k: v for d in role_details.tags for k, v in d.items()}  # Convert List[Dicts] to 1 Dict
+            actual_tags = {
+                k: v for d in role_details.tags for k, v in d.items()
+            }  # Convert List[Dicts] to 1 Dict
             if allowed_tags and not allowed_tags.items() <= actual_tags.items():
                 allowed = False
 
