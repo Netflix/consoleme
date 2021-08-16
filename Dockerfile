@@ -25,16 +25,16 @@ RUN pip install -e default_plugins
 # Install watchdog. Used to automatically restart ConsoleMe in Docker, for development.
 RUN pip install watchdog argh
 
-# Install SPA frontend
-COPY ui /apps/consoleme/ui/
+# Run ConsoleMe tornado server using configuration
 RUN mkdir /apps/consoleme/consoleme
+COPY consoleme /apps/consoleme/consoleme/
+COPY scripts /apps/consoleme/scripts/
+COPY ui /apps/consoleme/ui/
+
+# Install SPA frontend
 RUN npm install yarn -g
 RUN yarn --cwd ui
 RUN yarn --cwd ui build:prod
 
-# Run ConsoleMe tornado server using configuration
-COPY consoleme /apps/consoleme/consoleme/
-COPY scripts /apps/consoleme/scripts/
 CMD python scripts/retrieve_or_decode_configuration.py ; python /apps/consoleme/consoleme/__main__.py
-
 EXPOSE 8081
