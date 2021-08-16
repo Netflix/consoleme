@@ -577,7 +577,7 @@ def cache_policies_table_details() -> bool:
     allowed_arns = config.get("roles.allowed_arns", [])
     for arn, role_details_j in all_iam_roles.items():
         role_details = ujson.loads(role_details_j)
-        role_details_policy = ujson.loads(role_details.get("policy"))
+        role_details_policy = ujson.loads(role_details.get("policy"), {})
 
         allowed = True
 
