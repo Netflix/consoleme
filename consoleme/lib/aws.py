@@ -1778,8 +1778,8 @@ def allowed_to_sync_role(
     """
     This function determines whether ConsoleMe is allowed to sync or otherwise manipulate an IAM role. By default,
     ConsoleMe will sync all roles that it can get its grubby little hands on. However, ConsoleMe administrators can tell
-    ConsoleMe to only sync roles with either 1) Specific ARNs, or 2) Specific tag key/value pairs. Only one allowed_tag
-    has to be configured in the role for ConsoleMe to be allowed to sync.
+    ConsoleMe to only sync roles with either 1) Specific ARNs, or 2) Specific tag key/value pairs. All configured tags
+    must exist on the role for ConsoleMe to sync it.
 
     Here's an example configuration for a tag-based restriction:
 
@@ -1823,7 +1823,7 @@ def allowed_to_sync_role(
         d["Key"]: d["Value"] for d in role_tags
     }  # Convert List[Dicts] to 1 Dict
 
-    # At least one configured allowed_tags must exist in the role's actual_tags
+    # All configured allowed_tags must exist in the role's actual_tags for this condition to pass
     if allowed_tags and not allowed_tags.items() <= actual_tags.items():
         allowed = False
 

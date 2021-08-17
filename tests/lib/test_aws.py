@@ -287,6 +287,15 @@ class TestAwsLib(TestCase):
         CONFIG.config = {
             **CONFIG.config,
             "roles": {
+                "allowed_tags": {"testtag": "testtagv", "testtagNOTEXIST": "testv"},
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), False)
+
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
                 "allowed_tags": {"testtag": "testtagv"},
                 "allowed_arns": "arn:aws:iam::111111111111:role/role-name-here-1",
             },
