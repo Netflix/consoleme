@@ -1638,9 +1638,9 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     if not config.get(
         "celery.cache_resources_from_aws_config_across_accounts.enabled",
         config.get(
-            f"celery.cache_resources_from_aws_config_for_account.{account_id}.enabled"
+            f"celery.cache_resources_from_aws_config_for_account.{account_id}.enabled",
+            True,
         ),
-        True,
     ):
         log_data[
             "message"
