@@ -1814,6 +1814,9 @@ def allowed_to_sync_role(
     if not (allowed_tags or allowed_arns):
         return True
 
+    if role_arn in allowed_arns:
+        return True
+
     # Convert list of role tag dicts to a single key/value dict of tags
     # ex:
     # role_tags = [{'Key': 'consoleme-authorized', 'Value': 'consoleme_admins'},
@@ -1825,9 +1828,6 @@ def allowed_to_sync_role(
 
     # All configured allowed_tags must exist in the role's actual_tags for this condition to pass
     if allowed_tags and not allowed_tags.items() <= actual_tags.items():
-        allowed = False
-
-    if allowed_arns and role_arn not in allowed_arns:
         allowed = False
 
     return allowed
