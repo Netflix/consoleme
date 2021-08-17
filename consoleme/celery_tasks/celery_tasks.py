@@ -53,6 +53,7 @@ from consoleme.lib.account_indexers import (
     get_account_id_to_name_mapping,
 )
 from consoleme.lib.aws import (
+    allowed_to_sync_role,
     cache_all_scps,
     cache_org_structure,
     get_enabled_regions_for_account,
@@ -573,25 +574,12 @@ def cache_policies_table_details() -> bool:
     if all_s3_errors:
         s3_errors = json.loads(all_s3_errors)
 
-    allowed_tags = config.get("roles.allowed_tags", {})
-    allowed_arns = config.get("roles.allowed_arns", [])
     for arn, role_details_j in all_iam_roles.items():
         role_details = ujson.loads(role_details_j)
         role_details_policy = ujson.loads(role_details.get("policy", {}))
+        role_tags = role_details_policy.get("Tags", {})
 
-        allowed = True
-
-        if "Tags" in role_details_policy:
-            actual_tags = {
-                k: v for d in role_details_policy.get("Tags") for k, v in d.items()
-            }  # Convert List[Dicts] to 1 Dict
-            if allowed_tags and not allowed_tags.items() <= actual_tags.items():
-                allowed = False
-
-        if allowed_arns and arn not in allowed_arns:
-            allowed = False
-
-        if not allowed:
+        if not allowed_to_sync_role(arn, role_tags):
             continue
 
         error_count = cloudtrail_errors.get(arn, 0)

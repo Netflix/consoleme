@@ -14,7 +14,12 @@ from consoleme.lib.auth import (
     can_delete_iam_principals,
     can_delete_iam_principals_app,
 )
-from consoleme.lib.aws import clone_iam_role, create_iam_role, delete_iam_role
+from consoleme.lib.aws import (
+    allowed_to_sync_role,
+    clone_iam_role,
+    create_iam_role,
+    delete_iam_role,
+)
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
@@ -336,20 +341,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
             error = str(e)
 
         if role_details:
-            allowed = True
-
-            allowed_tags = config.get("roles.allowed_tags", {})
-            actual_tags = {
-                k: v for d in role_details.tags for k, v in d.items()
-            }  # Convert List[Dicts] to 1 Dict
-            if allowed_tags and not allowed_tags.items() <= actual_tags.items():
-                allowed = False
-
-            allowed_arns = config.get("roles.allowed_arns", [])
-            if allowed_arns and role_details.arn not in allowed_arns:
-                allowed = False
-
-            if not allowed:
+            if not allowed_to_sync_role(role_details.arn, role_details.tags):
                 role_details = None
 
         if not role_details:

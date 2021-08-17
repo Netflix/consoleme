@@ -28,6 +28,7 @@ RUN pip install watchdog argh
 # Run ConsoleMe tornado server using configuration
 RUN mkdir /apps/consoleme/consoleme
 COPY consoleme /apps/consoleme/consoleme/
+COPY example_config /apps/consoleme/example_config/
 COPY scripts /apps/consoleme/scripts/
 COPY ui /apps/consoleme/ui/
 
