@@ -17,3 +17,24 @@ policies:
 
 ConsoleMe's [Celery Tasks](https://github.com/Netflix/consoleme/blob/master/consoleme/celery/celery_tasks.py) do the bulk of the resource syncing. The Docker-Compose flow defined in the [Quick Start](../quick-start/) guide starts a Celery container, with a worker and a scheduler that will attempt to cache your resources with your existing AWS credentials when ran.
 
+
+If you need to only manage a subset of roles, you can limit the roles that will be displayed in the `/policies` page. You can limit the roles by referencing the tags on the roles and adding them to this configuration in Consoleme:
+
+```text
+roles:
+  allowed_tags:
+    tag1: value1
+    tag2: value2
+```
+
+Alternatively, you can provide an explicit list of roles you want managed by Consoleme by adding this configuration:
+
+```text
+roles:
+  allowed_arns:
+    - arn:aws:iam::111111111111:role/role-name-here-1
+    - arn:aws:iam::111111111111:role/role-name-here-2
+    - arn:aws:iam::111111111111:role/role-name-here-3
+    - arn:aws:iam::222222222222:role/role-name-here-1
+    - arn:aws:iam::333333333333:role/role-name-here-1
+```

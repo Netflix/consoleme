@@ -1799,3 +1799,64 @@ async def normalize_policies(policies: List[Any]) -> List[Any]:
                     modified_elements.add(policy[element][i])
             policy[element] = sorted(modified_elements)
     return policies
+
+
+def allowed_to_sync_role(
+    role_arn: str, role_tags: List[Optional[Dict[str, str]]]
+) -> bool:
+    """
+    This function determines whether ConsoleMe is allowed to sync or otherwise manipulate an IAM role. By default,
+    ConsoleMe will sync all roles that it can get its grubby little hands on. However, ConsoleMe administrators can tell
+    ConsoleMe to only sync roles with either 1) Specific ARNs, or 2) Specific tag key/value pairs. All configured tags
+    must exist on the role for ConsoleMe to sync it.
+
+    Here's an example configuration for a tag-based restriction:
+
+    ```
+    roles:
+      allowed_tags:
+        tag1: value1
+        tag2: value2
+    ```
+
+    And another one for an ARN-based restriction:
+
+    ```
+    roles:
+      allowed_arns:
+        - arn:aws:iam::111111111111:role/role-name-here-1
+        - arn:aws:iam::111111111111:role/role-name-here-2
+        - arn:aws:iam::111111111111:role/role-name-here-3
+        - arn:aws:iam::222222222222:role/role-name-here-1
+        - arn:aws:iam::333333333333:role/role-name-here-1
+    ```
+
+    :param
+        arn: The AWS role arn
+        role_tags: A dictionary of role tags
+
+    :return: boolean specifying whether ConsoleMe is allowed to sync / access the role
+    """
+    allowed = True
+    allowed_tags = config.get("roles.allowed_tags", {})
+    allowed_arns = config.get("roles.allowed_arns", [])
+    if not (allowed_tags or allowed_arns):
+        return True
+
+    if role_arn in allowed_arns:
+        return True
+
+    # Convert list of role tag dicts to a single key/value dict of tags
+    # ex:
+    # role_tags = [{'Key': 'consoleme-authorized', 'Value': 'consoleme_admins'},
+    # {'Key': 'Description', 'Value': 'ConsoleMe OSS Demo Role'}]
+    # so: actual_tags = {'consoleme-authorized': 'consoleme_admins', 'Description': 'ConsoleMe OSS Demo Role'}
+    actual_tags = {
+        d["Key"]: d["Value"] for d in role_tags
+    }  # Convert List[Dicts] to 1 Dict
+
+    # All configured allowed_tags must exist in the role's actual_tags for this condition to pass
+    if allowed_tags and not allowed_tags.items() <= actual_tags.items():
+        allowed = False
+
+    return allowed

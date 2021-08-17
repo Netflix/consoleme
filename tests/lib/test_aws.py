@@ -1,4 +1,5 @@
 import asyncio
+import copy
 from datetime import datetime, timedelta
 from unittest import TestCase
 
@@ -263,3 +264,80 @@ class TestAwsLib(TestCase):
                 "Version": "2012-10-17",
             },
         )
+
+    def test_allowed_to_sync_role(self):
+        from consoleme.config.config import CONFIG
+        from consoleme.lib.aws import allowed_to_sync_role
+
+        old_config = copy.deepcopy(CONFIG.config)
+        test_role_arn = "arn:aws:iam::111111111111:role/role-name-here-1"
+        test_role_tags = [
+            {"Key": "testtag", "Value": "testtagv"},
+            {"Key": "testtag2", "Value": "testtag2v"},
+        ]
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
+
+        # Allow - allowed_tags exists in role
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_tags": {"testtag": "testtagv"},
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
+
+        # Reject, one of the tags doesn't exist on role
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_tags": {"testtag": "testtagv", "testtagNOTEXIST": "testv"},
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), False)
+
+        # Allow - Role has all allowed_tags, doesn't matter that allowed_arns doesn't have our role ARN
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_tags": {"testtag": "testtagv"},
+                "allowed_arns": ["arn:aws:iam::111111111111:role/some-other-role"],
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
+
+        # Allow - Role has all allowed_tags
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_tags": {"testtag": "testtagv"},
+                "allowed_arns": ["arn:aws:iam::111111111111:role/BADROLENAME"],
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
+
+        # Reject - No tag
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_tags": {"a": "b"},
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), False)
+
+        # Allow by ARN
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_arns": ["arn:aws:iam::111111111111:role/role-name-here-1"]
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
+
+        CONFIG.config = old_config
