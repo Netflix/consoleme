@@ -24,7 +24,7 @@ class TestRequestsHandler(AsyncHTTPTestCase):
         response = self.fetch("/api/v2/requests", method="GET", headers=headers)
         self.assertEqual(response.code, 405)
 
-    def test_post(self):
+    def test_requestshandler_post(self):
         mock_request_data = [
             {
                 "request_id": 12345,

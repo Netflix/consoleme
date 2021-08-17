@@ -399,3 +399,10 @@ affinity: {}
 # https://YOUR_CONSOLEME_DOMAIN/config
 #   Reference the default values provided in consoleme/lib/defaults.py as PERMISSION_TEMPLATE_DEFAULTS
 #permission_templates: []
+
+# This is extra config for the site if you want to change the landing page
+# site_config:
+#   landing_url: /policies
+
+# This lets you change the help message in the self service iam wizard
+self_service_iam_help_message: "Contact support@example.com for help"
