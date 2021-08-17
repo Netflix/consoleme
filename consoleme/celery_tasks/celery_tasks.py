@@ -874,6 +874,17 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
         iam_groups = all_iam_resources["GroupDetailList"]
         iam_policies = all_iam_resources["Policies"]
 
+        # Make sure these roles satisfy config -> roles.allowed_*
+        filtered_iam_roles = []
+        for role in iam_roles:
+            arn = role.get("Arn", "")
+            policy = ujson.loads(role.get("Policy", {}))
+            tags = policy.get("Tags", {})
+            if allowed_to_sync_role(arn , tags):
+                filtered_iam_roles.append(role)
+
+        iam_roles = filtered_iam_roles
+
         if iam_roles:
             async_to_sync(store_json_results_in_redis_and_s3)(
                 iam_roles,
