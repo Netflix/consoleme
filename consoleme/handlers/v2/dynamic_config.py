@@ -6,6 +6,7 @@ import sentry_sdk
 import tornado.escape
 import tornado.web
 
+from consoleme.celery_tasks.celery_tasks import app as celery_app
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.auth import can_edit_dynamic_config
@@ -20,6 +21,16 @@ aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 
 
 class DynamicConfigApiHandler(BaseHandler):
+    def on_finish(self) -> None:
+        if self.request.method != "POST":
+            return
+        # Force refresh of crednetial authorization mapping after the dynamic config sync period to ensure all workers
+        # have the updated configuration
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping",
+            countdown=config.get("dynamic_config.dynamo_load_interval"),
+        )
+
     async def get(self) -> None:
         """
         Get the dynamic configuration endpoint.

@@ -25,12 +25,8 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.httputil import url_concat
 
 from consoleme.config import config
-from consoleme.exceptions.exceptions import (
-    NoRoleTemplateException,
-    UserRoleLambdaException,
-    UserRoleNotAssumableYet,
-)
-from consoleme.lib.account_indexers import get_account_id_to_name_mapping
+from consoleme.exceptions.exceptions import UserRoleNotAssumableYet
+from consoleme.lib.aws import raise_if_background_check_required_and_no_background_check
 from consoleme.lib.dynamo import IAMRoleDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import send_communications_policy_change_request_v2
@@ -42,9 +38,9 @@ log = config.get_logger(__name__)
 
 
 class Aws:
-    """The AWS class handles all interactions with AWS."""
+    """The AWS class handles interactions with AWS."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.red = RedisHandler().redis_sync()
         self.redis_key = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
         self.dynamo = IAMRoleDynamoHandler()
@@ -74,19 +70,6 @@ class Aws:
         :return:
         """
         return self.red.hget(self.redis_key, role_arn)
-
-    @retry(
-        stop_max_attempt_number=3,
-        wait_exponential_multiplier=1000,
-        wait_exponential_max=1000,
-    )
-    def _invoke_lambda(self, client: object, function_name: str, payload: bytes):
-        """Invoke the lambda function for creating the user-roles."""
-        return client.invoke(
-            FunctionName=function_name,
-            InvocationType="RequestResponse",
-            Payload=payload,
-        )
 
     async def _cloudaux_to_aws(self, principal):
         """Convert the cloudaux get_role/get_user into the get_account_authorization_details equivalent."""
@@ -466,52 +449,11 @@ class Aws:
         self, role: str, user_email: str, account_id: str, user_role_name: str = "user"
     ) -> str:
         """Call out to the lambda function to provision the per-user role for the account."""
-        # Get the template's name based on the account and user role name:
-        accounts = await get_account_id_to_name_mapping()
-        account_name = accounts[account_id]
-        role_to_fetch = (
-            f"arn:aws:iam::{account_id}:role/{account_name}_{user_role_name}"
-        )
-
-        # Fetch the role
-        role_details = await self.fetch_iam_role(account_id, role_to_fetch)
-
-        # If we did not receive any role details, raise an exception:
-        if not role_details:
-            raise NoRoleTemplateException(f"Unable to locate {role_to_fetch}")
-
-        # Prepare the payload for the lambda and send it out:
-        payload = json.dumps(
-            {
-                "user_role_short_name": role.split("role/")[1],
-                "user_email": user_email,
-                "account_number": account_id,
-                "primary_policies": role_details["policy"].get("RolePolicyList", []),
-                "managed_policy_arns": role_details["policy"].get(
-                    "AttachedManagedPolicies", []
-                ),
-            }
-        ).encode()
-
-        client = boto3.client(
-            "lambda", region_name=config.region, **config.get("boto3.client_kwargs", {})
-        )
-
-        lambda_result = await sync_to_async(self._invoke_lambda)(
-            client,
-            config.get("lambda_role_creator.function_name", "UserRoleCreator"),
-            payload,
-        )
-        lambda_result = json.loads(lambda_result["Payload"].read().decode())
-
-        if not lambda_result.get("success", False):
-            raise UserRoleLambdaException(f"Received invalid response: {lambda_result}")
-
-        return f'arn:aws:iam::{lambda_result["account_number"]}:role/{lambda_result["role_name"]}'
+        raise NotImplementedError("This feature isn't enabled in ConsoleMe OSS")
 
     @tenacity.retry(
         wait=tenacity.wait_fixed(2),
-        stop=tenacity.stop_after_attempt(5),
+        stop=tenacity.stop_after_attempt(10),
         retry=tenacity.retry_if_exception_type(UserRoleNotAssumableYet),
     )
     async def get_credentials(
@@ -551,6 +493,8 @@ class Aws:
             except Exception as e:
                 raise e
 
+        await raise_if_background_check_required_and_no_background_check(role, user)
+
         try:
             if enforce_ip_restrictions and ip_restrictions:
                 policy = json.dumps(
@@ -562,7 +506,16 @@ class Aws:
                                 Action="*",
                                 Resource="*",
                                 Condition=dict(
-                                    NotIpAddress={"aws:SourceIP": ip_restrictions}
+                                    NotIpAddress={"aws:SourceIP": ip_restrictions},
+                                    Null={
+                                        "aws:Via": "true",
+                                        "aws:PrincipalTag/AWSServiceTrust": "true",
+                                    },
+                                    StringNotLike={
+                                        "aws:PrincipalArn": [
+                                            "arn:aws:iam::*:role/aws:*"
+                                        ]
+                                    },
                                 ),
                             ),
                             dict(Effect="Allow", Action="*", Resource="*"),
@@ -578,6 +531,12 @@ class Aws:
                 )
                 credentials["Credentials"]["Expiration"] = int(
                     credentials["Credentials"]["Expiration"].timestamp()
+                )
+                log.debug(
+                    {
+                        **log_data,
+                        "access_key_id": credentials["Credentials"]["AccessKeyId"],
+                    }
                 )
                 return credentials
             if custom_ip_restrictions:
@@ -592,7 +551,16 @@ class Aws:
                                 Condition=dict(
                                     NotIpAddress={
                                         "aws:SourceIP": custom_ip_restrictions
-                                    }
+                                    },
+                                    Null={
+                                        "aws:Via": "true",
+                                        "aws:PrincipalTag/AWSServiceTrust": "true",
+                                    },
+                                    StringNotLike={
+                                        "aws:PrincipalArn": [
+                                            "arn:aws:iam::*:role/aws:*"
+                                        ]
+                                    },
                                 ),
                             ),
                             dict(Effect="Allow", Action="*", Resource="*"),
@@ -609,6 +577,12 @@ class Aws:
                 credentials["Credentials"]["Expiration"] = int(
                     credentials["Credentials"]["Expiration"].timestamp()
                 )
+                log.debug(
+                    {
+                        **log_data,
+                        "access_key_id": credentials["Credentials"]["AccessKeyId"],
+                    }
+                )
                 return credentials
 
             credentials = await sync_to_async(client.assume_role)(
@@ -619,7 +593,9 @@ class Aws:
             credentials["Credentials"]["Expiration"] = int(
                 credentials["Credentials"]["Expiration"].timestamp()
             )
-            log.debug(log_data)
+            log.debug(
+                {**log_data, "access_key_id": credentials["Credentials"]["AccessKeyId"]}
+            )
             return credentials
         except ClientError as e:
             # TODO(ccastrapel): Determine if user role was really just created, or if this is an older role.

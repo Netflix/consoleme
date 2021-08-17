@@ -170,7 +170,7 @@ class TestTypeAheadHandler(AsyncHTTPTestCase):
 
         result = async_to_sync(cache_self_service_typeahead)()
         self.assertIsInstance(result, SelfServiceTypeaheadModelArray)
-        self.assertEqual(len(result.typeahead_entries), 16)
+        self.assertGreater(len(result.typeahead_entries), 15)
         expected_entry = SelfServiceTypeaheadModel(
             account="default_account",
             details_endpoint="/api/v2/roles/123456789012/RoleNumber5",

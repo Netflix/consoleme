@@ -881,6 +881,11 @@ async def apply_changes_to_role(
         assume_role=config.get("policies.role_name"),
         session_name="principal-updater-v2-" + user,
         retry_max_attempts=2,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
@@ -1698,6 +1703,11 @@ async def apply_managed_policy_resource_tag_change(
         assume_role=config.get("policies.role_name"),
         session_name="tag-updater-v2-" + user,
         retry_max_attempts=2,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     principal_arn = change.principal.principal_arn
     if change.tag_action in [TagAction.create, TagAction.update]:

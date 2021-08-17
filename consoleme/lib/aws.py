@@ -1016,6 +1016,16 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
     )
     log_data["message"] = "Successfully created role"
     log.info(log_data)
+    # Force caching of role
+    try:
+        aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+        role_arn = (
+            f"arn:aws:iam::{create_model.account_id}:role/{create_model.role_name}"
+        )
+        await aws.fetch_iam_role(create_model.account_id, role_arn, force_refresh=True)
+    except Exception as e:
+        log.error({**log_data, "message": "Unable to cache role", "error": str(e)})
+        sentry_sdk.capture_exception()
     return results
 
 
