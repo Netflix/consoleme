@@ -117,6 +117,3 @@ dynamodb-data/
 redis-data/
 node_modules/
 ui/node_modules/
-
-# Frontend Ignores. Local work would copy into the docker image and break things
-consoleme/templates/*
