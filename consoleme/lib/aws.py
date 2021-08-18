@@ -1811,7 +1811,7 @@ def allowed_to_sync_role(
     allowed = True
     allowed_tags = config.get("roles.allowed_tags", {})
     allowed_arns = config.get("roles.allowed_arns", [])
-    if not (allowed_tags or allowed_arns):
+    if not allowed_tags and not allowed_arns:
         return True
 
     if role_arn in allowed_arns:
