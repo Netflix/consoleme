@@ -26,6 +26,11 @@ data:
       {{- toYaml . | nindent 6 }}
     {{- end }}
 
+    {{- with .Values.cache_policies_table_details }}
+    cache_policies_table_details:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
     environment: {{ .Values.consoleme.environment }}
 
     {{- with .Values.tornado }}

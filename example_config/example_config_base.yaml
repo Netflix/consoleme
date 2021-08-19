@@ -188,6 +188,18 @@ challenge_url:
 #   allowed_tags: {}
 #   allowed_arns: []
 
+# This section provides an opt-out for caching in the policies table on the /policies page. You can
+# opt-out of each resource type that's typically cached. By default, nothing is skipped; everything
+# pulled and cached.
+# cache_policies_table_details:
+#   skip_iam_roles: false
+#   skip_iam_users: false
+#   skip_s3_buckets: false
+#   skip_sns_topics: false
+#   skip_sqs_queues: false
+#   skip_managed_policies: false
+#   skip_aws_config_resources: false
+
 # If you have read this far and modified the above config variables to production ready values
 # remove the below config variable, or switch it to false
 example_config:
