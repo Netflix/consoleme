@@ -1811,10 +1811,9 @@ def allowed_to_sync_role(
 
     :return: boolean specifying whether ConsoleMe is allowed to sync / access the role
     """
-    allowed = True
     allowed_tags = config.get("roles.allowed_tags", {})
     allowed_arns = config.get("roles.allowed_arns", [])
-    if not (allowed_tags or allowed_arns):
+    if not allowed_tags and not allowed_arns:
         return True
 
     if role_arn in allowed_arns:
@@ -1830,10 +1829,9 @@ def allowed_to_sync_role(
     }  # Convert List[Dicts] to 1 Dict
 
     # All configured allowed_tags must exist in the role's actual_tags for this condition to pass
-    if allowed_tags and not allowed_tags.items() <= actual_tags.items():
-        allowed = False
-
-    return allowed
+    if allowed_tags and allowed_tags.items() <= actual_tags.items():
+        return True
+    return False
 
 
 def get_aws_principal_owner(role_details: Dict[str, Any]) -> Optional[str]:
