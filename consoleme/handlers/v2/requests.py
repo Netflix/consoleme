@@ -661,7 +661,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             updated_request = await dynamo.write_policy_request_v2(extended_request)
             last_updated = updated_request.get("last_updated")
 
-        can_approve_reject = (can_admin_policies(self.user, self.groups),)
+        can_approve_reject = can_admin_policies(self.user, self.groups)
         can_update_cancel = await can_update_cancel_requests_v2(
             extended_request.requester_email, self.user, self.groups
         )
