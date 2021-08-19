@@ -104,6 +104,33 @@ class Configuration(object):
             )
             self.config["dynamic_config"] = dynamic_config
 
+    def load_dynamic_config_from_redis(self, log_data: Dict[str, Any], red=None):
+        if not red:
+            from consoleme.lib.redis import RedisHandler
+
+            red = RedisHandler().redis_sync()
+        dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
+        if not dynamic_config:
+            self.get_logger("config").warning(
+                {
+                    **log_data,
+                    "error": (
+                        "Unable to retrieve Dynamic Config from Redis. "
+                        "This can be safely ignored if your dynamic config is empty."
+                    ),
+                }
+            )
+            return
+        dynamic_config_j = json.loads(dynamic_config)
+        if self.config.get("dynamic_config", {}) != dynamic_config_j:
+            self.get_logger("config").debug(
+                {
+                    **log_data,
+                    "message": "Refreshing dynamic configuration from Redis",
+                }
+            )
+            self.config["dynamic_config"] = dynamic_config_j
+
     def load_config_from_dynamo_bg_thread(self):
         """If enabled, we can load a configuration dynamically from Dynamo at a certain time interval. This reduces
         the need for code redeploys to make configuration changes"""
