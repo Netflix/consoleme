@@ -261,12 +261,14 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     async def get_dynamic_config_yaml(self) -> bytes:
         """Retrieve dynamic configuration yaml."""
+        return await sync_to_async(self.get_dynamic_config_yaml_sync)()
+
+    def get_dynamic_config_yaml_sync(self) -> bytes:
+        """Retrieve dynamic configuration yaml synchronously"""
         c = b""
 
         try:
-            current_config = await sync_to_async(self.dynamic_config.get_item)(
-                Key={"id": "master"}
-            )
+            current_config = self.dynamic_config.get_item(Key={"id": "master"})
             if not current_config:
                 return c
             compressed_config = current_config.get("Item", {}).get("config", "")
@@ -279,7 +281,14 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     def get_dynamic_config_dict(self) -> dict:
         """Retrieve dynamic configuration dictionary that can be merged with primary configuration dictionary."""
-        current_config_yaml = asyncio.run(self.get_dynamic_config_yaml())
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:  # if cleanup: 'RuntimeError: There is no current event loop..'
+            loop = None
+        if loop and loop.is_running():
+            current_config_yaml = self.get_dynamic_config_yaml_sync()
+        else:
+            current_config_yaml = asyncio.run(self.get_dynamic_config_yaml())
         config_d = yaml.safe_load(current_config_yaml)
         return config_d
 
