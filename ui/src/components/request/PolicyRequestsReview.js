@@ -78,6 +78,17 @@ class PolicyRequestReview extends Component {
                   },
                 ],
               });
+            } else if (response?.errors && response.errors > 0) {
+              // Error occurred making the request
+              this.setState({
+                isLoading: false,
+                buttonResponseMessage: [
+                  {
+                    status: "error",
+                    message: JSON.stringify(response),
+                  },
+                ],
+              });
             } else {
               // Successful request
               this.setState({
