@@ -2063,17 +2063,17 @@ schedule = {
     "cache_iam_resources_across_accounts": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_iam_resources_across_accounts",
         "options": {"expires": 1000},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_45_minute,
     },
     "clear_old_redis_iam_cache": {
         "task": "consoleme.celery_tasks.celery_tasks.clear_old_redis_iam_cache",
         "options": {"expires": 180},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_6_hours,
     },
     "cache_policies_table_details": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_policies_table_details",
         "options": {"expires": 1000},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_30_minute,
     },
     "report_celery_last_success_metrics": {
         "task": "consoleme.celery_tasks.celery_tasks.report_celery_last_success_metrics",
@@ -2083,37 +2083,37 @@ schedule = {
     "cache_managed_policies_across_accounts": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_managed_policies_across_accounts",
         "options": {"expires": 1000},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_45_minute,
     },
     "cache_s3_buckets_across_accounts": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_s3_buckets_across_accounts",
         "options": {"expires": 300},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_45_minute,
     },
     "cache_sqs_queues_across_accounts": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_sqs_queues_across_accounts",
         "options": {"expires": 300},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_45_minute,
     },
     "cache_sns_topics_across_accounts": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_sns_topics_across_accounts",
         "options": {"expires": 300},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_45_minute,
     },
     "get_iam_role_limit": {
         "task": "consoleme.celery_tasks.celery_tasks.get_iam_role_limit",
         "options": {"expires": 300},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_24_hours,
     },
     "cache_cloudtrail_errors_by_arn": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_errors_by_arn",
         "options": {"expires": 300},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_1_hour,
     },
     "cache_resources_from_aws_config_across_accounts": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_resources_from_aws_config_across_accounts",
         "options": {"expires": 300},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_1_hour,
     },
     "cache_policy_requests": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_policy_requests",
@@ -2123,7 +2123,7 @@ schedule = {
     "cache_cloud_account_mapping": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_cloud_account_mapping",
         "options": {"expires": 1000},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_1_hour,
     },
     "cache_credential_authorization_mapping": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping",
@@ -2133,22 +2133,22 @@ schedule = {
     "cache_scps_across_organizations": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_scps_across_organizations",
         "options": {"expires": 1000},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_1_hour,
     },
     "cache_organization_structure": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_organization_structure",
         "options": {"expires": 1000},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_1_hour,
     },
     "cache_resource_templates_task": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_resource_templates_task",
         "options": {"expires": 1000},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_30_minute,
     },
     "cache_self_service_typeahead_task": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_self_service_typeahead_task",
         "options": {"expires": 1000},
-        "schedule": schedule_5_minutes,
+        "schedule": schedule_30_minute,
     },
     "trigger_credential_mapping_refresh_from_role_changes": {
         "task": "consoleme.celery_tasks.celery_tasks.trigger_credential_mapping_refresh_from_role_changes",

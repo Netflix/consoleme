@@ -27,6 +27,7 @@ RUN pip install watchdog argh
 
 # Run ConsoleMe tornado server using configuration
 RUN mkdir /apps/consoleme/consoleme
+COPY consoleme /apps/consoleme/consoleme/
 COPY example_config /apps/consoleme/example_config/
 COPY scripts /apps/consoleme/scripts/
 COPY ui /apps/consoleme/ui/
@@ -35,8 +36,6 @@ COPY ui /apps/consoleme/ui/
 RUN npm install yarn -g
 RUN yarn --cwd ui
 RUN yarn --cwd ui build:prod
-
-COPY consoleme /apps/consoleme/consoleme/
 
 CMD python scripts/retrieve_or_decode_configuration.py ; python /apps/consoleme/consoleme/__main__.py
 EXPOSE 8081
