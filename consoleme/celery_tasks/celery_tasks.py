@@ -542,18 +542,6 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
 
 @app.task(soft_time_limit=1800)
 def cache_policies_table_details() -> bool:
-    all_iam_roles = async_to_sync(retrieve_json_data_from_redis_or_s3)(
-        redis_key=config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"),
-        redis_data_type="hash",
-        s3_bucket=config.get(
-            "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
-        ),
-        s3_key=config.get(
-            "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
-            "account_resource_cache/cache_all_roles_v1.json.gz",
-        ),
-        default={},
-    )
     items = []
     accounts_d = async_to_sync(get_account_id_to_name_mapping)()
 
@@ -574,202 +562,239 @@ def cache_policies_table_details() -> bool:
     if all_s3_errors:
         s3_errors = json.loads(all_s3_errors)
 
-    for arn, role_details_j in all_iam_roles.items():
-        role_details = ujson.loads(role_details_j)
-        role_details_policy = ujson.loads(role_details.get("policy", {}))
-        role_tags = role_details_policy.get("Tags", {})
-
-        if not allowed_to_sync_role(arn, role_tags):
-            continue
-
-        error_count = cloudtrail_errors.get(arn, 0)
-        s3_errors_for_arn = s3_errors.get(arn, [])
-        for error in s3_errors_for_arn:
-            error_count += int(error.get("count"))
-
-        account_id = arn.split(":")[4]
-        account_name = accounts_d.get(str(account_id), "Unknown")
-        resource_id = role_details.get("resourceId")
-        items.append(
-            {
-                "account_id": account_id,
-                "account_name": account_name,
-                "arn": arn,
-                "technology": "AWS::IAM::Role",
-                "templated": red.hget(
-                    config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
-                    arn.lower(),
-                ),
-                "errors": error_count,
-                "config_history_url": async_to_sync(
-                    get_aws_config_history_url_for_resource
-                )(account_id, resource_id, arn, "AWS::IAM::Role"),
-            }
+    # IAM Roles
+    skip_iam_roles = config.get("cache_policies_table_details.skip_iam_roles", False)
+    if not skip_iam_roles:
+        all_iam_roles = async_to_sync(retrieve_json_data_from_redis_or_s3)(
+            redis_key=config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"),
+            redis_data_type="hash",
+            s3_bucket=config.get(
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
+            ),
+            s3_key=config.get(
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
+                "account_resource_cache/cache_all_roles_v1.json.gz",
+            ),
+            default={},
         )
 
-    # IAM users
-    all_iam_users = async_to_sync(retrieve_json_data_from_redis_or_s3)(
-        redis_key=config.get("aws.iamusers_redis_key", "IAM_USER_CACHE"),
-        redis_data_type="hash",
-        s3_bucket=config.get(
-            "cache_iam_resources_across_accounts.all_users_combined.s3.bucket"
-        ),
-        s3_key=config.get(
-            "cache_iam_resources_across_accounts.all_users_combined.s3.file",
-            "account_resource_cache/cache_all_users_v1.json.gz",
-        ),
-        default={},
-    )
+        for arn, role_details_j in all_iam_roles.items():
+            role_details = ujson.loads(role_details_j)
+            role_details_policy = ujson.loads(role_details.get("policy", {}))
+            role_tags = role_details_policy.get("Tags", {})
 
-    for arn, details_j in all_iam_users.items():
-        details = ujson.loads(details_j)
-        error_count = cloudtrail_errors.get(arn, 0)
-        s3_errors_for_arn = s3_errors.get(arn, [])
-        for error in s3_errors_for_arn:
-            error_count += int(error.get("count"))
-        account_id = arn.split(":")[4]
-        account_name = accounts_d.get(str(account_id), "Unknown")
-        resource_id = details.get("resourceId")
-        items.append(
-            {
-                "account_id": account_id,
-                "account_name": account_name,
-                "arn": arn,
-                "technology": "AWS::IAM::User",
-                "templated": red.hget(
-                    config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
-                    arn.lower(),
-                ),
-                "errors": error_count,
-                "config_history_url": async_to_sync(
-                    get_aws_config_history_url_for_resource
-                )(account_id, resource_id, arn, "AWS::IAM::User"),
-            }
-        )
-
-    s3_bucket_key: str = config.get("redis.s3_bucket_key", "S3_BUCKETS")
-    s3_accounts = red.hkeys(s3_bucket_key)
-    if s3_accounts:
-        for account in s3_accounts:
-            account_name = accounts_d.get(str(account), "Unknown")
-            buckets = json.loads(red.hget(s3_bucket_key, account))
-
-            for bucket in buckets:
-                bucket_arn = f"arn:aws:s3:::{bucket}"
-                s3_errors_for_arn = s3_errors.get(bucket_arn, [])
-
-                error_count = 0
-                for error in s3_errors_for_arn:
-                    error_count += int(error.get("count"))
-                items.append(
-                    {
-                        "account_id": account,
-                        "account_name": account_name,
-                        "arn": f"arn:aws:s3:::{bucket}",
-                        "technology": "AWS::S3::Bucket",
-                        "templated": None,
-                        "errors": error_count,
-                    }
-                )
-
-    sns_topic_key: str = config.get("redis.sns_topics_key", "SNS_TOPICS")
-    sns_accounts = red.hkeys(sns_topic_key)
-    if sns_accounts:
-        for account in sns_accounts:
-            account_name = accounts_d.get(str(account), "Unknown")
-            topics = json.loads(red.hget(sns_topic_key, account))
-
-            for topic in topics:
-                error_count = 0
-                items.append(
-                    {
-                        "account_id": account,
-                        "account_name": account_name,
-                        "arn": topic,
-                        "technology": "AWS::SNS::Topic",
-                        "templated": None,
-                        "errors": error_count,
-                    }
-                )
-
-    sqs_queue_key: str = config.get("redis.sqs_queues_key", "SQS_QUEUES")
-    sqs_accounts = red.hkeys(sqs_queue_key)
-    if sqs_accounts:
-        for account in sqs_accounts:
-            account_name = accounts_d.get(str(account), "Unknown")
-            queues = json.loads(red.hget(sqs_queue_key, account))
-
-            for queue in queues:
-                error_count = 0
-                items.append(
-                    {
-                        "account_id": account,
-                        "account_name": account_name,
-                        "arn": queue,
-                        "technology": "AWS::SQS::Queue",
-                        "templated": None,
-                        "errors": error_count,
-                    }
-                )
-    managed_policies_key: str = config.get(
-        "redis.iam_managed_policies_key", "IAM_MANAGED_POLICIES"
-    )
-    managed_policies_accounts = red.hkeys(managed_policies_key)
-    if managed_policies_accounts:
-        for managed_policies_account in managed_policies_accounts:
-            account_name = accounts_d.get(str(managed_policies_account), "Unknown")
-            managed_policies_in_account = json.loads(
-                red.hget(managed_policies_key, managed_policies_account)
-            )
-
-            for policy_arn in managed_policies_in_account:
-                # managed policies that are managed by AWS shouldn't be added to the policies table for 2 reasons:
-                # 1. We don't manage them, can't edit them
-                # 2. There are a LOT of them and we would just end up spamming the policy table...
-                # TODO: discuss if this is okay
-                if str(managed_policies_account) not in policy_arn:
-                    continue
-                error_count = 0
-                items.append(
-                    {
-                        "account_id": managed_policies_account,
-                        "account_name": account_name,
-                        "arn": policy_arn,
-                        "technology": "managed_policy",
-                        "templated": None,
-                        "errors": error_count,
-                    }
-                )
-
-    resources_from_aws_config_redis_key: str = config.get(
-        "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
-    )
-    resources_from_aws_config = red.hgetall(resources_from_aws_config_redis_key)
-    if resources_from_aws_config:
-        for arn, value in resources_from_aws_config.items():
-            resource = json.loads(value)
-            technology = resource["resourceType"]
-            # Skip technologies that we retrieve directly
-            if technology in [
-                "AWS::IAM::Role",
-                "AWS::SQS::Queue",
-                "AWS::SNS::Topic",
-                "AWS::S3::Bucket",
-                "AWS::IAM::ManagedPolicy",
-            ]:
+            if not allowed_to_sync_role(arn, role_tags):
                 continue
+
+            error_count = cloudtrail_errors.get(arn, 0)
+            s3_errors_for_arn = s3_errors.get(arn, [])
+            for error in s3_errors_for_arn:
+                error_count += int(error.get("count"))
+
             account_id = arn.split(":")[4]
-            account_name = accounts_d.get(account_id, "Unknown")
+            account_name = accounts_d.get(str(account_id), "Unknown")
+            resource_id = role_details.get("resourceId")
             items.append(
                 {
                     "account_id": account_id,
                     "account_name": account_name,
                     "arn": arn,
-                    "technology": technology,
-                    "templated": None,
-                    "errors": 0,
+                    "technology": "AWS::IAM::Role",
+                    "templated": red.hget(
+                        config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
+                        arn.lower(),
+                    ),
+                    "errors": error_count,
+                    "config_history_url": async_to_sync(
+                        get_aws_config_history_url_for_resource
+                    )(account_id, resource_id, arn, "AWS::IAM::Role"),
                 }
             )
+
+    # IAM Users
+    skip_iam_users = config.get("cache_policies_table_details.skip_iam_users", False)
+    if not skip_iam_users:
+        all_iam_users = async_to_sync(retrieve_json_data_from_redis_or_s3)(
+            redis_key=config.get("aws.iamusers_redis_key", "IAM_USER_CACHE"),
+            redis_data_type="hash",
+            s3_bucket=config.get(
+                "cache_iam_resources_across_accounts.all_users_combined.s3.bucket"
+            ),
+            s3_key=config.get(
+                "cache_iam_resources_across_accounts.all_users_combined.s3.file",
+                "account_resource_cache/cache_all_users_v1.json.gz",
+            ),
+            default={},
+        )
+
+        for arn, details_j in all_iam_users.items():
+            details = ujson.loads(details_j)
+            error_count = cloudtrail_errors.get(arn, 0)
+            s3_errors_for_arn = s3_errors.get(arn, [])
+            for error in s3_errors_for_arn:
+                error_count += int(error.get("count"))
+            account_id = arn.split(":")[4]
+            account_name = accounts_d.get(str(account_id), "Unknown")
+            resource_id = details.get("resourceId")
+            items.append(
+                {
+                    "account_id": account_id,
+                    "account_name": account_name,
+                    "arn": arn,
+                    "technology": "AWS::IAM::User",
+                    "templated": red.hget(
+                        config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
+                        arn.lower(),
+                    ),
+                    "errors": error_count,
+                    "config_history_url": async_to_sync(
+                        get_aws_config_history_url_for_resource
+                    )(account_id, resource_id, arn, "AWS::IAM::User"),
+                }
+            )
+    # S3 Buckets
+    skip_s3_buckets = config.get("cache_policies_table_details.skip_s3_buckets", False)
+    if not skip_s3_buckets:
+        s3_bucket_key: str = config.get("redis.s3_bucket_key", "S3_BUCKETS")
+        s3_accounts = red.hkeys(s3_bucket_key)
+        if s3_accounts:
+            for account in s3_accounts:
+                account_name = accounts_d.get(str(account), "Unknown")
+                buckets = json.loads(red.hget(s3_bucket_key, account))
+
+                for bucket in buckets:
+                    bucket_arn = f"arn:aws:s3:::{bucket}"
+                    s3_errors_for_arn = s3_errors.get(bucket_arn, [])
+
+                    error_count = 0
+                    for error in s3_errors_for_arn:
+                        error_count += int(error.get("count"))
+                    items.append(
+                        {
+                            "account_id": account,
+                            "account_name": account_name,
+                            "arn": f"arn:aws:s3:::{bucket}",
+                            "technology": "AWS::S3::Bucket",
+                            "templated": None,
+                            "errors": error_count,
+                        }
+                    )
+
+    # SNS Topics
+    skip_sns_topics = config.get("cache_policies_table_details.skip_sns_topics", False)
+    if not skip_sns_topics:
+        sns_topic_key: str = config.get("redis.sns_topics_key", "SNS_TOPICS")
+        sns_accounts = red.hkeys(sns_topic_key)
+        if sns_accounts:
+            for account in sns_accounts:
+                account_name = accounts_d.get(str(account), "Unknown")
+                topics = json.loads(red.hget(sns_topic_key, account))
+
+                for topic in topics:
+                    error_count = 0
+                    items.append(
+                        {
+                            "account_id": account,
+                            "account_name": account_name,
+                            "arn": topic,
+                            "technology": "AWS::SNS::Topic",
+                            "templated": None,
+                            "errors": error_count,
+                        }
+                    )
+
+    # SQS Queues
+    skip_sqs_queues = config.get("cache_policies_table_details.skip_sqs_queues", False)
+    if not skip_sqs_queues:
+        sqs_queue_key: str = config.get("redis.sqs_queues_key", "SQS_QUEUES")
+        sqs_accounts = red.hkeys(sqs_queue_key)
+        if sqs_accounts:
+            for account in sqs_accounts:
+                account_name = accounts_d.get(str(account), "Unknown")
+                queues = json.loads(red.hget(sqs_queue_key, account))
+
+                for queue in queues:
+                    error_count = 0
+                    items.append(
+                        {
+                            "account_id": account,
+                            "account_name": account_name,
+                            "arn": queue,
+                            "technology": "AWS::SQS::Queue",
+                            "templated": None,
+                            "errors": error_count,
+                        }
+                    )
+
+    # Managed Policies
+    skip_managed_policies = config.get(
+        "cache_policies_table_details.skip_managed_policies", False
+    )
+    if not skip_managed_policies:
+        managed_policies_key: str = config.get(
+            "redis.iam_managed_policies_key", "IAM_MANAGED_POLICIES"
+        )
+        managed_policies_accounts = red.hkeys(managed_policies_key)
+        if managed_policies_accounts:
+            for managed_policies_account in managed_policies_accounts:
+                account_name = accounts_d.get(str(managed_policies_account), "Unknown")
+                managed_policies_in_account = json.loads(
+                    red.hget(managed_policies_key, managed_policies_account)
+                )
+
+                for policy_arn in managed_policies_in_account:
+                    # managed policies that are managed by AWS shouldn't be added to the policies table for 2 reasons:
+                    # 1. We don't manage them, can't edit them
+                    # 2. There are a LOT of them and we would just end up spamming the policy table...
+                    # TODO: discuss if this is okay
+                    if str(managed_policies_account) not in policy_arn:
+                        continue
+                    error_count = 0
+                    items.append(
+                        {
+                            "account_id": managed_policies_account,
+                            "account_name": account_name,
+                            "arn": policy_arn,
+                            "technology": "managed_policy",
+                            "templated": None,
+                            "errors": error_count,
+                        }
+                    )
+
+    # AWS Config Resources
+    skip_aws_config_resources = config.get(
+        "cache_policies_table_details.skip_aws_config_resources", False
+    )
+    if not skip_aws_config_resources:
+        resources_from_aws_config_redis_key: str = config.get(
+            "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+        )
+        resources_from_aws_config = red.hgetall(resources_from_aws_config_redis_key)
+        if resources_from_aws_config:
+            for arn, value in resources_from_aws_config.items():
+                resource = json.loads(value)
+                technology = resource["resourceType"]
+                # Skip technologies that we retrieve directly
+                if technology in [
+                    "AWS::IAM::Role",
+                    "AWS::SQS::Queue",
+                    "AWS::SNS::Topic",
+                    "AWS::S3::Bucket",
+                    "AWS::IAM::ManagedPolicy",
+                ]:
+                    continue
+                account_id = arn.split(":")[4]
+                account_name = accounts_d.get(account_id, "Unknown")
+                items.append(
+                    {
+                        "account_id": account_id,
+                        "account_name": account_name,
+                        "arn": arn,
+                        "technology": technology,
+                        "templated": None,
+                        "errors": 0,
+                    }
+                )
 
     s3_bucket = None
     s3_key = None
@@ -874,6 +899,16 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
         iam_users = all_iam_resources["UserDetailList"]
         iam_groups = all_iam_resources["GroupDetailList"]
         iam_policies = all_iam_resources["Policies"]
+
+        # Make sure these roles satisfy config -> roles.allowed_*
+        filtered_iam_roles = []
+        for role in iam_roles:
+            arn = role.get("Arn", "")
+            tags = role.get("Tags", [])
+            if allowed_to_sync_role(arn, tags):
+                filtered_iam_roles.append(role)
+
+        iam_roles = filtered_iam_roles
 
         if iam_roles:
             async_to_sync(store_json_results_in_redis_and_s3)(
