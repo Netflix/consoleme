@@ -727,7 +727,9 @@ def cache_policies_table_details() -> bool:
                     )
 
     # Managed Policies
-    skip_managed_policies = config.get("cache_policies_table_details.skip_managed_policies", False)
+    skip_managed_policies = config.get(
+        "cache_policies_table_details.skip_managed_policies", False
+    )
     if not skip_managed_policies:
         managed_policies_key: str = config.get(
             "redis.iam_managed_policies_key", "IAM_MANAGED_POLICIES"
@@ -760,7 +762,9 @@ def cache_policies_table_details() -> bool:
                     )
 
     # AWS Config Resources
-    skip_aws_config_resources = config.get("cache_policies_table_details.skip_aws_config_resources", False)
+    skip_aws_config_resources = config.get(
+        "cache_policies_table_details.skip_aws_config_resources", False
+    )
     if not skip_aws_config_resources:
         resources_from_aws_config_redis_key: str = config.get(
             "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
@@ -900,7 +904,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
         for role in iam_roles:
             arn = role.get("Arn", "")
             tags = role.get("Tags", [])
-            if allowed_to_sync_role(arn , tags):
+            if allowed_to_sync_role(arn, tags):
                 filtered_iam_roles.append(role)
 
         iam_roles = filtered_iam_roles
