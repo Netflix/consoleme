@@ -1,3 +1,7 @@
+# After modifying this file, run the following command to regenerate the Pydantic models file stored at
+# consoleme/models.py:
+# `datamodel-codegen --input swagger.yaml  --output consoleme/models.py \
+#  --base-class consoleme.lib.pydantic.BaseModel ; black consoleme/models.py`
 openapi: 3.0.0
 info:
   description: ConsoleMe API definition
@@ -1506,6 +1510,12 @@ components:
             description:
               type: string
               readOnly: true
+            owner:
+              type: string
+              readOnly: true
+              description: |-
+                A string depicting the owning user or group for a given AWS principal. Typically determined by one or
+                more tags on the principal.
     UserModel:
       type: object
       readOnly: true

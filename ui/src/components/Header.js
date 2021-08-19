@@ -1,13 +1,32 @@
 import React, { useState } from "react";
-import { Dropdown, Menu, Image, Message } from "semantic-ui-react";
+import {
+  Button,
+  Dropdown,
+  Menu,
+  Icon,
+  Image,
+  Label,
+  Message,
+} from "semantic-ui-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthProviderDefault";
 import ReactMarkdown from "react-markdown";
 import SettingsModal from "./SettingsModal";
+import { NotificationsModal } from "./notifications/Notifications";
+import { useInterval } from "./hooks/useInterval";
 
 const ConsoleMeHeader = () => {
   const { user } = useAuth();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [count, setCount] = useState(0);
+
+  function Counter() {
+    useInterval(() => {
+      // Your custom logic here
+      setCount(count + 1);
+    }, 1000);
+  }
 
   const generatePoliciesDropDown = () => {
     const canCreateRoles = user?.authorization?.can_create_roles;
@@ -51,12 +70,40 @@ const ConsoleMeHeader = () => {
     return null;
   };
 
+  const openNotifications = () => {
+    setNotificationsOpen(true);
+    setCount(0);
+  };
+
+  const closeNotifications = () => {
+    setNotificationsOpen(false);
+  };
+
   const openSettings = () => {
     setSettingsOpen(true);
   };
 
   const closeSettings = () => {
     setSettingsOpen(false);
+  };
+
+  const getNotifications = () => {
+    Counter();
+    // This is perfect: http://kadobot.github.io/notifications/
+    return (
+      <>
+        <Button circular icon="bell" color="red" onClick={openNotifications} />
+        <Label circular size="tiny" color="orange">
+          {count}
+        </Label>
+      </>
+    );
+
+    // return <Dropdown
+    //     inline
+    //     trigger={alertIcon}
+    //     options={dropdownOptions}
+    // />
   };
 
   const getAvatarImage = () => {
@@ -157,10 +204,15 @@ const ConsoleMeHeader = () => {
         </Menu.Menu>
         <Menu.Menu position="right">
           <Menu.Item>{getAvatarImage()}</Menu.Item>
+          <Menu.Item>{getNotifications()}</Menu.Item>
         </Menu.Menu>
       </Menu>
       {headerMessage()}
       <SettingsModal isOpen={settingsOpen} closeSettings={closeSettings} />
+      <NotificationsModal
+        isOpen={notificationsOpen}
+        closeNotifications={closeNotifications}
+      />
     </>
   );
 };

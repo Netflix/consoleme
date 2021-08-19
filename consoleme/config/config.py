@@ -117,7 +117,7 @@ class Configuration(object):
             self.load_config_from_dynamo(ddb, red)
             # Wait till main exit flag is set OR a fixed timeout
             if main_exit_flag.wait(
-                timeout=self.get("dynamic_config.dynamo_load_interval", 60)
+                timeout=self.get("dynamic_config.dynamo_load_interval", 5)
             ):
                 break
 

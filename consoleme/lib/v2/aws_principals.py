@@ -156,6 +156,7 @@ async def get_user_details(
             managed_policies=user["AttachedManagedPolicies"],
             groups=user["Groups"],
             tags=user["Tags"],
+            owner=user.get("owner"),
             templated=False,
             template_link=None,
             created_time=str(user.get("CreateDate", "")),
@@ -207,6 +208,7 @@ async def get_role_details(
             created_time=role["policy"].get("CreateDate"),
             last_used_time=role["policy"].get("RoleLastUsed", {}).get("LastUsedDate"),
             description=role["policy"].get("Description"),
+            owner=role.get("owner"),
             permissions_boundary=role["policy"].get("PermissionsBoundary", {}),
         )
     else:

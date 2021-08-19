@@ -41,6 +41,7 @@ from cloudaux.aws.iam import get_all_managed_policies
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
+from kombu.common import Broadcast
 from retrying import retry
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -56,6 +57,7 @@ from consoleme.lib.aws import (
     allowed_to_sync_role,
     cache_all_scps,
     cache_org_structure,
+    get_aws_principal_owner,
     get_enabled_regions_for_account,
 )
 from consoleme.lib.aws_config import aws_config
@@ -158,8 +160,42 @@ internal_policies = get_plugin_by_name(
 )()
 REDIS_IAM_COUNT = 1000
 
+# TODO: Wont work unless you change everything per
+# https://stackoverflow.com/questions/47663221/python-custom-decorator-not-working-with-celery-tasks?noredirect=1&lq=1
+def refresh_dynamic_config_decorator(func):
+    def inner(*args, **kwargs):
+        # Refresh dynamic config
+        dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
+        log_data = {
+            "function": f"{__name__}.{sys._getframe().f_code.co_name}",
+        }
+        if not dynamic_config:
+            log.warn(
+                {
+                    **log_data,
+                    "error": (
+                        "Unable to retrieve Dynamic Config from Redis. "
+                        "This can be safely ignored if your dynamic config is empty."
+                    ),
+                }
+            )
+            return
+        dynamic_config_j = json.loads(dynamic_config)
+        if config.CONFIG.config.get("dynamic_config", {}) != dynamic_config_j:
+            log.debug(
+                {
+                    **log_data,
+                    "message": "Refreshing dynamic configuration on Celery Worker",
+                }
+            )
+            config.CONFIG.config["dynamic_config"] = dynamic_config_j
+        return func(*args, **kwargs)
+
+    return inner
+
 
 @app.task(soft_time_limit=20)
+@refresh_dynamic_config_decorator
 def report_celery_last_success_metrics() -> bool:
     """
     For each celery task, this will determine the number of seconds since it has last been successful.
@@ -242,7 +278,8 @@ def get_celery_request_tags(**kwargs):
 @task_prerun.connect
 def refresh_dynamic_config_in_worker(**kwargs):
     tags = get_celery_request_tags(**kwargs)
-    log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
+    log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}", **tags}
+    log.debug(log_data)
 
     dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
     if not dynamic_config:
@@ -931,6 +968,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                 "resourceId": role.get("RoleId"),
                 "accountId": account_id,
                 "ttl": ttl,
+                "owner": get_aws_principal_owner(role),
                 "policy": dynamo.convert_iam_resource_to_json(role),
                 "templated": red.hget(
                     config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
@@ -954,6 +992,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                 "resourceId": user.get("UserId"),
                 "accountId": account_id,
                 "ttl": ttl,
+                "owner": get_aws_principal_owner(user),
                 "policy": dynamo.convert_iam_resource_to_json(user),
                 "templated": False,  # Templates not supported for IAM users at this time
             }
@@ -1968,7 +2007,7 @@ def trigger_credential_mapping_refresh_from_role_changes():
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_cloudtrail_denies():
     """
-    This task caches acess denies reported by Cloudtrail. This feature requires an
+    This task caches access denies reported by Cloudtrail. This feature requires an
     Event Bridge rule monitoring Cloudtrail for your accounts for access deny errors.
     """
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
@@ -1985,14 +2024,14 @@ def cache_cloudtrail_denies():
             "function": function,
             "message": "Not running Celery task in inactive region",
         }
-    ct_events = async_to_sync(detect_cloudtrail_denies_and_update_cache)()
-    if ct_events:
+    events = async_to_sync(detect_cloudtrail_denies_and_update_cache)()
+    if events["num_events"] > 0:
         # Spawn off a task to cache errors by ARN for the UI
         cache_cloudtrail_errors_by_arn.delay()
     log_data = {
         "function": function,
         "message": "Successfully cached cloudtrail denies",
-        "num_cloudtrail_denies": len(ct_events),
+        "num_cloudtrail_denies": events["num_events"],
     }
     log.debug(log_data)
     return log_data
@@ -2018,7 +2057,8 @@ schedule_5_minutes = timedelta(minutes=5)
 schedule_24_hours = timedelta(hours=24)
 schedule_1_hour = timedelta(hours=1)
 
-if config.get("development", False):
+# TODO: Revert this change
+if False:
     # If debug mode, we will set up the schedule to run the next minute after the job starts
     time_to_start = datetime.utcnow() + timedelta(minutes=1)
     dev_schedule = crontab(hour=time_to_start.hour, minute=time_to_start.minute)
@@ -2131,12 +2171,14 @@ schedule = {
     },
 }
 
+cache_cloudtrail_errors_by_arn()
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
 
-if config.get("celery.clear_tasks_for_development", False):
-    schedule = {}
+# TODO: Revert this change
+# if config.get("celery.clear_tasks_for_development", False):
+#     schedule = {}
 
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"

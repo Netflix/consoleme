@@ -1229,17 +1229,49 @@ class UserDynamoHandler(BaseDynamoHandler):
         return error_count
 
     def count_cloudtrail_errors_by_arn(self):
+        # TODO: Since we're already scanning the table here, also perform a count
+        # by user / group and save
         error_count = {}
         items = self.parallel_scan_table(
             self.cloudtrail_table,
-            dynamodb_kwargs={
-                "Select": "SPECIFIC_ATTRIBUTES",
-                "ProjectionExpression": "arn",
-            },
+            # dynamodb_kwargs={
+            #     "Select": "SPECIFIC_ATTRIBUTES",
+            #     "ProjectionExpression": "arn",
+            # },
         )
-        error_count = self.count_arn_errors(
-            error_count, self._data_from_dynamo_replace(items)
-        )
+        items = self._data_from_dynamo_replace(items)
+        error_count = self.count_arn_errors(error_count, items)
+        uniques = set()
+        uniques_by_session = set()
+        event_samples_by_owner = defaultdict(list)
+        event_samples_by_session_name = defaultdict(list)
+        for item in items:
+            unique_owner_id = (
+                item.get("arn", "")
+                + item.get("event_call", "")
+                + item.get("resource", "")
+            )
+            if item.get("principal_owner") and unique_owner_id not in uniques:
+                event_samples_by_owner[item["principal_owner"]].append(item)
+                uniques.add(unique_owner_id)
+            # TODO: Make this configurable, not netflix specific
+            if (
+                not item.get("session_name")
+                or item["session_name"].startswith("i-")
+                or "@" not in item["session_name"]
+            ):
+                continue
+            unique_session_id = (
+                item.get("arn", "")
+                + item.get("event_call", "")
+                + item.get("resource", "")
+                + item.get("session_name", "")
+            )
+            if unique_session_id in uniques_by_session:
+                continue
+            event_samples_by_session_name[item["session_name"]].append(item)
+        # TODO: Do something w event samples
+
         return error_count
 
 

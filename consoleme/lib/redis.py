@@ -1,7 +1,8 @@
 import os
 import sys
 import threading
-from typing import Optional
+import time
+from typing import Any, Dict, Optional
 
 import boto3
 import redis
@@ -433,3 +434,44 @@ def redis_get_sync(key: str, default: None = None) -> Optional[str]:
     if not v:
         return default
     return v
+
+
+async def redis_hsetex(name: str, key: str, value: Any, expiration_seconds: int):
+    """
+    Lazy way to set Redis hash keys with an expiration. Warning: Entries set here only get deleted when redis_hgetex
+    is called on an expired key.
+
+    :param name: Redis key
+    :param key: Hash key
+    :param value: Hash value
+    :param expiration_seconds: Number of seconds to consider entry expired
+    :return:
+    """
+    expiration = int(time.time()) + expiration_seconds
+    red = await RedisHandler().redis()
+    v = await sync_to_async(red.hset)(
+        name, key, json.dumps({"value": value, "ttl": expiration})
+    )
+    return v
+
+
+async def redis_hgetex(name: str, key: str, default=None):
+    """
+    Lazy way to retrieve an entry from a Redis Hash, and delete it if it's due to expire.
+
+    :param name:
+    :param key:
+    :param default:
+    :return:
+    """
+    red = await RedisHandler().redis()
+    if not red.exists(name):
+        return default
+    result_j = await sync_to_async(red.hget)(name, key)
+    if not result_j:
+        return default
+    result = json.loads(result_j)
+    if int(time.time()) > result["ttl"]:
+        red.hdel(name, key)
+        return default
+    return result["value"]
