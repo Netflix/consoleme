@@ -3,6 +3,7 @@ import sys
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import sentry_sdk
+import tornado.escape
 import ujson as json
 from furl import furl
 from pydantic import ValidationError
@@ -167,8 +168,8 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             self.write(
                 {
                     "type": "console_url",
-                    "message": log_data["message"],
-                    "error": str(log_data["error"]),
+                    "message": tornado.escape.xhtml_escape(log_data["message"]),
+                    "error": tornado.escape.xhtml_escape(str(log_data["error"])),
                 }
             )
             return
@@ -309,6 +310,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
         """
         GET /api/v2/roles/{account_number}/{role_name}
         """
+
         log_data = {
             "function": "RoleDetailHandler.get",
             "user": self.user,
@@ -373,6 +375,9 @@ class RoleDetailHandler(BaseAPIV2Handler):
         if not self.user:
             self.write_error(403, message="No user detected")
             return
+
+        account_id = tornado.escape.xhtml_escape(account_id)
+        role_name = tornado.escape.xhtml_escape(role_name)
 
         log_data = {
             "user": self.user,
@@ -446,6 +451,8 @@ class RoleDetailAppHandler(BaseMtlsHandler):
         """
         DELETE /api/v2/mtls/roles/{account_id}/{role_name}
         """
+        account_id = tornado.escape.xhtml_escape(account_id)
+        role_name = tornado.escape.xhtml_escape(role_name)
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "user-agent": self.request.headers.get("User-Agent"),
@@ -512,6 +519,8 @@ class RoleDetailAppHandler(BaseMtlsHandler):
         """
         GET /api/v2/mtls/roles/{account_id}/{role_name}
         """
+        account_id = tornado.escape.xhtml_escape(account_id)
+        role_name = tornado.escape.xhtml_escape(role_name)
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "ip": self.ip,
@@ -565,7 +574,6 @@ class RoleCloneHandler(BaseAPIV2Handler):
     allowed_methods = ["POST"]
 
     async def post(self):
-
         log_data = {
             "user": self.user,
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
