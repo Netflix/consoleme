@@ -1,7 +1,9 @@
 import sys
 
-import requests
 import tornado.escape
+import ujson as json
+from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
+from tornado.httputil import HTTPHeaders
 
 from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
@@ -44,14 +46,22 @@ async def send_slack_notification_new_request(
     payload = await get_payload(
         extended_request, requester, arn, admin_approved, approval_probe_approved
     )
-    resp = requests.post(slack_webhook_url, json=payload)
-    if resp.status_code != 200:
-        log_data["message"] = "Error occurred sending slack notification"
-        log_data["error"] = f"{resp.status_code} : {resp.text}"
-        log.error(log_data)
-    else:
+    http_headers = HTTPHeaders({"Content-Type": "application/json"})
+    http_req = HTTPRequest(
+        url=slack_webhook_url,
+        method="POST",
+        headers=http_headers,
+        body=json.dumps(payload),
+    )
+    http_client = AsyncHTTPClient(force_instance=True)
+    try:
+        await http_client.fetch(request=http_req)
         log_data["message"] = "Slack notification sent"
         log.debug(log_data)
+    except (ConnectionError, HTTPClientError) as e:
+        log_data["message"] = "Error occurred sending slack notification"
+        log_data["error"] = str(e)
+        log.error(log_data)
 
 
 async def get_payload(
