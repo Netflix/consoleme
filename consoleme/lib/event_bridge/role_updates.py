@@ -44,6 +44,7 @@ def detect_role_changes_and_update_cache(celery_app):
         retry_max_attempts=2,
         account_number=queue_account_number,
         assume_role=queue_assume_role,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
 
     queue_url_res = sqs_client.get_queue_url(QueueName=queue_name)

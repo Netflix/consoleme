@@ -69,6 +69,7 @@ async def update_role(event):
             assume_role=config.get("policies.role_name", "ConsoleMe"),
             session_name=aws_session_name,
             retry_max_attempts=2,
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         inline_policies = d.get("inline_policies", [])
         managed_policies = d.get("managed_policies", [])

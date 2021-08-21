@@ -236,36 +236,56 @@ def aws_credentials():
 @pytest.fixture(autouse=True, scope="session")
 def sts(aws_credentials):
     """Mocked STS Fixture."""
+    from consoleme.config import config
+
     with mock_sts():
-        yield boto3.client("sts", region_name="us-east-1")
+        yield boto3.client(
+            "sts", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def iam(aws_credentials):
     """Mocked IAM Fixture."""
+    from consoleme.config import config
+
     with mock_iam():
-        yield boto3.client("iam", region_name="us-east-1")
+        yield boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def aws_config(aws_credentials):
     """Mocked Config Fixture."""
+    from consoleme.config import config
+
     with mock_config():
-        yield boto3.client("config", region_name="us-east-1")
+        yield boto3.client(
+            "config", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def s3(aws_credentials):
     """Mocked S3 Fixture."""
+    from consoleme.config import config
+
     with mock_s3():
-        yield boto3.client("s3", region_name="us-east-1")
+        yield boto3.client(
+            "s3", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def ses(aws_credentials):
     """Mocked SES Fixture."""
+    from consoleme.config import config
+
     with mock_ses():
-        client = boto3.client("ses", region_name="us-east-1")
+        client = boto3.client(
+            "ses", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         client.verify_email_address(EmailAddress="consoleme_test@example.com")
         yield client
 
@@ -273,15 +293,23 @@ def ses(aws_credentials):
 @pytest.fixture(autouse=True, scope="session")
 def sqs(aws_credentials):
     """Mocked SQS Fixture."""
+    from consoleme.config import config
+
     with mock_sqs():
-        yield boto3.client("sqs", region_name="us-east-1")
+        yield boto3.client(
+            "sqs", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def sns(aws_credentials):
     """Mocked S3 Fixture."""
+    from consoleme.config import config
+
     with mock_sns():
-        yield boto3.client("sns", region_name="us-east-1")
+        yield boto3.client(
+            "sns", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -335,7 +363,9 @@ def dynamodb(aws_credentials):
 
         old_value = CONFIG.config.pop("dynamodb_server", None)
 
-        yield boto3.client("dynamodb", region_name="us-east-1")
+        yield boto3.client(
+            "dynamodb", region_name="us-east-1", **CONFIG.get("boto3.client_kwargs", {})
+        )
 
         # Reset the config value:
         CONFIG.config["dynamodb_server"] = old_value

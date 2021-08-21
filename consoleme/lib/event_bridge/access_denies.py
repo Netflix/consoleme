@@ -88,6 +88,7 @@ async def detect_cloudtrail_denies_and_update_cache():
         retry_max_attempts=2,
         account_number=queue_account_number,
         assume_role=queue_assume_role,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
 
     queue_url_res = await sync_to_async(sqs_client.get_queue_url)(QueueName=queue_name)

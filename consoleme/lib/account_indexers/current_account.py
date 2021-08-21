@@ -1,12 +1,15 @@
 import boto3
 
+from consoleme.config import config
 from consoleme.models import CloudAccountModel, CloudAccountModelArray
 
 
 async def retrieve_current_account() -> CloudAccountModelArray:
-    client = boto3.client("sts")
+    client = boto3.client("sts", **config.get("boto3.client_kwargs", {}))
     identity = client.get_caller_identity()
-    account_aliases = boto3.client("iam").list_account_aliases()["AccountAliases"]
+    account_aliases = boto3.client(
+        "iam", **config.get("boto3.client_kwargs", {})
+    ).list_account_aliases()["AccountAliases"]
     account_id = None
     if identity and identity.get("Account"):
         account_id = identity.get("Account")

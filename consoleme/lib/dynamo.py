@@ -68,7 +68,10 @@ class BaseDynamoHandler:
                 resource = boto3.resource(
                     "dynamodb",
                     region_name=config.region,
-                    endpoint_url=config.get("dynamodb_server"),
+                    endpoint_url=config.get(
+                        "dynamodb_server",
+                        config.get("boto3.client_kwargs.endpoint_url"),
+                    ),
                 )
             else:
                 resource = boto3_cached_conn(
@@ -77,6 +80,7 @@ class BaseDynamoHandler:
                     account_number=config.get("aws.account_number"),
                     session_name=config.get("application_name", "consoleme"),
                     region=config.region,
+                    client_kwargs=config.get("boto3.client_kwargs", {}),
                 )
             table = resource.Table(table_name)
         except Exception as e:

@@ -95,7 +95,11 @@ async def get_extended_request_helper():
 class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         self.maxDiff = None
-        client = boto3.client("iam", region_name="us-east-1")
+        from consoleme.config import config
+
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "test"
         client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
 
@@ -769,6 +773,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         red.delete("AWSCONFIG_RESOURCE_CACHE")
 
     async def test_apply_changes_to_role_inline_policy(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import apply_changes_to_role
 
         inline_policy_change = {
@@ -839,7 +844,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             action_results=[],
         )
 
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "test"
 
         # Detaching inline policy that isn't attached -> error
@@ -925,6 +932,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             self.assertIn("not attached to role", str(e))
 
     async def test_apply_changes_to_role_managed_policy(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import apply_changes_to_role
 
         managed_policy_change = {
@@ -966,7 +974,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             action_results=[],
         )
 
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "test"
 
         # Detaching a managed policy that's not attached
@@ -1038,6 +1048,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(role_attached_policies.get("AttachedPolicies")), 0)
 
     async def test_apply_changes_to_role_assume_role_policy(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import apply_changes_to_role
 
         assume_role_policy_change = {
@@ -1095,7 +1106,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             action_results=[],
         )
 
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "test"
 
         # Attach the assume role policy document -> no errors
@@ -1172,6 +1185,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         self.assertIn("not supported", dict(response.action_results[0]).get("message"))
 
     async def test_apply_specific_change_to_role(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import apply_changes_to_role
 
         assume_role_policy_change = {
@@ -1230,7 +1244,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             action_results=[],
         )
 
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "test"
         client.update_assume_role_policy(
             RoleName=role_name,
@@ -1293,9 +1309,12 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_populate_old_policies(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import populate_old_policies
 
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         client.put_role_policy(
             RoleName="test",
             PolicyName=existing_policy_name,
@@ -1385,9 +1404,12 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_populate_old_managed_policies(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import populate_old_managed_policies
 
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         for path in ["/", "/testpath/test2/"]:
             client.create_policy(
                 PolicyName=existing_policy_name + "managed",
@@ -1460,9 +1482,12 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             )
 
     async def test_apply_managed_policy_resource_change(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import apply_managed_policy_resource_change
 
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         for path in ["/", "/testpath/test2/"]:
             policy_name_and_path = path + existing_policy_name + "managed2"
             managed_policy_resource_change = {
@@ -1591,7 +1616,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
     # async def test_apply_managed_policy_resource_tag_change(self):
     #     from consoleme.lib.v2.requests import apply_managed_policy_resource_tag_change
     #
-    #     client = boto3.client("iam", region_name="us-east-1")
+    #     client = boto3.client("iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {}))
     #
     #     managed_policy_resource_tag_change = {
     #         "principal": {
@@ -1710,6 +1735,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         self.assertIn("not supported", dict(response.action_results[0]).get("message"))
 
     async def test_apply_resource_policy_change_iam(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import apply_resource_policy_change
 
         resource_policy_change = {
@@ -1784,7 +1810,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         self.assertIn("NoSuchEntity", dict(response.action_results[0]).get("message"))
         self.assertEqual(Status.not_applied, resource_policy_change_model.status)
 
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "test_2"
         client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
         response.errors = 0
@@ -1809,6 +1837,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(Status.applied, resource_policy_change_model.status)
 
     async def test_apply_resource_policy_change_s3(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import apply_resource_policy_change
 
         resource_policy_change = {
@@ -1890,7 +1919,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Error", dict(response.action_results[0]).get("message"))
         self.assertIn("NoSuchBucket", dict(response.action_results[0]).get("message"))
 
-        conn = boto3.resource("s3", region_name="us-east-1")
+        conn = boto3.resource(
+            "s3", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         conn.create_bucket(Bucket="test_bucket")
         response.errors = 0
         response.action_results = []
@@ -1911,6 +1942,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_apply_resource_policy_change_sqs(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import apply_resource_policy_change
 
         resource_policy_change = {
@@ -1985,7 +2017,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             "NonExistentQueue", dict(response.action_results[0]).get("message")
         )
 
-        client = boto3.client("sqs", region_name="us-east-1")
+        client = boto3.client(
+            "sqs", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         client.create_queue(QueueName="test_sqs")
         response.errors = 0
         response.action_results = []
@@ -2009,6 +2043,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         )
 
     async def test_apply_resource_policy_change_sns(self):
+        from consoleme.config import config
         from consoleme.lib.v2.requests import apply_resource_policy_change
 
         resource_policy_change = {
@@ -2081,7 +2116,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         self.assertIn("Error", dict(response.action_results[0]).get("message"))
         self.assertIn("NotFound", dict(response.action_results[0]).get("message"))
 
-        client = boto3.client("sns", region_name="us-east-1")
+        client = boto3.client(
+            "sns", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         client.create_topic(Name="test_sns")
         response.errors = 0
         response.action_results = []
@@ -2237,6 +2274,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_populate_old_policies,
         mock_fetch_iam_role,
     ):
+        from consoleme.config import config
         from consoleme.exceptions.exceptions import NoMatchingRequest, Unauthorized
         from consoleme.lib.v2.requests import (
             parse_and_apply_policy_request_modification,
@@ -2272,7 +2310,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_populate_old_policies.return_value = create_future(extended_request)
         mock_fetch_iam_role.return_value = create_future(None)
         can_admin_policies.return_value = False
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "test"
 
         # Trying to apply while not being authorized
@@ -2519,6 +2559,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         from asgiref.sync import sync_to_async
         from cloudaux.aws.sts import boto3_cached_conn
 
+        from consoleme.config import config
         from consoleme.exceptions.exceptions import Unauthorized
         from consoleme.lib.redis import RedisHandler
         from consoleme.lib.v2.requests import (
@@ -2543,6 +2584,7 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
             region="us-east-1",
             session_name="ConsoleMe_UnitTest",
             arn_partition="aws",
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         s3_client.create_bucket(Bucket="test_bucket")
 
@@ -2607,7 +2649,9 @@ class TestRequestsLibV2(unittest.IsolatedAsyncioTestCase):
         mock_can_update_cancel_requests_v2.return_value = create_future(False)
         can_admin_policies.return_value = False
         mock_send_email.return_value = create_future(None)
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "test"
 
         # Trying to approve while not being authorized

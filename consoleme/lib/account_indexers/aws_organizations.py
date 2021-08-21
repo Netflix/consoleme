@@ -251,6 +251,7 @@ async def retrieve_org_structure(
         "account_number": org_account_id,
         "session_name": "ConsoleMeSCPSync",
         "region": region,
+        "client_kwargs": config.get("boto3.client_kwargs", {}),
     }
     ca = CloudAux(**conn_details)
     roots = _list_org_roots(ca)
@@ -276,6 +277,7 @@ async def retrieve_scps_for_organization(
         "account_number": org_account_id,
         "session_name": "ConsoleMeSCPSync",
         "region": region,
+        "client_kwargs": config.get("boto3.client_kwargs", {}),
     }
     ca = CloudAux(**conn_details)
     all_scp_metadata = await sync_to_async(_list_service_control_policies)(ca)
