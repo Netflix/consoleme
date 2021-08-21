@@ -178,7 +178,11 @@ class TestRoleDetailHandler(AsyncHTTPTestCase):
     def test_delete_authorized_user_valid_role(self, mock_can_delete_iam_principals):
         import boto3
 
-        client = boto3.client("iam", region_name="us-east-1")
+        from consoleme.config import config
+
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "fake_account_admin"
         account_id = "123456789012"
         client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
@@ -226,6 +230,8 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
     def test_delete_role_by_app(self, mock_can_delete_roles):
         import boto3
 
+        from consoleme.config import config
+
         expected = {
             "status": 403,
             "title": "Forbidden",
@@ -239,7 +245,9 @@ class TestRoleDetailAppHandler(AsyncHTTPTestCase):
         self.assertDictEqual(json.loads(response.body), expected)
 
         mock_can_delete_roles.return_value = True
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "fake_account_admin2"
         account_id = "123456789012"
         client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
@@ -293,6 +301,8 @@ class TestRoleCloneHandler(AsyncHTTPTestCase):
     def test_clone_authorized_user(self, mock_can_create_roles):
         import boto3
 
+        from consoleme.config import config
+
         mock_can_create_roles.return_value = True
         input_body = {
             "dest_account_id": "012345678901",
@@ -318,7 +328,9 @@ class TestRoleCloneHandler(AsyncHTTPTestCase):
         self.assertEqual(response.code, 400)
         self.assertDictEqual(json.loads(response.body), expected)
 
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "fake_account_admin"
         client.create_role(
             RoleName=role_name,

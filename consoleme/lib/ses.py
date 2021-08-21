@@ -22,7 +22,9 @@ async def send_email(
     region: str = config.get("ses.region", "us-west-2"),
     charset: str = "UTF-8",
 ) -> None:
-    client = boto3.client("ses", region_name=region)
+    client = boto3.client(
+        "ses", region_name=region, **config.get("boto3.client_kwargs", {})
+    )
     sender = config.get(f"ses.{sending_app}.sender")
     log_data = {
         "to_user": to_addresses,

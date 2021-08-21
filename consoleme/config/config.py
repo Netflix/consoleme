@@ -64,10 +64,11 @@ class Configuration(object):
         self.config = {}
         self.log = None
 
-    @staticmethod
-    def raise_if_invalid_aws_credentials():
+    def raise_if_invalid_aws_credentials(self):
         try:
-            boto3.client("sts").get_caller_identity()
+            boto3.client(
+                "sts", **self.get("boto3.client_kwargs", {})
+            ).get_caller_identity()
         except botocore.exceptions.NoCredentialsError:
             raise Exception(
                 "We were unable to detect valid AWS credentials. ConsoleMe needs valid AWS credentials to "
@@ -387,7 +388,7 @@ class Configuration(object):
             # else check if set in config or in boto already
             boto3.DEFAULT_SESSION.region_name if boto3.DEFAULT_SESSION else None,
             boto3.Session().region_name,
-            boto3.client("s3").meta.region_name,
+            boto3.client("s3", **self.get("boto3.client_kwargs", {})).meta.region_name,
             "us-east-1",
         ]
         for region in region_checks:

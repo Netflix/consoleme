@@ -217,6 +217,7 @@ class TestAwsLib(TestCase):
         self.assertFalse(result)
 
     def test_fetch_managed_policy_details(self):
+        from consoleme.config import config
         from consoleme.lib.aws import fetch_managed_policy_details
 
         loop = asyncio.get_event_loop()
@@ -241,7 +242,9 @@ class TestAwsLib(TestCase):
         self.assertIn("NoSuchEntity", str(e))
 
         # test paths
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         policy_name = "policy_with_paths"
         policy_path = "/testpath/testpath2/"
         client.create_policy(

@@ -31,7 +31,7 @@ class DynamicConfigApiHandler(BaseHandler):
         # TODO: Delete server-side user-role cache intelligently so users get immediate access
         celery_app.send_task(
             "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping",
-            countdown=10,
+            countdown=config.get("dynamic_config.dynamo_load_interval"),
         )
 
     async def get(self) -> None:

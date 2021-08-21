@@ -35,7 +35,7 @@ async def is_object_older_than_seconds(
         )
     now = datetime.utcnow().replace(tzinfo=pytz.utc)
     if not s3_client:
-        s3_client = boto3.client("s3")
+        s3_client = boto3.client("s3", **config.get("boto3.client_kwargs", {}))
     try:
         res = await sync_to_async(s3_client.head_object)(Bucket=bucket, Key=key)
     except ClientError as e:
@@ -54,7 +54,7 @@ async def does_object_exist(bucket: str, key: str, s3_client=None) -> bool:
     This function checks if an S3 object exists.
     """
     if not s3_client:
-        s3_client = boto3.client("s3")
+        s3_client = boto3.client("s3", **config.get("boto3.client_kwargs", {}))
     try:
         await sync_to_async(s3_client.head_object)(Bucket=bucket, Key=key)
     except ClientError as e:
@@ -84,9 +84,10 @@ def get_object(**kwargs):
                 session_name=kwargs.get("session_name", "ConsoleMe"),
                 region=kwargs.get("region", config.region),
                 retry_max_attempts=2,
+                client_kwargs=config.get("boto3.client_kwargs", {}),
             )
         else:
-            client = boto3.client("s3")
+            client = boto3.client("s3", **config.get("boto3.client_kwargs", {}))
     return client.get_object(Bucket=kwargs.get("Bucket"), Key=kwargs.get("Key"))
 
 

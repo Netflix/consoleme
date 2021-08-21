@@ -1,0 +1,6 @@
+extends:
+  - example_config_development.yaml
+
+boto3:
+  client_kwargs:
+    endpoint_url: http://localhost:4566

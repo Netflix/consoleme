@@ -8,7 +8,9 @@ import sentry_sdk
 from consoleme.config import config
 from consoleme_default_plugins.plugins.metrics.base_metric import Metric
 
-cloudwatch = boto3.client("cloudwatch", region_name=config.region)
+cloudwatch = boto3.client(
+    "cloudwatch", region_name=config.region, **config.get("boto3.client_kwargs", {})
+)
 log = config.get_logger()
 
 

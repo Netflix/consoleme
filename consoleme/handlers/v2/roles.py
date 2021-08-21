@@ -8,6 +8,7 @@ import ujson as json
 from furl import furl
 from pydantic import ValidationError
 
+from consoleme.celery_tasks.celery_tasks import app as celery_app
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
 from consoleme.lib.auth import (
@@ -199,6 +200,18 @@ class RolesHandler(BaseAPIV2Handler):
     """
 
     allowed_methods = ["GET", "POST"]
+
+    def on_finish(self) -> None:
+        if self.request.method != "POST":
+            return
+        # Force refresh of crednetial authorization mapping after the dynamic config sync period to ensure all workers
+        # have the updated configuration
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_policies_table_details",
+        )
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping",
+        )
 
     async def get(self):
         payload = {"eligible_roles": self.eligible_roles}
