@@ -66,7 +66,7 @@ async def get_payload(
     request_uri = await get_policy_request_uri_v2(extended_request)
     pre_text = "A new request has been created"
     if admin_approved:
-        pre_text += " and auto-approved by admin "
+        pre_text += " and auto-approved by admin"
     elif approval_probe_approved:
         pre_text += " and auto-approved by auto-approval probe"
 
