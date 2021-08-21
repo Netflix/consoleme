@@ -242,30 +242,8 @@ def get_celery_request_tags(**kwargs):
 @task_prerun.connect
 def refresh_dynamic_config_in_worker(**kwargs):
     tags = get_celery_request_tags(**kwargs)
-    log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
-
-    dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
-    if not dynamic_config:
-        log.warn(
-            {
-                **log_data,
-                "error": (
-                    "Unable to retrieve Dynamic Config from Redis. "
-                    "This can be safely ignored if your dynamic config is empty."
-                ),
-            }
-        )
-        return
-    dynamic_config_j = json.loads(dynamic_config)
-    if config.CONFIG.config.get("dynamic_config", {}) != dynamic_config_j:
-        log.debug(
-            {
-                **log_data,
-                **tags,
-                "message": "Refreshing dynamic configuration on Celery Worker",
-            }
-        )
-        config.CONFIG.config["dynamic_config"] = dynamic_config_j
+    log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}", **tags}
+    config.CONFIG.load_dynamic_config_from_redis(log_data, red)
 
 
 @task_received.connect
@@ -2214,7 +2192,6 @@ schedule = {
         "schedule": schedule_minute,
     },
 }
-
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
