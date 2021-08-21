@@ -42,6 +42,13 @@ class UserProfileHandler(BaseAPIV1Handler):
             # If site_config.landing_url is set, users will be redirected to the landing URL after authenticating
             # on the frontend.
             "landing_url": config.get("site_config.landing_url"),
+            "notifications": {
+                "enabled": config.get("site_config.notifications.enabled"),
+                # TODO: change me
+                "request_interval": config.get(
+                    "site_config.notifications.request_interval", 60
+                ),
+            },
         }
 
         custom_page_header: Dict[str, str] = await get_custom_page_header(

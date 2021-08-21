@@ -90,7 +90,6 @@ export const AuthProvider = ({ children }) => {
       // Toggle the re-authentication modal to login back users if it's using ALB type of authentication system.
       console.error(error);
       setIsSessionExpired(true);
-      return;
     }
   };
 

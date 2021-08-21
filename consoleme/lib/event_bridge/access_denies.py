@@ -1,3 +1,4 @@
+import asyncio
 import re
 import sys
 import time
@@ -71,7 +72,9 @@ async def generate_policy_from_cloudtrail_deny(ct_event):
     return policy
 
 
-async def detect_cloudtrail_denies_and_update_cache() -> Dict[str, Any]:
+async def detect_cloudtrail_denies_and_update_cache(
+    event_ttl=config.get("detect_cloudtrail_denies_and_update_cache.event_ttl", 86400)
+) -> Dict[str, Any]:
     log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
     dynamo = UserDynamoHandler()
     queue_arn = config.get(
@@ -89,6 +92,14 @@ async def detect_cloudtrail_denies_and_update_cache() -> Dict[str, Any]:
     queue_assume_role = config.get(
         "event_bridge.detect_cloudtrail_denies_and_update_cache.assume_role"
     )
+
+    # Modify existing cloudtrail deny samples
+    all_cloudtrail_denies_l = await dynamo.parallel_scan_table_async(
+        dynamo.cloudtrail_table
+    )
+    all_cloudtrail_denies = {}
+    for cloudtrail_deny in all_cloudtrail_denies_l:
+        all_cloudtrail_denies[cloudtrail_deny["request_id"]] = cloudtrail_deny
 
     sqs_client = await sync_to_async(boto3_cached_conn)(
         "sqs",
@@ -109,7 +120,6 @@ async def detect_cloudtrail_denies_and_update_cache() -> Dict[str, Any]:
     messages = messages_awaitable.get("Messages", [])
     num_events = 0
     while messages:
-        ct_events = []
         processed_messages = []
         for message in messages:
             try:
@@ -128,10 +138,10 @@ async def detect_cloudtrail_denies_and_update_cache() -> Dict[str, Any]:
                 event_time = decoded_message.get("eventTime")
                 utc_time = datetime.strptime(event_time, "%Y-%m-%dT%H:%M:%SZ")
                 epoch_event_time = int(
-                    (utc_time - datetime(1970, 1, 1)).total_seconds() * 1000
+                    (utc_time - datetime(1970, 1, 1)).total_seconds()
                 )
                 # Skip entries older than a day
-                if int(time.time()) * 1000 - 86400 > epoch_event_time:
+                if int(time.time()) - 86400 > epoch_event_time:
                     continue
                 try:
                     session_name = decoded_message["userIdentity"]["arn"].split("/")[-1]
@@ -147,21 +157,6 @@ async def detect_cloudtrail_denies_and_update_cache() -> Dict[str, Any]:
                 except KeyError:  # Skip events without a parsable ARN
                     continue
 
-                principal_details = {}
-                principal_type = principal_arn.split(":")[-1].split("/")[0]
-                account_id = principal_arn.split(":")[4]
-                # TODO: If principal doesn't exist after the first query, we don't want to keep slamming AWS SDKs
-                # trying to find principal for subsequent queries
-                if principal_type == "role":
-                    principal_details = await aws.fetch_iam_role(
-                        account_id, principal_arn
-                    )
-                elif principal_type == "user":
-                    principal_details = await aws.fetch_iam_user(
-                        account_id, principal_arn
-                    )
-                owner = principal_details.get("owner")
-
                 # TODO: Generate CT events by user / owning google group to notify them about problems with their roles
                 # TODO: Find out what the problem is - Role policy doesn't allow it, SCP, PB, inline policy, or resource policy
                 # Need a quick way like the team role stuff to evaluate policies and make that determination
@@ -169,36 +164,33 @@ async def detect_cloudtrail_denies_and_update_cache() -> Dict[str, Any]:
                 # it and recommend the correct fix
 
                 event_call = f"{event_source}:{event_name}"
+
                 ct_event = dict(
                     error_code=decoded_message.get("errorCode"),
                     error_message=decoded_message.get("errorMessage"),
                     arn=principal_arn,
-                    principal_owner=owner,
+                    # principal_owner=owner,
                     session_name=session_name,
-                    request_id=decoded_message["requestID"],
                     source_ip=decoded_message["sourceIPAddress"],
                     event_call=event_call,
                     epoch_event_time=epoch_event_time,
-                    ttl=(epoch_event_time + 86400000) / 1000,
+                    ttl=epoch_event_time + event_ttl,
+                    count=1,
                 )
-                ct_event["resource"] = await get_resource_from_cloudtrail_deny(ct_event)
-                ct_event["resource_known"] = await resource_arn_known_in_aws_config(
-                    ct_event["resource"]
-                )
-
-                if ct_event["resource_known"]:
-                    ct_event[
-                        "iam_simulation_response"
-                    ] = await simulate_iam_principal_action(
-                        principal_arn,
-                        ct_event["event_call"],
-                        ct_event["resource"],
-                        ct_event["source_ip"],
-                    )
+                resource = await get_resource_from_cloudtrail_deny(ct_event)
+                ct_event["resource"] = resource
+                request_id = f"{principal_arn}-{session_name}-{event_call}-{resource}"
+                ct_event["request_id"] = request_id
                 generated_policy = await generate_policy_from_cloudtrail_deny(ct_event)
                 if generated_policy:
                     ct_event["generated_policy"] = generated_policy
-                ct_events.append(ct_event)
+
+                if all_cloudtrail_denies.get(request_id):
+                    existing_count = all_cloudtrail_denies[request_id].get("count", 1)
+                    ct_event["count"] += existing_count
+                    all_cloudtrail_denies[request_id] = ct_event
+                else:
+                    all_cloudtrail_denies[request_id] = ct_event
                 num_events += 1
             except Exception as e:
                 log.error({**log_data, "error": str(e)}, exc_info=True)
@@ -213,7 +205,10 @@ async def detect_cloudtrail_denies_and_update_cache() -> Dict[str, Any]:
             await sync_to_async(sqs_client.delete_message_batch)(
                 QueueUrl=queue_url, Entries=processed_messages
             )
-        await sync_to_async(dynamo.batch_write_cloudtrail_events)(ct_events)
+
+        await sync_to_async(dynamo.batch_write_cloudtrail_events)(
+            all_cloudtrail_denies.values()
+        )
         messages_awaitable = await sync_to_async(sqs_client.receive_message)(
             QueueUrl=queue_url, MaxNumberOfMessages=10
         )

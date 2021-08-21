@@ -1,4 +1,6 @@
 import asyncio
+import base64
+import json as original_json
 import os
 import sys
 import time
@@ -32,7 +34,11 @@ from consoleme.exceptions.exceptions import (
     NoMatchingRequest,
     PendingRequestAlreadyExists,
 )
+from consoleme.lib.aws import get_iam_principal_owner
+from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.crypto import Crypto
+from consoleme.lib.json_encoder import SetEncoder
+from consoleme.lib.notifications.models import ConsoleMeUserNotification
 from consoleme.lib.password import wait_after_authentication_failure
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.redis import RedisHandler
@@ -161,7 +167,6 @@ class BaseDynamoHandler:
         self,
         table,
         total_threads=os.cpu_count(),
-        loop=None,
         dynamodb_kwargs: Optional[Dict[str, Any]] = None,
     ):
         if not dynamodb_kwargs:
@@ -192,6 +197,43 @@ class BaseDynamoHandler:
             tasks.append(task)
 
         results = loop.run_until_complete(asyncio.gather(*tasks))
+        items = []
+        for result in results:
+            items.extend(result)
+        return items
+
+    async def parallel_scan_table_async(
+        self,
+        table,
+        total_threads=os.cpu_count(),
+        dynamodb_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        if not dynamodb_kwargs:
+            dynamodb_kwargs = {}
+
+        async def _scan_segment(segment, total_segments):
+            response = table.scan(
+                Segment=segment, TotalSegments=total_segments, **dynamodb_kwargs
+            )
+            items = response.get("Items", [])
+
+            while "LastEvaluatedKey" in response:
+                response = table.scan(
+                    ExclusiveStartKey=response["LastEvaluatedKey"],
+                    Segment=segment,
+                    TotalSegments=total_segments,
+                    **dynamodb_kwargs,
+                )
+                items.extend(self._data_from_dynamo_replace(response["Items"]))
+
+            return items
+
+        tasks = []
+        for i in range(total_threads):
+            task = asyncio.ensure_future(_scan_segment(i, total_threads))
+            tasks.append(task)
+
+        results = await asyncio.gather(*tasks)
         items = []
         for result in results:
             items.extend(result)
@@ -231,6 +273,10 @@ class UserDynamoHandler(BaseDynamoHandler):
             )
             self.cloudtrail_table = self._get_dynamo_table(
                 config.get("aws.cloudtrail_table", "consoleme_cloudtrail")
+            )
+
+            self.notifications_table = self._get_dynamo_table(
+                config.get("aws.notifications_table", "consoleme_notifications")
             )
 
             if user_email:
@@ -1225,54 +1271,177 @@ class UserDynamoHandler(BaseDynamoHandler):
             arn = item.get("arn")
             if not error_count.get(arn):
                 error_count[arn] = 0
-            error_count[arn] += 1
+            error_count[arn] += item.get("count", 1)
         return error_count
 
-    def count_cloudtrail_errors_by_arn(self):
-        # TODO: Since we're already scanning the table here, also perform a count
-        # by user / group and save
-        error_count = {}
-        items = self.parallel_scan_table(
-            self.cloudtrail_table,
-            # dynamodb_kwargs={
-            #     "Select": "SPECIFIC_ATTRIBUTES",
-            #     "ProjectionExpression": "arn",
-            # },
+    async def process_cloudtrail_errors(
+        self,
+        aws,
+        notification_ttl_seconds=config.get(
+            "process_cloudtrail_errors.notification_ttl", 86400
+        ),
+    ):
+        """
+        Processes Cloudtrail Errors that were cached by the `cache_cloudtrail_denies` celery task.
+        Generates notifications to end-users based on Cloudtrail errors
+
+        :param notification_ttl_seconds:
+        :return:
+        """
+        notification_type = "cloudtrail_generated_policy"
+        expiration = int(time.time() + notification_ttl_seconds)
+
+        # Get all existing cloudtrail_generated_policy notifications
+        all_notifications = {}
+        all_notifications_l = await self.parallel_scan_table_async(
+            self.notifications_table
         )
-        items = self._data_from_dynamo_replace(items)
-        error_count = self.count_arn_errors(error_count, items)
-        uniques = set()
-        uniques_by_session = set()
-        event_samples_by_owner = defaultdict(list)
-        event_samples_by_session_name = defaultdict(list)
-        for item in items:
-            unique_owner_id = (
-                item.get("arn", "")
-                + item.get("event_call", "")
-                + item.get("resource", "")
+        for existing_notification in all_notifications_l:
+            if existing_notification["type"] != notification_type:
+                continue
+            all_notifications[
+                existing_notification["predictable_id"]
+            ] = ConsoleMeUserNotification.parse_obj(existing_notification)
+
+        error_count = {}
+        # Get all existing Cloudtrail errors. This will be expensive if there are a large number of errors.
+        cloudtrail_errors = await self.parallel_scan_table_async(
+            self.cloudtrail_table,
+        )
+        cloudtrail_errors = self._data_from_dynamo_replace(cloudtrail_errors)
+        error_count = self.count_arn_errors(error_count, cloudtrail_errors)
+        new_or_changed_notifications = {}
+        for cloudtrail_error in cloudtrail_errors:
+            arn = cloudtrail_error.get("arn", "")
+            principal_owner = await get_iam_principal_owner(arn, aws)
+            session_name = cloudtrail_error.get("session_name", "")
+            principal_type = "iam" + arn.split(":")[-1].split("/")[0]
+            account_id = arn.split(":")[4]
+            principal_name = arn.split("/")[-1]
+            url_role_path = (
+                f"/policies/edit/{account_id}/{principal_type}/{principal_name}"
             )
-            if item.get("principal_owner") and unique_owner_id not in uniques:
-                event_samples_by_owner[item["principal_owner"]].append(item)
-                uniques.add(unique_owner_id)
-            # TODO: Make this configurable, not netflix specific
+            event_call = cloudtrail_error.get("event_call", "")
+            resource = cloudtrail_error.get("resource", "")
+            resource_full_name = resource.split(":")[-1]
+            predictable_id = f"{notification_type}-{principal_owner}-{principal_name}-{event_call}-{resource_full_name}"
+            generated_request = {
+                "role": {
+                    "name": principal_name,
+                    "account_id": account_id,
+                    "account_name": "",
+                    "arn": arn,
+                    "cloudtrail_details": {
+                        "error_url": "",
+                        "errors": {
+                            "cloudtrail_errors": [],
+                        },
+                    },
+                    "s3_details": {
+                        "error_url": "",
+                        "errors": {
+                            "s3_errors": [],
+                        },
+                    },
+                    "apps": {
+                        "app_details": [],
+                    },
+                    "tags": [],
+                    "templated": False,
+                    "principal": {
+                        "principal_type": "AwsResource",
+                        "principal_arn": arn,
+                    },
+                },
+                "updated_policy": json.dumps(cloudtrail_error["generated_policy"]),
+            }
+            encoded_request = base64.b64encode(
+                json.dumps(generated_request).encode()
+            ).decode("utf-8")
+            encoded_request_url = f"/selfservice?encoded_request={encoded_request}"
+            notification_message = config.get(
+                "process_cloudtrail_errors.generate_notifications.message",
+                """We've generated a policy suggestion for a recent permissions error with **[{arn}]({url_role_path})**.
+Please review it **[here]({encoded_request_url})**.
+
+You are receiving this notification because your team owns this role, or you were using this role at the time the error
+was detected.""".format(
+                    arn=arn,
+                    url_role_path=url_role_path,
+                    encoded_request_url=encoded_request_url,
+                ),
+            )
+
+            generated_notification = ConsoleMeUserNotification(
+                predictable_id=predictable_id,
+                type=notification_type,
+                users_or_groups=set(),
+                event_time=cloudtrail_error["epoch_event_time"],
+                expiration=expiration,
+                message=notification_message,
+                details=cloudtrail_error,
+                global_notification_settings=dict(marked_as_deleted=False, read=False),
+                user_notification_settings=dict(),
+            )
+
+            # Update existing item without overwriting settings
+            if all_notifications.get(predictable_id):
+                new_or_changed_notifications[predictable_id] = all_notifications[
+                    predictable_id
+                ]
+                new_or_changed_notifications[
+                    predictable_id
+                ].event_time = cloudtrail_error["epoch_event_time"]
+                new_or_changed_notifications[predictable_id].expiration = expiration
+                new_or_changed_notifications[
+                    predictable_id
+                ].message = notification_message
+                new_or_changed_notifications[predictable_id].details = cloudtrail_error
+
+            if principal_owner and not all_notifications.get(predictable_id):
+                generated_notification.users_or_groups.add(principal_owner)
+                new_or_changed_notifications[predictable_id] = generated_notification
+            # TODO: Make this configurable, not Netflix specific
             if (
-                not item.get("session_name")
-                or item["session_name"].startswith("i-")
-                or "@" not in item["session_name"]
+                not session_name
+                or session_name.startswith("i-")  # Session ID is instance ID
+                or "@"
+                not in cloudtrail_error[
+                    "session_name"
+                ]  # Session ID is not an e-mail address
             ):
                 continue
-            unique_session_id = (
-                item.get("arn", "")
-                + item.get("event_call", "")
-                + item.get("resource", "")
-                + item.get("session_name", "")
+            new_or_changed_notifications[predictable_id].users_or_groups.add(
+                session_name
             )
-            if unique_session_id in uniques_by_session:
-                continue
-            event_samples_by_session_name[item["session_name"]].append(item)
-        # TODO: Do something w event samples
-
-        return error_count
+        new_or_changed_notifications_l = []
+        # TODO: This only gets notifications by user/group that are related to cloudtrail. We should create a new celery
+        # task to fetch all notifications, sort them in the right way, and cache to s3/redis
+        notifications_by_user_group = defaultdict(list)
+        for notification in new_or_changed_notifications.values():
+            new_or_changed_notifications_l.append(notification.dict())
+            for user_or_group in notification.users_or_groups:
+                notifications_by_user_group[user_or_group].append(notification.dict())
+        if new_or_changed_notifications_l:
+            self.parallel_write_table(
+                self.notifications_table, new_or_changed_notifications_l
+            )
+        if notifications_by_user_group:
+            for k, v in notifications_by_user_group.items():
+                notifications_by_user_group[k] = original_json.dumps(v, cls=SetEncoder)
+            await store_json_results_in_redis_and_s3(
+                notifications_by_user_group,
+                redis_key=config.get("notifications.redis_key", "ALL_NOTIFICATIONS"),
+                redis_data_type="hash",
+                s3_bucket=config.get("notifications.s3.bucket"),
+                s3_key=config.get(
+                    "notifications.s3.key", "notifications/all_notifications_v1.json.gz"
+                ),
+            )
+        return {
+            "error_count_by_role": error_count,
+            "number_modified_notifications": len(new_or_changed_notifications_l),
+        }
 
 
 class IAMRoleDynamoHandler(BaseDynamoHandler):

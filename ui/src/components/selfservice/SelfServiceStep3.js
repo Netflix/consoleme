@@ -37,6 +37,7 @@ class SelfServiceStep3 extends Component {
       role: this.props.role,
       active: true,
       requestUrl: null,
+      principal_name: "",
     };
     this.inlinePolicyEditorRef = React.createRef();
     this.editorDidMount = this.editorDidMount.bind(this);
@@ -85,6 +86,9 @@ class SelfServiceStep3 extends Component {
         this.setState({
           new_policy: response.extended_request.changes.changes[0].policy,
           old_policy: response.extended_request.changes.changes[0].old_policy,
+          principal_name:
+            role.principal.resource_identifier +
+            role.principal.resource_identifier,
           active: false,
         });
       } else {
@@ -94,6 +98,7 @@ class SelfServiceStep3 extends Component {
             null,
             "\t"
           ),
+          principal_name: role.principal.principal_arn,
           active: false,
         });
       }
@@ -431,6 +436,11 @@ class SelfServiceStep3 extends Component {
     return (
       <div>
         <Header size={"huge"}>Review Changes & Submit</Header>
+        {this.state.principal_name ? (
+          <p>
+            Principal: <b>{this.state.principal_name}</b>
+          </p>
+        ) : null}
         <p>
           Use the following editor to review changes before submitting for
           review.

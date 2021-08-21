@@ -3,18 +3,18 @@ import { Label, Header, Icon, Image, Menu } from "semantic-ui-react";
 import { parseLocalStorageCache } from "../helpers/utils";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthProviderDefault";
+import { arnRegex } from "../helpers/utils";
 
 const localStorageRecentRolesKey = "consoleMeLocalStorage";
 
 const listRecentRoles = (recentRoles, user) => {
-  const arnRegex = /^arn:aws:iam::(\d{12}):role\/(.+)$/;
   return recentRoles.map((role) => {
     const match = role.match(arnRegex);
     if (!match) {
       return null;
     }
-    const [, accountNumber, roleName] = match;
-    const accountName = user?.accounts[accountNumber];
+    const { accountId, resourceName } = match.groups;
+    const accountName = user?.accounts[accountId];
     return (
       <Menu.Item as={NavLink} name={role} key={role} to={"/role/" + role}>
         <Header
@@ -24,14 +24,14 @@ const listRecentRoles = (recentRoles, user) => {
           }}
         >
           <Header.Content>
-            {accountName ? accountName : accountNumber}
+            {accountName ? accountName : accountId}
             <Header.Subheader
               style={{
                 fontSize: "14px",
                 color: "grey",
               }}
             >
-              {roleName}
+              {resourceName}
             </Header.Subheader>
           </Header.Content>
         </Header>

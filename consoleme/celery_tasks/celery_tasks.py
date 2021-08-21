@@ -560,9 +560,11 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
         log_data["message"] = "Skipping task: An identical task is currently running"
         log.debug(log_data)
         return log_data
-    cloudtrail_errors: Dict = internal_policies.error_count_by_arn()
-    if not cloudtrail_errors:
-        cloudtrail_errors = {}
+    dynamo = UserDynamoHandler()
+    process_cloudtrail_errors_res: Dict = async_to_sync(
+        dynamo.process_cloudtrail_errors
+    )(aws)
+    cloudtrail_errors = process_cloudtrail_errors_res["error_count_by_role"]
     red.setex(
         config.get(
             "celery.cache_cloudtrail_errors_by_arn.redis_key",
@@ -2205,8 +2207,8 @@ schedule = {
         "schedule": schedule_minute,
     },
 }
-
-cache_cloudtrail_errors_by_arn()
+# cache_cloudtrail_denies()
+# cache_cloudtrail_errors_by_arn()
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}

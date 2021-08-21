@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useAuth } from "./AuthProviderDefault";
+import { useNotifications } from "../components/hooks/notifications";
 import {
   Route,
   useHistory,
@@ -13,6 +14,7 @@ import ReactGA from "react-ga";
 
 const ProtectedRoute = (props) => {
   const auth = useAuth();
+  const notifications = useNotifications();
   let history = useHistory();
   const location = useLocation();
   const { login, user, isSessionExpired } = auth;
@@ -35,6 +37,9 @@ const ProtectedRoute = (props) => {
       (async () => {
         await login(history);
       })();
+    }
+    if (user) {
+      notifications.RetrieveNotificationsAtInterval();
     }
   }, [match, user, isSessionExpired, login, history]);
 

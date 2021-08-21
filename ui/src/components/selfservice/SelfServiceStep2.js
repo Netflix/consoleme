@@ -15,6 +15,7 @@ import {
 } from "semantic-ui-react";
 import SelfServiceComponent from "./SelfServiceComponent";
 import SelfServiceModal from "./SelfServiceModal.js";
+import { arnRegex } from "../../helpers/utils";
 
 // TODO, move this to config file.
 const DEFAULT_AWS_SERVICE = "s3";
@@ -358,13 +359,16 @@ class SelfServiceStep2 extends Component {
 
     // TODO(ccastrapel): The false condition for headerMessage needs to be updated. Maybe the backend should just
     // provide a link to the policy editor for a given principal, or the repository location?
+    const match = arnRegex.exec(role?.arn);
+    let resourceType = null;
+    if (match) resourceType = match?.groups?.resourceType;
     const headerMessage = role.arn ? (
       <Header>
         Add Permission
         <Header.Subheader>
-          Please add permissions to your role&nbsp;
+          Please add permissions to your {resourceType}&nbsp;
           <a
-            href={`/policies/edit/${role.account_id}/iamrole/${role.name}`}
+            href={`/policies/edit/${role.account_id}/iam${resourceType}/${role.name}`}
             target="_blank"
             rel="noopener noreferrer"
           >

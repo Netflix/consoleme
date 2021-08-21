@@ -1994,3 +1994,15 @@ async def simulate_iam_principal_action(
         expiration_seconds=expiration_seconds,
     )
     return response["EvaluationResults"]
+
+
+async def get_iam_principal_owner(arn: str, aws: Any) -> Optional[str]:
+    principal_details = {}
+    principal_type = arn.split(":")[-1].split("/")[0]
+    account_id = arn.split(":")[4]
+    # trying to find principal for subsequent queries
+    if principal_type == "role":
+        principal_details = await aws().fetch_iam_role(account_id, arn)
+    elif principal_type == "user":
+        principal_details = await aws().fetch_iam_user(account_id, arn)
+    return principal_details.get("owner")

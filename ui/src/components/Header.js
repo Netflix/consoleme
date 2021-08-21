@@ -1,9 +1,8 @@
-import React, { useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import {
   Button,
   Dropdown,
   Menu,
-  Icon,
   Image,
   Label,
   Message,
@@ -13,20 +12,13 @@ import { useAuth } from "../auth/AuthProviderDefault";
 import ReactMarkdown from "react-markdown";
 import SettingsModal from "./SettingsModal";
 import { NotificationsModal } from "./notifications/Notifications";
-import { useInterval } from "./hooks/useInterval";
+import { useNotifications } from "./hooks/notifications";
 
 const ConsoleMeHeader = () => {
   const { user } = useAuth();
+  const { notifications, unreadNotificationCount } = useNotifications();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [count, setCount] = useState(0);
-
-  function Counter() {
-    useInterval(() => {
-      // Your custom logic here
-      setCount(count + 1);
-    }, 1000);
-  }
 
   const generatePoliciesDropDown = () => {
     const canCreateRoles = user?.authorization?.can_create_roles;
@@ -72,7 +64,6 @@ const ConsoleMeHeader = () => {
 
   const openNotifications = () => {
     setNotificationsOpen(true);
-    setCount(0);
   };
 
   const closeNotifications = () => {
@@ -88,22 +79,25 @@ const ConsoleMeHeader = () => {
   };
 
   const getNotifications = () => {
-    Counter();
-    // This is perfect: http://kadobot.github.io/notifications/
-    return (
-      <>
-        <Button circular icon="bell" color="red" onClick={openNotifications} />
-        <Label circular size="tiny" color="orange">
-          {count}
-        </Label>
-      </>
-    );
+    if (!user?.site_config?.notifications?.enabled) {
+      return;
+    }
 
-    // return <Dropdown
-    //     inline
-    //     trigger={alertIcon}
-    //     options={dropdownOptions}
-    // />
+    if (unreadNotificationCount > 0) {
+      return (
+        <>
+          <Button
+            circular
+            icon="bell"
+            color="red"
+            onClick={openNotifications}
+          />
+          <Label circular size="tiny" color="orange">
+            {unreadNotificationCount}
+          </Label>
+        </>
+      );
+    }
   };
 
   const getAvatarImage = () => {
@@ -166,6 +160,14 @@ const ConsoleMeHeader = () => {
     return null;
   };
 
+  let notificationsInterval = 60;
+  if (user?.site_config?.notifications?.request_interval) {
+    notificationsInterval = user.site_config.notifications.request_interval;
+  }
+
+  // TODO: Figure out why this is triggering multiple times
+  // RetrieveNotificationsAtInterval(notificationsInterval)
+
   return (
     <>
       <Menu
@@ -212,6 +214,7 @@ const ConsoleMeHeader = () => {
       <NotificationsModal
         isOpen={notificationsOpen}
         closeNotifications={closeNotifications}
+        notifications={notifications}
       />
     </>
   );
