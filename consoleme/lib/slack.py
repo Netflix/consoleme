@@ -1,16 +1,20 @@
 import sys
 
 import requests
+import tornado.escape
 
 from consoleme.config import config
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.policies import get_policy_request_uri_v2
 from consoleme.models import ExtendedRequestModel
 
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
-async def send_slack_notification_new_request(extended_request: ExtendedRequestModel):
+async def send_slack_notification_new_request(
+    extended_request: ExtendedRequestModel, admin_approved, approval_probe_approved
+):
     """
     Sends a notification using specified webhook URL about a new request created
     """
@@ -28,6 +32,8 @@ async def send_slack_notification_new_request(extended_request: ExtendedRequestM
         "arn": arn,
         "message": "Incoming request for slack notification",
         "request": extended_request.dict(),
+        "admin_approved": admin_approved,
+        "approval_probe_approved": approval_probe_approved,
     }
     log.debug(log_data)
     slack_webhook_url = config.get("slack.webhook_url")
@@ -36,7 +42,9 @@ async def send_slack_notification_new_request(extended_request: ExtendedRequestM
         # TODO: warn or error or some other level?
         log.warn(log_data)
         return
-    payload = {"text": "Hello, world."}
+    payload = await get_payload(
+        extended_request, requester, arn, admin_approved, approval_probe_approved
+    )
     resp = requests.post(slack_webhook_url, json=payload)
     if resp.status_code != 200:
         log_data["message"] = "Error occurred sending slack notification"
@@ -46,3 +54,58 @@ async def send_slack_notification_new_request(extended_request: ExtendedRequestM
     else:
         log_data["message"] = "Slack notification sent"
         log.debug(log_data)
+
+
+async def get_payload(
+    extended_request: ExtendedRequestModel,
+    requester: str,
+    arn: str,
+    admin_approved: bool,
+    approval_probe_approved: bool,
+):
+    request_uri = await get_policy_request_uri_v2(extended_request)
+    pre_text = "A new request has been created"
+    if admin_approved:
+        pre_text += " and auto-approved by admin "
+    elif approval_probe_approved:
+        pre_text += " and auto-approved by auto-approval probe"
+
+    payload = {
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"*<{request_uri}|ConsoleMe Policy Change Request>*",
+                },
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*User* \n {requester}"},
+            },
+            {
+                "type": "section",
+                "text": {"type": "mrkdwn", "text": f"*Resource* \n {arn}"},
+            },
+            {
+                "type": "section",
+                "fields": [
+                    {"text": "*Justification*", "type": "mrkdwn"},
+                    {"type": "plain_text", "text": "\n"},
+                    {
+                        "type": "plain_text",
+                        "text": f"{tornado.escape.xhtml_escape(extended_request.justification)}",
+                    },
+                ],
+            },
+            {"type": "divider"},
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"{pre_text}. Click *<{request_uri}|here>* to view it.",
+                },
+            },
+        ]
+    }
+    return payload

@@ -443,7 +443,9 @@ class RequestHandler(BaseAPIV2Handler):
         await aws.send_communications_new_policy_request(
             extended_request, admin_approved, approval_probe_approved
         )
-        await send_slack_notification_new_request(extended_request)
+        await send_slack_notification_new_request(
+            extended_request, admin_approved, approval_probe_approved
+        )
         self.write(response.json())
         await self.finish()
         return
