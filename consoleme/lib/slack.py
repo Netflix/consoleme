@@ -39,8 +39,7 @@ async def send_slack_notification_new_request(
     slack_webhook_url = config.get("slack.webhook_url")
     if not slack_webhook_url:
         log_data["message"] = "Missing webhook URL for slack notification"
-        # TODO: warn or error or some other level?
-        log.warn(log_data)
+        log.error(log_data)
         return
     payload = await get_payload(
         extended_request, requester, arn, admin_approved, approval_probe_approved
@@ -49,8 +48,7 @@ async def send_slack_notification_new_request(
     if resp.status_code != 200:
         log_data["message"] = "Error occurred sending slack notification"
         log_data["error"] = f"{resp.status_code} : {resp.text}"
-        # TODO: warn or error or some other level?
-        log.warn(log_data)
+        log.error(log_data)
     else:
         log_data["message"] = "Slack notification sent"
         log.debug(log_data)
