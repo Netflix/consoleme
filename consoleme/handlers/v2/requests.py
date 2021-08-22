@@ -30,6 +30,7 @@ from consoleme.lib.policies import (
     get_url_for_resource,
     should_auto_approve_policy_v2,
 )
+from consoleme.lib.slack import send_slack_notification_new_request
 from consoleme.lib.timeout import Timeout
 from consoleme.lib.v2.requests import (
     generate_request_from_change_model_array,
@@ -440,6 +441,9 @@ class RequestHandler(BaseAPIV2Handler):
             log.debug(log_data)
 
         await aws.send_communications_new_policy_request(
+            extended_request, admin_approved, approval_probe_approved
+        )
+        await send_slack_notification_new_request(
             extended_request, admin_approved, approval_probe_approved
         )
         self.write(response.json())

@@ -31,7 +31,7 @@ automatically_backup_to_s3 = config.get(
 automatically_restore_from_s3 = config.get(
     "redis.automatically_restore_from_s3.enabled", False
 )
-s3 = boto3.resource("s3")
+s3 = boto3.resource("s3", **config.get("boto3.client_kwargs", {}))
 s3_bucket = config.get("redis.automatically_backup_to_s3.bucket")
 s3_folder = config.get("redis.automatically_backup_to_s3.folder")
 

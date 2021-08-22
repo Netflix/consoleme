@@ -279,30 +279,7 @@ def get_celery_request_tags(**kwargs):
 def refresh_dynamic_config_in_worker(**kwargs):
     tags = get_celery_request_tags(**kwargs)
     log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}", **tags}
-    log.debug(log_data)
-
-    dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
-    if not dynamic_config:
-        log.warn(
-            {
-                **log_data,
-                "error": (
-                    "Unable to retrieve Dynamic Config from Redis. "
-                    "This can be safely ignored if your dynamic config is empty."
-                ),
-            }
-        )
-        return
-    dynamic_config_j = json.loads(dynamic_config)
-    if config.CONFIG.config.get("dynamic_config", {}) != dynamic_config_j:
-        log.debug(
-            {
-                **log_data,
-                **tags,
-                "message": "Refreshing dynamic configuration on Celery Worker",
-            }
-        )
-        config.CONFIG.config["dynamic_config"] = dynamic_config_j
+    config.CONFIG.load_dynamic_config_from_redis(log_data, red)
 
 
 @task_received.connect
@@ -898,6 +875,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
         paginator = client.get_paginator("get_account_authorization_details")
         response_iterator = paginator.paginate()
@@ -1250,6 +1228,7 @@ def cache_managed_policies_for_account(account_id: str) -> Dict[str, Union[str, 
         account_number=account_id,
         assume_role=config.get("policies.role_name"),
         region=config.region,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     all_policies: List = []
     for policy in managed_policies:
@@ -1479,38 +1458,50 @@ def cache_sns_topics_across_accounts(
 
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
-    all_queues: set = set()
-    enabled_regions = async_to_sync(get_enabled_regions_for_account)(account_id)
-    for region in enabled_regions:
-        client = boto3_cached_conn(
-            "sqs",
-            account_number=account_id,
-            assume_role=config.get("policies.role_name"),
-            region=region,
-            read_only=True,
-            sts_client_kwargs=dict(
-                region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
-            ),
-        )
-
-        paginator = client.get_paginator("list_queues")
-
-        response_iterator = paginator.paginate(PaginationConfig={"PageSize": 1000})
-
-        for res in response_iterator:
-            for queue in res.get("QueueUrls", []):
-                arn = f"arn:aws:sqs:{region}:{account_id}:{queue.split('/')[4]}"
-                all_queues.add(arn)
-    sqs_queue_key: str = config.get("redis.sqs_queues_key", "SQS_QUEUES")
-    red.hset(sqs_queue_key, account_id, json.dumps(list(all_queues)))
-
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "account_id": account_id,
-        "message": "Successfully cached SQS queues for account",
-        "number_sqs_queues": len(all_queues),
     }
+    all_queues: set = set()
+    enabled_regions = async_to_sync(get_enabled_regions_for_account)(account_id)
+    for region in enabled_regions:
+        try:
+            client = boto3_cached_conn(
+                "sqs",
+                account_number=account_id,
+                assume_role=config.get("policies.role_name"),
+                region=region,
+                read_only=True,
+                sts_client_kwargs=dict(
+                    region_name=config.region,
+                    endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                ),
+                client_kwargs=config.get("boto3.client_kwargs", {}),
+            )
+
+            paginator = client.get_paginator("list_queues")
+
+            response_iterator = paginator.paginate(PaginationConfig={"PageSize": 1000})
+
+            for res in response_iterator:
+                for queue in res.get("QueueUrls", []):
+                    arn = f"arn:aws:sqs:{region}:{account_id}:{queue.split('/')[4]}"
+                    all_queues.add(arn)
+        except Exception as e:
+            log.error(
+                {
+                    **log_data,
+                    "region": region,
+                    "message": "Unable to sync SQS queues from region",
+                    "error": str(e),
+                }
+            )
+            sentry_sdk.capture_exception()
+    sqs_queue_key: str = config.get("redis.sqs_queues_key", "SQS_QUEUES")
+    red.hset(sqs_queue_key, account_id, json.dumps(list(all_queues)))
+
+    log_data["message"] = "Successfully cached SQS queues for account"
+    log_data["number_sqs_queues"] = len(all_queues)
     log.debug(log_data)
     stats.count(
         "cache_sqs_queues_for_account",
@@ -1534,30 +1525,43 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
     # Make sure it is regional
-    all_topics: set = set()
-    enabled_regions = async_to_sync(get_enabled_regions_for_account)(account_id)
-    for region in enabled_regions:
-        topics = list_topics(
-            account_number=account_id,
-            assume_role=config.get("policies.role_name"),
-            region=region,
-            read_only=True,
-            sts_client_kwargs=dict(
-                region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
-            ),
-        )
-        for topic in topics:
-            all_topics.add(topic["TopicArn"])
-    sns_topic_key: str = config.get("redis.sns_topics_key", "SNS_TOPICS")
-    red.hset(sns_topic_key, account_id, json.dumps(list(all_topics)))
-
     log_data = {
         "function": f"{__name__}.{sys._getframe().f_code.co_name}",
         "account_id": account_id,
-        "message": "Successfully cached SNS topics for account",
-        "number_sns_topics": len(all_topics),
     }
+    all_topics: set = set()
+    enabled_regions = async_to_sync(get_enabled_regions_for_account)(account_id)
+    for region in enabled_regions:
+        try:
+            topics = list_topics(
+                account_number=account_id,
+                assume_role=config.get("policies.role_name"),
+                region=region,
+                read_only=True,
+                sts_client_kwargs=dict(
+                    region_name=config.region,
+                    endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                ),
+                client_kwargs=config.get("boto3.client_kwargs", {}),
+            )
+            for topic in topics:
+                all_topics.add(topic["TopicArn"])
+        except Exception as e:
+            log.error(
+                {
+                    **log_data,
+                    "region": region,
+                    "message": "Unable to sync SNS topics from region",
+                    "error": str(e),
+                }
+            )
+            sentry_sdk.capture_exception()
+
+    sns_topic_key: str = config.get("redis.sns_topics_key", "SNS_TOPICS")
+    red.hset(sns_topic_key, account_id, json.dumps(list(all_topics)))
+
+    log_data["message"] = "Successfully cached SNS topics for account"
+    log_data["number_sns_topics"] = len(all_topics)
     log.debug(log_data)
     stats.count(
         "cache_sns_topics_for_account",
@@ -1585,6 +1589,7 @@ def cache_s3_buckets_for_account(account_id: str) -> Dict[str, Union[str, int]]:
         assume_role=config.get("policies.role_name"),
         region=config.region,
         read_only=True,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     buckets: List = []
     for bucket in s3_buckets["Buckets"]:
@@ -1686,6 +1691,23 @@ def clear_old_redis_iam_cache() -> bool:
 @app.task(soft_time_limit=3600, **default_retry_kwargs)
 def cache_resources_from_aws_config_for_account(account_id) -> dict:
     function: str = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {
+        "function": function,
+        "account_id": account_id,
+    }
+    if not config.get(
+        "celery.cache_resources_from_aws_config_across_accounts.enabled",
+        config.get(
+            f"celery.cache_resources_from_aws_config_for_account.{account_id}.enabled",
+            True,
+        ),
+    ):
+        log_data[
+            "message"
+        ] = "Skipping task: Caching resources from AWS Config is disabled."
+        log.debug(log_data)
+        return log_data
+
     s3_bucket = config.get("aws_config_cache.s3.bucket")
     s3_key = config.get(
         "aws_config_cache.s3.file", "aws_config_cache/cache_{account_id}_v1.json.gz"
@@ -1736,12 +1758,8 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
             ),
             redis_data_type="hash",
         )
-    log_data = {
-        "function": function,
-        "account_id": account_id,
-        "message": "Successfully cached resources from AWS Config for account",
-        "number_resources_synced": len(redis_result_set),
-    }
+    log_data["message"] = "Successfully cached resources from AWS Config for account"
+    log_data["number_resources_synced"] = len(redis_result_set)
     log.debug(log_data)
     return log_data
 
@@ -1755,11 +1773,19 @@ def cache_resources_from_aws_config_across_accounts(
     resource_redis_cache_key = config.get(
         "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
     )
-
     log_data = {
         "function": function,
         "resource_redis_cache_key": resource_redis_cache_key,
     }
+
+    if not config.get(
+        "celery.cache_resources_from_aws_config_across_accounts.enabled", True
+    ):
+        log_data[
+            "message"
+        ] = "Skipping task: Caching resources from AWS Config is disabled."
+        log.debug(log_data)
+        return log_data
 
     tasks = []
     # First, get list of accounts
@@ -1830,7 +1856,7 @@ def get_iam_role_limit() -> dict:
         "celery.active_region", config.region
     ) and config.get("environment") in ["prod", "dev"]:
 
-        @sts_conn("iam")
+        @sts_conn("iam", client_kwargs=config.get("boto3.client_kwargs", {}))
         def _get_delivery_channels(**kwargs) -> list:
             """Gets the delivery channels in the account/region -- calls are wrapped with CloudAux"""
             return kwargs.pop("client").get_account_summary(**kwargs)
@@ -2207,6 +2233,7 @@ schedule = {
         "schedule": schedule_minute,
     },
 }
+
 # cache_cloudtrail_denies()
 # cache_cloudtrail_errors_by_arn()
 

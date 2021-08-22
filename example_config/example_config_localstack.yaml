@@ -1,0 +1,22 @@
+# Warning: The following configuration file is an example, and it is insecure by default. Please carefully
+# review and change values accordingly before deploying to a production environment. You are responsible
+# for your deployment.
+
+# Run Localstack in Docker with the following command:
+# docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack
+
+# Example invocation of ConsoleMe with this configuration (Activate your virtual environment first):
+# CONFIG_LOCATION=/path/to/consoleme/example_config/example_config_localstack.yaml \
+# AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 \
+# python /path/to/consoleme/consoleme/__main__.py
+extends:
+  - example_config_development.yaml
+
+boto3:
+  client_kwargs:
+    endpoint_url: http://localhost:4566
+
+# Localstack doesn't support AWS Config. This stanza avoids syncing resources from AWS Config.
+celery:
+  cache_resources_from_aws_config_across_accounts:
+    enabled: false

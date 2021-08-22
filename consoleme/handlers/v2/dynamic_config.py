@@ -6,20 +6,34 @@ import sentry_sdk
 import tornado.escape
 import tornado.web
 
+from consoleme.celery_tasks.celery_tasks import app as celery_app
 from consoleme.config import config
 from consoleme.handlers.base import BaseHandler
 from consoleme.lib.auth import can_edit_dynamic_config
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.lib.redis import RedisHandler
 
 ddb = UserDynamoHandler()
 log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+red = RedisHandler().redis_sync()
 
 
 class DynamicConfigApiHandler(BaseHandler):
+    def on_finish(self) -> None:
+        if self.request.method != "POST":
+            return
+        # Force a refresh of credential authorization mapping in current region
+        # TODO: Trigger this to run cross-region
+        # TODO: Delete server-side user-role cache intelligently so users get immediate access
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping",
+            countdown=config.get("dynamic_config.dynamo_load_interval"),
+        )
+
     async def get(self) -> None:
         """
         Get the dynamic configuration endpoint.
@@ -110,4 +124,7 @@ class DynamicConfigApiHandler(BaseHandler):
         result["newsha56"] = new_sha256
         self.write(result)
         await self.finish()
+        # Force a refresh of dynamic configuration in the current region. Other regions will need to wait until the
+        # next background thread refreshes it automatically. By default, this happens every 60 seconds.
+        config.CONFIG.load_config_from_dynamo(ddb=ddb, red=red)
         return

@@ -5,7 +5,11 @@ from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait
 from consoleme.config import config
 
 ddb = boto3.client(
-    "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name=config.region
+    "dynamodb",
+    endpoint_url=config.get(
+        "dynamodb_server", config.get("boto3.client_kwargs.endpoint_url")
+    ),
+    region_name=config.region,
 )
 
 table_name = "consoleme_iamroles_global"
