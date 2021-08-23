@@ -42,6 +42,7 @@
   * [CLI Authentication](configuration/cli-authentication.md)
   * [Sending email through SES](configuration/ses.md)
   * [AWS Secret Manager Integration](configuration/aws-secret-manager-integration.md)
+  * [Slack Notifications](configuration/slack.md)
 * [Celery Tasks](celery-tasks/README.md)
   * [Celery Flower](celery-tasks/celery-flower.md)
 * [Development Guide](development-guide/README.md)
