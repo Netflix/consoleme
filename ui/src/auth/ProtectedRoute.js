@@ -18,6 +18,7 @@ const ProtectedRoute = (props) => {
   let history = useHistory();
   const location = useLocation();
   const { login, user, isSessionExpired } = auth;
+  const { RetrieveNotificationsAtInterval } = notifications;
   const match = useRouteMatch(props);
   const { component: Component, ...rest } = props;
 
@@ -39,7 +40,7 @@ const ProtectedRoute = (props) => {
       })();
     }
     if (user) {
-      notifications.RetrieveNotificationsAtInterval();
+      RetrieveNotificationsAtInterval(5);
     }
   }, [match, user, isSessionExpired, login, history]);
 

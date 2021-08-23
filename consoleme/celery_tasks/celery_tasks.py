@@ -2234,8 +2234,8 @@ schedule = {
     },
 }
 
-# cache_cloudtrail_denies()
-# cache_cloudtrail_errors_by_arn()
+cache_cloudtrail_denies()
+cache_cloudtrail_errors_by_arn()
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}

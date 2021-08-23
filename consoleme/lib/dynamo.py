@@ -1378,7 +1378,7 @@ class UserDynamoHandler(BaseDynamoHandler):
 Please review it **[here]({encoded_request_url})**.
 
 You are receiving this notification because your team owns this role, or you were using this role at the time the error
-was detected.""".format(
+was detected. This notification will disappear when a similar error has not occurred for 24 hours.""".format(
                     arn=arn,
                     url_role_path=url_role_path,
                     encoded_request_url=encoded_request_url,
@@ -1442,6 +1442,11 @@ was detected.""".format(
         if notifications_by_user_group:
             for k, v in notifications_by_user_group.items():
                 notifications_by_user_group[k] = original_json.dumps(v, cls=SetEncoder)
+                # TODO: You should have two hashes. One for Notifications (Notification ID -> Notification, the other for
+                # USER_OR_GROUP to NOTIFICATION ID
+                # TODO: Future feature : Allow user to respond in a text box, store that within the notification. IE:
+                # Which e-mail address owns this resource?
+                # TODO: expired state in notification model to make it obvious?
             await store_json_results_in_redis_and_s3(
                 notifications_by_user_group,
                 redis_key=config.get("notifications.redis_key", "ALL_NOTIFICATIONS"),

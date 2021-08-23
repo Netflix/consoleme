@@ -79,11 +79,15 @@ export const NotificationProvider = ({ children }) => {
     });
   };
 
-  function RetrieveNotificationsAtInterval(interval) {
+  const RetrieveNotificationsAtInterval = (interval) => {
+    if (state.intervalHookCalled) {
+      return;
+    }
     setInterval(function () {
       getAndSetNotifications(user);
-    }, 5000);
-  }
+    }, interval * 1000);
+    setIntervalHookCalled();
+  };
 
   // function RetrieveNotificationsAtInterval(interval) {
   //   useInterval(() => {

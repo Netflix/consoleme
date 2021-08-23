@@ -64,12 +64,22 @@ export const NotificationsModal = (props) => {
               />
             </Accordion.Content>
           </Accordion>
+          <Button.Group>
+            <Button color={"green"}>Mark as read</Button>
+            <Button.Or />
+            <Button color={"orange"}>Hide from me</Button>
+            <Button.Or />
+            <Button color={"red"}>Hide from everyone</Button>
+          </Button.Group>
         </Segment>
       </>
     );
   });
   const notificationDisplay = (
     <>
+      {notificationList.length > 0 ? (
+        <Button color={"green"}>Mark all as read</Button>
+      ) : null}
       {notificationList.length > 0 ? (
         notificationList
       ) : (
