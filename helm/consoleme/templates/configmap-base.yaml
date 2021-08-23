@@ -21,6 +21,11 @@ data:
       {{- toYaml . | nindent 6 }}
     {{- end }}
 
+    {{- with .Values.slack }}
+    slack:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
     {{- with .Values.roles }}
     roles:
       {{- toYaml . | nindent 6 }}
