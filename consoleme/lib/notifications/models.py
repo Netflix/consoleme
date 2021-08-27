@@ -1,6 +1,9 @@
+from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 
-from pydantic import BaseModel, Field
+from pydantic import Field
+
+from consoleme.lib.pydantic import BaseModel
 
 
 class ConsoleMeNotificationSettings(BaseModel):
@@ -35,6 +38,10 @@ class ConsoleMeUserNotification(BaseModel):
     expiration: int = Field(
         ..., description="Time that this entry should stop notifying people"
     )
+    expired: bool = Field(
+        ...,
+        description="A more obvious indicator about whether a notification has expired",
+    )
     header: Optional[str] = Field(
         None, description="Bolded text (Header) for the notification"
     )
@@ -51,3 +58,23 @@ class ConsoleMeUserNotification(BaseModel):
     )
     global_notification_settings: ConsoleMeNotificationSettings
     user_notification_settings: Dict[str, ConsoleMeNotificationSettings]
+    read_by_user: Optional[bool] = Field(
+        None,
+        description=(
+            "Convenience feature set upon notifiation retrieval. "
+            "Makes it easier for frontend to determine if current user has read "
+            "the notification. Not stored in the notifications DB."
+        ),
+    )
+
+
+class ConsoleMeNotificationUpdateAction(Enum):
+    toggle_read_or_unread_for_current_user = "toggle_read_or_unread_for_current_user"
+    toggle_hide_for_current_user = "toggle_hide_for_current_user"
+    toggle_hide_for_all_users = "toggle_hide_for_all_users"
+    toggle_mark_all_read_current_user = "toggle_mark_all_read_current_user"
+
+
+class ConsoleMeNotificationUpdateRequest(BaseModel):
+    action: ConsoleMeNotificationUpdateAction
+    notifications: List[ConsoleMeUserNotification]

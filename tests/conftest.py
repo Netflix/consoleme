@@ -414,6 +414,35 @@ def iamrole_table(dynamodb):
 
 
 @pytest.fixture(autouse=True, scope="session")
+def cloudtrail_table(dynamodb):
+    # Create the table:
+    dynamodb.create_table(
+        TableName="consoleme_cloudtrail",
+        AttributeDefinitions=[
+            {"AttributeName": "arn", "AttributeType": "S"},
+            {"AttributeName": "request_id", "AttributeType": "S"},
+        ],
+        KeySchema=[
+            {"AttributeName": "arn", "KeyType": "HASH"},
+            {"AttributeName": "request_id", "KeyType": "RANGE"},
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 1000, "WriteCapacityUnits": 1000},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
+    )
+
+    # Apply a TTL:
+    dynamodb.update_time_to_live(
+        TableName="consoleme_cloudtrail",
+        TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
+    )
+
+    yield dynamodb
+
+
+@pytest.fixture(autouse=True, scope="session")
 def sqs_queue(sqs):
     sqs.create_queue(
         QueueName="consoleme-cloudtrail-role-events-test",
@@ -421,6 +450,7 @@ def sqs_queue(sqs):
     sqs.create_queue(QueueName="consoleme-cloudtrail-access-deny-events-test")
 
     queue_url = sqs.get_queue_url(QueueName="consoleme-cloudtrail-role-events-test")
+    current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
     message = json.dumps(
         {
             "Message": json.dumps(
@@ -456,7 +486,7 @@ def sqs_queue(sqs):
                                 },
                             },
                         },
-                        "eventTime": "2021-06-15T18:51:57Z",
+                        "eventTime": current_time,
                         "eventSource": "iam.amazonaws.com",
                         "eventName": "AttachRolePolicy",
                         "awsRegion": "us-east-1",
@@ -520,7 +550,7 @@ def sqs_queue(sqs):
                                 "ec2RoleDelivery": "2.0",
                             },
                         },
-                        "eventTime": "2021-06-22T16:17:45Z",
+                        "eventTime": current_time,
                         "eventSource": "sts.amazonaws.com",
                         "eventName": "AssumeRole",
                         "awsRegion": "global",

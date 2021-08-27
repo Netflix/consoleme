@@ -1,4 +1,3 @@
-import asyncio
 import re
 import sys
 import time
@@ -14,10 +13,6 @@ from consoleme.config import config
 from consoleme.exceptions.exceptions import (
     DataNotRetrievable,
     MissingConfigurationValue,
-)
-from consoleme.lib.aws import (
-    resource_arn_known_in_aws_config,
-    simulate_iam_principal_action,
 )
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
@@ -125,10 +120,22 @@ async def detect_cloudtrail_denies_and_update_cache(
         for message in messages:
             try:
                 message_body = json.loads(message["Body"])
-                if "Message" in message_body:
-                    decoded_message = json.loads(message_body["Message"])["detail"]
-                else:
-                    decoded_message = message_body["detail"]
+                try:
+                    if "Message" in message_body:
+                        decoded_message = json.loads(message_body["Message"])["detail"]
+                    else:
+                        decoded_message = message_body["detail"]
+                except Exception as e:
+                    log.error(
+                        {
+                            **log_data,
+                            "message": "Unable to process Cloudtrail message",
+                            "message_body": message_body,
+                            "error": str(e),
+                        }
+                    )
+                    sentry_sdk.capture_exception()
+                    continue
                 event_name = decoded_message.get("eventName")
                 event_source = decoded_message.get("eventSource")
                 for event_source_substitution in config.get(
@@ -157,12 +164,6 @@ async def detect_cloudtrail_denies_and_update_cache(
                     ]["arn"]
                 except KeyError:  # Skip events without a parsable ARN
                     continue
-
-                # TODO: Generate CT events by user / owning google group to notify them about problems with their roles
-                # TODO: Find out what the problem is - Role policy doesn't allow it, SCP, PB, inline policy, or resource policy
-                # Need a quick way like the team role stuff to evaluate policies and make that determination
-                # If access is because a resource doesn't exist,  whether to notify. If a lot of similar alerts, consider not doing
-                # it and recommend the correct fix
 
                 event_call = f"{event_source}:{event_name}"
 

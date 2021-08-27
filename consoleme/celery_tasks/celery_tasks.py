@@ -41,7 +41,6 @@ from cloudaux.aws.iam import get_all_managed_policies
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
-from kombu.common import Broadcast
 from retrying import retry
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -160,42 +159,8 @@ internal_policies = get_plugin_by_name(
 )()
 REDIS_IAM_COUNT = 1000
 
-# TODO: Wont work unless you change everything per
-# https://stackoverflow.com/questions/47663221/python-custom-decorator-not-working-with-celery-tasks?noredirect=1&lq=1
-def refresh_dynamic_config_decorator(func):
-    def inner(*args, **kwargs):
-        # Refresh dynamic config
-        dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
-        log_data = {
-            "function": f"{__name__}.{sys._getframe().f_code.co_name}",
-        }
-        if not dynamic_config:
-            log.warn(
-                {
-                    **log_data,
-                    "error": (
-                        "Unable to retrieve Dynamic Config from Redis. "
-                        "This can be safely ignored if your dynamic config is empty."
-                    ),
-                }
-            )
-            return
-        dynamic_config_j = json.loads(dynamic_config)
-        if config.CONFIG.config.get("dynamic_config", {}) != dynamic_config_j:
-            log.debug(
-                {
-                    **log_data,
-                    "message": "Refreshing dynamic configuration on Celery Worker",
-                }
-            )
-            config.CONFIG.config["dynamic_config"] = dynamic_config_j
-        return func(*args, **kwargs)
-
-    return inner
-
 
 @app.task(soft_time_limit=20)
-@refresh_dynamic_config_decorator
 def report_celery_last_success_metrics() -> bool:
     """
     For each celery task, this will determine the number of seconds since it has last been successful.
@@ -2234,15 +2199,13 @@ schedule = {
     },
 }
 
-cache_cloudtrail_denies()
-cache_cloudtrail_errors_by_arn()
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
 
 # TODO: Revert this change
-# if config.get("celery.clear_tasks_for_development", False):
-#     schedule = {}
+if config.get("celery.clear_tasks_for_development", False):
+    schedule = {}
 
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"

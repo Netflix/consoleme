@@ -1391,6 +1391,7 @@ was detected. This notification will disappear when a similar error has not occu
                 users_or_groups=set(),
                 event_time=cloudtrail_error["epoch_event_time"],
                 expiration=expiration,
+                expired=False,
                 message=notification_message,
                 details=cloudtrail_error,
                 global_notification_settings=dict(marked_as_deleted=False, read=False),
@@ -1429,7 +1430,7 @@ was detected. This notification will disappear when a similar error has not occu
             )
         new_or_changed_notifications_l = []
         # TODO: This only gets notifications by user/group that are related to cloudtrail. We should create a new celery
-        # task to fetch all notifications, sort them in the right way, and cache to s3/redis
+        # task to fetch all notifications, sort them in the right way, and cache to s3/redis, and mark as "expired=true"
         notifications_by_user_group = defaultdict(list)
         for notification in new_or_changed_notifications.values():
             new_or_changed_notifications_l.append(notification.dict())
@@ -1442,10 +1443,6 @@ was detected. This notification will disappear when a similar error has not occu
         if notifications_by_user_group:
             for k, v in notifications_by_user_group.items():
                 notifications_by_user_group[k] = original_json.dumps(v, cls=SetEncoder)
-                # TODO: You should have two hashes. One for Notifications (Notification ID -> Notification, the other for
-                # USER_OR_GROUP to NOTIFICATION ID
-                # TODO: Future feature : Allow user to respond in a text box, store that within the notification. IE:
-                # Which e-mail address owns this resource?
                 # TODO: expired state in notification model to make it obvious?
             await store_json_results_in_redis_and_s3(
                 notifications_by_user_group,
