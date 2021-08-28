@@ -2010,8 +2010,10 @@ async def simulate_iam_principal_action(
         ResourceArns=[
             resource_arn,
         ],
-        # ResourcePolicy='string', TODO: Attach resource policy when discoverable
-        # ResourceOwner='string', TODO: Account ID of resource
+        # TODO: Attach resource policy when discoverable
+        # ResourcePolicy='string',
+        # TODO: Attach Account ID of resource
+        # ResourceOwner='string',
         ContextEntries=context_entries,
         MaxItems=100,
     )

@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useReducer } from "react";
-import { useInterval } from "./useInterval";
 import { useAuth } from "../../auth/AuthProviderDefault";
 
 const initialNotificationsState = {
@@ -89,11 +88,6 @@ export const NotificationProvider = ({ children }) => {
     setIntervalHookCalled();
   };
 
-  // function RetrieveNotificationsAtInterval(interval) {
-  //   useInterval(() => {
-  //     getAndSetNotifications(state.user)
-  //   }, interval * 1000);
-  // }
   return (
     <NotificationsContext.Provider
       value={{
@@ -105,5 +99,3 @@ export const NotificationProvider = ({ children }) => {
     </NotificationsContext.Provider>
   );
 };
-
-// run one time: await getAndSetNotifications(user)

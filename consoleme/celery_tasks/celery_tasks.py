@@ -41,7 +41,6 @@ from cloudaux.aws.iam import get_all_managed_policies
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
-from consoleme_internal.lib.cloudtrail import CloudTrail
 from retrying import retry
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -69,6 +68,7 @@ from consoleme.lib.cloud_credential_authorization_mapping import (
     generate_and_store_credential_authorization_mapping,
     generate_and_store_reverse_authorization_mapping,
 )
+from consoleme.lib.cloudtrail import CloudTrail
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.event_bridge.access_denies import (
     detect_cloudtrail_denies_and_update_cache,

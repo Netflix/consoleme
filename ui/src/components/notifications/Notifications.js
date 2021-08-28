@@ -44,11 +44,11 @@ export const NotificationsModal = (props) => {
     sendRequestCommon(request, "/api/v2/notifications", "put");
   };
 
-  // TODO: Link to role page, specifically, recent errors page
+  // TODO: Make it possible to link specifically to recent errors page instead of primary role page
+  // TODO: Error list on recent errors page should also allow generating request in as few clisk as possible
   // format should be figured out by the backend
   // TODO: When user clicks X, mark notification as deleted on the backend
   // TODO: Allow user to ignore errors for this role, this service, or this resource.
-  // TODO: Show unread vs read notifications differently, IE in blue box like LinkedIn?
 
   const monacoOptions = {
     selectOnLineNumbers: true,

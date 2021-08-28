@@ -2,8 +2,6 @@ import sentry_sdk
 
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler
-
-# TODO: Move this
 from consoleme.lib.notifications.models import ConsoleMeNotificationUpdateRequest
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.notifications import get_notifications_for_user
@@ -15,7 +13,8 @@ log = config.get_logger()
 
 class NotificationsHandler(BaseAPIV2Handler):
     """
-    A class for receiving notifications. These usually consist of Cloudtrail errors, but it could really be anything.
+    A web handler for serving, updating, and (in the future) creating notifications. Current notifications are based
+    around policy generation from CloudTrail errors.
     """
 
     async def get(self):
@@ -48,9 +47,9 @@ class NotificationsHandler(BaseAPIV2Handler):
 
     async def put(self):
         # Update a notification to be read or deleted
-        # TODO: Use the `user_notification_settings` set  on the notification
+        # TODO: Use the `user_notification_settings` set  on the notification to update the status of the notification.
         change = ConsoleMeNotificationUpdateRequest.parse_raw(self.request.body)
         print(change)
-        # Validate user is authorized to make the change
-        # Set the change in DB
-        # Re-cache to Redis
+        # TODO: Validate user is authorized to make the change
+        # TODO:  Set the change in DB
+        # TODO: Re-cache to Redis
