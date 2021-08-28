@@ -41,6 +41,7 @@ from cloudaux.aws.iam import get_all_managed_policies
 from cloudaux.aws.s3 import list_buckets
 from cloudaux.aws.sns import list_topics
 from cloudaux.aws.sts import boto3_cached_conn
+from consoleme_internal.lib.cloudtrail import CloudTrail
 from retrying import retry
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -502,10 +503,10 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
         log_data["message"] = "Skipping task: An identical task is currently running"
         log.debug(log_data)
         return log_data
-    dynamo = UserDynamoHandler()
-    process_cloudtrail_errors_res: Dict = async_to_sync(
-        dynamo.process_cloudtrail_errors
-    )(aws)
+    ct = CloudTrail()
+    process_cloudtrail_errors_res: Dict = async_to_sync(ct.process_cloudtrail_errors)(
+        aws
+    )
     cloudtrail_errors = process_cloudtrail_errors_res["error_count_by_role"]
     red.setex(
         config.get(
@@ -2085,8 +2086,7 @@ schedule_5_minutes = timedelta(minutes=5)
 schedule_24_hours = timedelta(hours=24)
 schedule_1_hour = timedelta(hours=1)
 
-# TODO: Revert this change
-if False:
+if config.get("development", False):
     # If debug mode, we will set up the schedule to run the next minute after the job starts
     time_to_start = datetime.utcnow() + timedelta(minutes=1)
     dev_schedule = crontab(hour=time_to_start.hour, minute=time_to_start.minute)
@@ -2203,7 +2203,6 @@ schedule = {
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
 
-# TODO: Revert this change
 if config.get("celery.clear_tasks_for_development", False):
     schedule = {}
 

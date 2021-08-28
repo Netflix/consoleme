@@ -44,7 +44,6 @@ class UserProfileHandler(BaseAPIV1Handler):
             "landing_url": config.get("site_config.landing_url"),
             "notifications": {
                 "enabled": config.get("site_config.notifications.enabled"),
-                # TODO: change me
                 "request_interval": config.get(
                     "site_config.notifications.request_interval", 60
                 ),
