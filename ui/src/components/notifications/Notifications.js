@@ -15,14 +15,14 @@ export const NotificationsModal = (props) => {
 
   const toggleReadUnreadStatusForUser = (notification) => {
     const request = {
-      action: "toggle_read_or_unread_for_current_user",
+      action: "toggle_read_for_current_user",
       notifications: [notification],
     };
     sendRequestCommon(request, "/api/v2/notifications", "put");
   };
   const toggleHideFromUser = (notification) => {
     const request = {
-      action: "toggle_hide_for_current_user",
+      action: "toggle_hidden_for_current_user",
       notifications: [notification],
     };
     sendRequestCommon(request, "/api/v2/notifications", "put");
@@ -30,7 +30,7 @@ export const NotificationsModal = (props) => {
 
   const toggleHideFromAllUsers = (notification) => {
     const request = {
-      action: "toggle_hide_for_all_users",
+      action: "toggle_hidden_for_all_users",
       notifications: [notification],
     };
     sendRequestCommon(request, "/api/v2/notifications", "put");
@@ -38,7 +38,7 @@ export const NotificationsModal = (props) => {
 
   const toggleMarkAllRead = (notifications) => {
     const request = {
-      action: "toggle_mark_all_read_current_user",
+      action: "toggle_read_for_current_user",
       notifications: notifications,
     };
     sendRequestCommon(request, "/api/v2/notifications", "put");

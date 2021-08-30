@@ -6,17 +6,6 @@ from pydantic import Field
 from consoleme.lib.pydantic import BaseModel
 
 
-class ConsoleMeNotificationSettings(BaseModel):
-    marked_as_deleted: bool = Field(
-        ...,
-        description=(
-            "Stop showing this notification, but keep it in the database. "
-            "Users can choose to delete a notification for themselves, or everyone on their team."
-        ),
-    )
-    read: bool = Field(..., description=("Mark the notification as read."))
-
-
 class ConsoleMeUserNotification(BaseModel):
     predictable_id: str = Field(
         ...,
@@ -56,23 +45,42 @@ class ConsoleMeUserNotification(BaseModel):
             "This will be accessible to the user in the UI, but not visible by default"
         ),
     )
-    global_notification_settings: ConsoleMeNotificationSettings
-    user_notification_settings: Dict[str, ConsoleMeNotificationSettings]
-    read_by_user: Optional[bool] = Field(
-        None,
+    read_by_users: List[str] = Field(
+        ...,
         description=(
-            "Convenience feature set upon notifiation retrieval. "
-            "Makes it easier for frontend to determine if current user has read "
-            "the notification. Not stored in the notifications DB."
+            "List of users the notification is `read` for. It will show up in the user's list of notifications, "
+            "but will not be shown as `unread` nor be included in the unread counter."
         ),
     )
+    read_by_all: bool = Field(
+        False,
+        description=(
+            "Notification is `marked as read` for all users and will not appear as an unread notification for "
+            "any users."
+        ),
+    )
+    hidden_for_users: List[str] = Field(
+        ...,
+        description=(
+            "List of users the notification is `hidden` for. It will not appear at all in the user's list of "
+            "notifications."
+        ),
+    )
+    hidden_for_all: bool = Field(
+        False,
+        description=(
+            "Notification is `marked as hidden` for all users, and will not appear in the notificaiton list for "
+            "any user."
+        ),
+    )
+    version: int = Field(..., description=("Version of the notification model"))
 
 
 class ConsoleMeNotificationUpdateAction(Enum):
-    toggle_read_or_unread_for_current_user = "toggle_read_or_unread_for_current_user"
-    toggle_hide_for_current_user = "toggle_hide_for_current_user"
-    toggle_hide_for_all_users = "toggle_hide_for_all_users"
-    toggle_mark_all_read_current_user = "toggle_mark_all_read_current_user"
+    toggle_read_for_current_user = "toggle_read_for_current_user"
+    toggle_read_for_all_users = "toggle_read_for_all_users"
+    toggle_hidden_for_current_user = "toggle_hidden_for_current_user"
+    toggle_hidden_for_all_users = "toggle_hidden_for_all_users"
 
 
 class ConsoleMeNotificationUpdateRequest(BaseModel):

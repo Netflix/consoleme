@@ -66,6 +66,11 @@ class CloudTrail:
             )
             event_call = cloudtrail_error.get("event_call", "")
             resource = cloudtrail_error.get("resource", "")
+            # If a given IAM principal encounters an sts:AssumeRole AccessDeny error for a given role across multiple
+            # accounts (I.E. The role being assumed has the same name on multiple accounts), we only want to generate
+            # one notification for the issue. Therefore, resource_full_name might not accurately reflect the resource
+            # name, but it works for the purposes of creating a unique ID such that only one notification gets created
+            # for this set of CloudTrail Events
             resource_full_name = resource.split(":")[-1]
             predictable_id = f"{notification_type}-{principal_owner}-{principal_name}-{event_call}-{resource_full_name}"
             generated_request = {
@@ -124,8 +129,11 @@ was detected. This notification will disappear when a similar error has not occu
                 expired=False,
                 message=notification_message,
                 details=cloudtrail_error,
-                global_notification_settings=dict(marked_as_deleted=False, read=False),
-                user_notification_settings=dict(),
+                read_by_users=set(),
+                read_by_all=False,
+                hidden_for_users=set(),
+                hidden_for_all=False,
+                version=1,
             )
 
             # Update existing item without overwriting settings
@@ -162,9 +170,15 @@ was detected. This notification will disappear when a similar error has not occu
                 "i-"
             ):  # Session ID is instance ID
                 continue
-            new_or_changed_notifications[predictable_id].users_or_groups.add(
-                session_name
-            )
+            if new_or_changed_notifications.get(predictable_id):
+                new_or_changed_notifications[predictable_id].users_or_groups.add(
+                    session_name
+                )
+            else:
+                new_or_changed_notifications[predictable_id] = generated_notification
+                new_or_changed_notifications[predictable_id].users_or_groups.add(
+                    session_name
+                )
         new_or_changed_notifications_l = []
         # TODO: This only gets notifications by user/group that are related to cloudtrail. We should create a new celery
         # task to fetch all notifications, sort them in the right way, and cache to s3/redis, and mark as "expired=true"
