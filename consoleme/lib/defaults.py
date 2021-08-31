@@ -497,5 +497,33 @@ PERMISSION_TEMPLATE_DEFAULTS = yaml.safe_load(
             }
         ]
     }
+-   key: securitygroupmutate
+    text: EC2 - Security Group Read/Write
+    value: |-
+      {
+        "Statement": [
+            {
+                "Action": [
+                    "ec2:authorizesecuritygroupingress",
+                    "ec2:revokesecuritygroupingress"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "arn:aws:ec2:REGION:ACCOUNT_NUMBER:security-group/SECURITY_GROUP_ID"
+                ],
+                "Sid": "sgmutate"
+            },
+            {
+                "Action": [
+                    "ec2:describesecuritygroup*"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                    "*"
+                ],
+                "Sid": "sgdescribe"
+            }
+        ]
+      }
 """
 )
