@@ -27,7 +27,6 @@ log = config.get_logger()
 async def generate_honeybee_request_from_change_model_array(
     request_creation: RequestCreationModel, user: str, extended_request_uuid: str
 ) -> ExtendedRequestModel:
-    # TODO: We should know holistically what has changed in the request and request exactly that.
     repositories_for_request = {}
     primary_principal = None
     t = int(time.time())
@@ -123,7 +122,6 @@ async def generate_honeybee_request_from_change_model_array(
                     json.loads(json.dumps(policy["Statement"]))
                 )
             if not successfully_merged_statement:
-                # TODO: Need to add a new statement here, yay.
                 yaml_content["Policies"].append(
                     {
                         "PolicyName": policy_name,
