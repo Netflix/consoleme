@@ -14,6 +14,7 @@ from consoleme.models import (
     ChangeModelArray,
     ExtendedRequestModel,
     GenericFileChangeModel,
+    PolicyModel,
     RequestCreationModel,
     RequestStatus,
     UserModel,
@@ -95,42 +96,56 @@ async def generate_honeybee_request_from_change_model_array(
         if isinstance(yaml_content["Policies"], dict):
             yaml_content["Policies"] = [yaml_content["Policies"]]
 
-        if isinstance(change.policy.policy_document["Statement"], str):
-            change.policy.policy_document["Statement"] = [
-                change.policy.policy_document["Statement"]
-            ]
-        for i in range(len(yaml_content.get("Policies", []))):
-            policy = yaml_content["Policies"][i]
-            if policy.get("PolicyName") != policy_name:
-                continue
-            if policy.get("IncludeAccounts") or policy.get("ExcludeAccounts"):
-                raise ValueError(
-                    f"The {policy_name} policy has IncludeAccounts or ExcludeAccounts set"
-                )
-            successfully_merged_statement = True
+        # The PolicyModel is a representation of a single (usually inline) policy that a user has requested be merged
+        # into a given template. If the policy is provided as a string, it's the contents of the full file (which
+        # should include the user's requested change)
+        if isinstance(change.policy, PolicyModel):
+            if isinstance(change.policy.policy_document["Statement"], str):
+                change.policy.policy_document["Statement"] = [
+                    change.policy.policy_document["Statement"]
+                ]
+            for i in range(len(yaml_content.get("Policies", []))):
+                policy = yaml_content["Policies"][i]
+                if policy.get("PolicyName") != policy_name:
+                    continue
+                if policy.get("IncludeAccounts") or policy.get("ExcludeAccounts"):
+                    raise ValueError(
+                        f"The {policy_name} policy has IncludeAccounts or ExcludeAccounts set"
+                    )
+                successfully_merged_statement = True
 
-            policy["Statement"].extend(
-                CommentedSeq(change.policy.policy_document["Statement"])
+                policy["Statement"].extend(
+                    CommentedSeq(change.policy.policy_document["Statement"])
+                )
+                yaml_content["Policies"][i][
+                    "Statement"
+                ] = await minimize_iam_policy_statements(
+                    json.loads(json.dumps(policy["Statement"]))
+                )
+            if not successfully_merged_statement:
+                # TODO: Need to add a new statement here, yay.
+                yaml_content["Policies"].append(
+                    {
+                        "PolicyName": policy_name,
+                        "Statement": change.policy.policy_document["Statement"],
+                    }
+                )
+            with open(change_file_path, "w") as f:
+                yaml.dump(yaml_content, f)
+            # New
+            buf = io.BytesIO()
+            yaml.dump(yaml_content, buf)
+            updated_text = buf.getvalue()
+
+        elif isinstance(change.policy, str):
+            # If the change is provided as a string, it represents the full change
+            updated_text = change.policy
+            with open(change_file_path, "w") as f:
+                f.write(updated_text)
+        else:
+            raise Exception(
+                "Unable to parse change from Honeybee templated role change request"
             )
-            yaml_content["Policies"][i][
-                "Statement"
-            ] = await minimize_iam_policy_statements(
-                json.loads(json.dumps(policy["Statement"]))
-            )
-        if not successfully_merged_statement:
-            # TODO: Need to add a new statement here, yay.
-            yaml_content["Policies"].append(
-                {
-                    "PolicyName": policy_name,
-                    "Statement": change.policy.policy_document["Statement"],
-                }
-            )
-        with open(change_file_path, "w") as f:
-            yaml.dump(yaml_content, f)
-        # New
-        buf = io.BytesIO()
-        yaml.dump(yaml_content, buf)
-        updated_text = buf.getvalue()
 
         request_changes.changes.append(
             GenericFileChangeModel(
