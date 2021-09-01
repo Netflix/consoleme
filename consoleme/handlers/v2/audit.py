@@ -55,7 +55,12 @@ class AuditRolesHandler(BaseMtlsHandler):
         except ValueError:
             log_data["message"] = f"invalid value for count: {count}"
             log.warning(log_data)
-            count = 100
+            count = 1000
+
+        if page < 0:
+            page = 0
+        if count < 0:
+            count = 1000
 
         app_name = self.requester.get("name") or self.requester.get("username")
         stats.count(
