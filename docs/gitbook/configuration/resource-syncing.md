@@ -50,3 +50,4 @@ cache_policies_table_details:
   skip_managed_policies: true
   skip_aws_config_resources: true
 ```
+
