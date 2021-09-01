@@ -1824,6 +1824,14 @@ components:
           type: array
           items:
             type: string
+        count:
+          type: integer
+        total:
+          type: integer
+        page:
+          type: integer
+        last_page:
+          type: integer
         data:
           oneOf:
             - type: object
