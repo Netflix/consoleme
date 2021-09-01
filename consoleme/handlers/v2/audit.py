@@ -13,7 +13,7 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 credential_mapping = CredentialAuthorizationMapping()
 
 
-def get_last_page(total, page_size):
+def _get_last_page(total, page_size):
     pages = total / page_size
     if not total % page_size:
         pages += 1
@@ -88,7 +88,7 @@ class AuditRolesHandler(BaseMtlsHandler):
                 page=page,
                 total=total_roles,
                 count=len(roles),
-                last_page=get_last_page(total_roles, count),
+                last_page=_get_last_page(total_roles, count),
             ).json(exclude_unset=True)
         )
 

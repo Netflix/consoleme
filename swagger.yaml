@@ -167,7 +167,7 @@ paths:
                 $ref: "#/components/schemas/CreateCloneRequestResponse"
         default:
           $ref: "#/components/responses/DefaultErrorResponse"
-  /managed_policies_on_role/{accountNumber}/{roleName}:
+  /managed_policies_on_role/{account_id}/{role_name}:
     get:
       summary: get details about managed policies attached to a role
       tags:
@@ -182,7 +182,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WebResponse"
-  /service_control_policies/{accountNumberOrOuId}:
+  /service_control_policies/{account_or_ou_id}:
     get:
       summary: get details about service control policies targeting an account or organizational unit
       tags:
@@ -403,6 +403,9 @@ paths:
       summary: retrieve a list of IAM roles
       tags:
         - audit
+      parameters:
+        - $ref: "#/components/parameters/PageQueryString"
+        - $ref: "#/components/parameters/CountQueryString"
       responses:
         "200":
           description: OK
@@ -493,6 +496,18 @@ components:
       name: limit
       in: query
       example: 20
+      schema:
+        type: integer
+    PageQueryString:
+      name: page
+      in: query
+      example: 0
+      schema:
+        type: integer
+    CountQueryString:
+      name: count
+      in: query
+      example: 1000
       schema:
         type: integer
   schemas:
