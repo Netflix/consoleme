@@ -64,6 +64,7 @@ from consoleme.models import (
     CommentRequestModificationModel,
     ExtendedAwsPrincipalModel,
     ExtendedRequestModel,
+    GenericFileChangeModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
     ManagedPolicyResourceChangeModel,
@@ -121,6 +122,7 @@ async def generate_request_from_change_model_array(
     resource_tag_changes = []
     permissions_boundary_changes = []
     managed_policy_resource_changes = []
+    generic_file_changes = []
     role = None
 
     extended_request_uuid = str(uuid.uuid4())
@@ -179,6 +181,10 @@ async def generate_request_from_change_model_array(
         elif change.change_type == "permissions_boundary":
             permissions_boundary_changes.append(
                 PermissionsBoundaryChangeModel.parse_obj(change.__dict__)
+            )
+        elif change.change_type == "generic_file":
+            generic_file_changes.append(
+                GenericFileChangeModel.parse_obj(change.__dict__)
             )
         else:
             raise UnsupportedChangeType(
