@@ -116,7 +116,7 @@ class UserRegistrationHandler(TornadoRequestHandler):
             status_code=200,
             message=f"Successfully created user {registration_attempt.username}.",
         )
-        self.write(res.json())
+        self.write(res.json(exclude_unset=True))
 
 
 class LoginConfigurationHandler(TornadoRequestHandler):
@@ -224,7 +224,7 @@ class LoginHandler(TornadoRequestHandler):
             reason="authenticated_redirect",
             message="User has successfully authenticated. Redirecting to their intended destination.",
         )
-        self.write(res.json())
+        self.write(res.json(exclude_unset=True))
 
 
 class UserManagementHandler(BaseAPIV2Handler):
@@ -288,7 +288,7 @@ class UserManagementHandler(BaseAPIV2Handler):
                 status_code=200,
                 message=f"Successfully created user {request.username}.",
             )
-            self.write(res.json())
+            self.write(res.json(exclude_unset=True))
             return
         elif request.user_management_action.value == "update":
             log.debug(
@@ -325,7 +325,7 @@ class UserManagementHandler(BaseAPIV2Handler):
                 status_code=200,
                 message=f"Successfully updated user {request.username}.",
             )
-            self.write(res.json())
+            self.write(res.json(exclude_unset=True))
             return
         elif request.user_management_action.value == "delete":
             log.debug(
@@ -343,7 +343,7 @@ class UserManagementHandler(BaseAPIV2Handler):
                 status_code=200,
                 message=f"Successfully deleted user {request.username}.",
             )
-            self.write(res.json())
+            self.write(res.json(exclude_unset=True))
             return
         else:
             errors = ["Change type is not supported by this endpoint."]
