@@ -37,6 +37,7 @@ class NotificationsHandler(BaseAPIV2Handler):
             )
             self.write(response.json())
         except Exception as e:
+            raise  # TODO: Remove
             sentry_sdk.capture_exception()
             self.set_status(500)
             response = WebResponse(

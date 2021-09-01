@@ -44,6 +44,11 @@ export const NotificationsModal = (props) => {
     sendRequestCommon(request, "/api/v2/notifications", "put");
   };
 
+  const toggleRequestForUser = (notification) => {
+    console.log("here");
+  };
+
+  // TODO: Dynamically define buttons from backend
   // TODO: Make it possible to link specifically to recent errors page instead of primary role page
   // TODO: Error list on recent errors page should also allow generating request in as few clisk as possible
   // format should be figured out by the backend
@@ -65,6 +70,14 @@ export const NotificationsModal = (props) => {
     return (
       <>
         <Segment color="blue">
+          <Button.Group basic size="small" floated="right">
+            <Button
+              icon="close"
+              onClick={() => {
+                toggleHideFromUser(notification);
+              }}
+            />
+          </Button.Group>
           <ReactMarkdown linkTarget="_blank" source={notification?.message} />
           <Accordion exclusive={false} fluid>
             <Accordion.Title
@@ -101,46 +114,54 @@ export const NotificationsModal = (props) => {
             <Button
               color={"green"}
               onClick={() => {
-                toggleReadUnreadStatusForUser(notification);
+                toggleRequestForUser(notification);
               }}
-            >
-              Mark as read
-            </Button>
-            <Button.Or />
-            <Button
-              color={"orange"}
-              onClick={() => {
-                toggleHideFromUser(notification);
-              }}
-            >
-              Hide from me
-            </Button>
-            <Button.Or />
-            <Button
-              color={"red"}
-              onClick={() => {
-                toggleHideFromAllUsers(notification);
-              }}
-            >
-              Hide from everyone
-            </Button>
+            ></Button>
           </Button.Group>
+          {/*<Button.Group>*/}
+          {/*  <Button*/}
+          {/*    color={"green"}*/}
+          {/*    onClick={() => {*/}
+          {/*      toggleReadUnreadStatusForUser(notification);*/}
+          {/*    }}*/}
+          {/*  >*/}
+          {/*    Mark as read*/}
+          {/*  </Button>*/}
+          {/*  <Button.Or />*/}
+          {/*  <Button*/}
+          {/*    color={"orange"}*/}
+          {/*    onClick={() => {*/}
+          {/*      toggleHideFromUser(notification);*/}
+          {/*    }}*/}
+          {/*  >*/}
+          {/*    Hide from me*/}
+          {/*  </Button>*/}
+          {/*  <Button.Or />*/}
+          {/*  <Button*/}
+          {/*    color={"red"}*/}
+          {/*    onClick={() => {*/}
+          {/*      toggleHideFromAllUsers(notification);*/}
+          {/*    }}*/}
+          {/*  >*/}
+          {/*    Hide from everyone*/}
+          {/*  </Button>*/}
+          {/*</Button.Group>*/}
         </Segment>
       </>
     );
   });
   const notificationDisplay = (
     <>
-      {notificationList.length > 0 ? (
-        <Button
-          color={"green"}
-          onClick={() => {
-            toggleMarkAllRead(props.notifications);
-          }}
-        >
-          Mark all as read
-        </Button>
-      ) : null}
+      {/*{notificationList.length > 0 ? (*/}
+      {/*  <Button*/}
+      {/*    color={"green"}*/}
+      {/*    onClick={() => {*/}
+      {/*      toggleMarkAllRead(props.notifications);*/}
+      {/*    }}*/}
+      {/*  >*/}
+      {/*    Mark all as read*/}
+      {/*  </Button>*/}
+      {/*) : null}*/}
       {notificationList.length > 0 ? (
         notificationList
       ) : (

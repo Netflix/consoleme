@@ -47,9 +47,10 @@ async def get_notifications_for_user(
         force_refresh
     )
 
+    notifications_for_user_raw = json.loads(all_notifications.get(user, "[]"))
     notifications_for_user = []
-    if all_notifications.get(user):
-        notifications_for_user.extend(json.loads(all_notifications[user]))
+    for notification in notifications_for_user_raw:
+        notifications_for_user.append(ConsoleMeUserNotification.parse_obj(notification))
     for group in groups:
         # Filter out identical notifications that were already captured via user-specific attribution. IE: "UserA"
         # performed an access deny operation locally under "RoleA" with session name = "UserA", so the generated
@@ -76,8 +77,10 @@ async def get_notifications_for_user(
                 # Skip this notification if it isn't hidden for the user
                 continue
             seen = False
-            for existing_user_notification in notifications_for_user:
-                # TODO: Parse these as ConsoleMeUserNotification
+            for existing_user_notification_raw in notifications_for_user:
+                existing_user_notification = ConsoleMeUserNotification.parse_obj(
+                    existing_user_notification_raw
+                )
                 if (
                     notification.predictable_id
                     == existing_user_notification.predictable_id
