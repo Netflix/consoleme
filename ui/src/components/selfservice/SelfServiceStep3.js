@@ -38,6 +38,7 @@ class SelfServiceStep3 extends Component {
       active: true,
       requestUrl: null,
       principal_name: "",
+      change_type: "inline_policy",
     };
     this.inlinePolicyEditorRef = React.createRef();
     this.editorDidMount = this.editorDidMount.bind(this);
@@ -53,17 +54,22 @@ class SelfServiceStep3 extends Component {
       messages: [],
     });
 
+    let parsed_policy = updated_policy;
+    try {
+      parsed_policy = { policy_document: JSON.parse(updated_policy) };
+    } catch {
+      // Some template languages don't use JSON
+    }
+
     const payload = {
       dry_run: true,
       changes: {
         changes: [
           {
             principal: role.principal,
-            change_type: "inline_policy",
+            change_type: this.state.change_type,
             action: "attach",
-            policy: {
-              policy_document: JSON.parse(updated_policy),
-            },
+            policy: parsed_policy,
           },
         ],
       },
@@ -90,6 +96,7 @@ class SelfServiceStep3 extends Component {
             role.principal.resource_identifier +
             role.principal.resource_identifier,
           active: false,
+          change_type: "generic_file",
         });
       } else {
         this.setState({
@@ -166,6 +173,12 @@ class SelfServiceStep3 extends Component {
         messages: ["No Justification is Given"],
       }));
     }
+    let parsed_policy = new_policy;
+    try {
+      parsed_policy = { policy_document: JSON.parse(new_policy) };
+    } catch {
+      // Some template languages don't use JSON
+    }
 
     const requestV2 = {
       justification,
@@ -174,11 +187,9 @@ class SelfServiceStep3 extends Component {
         changes: [
           {
             principal: role.principal,
-            change_type: "inline_policy",
+            change_type: this.state.change_type,
             action: "attach",
-            policy: {
-              policy_document: JSON.parse(new_policy),
-            },
+            policy: parsed_policy,
           },
         ],
       },

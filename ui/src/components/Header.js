@@ -16,7 +16,11 @@ import { useNotifications } from "./hooks/notifications";
 
 const ConsoleMeHeader = () => {
   const { user } = useAuth();
-  const { notifications, unreadNotificationCount } = useNotifications();
+  const {
+    notifications,
+    unreadNotificationCount,
+    GetAndSetNotifications,
+  } = useNotifications();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -215,6 +219,7 @@ const ConsoleMeHeader = () => {
         isOpen={notificationsOpen}
         closeNotifications={closeNotifications}
         notifications={notifications}
+        GetAndSetNotifications={GetAndSetNotifications}
       />
     </>
   );

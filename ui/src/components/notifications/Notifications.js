@@ -1,17 +1,21 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Accordion, Button, Modal, Segment, Icon } from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
 import MonacoEditor from "react-monaco-editor";
 import { getLocalStorageSettings } from "../../helpers/utils";
 import { useAuth } from "../../auth/AuthProviderDefault";
+import { useNotifications } from "../hooks/notifications";
 
 export const NotificationsModal = (props) => {
+  const { notifications, GetAndSetNotifications } = useNotifications();
   const { sendRequestCommon } = useAuth();
   const [activeTargets, setActiveTargets] = useState({});
   const editorTheme = getLocalStorageSettings("editorTheme");
   const closeNotifications = () => {
     props.closeNotifications();
   };
+  const [notificationList, setNotificationList] = useState([]);
+  //const [notifications, setNotifications] = useState(props.notifications)
 
   const toggleReadUnreadStatusForUser = (notification) => {
     const request = {
@@ -26,6 +30,8 @@ export const NotificationsModal = (props) => {
       notifications: [notification],
     };
     sendRequestCommon(request, "/api/v2/notifications", "put");
+    // setNotifications( notifications.filter(item => item !== notification))
+    GetAndSetNotifications();
   };
 
   const toggleHideFromAllUsers = (notification) => {
@@ -66,97 +72,188 @@ export const NotificationsModal = (props) => {
     wordWrap: true,
     readOnly: true,
   };
-  let notificationList = props.notifications.map(function (notification) {
-    return (
-      <>
-        <Segment color="blue">
-          <Button.Group basic size="small" floated="right">
-            <Button
-              icon="close"
-              onClick={() => {
-                toggleHideFromUser(notification);
-              }}
-            />
-          </Button.Group>
-          <ReactMarkdown linkTarget="_blank" source={notification?.message} />
-          <Accordion exclusive={false} fluid>
-            <Accordion.Title
-              active={activeTargets[notification?.predictable_id] === true}
-              index={true}
-              onClick={() => {
-                let newState = activeTargets;
-                newState[notification.predictable_id] = !newState[
-                  notification.predictable_id
-                ];
-                setActiveTargets({
-                  ...activeTargets,
-                  ...newState,
-                });
-              }}
-            >
-              <Icon name="dropdown" />
-              More Details
-            </Accordion.Title>
-            <Accordion.Content
-              active={activeTargets[notification?.predictable_id] === true}
-            >
-              <MonacoEditor
-                height="500"
-                language="json"
-                theme={editorTheme}
-                value={JSON.stringify(notification?.details, null, 2)}
-                options={monacoOptions}
-                textAlign="center"
+  useEffect(() => {
+    setNotificationList(
+      notifications.map(function (notification) {
+        return (
+          <>
+            <Segment color="blue">
+              <Button.Group basic size="small" floated="right">
+                <Button
+                  icon="close"
+                  onClick={() => {
+                    toggleHideFromUser(notification);
+                  }}
+                />
+              </Button.Group>
+              <ReactMarkdown
+                linkTarget="_blank"
+                source={notification?.message}
               />
-            </Accordion.Content>
-          </Accordion>
-          <Button.Group>
-            <Button
-              color={"green"}
-              onClick={() => {
-                toggleRequestForUser(notification);
-              }}
-            ></Button>
-          </Button.Group>
-          {/*<Button.Group>*/}
-          {/*  <Button*/}
-          {/*    color={"green"}*/}
-          {/*    onClick={() => {*/}
-          {/*      toggleReadUnreadStatusForUser(notification);*/}
-          {/*    }}*/}
-          {/*  >*/}
-          {/*    Mark as read*/}
-          {/*  </Button>*/}
-          {/*  <Button.Or />*/}
-          {/*  <Button*/}
-          {/*    color={"orange"}*/}
-          {/*    onClick={() => {*/}
-          {/*      toggleHideFromUser(notification);*/}
-          {/*    }}*/}
-          {/*  >*/}
-          {/*    Hide from me*/}
-          {/*  </Button>*/}
-          {/*  <Button.Or />*/}
-          {/*  <Button*/}
-          {/*    color={"red"}*/}
-          {/*    onClick={() => {*/}
-          {/*      toggleHideFromAllUsers(notification);*/}
-          {/*    }}*/}
-          {/*  >*/}
-          {/*    Hide from everyone*/}
-          {/*  </Button>*/}
-          {/*</Button.Group>*/}
-        </Segment>
-      </>
+              <Accordion exclusive={false} fluid>
+                <Accordion.Title
+                  active={activeTargets[notification?.predictable_id] === true}
+                  index={true}
+                  onClick={() => {
+                    let newState = activeTargets;
+                    newState[notification.predictable_id] = !newState[
+                      notification.predictable_id
+                    ];
+                    setActiveTargets({
+                      ...activeTargets,
+                      ...newState,
+                    });
+                  }}
+                >
+                  <Icon name="dropdown" />
+                  More Details
+                </Accordion.Title>
+                <Accordion.Content
+                  active={activeTargets[notification?.predictable_id] === true}
+                >
+                  <MonacoEditor
+                    height="500"
+                    language="json"
+                    theme={editorTheme}
+                    value={JSON.stringify(notification?.details, null, 2)}
+                    options={monacoOptions}
+                    textAlign="center"
+                  />
+                </Accordion.Content>
+              </Accordion>
+              <Button.Group>
+                <Button
+                  color={"green"}
+                  onClick={() => {
+                    toggleRequestForUser(notification);
+                  }}
+                ></Button>
+              </Button.Group>
+              {/*<Button.Group>*/}
+              {/*  <Button*/}
+              {/*    color={"green"}*/}
+              {/*    onClick={() => {*/}
+              {/*      toggleReadUnreadStatusForUser(notification);*/}
+              {/*    }}*/}
+              {/*  >*/}
+              {/*    Mark as read*/}
+              {/*  </Button>*/}
+              {/*  <Button.Or />*/}
+              {/*  <Button*/}
+              {/*    color={"orange"}*/}
+              {/*    onClick={() => {*/}
+              {/*      toggleHideFromUser(notification);*/}
+              {/*    }}*/}
+              {/*  >*/}
+              {/*    Hide from me*/}
+              {/*  </Button>*/}
+              {/*  <Button.Or />*/}
+              {/*  <Button*/}
+              {/*    color={"red"}*/}
+              {/*    onClick={() => {*/}
+              {/*      toggleHideFromAllUsers(notification);*/}
+              {/*    }}*/}
+              {/*  >*/}
+              {/*    Hide from everyone*/}
+              {/*  </Button>*/}
+              {/*</Button.Group>*/}
+            </Segment>
+          </>
+        );
+      })
     );
-  });
+  }, [notifications]);
+  // let notificationList = notifications.map(function (notification) {
+  //   return (
+  //     <>
+  //       <Segment color="blue">
+  //         <Button.Group basic size="small" floated="right">
+  //           <Button
+  //             icon="close"
+  //             onClick={() => {
+  //               toggleHideFromUser(notification);
+  //             }}
+  //           />
+  //         </Button.Group>
+  //         <ReactMarkdown linkTarget="_blank" source={notification?.message} />
+  //         <Accordion exclusive={false} fluid>
+  //           <Accordion.Title
+  //             active={activeTargets[notification?.predictable_id] === true}
+  //             index={true}
+  //             onClick={() => {
+  //               let newState = activeTargets;
+  //               newState[notification.predictable_id] = !newState[
+  //                 notification.predictable_id
+  //               ];
+  //               setActiveTargets({
+  //                 ...activeTargets,
+  //                 ...newState,
+  //               });
+  //             }}
+  //           >
+  //             <Icon name="dropdown" />
+  //             More Details
+  //           </Accordion.Title>
+  //           <Accordion.Content
+  //             active={activeTargets[notification?.predictable_id] === true}
+  //           >
+  //             <MonacoEditor
+  //               height="500"
+  //               language="json"
+  //               theme={editorTheme}
+  //               value={JSON.stringify(notification?.details, null, 2)}
+  //               options={monacoOptions}
+  //               textAlign="center"
+  //             />
+  //           </Accordion.Content>
+  //         </Accordion>
+  //         <Button.Group>
+  //           <Button
+  //             color={"green"}
+  //             onClick={() => {
+  //               toggleRequestForUser(notification);
+  //             }}
+  //           ></Button>
+  //         </Button.Group>
+  //         {/*<Button.Group>*/}
+  //         {/*  <Button*/}
+  //         {/*    color={"green"}*/}
+  //         {/*    onClick={() => {*/}
+  //         {/*      toggleReadUnreadStatusForUser(notification);*/}
+  //         {/*    }}*/}
+  //         {/*  >*/}
+  //         {/*    Mark as read*/}
+  //         {/*  </Button>*/}
+  //         {/*  <Button.Or />*/}
+  //         {/*  <Button*/}
+  //         {/*    color={"orange"}*/}
+  //         {/*    onClick={() => {*/}
+  //         {/*      toggleHideFromUser(notification);*/}
+  //         {/*    }}*/}
+  //         {/*  >*/}
+  //         {/*    Hide from me*/}
+  //         {/*  </Button>*/}
+  //         {/*  <Button.Or />*/}
+  //         {/*  <Button*/}
+  //         {/*    color={"red"}*/}
+  //         {/*    onClick={() => {*/}
+  //         {/*      toggleHideFromAllUsers(notification);*/}
+  //         {/*    }}*/}
+  //         {/*  >*/}
+  //         {/*    Hide from everyone*/}
+  //         {/*  </Button>*/}
+  //         {/*</Button.Group>*/}
+  //       </Segment>
+  //     </>
+  //   );
+  // });
   const notificationDisplay = (
     <>
       {/*{notificationList.length > 0 ? (*/}
       {/*  <Button*/}
       {/*    color={"green"}*/}
       {/*    onClick={() => {*/}
-      {/*      toggleMarkAllRead(props.notifications);*/}
+      {/*      toggleMarkAllRead(notifications);*/}
       {/*    }}*/}
       {/*  >*/}
       {/*    Mark all as read*/}

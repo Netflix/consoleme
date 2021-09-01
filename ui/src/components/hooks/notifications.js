@@ -42,7 +42,7 @@ export const NotificationProvider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialNotificationsState);
   const { user, sendRequestCommon } = useAuth();
 
-  async function getAndSetNotifications(user) {
+  async function GetAndSetNotifications(user) {
     if (!user?.site_config?.notifications?.enabled) return;
     const result = await sendRequestCommon(
       null,
@@ -83,7 +83,7 @@ export const NotificationProvider = ({ children }) => {
       return;
     }
     setInterval(function () {
-      getAndSetNotifications(user);
+      GetAndSetNotifications(user);
     }, interval * 1000);
     setIntervalHookCalled();
   };
@@ -93,6 +93,7 @@ export const NotificationProvider = ({ children }) => {
       value={{
         ...state,
         RetrieveNotificationsAtInterval,
+        GetAndSetNotifications,
       }}
     >
       {children}
