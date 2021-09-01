@@ -14,17 +14,17 @@ ConsoleMe uses [**Celery**](https://docs.celeryproject.org/en/stable/getting-sta
   </thead>
   <tbody>
     <tr>
-      <td style="text-align:left">cache_roles_across_accounts</td>
+      <td style="text-align:left">cache_iam_resources_across_accounts</td>
       <td style="text-align:left">Retrieves a list of your AWS accounts. In your primary region, this task
-        will invoke a celery task ( cache_roles_for_account ) for each account.
+        will invoke a celery task ( cache_iam_resources_for_account ) for each account.
         In other regions, ConsoleMe will attempt to retreive this information from
-        your<code>consoleme_iamroles_global</code> global DynamoDB table to sync.</td>
+        your<code>consoleme_iamroles_global</code> global DynamoDB table to sync roles.</td>
       <td
       style="text-align:left">Every 45 minutes</td>
     </tr>
     <tr>
-      <td style="text-align:left">cache_roles_for_account</td>
-      <td style="text-align:left">Retrieves and caches a list of IAM roles for the current account. Stores
+      <td style="text-align:left">cache_iam_resources_for_account</td>
+      <td style="text-align:left">Retrieves and caches a list of IAM principals and policies for the current account. Stores
         data in DynamoDB, Redis, and (optionally) S3.</td>
       <td style="text-align:left">On demand</td>
     </tr>

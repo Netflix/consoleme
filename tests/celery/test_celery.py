@@ -31,7 +31,7 @@ class TestCelerySync(TestCase):
                 **CONFIG.config.get("aws", {}),
                 "iamroles_redis_key": "cache_iam_resources_for_account",
             },
-            "cache_roles_across_accounts": {
+            "cache_iam_resources_across_accounts": {
                 "all_roles_combined": {
                     "s3": {
                         "file": "cache_iam_resources_for_account.json.gz",
@@ -88,7 +88,7 @@ class TestCelerySync(TestCase):
         self.assertEqual(
             res,
             {
-                "function": "consoleme.celery_tasks.celery_tasks.cache_roles_across_accounts",
+                "function": "consoleme.celery_tasks.celery_tasks.cache_iam_resources_across_accounts",
                 "cache_key": "cache_iam_resources_for_account",
                 "num_roles": 15,
                 "num_accounts": 1,
@@ -98,7 +98,7 @@ class TestCelerySync(TestCase):
         self.assertEqual(
             res,
             {
-                "function": "consoleme.celery_tasks.celery_tasks.cache_roles_across_accounts",
+                "function": "consoleme.celery_tasks.celery_tasks.cache_iam_resources_across_accounts",
                 "cache_key": "cache_iam_resources_for_account",
                 "num_roles": 15,
                 "num_accounts": 1,
