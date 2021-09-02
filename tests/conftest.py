@@ -328,9 +328,12 @@ def create_default_resources(s3, iam, redis, iam_sync_principals, iamrole_table)
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_roles,
             s3_bucket=config.get(
-                "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
             ),
-            s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+            s3_key=config.get(
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
+                "account_resource_cache/cache_all_roles_v1.json.gz",
+            ),
         )
         return
     from consoleme.celery_tasks.celery_tasks import cache_iam_resources_for_account
@@ -348,9 +351,12 @@ def create_default_resources(s3, iam, redis, iam_sync_principals, iamrole_table)
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_roles,
         s3_bucket=config.get(
-            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
         ),
-        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+        s3_key=config.get(
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
+            "account_resource_cache/cache_all_roles_v1.json.gz",
+        ),
     )
 
 
@@ -1042,8 +1048,8 @@ def populate_caches(
         celery.cache_sqs_queues_for_account(account_id)
         celery.cache_managed_policies_for_account(account_id)
         # celery.cache_resources_from_aws_config_for_account(account_id) # No select_resource_config in moto yet
-    # Running cache_roles_across_accounts ensures that all of the pre-existing roles in our role cache are stored in
-    # (mock) S3
+    # Running cache_iam_resources_across_accounts ensures that all of the pre-existing roles in our
+    # role cache are stored in (mock) S3
     celery.cache_iam_resources_across_accounts()
     celery.cache_policies_table_details()
     celery.cache_policy_requests()

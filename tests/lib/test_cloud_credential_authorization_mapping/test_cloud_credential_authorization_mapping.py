@@ -16,9 +16,9 @@ class TestCloudCredentialAuthorizationMapping(unittest.IsolatedAsyncioTestCase):
             **CONFIG.config,
             "aws": {
                 **CONFIG.config.get("aws", {}),
-                "iamroles_redis_key": "test_cache_roles_for_account",
+                "iamroles_redis_key": "test_cache_iam_resources_for_account",
             },
-            "cache_roles_across_accounts": {
+            "cache_iam_resources_across_accounts": {
                 "all_roles_combined": {
                     "s3": {
                         "file": "TestCloudCredentialAuthorizationMapping.json.gz",

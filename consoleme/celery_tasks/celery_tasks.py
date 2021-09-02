@@ -802,7 +802,9 @@ def cache_policies_table_details() -> bool:
 
 
 @app.task(soft_time_limit=2700, **default_retry_kwargs)
-def cache_iam_resources_for_account(account_id: str) -> bool:
+def cache_iam_resources_for_account(account_id: str) -> Dict[str, Any]:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {"function": function, "account_id": account_id}
     cache_keys = {
         "iam_roles": {
             "temp_cache_key": config.get(
@@ -903,6 +905,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                     "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
                 ).format(resource_type="iam_roles", account_id=account_id),
             )
+            log_data["num_iam_roles"] = len(iam_roles)
 
         if iam_users:
             async_to_sync(store_json_results_in_redis_and_s3)(
@@ -915,6 +918,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                     "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
                 ).format(resource_type="iam_users", account_id=account_id),
             )
+            log_data["num_iam_users"] = len(iam_users)
 
         if iam_groups:
             async_to_sync(store_json_results_in_redis_and_s3)(
@@ -927,6 +931,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                     "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
                 ).format(resource_type="iam_groups", account_id=account_id),
             )
+            log_data["num_iam_groups"] = len(iam_groups)
 
         if iam_policies:
             async_to_sync(store_json_results_in_redis_and_s3)(
@@ -939,6 +944,7 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
                     "account_resource_cache/cache_{resource_type}_{account_id}_v1.json.gz",
                 ).format(resource_type="iam_policies", account_id=account_id),
             )
+            log_data["num_iam_policies"] = len(iam_policies)
 
         ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
         # Save them:
@@ -1022,7 +1028,8 @@ def cache_iam_resources_for_account(account_id: str) -> bool:
     stats.count(
         "cache_iam_resources_for_account.success", tags={"account_id": account_id}
     )
-    return True
+    log.debug({**log_data, "message": "Finished caching IAM resources for account"})
+    return log_data
 
 
 @app.task(soft_time_limit=3600)

@@ -25,10 +25,10 @@ async def cache_self_service_typeahead() -> SelfServiceTypeaheadModelArray:
         redis_key=config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE"),
         redis_data_type="hash",
         s3_bucket=config.get(
-            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
         ),
         s3_key=config.get(
-            "cache_roles_across_accounts.all_roles_combined.s3.file",
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
             "account_resource_cache/cache_all_roles_v1.json.gz",
         ),
     )
