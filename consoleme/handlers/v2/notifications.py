@@ -112,9 +112,7 @@ class NotificationsHandler(BaseAPIV2Handler):
                     # whether to show the notification or not
                     notification.hidden_for_all = True
             print(notification)
-        # TODO:  Set the change in DB
-        # TODO: Re-cache to Redis
-        # TODO: Reuse this in separate function
+        # TODO: Store in Dynamo, force recache to S3/Redis, reset last_updated timer after done
         try:
             # Check notifications for user, return notifications for user
             notifications = await get_notifications_for_user(

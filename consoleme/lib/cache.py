@@ -2,6 +2,7 @@ import gzip
 import json
 import sys
 import time
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 from asgiref.sync import sync_to_async
@@ -41,10 +42,12 @@ async def store_json_results_in_redis_and_s3(
     s3_bucket: str = None,
     s3_key: str = None,
     json_encoder=None,
+    s3_expires: int = None,
 ):
     """
     Stores data in Redis and S3, depending on configuration
 
+    :param s3_expires: Epoch time integer for when the written S3 object should expire
     :param redis_data_type: "str" or "hash", depending on how we're storing data in Redis
     :param data: Python dictionary or list that will be encoded in JSON for storage
     :param redis_key: Redis Key to store data to
@@ -60,6 +63,7 @@ async def store_json_results_in_redis_and_s3(
 
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     last_updated = int(time.time())
+
     stats.count(
         f"{function}.called",
         tags={"redis_key": redis_key, "s3_bucket": s3_bucket, "s3_key": s3_key},
@@ -85,6 +89,9 @@ async def store_json_results_in_redis_and_s3(
         red.hset(last_updated_redis_key, redis_key, last_updated)
 
     if s3_bucket and s3_key:
+        s3_extra_kwargs = {}
+        if isinstance(s3_expires, int):
+            s3_extra_kwargs["Expires"] = datetime.utcfromtimestamp(s3_expires)
         data_for_s3 = json.dumps(
             {"last_updated": last_updated, "data": data},
             cls=SetEncoder,
@@ -93,11 +100,7 @@ async def store_json_results_in_redis_and_s3(
         ).encode()
         if s3_key.endswith(".gz"):
             data_for_s3 = gzip.compress(data_for_s3)
-        put_object(
-            Bucket=s3_bucket,
-            Key=s3_key,
-            Body=data_for_s3,
-        )
+        put_object(Bucket=s3_bucket, Key=s3_key, Body=data_for_s3, **s3_extra_kwargs)
 
 
 async def retrieve_json_data_from_redis_or_s3(

@@ -1,10 +1,16 @@
 import time
+from collections import defaultdict
 
 import sentry_sdk
 import ujson as json
+from asgiref.sync import sync_to_async
 
 from consoleme.config import config
-from consoleme.lib.cache import retrieve_json_data_from_redis_or_s3
+from consoleme.lib.cache import (
+    retrieve_json_data_from_redis_or_s3,
+    store_json_results_in_redis_and_s3,
+)
+from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.notifications.models import ConsoleMeUserNotification
 from consoleme.lib.singleton import Singleton
 
@@ -97,3 +103,14 @@ async def get_notifications_for_user(
         notifications_for_user, key=lambda i: i.event_time, reverse=True
     )
     return notifications_for_user[0:max_notifications]
+
+
+async def set_notification(notification: ConsoleMeUserNotification):
+    ddb = UserDynamoHandler()
+    await sync_to_async(ddb.notifications_table.put_item)(
+        Item=ddb._data_to_dynamo_replace(notification.dict())
+    )
+
+    # TODO: Force re-cache to Redis/S3
+    # Reset `last_update` time in our Singleton to force data refresh on next notification pull
+    RetrieveNotifications().last_update = 0
