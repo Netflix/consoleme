@@ -116,7 +116,7 @@ class UserRegistrationHandler(TornadoRequestHandler):
             status_code=200,
             message=f"Successfully created user {registration_attempt.username}.",
         )
-        self.write(res.json(exclude_unset=True, exclude_none=True))
+        self.write(res.json(exclude_unset=True))
 
 
 class LoginConfigurationHandler(TornadoRequestHandler):
