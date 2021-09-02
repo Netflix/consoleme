@@ -6,6 +6,16 @@ from pydantic import Field
 from consoleme.lib.pydantic import BaseModel
 
 
+class ConsoleMeUserNotificationAction(BaseModel):
+    http_method: str = Field(
+        ..., description="HTTP method for the request", example="get"
+    )
+    uri: str = Field(
+        ..., description="URL to send the request if user invokes the action"
+    )
+    text: str = Field(..., description="Text to show for the call-to-action")
+
+
 class ConsoleMeUserNotification(BaseModel):
     predictable_id: str = Field(
         ...,
@@ -37,6 +47,12 @@ class ConsoleMeUserNotification(BaseModel):
     message: str = Field(
         ...,
         description="An (optionally markdown) formatted message to show to users in the UI",
+    )
+    message_actions: List[ConsoleMeUserNotificationAction] = Field(
+        ...,
+        description=(
+            "An optional list of actions to make available to the user. These will be shown below the notification."
+        ),
     )
     details: Dict[str, Any] = Field(
         ...,

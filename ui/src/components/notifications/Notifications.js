@@ -73,8 +73,21 @@ export const NotificationsModal = (props) => {
     readOnly: true,
   };
   useEffect(() => {
+    console.log("rerender");
     setNotificationList(
       notifications.map(function (notification) {
+        const { messageActions } = notification.message_actions.map(function (
+          message_action
+        ) {
+          return (
+            <Button
+              icon="close"
+              onClick={() => window.open(message_action.uri, "_blank")}
+            >
+              {message_action.text}
+            </Button>
+          );
+        });
         return (
           <>
             <Segment color="blue">
@@ -105,6 +118,7 @@ export const NotificationsModal = (props) => {
                     });
                   }}
                 >
+                  {/*TODO: Figure out why this doesn't expand until next refresh*/}
                   <Icon name="dropdown" />
                   More Details
                 </Accordion.Title>
@@ -121,14 +135,7 @@ export const NotificationsModal = (props) => {
                   />
                 </Accordion.Content>
               </Accordion>
-              <Button.Group>
-                <Button
-                  color={"green"}
-                  onClick={() => {
-                    toggleRequestForUser(notification);
-                  }}
-                ></Button>
-              </Button.Group>
+              <Button.Group>{messageActions}</Button.Group>
               {/*<Button.Group>*/}
               {/*  <Button*/}
               {/*    color={"green"}*/}

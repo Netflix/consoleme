@@ -11,7 +11,10 @@ from consoleme.lib.aws import get_iam_principal_owner, simulate_iam_principal_ac
 from consoleme.lib.cache import store_json_results_in_redis_and_s3
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.json_encoder import SetEncoder
-from consoleme.lib.notifications.models import ConsoleMeUserNotification
+from consoleme.lib.notifications.models import (
+    ConsoleMeUserNotification,
+    ConsoleMeUserNotificationAction,
+)
 
 ddb = UserDynamoHandler()
 
@@ -110,15 +113,24 @@ class CloudTrail:
             notification_message = config.get(
                 "process_cloudtrail_errors.generate_notifications.message",
                 """We've generated a policy suggestion for a recent permissions error with **[{arn}]({url_role_path})**.
-Please review it **[here]({encoded_request_url})**.
+Please click the button below to review it.
 
 You are receiving this notification because your team owns this role, or you were using this role at the time the error
 was detected. This notification will disappear when a similar error has not occurred for 24 hours.""".format(
                     arn=arn,
                     url_role_path=url_role_path,
-                    encoded_request_url=encoded_request_url,
                 ),
             )
+
+            message_actions = [
+                ConsoleMeUserNotificationAction.parse_obj(
+                    {
+                        "http_method": "get",
+                        "uri": encoded_request_url,
+                        "text": "Review and Submit Request",
+                    }
+                )
+            ]
 
             generated_notification = ConsoleMeUserNotification(
                 predictable_id=predictable_id,
@@ -128,6 +140,7 @@ was detected. This notification will disappear when a similar error has not occu
                 expiration=expiration,
                 expired=False,
                 message=notification_message,
+                message_actions=message_actions,
                 details=cloudtrail_error,
                 read_by_users=set(),
                 read_by_all=False,
