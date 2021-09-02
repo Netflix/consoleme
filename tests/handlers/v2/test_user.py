@@ -34,13 +34,10 @@ class TestUserRegistrationApi(AsyncHTTPTestCase):
             {
                 "status": "error",
                 "reason": "invalid_request",
-                "redirect_url": None,
                 "status_code": 403,
-                "message": None,
                 "errors": [
                     "The email address is not valid. It must have exactly one @-sign."
                 ],
-                "data": None,
             },
         )
 
@@ -56,12 +53,8 @@ class TestUserRegistrationApi(AsyncHTTPTestCase):
             json.loads(response.body),
             {
                 "status": "success",
-                "reason": None,
-                "redirect_url": None,
                 "status_code": 200,
                 "message": "Successfully created user testuser5@example.com.",
-                "errors": None,
-                "data": None,
             },
         )
 
@@ -93,14 +86,11 @@ class TestLoginApi(AsyncHTTPTestCase):
             {
                 "status": "error",
                 "reason": "authentication_failure",
-                "redirect_url": None,
                 "status_code": 403,
-                "message": None,
                 "errors": [
                     "User doesn't exist, or password is incorrect. ",
                     "Your next authentication failure will result in a 1 second wait. This wait time will expire after 60 seconds of no authentication failures.",
                 ],
-                "data": None,
             },
         )
 
@@ -119,14 +109,11 @@ class TestLoginApi(AsyncHTTPTestCase):
             {
                 "status": "error",
                 "reason": "authentication_failure",
-                "redirect_url": None,
                 "status_code": 403,
-                "message": None,
                 "errors": [
                     "User doesn't exist, or password is incorrect. ",
                     "Your next authentication failure will result in a 1 second wait. This wait time will expire after 60 seconds of no authentication failures.",
                 ],
-                "data": None,
             },
         )
 
@@ -154,8 +141,6 @@ class TestLoginApi(AsyncHTTPTestCase):
                 "redirect_url": "/",
                 "status_code": 200,
                 "message": "User has successfully authenticated. Redirecting to their intended destination.",
-                "errors": None,
-                "data": None,
             },
         )
 
@@ -188,12 +173,8 @@ class TestUserApi(AsyncHTTPTestCase):
             json.loads(response.body),
             {
                 "status": "success",
-                "reason": None,
-                "redirect_url": None,
                 "status_code": 200,
                 "message": "Successfully created user testuser3.",
-                "errors": None,
-                "data": None,
             },
         )
 
@@ -231,8 +212,8 @@ class TestUserApi(AsyncHTTPTestCase):
                     "Your next authentication failure will result in a 1 second wait. "
                     "This wait time will expire after 60 seconds of no authentication failures.",
                 ],
-                "username": None,
                 "groups": None,
+                "username": None,
             },
         )
 
@@ -250,12 +231,8 @@ class TestUserApi(AsyncHTTPTestCase):
             json.loads(response.body),
             {
                 "status": "success",
-                "reason": None,
-                "redirect_url": None,
                 "status_code": 200,
                 "message": "Successfully updated user testuser3.",
-                "errors": None,
-                "data": None,
             },
         )
 
@@ -273,12 +250,8 @@ class TestUserApi(AsyncHTTPTestCase):
             json.loads(response.body),
             {
                 "status": "success",
-                "reason": None,
-                "redirect_url": None,
                 "status_code": 200,
                 "message": "Successfully updated user testuser3.",
-                "errors": None,
-                "data": None,
             },
         )
         # Update groups and password AT THE SAME TIME!!1
@@ -296,12 +269,8 @@ class TestUserApi(AsyncHTTPTestCase):
             json.loads(response.body),
             {
                 "status": "success",
-                "reason": None,
-                "redirect_url": None,
                 "status_code": 200,
                 "message": "Successfully updated user testuser3.",
-                "errors": None,
-                "data": None,
             },
         )
 
@@ -320,11 +289,7 @@ class TestUserApi(AsyncHTTPTestCase):
             json.loads(response.body),
             {
                 "status": "success",
-                "reason": None,
-                "redirect_url": None,
                 "status_code": 200,
                 "message": "Successfully deleted user testuser3.",
-                "errors": None,
-                "data": None,
             },
         )

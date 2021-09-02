@@ -13,6 +13,13 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 credential_mapping = CredentialAuthorizationMapping()
 
 
+def _get_last_page(total: int, page_size: int) -> int:
+    pages = int(total / page_size)
+    if not total % page_size:
+        pages += 1
+    return pages
+
+
 class AuditRolesHandler(BaseMtlsHandler):
     """Handler for /api/v2/audit/roles
 
@@ -28,6 +35,33 @@ class AuditRolesHandler(BaseMtlsHandler):
         """
         GET /api/v2/audit/roles
         """
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+
+        page = self.get_argument("page", "0")
+        try:
+            page = int(page)
+        except ValueError:
+            log_data["message"] = f"invalid value for page: {page}"
+            log.warning(log_data)
+            page = 0
+
+        count = self.get_argument("count", "1000")
+        try:
+            count = int(count)
+        except ValueError:
+            log_data["message"] = f"invalid value for count: {count}"
+            log.warning(log_data)
+            count = 1000
+
+        if page < 0:
+            page = 0
+        if count < 0:
+            count = 1000
+
         app_name = self.requester.get("name") or self.requester.get("username")
         stats.count(
             "AuditRoleHandler.get",
@@ -36,12 +70,26 @@ class AuditRolesHandler(BaseMtlsHandler):
             },
         )
 
-        roles = await credential_mapping.all_roles()
+        roles = await credential_mapping.all_roles(
+            paginate=True, page=page, count=count
+        )
+        total_roles = await credential_mapping.number_roles()
+        start = page * count
+        end = start + count
+        if end >= total_roles:
+            end = total_roles - 1
+        roles = roles[start:end]
 
         self.write(
-            WebResponse(status=Status2.success, status_code=200, data=roles).json(
-                exclude_unset=True
-            )
+            WebResponse(
+                status=Status2.success,
+                status_code=200,
+                data=roles,
+                page=page,
+                total=total_roles,
+                count=len(roles),
+                last_page=_get_last_page(total_roles, count),
+            ).json(exclude_unset=True)
         )
 
 
