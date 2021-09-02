@@ -13,8 +13,8 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 credential_mapping = CredentialAuthorizationMapping()
 
 
-def _get_last_page(total, page_size):
-    pages = total / page_size
+def _get_last_page(total: int, page_size: int) -> int:
+    pages = int(total / page_size)
     if not total % page_size:
         pages += 1
     return pages
