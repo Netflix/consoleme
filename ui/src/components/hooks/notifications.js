@@ -42,13 +42,11 @@ export const NotificationProvider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialNotificationsState);
   const { user, sendRequestCommon } = useAuth();
 
-  async function GetAndSetNotifications(user) {
+  async function GetAndSetNotifications(user, result) {
     if (!user?.site_config?.notifications?.enabled) return;
-    const result = await sendRequestCommon(
-      null,
-      "/api/v2/notifications",
-      "get"
-    );
+    if (!result) {
+      result = await sendRequestCommon(null, "/api/v2/notifications", "get");
+    }
 
     // TODO: Error Handling
     if (!result?.data?.unreadNotificationCount) return;

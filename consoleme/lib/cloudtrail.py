@@ -28,8 +28,8 @@ class CloudTrail:
         ),
     ) -> object:
         """
-        Processes Cloudtrail Errors that were cached by the `cache_cloudtrail_denies` celery task.
-        If configured, generates notifications to end-users based on Cloudtrail errors
+        Processes Cloudtrail Errors that were cached by the `cache_cloudtrail_denies` celery task. Generates and returns
+        count data. If configured, generates notifications to end-users based on policies that can be generated
 
         :param notification_ttl_seconds:
         :return:

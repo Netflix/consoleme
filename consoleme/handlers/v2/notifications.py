@@ -8,7 +8,11 @@ from consoleme.lib.notifications.models import (
     ConsoleMeNotificationUpdateRequest,
 )
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.v2.notifications import get_notifications_for_user
+from consoleme.lib.v2.notifications import (
+    fetch_notification,
+    get_notifications_for_user,
+    write_notification,
+)
 from consoleme.models import Status2, WebResponse
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
@@ -60,7 +64,13 @@ class NotificationsHandler(BaseAPIV2Handler):
         change = ConsoleMeNotificationUpdateRequest.parse_raw(self.request.body)
         errors = []
 
-        for notification in change.notifications:
+        for untrusted_notification in change.notifications:
+            notification = await fetch_notification(
+                untrusted_notification.predictable_id
+            )
+            if not notification:
+                errors.append(f"Unable to find matching notification")
+                continue
             authorized = is_in_group(
                 self.user, self.groups, notification.users_or_groups
             )
@@ -111,9 +121,11 @@ class NotificationsHandler(BaseAPIV2Handler):
                     # Unmark as "Hidden for all users" (Falls back to `hidden_for_users.read_by_user` to determine
                     # whether to show the notification or not
                     notification.hidden_for_all = True
-            print(notification)
-        # TODO: Store in Dynamo, force recache to S3/Redis, reset last_updated timer after done
+            else:
+                raise Exception("Unknown or unsupported change action.")
+            await write_notification(notification)
         try:
+
             # Check notifications for user, return notifications for user
             notifications = await get_notifications_for_user(
                 self.user, self.groups, force_refresh=True

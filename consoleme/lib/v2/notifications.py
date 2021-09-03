@@ -1,3 +1,4 @@
+import json as original_json
 import time
 from collections import defaultdict
 
@@ -11,6 +12,7 @@ from consoleme.lib.cache import (
     store_json_results_in_redis_and_s3,
 )
 from consoleme.lib.dynamo import UserDynamoHandler
+from consoleme.lib.json_encoder import SetEncoder
 from consoleme.lib.notifications.models import ConsoleMeUserNotification
 from consoleme.lib.singleton import Singleton
 
@@ -53,17 +55,14 @@ async def get_notifications_for_user(
         force_refresh
     )
 
-    notifications_for_user_raw = json.loads(all_notifications.get(user, "[]"))
     notifications_for_user = []
-    for notification in notifications_for_user_raw:
-        notifications_for_user.append(ConsoleMeUserNotification.parse_obj(notification))
-    for group in groups:
+    for user_or_group in [user, *groups]:
         # Filter out identical notifications that were already captured via user-specific attribution. IE: "UserA"
         # performed an access deny operation locally under "RoleA" with session name = "UserA", so the generated
         # notification is tied to the user. However, "UserA" is a member of "GroupA", which owns RoleA. We want
         # to show the notification to members of "GroupA", as well as "UserA" but we don't want "UserA" to see 2
         # notifications.
-        notifications = all_notifications.get(group)
+        notifications = all_notifications.get(user_or_group)
         if not notifications:
             continue
         notifications = json.loads(notifications)
@@ -98,6 +97,7 @@ async def get_notifications_for_user(
     notifications_for_user = [
         v for v in notifications_for_user if v.expiration > current_time
     ]
+
     # Show newest notifications first
     notifications_for_user = sorted(
         notifications_for_user, key=lambda i: i.event_time, reverse=True
@@ -105,12 +105,42 @@ async def get_notifications_for_user(
     return notifications_for_user[0:max_notifications]
 
 
-async def set_notification(notification: ConsoleMeUserNotification):
+async def fetch_notification(notification_id: str):
+    ddb = UserDynamoHandler()
+    notification = await sync_to_async(ddb.notifications_table.get_item)(
+        Key={"predictable_id": notification_id}
+    )
+    if notification.get("Item"):
+        return ConsoleMeUserNotification.parse_obj(notification["Item"])
+
+
+async def cache_notifications_to_redis_s3():
+    ddb = UserDynamoHandler()
+    notifications_by_user_group = defaultdict(list)
+    all_notifications_l = await ddb.parallel_scan_table_async(ddb.notifications_table)
+    for existing_notification in all_notifications_l:
+        notification = ConsoleMeUserNotification.parse_obj(existing_notification)
+        for user_or_group in notification.users_or_groups:
+            notifications_by_user_group[user_or_group].append(notification.dict())
+
+    if notifications_by_user_group:
+        for k, v in notifications_by_user_group.items():
+            notifications_by_user_group[k] = original_json.dumps(v, cls=SetEncoder)
+        await store_json_results_in_redis_and_s3(
+            notifications_by_user_group,
+            redis_key=config.get("notifications.redis_key", "ALL_NOTIFICATIONS"),
+            redis_data_type="hash",
+            s3_bucket=config.get("notifications.s3.bucket"),
+            s3_key=config.get(
+                "notifications.s3.key", "notifications/all_notifications_v1.json.gz"
+            ),
+        )
+
+
+async def write_notification(notification: ConsoleMeUserNotification):
     ddb = UserDynamoHandler()
     await sync_to_async(ddb.notifications_table.put_item)(
         Item=ddb._data_to_dynamo_replace(notification.dict())
     )
-
-    # TODO: Force re-cache to Redis/S3
-    # Reset `last_update` time in our Singleton to force data refresh on next notification pull
-    RetrieveNotifications().last_update = 0
+    await cache_notifications_to_redis_s3()
+    return True

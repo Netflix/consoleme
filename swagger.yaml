@@ -686,10 +686,14 @@ components:
               custom_iam: "#/components/schemas/CustomIamChangeGeneratorModel"
         resource_arn:
           description: |-
-            The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
-            resource policy will need to be modified if the change is approved and successful.
-          example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
-          type: string
+            The ARN(s) of the resource being accessed. This is often SQS/SNS/S3/etc. ARNs. It is possible that the
+            resource policies will need to be modified if the change is approved and successful.
+          example:
+            - arn:aws:sqs:us-east-1:123456789012:sqs_queue,
+            - arn:aws:sqs:us-west-2:123456789012:sqs_queue2,
+          type: array
+          items:
+            type: string
         version:
           description: Version
           type: string
@@ -803,11 +807,13 @@ components:
                 type: string
             resource_arn:
               description: |-
-                The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
-                resource policy will need to be modified if the change is approved and successful.
-              example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
-              type: string
-              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|(^\*$)'
+                The ARN(s) of the resource being accessed. This is often SQS/SNS/S3/etc. ARNs. It is possible that the
+                resource policies will need to be modified if the change is approved and successful.
+              example:
+                - arn:aws:sqs:us-east-1:123456789012:sqs_queue
+              type: array
+              items:
+                type: string
     CrudChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -849,9 +855,12 @@ components:
               pattern: "s3"
             resource_arn:
               description: |-
-                The ARN of the S3 resource being accessed.
-              example: arn:aws:s3:::example_bucket
-              type: string
+                The ARN(s) of the S3 resource(s) being accessed.
+              example:
+                - arn:aws:s3:::example_bucket
+              type: array
+              items:
+                type: string
             bucket_prefix:
               type: string
               example: /awesome/prefix/*

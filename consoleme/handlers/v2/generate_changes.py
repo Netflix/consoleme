@@ -37,7 +37,7 @@ class GenerateChangesHandler(BaseAPIV2Handler):
                     "principal_type": "AwsResource"
                 },
                 "generator_type": "s3",
-                "resource_arn": "arn:aws:s3:::123456789012-bucket",
+                "resource_arn": ["arn:aws:s3:::123456789012-bucket"],
                 "bucket_prefix": "/*",
                 "effect": "Allow",
                 "action_groups": [
@@ -56,7 +56,7 @@ class GenerateChangesHandler(BaseAPIV2Handler):
                         "principal_type": "AwsResource"
                     },
                     "change_type": "inline_policy",
-                    "resource_arns": [
+                    "resource_arn": [
                         "arn:aws:s3:::123456789012-bucket"
                     ],
                     "resource": null,
