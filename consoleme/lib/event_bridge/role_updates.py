@@ -61,9 +61,26 @@ def detect_role_changes_and_update_cache(celery_app):
         for message in messages:
             try:
                 message_body = json.loads(message["Body"])
-                decoded_message = json.loads(message_body["Message"])
-                role_name = decoded_message["detail"]["requestParameters"]["roleName"]
-                role_account_id = decoded_message["account"]
+                try:
+                    if "Message" in message_body:
+                        decoded_message = json.loads(message_body["Message"])["detail"]
+                    else:
+                        decoded_message = message_body["detail"]
+                except Exception as e:
+                    log.error(
+                        {
+                            **log_data,
+                            "message": "Unable to process Cloudtrail message",
+                            "message_body": message_body,
+                            "error": str(e),
+                        }
+                    )
+                    sentry_sdk.capture_exception()
+                    continue
+                role_name = decoded_message["requestParameters"]["roleName"]
+                role_account_id = decoded_message.get(
+                    "account", decoded_message.get("recipientAccountId")
+                )
                 role_arn = f"arn:aws:iam::{role_account_id}:role/{role_name}"
 
                 if role_arn not in roles_to_update:

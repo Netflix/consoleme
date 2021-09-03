@@ -427,6 +427,7 @@ def sqs_queue(sqs):
     sqs.create_queue(QueueName="consoleme-cloudtrail-access-deny-events-test")
 
     queue_url = sqs.get_queue_url(QueueName="consoleme-cloudtrail-role-events-test")
+    # Event Bridge -> SNS -> SQS message format
     message = json.dumps(
         {
             "Message": json.dumps(
@@ -483,6 +484,63 @@ def sqs_queue(sqs):
                     },
                 }
             )
+        }
+    )
+    sqs.send_message(QueueUrl=queue_url["QueueUrl"], MessageBody=message)
+
+    # Event Bridge -> SQS message format
+    message = json.dumps(
+        {
+            "version": "0",
+            "id": "c638b372-39b0-3218-d06d-a529b9da5b75",
+            "detail-type": "AWS API Call via CloudTrail",
+            "source": "aws.iam",
+            "account": "987128315680",
+            "time": "2021-09-03T20:16:32Z",
+            "region": "us-east-1",
+            "resources": [],
+            "detail": {
+                "eventVersion": "1.08",
+                "userIdentity": {
+                    "type": "AssumedRole",
+                    "principalId": "ABC123:i-12345",
+                    "arn": "arn:aws:sts::123456789012:assumed-role/aRole/thatDoesSomething",
+                    "accountId": "123456789012",
+                    "accessKeyId": "ACCESS_KEY",
+                    "sessionContext": {
+                        "sessionIssuer": {
+                            "type": "Role",
+                            "principalId": "PRINCIPAL_ID",
+                            "arn": "arn:aws:iam::123456789012:role/aRole",
+                            "accountId": "123456789012",
+                            "userName": "aRole",
+                        },
+                        "webIdFederationData": {},
+                        "attributes": {
+                            "creationDate": "2021-09-03T20:16:32Z",
+                            "mfaAuthenticated": "false",
+                        },
+                    },
+                },
+                "eventTime": "2021-09-03T20:16:32Z",
+                "eventSource": "iam.amazonaws.com",
+                "eventName": "TagRole",
+                "awsRegion": "us-east-1",
+                "sourceIPAddress": "1.2.3.4",
+                "userAgent": "Boto3/1.18.36 Python/3.7.11 Linux/4.14.243-194.434.amzn2.x86_64 exec-env/AWS_Lambda_python3.7 Botocore/1.21.36",
+                "requestParameters": {
+                    "roleName": "abcrole",
+                    "tags": [{"key": "1", "value": "1"}, {"key": "2", "value": "2"}],
+                },
+                "responseElements": None,
+                "requestID": "bf6ebf8f-f97e-413d-ba51-299816b1bd0d",
+                "eventID": "878b93f3-436a-45ee-b0f2-5ea9e155dd56",
+                "readOnly": False,
+                "eventType": "AwsApiCall",
+                "managementEvent": True,
+                "recipientAccountId": "123456789012",
+                "eventCategory": "Management",
+            },
         }
     )
     sqs.send_message(QueueUrl=queue_url["QueueUrl"], MessageBody=message)
