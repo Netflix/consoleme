@@ -89,6 +89,14 @@ class ConsoleMeUserNotification(BaseModel):
             "any user."
         ),
     )
+    read_for_current_user: bool = Field(
+        None,
+        description=(
+            "Convenience variable  to mark a notification as read for current user when retrieving notification. "
+            "This makes it so the frontend doesn't need to do any computation to figure it out. A Non-None value "
+            "should not be stored in the database."
+        ),
+    )
     version: int = Field(..., description=("Version of the notification model"))
 
 
@@ -102,3 +110,8 @@ class ConsoleMeNotificationUpdateAction(Enum):
 class ConsoleMeNotificationUpdateRequest(BaseModel):
     action: ConsoleMeNotificationUpdateAction
     notifications: List[ConsoleMeUserNotification]
+
+
+class GetNotificationsForUserResponse(BaseModel):
+    notifications: List[ConsoleMeUserNotification]
+    unread_count: int

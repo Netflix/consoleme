@@ -19,11 +19,23 @@ export const NotificationsModal = (props) => {
   const { user, sendRequestCommon } = useAuth();
   const [activeTargets, setActiveTargets] = useState({});
   const editorTheme = getLocalStorageSettings("editorTheme");
+
   const closeNotifications = () => {
+    markAllNotificationsAsReadForUser(notifications);
     props.closeNotifications();
   };
+
   const [notificationList, setNotificationList] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState([]);
+
+  const markAllNotificationsAsReadForUser = async (notifications) => {
+    const request = {
+      action: "toggle_read_for_current_user",
+      notifications: [notifications],
+    };
+
+    await sendRequestCommon(request, "/api/v2/notifications", "put");
+  };
 
   const toggleHideFromUser = async (notification) => {
     const request = {
@@ -44,14 +56,6 @@ export const NotificationsModal = (props) => {
     );
   };
 
-  const toggleMarkAllRead = (notifications) => {
-    const request = {
-      action: "toggle_read_for_current_user",
-      notifications: notifications,
-    };
-    sendRequestCommon(request, "/api/v2/notifications", "put");
-  };
-
   const monacoOptions = {
     selectOnLineNumbers: true,
     quickSuggestions: true,
@@ -68,7 +72,6 @@ export const NotificationsModal = (props) => {
       setNotificationList(
         await Promise.all(
           notifications.map(async function (notification) {
-            let loading = false;
             const messageActions = await Promise.all(
               notification.message_actions.map(async function (message_action) {
                 return (
@@ -95,9 +98,7 @@ export const NotificationsModal = (props) => {
                       icon="close"
                       onClick={() => {
                         async function execute() {
-                          loading = true;
                           await toggleHideFromUser(notification);
-                          loading = false;
                         }
 
                         execute();
@@ -152,7 +153,7 @@ export const NotificationsModal = (props) => {
       );
     }
     generateRenderedData();
-  }, [notifications, activeTargets, loadingNotifications]);
+  }, [notifications, activeTargets, loadingNotifications]); // eslint-disable-line
 
   const notificationDisplay = (
     <>

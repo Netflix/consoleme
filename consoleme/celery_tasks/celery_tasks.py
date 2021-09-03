@@ -2086,6 +2086,20 @@ def refresh_iam_role(role_arn):
     )
 
 
+# TODO: Spawn this appropriately
+@app.task(soft_time_limit=600, **default_retry_kwargs)
+def cache_notifications() -> Dict[str, Any]:
+    """
+    This task caches notifications to be shown to end-users based on their identity or group membership.
+    """
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {"function": function}
+    result = async_to_sync(cache_notifications_to_redis_s3)()
+    log_data.update({**result, "message": "Successfully cached notifications"})
+    log.debug(log_data)
+    return log_data
+
+
 schedule_30_minute = timedelta(seconds=1800)
 schedule_45_minute = timedelta(seconds=2700)
 schedule_6_hours = timedelta(hours=6)
@@ -2207,9 +2221,10 @@ schedule = {
     },
 }
 
-# cache_cloudtrail_denies()
+# cache_cloudtrail_denies() - Runs, and invokes cache_cloudtrail_errors_by_arn if new findings. Or maybe we need a less
+# heavy approach?
 # cache_cloudtrail_errors_by_arn()
-# cache_notifications_to_redis_s3()
+#
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}

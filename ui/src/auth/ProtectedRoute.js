@@ -42,7 +42,7 @@ const ProtectedRoute = (props) => {
     if (user) {
       RetrieveNotificationsAtInterval(5);
     }
-  }, [match, user, isSessionExpired, login, history]);
+  }, [match, user, isSessionExpired, login, history]); // eslint-disable-line
 
   if (!user) {
     return null;

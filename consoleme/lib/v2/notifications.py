@@ -1,6 +1,8 @@
 import json as original_json
+import sys
 import time
 from collections import defaultdict
+from typing import Dict
 
 import sentry_sdk
 import ujson as json
@@ -13,10 +15,13 @@ from consoleme.lib.cache import (
 )
 from consoleme.lib.dynamo import UserDynamoHandler
 from consoleme.lib.json_encoder import SetEncoder
-from consoleme.lib.notifications.models import ConsoleMeUserNotification
+from consoleme.lib.notifications.models import (
+    ConsoleMeUserNotification,
+    GetNotificationsForUserResponse,
+)
 from consoleme.lib.singleton import Singleton
 
-# TODO: Use notification version specification to ignore older versions
+log = config.get_logger()
 
 
 class RetrieveNotifications(metaclass=Singleton):
@@ -48,13 +53,20 @@ async def get_notifications_for_user(
     groups,
     max_notifications=config.get("get_notifications_for_user.max_notifications", 5),
     force_refresh=False,
-):
+) -> GetNotificationsForUserResponse:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {
+        "function": function,
+        "user": user,
+        "max_notifications": max_notifications,
+        "force_refresh": force_refresh,
+    }
 
     current_time = int(time.time())
     all_notifications = await RetrieveNotifications().retrieve_all_notifications(
         force_refresh
     )
-
+    unread_count = 0
     notifications_for_user = []
     for user_or_group in [user, *groups]:
         # Filter out identical notifications that were already captured via user-specific attribution. IE: "UserA"
@@ -72,7 +84,8 @@ async def get_notifications_for_user(
                 # to account for future changes to the model that may invalidate older
                 # notifications
                 notification = ConsoleMeUserNotification.parse_obj(notification_raw)
-            except:
+            except Exception as e:
+                log.error({**log_data, "error": str(e)})
                 sentry_sdk.capture_exception()
                 continue
             if notification.version != 1:
@@ -102,7 +115,16 @@ async def get_notifications_for_user(
     notifications_for_user = sorted(
         notifications_for_user, key=lambda i: i.event_time, reverse=True
     )
-    return notifications_for_user[0:max_notifications]
+
+    # Increment Unread Count
+    notifications_to_return = notifications_for_user[0:max_notifications]
+    for notification in notifications_to_return:
+        if user in notification.read_by_users or notification.read_by_all:
+            continue
+        unread_count += 1
+    return GetNotificationsForUserResponse(
+        notifications=notifications_to_return, unread_count=unread_count
+    )
 
 
 async def fetch_notification(notification_id: str):
@@ -114,7 +136,9 @@ async def fetch_notification(notification_id: str):
         return ConsoleMeUserNotification.parse_obj(notification["Item"])
 
 
-async def cache_notifications_to_redis_s3():
+async def cache_notifications_to_redis_s3() -> Dict[str, int]:
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {"function": function}
     ddb = UserDynamoHandler()
     notifications_by_user_group = defaultdict(list)
     all_notifications_l = await ddb.parallel_scan_table_async(ddb.notifications_table)
@@ -135,6 +159,15 @@ async def cache_notifications_to_redis_s3():
                 "notifications.s3.key", "notifications/all_notifications_v1.json.gz"
             ),
         )
+    log_data["num_user_groups_for_notifications"] = len(
+        notifications_by_user_group.keys()
+    )
+    log_data["num_notifications"] = len(all_notifications_l)
+    log.debug(log_data)
+    return {
+        "num_user_groups_to_notify": len(notifications_by_user_group.keys()),
+        "num_notifications": len(all_notifications_l),
+    }
 
 
 async def write_notification(notification: ConsoleMeUserNotification):

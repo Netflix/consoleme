@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { useState } from "react";
 import {
   Button,
   Dropdown,
@@ -87,21 +87,16 @@ const ConsoleMeHeader = () => {
       return;
     }
 
-    if (unreadNotificationCount > 0) {
-      return (
-        <>
-          <Button
-            circular
-            icon="bell"
-            color="red"
-            onClick={openNotifications}
-          />
+    return (
+      <>
+        <Button circular icon="bell" color="red" onClick={openNotifications} />
+        {unreadNotificationCount > 0 ? (
           <Label circular size="tiny" color="orange">
             {unreadNotificationCount}
           </Label>
-        </>
-      );
-    }
+        ) : null}
+      </>
+    );
   };
 
   const getAvatarImage = () => {
@@ -163,14 +158,6 @@ const ConsoleMeHeader = () => {
     }
     return null;
   };
-
-  let notificationsInterval = 60;
-  if (user?.site_config?.notifications?.request_interval) {
-    notificationsInterval = user.site_config.notifications.request_interval;
-  }
-
-  // TODO: Figure out why this is triggering multiple times
-  // RetrieveNotificationsAtInterval(notificationsInterval)
 
   return (
     <>

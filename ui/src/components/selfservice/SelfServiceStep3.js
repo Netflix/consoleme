@@ -150,6 +150,7 @@ class SelfServiceStep3 extends Component {
         newValue={new_policy}
         onLintError={this.onLintError}
         onValueChange={this.onValueChange}
+        readOnly={false}
       />
     );
   }
@@ -465,6 +466,7 @@ class SelfServiceStep3 extends Component {
             newValue={new_policy}
             onLintError={this.onLintError}
             onValueChange={this.onValueChange}
+            readOnly={false}
           />
         </Segment>
         <Divider />

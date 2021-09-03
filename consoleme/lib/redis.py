@@ -2,7 +2,7 @@ import os
 import sys
 import threading
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import boto3
 import redis

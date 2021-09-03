@@ -1,3 +1,5 @@
+from typing import List
+
 import sentry_sdk
 
 from consoleme.config import config
@@ -6,6 +8,8 @@ from consoleme.lib.generic import is_in_group
 from consoleme.lib.notifications.models import (
     ConsoleMeNotificationUpdateAction,
     ConsoleMeNotificationUpdateRequest,
+    ConsoleMeUserNotification,
+    GetNotificationsForUserResponse,
 )
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.notifications import (
@@ -28,14 +32,17 @@ class NotificationsHandler(BaseAPIV2Handler):
     async def get(self):
         try:
             # Check notifications for user, return notifications for user
-            notifications = await get_notifications_for_user(self.user, self.groups)
-            # TODO: Actually get the unread count instead of total count
-            unread_count = len(notifications)
+            notification_response: GetNotificationsForUserResponse = (
+                await get_notifications_for_user(self.user, self.groups)
+            )
+            notifications: List[
+                ConsoleMeUserNotification
+            ] = notification_response.notifications
             response = WebResponse(
                 status="success",
                 status_code=200,
                 data={
-                    "unreadNotificationCount": unread_count,
+                    "unreadNotificationCount": notification_response.unread_count,
                     "notifications": notifications,
                 },
             )
@@ -69,7 +76,7 @@ class NotificationsHandler(BaseAPIV2Handler):
                 untrusted_notification.predictable_id
             )
             if not notification:
-                errors.append(f"Unable to find matching notification")
+                errors.append("Unable to find matching notification")
                 continue
             authorized = is_in_group(
                 self.user, self.groups, notification.users_or_groups
@@ -125,18 +132,20 @@ class NotificationsHandler(BaseAPIV2Handler):
                 raise Exception("Unknown or unsupported change action.")
             await write_notification(notification)
         try:
-
-            # Check notifications for user, return notifications for user
-            notifications = await get_notifications_for_user(
-                self.user, self.groups, force_refresh=True
+            # Retrieve and return updated notifications for user
+            notification_response: GetNotificationsForUserResponse = (
+                await get_notifications_for_user(
+                    self.user, self.groups, force_refresh=True
+                )
             )
-            # TODO: Actually get the unread count instead of total count
-            unread_count = len(notifications)
+            notifications: List[
+                ConsoleMeUserNotification
+            ] = notification_response.notifications
             response = WebResponse(
                 status="success",
                 status_code=200,
                 data={
-                    "unreadNotificationCount": unread_count,
+                    "unreadNotificationCount": notification_response.unread_count,
                     "notifications": notifications,
                 },
             )

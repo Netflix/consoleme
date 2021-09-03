@@ -693,7 +693,9 @@ components:
             - arn:aws:sqs:us-west-2:123456789012:sqs_queue2,
           oneOf:
             - type: string
-            - type: integer
+            - type: array
+              items:
+                type: string
         version:
           description: Version
           type: string
@@ -813,7 +815,9 @@ components:
                 - arn:aws:sqs:us-east-1:123456789012:sqs_queue
               oneOf:
                 - type: string
-                - type: integer
+                - type: array
+                  items:
+                    type: string
     CrudChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -860,7 +864,9 @@ components:
                 - arn:aws:s3:::example_bucket
               oneOf:
                 - type: string
-                - type: integer
+                - type: array
+                  items:
+                    type: string
             bucket_prefix:
               type: string
               example: /awesome/prefix/*

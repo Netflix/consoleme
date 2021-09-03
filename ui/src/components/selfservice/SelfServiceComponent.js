@@ -8,8 +8,6 @@ import {
   Dropdown,
   Form,
   Header,
-  Icon,
-  Label,
   Message,
 } from "semantic-ui-react";
 import DropDownBlockComponent from "../blocks/DropDownBlockComponent";
