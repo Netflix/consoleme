@@ -492,10 +492,10 @@ def sqs_queue(sqs):
     message = json.dumps(
         {
             "version": "0",
-            "id": "c638b372-39b0-3218-d06d-a529b9da5b75",
+            "id": "11111-39b0-3218-d06d-a529b9da5b75",
             "detail-type": "AWS API Call via CloudTrail",
             "source": "aws.iam",
-            "account": "987128315680",
+            "account": "123456789012",
             "time": "2021-09-03T20:16:32Z",
             "region": "us-east-1",
             "resources": [],
@@ -533,8 +533,8 @@ def sqs_queue(sqs):
                     "tags": [{"key": "1", "value": "1"}, {"key": "2", "value": "2"}],
                 },
                 "responseElements": None,
-                "requestID": "bf6ebf8f-f97e-413d-ba51-299816b1bd0d",
-                "eventID": "878b93f3-436a-45ee-b0f2-5ea9e155dd56",
+                "requestID": "11111-f97e-413d-ba51-299816b1bd0d",
+                "eventID": "111111-436a-45ee-b0f2-5ea9e155dd56",
                 "readOnly": False,
                 "eventType": "AwsApiCall",
                 "managementEvent": True,
