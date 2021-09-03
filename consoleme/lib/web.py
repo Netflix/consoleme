@@ -33,6 +33,6 @@ async def handle_generic_error_response(
         status="error", status_code=status_code, errors=errors, reason=reason
     )
     request.set_status(status_code)
-    request.write(res.json())
+    request.write(res.json(exclude_unset=True))
     await request.finish()
     return True
