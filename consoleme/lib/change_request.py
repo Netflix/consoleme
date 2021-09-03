@@ -198,6 +198,8 @@ async def _generate_s3_inline_policy_statement_from_mapping(
     effect = generator.effect
     condition = generator.condition
 
+    if isinstance(generator.resource_arn, str):
+        generator.resource_arn = [generator.resource_arn]
     # Handle the bucket ARNs
     for arn in generator.resource_arn:
         if not arn.startswith("arn:aws:s3:::"):
@@ -254,6 +256,8 @@ async def _generate_inline_policy_statement_from_mapping(
         )
 
     action_group_actions: List[str] = []
+    if isinstance(generator.resource_arn, str):
+        generator.resource_arn = [generator.resource_arn]
     resource_arns = generator.resource_arn
     effect = generator.effect
 
@@ -300,6 +304,8 @@ async def _generate_inline_policy_statement_from_policy_sentry(
     )
     if generator.extra_actions:
         actions.extend(generator.extra_actions)
+    if isinstance(generator.resource_arn, str):
+        generator.resource_arn = [generator.resource_arn]
     return await _generate_policy_statement(
         actions, generator.resource_arn, generator.effect, generator.condition
     )
@@ -436,6 +442,8 @@ async def generate_change_model_array(
                 )
             if inline_policy and change.resource_arn:
                 # TODO(ccastrapel): Add more details to the ResourceModel when we determine we can use it for something.
+                if isinstance(change.resource_arn, str):
+                    change.resource_arn = [change.resource_arn]
                 for arn in change.resource_arn:
                     resource_model = await _generate_resource_model_from_arn(arn)
                     # If the resource arn is actually a wildcard, we might not have a valid resource model

@@ -691,9 +691,9 @@ components:
           example:
             - arn:aws:sqs:us-east-1:123456789012:sqs_queue,
             - arn:aws:sqs:us-west-2:123456789012:sqs_queue2,
-          type: array
-          items:
-            type: string
+          oneOf:
+            - type: string
+            - type: integer
         version:
           description: Version
           type: string
@@ -811,9 +811,9 @@ components:
                 resource policies will need to be modified if the change is approved and successful.
               example:
                 - arn:aws:sqs:us-east-1:123456789012:sqs_queue
-              type: array
-              items:
-                type: string
+              oneOf:
+                - type: string
+                - type: integer
     CrudChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -858,9 +858,9 @@ components:
                 The ARN(s) of the S3 resource(s) being accessed.
               example:
                 - arn:aws:s3:::example_bucket
-              type: array
-              items:
-                type: string
+              oneOf:
+                - type: string
+                - type: integer
             bucket_prefix:
               type: string
               example: /awesome/prefix/*
