@@ -2062,13 +2062,16 @@ def cache_cloudtrail_denies():
             "message": "Not running Celery task in inactive region",
         }
     events = async_to_sync(detect_cloudtrail_denies_and_update_cache)()
-    if events["num_events"] > 0:
+    if events["new_events"] > 0:
         # Spawn off a task to cache errors by ARN for the UI
         cache_cloudtrail_errors_by_arn.delay()
     log_data = {
         "function": function,
         "message": "Successfully cached cloudtrail denies",
+        # Total CT denies
         "num_cloudtrail_denies": events["num_events"],
+        # "New" CT messages that we don't already have cached in Dynamo DB. Not a "repeated" error
+        "num_new_cloudtrail_denies": events["new_events"],
     }
     log.debug(log_data)
     return log_data
@@ -2221,10 +2224,9 @@ schedule = {
     },
 }
 
-# cache_cloudtrail_denies() - Runs, and invokes cache_cloudtrail_errors_by_arn if new findings. Or maybe we need a less
-# heavy approach?
+# cache_cloudtrail_denies()
 # cache_cloudtrail_errors_by_arn()
-#
+
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}
@@ -2234,6 +2236,3 @@ if config.get("celery.clear_tasks_for_development", False):
 
 app.conf.beat_schedule = schedule
 app.conf.timezone = "UTC"
-
-# Today:
-# Separate out

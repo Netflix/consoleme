@@ -113,6 +113,7 @@ async def detect_cloudtrail_denies_and_update_cache(
     messages_awaitable = await sync_to_async(sqs_client.receive_message)(
         QueueUrl=queue_url, MaxNumberOfMessages=10
     )
+    new_events = 0
     messages = messages_awaitable.get("Messages", [])
     num_events = 0
     while messages:
@@ -193,6 +194,7 @@ async def detect_cloudtrail_denies_and_update_cache(
                     all_cloudtrail_denies[request_id] = ct_event
                 else:
                     all_cloudtrail_denies[request_id] = ct_event
+                    new_events += 1
                 num_events += 1
             except Exception as e:
                 log.error({**log_data, "error": str(e)}, exc_info=True)
@@ -217,6 +219,7 @@ async def detect_cloudtrail_denies_and_update_cache(
         messages = messages_awaitable.get("Messages", [])
     log_data["message"] = "Successfully cached Cloudtrail Access Denies"
     log_data["num_events"] = num_events
+    log_data["new_events"] = new_events
     log.debug(log_data)
 
     return log_data
