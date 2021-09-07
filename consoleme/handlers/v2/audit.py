@@ -76,8 +76,7 @@ class AuditRolesHandler(BaseMtlsHandler):
         total_roles = await credential_mapping.number_roles()
         start = page * count
         end = start + count
-        if end >= total_roles:
-            end = total_roles
+        end = min(end, total_roles)
         roles = roles[start:end]
 
         self.write(
