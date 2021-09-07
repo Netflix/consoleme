@@ -517,6 +517,8 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
         86400,
         json.dumps(cloudtrail_errors),
     )
+    if process_cloudtrail_errors_res["number_modified_notifications"] > 0:
+        cache_notifications.delay()
     log_data["number_of_roles_with_errors"]: len(cloudtrail_errors.keys())
     log_data["number_errors"]: sum(cloudtrail_errors.values())
     log.debug(log_data)
@@ -2048,11 +2050,6 @@ def cache_cloudtrail_denies():
     Event Bridge rule monitoring Cloudtrail for your accounts for access deny errors.
     """
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    if not config.get("celery.cache_cloudtrail_denies.enabled"):
-        return {
-            "function": function,
-            "message": "Not running Celery task because it is not enabled.",
-        }
     if not (
         config.region == config.get("celery.active_region", config.region)
         or config.get("environment") in ["dev", "test"]
@@ -2212,20 +2209,21 @@ schedule = {
         "options": {"expires": 1000},
         "schedule": schedule_30_minute,
     },
-    "trigger_credential_mapping_refresh_from_role_changes": {
+}
+
+if config.get("celery.trigger_credential_mapping_refresh_from_role_changes.enabled"):
+    schedule["trigger_credential_mapping_refresh_from_role_changes"] = {
         "task": "consoleme.celery_tasks.celery_tasks.trigger_credential_mapping_refresh_from_role_changes",
         "options": {"expires": 300},
         "schedule": schedule_minute,
-    },
-    "cache_cloudtrail_denies": {
+    }
+
+if config.get("celery.cache_cloudtrail_denies.enabled"):
+    schedule["cache_cloudtrail_denies"] = {
         "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_denies",
         "options": {"expires": 300},
         "schedule": schedule_minute,
-    },
-}
-
-# cache_cloudtrail_denies()
-# cache_cloudtrail_errors_by_arn()
+    }
 
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
