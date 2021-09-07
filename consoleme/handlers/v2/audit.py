@@ -77,7 +77,7 @@ class AuditRolesHandler(BaseMtlsHandler):
         start = page * count
         end = start + count
         if end >= total_roles:
-            end = total_roles - 1
+            end = total_roles
         roles = roles[start:end]
 
         self.write(
