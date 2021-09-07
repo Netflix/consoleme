@@ -1939,3 +1939,33 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/ServiceControlPolicyModel"
+    EligibleRolesModel:
+      type: object
+      description: Model element for details about an eligible role
+      required:
+        - arn
+        - account_id
+        - role_name
+      properties:
+        arn:
+          type: string
+          description: ARN of the role
+        account_id:
+          type: string
+          description: Account ID of the role
+        account_friendly_name:
+          type: string
+          description: Account's friendly name (if known), otherwise "Unknown"
+        role_name:
+          type: string
+          description: Name of the role
+        apps:
+          $ref: "#/components/schemas/AppDetailsArray"
+    EligibleRolesModelArray:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            anyOf:
+              - $ref: "#/components/schemas/EligibleRolesModel"

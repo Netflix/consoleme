@@ -25,7 +25,7 @@ from consoleme.lib.aws import (
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.v2.aws_principals import get_role_details
+from consoleme.lib.v2.aws_principals import get_role_details, get_eligible_role_details
 from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
@@ -639,3 +639,74 @@ class RoleCloneHandler(BaseAPIV2Handler):
 
         # if here, role has been successfully cloned
         self.write(results)
+
+
+class GetRolesMTLSHandler(BaseMtlsHandler):
+    """
+    Handler for /api/v2/get_roles
+    Consoleme MTLS role handler - returns User's eligible roles and other details about eligible roles
+    Pass ?all=true to URL query to return all roles.
+    """
+
+    def check_xsrf_cookie(self):
+        pass
+
+    def initialize(self):
+        self.user: str = None
+        self.eligible_roles: list = []
+
+    async def get(self):
+        """
+        GET /api/v2/get_roles - Endpoint used to get details of eligible roles. Used by weep and newt.
+        ---
+        get:
+            description: Returns a json-encoded list of objects of eligible roles for the user.
+            response format: EligibleRolesModelArray
+            Example response:
+                {
+                    "roles": [
+                                {
+                                    "arn": "arn:aws:iam::123456789012:role/role_name",
+                                    "account_id": "123456789012",
+                                    "account_friendly_name": "prod",
+                                    "role_name": "role_name",
+                                    "apps": {
+                                        "app_details": [
+                                            {
+                                                "name": "consoleme",
+                                                "owner": "owner@example.com",
+                                                "owner_url": null,
+                                                "app_url": "https://example.com"
+                                            }
+                                        ]
+                                    }
+                                },
+                                ...
+                            ]
+                }
+        """
+        self.user: str = self.requester["email"]
+
+        include_all_roles = self.get_arguments("all")
+        console_only = True
+        if include_all_roles == ["true"]:
+            console_only = False
+
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user": self.user,
+            "console_only": console_only,
+            "message": "Getting all eligible user roles",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+        log.debug(log_data)
+        stats.count("GetRolesMTLSHandler.get", tags={"user": self.user})
+
+        await self.authorization_flow(user=self.user, console_only=console_only)
+        eligible_roles_details_array = await get_eligible_role_details(
+            sorted(self.eligible_roles)
+        )
+        self.write(eligible_roles_details_array.dict())
+        self.set_header("Content-Type", "application/json")
+        await self.finish()
