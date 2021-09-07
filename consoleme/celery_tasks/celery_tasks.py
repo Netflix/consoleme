@@ -517,7 +517,7 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
         86400,
         json.dumps(cloudtrail_errors),
     )
-    if process_cloudtrail_errors_res["number_modified_notifications"] > 0:
+    if process_cloudtrail_errors_res["num_new_or_changed_notifications"] > 0:
         cache_notifications.delay()
     log_data["number_of_roles_with_errors"]: len(cloudtrail_errors.keys())
     log_data["number_errors"]: sum(cloudtrail_errors.values())
@@ -2086,7 +2086,6 @@ def refresh_iam_role(role_arn):
     )
 
 
-# TODO: Spawn this appropriately
 @app.task(soft_time_limit=600, **default_retry_kwargs)
 def cache_notifications() -> Dict[str, Any]:
     """

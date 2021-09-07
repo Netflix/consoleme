@@ -40,7 +40,11 @@ const ProtectedRoute = (props) => {
       })();
     }
     if (user) {
-      RetrieveNotificationsAtInterval(5);
+      let interval = 60;
+      if (user?.site_config?.notifications?.request_interval) {
+        interval = user.site_config.notifications.request_interval;
+      }
+      RetrieveNotificationsAtInterval(interval);
     }
   }, [match, user, isSessionExpired, login, history]); // eslint-disable-line
 

@@ -158,6 +158,7 @@ was detected. This notification will disappear when a similar error has not occu
                     predictable_id
                 ].event_time = cloudtrail_error["epoch_event_time"]
                 new_or_changed_notifications[predictable_id].expiration = expiration
+                new_or_changed_notifications[predictable_id].expired = False
                 new_or_changed_notifications[
                     predictable_id
                 ].message = notification_message
@@ -193,8 +194,6 @@ was detected. This notification will disappear when a similar error has not occu
                     session_name
                 )
         new_or_changed_notifications_l = []
-        # TODO: This only gets notifications by user/group that are related to cloudtrail. We should create a new celery
-        # task to fetch all notifications, sort them in the right way, and cache to s3/redis, and mark as "expired=true"
         notifications_by_user_group = defaultdict(list)
         for notification in new_or_changed_notifications.values():
             new_or_changed_notifications_l.append(notification.dict())
@@ -218,5 +217,5 @@ was detected. This notification will disappear when a similar error has not occu
             )
         return {
             "error_count_by_role": error_count,
-            "number_modified_notifications": len(new_or_changed_notifications_l),
+            "num_new_or_changed_notifications": len(new_or_changed_notifications_l),
         }

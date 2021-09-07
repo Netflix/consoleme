@@ -138,14 +138,22 @@ async def fetch_notification(notification_id: str):
 
 async def cache_notifications_to_redis_s3() -> Dict[str, int]:
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    current_time = int(time.time())
     log_data = {"function": function}
     ddb = UserDynamoHandler()
     notifications_by_user_group = defaultdict(list)
     all_notifications_l = await ddb.parallel_scan_table_async(ddb.notifications_table)
+    changed_notifications = []
     for existing_notification in all_notifications_l:
         notification = ConsoleMeUserNotification.parse_obj(existing_notification)
+        if current_time > notification.expiration:
+            notification.expired = True
+            changed_notifications.append(notification.dict())
         for user_or_group in notification.users_or_groups:
             notifications_by_user_group[user_or_group].append(notification.dict())
+
+    if changed_notifications:
+        ddb.parallel_write_table(ddb.notifications_table, changed_notifications)
 
     if notifications_by_user_group:
         for k, v in notifications_by_user_group.items():
