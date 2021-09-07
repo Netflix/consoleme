@@ -184,6 +184,7 @@ was detected. This notification will disappear when a similar error has not occu
                 "i-"
             ):  # Session ID is instance ID
                 continue
+
             if new_or_changed_notifications.get(predictable_id):
                 new_or_changed_notifications[predictable_id].users_or_groups.add(
                     session_name
@@ -193,6 +194,11 @@ was detected. This notification will disappear when a similar error has not occu
                 new_or_changed_notifications[predictable_id].users_or_groups.add(
                     session_name
                 )
+
+            # Optionally add development users to the notification
+            new_or_changed_notifications[predictable_id].users_or_groups.update(
+                set(config.get("process_cloudtrail_errors.additional_notify_users", []))
+            )
         new_or_changed_notifications_l = []
         notifications_by_user_group = defaultdict(list)
         for notification in new_or_changed_notifications.values():

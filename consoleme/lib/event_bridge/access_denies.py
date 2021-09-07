@@ -79,7 +79,9 @@ async def generate_policy_from_cloudtrail_deny(ct_event):
 
 
 async def detect_cloudtrail_denies_and_update_cache(
-    event_ttl=config.get("detect_cloudtrail_denies_and_update_cache.event_ttl", 86400)
+    event_ttl=config.get(
+        "event_bridge.detect_cloudtrail_denies_and_update_cache.event_ttl", 86400
+    ),
 ) -> Dict[str, Any]:
     log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
     dynamo = UserDynamoHandler()
