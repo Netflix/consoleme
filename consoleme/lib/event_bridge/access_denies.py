@@ -21,15 +21,26 @@ aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 log = config.get_logger()
 
 
-async def get_resource_from_cloudtrail_deny(ct_event):
+async def get_resource_from_cloudtrail_deny(ct_event, raw_ct_event):
     """
     Naive attempt to determine resource from Access Deny CloudTrail event. If we can't parse it from the
     Cloudtrail message, we return `*`.
     """
+
+    resources = [
+        resource["ARN"]
+        for resource in raw_ct_event.get("resources", [])
+        if "ARN" in resource
+    ]
+    if resources:
+        resource: str = max(resources, key=len)
+        return resource
     resource = "*"
+
     error_message = ct_event.get("error_message", "")
     if not error_message:
         return resource
+
     if "on resource: arn:aws" in ct_event.get("error_message", ""):
         resource_re = re.match(
             r"^.* on resource: (arn:aws:.*?$)", ct_event["error_message"]
@@ -180,7 +191,9 @@ async def detect_cloudtrail_denies_and_update_cache(
                     ttl=epoch_event_time + event_ttl,
                     count=1,
                 )
-                resource = await get_resource_from_cloudtrail_deny(ct_event)
+                resource = await get_resource_from_cloudtrail_deny(
+                    ct_event, decoded_message
+                )
                 ct_event["resource"] = resource
                 request_id = f"{principal_arn}-{session_name}-{event_call}-{resource}"
                 ct_event["request_id"] = request_id
