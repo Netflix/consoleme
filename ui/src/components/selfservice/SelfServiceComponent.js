@@ -71,8 +71,7 @@ class SelfServiceComponent extends Component {
       ...values,
       [context]: _.isString(value) ? value.trim() : value,
     };
-    // TODO: Remove
-    console.log(newValues);
+
     this.setState({
       values: newValues,
     });
@@ -305,7 +304,6 @@ class SelfServiceComponent extends Component {
         <ReactMarkdown linkTarget="_blank" source={description} />
         {blocks}
         {advancedOptions}
-
         {messagesToShow}
         <Button
           fluid

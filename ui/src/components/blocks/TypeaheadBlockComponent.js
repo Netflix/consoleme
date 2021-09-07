@@ -24,6 +24,7 @@ class TypeaheadBlockComponent extends Component {
         {
           selectedValues: values,
           value: "",
+          results: [],
         },
         () => {
           this.props.handleInputUpdate(values);
@@ -67,7 +68,7 @@ class TypeaheadBlockComponent extends Component {
     );
 
     setTimeout(() => {
-      if (this.state.value.length < 1) {
+      if (value.length < 1) {
         return this.setState(
           {
             isLoading: false,
@@ -75,7 +76,7 @@ class TypeaheadBlockComponent extends Component {
             value: "",
           },
           () => {
-            this.props.handleInputUpdate("");
+            this.props.handleInputUpdate(this.state.selectedValues);
           }
         );
       }
@@ -126,6 +127,7 @@ class TypeaheadBlockComponent extends Component {
           onKeyDown={this._handleKeyDown}
           results={results}
           value={value}
+          showNoResults={false}
         />
         <br />
         {selectedValueLabels}
