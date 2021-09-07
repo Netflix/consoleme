@@ -147,6 +147,7 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
             try:
                 all_roles = await retrieve_json_data_from_redis_or_s3(
                     redis_topic,
+                    redis_data_type="hash",
                     s3_bucket=s3_bucket,
                     s3_key=s3_key,
                     json_object_hook=RoleAuthorizationsDecoder,
