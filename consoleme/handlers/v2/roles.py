@@ -25,7 +25,7 @@ from consoleme.lib.aws import (
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.v2.aws_principals import get_role_details, get_eligible_role_details
+from consoleme.lib.v2.aws_principals import get_eligible_role_details, get_role_details
 from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()

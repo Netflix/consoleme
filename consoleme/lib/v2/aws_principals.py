@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 import ujson as json
 from asgiref.sync import sync_to_async
@@ -16,10 +16,12 @@ from consoleme.models import (
     CloudTrailDetailsModel,
     CloudTrailError,
     CloudTrailErrorArray,
+    EligibleRolesModel,
+    EligibleRolesModelArray,
     ExtendedAwsPrincipalModel,
     S3DetailsModel,
     S3Error,
-    S3ErrorArray, EligibleRolesModelArray, EligibleRolesModel,
+    S3ErrorArray,
 )
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()

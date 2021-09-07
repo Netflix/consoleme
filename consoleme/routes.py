@@ -59,11 +59,12 @@ from consoleme.handlers.v2.requests import (
 from consoleme.handlers.v2.resources import GetResourceURLHandler, ResourceDetailHandler
 from consoleme.handlers.v2.roles import (
     AccountRolesHandler,
+    GetRolesMTLSHandler,
     RoleCloneHandler,
     RoleConsoleLoginHandler,
     RoleDetailAppHandler,
     RoleDetailHandler,
-    RolesHandler, GetRolesMTLSHandler,
+    RolesHandler,
 )
 from consoleme.handlers.v2.self_service import (
     PermissionTemplatesHandler,
