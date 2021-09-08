@@ -26,7 +26,12 @@ from consoleme.lib.crypto import Crypto
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.aws_principals import get_eligible_role_details, get_role_details
-from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
+from consoleme.models import (
+    CloneRoleRequestModel,
+    RoleCreationRequestModel,
+    Status2,
+    WebResponse,
+)
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
@@ -661,28 +666,32 @@ class GetRolesMTLSHandler(BaseMtlsHandler):
         ---
         get:
             description: Returns a json-encoded list of objects of eligible roles for the user.
-            response format: EligibleRolesModelArray
+            response format: WebResponse. The "data" field within WebResponse is of format EligibleRolesModelArray
             Example response:
                 {
-                    "roles": [
-                                {
-                                    "arn": "arn:aws:iam::123456789012:role/role_name",
-                                    "account_id": "123456789012",
-                                    "account_friendly_name": "prod",
-                                    "role_name": "role_name",
-                                    "apps": {
-                                        "app_details": [
-                                            {
-                                                "name": "consoleme",
-                                                "owner": "owner@example.com",
-                                                "owner_url": null,
-                                                "app_url": "https://example.com"
-                                            }
-                                        ]
-                                    }
-                                },
-                                ...
-                            ]
+                    "status": "success",
+                    "status_code": 200,
+                    "data": {
+                        "roles": [
+                                    {
+                                        "arn": "arn:aws:iam::123456789012:role/role_name",
+                                        "account_id": "123456789012",
+                                        "account_friendly_name": "prod",
+                                        "role_name": "role_name",
+                                        "apps": {
+                                            "app_details": [
+                                                {
+                                                    "name": "consoleme",
+                                                    "owner": "owner@example.com",
+                                                    "owner_url": null,
+                                                    "app_url": "https://example.com"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    ...
+                                ]
+                    }
                 }
         """
         self.user: str = self.requester["email"]
@@ -707,6 +716,11 @@ class GetRolesMTLSHandler(BaseMtlsHandler):
         eligible_roles_details_array = await get_eligible_role_details(
             sorted(self.eligible_roles)
         )
-        self.write(eligible_roles_details_array.dict())
-        self.set_header("Content-Type", "application/json")
+
+        res = WebResponse(
+            status=Status2.success,
+            status_code=200,
+            data=eligible_roles_details_array.dict(),
+        )
+        self.write(res.json(exclude_unset=True))
         await self.finish()
