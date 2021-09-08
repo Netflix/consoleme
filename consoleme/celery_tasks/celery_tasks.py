@@ -182,7 +182,7 @@ def report_celery_last_success_metrics() -> bool:
         if last_success == 0:
             log_data["message"] = "Last Success Value is 0"
             log_data["task_last_success_key"] = f"{task}.last_success"
-            log.warn(log_data)
+            log.warning(log_data)
         stats.gauge(f"{task}.time_since_last_success", current_time - last_success)
         red.set(f"{task}.time_since_last_success", current_time - last_success)
     red.set(
@@ -1093,6 +1093,15 @@ def cache_iam_resources_across_accounts(
             if config.get("environment") in ["prod", "dev"]:
                 tasks.append(cache_iam_resources_for_account.s(account_id))
             else:
+                log.debug(
+                    {
+                        **log_data,
+                        "message": (
+                            "`environment` configuration is not set. Only running tasks for accounts in configuration "
+                            "key `celery.test_account_ids`"
+                        ),
+                    }
+                )
                 if account_id in config.get("celery.test_account_ids", []):
                     tasks.append(cache_iam_resources_for_account.s(account_id))
         if run_subtasks:
@@ -1101,6 +1110,14 @@ def cache_iam_resources_across_accounts(
                 # results.join() forces function to wait until all tasks are complete
                 results.join(disable_sync_subtasks=False)
     else:
+        log.debug(
+            {
+                **log_data,
+                "message": (
+                    "Running in non-active region. Caching roles from DynamoDB and not directly from AWS"
+                ),
+            }
+        )
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
         roles = dynamo.fetch_all_roles()

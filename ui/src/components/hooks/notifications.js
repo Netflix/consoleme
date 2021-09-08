@@ -48,11 +48,11 @@ export const NotificationProvider = ({ children }) => {
       result = await sendRequestCommon(null, "/api/v2/notifications", "get");
     }
 
-    // TODO: Error Handling
-    if (!result?.data?.unreadNotificationCount) return;
     setUnreadNotificationCount(result.data.unreadNotificationCount);
     if (result.data.unreadNotificationCount > 0) {
       setNotifications(result.data.notifications);
+    } else {
+      setNotifications([]);
     }
   }
 
@@ -83,6 +83,8 @@ export const NotificationProvider = ({ children }) => {
     setInterval(function () {
       GetAndSetNotifications(user);
     }, interval * 1000);
+    // Initial run
+    GetAndSetNotifications(user);
     setIntervalHookCalled();
   };
 

@@ -31,7 +31,6 @@ class NotificationsHandler(BaseAPIV2Handler):
 
     async def get(self):
         try:
-            # Check notifications for user, return notifications for user
             notification_response: GetNotificationsForUserResponse = (
                 await get_notifications_for_user(self.user, self.groups)
             )
@@ -99,13 +98,10 @@ class NotificationsHandler(BaseAPIV2Handler):
                 change.action
                 == ConsoleMeNotificationUpdateAction.toggle_read_for_all_users
             ):
-                if notification.read_by_all:
-                    # Mark as "Read by all"
-                    notification.read_by_all = False
-                else:
-                    # Unmark as "Read by all" (Falls back to `notification.read_by_user` to determine if
-                    # users have read the notification
-                    notification.read_by_all = True
+                # Mark or unmark notification as `read_by_all`.  If unmarked,
+                # ConsoleMe will fall back to `notification.read_by_user` to determine if
+                # a given user has read the notification
+                notification.read_by_all = not notification.read_by_all
             elif (
                 change.action
                 == ConsoleMeNotificationUpdateAction.toggle_hidden_for_current_user
@@ -120,13 +116,9 @@ class NotificationsHandler(BaseAPIV2Handler):
                 change.action
                 == ConsoleMeNotificationUpdateAction.toggle_hidden_for_all_users
             ):
-                if notification.hidden_for_all:
-                    # Mark as "Hidden for all users"
-                    notification.hidden_for_all = False
-                else:
-                    # Unmark as "Hidden for all users" (Falls back to `hidden_for_users.read_by_user` to determine
-                    # whether to show the notification or not
-                    notification.hidden_for_all = True
+                # Mark or unmark as "Hidden for all users". If unmarked, falls back to `hidden_for_users.read_by_user`
+                # to determine whether to show the notification to a given user
+                notification.hidden_for_all = not notification.hidden_for_all
             else:
                 raise Exception("Unknown or unsupported change action.")
             await write_notification(notification)

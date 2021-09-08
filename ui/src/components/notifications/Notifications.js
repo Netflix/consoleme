@@ -21,6 +21,7 @@ export const NotificationsModal = (props) => {
   const editorTheme = getLocalStorageSettings("editorTheme");
 
   const closeNotifications = () => {
+    // We mark notifications read after user has closed the notifications modal
     markAllNotificationsAsReadForUser(notifications);
     props.closeNotifications();
   };
@@ -29,6 +30,7 @@ export const NotificationsModal = (props) => {
   const [loadingNotifications, setLoadingNotifications] = useState([]);
 
   const markAllNotificationsAsReadForUser = async (notifications) => {
+    if (notifications.length <= 0) return;
     const request = {
       action: "toggle_read_for_current_user",
       notifications: [notifications],
@@ -49,7 +51,6 @@ export const NotificationsModal = (props) => {
       "/api/v2/notifications",
       "put"
     );
-    // setNotifications( notifications.filter(item => item !== notification))
     GetAndSetNotifications(user, res);
     setLoadingNotifications(
       loadingNotifications.filter((item) => item !== predictable_id)
@@ -154,6 +155,11 @@ export const NotificationsModal = (props) => {
     }
     generateRenderedData();
   }, [notifications, activeTargets, loadingNotifications]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!props.isOpen) return;
+    GetAndSetNotifications(user);
+  }, [props.isOpen, GetAndSetNotifications, user]);
 
   const notificationDisplay = (
     <>
