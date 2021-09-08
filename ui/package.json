@@ -11,6 +11,7 @@
     "js-yaml": "^4.1.0",
     "json-2-csv": "^3.14.1",
     "lodash": "^4.17.21",
+    "luxon": "^2.0.2",
     "monaco-editor": "0.25.2",
     "monaco-editor-webpack-plugin": "^4.0.0",
     "qs": "^6.10.1",
