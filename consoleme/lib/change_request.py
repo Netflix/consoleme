@@ -198,16 +198,19 @@ async def _generate_s3_inline_policy_statement_from_mapping(
     effect = generator.effect
     condition = generator.condition
 
-    # Handle the bucket ARN
-    if not generator.resource_arn.startswith("arn:aws:s3:::"):
-        generator.resource_arn = f"arn:aws:s3:::{generator.resource_arn}"
-    resource_arns.append(generator.resource_arn)
+    if isinstance(generator.resource_arn, str):
+        generator.resource_arn = [generator.resource_arn]
+    # Handle the bucket ARNs
+    for arn in generator.resource_arn:
+        if not arn.startswith("arn:aws:s3:::"):
+            arn = f"arn:aws:s3:::{arn}"
+        resource_arns.append(arn)
 
-    # Make sure prefix starts with "/"
-    if not generator.bucket_prefix.startswith("/"):
-        generator.bucket_prefix = f"/{generator.bucket_prefix}"
+        # Make sure prefix starts with "/"
+        if not generator.bucket_prefix.startswith("/"):
+            generator.bucket_prefix = f"/{generator.bucket_prefix}"
 
-    resource_arns.append(f"{generator.resource_arn}{generator.bucket_prefix}")
+        resource_arns.append(f"{arn}{generator.bucket_prefix}")
 
     for action in generator.action_groups:
         action_group_actions.append(action)
@@ -253,7 +256,9 @@ async def _generate_inline_policy_statement_from_mapping(
         )
 
     action_group_actions: List[str] = []
-    resource_arns = [generator.resource_arn]
+    if isinstance(generator.resource_arn, str):
+        generator.resource_arn = [generator.resource_arn]
+    resource_arns = generator.resource_arn
     effect = generator.effect
 
     for action in generator.action_groups:
@@ -299,8 +304,10 @@ async def _generate_inline_policy_statement_from_policy_sentry(
     )
     if generator.extra_actions:
         actions.extend(generator.extra_actions)
+    if isinstance(generator.resource_arn, str):
+        generator.resource_arn = [generator.resource_arn]
     return await _generate_policy_statement(
-        actions, [generator.resource_arn], generator.effect, generator.condition
+        actions, generator.resource_arn, generator.effect, generator.condition
     )
 
 
@@ -435,12 +442,13 @@ async def generate_change_model_array(
                 )
             if inline_policy and change.resource_arn:
                 # TODO(ccastrapel): Add more details to the ResourceModel when we determine we can use it for something.
-                resource_model = await _generate_resource_model_from_arn(
-                    change.resource_arn
-                )
-                # If the resource arn is actually a wildcard, we might not have a valid resource model
-                if resource_model:
-                    resources.append(resource_model)
+                if isinstance(change.resource_arn, str):
+                    change.resource_arn = [change.resource_arn]
+                for arn in change.resource_arn:
+                    resource_model = await _generate_resource_model_from_arn(arn)
+                    # If the resource arn is actually a wildcard, we might not have a valid resource model
+                    if resource_model:
+                        resources.append(resource_model)
             if inline_policy:
                 inline_iam_policy_statements.append(inline_policy)
 

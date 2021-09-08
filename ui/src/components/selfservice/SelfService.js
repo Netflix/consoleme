@@ -7,8 +7,7 @@ import SelfServiceStep1 from "./SelfServiceStep1";
 import SelfServiceStep2 from "./SelfServiceStep2";
 import SelfServiceStep3 from "./SelfServiceStep3";
 import { SelfServiceStepEnum } from "./SelfServiceEnums";
-
-const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):(?<resourceType>(user|role))\/(.+\/)?(?<resourceName>(.+))/;
+import { arnRegex } from "../../helpers/utils";
 
 class SelfService extends Component {
   constructor(props) {
@@ -56,6 +55,7 @@ class SelfService extends Component {
     });
 
     if (arnRegex.test(paramSearch.arn)) {
+      // TODO(ccastrapel): Make backend request to get formal principal, since it may be a template
       const match = arnRegex.exec(paramSearch.arn);
       const { accountId, resourceType, resourceName } = match.groups;
       this.setState({
@@ -92,6 +92,19 @@ class SelfService extends Component {
             },
           },
         },
+        services,
+      });
+    } else if (paramSearch?.encoded_request) {
+      const { role, updated_policy } = JSON.parse(
+        Buffer.from(paramSearch.encoded_request, "base64").toString()
+      );
+      this.setState({
+        admin_bypass_approval_enabled: config.admin_bypass_approval_enabled,
+        export_to_terraform_enabled: config.export_to_terraform_enabled,
+        config,
+        currStep: SelfServiceStepEnum.STEP3,
+        role: role,
+        updated_policy: updated_policy,
         services,
       });
     } else {

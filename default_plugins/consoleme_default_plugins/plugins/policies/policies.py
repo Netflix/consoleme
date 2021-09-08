@@ -15,13 +15,6 @@ class Policies:
     ) -> None:
         self.dynamo = UserDynamoHandler()
 
-    def error_count_by_arn(self):
-        try:
-            return self.dynamo.count_cloudtrail_errors_by_arn()
-        except Exception:
-            sentry_sdk.capture_exception()
-            return {}
-
     async def get_errors_by_role(self, arn, n=5):
         try:
             return await self.dynamo.get_top_cloudtrail_errors_by_arn(arn, n)

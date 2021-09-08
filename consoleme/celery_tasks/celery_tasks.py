@@ -56,6 +56,7 @@ from consoleme.lib.aws import (
     allowed_to_sync_role,
     cache_all_scps,
     cache_org_structure,
+    get_aws_principal_owner,
     get_enabled_regions_for_account,
 )
 from consoleme.lib.aws_config import aws_config
@@ -67,6 +68,7 @@ from consoleme.lib.cloud_credential_authorization_mapping import (
     generate_and_store_credential_authorization_mapping,
     generate_and_store_reverse_authorization_mapping,
 )
+from consoleme.lib.cloudtrail import CloudTrail
 from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.event_bridge.access_denies import (
     detect_cloudtrail_denies_and_update_cache,
@@ -81,6 +83,7 @@ from consoleme.lib.requests import cache_all_policy_requests
 from consoleme.lib.self_service.typeahead import cache_self_service_typeahead
 from consoleme.lib.templated_resources import cache_resource_templates
 from consoleme.lib.timeout import Timeout
+from consoleme.lib.v2.notifications import cache_notifications_to_redis_s3
 
 asynpool.PROC_ALIVE_TIMEOUT = config.get("celery.asynpool_proc_alive_timeout", 60.0)
 default_retry_kwargs = {
@@ -179,7 +182,7 @@ def report_celery_last_success_metrics() -> bool:
         if last_success == 0:
             log_data["message"] = "Last Success Value is 0"
             log_data["task_last_success_key"] = f"{task}.last_success"
-            log.warn(log_data)
+            log.warning(log_data)
         stats.gauge(f"{task}.time_since_last_success", current_time - last_success)
         red.set(f"{task}.time_since_last_success", current_time - last_success)
     red.set(
@@ -501,9 +504,11 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
         log_data["message"] = "Skipping task: An identical task is currently running"
         log.debug(log_data)
         return log_data
-    cloudtrail_errors: Dict = internal_policies.error_count_by_arn()
-    if not cloudtrail_errors:
-        cloudtrail_errors = {}
+    ct = CloudTrail()
+    process_cloudtrail_errors_res: Dict = async_to_sync(ct.process_cloudtrail_errors)(
+        aws
+    )
+    cloudtrail_errors = process_cloudtrail_errors_res["error_count_by_role"]
     red.setex(
         config.get(
             "celery.cache_cloudtrail_errors_by_arn.redis_key",
@@ -512,6 +517,8 @@ def cache_cloudtrail_errors_by_arn() -> Dict:
         86400,
         json.dumps(cloudtrail_errors),
     )
+    if process_cloudtrail_errors_res["num_new_or_changed_notifications"] > 0:
+        cache_notifications.delay()
     log_data["number_of_roles_with_errors"]: len(cloudtrail_errors.keys())
     log_data["number_errors"]: sum(cloudtrail_errors.values())
     log.debug(log_data)
@@ -951,6 +958,7 @@ def cache_iam_resources_for_account(account_id: str) -> Dict[str, Any]:
                 "resourceId": role.get("RoleId"),
                 "accountId": account_id,
                 "ttl": ttl,
+                "owner": get_aws_principal_owner(role),
                 "policy": dynamo.convert_iam_resource_to_json(role),
                 "templated": red.hget(
                     config.get("templated_roles.redis_key", "TEMPLATED_ROLES_v2"),
@@ -974,6 +982,7 @@ def cache_iam_resources_for_account(account_id: str) -> Dict[str, Any]:
                 "resourceId": user.get("UserId"),
                 "accountId": account_id,
                 "ttl": ttl,
+                "owner": get_aws_principal_owner(user),
                 "policy": dynamo.convert_iam_resource_to_json(user),
                 "templated": False,  # Templates not supported for IAM users at this time
             }
@@ -1084,6 +1093,15 @@ def cache_iam_resources_across_accounts(
             if config.get("environment") in ["prod", "dev"]:
                 tasks.append(cache_iam_resources_for_account.s(account_id))
             else:
+                log.debug(
+                    {
+                        **log_data,
+                        "message": (
+                            "`environment` configuration is not set. Only running tasks for accounts in configuration "
+                            "key `celery.test_account_ids`"
+                        ),
+                    }
+                )
                 if account_id in config.get("celery.test_account_ids", []):
                     tasks.append(cache_iam_resources_for_account.s(account_id))
         if run_subtasks:
@@ -1092,6 +1110,14 @@ def cache_iam_resources_across_accounts(
                 # results.join() forces function to wait until all tasks are complete
                 results.join(disable_sync_subtasks=False)
     else:
+        log.debug(
+            {
+                **log_data,
+                "message": (
+                    "Running in non-active region. Caching roles from DynamoDB and not directly from AWS"
+                ),
+            }
+        )
         dynamo = IAMRoleDynamoHandler()
         # In non-active regions, we just want to sync DDB data to Redis
         roles = dynamo.fetch_all_roles()
@@ -2037,15 +2063,10 @@ def trigger_credential_mapping_refresh_from_role_changes():
 @app.task(soft_time_limit=1800, **default_retry_kwargs)
 def cache_cloudtrail_denies():
     """
-    This task caches acess denies reported by Cloudtrail. This feature requires an
+    This task caches access denies reported by Cloudtrail. This feature requires an
     Event Bridge rule monitoring Cloudtrail for your accounts for access deny errors.
     """
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
-    if not config.get("celery.cache_cloudtrail_denies.enabled"):
-        return {
-            "function": function,
-            "message": "Not running Celery task because it is not enabled.",
-        }
     if not (
         config.region == config.get("celery.active_region", config.region)
         or config.get("environment") in ["dev", "test"]
@@ -2054,14 +2075,17 @@ def cache_cloudtrail_denies():
             "function": function,
             "message": "Not running Celery task in inactive region",
         }
-    ct_events = async_to_sync(detect_cloudtrail_denies_and_update_cache)()
-    if ct_events:
+    events = async_to_sync(detect_cloudtrail_denies_and_update_cache)()
+    if events["new_events"] > 0:
         # Spawn off a task to cache errors by ARN for the UI
         cache_cloudtrail_errors_by_arn.delay()
     log_data = {
         "function": function,
         "message": "Successfully cached cloudtrail denies",
-        "num_cloudtrail_denies": len(ct_events),
+        # Total CT denies
+        "num_cloudtrail_denies": events["num_events"],
+        # "New" CT messages that we don't already have cached in Dynamo DB. Not a "repeated" error
+        "num_new_cloudtrail_denies": events["new_events"],
     }
     log.debug(log_data)
     return log_data
@@ -2077,6 +2101,19 @@ def refresh_iam_role(role_arn):
     async_to_sync(aws().fetch_iam_role)(
         account_id, role_arn, force_refresh=True, run_sync=True
     )
+
+
+@app.task(soft_time_limit=600, **default_retry_kwargs)
+def cache_notifications() -> Dict[str, Any]:
+    """
+    This task caches notifications to be shown to end-users based on their identity or group membership.
+    """
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+    log_data = {"function": function}
+    result = async_to_sync(cache_notifications_to_redis_s3)()
+    log_data.update({**result, "message": "Successfully cached notifications"})
+    log.debug(log_data)
+    return log_data
 
 
 schedule_30_minute = timedelta(seconds=1800)
@@ -2188,17 +2225,22 @@ schedule = {
         "options": {"expires": 1000},
         "schedule": schedule_30_minute,
     },
-    "trigger_credential_mapping_refresh_from_role_changes": {
+}
+
+if config.get("celery.trigger_credential_mapping_refresh_from_role_changes.enabled"):
+    schedule["trigger_credential_mapping_refresh_from_role_changes"] = {
         "task": "consoleme.celery_tasks.celery_tasks.trigger_credential_mapping_refresh_from_role_changes",
         "options": {"expires": 300},
         "schedule": schedule_minute,
-    },
-    "cache_cloudtrail_denies": {
+    }
+
+if config.get("celery.cache_cloudtrail_denies.enabled"):
+    schedule["cache_cloudtrail_denies"] = {
         "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_denies",
         "options": {"expires": 300},
         "schedule": schedule_minute,
-    },
-}
+    }
+
 
 if internal_celery_tasks and isinstance(internal_celery_tasks, dict):
     schedule = {**schedule, **internal_celery_tasks}

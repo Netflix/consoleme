@@ -203,6 +203,7 @@ class TestCelerySync(TestCase):
             {
                 "function": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_denies",
                 "message": "Successfully cached cloudtrail denies",
+                "num_new_cloudtrail_denies": 1,
                 "num_cloudtrail_denies": 1,
             },
         )

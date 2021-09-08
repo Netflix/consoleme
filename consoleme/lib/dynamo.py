@@ -165,7 +165,6 @@ class BaseDynamoHandler:
         self,
         table,
         total_threads=os.cpu_count(),
-        loop=None,
         dynamodb_kwargs: Optional[Dict[str, Any]] = None,
     ):
         if not dynamodb_kwargs:
@@ -196,6 +195,43 @@ class BaseDynamoHandler:
             tasks.append(task)
 
         results = loop.run_until_complete(asyncio.gather(*tasks))
+        items = []
+        for result in results:
+            items.extend(result)
+        return items
+
+    async def parallel_scan_table_async(
+        self,
+        table,
+        total_threads=os.cpu_count(),
+        dynamodb_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        if not dynamodb_kwargs:
+            dynamodb_kwargs = {}
+
+        async def _scan_segment(segment, total_segments):
+            response = table.scan(
+                Segment=segment, TotalSegments=total_segments, **dynamodb_kwargs
+            )
+            items = response.get("Items", [])
+
+            while "LastEvaluatedKey" in response:
+                response = table.scan(
+                    ExclusiveStartKey=response["LastEvaluatedKey"],
+                    Segment=segment,
+                    TotalSegments=total_segments,
+                    **dynamodb_kwargs,
+                )
+                items.extend(self._data_from_dynamo_replace(response["Items"]))
+
+            return items
+
+        tasks = []
+        for i in range(total_threads):
+            task = asyncio.ensure_future(_scan_segment(i, total_threads))
+            tasks.append(task)
+
+        results = await asyncio.gather(*tasks)
         items = []
         for result in results:
             items.extend(result)
@@ -235,6 +271,10 @@ class UserDynamoHandler(BaseDynamoHandler):
             )
             self.cloudtrail_table = self._get_dynamo_table(
                 config.get("aws.cloudtrail_table", "consoleme_cloudtrail")
+            )
+
+            self.notifications_table = self._get_dynamo_table(
+                config.get("aws.notifications_table", "consoleme_notifications")
             )
 
             if user_email:
@@ -1238,21 +1278,7 @@ class UserDynamoHandler(BaseDynamoHandler):
             arn = item.get("arn")
             if not error_count.get(arn):
                 error_count[arn] = 0
-            error_count[arn] += 1
-        return error_count
-
-    def count_cloudtrail_errors_by_arn(self):
-        error_count = {}
-        items = self.parallel_scan_table(
-            self.cloudtrail_table,
-            dynamodb_kwargs={
-                "Select": "SPECIFIC_ATTRIBUTES",
-                "ProjectionExpression": "arn",
-            },
-        )
-        error_count = self.count_arn_errors(
-            error_count, self._data_from_dynamo_replace(items)
-        )
+            error_count[arn] += item.get("count", 1)
         return error_count
 
 

@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { useAuth } from "./AuthProviderDefault";
+import { useNotifications } from "../components/hooks/notifications";
 import {
   Route,
   useHistory,
@@ -13,9 +14,11 @@ import ReactGA from "react-ga";
 
 const ProtectedRoute = (props) => {
   const auth = useAuth();
+  const notifications = useNotifications();
   let history = useHistory();
   const location = useLocation();
   const { login, user, isSessionExpired } = auth;
+  const { RetrieveNotificationsAtInterval } = notifications;
   const match = useRouteMatch(props);
   const { component: Component, ...rest } = props;
 
@@ -36,7 +39,14 @@ const ProtectedRoute = (props) => {
         await login(history);
       })();
     }
-  }, [match, user, isSessionExpired, login, history]);
+    if (user) {
+      let interval = 60;
+      if (user?.site_config?.notifications?.request_interval) {
+        interval = user.site_config.notifications.request_interval;
+      }
+      RetrieveNotificationsAtInterval(interval);
+    }
+  }, [match, user, isSessionExpired, login, history]); // eslint-disable-line
 
   if (!user) {
     return null;
