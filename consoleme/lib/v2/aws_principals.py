@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import ujson as json
 from asgiref.sync import sync_to_async
+from policy_sentry.util.arns import parse_arn
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
@@ -15,6 +16,8 @@ from consoleme.models import (
     CloudTrailDetailsModel,
     CloudTrailError,
     CloudTrailErrorArray,
+    EligibleRolesModel,
+    EligibleRolesModelArray,
     ExtendedAwsPrincipalModel,
     S3DetailsModel,
     S3Error,
@@ -216,3 +219,31 @@ async def get_role_details(
             account_name=account_ids_to_name.get(account_id, None),
             arn=arn,
         )
+
+
+async def get_eligible_role_details(
+    eligible_roles: List[str],
+) -> EligibleRolesModelArray:
+    account_ids_to_name = await get_account_id_to_name_mapping()
+    eligible_roles_detailed = []
+    for role in eligible_roles:
+        arn_parsed = parse_arn(role)
+        account_id = arn_parsed["account"]
+        role_name = (
+            arn_parsed["resource_path"]
+            if arn_parsed["resource_path"]
+            else arn_parsed["resource"]
+        )
+        account_friendly_name = account_ids_to_name.get(account_id, "Unknown")
+        role_apps = await get_app_details_for_role(role)
+        eligible_roles_detailed.append(
+            EligibleRolesModel(
+                arn=role,
+                account_id=account_id,
+                account_friendly_name=account_friendly_name,
+                role_name=role_name,
+                apps=role_apps,
+            )
+        )
+
+    return EligibleRolesModelArray(roles=eligible_roles_detailed)
