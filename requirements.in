@@ -29,6 +29,7 @@ jmespath
 jsonschema
 kombu
 marshmallow
+numpy==1.19.5 # Internal dependency pin
 logmatic-python
 lxml
 okta_jwt
