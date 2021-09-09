@@ -294,7 +294,7 @@ class SelfService extends Component {
         <Message success>
           <ReactMarkdown
             linkTarget="_blank"
-            source={this.state.config.custom_header_message}
+            children={this.state.config.custom_header_message}
           />
         </Message>
       ) : null;

@@ -108,7 +108,7 @@ export const NotificationsModal = (props) => {
                   </Button.Group>
                   <ReactMarkdown
                     linkTarget="_blank"
-                    source={notification?.message}
+                    children={notification?.message}
                   />
                   <Accordion exclusive={false} fluid>
                     <Accordion.Title
