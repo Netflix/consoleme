@@ -2060,7 +2060,7 @@ def trigger_credential_mapping_refresh_from_role_changes():
     return log_data
 
 
-@app.task(soft_time_limit=1800, **default_retry_kwargs)
+@app.task(soft_time_limit=3600, **default_retry_kwargs)
 def cache_cloudtrail_denies():
     """
     This task caches access denies reported by Cloudtrail. This feature requires an
@@ -2075,7 +2075,7 @@ def cache_cloudtrail_denies():
             "function": function,
             "message": "Not running Celery task in inactive region",
         }
-    events = async_to_sync(detect_cloudtrail_denies_and_update_cache)()
+    events = async_to_sync(detect_cloudtrail_denies_and_update_cache)(app)
     if events["new_events"] > 0:
         # Spawn off a task to cache errors by ARN for the UI
         cache_cloudtrail_errors_by_arn.delay()

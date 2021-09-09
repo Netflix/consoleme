@@ -79,8 +79,13 @@ async def generate_policy_from_cloudtrail_deny(ct_event):
 
 
 async def detect_cloudtrail_denies_and_update_cache(
+    celery_app,
     event_ttl=config.get(
         "event_bridge.detect_cloudtrail_denies_and_update_cache.event_ttl", 86400
+    ),
+    max_num_messages_to_process=config.get(
+        "event_bridge.detect_cloudtrail_denies_and_update_cache.max_num_messages_to_process",
+        100,
     ),
 ) -> Dict[str, Any]:
     log_data = {"function": f"{__name__}.{sys._getframe().f_code.co_name}"}
@@ -129,7 +134,12 @@ async def detect_cloudtrail_denies_and_update_cache(
     new_events = 0
     messages = messages_awaitable.get("Messages", [])
     num_events = 0
+    reached_limit_on_num_messages_to_process = False
+
     while messages:
+        if num_events >= max_num_messages_to_process:
+            reached_limit_on_num_messages_to_process = True
+            break
         processed_messages = []
         for message in messages:
             try:
@@ -232,6 +242,11 @@ async def detect_cloudtrail_denies_and_update_cache(
             QueueUrl=queue_url, MaxNumberOfMessages=10
         )
         messages = messages_awaitable.get("Messages", [])
+    if reached_limit_on_num_messages_to_process:
+        # We hit our limit. Let's spawn another task immediately to process remaining messages
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_denies",
+        )
     log_data["message"] = "Successfully cached Cloudtrail Access Denies"
     log_data["num_events"] = num_events
     log_data["new_events"] = new_events
