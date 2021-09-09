@@ -36,7 +36,7 @@ const SelectRoles = () => {
           <ReactMarkdown
             escapeHtml={false}
             linkTarget="_blank"
-            source={pageDescription}
+            children={pageDescription}
           />
         </Header.Subheader>
       </Header>
