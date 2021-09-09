@@ -2002,28 +2002,32 @@ async def simulate_iam_principal_action(
         ),
         retry_max_attempts=2,
     )
-    response = await sync_to_async(client.simulate_principal_policy)(
-        PolicySourceArn=principal_arn,
-        ActionNames=[
-            action,
-        ],
-        ResourceArns=[
-            resource_arn,
-        ],
-        # TODO: Attach resource policy when discoverable
-        # ResourcePolicy='string',
-        # TODO: Attach Account ID of resource
-        # ResourceOwner='string',
-        ContextEntries=context_entries,
-        MaxItems=100,
-    )
+    try:
+        response = await sync_to_async(client.simulate_principal_policy)(
+            PolicySourceArn=principal_arn,
+            ActionNames=[
+                action,
+            ],
+            ResourceArns=[
+                resource_arn,
+            ],
+            # TODO: Attach resource policy when discoverable
+            # ResourcePolicy='string',
+            # TODO: Attach Account ID of resource
+            # ResourceOwner='string',
+            ContextEntries=context_entries,
+            MaxItems=100,
+        )
 
-    await redis_hsetex(
-        resource_arn_exists_temp_matches_redis_key,
-        resource_arn,
-        response["EvaluationResults"],
-        expiration_seconds=expiration_seconds,
-    )
+        await redis_hsetex(
+            resource_arn_exists_temp_matches_redis_key,
+            resource_arn,
+            response["EvaluationResults"],
+            expiration_seconds=expiration_seconds,
+        )
+    except Exception:
+        sentry_sdk.capture_exception()
+        return None
     return response["EvaluationResults"]
 
 
