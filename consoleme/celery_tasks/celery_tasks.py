@@ -56,7 +56,7 @@ from consoleme.lib.aws import (
     allowed_to_sync_role,
     cache_all_scps,
     cache_org_structure,
-    get_enabled_regions_for_account,
+    get_enabled_regions_for_account, #remove_temp_policies,
 )
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
@@ -963,6 +963,8 @@ def cache_iam_resources_for_account(account_id: str) -> Dict[str, Any]:
 
             # Redis:
             _add_role_to_redis(cache_key, role_entry)
+
+            remove_temp_policies(role)
 
             # Run internal function on role. This can be used to inspect roles, add managed policies, or other actions
             aws().handle_detected_role(role)

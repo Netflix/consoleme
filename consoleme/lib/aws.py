@@ -1859,3 +1859,28 @@ def allowed_to_sync_role(
         return True
 
     return False
+
+#
+# def remove_temp_policies(role):
+#     temp_policies_removed = []
+#     today = datetime.today()
+#     # iam_client.delete_role_policy(
+#     #     RoleName=principal_name, PolicyName=change.policy_name
+#     # )
+#
+#     for policy in policies:
+#         # if we have a policy that starts with temp
+#         if policy['PolicyName'].startswith('temp_'):
+#             policy_date = policy['PolicyName'].split('_')[1]
+#             # and the rest of the policy name is a valid date
+#             if bool(re.match(r'\d{4}-\d{2}-\d{2}', policy_date)):
+#                 policy_date = datetime.strptime(policy_date, "%Y-%m-%d")
+#                 # compare the date to today and if the date is passed, remove it
+#                 if policy_date < today:
+#                     temp_policies_removed.append(policy['PolicyName'])
+#
+#     if temp_policies_removed:
+#         log.info(f"Removing temporary policies {temp_policies_removed} from role {role_name}"
+#                  f" in account {account_number}")
+#
+#     return [p for p in policies if p['PolicyName'] not in temp_policies_removed]
