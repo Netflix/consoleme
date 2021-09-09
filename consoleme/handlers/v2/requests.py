@@ -578,7 +578,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
         requests = await dynamo.get_policy_requests(request_id=request_id)
         if len(requests) == 0:
             log_data["message"] = "Request with that ID not found"
-            log.warn(log_data)
+            log.warning(log_data)
             stats.count(f"{log_data['function']}.not_found", tags={"user": self.user})
             raise NoMatchingRequest(log_data["message"])
         if len(requests) > 1:

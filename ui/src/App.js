@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Route, Switch } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthProviderDefault";
+import { NotificationProvider } from "./components/hooks/notifications";
 import ProtectedRoute from "./auth/ProtectedRoute";
 import ConsoleMeSelectRoles from "./components/roles/SelectRoles";
 import ConsoleMePolicyTable from "./components/policy/PolicyTable";
@@ -104,7 +105,9 @@ function App() {
 const AuthWrapper = () => {
   return (
     <AuthProvider>
-      <App />
+      <NotificationProvider>
+        <App />
+      </NotificationProvider>
     </AuthProvider>
   );
 };

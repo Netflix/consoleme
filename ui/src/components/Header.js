@@ -1,13 +1,28 @@
 import React, { useState } from "react";
-import { Dropdown, Menu, Image, Message } from "semantic-ui-react";
+import {
+  Button,
+  Dropdown,
+  Menu,
+  Image,
+  Label,
+  Message,
+} from "semantic-ui-react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthProviderDefault";
 import ReactMarkdown from "react-markdown";
 import SettingsModal from "./SettingsModal";
+import { NotificationsModal } from "./notifications/Notifications";
+import { useNotifications } from "./hooks/notifications";
 
 const ConsoleMeHeader = () => {
   const { user } = useAuth();
+  const {
+    notifications,
+    unreadNotificationCount,
+    GetAndSetNotifications,
+  } = useNotifications();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const generatePoliciesDropDown = () => {
     const canCreateRoles = user?.authorization?.can_create_roles;
@@ -51,12 +66,37 @@ const ConsoleMeHeader = () => {
     return null;
   };
 
+  const openNotifications = () => {
+    setNotificationsOpen(true);
+  };
+
+  const closeNotifications = () => {
+    setNotificationsOpen(false);
+  };
+
   const openSettings = () => {
     setSettingsOpen(true);
   };
 
   const closeSettings = () => {
     setSettingsOpen(false);
+  };
+
+  const getNotifications = () => {
+    if (!user?.site_config?.notifications?.enabled) {
+      return;
+    }
+
+    return (
+      <>
+        <Button circular icon="bell" color="red" onClick={openNotifications} />
+        {unreadNotificationCount > 0 ? (
+          <Label circular size="tiny" color="orange">
+            {unreadNotificationCount}
+          </Label>
+        ) : null}
+      </>
+    );
   };
 
   const getAvatarImage = () => {
@@ -157,10 +197,17 @@ const ConsoleMeHeader = () => {
         </Menu.Menu>
         <Menu.Menu position="right">
           <Menu.Item>{getAvatarImage()}</Menu.Item>
+          <Menu.Item>{getNotifications()}</Menu.Item>
         </Menu.Menu>
       </Menu>
       {headerMessage()}
       <SettingsModal isOpen={settingsOpen} closeSettings={closeSettings} />
+      <NotificationsModal
+        isOpen={notificationsOpen}
+        closeNotifications={closeNotifications}
+        notifications={notifications}
+        GetAndSetNotifications={GetAndSetNotifications}
+      />
     </>
   );
 };

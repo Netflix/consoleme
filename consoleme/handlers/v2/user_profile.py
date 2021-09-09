@@ -43,6 +43,12 @@ class UserProfileHandler(BaseAPIV1Handler):
             # on the frontend.
             "landing_url": config.get("site_config.landing_url"),
             "temp_policy_support": config.get("policies.temp_policy_support", True),
+            "notifications": {
+                "enabled": config.get("site_config.notifications.enabled"),
+                "request_interval": config.get(
+                    "site_config.notifications.request_interval", 60
+                ),
+            },
         }
 
         custom_page_header: Dict[str, str] = await get_custom_page_header(

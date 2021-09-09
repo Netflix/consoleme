@@ -294,3 +294,5 @@ export const setLocalStorageSettings = (settings) => {
     JSON.stringify(settings)
   );
 };
+
+export const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):(?<resourceType>(user|role))\/(.+\/)?(?<resourceName>(.+))/;

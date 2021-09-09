@@ -1681,7 +1681,7 @@ async def apply_managed_policy_resource_tag_change(
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
         # we can't apply this change
         log_data["message"] = "Resource account not found"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -1694,7 +1694,7 @@ async def apply_managed_policy_resource_tag_change(
     if resource_type != "iam" or resource_name != "policy" or resource_account == "aws":
         # Not a managed policy, or a managed policy that is AWS owned
         log_data["message"] = "Resource change not supported"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -1836,7 +1836,7 @@ async def apply_non_iam_resource_tag_change(
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
         # we can't apply this change
         log_data["message"] = "Resource account not found"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -1852,7 +1852,7 @@ async def apply_non_iam_resource_tag_change(
 
     if resource_type not in supported_resource_types:
         log_data["message"] = "Resource change not supported"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -2042,7 +2042,7 @@ async def apply_managed_policy_resource_change(
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
         # we can't apply this change
         log_data["message"] = "Resource account not found"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -2175,7 +2175,7 @@ async def apply_resource_policy_change(
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
         # we can't apply this change
         log_data["message"] = "Resource account not found"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -2204,7 +2204,7 @@ async def apply_resource_policy_change(
         )
     ):
         log_data["message"] = "Resource change not supported"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(

@@ -77,7 +77,7 @@ async def add_user_to_group_task(
                 result["Error"] = True
                 error = f"There was at least one problem. {result['Result']}"
                 log_data["error"] = error
-                log.warn(log_data, exc_info=True)
+                log.warning(log_data, exc_info=True)
 
                 return result
             if not validate_email(member):
@@ -85,7 +85,7 @@ async def add_user_to_group_task(
                 result["Error"] = True
                 log_data["message"] = "Error"
                 log_data["error"] = result["Result"]
-                log.warn(log_data, exc_info=True)
+                log.warning(log_data, exc_info=True)
                 return result
 
             if (
@@ -98,7 +98,7 @@ async def add_user_to_group_task(
                 result["Error"] = True
                 log_data["message"] = "Error"
                 log_data["error"] = result["Result"]
-                log.warn(log_data, exc_info=True)
+                log.warning(log_data, exc_info=True)
                 return result
 
             await add_user_to_group(member, group, requesting_user, service=service)
@@ -157,7 +157,7 @@ async def remove_user_from_group_task(
                 result["Error"] = True
                 error = f"There was at least one problem. {result['Result']}"
                 log_data["error"] = error
-                log.warn(log_data, exc_info=True)
+                log.warning(log_data, exc_info=True)
 
                 return result
 
@@ -168,7 +168,7 @@ async def remove_user_from_group_task(
                 result["Error"] = True
                 log_data["message"] = "Error"
                 log_data["error"] = result["Result"]
-                log.warn(log_data, exc_info=True)
+                log.warning(log_data, exc_info=True)
                 return result
 
             await remove_user_from_group(
@@ -487,7 +487,7 @@ async def add_user_to_group(
 
     if user_email in existing:
         log_data["message"] = "Unable to add user to group. User is already a member."
-        log.warn(log_data)
+        log.warning(log_data)
         result["done"] = False
         result["message"] = log_data["message"]
         raise UserAlreadyAMemberOfGroupException(result["message"])
@@ -604,7 +604,7 @@ async def remove_user_from_group(
         log_data[
             "message"
         ] = "Unable to remove user from group. User is not currently in the group."
-        log.warn(log_data)
+        log.warning(log_data)
         result["done"] = False
         result["message"] = log_data["message"]
         raise NotAMemberException(result["message"])

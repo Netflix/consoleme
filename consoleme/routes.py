@@ -45,6 +45,7 @@ from consoleme.handlers.v2.managed_policies import (
     ManagedPoliciesHandler,
     ManagedPoliciesOnPrincipalHandler,
 )
+from consoleme.handlers.v2.notifications import NotificationsHandler
 from consoleme.handlers.v2.policies import (
     CheckPoliciesHandler,
     PoliciesHandler,
@@ -145,6 +146,7 @@ def make_app(jwt_validator=None):
         (r"/api/v2/policies_page_config", PoliciesPageConfigHandler),
         (r"/api/v2/requests_page_config", RequestsPageConfigHandler),
         (r"/api/v2/generate_policy", GeneratePolicyHandler),
+        (r"/api/v2/notifications/?", NotificationsHandler),
         (r"/api/v2/managed_policies/(\d{12})", ManagedPoliciesForAccountHandler),
         (r"/api/v2/managed_policies/(.*)", ManagedPoliciesHandler),
         (

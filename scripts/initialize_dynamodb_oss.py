@@ -215,3 +215,28 @@ except ClientError as e:
         "Cannot create preexisting table"
     ):
         print(f"Unable to create table {table_name}. Error: {e}.")
+
+
+table_name = "consoleme_notifications"
+try:
+    ddb.create_table(
+        TableName=table_name,
+        AttributeDefinitions=[
+            {"AttributeName": "predictable_id", "AttributeType": "S"},
+        ],
+        KeySchema=[
+            {"AttributeName": "predictable_id", "KeyType": "HASH"},
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 100, "WriteCapacityUnits": 100},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
+    )
+
+except ClientError as e:
+    if str(e) != (
+        "An error occurred (ResourceInUseException) when calling the CreateTable operation: "
+        "Cannot create preexisting table"
+    ):
+        print(f"Unable to create table {table_name}. Error: {e}.")

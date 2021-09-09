@@ -1,6 +1,6 @@
 import _ from "lodash";
 import React, { Component } from "react";
-import { Form, Search } from "semantic-ui-react";
+import { Form, Icon, Label, Search } from "semantic-ui-react";
 
 class TypeaheadBlockComponent extends Component {
   constructor(props) {
@@ -8,17 +8,49 @@ class TypeaheadBlockComponent extends Component {
     this.state = {
       isLoading: false,
       results: [],
+      selectedValues: [],
       value: "",
     };
   }
 
+  _handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      if (!e.target.value) {
+        return;
+      }
+      let values = this.state.selectedValues;
+      values.push(e.target.value);
+      this.setState(
+        {
+          selectedValues: values,
+          value: "",
+          results: [],
+        },
+        () => {
+          this.props.handleInputUpdate(values);
+        }
+      );
+    }
+  };
+
+  handleSelectedValueDelete(value) {
+    this.setState({
+      selectedValues: this.state.selectedValues.filter(
+        (item) => item !== value
+      ),
+    });
+  }
+
   handleResultSelect(e, { result }) {
+    let values = this.state.selectedValues;
+    values.push(result.title);
     this.setState(
       {
-        value: result.title,
+        value: "",
+        selectedValues: values,
       },
       () => {
-        this.props.handleInputUpdate(result.title);
+        this.props.handleInputUpdate(values);
       }
     );
   }
@@ -31,12 +63,12 @@ class TypeaheadBlockComponent extends Component {
         value,
       },
       () => {
-        this.props.handleInputUpdate(value);
+        this.props.handleInputUpdate(this.state.selectedValues);
       }
     );
 
     setTimeout(() => {
-      if (this.state.value.length < 1) {
+      if (value.length < 1) {
         return this.setState(
           {
             isLoading: false,
@@ -44,7 +76,7 @@ class TypeaheadBlockComponent extends Component {
             value: "",
           },
           () => {
-            this.props.handleInputUpdate("");
+            this.props.handleInputUpdate(this.state.selectedValues);
           }
         );
       }
@@ -65,23 +97,40 @@ class TypeaheadBlockComponent extends Component {
   }
 
   render() {
-    const { isLoading, results, value } = this.state;
+    const { isLoading, results, value, selectedValues } = this.state;
     const { defaultValue, required, label } = this.props;
+
+    const selectedValueLabels = selectedValues.map((selectedValue) => {
+      return (
+        <Label basic color={"red"}>
+          {selectedValue}
+          <Icon
+            name="delete"
+            onClick={() => this.handleSelectedValueDelete(selectedValue)}
+          />
+        </Label>
+      );
+    });
 
     return (
       <Form.Field required={required || false}>
         <label>{label || "Enter Value"}</label>
         <Search
           fluid
+          multiple
           defaultValue={defaultValue || ""}
           loading={isLoading}
           onResultSelect={this.handleResultSelect.bind(this)}
           onSearchChange={_.debounce(this.handleSearchChange.bind(this), 500, {
             leading: true,
           })}
+          onKeyDown={this._handleKeyDown}
           results={results}
           value={value}
+          showNoResults={false}
         />
+        <br />
+        {selectedValueLabels}
       </Form.Field>
     );
   }

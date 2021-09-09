@@ -82,6 +82,7 @@ class TestAwsIamUsers(AsyncHTTPTestCase):
                 "updated_time": None,
                 "last_used_time": None,
                 "description": None,
+                "owner": None,
             },
         )
 
