@@ -22,7 +22,12 @@ class Policies:
             sentry_sdk.capture_exception()
             return {}
 
-    async def get_applications_associated_with_role(self, arn: str) -> AppDetailsArray:
+    async def get_role_application_mapping_cache(self):
+        return config.get("application_details", {})
+
+    async def get_applications_associated_with_role(
+        self, arn: str, role_app_mapping=None
+    ) -> AppDetailsArray:
         """
         This function returns applications associated with a role from configuration. You may want to override this
         function to pull this information from an authoratative source.
@@ -32,10 +37,10 @@ class Policies:
         """
 
         apps_formatted = []
+        if not role_app_mapping:
+            role_app_mapping = config.get("application_details", {})
 
-        application_details = config.get("application_details", {})
-
-        for app, details in application_details.items():
+        for app, details in role_app_mapping.items():
             apps_formatted.append(
                 AppDetailsModel(
                     name=app,

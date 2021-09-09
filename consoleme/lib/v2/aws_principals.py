@@ -117,13 +117,15 @@ async def get_s3_details_for_role(account_id: str, role_name: str) -> S3DetailsM
     )
 
 
-async def get_app_details_for_role(arn: str):
+async def get_app_details_for_role(arn: str, role_app_mapping=None):
     """
     Retrieves applications associated with role, if they exist
     :param arn:
     :return:
     """
-    return await internal_policies.get_applications_associated_with_role(arn)
+    return await internal_policies.get_applications_associated_with_role(
+        arn, role_app_mapping
+    )
 
 
 async def get_role_template(arn: str):
@@ -227,6 +229,8 @@ async def get_eligible_role_details(
     eligible_roles: List[str],
 ) -> EligibleRolesModelArray:
     account_ids_to_name = await get_account_id_to_name_mapping()
+    role_app_mapping = await internal_policies.get_role_application_mapping_cache()
+
     eligible_roles_detailed = []
     for role in eligible_roles:
         arn_parsed = parse_arn(role)
@@ -237,7 +241,7 @@ async def get_eligible_role_details(
             else arn_parsed["resource"]
         )
         account_friendly_name = account_ids_to_name.get(account_id, "Unknown")
-        role_apps = await get_app_details_for_role(role)
+        role_apps = await get_app_details_for_role(role, role_app_mapping)
         eligible_roles_detailed.append(
             EligibleRolesModel(
                 arn=role,
