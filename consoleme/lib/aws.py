@@ -1894,7 +1894,9 @@ def remove_temp_policies(role, iam_client) -> bool:
             policy_name = policy["PolicyName"]
             if not policy_name.startswith(temp_policy_prefix):
                 continue
-            expiration_date = policy_name.removeprefix(temp_policy_prefix).split("_")[1]
+            expiration_date = policy_name.replace(temp_policy_prefix, "", 1).split("_")[
+                1
+            ]
             if not current_dateint >= expiration_date:
                 continue
             log.debug(
