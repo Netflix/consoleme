@@ -31,9 +31,13 @@ export const NotificationsModal = (props) => {
 
   const markAllNotificationsAsReadForUser = async (notifications) => {
     if (notifications.length <= 0) return;
+    const unreadNotifications = notifications.filter(
+      (item) => item?.read_for_current_user !== true
+    );
+    if (unreadNotifications.length <= 0) return;
     const request = {
       action: "toggle_read_for_current_user",
-      notifications: [notifications],
+      notifications: unreadNotifications,
     };
 
     await sendRequestCommon(request, "/api/v2/notifications", "put");
@@ -85,10 +89,14 @@ export const NotificationsModal = (props) => {
                 );
               })
             );
+            const notificationColor = notification?.read_for_current_user
+              ? null
+              : "blue";
+
             const predictable_id = notification?.predictable_id;
             return (
               <>
-                <Segment color="blue">
+                <Segment color={notificationColor}>
                   <Dimmer
                     active={loadingNotifications.includes(predictable_id)}
                   >
@@ -159,7 +167,7 @@ export const NotificationsModal = (props) => {
   useEffect(() => {
     if (!props.isOpen) return;
     GetAndSetNotifications(user);
-  }, [props.isOpen, GetAndSetNotifications, user]);
+  }, [props.isOpen, user]); // eslint-disable-line
 
   const notificationDisplay = (
     <>

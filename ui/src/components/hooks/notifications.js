@@ -49,11 +49,7 @@ export const NotificationProvider = ({ children }) => {
     }
 
     setUnreadNotificationCount(result.data.unreadNotificationCount);
-    if (result.data.unreadNotificationCount > 0) {
-      setNotifications(result.data.notifications);
-    } else {
-      setNotifications([]);
-    }
+    setNotifications(result.data.notifications);
   }
 
   const setNotifications = (notifications) => {
