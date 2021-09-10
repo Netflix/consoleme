@@ -40,7 +40,7 @@ const ConsoleMeChallengeValidator = () => {
 
   return (
     <>
-      <ReactMarkdown linkTarget="_blank" source={result && result.message} />
+      <ReactMarkdown linkTarget="_blank" children={result && result.message} />
       {showApproveButton ? (
         <Button primary type="submit" onClick={validateChallengeToken}>
           Approve Credential Request

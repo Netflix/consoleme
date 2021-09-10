@@ -152,7 +152,7 @@ const ConsoleMeHeader = () => {
         >
           {}
           <Message.Header>{headerTitle}</Message.Header>
-          <ReactMarkdown linkTarget="_blank" source={headerText} />
+          <ReactMarkdown linkTarget="_blank" children={headerText} />
         </Message>
       );
     }

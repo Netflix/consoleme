@@ -301,7 +301,7 @@ class SelfServiceComponent extends Component {
         }}
       >
         <Header as="h3">{text}</Header>
-        <ReactMarkdown linkTarget="_blank" source={description} />
+        <ReactMarkdown linkTarget="_blank" children={description} />
         {blocks}
         {advancedOptions}
         {messagesToShow}

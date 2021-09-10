@@ -252,7 +252,7 @@ class SelfServiceStep1 extends Component {
                       <ReactMarkdown
                         className={"help"}
                         linkTarget="_blank"
-                        source={config.help_message}
+                        children={config.help_message}
                       />
                     ) : null}
                   </Grid.Column>
