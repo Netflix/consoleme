@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { Button, Modal, Dropdown, Grid, Message } from "semantic-ui-react";
+import {
+  Button,
+  Modal,
+  Dropdown,
+  Grid,
+  Message,
+  Input,
+} from "semantic-ui-react";
 import {
   editor_themes,
   getLocalStorageSettings,
@@ -29,6 +36,13 @@ const SettingsModal = (props) => {
     setCurrentSettings(oldSettings);
   };
 
+  const updateDefaultAwsConsoleRegion = (e, data) => {
+    const oldSettings = currentSettings;
+    oldSettings.defaultAwsConsoleRegion = data.value;
+    setMessages([]);
+    setCurrentSettings(oldSettings);
+  };
+
   const editorThemeSettings = () => {
     return (
       <Grid verticalAlign="middle">
@@ -44,6 +58,20 @@ const SettingsModal = (props) => {
               onChange={updateEditorTheme}
               defaultValue={currentSettings.editorTheme}
               options={editor_themes}
+            />
+          </Grid.Column>
+        </Grid.Row>
+        <Grid.Row>
+          <Grid.Column width={4} floated="left">
+            Default AWS Console Region
+          </Grid.Column>
+          <Grid.Column width={8}>
+            <Input
+              fluid
+              placeholder="Default AWS Console Region"
+              selection
+              onChange={updateDefaultAwsConsoleRegion}
+              defaultValue={currentSettings.defaultAwsConsoleRegion}
             />
           </Grid.Column>
         </Grid.Row>
