@@ -84,6 +84,7 @@ user_role_creator:
   default_trust_policy: {}
 
 policies:
+  temp_policy_support: true
   supported_resource_types_for_policy_application:
     - s3
     - sns

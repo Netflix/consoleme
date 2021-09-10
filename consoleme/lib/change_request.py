@@ -81,13 +81,15 @@ async def generate_policy_name(
     :param user: User's e-mail address
     :return: policy name string
     """
-    temp_policy_prefix = config.get("policies.temp_policy_prefix", "delete_on")
+    temp_policy_prefix = config.get("policies.temp_policy_prefix", "cm_delete-on")
     if policy_name:
         return policy_name
     user_stripped = user.split("@")[0]
     random_string = await generate_random_string()
     if expiration_date:
-        return f"cm_{temp_policy_prefix}_{expiration_date}_{user_stripped}_{int(time.time())}"
+        return (
+            f"{temp_policy_prefix}_{expiration_date}_{user_stripped}_{int(time.time())}"
+        )
     return f"cm_{user_stripped}_{int(time.time())}_{random_string}"
 
 
