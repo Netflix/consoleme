@@ -31,7 +31,9 @@ export const NotificationsModal = (props) => {
 
   const markAllNotificationsAsReadForUser = async (notifications) => {
     if (notifications.length <= 0) return;
-    const unreadNotifications = notifications.filter((item) => item?.read_for_current_user !== true)
+    const unreadNotifications = notifications.filter(
+      (item) => item?.read_for_current_user !== true
+    );
     if (unreadNotifications.length <= 0) return;
     const request = {
       action: "toggle_read_for_current_user",
@@ -87,7 +89,9 @@ export const NotificationsModal = (props) => {
                 );
               })
             );
-            const notificationColor  = notification?.read_for_current_user ? null: "blue"
+            const notificationColor = notification?.read_for_current_user
+              ? null
+              : "blue";
 
             const predictable_id = notification?.predictable_id;
             return (
@@ -122,9 +126,8 @@ export const NotificationsModal = (props) => {
                       index={true}
                       onClick={() => {
                         let newState = activeTargets;
-                        newState[notification.predictable_id] = !newState[
-                          notification.predictable_id
-                        ];
+                        newState[notification.predictable_id] =
+                          !newState[notification.predictable_id];
                         setActiveTargets({
                           ...activeTargets,
                           ...newState,
