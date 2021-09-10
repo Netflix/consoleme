@@ -14,6 +14,18 @@ data:
         {{ .Values.redis.region }}: {{ .Values.redis.broker_url }}
       debug: false
 
+      {{- if .Values.event_bridge.enabled }}
+      trigger_credential_mapping_refresh_from_role_changes:
+        enabled: true
+      cache_cloudtrail_denies:
+        enabled: true
+      {{- end }}
+
+      {{- if .Values.redis.sync_regions }}
+      sync_regions:
+        {{- toYaml .Values.redis.sync_regions | nindent 8 }}
+      {{- end }}
+
     redis:
       host:
         {{ .Values.redis.region }}: {{ .Values.redis.host }}
