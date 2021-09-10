@@ -120,6 +120,7 @@ async def get_notifications_for_user(
     notifications_to_return = notifications_for_user[0:max_notifications]
     for notification in notifications_to_return:
         if user in notification.read_by_users or notification.read_by_all:
+            notification.read_for_current_user = True
             continue
         unread_count += 1
     return GetNotificationsForUserResponse(
