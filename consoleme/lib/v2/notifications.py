@@ -43,6 +43,7 @@ class RetrieveNotifications(metaclass=Singleton):
                 s3_key=config.get(
                     "notifications.s3.key", "notifications/all_notifications_v1.json.gz"
                 ),
+                default={},
             )
             self.last_update = int(time.time())
         return self.all_notifications
