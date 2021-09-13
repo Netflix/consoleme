@@ -12,7 +12,7 @@ data:
       - config_redis.yaml
       - config_auth.yaml
     {{- if .Values.awsSecretsManager.enabled }}
-      - AWS_SECRETS_MANAGER: {{ .Values.awsSecretsManager.name }}
-    {{- else -}}
+      - AWS_SECRETS_MANAGER:{{ .Values.awsSecretsManager.name }}
+    {{- else }}
       - secrets/secrets.yaml
-    {{- end -}}
+    {{- end }}
