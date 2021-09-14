@@ -104,8 +104,9 @@ class SelfServiceComponent extends Component {
     const messages = [];
     Object.keys(inputs).forEach((idx) => {
       const input = inputs[idx];
-      if (!result[input.name]) {
-        messages.push(`No value is given for ${input.name}`);
+      if (!result[input.name] || result[input.name].length === 0) {
+        messages.push(`No value is given for ${input.text}. If you entered text for ${input.text},
+                      don't forget to press enter to add it`);
       }
     });
 
