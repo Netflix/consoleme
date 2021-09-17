@@ -71,6 +71,7 @@ class SelfServiceComponent extends Component {
       ...values,
       [context]: _.isString(value) ? value.trim() : value,
     };
+
     this.setState({
       values: newValues,
     });
@@ -90,7 +91,11 @@ class SelfServiceComponent extends Component {
     const result = Object.assign(default_values, values);
     Object.keys(result).forEach((key) => {
       const value = result[key];
-      if (value && !["actions", "condition"].includes(key)) {
+      if (
+        value &&
+        typeof value === "string" &&
+        !["actions", "condition"].includes(key)
+      ) {
         result[key] = value.replace("{account_id}", role.account_id);
       }
     });
@@ -99,8 +104,9 @@ class SelfServiceComponent extends Component {
     const messages = [];
     Object.keys(inputs).forEach((idx) => {
       const input = inputs[idx];
-      if (!result[input.name]) {
-        messages.push(`No value is given for ${input.name}`);
+      if (!result[input.name] || result[input.name].length === 0) {
+        messages.push(`No value is given for ${input.text}. If you entered text for ${input.text},
+                      don't forget to press enter to add it`);
       }
     });
 
@@ -166,14 +172,19 @@ class SelfServiceComponent extends Component {
           );
         case "typeahead_input":
           return (
-            <TypeaheadBlockComponent
-              defaultValue={defaultValue + 1}
-              handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
-              required={input.required || false}
-              typeahead={input.typeahead_endpoint}
-              label={input.text}
-              sendRequestCommon={this.props.sendRequestCommon}
-            />
+            <>
+              <TypeaheadBlockComponent
+                defaultValue={defaultValue + 1}
+                handleInputUpdate={this.handleInputUpdate.bind(
+                  this,
+                  input.name
+                )}
+                required={input.required || false}
+                typeahead={input.typeahead_endpoint}
+                label={input.text}
+                sendRequestCommon={this.props.sendRequestCommon}
+              />
+            </>
           );
         default:
           return <div />;
@@ -285,12 +296,15 @@ class SelfServiceComponent extends Component {
     const advancedOptions = this.buildAdvancedOptions();
 
     return (
-      <Form>
+      <Form
+        onKeyPress={(e) => {
+          e.key === "Enter" && e.preventDefault();
+        }}
+      >
         <Header as="h3">{text}</Header>
-        <ReactMarkdown linkTarget="_blank" source={description} />
+        <ReactMarkdown linkTarget="_blank" children={description} />
         {blocks}
         {advancedOptions}
-
         {messagesToShow}
         <Button
           fluid

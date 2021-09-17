@@ -444,7 +444,7 @@ class BaseHandler(TornadoRequestHandler):
             log_data[
                 "message"
             ] = "No eligible roles detected for user. But letting them continue"
-            log.error(log_data)
+            log.warning(log_data)
         log_data["eligible_roles"] = len(self.eligible_roles)
 
         if not self.eligible_accounts:

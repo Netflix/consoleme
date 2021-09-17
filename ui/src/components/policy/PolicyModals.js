@@ -18,7 +18,7 @@ const StatusMessage = ({ message, isSuccess }) => {
       <Message positive>
         <Message.Header>Success</Message.Header>
         <Message.Content>
-          <ReactMarkdown linkTarget="_blank" source={message} />
+          <ReactMarkdown linkTarget="_blank" children={message} />
         </Message.Content>
       </Message>
     );
@@ -28,7 +28,7 @@ const StatusMessage = ({ message, isSuccess }) => {
       <Message negative>
         <Message.Header>Oops! There was a problem.</Message.Header>
         <Message.Content>
-          <ReactMarkdown linkTarget="_blank" source={message} />
+          <ReactMarkdown linkTarget="_blank" children={message} />
         </Message.Content>
       </Message>
     );

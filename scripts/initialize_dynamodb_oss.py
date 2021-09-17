@@ -5,7 +5,11 @@ from tenacity import Retrying, retry_if_exception_type, stop_after_attempt, wait
 from consoleme.config import config
 
 ddb = boto3.client(
-    "dynamodb", endpoint_url=config.get("dynamodb_server"), region_name=config.region
+    "dynamodb",
+    endpoint_url=config.get(
+        "dynamodb_server", config.get("boto3.client_kwargs.endpoint_url")
+    ),
+    region_name=config.region,
 )
 
 table_name = "consoleme_iamroles_global"
@@ -205,6 +209,31 @@ try:
             "StreamViewType": "NEW_AND_OLD_IMAGES",
         },
     )
+except ClientError as e:
+    if str(e) != (
+        "An error occurred (ResourceInUseException) when calling the CreateTable operation: "
+        "Cannot create preexisting table"
+    ):
+        print(f"Unable to create table {table_name}. Error: {e}.")
+
+
+table_name = "consoleme_notifications"
+try:
+    ddb.create_table(
+        TableName=table_name,
+        AttributeDefinitions=[
+            {"AttributeName": "predictable_id", "AttributeType": "S"},
+        ],
+        KeySchema=[
+            {"AttributeName": "predictable_id", "KeyType": "HASH"},
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 100, "WriteCapacityUnits": 100},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
+    )
+
 except ClientError as e:
     if str(e) != (
         "An error occurred (ResourceInUseException) when calling the CreateTable operation: "

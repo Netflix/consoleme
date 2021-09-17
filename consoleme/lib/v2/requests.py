@@ -64,6 +64,7 @@ from consoleme.models import (
     CommentRequestModificationModel,
     ExtendedAwsPrincipalModel,
     ExtendedRequestModel,
+    GenericFileChangeModel,
     InlinePolicyChangeModel,
     ManagedPolicyChangeModel,
     ManagedPolicyResourceChangeModel,
@@ -121,6 +122,7 @@ async def generate_request_from_change_model_array(
     resource_tag_changes = []
     permissions_boundary_changes = []
     managed_policy_resource_changes = []
+    generic_file_changes = []
     role = None
 
     extended_request_uuid = str(uuid.uuid4())
@@ -179,6 +181,10 @@ async def generate_request_from_change_model_array(
         elif change.change_type == "permissions_boundary":
             permissions_boundary_changes.append(
                 PermissionsBoundaryChangeModel.parse_obj(change.__dict__)
+            )
+        elif change.change_type == "generic_file":
+            generic_file_changes.append(
+                GenericFileChangeModel.parse_obj(change.__dict__)
             )
         else:
             raise UnsupportedChangeType(
@@ -881,6 +887,11 @@ async def apply_changes_to_role(
         assume_role=config.get("policies.role_name"),
         session_name="principal-updater-v2-" + user,
         retry_max_attempts=2,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     for change in extended_request.changes.changes:
         if change.status == Status.applied:
@@ -1668,7 +1679,7 @@ async def apply_managed_policy_resource_tag_change(
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
         # we can't apply this change
         log_data["message"] = "Resource account not found"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -1681,7 +1692,7 @@ async def apply_managed_policy_resource_tag_change(
     if resource_type != "iam" or resource_name != "policy" or resource_account == "aws":
         # Not a managed policy, or a managed policy that is AWS owned
         log_data["message"] = "Resource change not supported"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -1698,6 +1709,11 @@ async def apply_managed_policy_resource_tag_change(
         assume_role=config.get("policies.role_name"),
         session_name="tag-updater-v2-" + user,
         retry_max_attempts=2,
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     principal_arn = change.principal.principal_arn
     if change.tag_action in [TagAction.create, TagAction.update]:
@@ -1818,7 +1834,7 @@ async def apply_non_iam_resource_tag_change(
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
         # we can't apply this change
         log_data["message"] = "Resource account not found"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -1834,7 +1850,7 @@ async def apply_non_iam_resource_tag_change(
 
     if resource_type not in supported_resource_types:
         log_data["message"] = "Resource change not supported"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -1858,6 +1874,7 @@ async def apply_non_iam_resource_tag_change(
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
 
@@ -2023,7 +2040,7 @@ async def apply_managed_policy_resource_change(
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
         # we can't apply this change
         log_data["message"] = "Resource account not found"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -2037,6 +2054,7 @@ async def apply_managed_policy_resource_change(
         "account_number": resource_account,
         "assume_role": config.get("policies.role_name"),
         "session_name": f"ConsoleMe_MP_{user}",
+        "client_kwargs": config.get("boto3.client_kwargs", {}),
     }
 
     # Save current policy by populating "old" policies at the time of application for historical record
@@ -2155,7 +2173,7 @@ async def apply_resource_policy_change(
         # If we don't have resource_account (due to resource not being in Config or 3rd Party account),
         # we can't apply this change
         log_data["message"] = "Resource account not found"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -2184,7 +2202,7 @@ async def apply_resource_policy_change(
         )
     ):
         log_data["message"] = "Resource change not supported"
-        log.warn(log_data)
+        log.warning(log_data)
         response.errors += 1
         response.action_results.append(
             ActionResult(
@@ -2208,6 +2226,7 @@ async def apply_resource_policy_change(
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
         if resource_type == "s3":

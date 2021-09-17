@@ -16,8 +16,18 @@ data:
     self_service_iam_help_message: {{ . }}
     {{- end }}
 
+    {{- if .Values.api_protect }}
+    api_protect:
+      {{- toYaml .Values.api_protect | nindent 6 }}
+    {{- end }}
+
     {{- with .Values.site_config }}
     site_config:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    {{- with .Values.slack }}
+    slack:
       {{- toYaml . | nindent 6 }}
     {{- end }}
 
@@ -29,6 +39,18 @@ data:
     {{- with .Values.cache_policies_table_details }}
     cache_policies_table_details:
       {{- toYaml . | nindent 6 }}
+    {{- end }}
+
+    {{- if .Values.event_bridge.enabled }}
+    event_bridge:
+      {{- if .Values.event_bridge.role_changes_sqs_arn }}
+      detect_role_changes_and_update_cache:
+        queue_arn: {{ .Values.event_bridge.role_changes_sqs_arn }}
+      {{- end }}
+      {{- if .Values.event_bridge.cloudtrail_denies_sqs_arn }}
+      detect_cloudtrail_denies_and_update_cache:
+        queue_arn: {{ .Values.event_bridge.cloudtrail_denies_sqs_arn }}
+      {{- end }}
     {{- end }}
 
     environment: {{ .Values.consoleme.environment }}

@@ -105,7 +105,7 @@ const DataTableRowsComponent = ({
               style={column.style}
             >
               <ReactMarkdown
-                source={new Date(entry[column.key] * 1000).toUTCString()}
+                children={new Date(entry[column.key] * 1000).toUTCString()}
               />
             </Table.Cell>
           );
@@ -187,7 +187,7 @@ const DataTableRowsComponent = ({
                 style={column.style}
               >
                 <ReactMarkdown
-                  source={
+                  children={
                     entry[column.key] != null && entry[column.key].toString()
                   }
                 />
@@ -202,7 +202,7 @@ const DataTableRowsComponent = ({
               style={column.style}
             >
               <ReactMarkdown
-                source={
+                children={
                   entry[column.key] != null && entry[column.key].toString()
                 }
               />

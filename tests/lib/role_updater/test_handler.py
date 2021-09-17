@@ -27,10 +27,13 @@ policy_document = json.dumps(
 
 class TestHandler(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        from consoleme.config import config
         from consoleme.lib.role_updater import handler
 
         self.handler = handler
-        client = boto3.client("iam", region_name="us-east-1")
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "role_name"
         client.create_role(RoleName=role_name, AssumeRolePolicyDocument="{}")
 
@@ -56,7 +59,11 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(role_name, "testrole")
 
     def test_update_inline_policy_attach(self):
-        client = boto3.client("iam", region_name="us-east-1")
+        from consoleme.config import config
+
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "role_name"
 
         policy = {
@@ -67,7 +74,11 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
         async_to_sync(self.handler.update_inline_policy)(client, role_name, policy)
 
     def test_update_inline_policy_attach_then_detach(self):
-        client = boto3.client("iam", region_name="us-east-1")
+        from consoleme.config import config
+
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "role_name"
         attach_policy = {
             "action": "attach",
@@ -87,7 +98,11 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
         )
 
     def test_update_managed_policy_attach(self):
-        client = boto3.client("iam", region_name="us-east-1")
+        from consoleme.config import config
+
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "role_name"
         policy = {
             "action": "attach",
@@ -96,7 +111,11 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
         async_to_sync(self.handler.update_managed_policy)(client, role_name, policy)
 
     def test_update_managed_policy_attach_then_detach(self):
-        client = boto3.client("iam", region_name="us-east-1")
+        from consoleme.config import config
+
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "role_name"
         attach_policy = {
             "action": "attach",
@@ -114,7 +133,11 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
         )
 
     def test_update_assume_role_policy_document(self):
-        client = boto3.client("iam", region_name="us-east-1")
+        from consoleme.config import config
+
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "role_name"
         policy = {
             "Version": "2012-10-17",
@@ -131,13 +154,21 @@ class TestHandler(unittest.IsolatedAsyncioTestCase):
         )
 
     def test_add_tag(self):
-        client = boto3.client("iam", region_name="us-east-1")
+        from consoleme.config import config
+
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "role_name"
         tag = {"action": "add", "key": "testkey", "value": "testvalue"}
         async_to_sync(self.handler.update_tags)(client, role_name, tag)
 
     def test_remove_tag(self):
-        client = boto3.client("iam", region_name="us-east-1")
+        from consoleme.config import config
+
+        client = boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         role_name = "role_name"
         tag = {"action": "remove", "key": "testkey"}
         async_to_sync(self.handler.update_tags)(client, role_name, tag)

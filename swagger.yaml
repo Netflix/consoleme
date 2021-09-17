@@ -1,3 +1,7 @@
+# After modifying this file, run the following command to regenerate the Pydantic models file stored at
+# consoleme/models.py:
+# `datamodel-codegen --input swagger.yaml  --output consoleme/models.py \
+#  --base-class consoleme.lib.pydantic.BaseModel ; black consoleme/models.py`
 openapi: 3.0.0
 info:
   description: ConsoleMe API definition
@@ -167,7 +171,7 @@ paths:
                 $ref: "#/components/schemas/CreateCloneRequestResponse"
         default:
           $ref: "#/components/responses/DefaultErrorResponse"
-  /managed_policies_on_role/{accountNumber}/{roleName}:
+  /managed_policies_on_role/{account_id}/{role_name}:
     get:
       summary: get details about managed policies attached to a role
       tags:
@@ -182,7 +186,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/WebResponse"
-  /service_control_policies/{accountNumberOrOuId}:
+  /service_control_policies/{account_or_ou_id}:
     get:
       summary: get details about service control policies targeting an account or organizational unit
       tags:
@@ -403,6 +407,9 @@ paths:
       summary: retrieve a list of IAM roles
       tags:
         - audit
+      parameters:
+        - $ref: "#/components/parameters/PageQueryString"
+        - $ref: "#/components/parameters/CountQueryString"
       responses:
         "200":
           description: OK
@@ -493,6 +500,18 @@ components:
       name: limit
       in: query
       example: 20
+      schema:
+        type: integer
+    PageQueryString:
+      name: page
+      in: query
+      example: 0
+      schema:
+        type: integer
+    CountQueryString:
+      name: count
+      in: query
+      example: 1000
       schema:
         type: integer
   schemas:
@@ -682,10 +701,16 @@ components:
               custom_iam: "#/components/schemas/CustomIamChangeGeneratorModel"
         resource_arn:
           description: |-
-            The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
-            resource policy will need to be modified if the change is approved and successful.
-          example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
-          type: string
+            The ARN(s) of the resource being accessed. This is often SQS/SNS/S3/etc. ARNs. It is possible that the
+            resource policies will need to be modified if the change is approved and successful.
+          example:
+            - arn:aws:sqs:us-east-1:123456789012:sqs_queue,
+            - arn:aws:sqs:us-west-2:123456789012:sqs_queue2,
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
         version:
           description: Version
           type: string
@@ -799,11 +824,15 @@ components:
                 type: string
             resource_arn:
               description: |-
-                The ARN of the resource being accessed. This is often an SQS/SNS/S3/etc. ARN. It is possible that the
-                resource policy will need to be modified if the change is approved and successful.
-              example: arn:aws:sqs:us-east-1:123456789012:sqs_queue
-              type: string
-              pattern: '(^arn:([^:]*):([^:]*):([^:]*):(|\*|[\d]{12}|cloudfront|aws):(.+)$)|(^\*$)'
+                The ARN(s) of the resource being accessed. This is often SQS/SNS/S3/etc. ARNs. It is possible that the
+                resource policies will need to be modified if the change is approved and successful.
+              example:
+                - arn:aws:sqs:us-east-1:123456789012:sqs_queue
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: string
     CrudChangeGeneratorModel:
       description: uses Policy Sentry to generate a policy based on access levels
       allOf:
@@ -845,9 +874,14 @@ components:
               pattern: "s3"
             resource_arn:
               description: |-
-                The ARN of the S3 resource being accessed.
-              example: arn:aws:s3:::example_bucket
-              type: string
+                The ARN(s) of the S3 resource(s) being accessed.
+              example:
+                - arn:aws:s3:::example_bucket
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: string
             bucket_prefix:
               type: string
               example: /awesome/prefix/*
@@ -1506,6 +1540,12 @@ components:
             description:
               type: string
               readOnly: true
+            owner:
+              type: string
+              readOnly: true
+              description: |-
+                A string depicting the owning user or group for a given AWS principal. Typically determined by one or
+                more tags on the principal.
     UserModel:
       type: object
       readOnly: true
@@ -1824,6 +1864,14 @@ components:
           type: array
           items:
             type: string
+        count:
+          type: integer
+        total:
+          type: integer
+        page:
+          type: integer
+        last_page:
+          type: integer
         data:
           oneOf:
             - type: object
@@ -1916,3 +1964,33 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/ServiceControlPolicyModel"
+    EligibleRolesModel:
+      type: object
+      description: Model element for details about an eligible role
+      required:
+        - arn
+        - account_id
+        - role_name
+      properties:
+        arn:
+          type: string
+          description: ARN of the role
+        account_id:
+          type: string
+          description: Account ID of the role
+        account_friendly_name:
+          type: string
+          description: Account's friendly name (if known), otherwise "Unknown"
+        role_name:
+          type: string
+          description: Name of the role
+        apps:
+          $ref: "#/components/schemas/AppDetailsArray"
+    EligibleRolesModelArray:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            anyOf:
+              - $ref: "#/components/schemas/EligibleRolesModel"

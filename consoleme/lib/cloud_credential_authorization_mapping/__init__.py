@@ -33,6 +33,8 @@ log = config.get_logger("consoleme")
 class CredentialAuthorizationMapping(metaclass=Singleton):
     def __init__(self) -> None:
         self._all_roles = []
+        self._all_roles_count = 0
+        self._all_roles_last_update = 0
         self.authorization_mapping = {}
         self.authorization_mapping_last_update = 0
         self.reverse_mapping = {}
@@ -132,12 +134,48 @@ class CredentialAuthorizationMapping(metaclass=Singleton):
                 return {}
         return self.reverse_mapping
 
-    async def all_roles(self):
-        if self._all_roles:
-            return self._all_roles
-        reverse_mapping = await self.retrieve_reverse_authorization_mapping()
-        self._all_roles = list(reverse_mapping.keys())
+    async def retrieve_all_roles(self, max_age: Optional[int] = None):
+        if not self._all_roles or int(time.time()) - self._all_roles_last_update > 600:
+            redis_topic = config.get("aws.iamroles_redis_key", "IAM_ROLE_CACHE")
+            s3_bucket = config.get(
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
+            )
+            s3_key = config.get(
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
+                "account_resource_cache/cache_all_roles_v1.json.gz",
+            )
+            try:
+                all_roles = await retrieve_json_data_from_redis_or_s3(
+                    redis_topic,
+                    redis_data_type="hash",
+                    s3_bucket=s3_bucket,
+                    s3_key=s3_key,
+                    json_object_hook=RoleAuthorizationsDecoder,
+                    json_encoder=pydantic_encoder,
+                    max_age=max_age,
+                )
+            except Exception as e:
+                sentry_sdk.capture_exception()
+                log.error(
+                    {
+                        "function": f"{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+                        "error": f"Error loading IAM roles. Returning empty list: {e}",
+                    },
+                    exc_info=True,
+                )
+                return []
+            self._all_roles = list(all_roles.keys())
+            self._all_roles_count = len(self._all_roles)
+            self._all_roles_last_update = int(time.time())
         return self._all_roles
+
+    async def all_roles(self, paginate=False, page=None, count=None):
+        all_roles = await self.retrieve_all_roles()
+        return all_roles
+
+    async def number_roles(self) -> int:
+        _ = await self.retrieve_all_roles()
+        return self._all_roles_count
 
     async def determine_role_authorized_groups(self, account_id: str, role_name: str):
         arn = f"arn:aws:iam::{account_id}:role/{role_name.lower()}"

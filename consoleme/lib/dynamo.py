@@ -68,7 +68,10 @@ class BaseDynamoHandler:
                 resource = boto3.resource(
                     "dynamodb",
                     region_name=config.region,
-                    endpoint_url=config.get("dynamodb_server"),
+                    endpoint_url=config.get(
+                        "dynamodb_server",
+                        config.get("boto3.client_kwargs.endpoint_url"),
+                    ),
                 )
             else:
                 resource = boto3_cached_conn(
@@ -77,6 +80,7 @@ class BaseDynamoHandler:
                     account_number=config.get("aws.account_number"),
                     session_name=config.get("application_name", "consoleme"),
                     region=config.region,
+                    client_kwargs=config.get("boto3.client_kwargs", {}),
                 )
             table = resource.Table(table_name)
         except Exception as e:
@@ -161,7 +165,6 @@ class BaseDynamoHandler:
         self,
         table,
         total_threads=os.cpu_count(),
-        loop=None,
         dynamodb_kwargs: Optional[Dict[str, Any]] = None,
     ):
         if not dynamodb_kwargs:
@@ -192,6 +195,43 @@ class BaseDynamoHandler:
             tasks.append(task)
 
         results = loop.run_until_complete(asyncio.gather(*tasks))
+        items = []
+        for result in results:
+            items.extend(result)
+        return items
+
+    async def parallel_scan_table_async(
+        self,
+        table,
+        total_threads=os.cpu_count(),
+        dynamodb_kwargs: Optional[Dict[str, Any]] = None,
+    ):
+        if not dynamodb_kwargs:
+            dynamodb_kwargs = {}
+
+        async def _scan_segment(segment, total_segments):
+            response = table.scan(
+                Segment=segment, TotalSegments=total_segments, **dynamodb_kwargs
+            )
+            items = response.get("Items", [])
+
+            while "LastEvaluatedKey" in response:
+                response = table.scan(
+                    ExclusiveStartKey=response["LastEvaluatedKey"],
+                    Segment=segment,
+                    TotalSegments=total_segments,
+                    **dynamodb_kwargs,
+                )
+                items.extend(self._data_from_dynamo_replace(response["Items"]))
+
+            return items
+
+        tasks = []
+        for i in range(total_threads):
+            task = asyncio.ensure_future(_scan_segment(i, total_threads))
+            tasks.append(task)
+
+        results = await asyncio.gather(*tasks)
         items = []
         for result in results:
             items.extend(result)
@@ -233,6 +273,10 @@ class UserDynamoHandler(BaseDynamoHandler):
                 config.get("aws.cloudtrail_table", "consoleme_cloudtrail")
             )
 
+            self.notifications_table = self._get_dynamo_table(
+                config.get("aws.notifications_table", "consoleme_notifications")
+            )
+
             if user_email:
                 self.user = self.get_or_create_user(user_email)
                 self.affected_user = self.user
@@ -261,12 +305,14 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     async def get_dynamic_config_yaml(self) -> bytes:
         """Retrieve dynamic configuration yaml."""
+        return await sync_to_async(self.get_dynamic_config_yaml_sync)()
+
+    def get_dynamic_config_yaml_sync(self) -> bytes:
+        """Retrieve dynamic configuration yaml synchronously"""
         c = b""
 
         try:
-            current_config = await sync_to_async(self.dynamic_config.get_item)(
-                Key={"id": "master"}
-            )
+            current_config = self.dynamic_config.get_item(Key={"id": "master"})
             if not current_config:
                 return c
             compressed_config = current_config.get("Item", {}).get("config", "")
@@ -279,7 +325,14 @@ class UserDynamoHandler(BaseDynamoHandler):
 
     def get_dynamic_config_dict(self) -> dict:
         """Retrieve dynamic configuration dictionary that can be merged with primary configuration dictionary."""
-        current_config_yaml = asyncio.run(self.get_dynamic_config_yaml())
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:  # if cleanup: 'RuntimeError: There is no current event loop..'
+            loop = None
+        if loop and loop.is_running():
+            current_config_yaml = self.get_dynamic_config_yaml_sync()
+        else:
+            current_config_yaml = asyncio.run(self.get_dynamic_config_yaml())
         config_d = yaml.safe_load(current_config_yaml)
         return config_d
 
@@ -1225,21 +1278,7 @@ class UserDynamoHandler(BaseDynamoHandler):
             arn = item.get("arn")
             if not error_count.get(arn):
                 error_count[arn] = 0
-            error_count[arn] += 1
-        return error_count
-
-    def count_cloudtrail_errors_by_arn(self):
-        error_count = {}
-        items = self.parallel_scan_table(
-            self.cloudtrail_table,
-            dynamodb_kwargs={
-                "Select": "SPECIFIC_ATTRIBUTES",
-                "ProjectionExpression": "arn",
-            },
-        )
-        error_count = self.count_arn_errors(
-            error_count, self._data_from_dynamo_replace(items)
-        )
+            error_count[arn] += item.get("count", 1)
         return error_count
 
 

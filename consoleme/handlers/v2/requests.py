@@ -30,6 +30,7 @@ from consoleme.lib.policies import (
     get_url_for_resource,
     should_auto_approve_policy_v2,
 )
+from consoleme.lib.slack import send_slack_notification_new_request
 from consoleme.lib.timeout import Timeout
 from consoleme.lib.v2.requests import (
     generate_request_from_change_model_array,
@@ -442,6 +443,9 @@ class RequestHandler(BaseAPIV2Handler):
         await aws.send_communications_new_policy_request(
             extended_request, admin_approved, approval_probe_approved
         )
+        await send_slack_notification_new_request(
+            extended_request, admin_approved, approval_probe_approved
+        )
         self.write(response.json())
         await self.finish()
         return
@@ -574,7 +578,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
         requests = await dynamo.get_policy_requests(request_id=request_id)
         if len(requests) == 0:
             log_data["message"] = "Request with that ID not found"
-            log.warn(log_data)
+            log.warning(log_data)
             stats.count(f"{log_data['function']}.not_found", tags={"user": self.user})
             raise NoMatchingRequest(log_data["message"])
         if len(requests) > 1:
@@ -661,7 +665,7 @@ class RequestDetailHandler(BaseAPIV2Handler):
             updated_request = await dynamo.write_policy_request_v2(extended_request)
             last_updated = updated_request.get("last_updated")
 
-        can_approve_reject = (can_admin_policies(self.user, self.groups),)
+        can_approve_reject = can_admin_policies(self.user, self.groups)
         can_update_cancel = await can_update_cancel_requests_v2(
             extended_request.requester_email, self.user, self.groups
         )

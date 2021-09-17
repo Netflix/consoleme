@@ -3,10 +3,12 @@ import sys
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import sentry_sdk
+import tornado.escape
 import ujson as json
 from furl import furl
 from pydantic import ValidationError
 
+from consoleme.celery_tasks.celery_tasks import app as celery_app
 from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler, BaseMtlsHandler
 from consoleme.lib.auth import (
@@ -23,8 +25,13 @@ from consoleme.lib.aws import (
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.v2.aws_principals import get_role_details
-from consoleme.models import CloneRoleRequestModel, RoleCreationRequestModel
+from consoleme.lib.v2.aws_principals import get_eligible_role_details, get_role_details
+from consoleme.models import (
+    CloneRoleRequestModel,
+    RoleCreationRequestModel,
+    Status2,
+    WebResponse,
+)
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
@@ -167,8 +174,8 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             self.write(
                 {
                     "type": "console_url",
-                    "message": log_data["message"],
-                    "error": str(log_data["error"]),
+                    "message": tornado.escape.xhtml_escape(log_data["message"]),
+                    "error": tornado.escape.xhtml_escape(str(log_data["error"])),
                 }
             )
             return
@@ -198,6 +205,18 @@ class RolesHandler(BaseAPIV2Handler):
     """
 
     allowed_methods = ["GET", "POST"]
+
+    def on_finish(self) -> None:
+        if self.request.method != "POST":
+            return
+        # Force refresh of crednetial authorization mapping after the dynamic config sync period to ensure all workers
+        # have the updated configuration
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_policies_table_details",
+        )
+        celery_app.send_task(
+            "consoleme.celery_tasks.celery_tasks.cache_credential_authorization_mapping",
+        )
 
     async def get(self):
         payload = {"eligible_roles": self.eligible_roles}
@@ -309,6 +328,7 @@ class RoleDetailHandler(BaseAPIV2Handler):
         """
         GET /api/v2/roles/{account_number}/{role_name}
         """
+
         log_data = {
             "function": "RoleDetailHandler.get",
             "user": self.user,
@@ -373,6 +393,9 @@ class RoleDetailHandler(BaseAPIV2Handler):
         if not self.user:
             self.write_error(403, message="No user detected")
             return
+
+        account_id = tornado.escape.xhtml_escape(account_id)
+        role_name = tornado.escape.xhtml_escape(role_name)
 
         log_data = {
             "user": self.user,
@@ -446,6 +469,8 @@ class RoleDetailAppHandler(BaseMtlsHandler):
         """
         DELETE /api/v2/mtls/roles/{account_id}/{role_name}
         """
+        account_id = tornado.escape.xhtml_escape(account_id)
+        role_name = tornado.escape.xhtml_escape(role_name)
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "user-agent": self.request.headers.get("User-Agent"),
@@ -512,6 +537,8 @@ class RoleDetailAppHandler(BaseMtlsHandler):
         """
         GET /api/v2/mtls/roles/{account_id}/{role_name}
         """
+        account_id = tornado.escape.xhtml_escape(account_id)
+        role_name = tornado.escape.xhtml_escape(role_name)
         log_data = {
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
             "ip": self.ip,
@@ -565,7 +592,6 @@ class RoleCloneHandler(BaseAPIV2Handler):
     allowed_methods = ["POST"]
 
     async def post(self):
-
         log_data = {
             "user": self.user,
             "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
@@ -618,3 +644,83 @@ class RoleCloneHandler(BaseAPIV2Handler):
 
         # if here, role has been successfully cloned
         self.write(results)
+
+
+class GetRolesMTLSHandler(BaseMtlsHandler):
+    """
+    Handler for /api/v2/get_roles
+    Consoleme MTLS role handler - returns User's eligible roles and other details about eligible roles
+    Pass ?all=true to URL query to return all roles.
+    """
+
+    def check_xsrf_cookie(self):
+        pass
+
+    def initialize(self):
+        self.user: str = None
+        self.eligible_roles: list = []
+
+    async def get(self):
+        """
+        GET /api/v2/get_roles - Endpoint used to get details of eligible roles. Used by weep and newt.
+        ---
+        get:
+            description: Returns a json-encoded list of objects of eligible roles for the user.
+            response format: WebResponse. The "data" field within WebResponse is of format EligibleRolesModelArray
+            Example response:
+                {
+                    "status": "success",
+                    "status_code": 200,
+                    "data": {
+                        "roles": [
+                                    {
+                                        "arn": "arn:aws:iam::123456789012:role/role_name",
+                                        "account_id": "123456789012",
+                                        "account_friendly_name": "prod",
+                                        "role_name": "role_name",
+                                        "apps": {
+                                            "app_details": [
+                                                {
+                                                    "name": "consoleme",
+                                                    "owner": "owner@example.com",
+                                                    "owner_url": null,
+                                                    "app_url": "https://example.com"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    ...
+                                ]
+                    }
+                }
+        """
+        self.user: str = self.requester["email"]
+
+        include_all_roles = self.get_arguments("all")
+        console_only = True
+        if include_all_roles == ["true"]:
+            console_only = False
+
+        log_data = {
+            "function": f"{__name__}.{self.__class__.__name__}.{sys._getframe().f_code.co_name}",
+            "user": self.user,
+            "console_only": console_only,
+            "message": "Getting all eligible user roles",
+            "user-agent": self.request.headers.get("User-Agent"),
+            "request_id": self.request_uuid,
+        }
+        log.debug(log_data)
+        stats.count("GetRolesMTLSHandler.get", tags={"user": self.user})
+
+        await self.authorization_flow(user=self.user, console_only=console_only)
+        eligible_roles_details_array = await get_eligible_role_details(
+            sorted(self.eligible_roles)
+        )
+
+        res = WebResponse(
+            status=Status2.success,
+            status_code=200,
+            data=eligible_roles_details_array.dict(),
+        )
+        self.write(res.json(exclude_unset=True))
+        await self.finish()

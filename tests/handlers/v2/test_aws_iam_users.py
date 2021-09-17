@@ -82,6 +82,7 @@ class TestAwsIamUsers(AsyncHTTPTestCase):
                 "updated_time": None,
                 "last_used_time": None,
                 "description": None,
+                "owner": None,
             },
         )
 
@@ -92,8 +93,10 @@ class TestAwsIamUsers(AsyncHTTPTestCase):
     def test_delete_user_forbidden(self):
         import boto3
 
+        from consoleme.config import config
+
         user_name = "test_delete_user_forbidden"
-        iam = boto3.client("iam")
+        iam = boto3.client("iam", **config.get("boto3.client_kwargs", {}))
         iam.create_user(UserName=user_name)
         response = self.fetch(
             f"/api/v2/users/123456789012/{user_name}", method="DELETE"
@@ -121,7 +124,7 @@ class TestAwsIamUsers(AsyncHTTPTestCase):
             ): "groupa,groupb,groupc,consoleme_admins@example.com",
         }
         user_name = "test_delete_user_allowed"
-        iam = boto3.client("iam")
+        iam = boto3.client("iam", **config.get("boto3.client_kwargs", {}))
         iam.create_user(UserName=user_name)
         response = self.fetch(
             f"/api/v2/users/123456789012/{user_name}", method="DELETE", headers=headers

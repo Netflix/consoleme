@@ -236,36 +236,56 @@ def aws_credentials():
 @pytest.fixture(autouse=True, scope="session")
 def sts(aws_credentials):
     """Mocked STS Fixture."""
+    from consoleme.config import config
+
     with mock_sts():
-        yield boto3.client("sts", region_name="us-east-1")
+        yield boto3.client(
+            "sts", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def iam(aws_credentials):
     """Mocked IAM Fixture."""
+    from consoleme.config import config
+
     with mock_iam():
-        yield boto3.client("iam", region_name="us-east-1")
+        yield boto3.client(
+            "iam", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def aws_config(aws_credentials):
     """Mocked Config Fixture."""
+    from consoleme.config import config
+
     with mock_config():
-        yield boto3.client("config", region_name="us-east-1")
+        yield boto3.client(
+            "config", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def s3(aws_credentials):
     """Mocked S3 Fixture."""
+    from consoleme.config import config
+
     with mock_s3():
-        yield boto3.client("s3", region_name="us-east-1")
+        yield boto3.client(
+            "s3", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def ses(aws_credentials):
     """Mocked SES Fixture."""
+    from consoleme.config import config
+
     with mock_ses():
-        client = boto3.client("ses", region_name="us-east-1")
+        client = boto3.client(
+            "ses", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
         client.verify_email_address(EmailAddress="consoleme_test@example.com")
         yield client
 
@@ -273,15 +293,23 @@ def ses(aws_credentials):
 @pytest.fixture(autouse=True, scope="session")
 def sqs(aws_credentials):
     """Mocked SQS Fixture."""
+    from consoleme.config import config
+
     with mock_sqs():
-        yield boto3.client("sqs", region_name="us-east-1")
+        yield boto3.client(
+            "sqs", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
 def sns(aws_credentials):
     """Mocked S3 Fixture."""
+    from consoleme.config import config
+
     with mock_sns():
-        yield boto3.client("sns", region_name="us-east-1")
+        yield boto3.client(
+            "sns", region_name="us-east-1", **config.get("boto3.client_kwargs", {})
+        )
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -300,9 +328,12 @@ def create_default_resources(s3, iam, redis, iam_sync_principals, iamrole_table)
         async_to_sync(store_json_results_in_redis_and_s3)(
             all_roles,
             s3_bucket=config.get(
-                "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
             ),
-            s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+            s3_key=config.get(
+                "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
+                "account_resource_cache/cache_all_roles_v1.json.gz",
+            ),
         )
         return
     from consoleme.celery_tasks.celery_tasks import cache_iam_resources_for_account
@@ -320,9 +351,12 @@ def create_default_resources(s3, iam, redis, iam_sync_principals, iamrole_table)
     async_to_sync(store_json_results_in_redis_and_s3)(
         all_roles,
         s3_bucket=config.get(
-            "cache_roles_across_accounts.all_roles_combined.s3.bucket"
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.bucket"
         ),
-        s3_key=config.get("cache_roles_across_accounts.all_roles_combined.s3.file"),
+        s3_key=config.get(
+            "cache_iam_resources_across_accounts.all_roles_combined.s3.file",
+            "account_resource_cache/cache_all_roles_v1.json.gz",
+        ),
     )
 
 
@@ -335,7 +369,9 @@ def dynamodb(aws_credentials):
 
         old_value = CONFIG.config.pop("dynamodb_server", None)
 
-        yield boto3.client("dynamodb", region_name="us-east-1")
+        yield boto3.client(
+            "dynamodb", region_name="us-east-1", **CONFIG.get("boto3.client_kwargs", {})
+        )
 
         # Reset the config value:
         CONFIG.config["dynamodb_server"] = old_value
@@ -384,6 +420,35 @@ def iamrole_table(dynamodb):
 
 
 @pytest.fixture(autouse=True, scope="session")
+def cloudtrail_table(dynamodb):
+    # Create the table:
+    dynamodb.create_table(
+        TableName="consoleme_cloudtrail",
+        AttributeDefinitions=[
+            {"AttributeName": "arn", "AttributeType": "S"},
+            {"AttributeName": "request_id", "AttributeType": "S"},
+        ],
+        KeySchema=[
+            {"AttributeName": "arn", "KeyType": "HASH"},
+            {"AttributeName": "request_id", "KeyType": "RANGE"},
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 1000, "WriteCapacityUnits": 1000},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
+    )
+
+    # Apply a TTL:
+    dynamodb.update_time_to_live(
+        TableName="consoleme_cloudtrail",
+        TimeToLiveSpecification={"Enabled": True, "AttributeName": "ttl"},
+    )
+
+    yield dynamodb
+
+
+@pytest.fixture(autouse=True, scope="session")
 def sqs_queue(sqs):
     sqs.create_queue(
         QueueName="consoleme-cloudtrail-role-events-test",
@@ -391,6 +456,8 @@ def sqs_queue(sqs):
     sqs.create_queue(QueueName="consoleme-cloudtrail-access-deny-events-test")
 
     queue_url = sqs.get_queue_url(QueueName="consoleme-cloudtrail-role-events-test")
+    current_time = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    # Event Bridge -> SNS -> SQS message format
     message = json.dumps(
         {
             "Message": json.dumps(
@@ -426,7 +493,7 @@ def sqs_queue(sqs):
                                 },
                             },
                         },
-                        "eventTime": "2021-06-15T18:51:57Z",
+                        "eventTime": current_time,
                         "eventSource": "iam.amazonaws.com",
                         "eventName": "AttachRolePolicy",
                         "awsRegion": "us-east-1",
@@ -447,6 +514,63 @@ def sqs_queue(sqs):
                     },
                 }
             )
+        }
+    )
+    sqs.send_message(QueueUrl=queue_url["QueueUrl"], MessageBody=message)
+
+    # Event Bridge -> SQS message format
+    message = json.dumps(
+        {
+            "version": "0",
+            "id": "11111-39b0-3218-d06d-a529b9da5b75",
+            "detail-type": "AWS API Call via CloudTrail",
+            "source": "aws.iam",
+            "account": "123456789012",
+            "time": "2021-09-03T20:16:32Z",
+            "region": "us-east-1",
+            "resources": [],
+            "detail": {
+                "eventVersion": "1.08",
+                "userIdentity": {
+                    "type": "AssumedRole",
+                    "principalId": "ABC123:i-12345",
+                    "arn": "arn:aws:sts::123456789012:assumed-role/aRole/thatDoesSomething",
+                    "accountId": "123456789012",
+                    "accessKeyId": "ACCESS_KEY",
+                    "sessionContext": {
+                        "sessionIssuer": {
+                            "type": "Role",
+                            "principalId": "PRINCIPAL_ID",
+                            "arn": "arn:aws:iam::123456789012:role/aRole",
+                            "accountId": "123456789012",
+                            "userName": "aRole",
+                        },
+                        "webIdFederationData": {},
+                        "attributes": {
+                            "creationDate": "2021-09-03T20:16:32Z",
+                            "mfaAuthenticated": "false",
+                        },
+                    },
+                },
+                "eventTime": current_time,
+                "eventSource": "iam.amazonaws.com",
+                "eventName": "TagRole",
+                "awsRegion": "us-east-1",
+                "sourceIPAddress": "1.2.3.4",
+                "userAgent": "Boto3/1.18.36 Python/3.7.11 Linux/4.14.243-194.434.amzn2.x86_64 exec-env/AWS_Lambda_python3.7 Botocore/1.21.36",
+                "requestParameters": {
+                    "roleName": "abcrole",
+                    "tags": [{"key": "1", "value": "1"}, {"key": "2", "value": "2"}],
+                },
+                "responseElements": None,
+                "requestID": "11111-f97e-413d-ba51-299816b1bd0d",
+                "eventID": "111111-436a-45ee-b0f2-5ea9e155dd56",
+                "readOnly": False,
+                "eventType": "AwsApiCall",
+                "managementEvent": True,
+                "recipientAccountId": "123456789012",
+                "eventCategory": "Management",
+            },
         }
     )
     sqs.send_message(QueueUrl=queue_url["QueueUrl"], MessageBody=message)
@@ -490,7 +614,7 @@ def sqs_queue(sqs):
                                 "ec2RoleDelivery": "2.0",
                             },
                         },
-                        "eventTime": "2021-06-22T16:17:45Z",
+                        "eventTime": current_time,
                         "eventSource": "sts.amazonaws.com",
                         "eventName": "AssumeRole",
                         "awsRegion": "global",
@@ -982,8 +1106,8 @@ def populate_caches(
         celery.cache_sqs_queues_for_account(account_id)
         celery.cache_managed_policies_for_account(account_id)
         # celery.cache_resources_from_aws_config_for_account(account_id) # No select_resource_config in moto yet
-    # Running cache_roles_across_accounts ensures that all of the pre-existing roles in our role cache are stored in
-    # (mock) S3
+    # Running cache_iam_resources_across_accounts ensures that all of the pre-existing roles in our
+    # role cache are stored in (mock) S3
     celery.cache_iam_resources_across_accounts()
     celery.cache_policies_table_details()
     celery.cache_policy_requests()

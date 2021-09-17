@@ -29,8 +29,8 @@ applied with a single click for certain resource types.
 ways**](https://hawkins.gitbook.io/consoleme/weep-cli/cli) of serving AWS credentials locally.
 
 Cloud administrators can [**create/clone IAM
-roles**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/role-creation-and-cloning) and [**manage
-IAM roles, IAM inline/managed policies, S3 Buckets, SQS queues, and SNS
+roles**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/role-creation-and-cloning) and natively [**manage
+IAM roles, users, inline/managed policies, S3 Buckets, SQS queues, and SNS
 topics**](https://hawkins.gitbook.io/consoleme/feature-videos/policy-management/policy-editor-for-iam-sqs-sns-and-s3)
 across hundreds of accounts in a single interface.
 

@@ -64,10 +64,11 @@ class Configuration(object):
         self.config = {}
         self.log = None
 
-    @staticmethod
-    def raise_if_invalid_aws_credentials():
+    def raise_if_invalid_aws_credentials(self):
         try:
-            boto3.client("sts").get_caller_identity()
+            boto3.client(
+                "sts", **self.get("boto3.client_kwargs", {})
+            ).get_caller_identity()
         except botocore.exceptions.NoCredentialsError:
             raise Exception(
                 "We were unable to detect valid AWS credentials. ConsoleMe needs valid AWS credentials to "
@@ -103,6 +104,33 @@ class Configuration(object):
                 }
             )
             self.config["dynamic_config"] = dynamic_config
+
+    def load_dynamic_config_from_redis(self, log_data: Dict[str, Any], red=None):
+        if not red:
+            from consoleme.lib.redis import RedisHandler
+
+            red = RedisHandler().redis_sync()
+        dynamic_config = red.get("DYNAMIC_CONFIG_CACHE")
+        if not dynamic_config:
+            self.get_logger("config").warning(
+                {
+                    **log_data,
+                    "error": (
+                        "Unable to retrieve Dynamic Config from Redis. "
+                        "This can be safely ignored if your dynamic config is empty."
+                    ),
+                }
+            )
+            return
+        dynamic_config_j = json.loads(dynamic_config)
+        if self.config.get("dynamic_config", {}) != dynamic_config_j:
+            self.get_logger("config").debug(
+                {
+                    **log_data,
+                    "message": "Refreshing dynamic configuration from Redis",
+                }
+            )
+            self.config["dynamic_config"] = dynamic_config_j
 
     def load_config_from_dynamo_bg_thread(self):
         """If enabled, we can load a configuration dynamically from Dynamo at a certain time interval. This reduces
@@ -360,7 +388,7 @@ class Configuration(object):
             # else check if set in config or in boto already
             boto3.DEFAULT_SESSION.region_name if boto3.DEFAULT_SESSION else None,
             boto3.Session().region_name,
-            boto3.client("s3").meta.region_name,
+            boto3.client("s3", **self.get("boto3.client_kwargs", {})).meta.region_name,
             "us-east-1",
         ]
         for region in region_checks:

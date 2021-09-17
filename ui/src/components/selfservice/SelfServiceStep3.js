@@ -37,6 +37,8 @@ class SelfServiceStep3 extends Component {
       role: this.props.role,
       active: true,
       requestUrl: null,
+      principal_name: "",
+      change_type: "inline_policy",
     };
     this.inlinePolicyEditorRef = React.createRef();
     this.editorDidMount = this.editorDidMount.bind(this);
@@ -52,17 +54,22 @@ class SelfServiceStep3 extends Component {
       messages: [],
     });
 
+    let parsed_policy = updated_policy;
+    try {
+      parsed_policy = { policy_document: JSON.parse(updated_policy) };
+    } catch {
+      // Some template languages don't use JSON
+    }
+
     const payload = {
       dry_run: true,
       changes: {
         changes: [
           {
             principal: role.principal,
-            change_type: "inline_policy",
+            change_type: this.state.change_type,
             action: "attach",
-            policy: {
-              policy_document: JSON.parse(updated_policy),
-            },
+            policy: parsed_policy,
           },
         ],
       },
@@ -85,7 +92,11 @@ class SelfServiceStep3 extends Component {
         this.setState({
           new_policy: response.extended_request.changes.changes[0].policy,
           old_policy: response.extended_request.changes.changes[0].old_policy,
+          principal_name:
+            role.principal.resource_identifier +
+            role.principal.resource_identifier,
           active: false,
+          change_type: "generic_file",
         });
       } else {
         this.setState({
@@ -94,6 +105,7 @@ class SelfServiceStep3 extends Component {
             null,
             "\t"
           ),
+          principal_name: role.principal.principal_arn,
           active: false,
         });
       }
@@ -138,6 +150,7 @@ class SelfServiceStep3 extends Component {
         newValue={new_policy}
         onLintError={this.onLintError}
         onValueChange={this.onValueChange}
+        readOnly={false}
       />
     );
   }
@@ -161,6 +174,12 @@ class SelfServiceStep3 extends Component {
         messages: ["No Justification is Given"],
       }));
     }
+    let parsed_policy = new_policy;
+    try {
+      parsed_policy = { policy_document: JSON.parse(new_policy) };
+    } catch {
+      // Some template languages don't use JSON
+    }
 
     const requestV2 = {
       justification,
@@ -169,11 +188,9 @@ class SelfServiceStep3 extends Component {
         changes: [
           {
             principal: role.principal,
-            change_type: "inline_policy",
+            change_type: this.state.change_type,
             action: "attach",
-            policy: {
-              policy_document: JSON.parse(new_policy),
-            },
+            policy: parsed_policy,
           },
         ],
       },
@@ -431,6 +448,11 @@ class SelfServiceStep3 extends Component {
     return (
       <div>
         <Header size={"huge"}>Review Changes & Submit</Header>
+        {this.state.principal_name ? (
+          <p>
+            Principal: <b>{this.state.principal_name}</b>
+          </p>
+        ) : null}
         <p>
           Use the following editor to review changes before submitting for
           review.
@@ -444,6 +466,7 @@ class SelfServiceStep3 extends Component {
             newValue={new_policy}
             onLintError={this.onLintError}
             onValueChange={this.onValueChange}
+            readOnly={false}
           />
         </Segment>
         <Divider />

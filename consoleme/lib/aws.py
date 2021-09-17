@@ -1,5 +1,6 @@
 import fnmatch
 import json
+import re
 import sys
 import time
 from copy import deepcopy
@@ -38,13 +39,14 @@ from consoleme.lib.account_indexers.aws_organizations import (
     retrieve_org_structure,
     retrieve_scps_for_organization,
 )
+from consoleme.lib.aws_config.aws_config import query
 from consoleme.lib.cache import (
     retrieve_json_data_from_redis_or_s3,
     store_json_results_in_redis_and_s3,
 )
 from consoleme.lib.generic import sort_dict
 from consoleme.lib.plugins import get_plugin_by_name
-from consoleme.lib.redis import RedisHandler, redis_hget
+from consoleme.lib.redis import RedisHandler, redis_hget, redis_hgetex, redis_hsetex
 from consoleme.models import (
     CloneRoleRequestModel,
     RoleCreationRequestModel,
@@ -58,6 +60,7 @@ ALL_IAM_MANAGED_POLICIES_LAST_UPDATE: int = 0
 log = config.get_logger(__name__)
 auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
+red = RedisHandler().redis_sync()
 
 
 @rate_limited()
@@ -357,6 +360,7 @@ async def fetch_managed_policy_details(
         assume_role=config.get("policies.role_name"),
         region=config.region,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     policy_details = await sync_to_async(get_policy)(
         policy_arn=policy_arn,
@@ -364,6 +368,7 @@ async def fetch_managed_policy_details(
         assume_role=config.get("policies.role_name"),
         region=config.region,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
 
     try:
@@ -412,6 +417,7 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
 
@@ -424,6 +430,7 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
 
@@ -460,6 +467,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
 
@@ -473,6 +481,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
 
@@ -485,6 +494,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
             region_name=config.region,
             endpoint_url=f"https://sts.{config.region}.amazonaws.com",
         ),
+        client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
     )
     result["TagSet"]: list = []
@@ -527,6 +537,7 @@ async def get_bucket_location_with_fallback(
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
         bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
@@ -569,6 +580,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
         created_time_stamp = bucket_resource.creation_date
@@ -589,6 +601,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
     except ClientError as e:
@@ -606,6 +619,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
         )
     except ClientError as e:
@@ -678,6 +692,7 @@ def apply_managed_policy_to_role(
         assume_role=config.get("policies.role_name"),
         session_name=session_name,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
 
     client.attach_role_policy(RoleName=role.get("RoleName"), PolicyArn=policy_arn)
@@ -815,6 +830,7 @@ async def fetch_role_details(account_id, role_name):
         assume_role=config.get("policies.role_name"),
         session_name="fetch_role_details",
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     try:
         iam_role = await sync_to_async(iam_resource.Role)(role_name)
@@ -852,6 +868,7 @@ async def fetch_iam_user_details(account_id, iam_user_name):
         assume_role=config.get("policies.role_name"),
         session_name="fetch_iam_user_details",
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     try:
         iam_user = await sync_to_async(iam_resource.User)(iam_user_name)
@@ -916,6 +933,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
         assume_role=config.get("policies.role_name"),
         session_name="create_role_" + username,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     results = {"errors": 0, "role_created": "false", "action_results": []}
     try:
@@ -1001,6 +1019,16 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
     )
     log_data["message"] = "Successfully created role"
     log.info(log_data)
+    # Force caching of role
+    try:
+        aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
+        role_arn = (
+            f"arn:aws:iam::{create_model.account_id}:role/{create_model.role_name}"
+        )
+        await aws.fetch_iam_role(create_model.account_id, role_arn, force_refresh=True)
+    except Exception as e:
+        log.error({**log_data, "message": "Unable to cache role", "error": str(e)})
+        sentry_sdk.capture_exception()
     return results
 
 
@@ -1078,6 +1106,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
         assume_role=config.get("policies.role_name"),
         session_name="clone_role_" + username,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
     results = {"errors": 0, "role_created": "false", "action_results": []}
     try:
@@ -1361,6 +1390,7 @@ async def get_enabled_regions_for_account(account_id: str) -> Set[str]:
         assume_role=config.get("policies.role_name"),
         read_only=True,
         retry_max_attempts=2,
+        client_kwargs=config.get("boto3.client_kwargs", {}),
     )
 
     regions = await sync_to_async(client.describe_regions)()
@@ -1373,7 +1403,9 @@ async def access_analyzer_validate_policy(
     try:
         enhanced_findings = []
         client = await sync_to_async(boto3.client)(
-            "accessanalyzer", region_name=config.region
+            "accessanalyzer",
+            region_name=config.region,
+            **config.get("boto3.client_kwargs", {}),
         )
         access_analyzer_response = await sync_to_async(client.validate_policy)(
             policyDocument=policy,
@@ -1828,5 +1860,184 @@ def allowed_to_sync_role(
     # All configured allowed_tags must exist in the role's actual_tags for this condition to pass
     if allowed_tags and allowed_tags.items() <= actual_tags.items():
         return True
-
     return False
+
+
+def get_aws_principal_owner(role_details: Dict[str, Any]) -> Optional[str]:
+    """
+    Identifies the owning user/group of an AWS principal based on one or more trusted and configurable principal tags.
+    `owner` is used to notify application owners of permission problems with their detected AWS principals or resources
+    if another identifier (ie: session name) for a principal doesn't point to a specific user for notification.
+
+    :return: owner: str
+    """
+    owner = None
+    owner_tag_names = config.get("aws.tags.owner", [])
+    if not owner_tag_names:
+        return owner
+    if isinstance(owner_tag_names, str):
+        owner_tag_names = [owner_tag_names]
+    role_tags = role_details.get("Tags")
+    for owner_tag_name in owner_tag_names:
+        for role_tag in role_tags:
+            if role_tag["Key"] == owner_tag_name:
+                return role_tag["Value"]
+    return owner
+
+
+async def resource_arn_known_in_aws_config(
+    resource_arn: str,
+    run_query: bool = True,
+    run_query_with_aggregator: bool = True,
+    expiration_seconds: int = config.get(
+        "aws.resource_arn_known_in_aws_config.expiration_seconds", 3600
+    ),
+) -> bool:
+    """
+    Determines if the resource ARN is known in AWS Config. AWS config does not store all resource
+    types, nor will it account for cross-organizational resources, so the result of this function shouldn't be used
+    to determine if a resource "exists" or not.
+
+    A more robust approach is determining the resource type and querying AWS API directly to see if it exists, but this
+    requires a lot of code.
+
+    Note: This data may be stale by ~ 1 hour and 15 minutes (local results caching + typical AWS config delay)
+
+    :param expiration_seconds: Number of seconds to consider stored result expired
+    :param resource_arn: ARN of the resource we want to look up
+    :param run_query: Should we run an AWS config query if we're not able to find the resource in our AWS Config cache?
+    :param run_query_with_aggregator: Should we run the AWS Config query on our AWS Config aggregator?
+    :return:
+    """
+    known_arn = False
+    if not resource_arn.startswith("arn:aws:"):
+        return known_arn
+
+    resources_from_aws_config_redis_key: str = config.get(
+        "aws_config_cache.redis_key", "AWSCONFIG_RESOURCE_CACHE"
+    )
+
+    if red.exists(resources_from_aws_config_redis_key) and red.hget(
+        resources_from_aws_config_redis_key, resource_arn
+    ):
+        return True
+
+    resource_arn_exists_temp_matches_redis_key: str = config.get(
+        "resource_arn_known_in_aws_config.redis.temp_matches_key",
+        "TEMP_QUERIED_RESOURCE_ARN_CACHE",
+    )
+
+    # To prevent repetitive queries against AWS config, first see if we've already ran a query recently
+    result = await redis_hgetex(
+        resource_arn_exists_temp_matches_redis_key, resource_arn
+    )
+    if result:
+        return result["known"]
+
+    if not run_query:
+        return False
+
+    r = await sync_to_async(query)(
+        f"select arn where arn = '{resource_arn}'",
+        use_aggregator=run_query_with_aggregator,
+    )
+    if r:
+        known_arn = True
+    # To prevent future repetitive queries on AWS Config, set our result in Redis with an expiration
+    await redis_hsetex(
+        resource_arn_exists_temp_matches_redis_key,
+        resource_arn,
+        {"known": known_arn},
+        expiration_seconds=expiration_seconds,
+    )
+
+    return known_arn
+
+
+async def simulate_iam_principal_action(
+    principal_arn,
+    action,
+    resource_arn,
+    source_ip,
+    expiration_seconds: int = config.get(
+        "aws.simulate_iam_principal_action.expiration_seconds", 3600
+    ),
+):
+    """
+    Simulates an IAM principal action affecting a resource
+
+    :return:
+    """
+    # simulating IAM principal policies is expensive.
+    # Temporarily cache and return results by principal_arn, action, and resource_arn. We don't consider source_ip
+    # when caching because it could vary greatly for application roles running on multiple instances/containers.
+    resource_arn_exists_temp_matches_redis_key: str = config.get(
+        "resource_arn_known_in_aws_config.redis.temp_matches_key",
+        "TEMP_POLICY_SIMULATION_CACHE",
+    )
+
+    cache_key = f"{principal_arn}-{action}-{resource_arn}"
+    result = await redis_hgetex(resource_arn_exists_temp_matches_redis_key, cache_key)
+    if result:
+        return result
+
+    ip_regex = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+    context_entries = []
+    if source_ip and re.match(ip_regex, source_ip):
+        context_entries.append(
+            {
+                "ContextKeyName": "aws:SourceIp",
+                "ContextKeyValues": [source_ip],
+                "ContextKeyType": "ip",
+            }
+        )
+    account_id = principal_arn.split(":")[4]
+    client = await sync_to_async(boto3_cached_conn)(
+        "iam",
+        account_number=account_id,
+        assume_role=config.get("policies.role_name"),
+        sts_client_kwargs=dict(
+            region_name=config.region,
+            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+        ),
+        retry_max_attempts=2,
+    )
+    try:
+        response = await sync_to_async(client.simulate_principal_policy)(
+            PolicySourceArn=principal_arn,
+            ActionNames=[
+                action,
+            ],
+            ResourceArns=[
+                resource_arn,
+            ],
+            # TODO: Attach resource policy when discoverable
+            # ResourcePolicy='string',
+            # TODO: Attach Account ID of resource
+            # ResourceOwner='string',
+            ContextEntries=context_entries,
+            MaxItems=100,
+        )
+
+        await redis_hsetex(
+            resource_arn_exists_temp_matches_redis_key,
+            resource_arn,
+            response["EvaluationResults"],
+            expiration_seconds=expiration_seconds,
+        )
+    except Exception:
+        sentry_sdk.capture_exception()
+        return None
+    return response["EvaluationResults"]
+
+
+async def get_iam_principal_owner(arn: str, aws: Any) -> Optional[str]:
+    principal_details = {}
+    principal_type = arn.split(":")[-1].split("/")[0]
+    account_id = arn.split(":")[4]
+    # trying to find principal for subsequent queries
+    if principal_type == "role":
+        principal_details = await aws().fetch_iam_role(account_id, arn)
+    elif principal_type == "user":
+        principal_details = await aws().fetch_iam_user(account_id, arn)
+    return principal_details.get("owner")

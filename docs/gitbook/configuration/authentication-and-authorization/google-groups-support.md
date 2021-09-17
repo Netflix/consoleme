@@ -67,8 +67,8 @@ https://www.googleapis.com/auth/admin.reports.audit.readonly
 ## ConsoleMe static config changes
 
 1. Add the contents of the key file that was downloaded while generating service account keys as a dictionary in your consoleme static config.
-2. There are newline characters in the private_key inside the service account key. You have to split the line on the newline character when you paste it into the YAML file.
-3. If you're using the Google Workspace then make sure that credential_subject is the email of workspace admin.
+2. There are newline characters in the private\_key inside the service account key. You have to split the line on the newline character when you paste it into the YAML file.
+3. If you're using the Google Workspace then make sure that credential\_subject is the email of workspace admin.
 
 Your static config should look similar to this:
 
@@ -106,8 +106,9 @@ ConsoleMe should now be able to get groups info from Google IDP.
 
 ## Check if group info is properly retrieved
 
-One way to check is by decoding the JWT in the **consoleme_auth** cookie.
+One way to check is by decoding the JWT in the **consoleme\_auth** cookie.
 
-1. Copy the contents of the **consoleme_auth** cookie from your consoleme domain
+1. Copy the contents of the **consoleme\_auth** cookie from your consoleme domain
 2. Go to [jwt.io](https://github.com/Netflix/consoleme/tree/6423fcfc7f089b5f021608c48e7c04f9d1435221/docs/gitbook/configuration/authentication-and-authorization/jwt.io) and paste in the contents of the cookie
 3. It will decode the JWT and you can validate the groups information as seen by ConsoleMe
+

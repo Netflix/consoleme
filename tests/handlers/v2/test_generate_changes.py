@@ -201,6 +201,64 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
         MockBaseHandler.authorization_flow,
     )
+    def test_post_valid_request_s3_multi(self):
+        input_body = {
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal": {
+                        "principal_type": "AwsResource",
+                        "principal_arn": "arn:aws:iam::123456789012:role/roleName",
+                    },
+                    "resource_arn": [
+                        "arn:aws:s3::123456789012:examplebucket",
+                        "arn:aws:s3::123456789012:examplebucket2",
+                    ],
+                    "bucket_prefix": "/*",
+                    "generator_type": "s3",
+                    "version": "abcd",
+                    "asd": "sdf",
+                    "action_groups": ["list", "delete"],
+                }
+            ]
+        }
+        response = self.fetch(
+            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 200)
+        result = json.loads(response.body)
+        self.assertEqual(
+            result["changes"][0]["principal"]["principal_arn"],
+            "arn:aws:iam::123456789012:role/roleName",
+        )
+        del result["changes"][0]["policy"]["policy_document"]["Statement"][0]["Sid"]
+        self.assertEqual(
+            result["changes"][0]["policy"]["policy_document"]["Statement"],
+            [
+                {
+                    "Action": [
+                        "s3:deleteobject",
+                        "s3:deleteobjecttagging",
+                        "s3:deleteobjectversion",
+                        "s3:deleteobjectversiontagging",
+                        "s3:listbucket",
+                        "s3:listbucketversions",
+                    ],
+                    "Effect": "Allow",
+                    "Resource": [
+                        "arn:aws:s3:::arn:aws:s3::123456789012:examplebucket",
+                        "arn:aws:s3:::arn:aws:s3::123456789012:examplebucket/*",
+                        "arn:aws:s3:::arn:aws:s3::123456789012:examplebucket2",
+                        "arn:aws:s3:::arn:aws:s3::123456789012:examplebucket2/*",
+                    ],
+                }
+            ],
+        )
+
+    @patch(
+        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
     def test_post_valid_request_s3_combined_inline(self):
         input_body = {
             "changes": [
@@ -365,6 +423,62 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
         self.assertEqual(
             result["changes"][0]["principal"]["principal_arn"],
             "arn:aws:iam::123456789012:role/exampleRole",
+        )
+
+    @patch(
+        "consoleme.handlers.v2.generate_changes.GenerateChangesHandler.authorization_flow",
+        MockBaseHandler.authorization_flow,
+    )
+    def test_post_valid_request_sns_multi(self):
+        input_body = {
+            "changes": [
+                {
+                    "user": "username@example.com",
+                    "principal": {
+                        "principal_type": "AwsResource",
+                        "principal_arn": "arn:aws:iam::123456789012:role/exampleRole",
+                    },
+                    "resource_arn": [
+                        "arn:aws:sns:us-east-1:123456789012:exampletopic",
+                        "arn:aws:sns:us-east-1:123456789012:exampletopic2",
+                        "arn:aws:sns:us-east-1:123456789012:exampletopic3",
+                    ],
+                    "generator_type": "sns",
+                    "version": "abcd",
+                    "asd": "sdf",
+                    "action_groups": ["get_topic_attributes", "publish"],
+                }
+            ]
+        }
+
+        response = self.fetch(
+            "/api/v2/generate_changes", method="POST", body=json.dumps(input_body)
+        )
+        self.assertEqual(response.code, 200)
+        result = json.loads(response.body)
+        self.assertEqual(
+            result["changes"][0]["principal"]["principal_arn"],
+            "arn:aws:iam::123456789012:role/exampleRole",
+        )
+
+        del result["changes"][0]["policy"]["policy_document"]["Statement"][0]["Sid"]
+        self.assertEqual(
+            result["changes"][0]["policy"]["policy_document"]["Statement"],
+            [
+                {
+                    "Action": [
+                        "sns:getendpointattributes",
+                        "sns:gettopicattributes",
+                        "sns:publish",
+                    ],
+                    "Effect": "Allow",
+                    "Resource": [
+                        "arn:aws:sns:us-east-1:123456789012:exampletopic",
+                        "arn:aws:sns:us-east-1:123456789012:exampletopic2",
+                        "arn:aws:sns:us-east-1:123456789012:exampletopic3",
+                    ],
+                }
+            ],
         )
 
     @patch(

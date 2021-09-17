@@ -101,21 +101,21 @@ You must also allow ConsoleMe to read/write to the bucket you've decided to use 
 
 ```text
 {
-	"Statement": [
-		{
-			"Action": [
-				"s3:ListBucket",
-				"s3:GetObject",
-				"s3:PutObject",
-				"s3:DeleteObject"
-			],
-			"Effect": "Allow",
-			"Resource": [
-				"arn:aws:s3:::BUCKET_NAME",
-				"arn:aws:s3:::BUCKET_NAME/*"
-			]
-		}
-	]
+    "Statement": [
+        {
+            "Action": [
+                "s3:ListBucket",
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+            ],
+            "Effect": "Allow",
+            "Resource": [
+                "arn:aws:s3:::BUCKET_NAME",
+                "arn:aws:s3:::BUCKET_NAME/*"
+            ]
+        }
+    ]
 }
 ```
 
@@ -142,3 +142,4 @@ Configure the trust policy with the following settings \(Yes, you'll want to giv
   "Version": "2012-10-17"
 }
 ```
+

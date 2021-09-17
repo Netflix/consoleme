@@ -48,12 +48,27 @@ tornado:
   xsrf_cookie_kwargs:
     samesite: strict
 
+awsSecretsManager:
+  enabled: false
+  name: consoleme-secrets
+
+api_protect:
+  exclude_regions:
+    - af-south-1
+    - ap-east-1
+    - ap-northeast-3
+    - eu-central-1
+    - me-south-1
+
 redis:
   broker_url: redis://<Redis Host>:6379/1
   region: us-east-1
   host: <Redis Host>
   db: 0
   port: 6379
+
+  sync_regions:
+    - "us-east-1"
 
   # For local Redis:
   #  broker_url: redis://consoleme-redis-master:6379/1
@@ -83,6 +98,11 @@ dynamodb:
     repository: cnadiminti/dynamodb-local
     pullPolicy: IfNotPresent
     tag: "latest"
+
+event_bridge:
+  enabled: true
+  role_changes_sqs_arn: arn:aws:sqs:{region}:123456789012:consoleme-cloudtrail-role-events-test
+  cloudtrail_denies_sqs_arn: arn:aws:sqs:{region}:123456789012:consoleme-cloudtrail-access-deny-events-test
 
 authentication:
   type: saml
@@ -271,7 +291,8 @@ consoleme:
         value: stdlib
       - name: COLUMNS
         value: "80"
-    resources: {}
+    resources:
+      {}
       # We usually recommend not to specify default resources and to leave this as a conscious
       # choice for the user. This also increases chances charts run on environments with little
       # resources, such as Minikube. If you do want to specify resources, uncomment the following
@@ -299,7 +320,8 @@ consoleme:
         value: stdlib
       - name: COLUMNS
         value: "80"
-    resources: { }
+    resources:
+      {}
       # We usually recommend not to specify default resources and to leave this as a conscious
       # choice for the user. This also increases chances charts run on environments with little
       # resources, such as Minikube. If you do want to specify resources, uncomment the following
