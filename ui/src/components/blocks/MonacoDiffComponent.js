@@ -15,7 +15,7 @@ const MonacoDiffComponent = (props) => {
   const modifiedEditorRef = useRef();
   const [language, setLanguage] = useState("json");
 
-  const onChange = (newValue, e) => {
+  const onChange = (newValue) => {
     onValueChange(newValue);
   };
 
@@ -39,6 +39,9 @@ const MonacoDiffComponent = (props) => {
   );
 
   const editorDidMount = (editor, monaco) => {
+    editor._modifiedEditor.onDidChangeModelContent((_) => {
+      onChange(editor._modifiedEditor.getValue());
+    });
     editor._modifiedEditor.onDidChangeModelDecorations(() => {
       if (modifiedEditorRef.current) {
         const model = modifiedEditorRef.current.getModel();
