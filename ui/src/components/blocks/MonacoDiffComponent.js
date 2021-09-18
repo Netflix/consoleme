@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState }  from "react";
-import { DiffEditor, useMonaco} from "@monaco-editor/react";
+import React, { useEffect, useRef, useState } from "react";
+import { DiffEditor, useMonaco } from "@monaco-editor/react";
 import PropTypes from "prop-types";
 import {
   getMonacoTriggerCharacters,
@@ -7,7 +7,6 @@ import {
   getStringFormat,
   getLocalStorageSettings,
 } from "../../helpers/utils";
-
 
 const MonacoDiffComponent = (props) => {
   const monaco = useMonaco();
@@ -28,69 +27,69 @@ const MonacoDiffComponent = (props) => {
         return await getMonacoCompletions(model, position, monaco);
       },
     });
+  }, [monaco]);
 
-  }, [monaco]
-  )
+  useEffect(
+    () => {
+      const { newValue } = props;
+      if (!newValue) return;
+      setLanguage(getStringFormat(newValue));
+    },
+    [] // eslint-disable-line
+  );
 
-  useEffect(() => {
-    const { newValue } = props;
-    if (!newValue) return;
-    setLanguage(
-      getStringFormat(newValue)
-      )
-  }, [] // eslint-disable-line
-  )
-
- const editorDidMount = (editor, monaco) => {
+  const editorDidMount = (editor, monaco) => {
     editor._modifiedEditor.onDidChangeModelDecorations(() => {
       if (modifiedEditorRef.current) {
-      const model = modifiedEditorRef.current.getModel();
-      if (model === null || model.getModeId() !== "json") {
-        return;
+        const model = modifiedEditorRef.current.getModel();
+        if (model === null || model.getModeId() !== "json") {
+          return;
+        }
+
+        const owner = model.getModeId();
+        const uri = model.uri;
+        const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
+        onLintError(
+          markers.map(
+            (marker) =>
+              `Lint error on line ${marker.startLineNumber} columns
+              ${marker.startColumn}-${marker.endColumn}: ${marker.message}`
+          )
+        );
       }
+    });
+    modifiedEditorRef.current = editor._modifiedEditor;
+  };
 
-      const owner = model.getModeId();
-      const uri = model.uri;
-      const markers = monaco.editor.getModelMarkers({ owner, resource: uri });
-      onLintError(
-        markers.map(
-          (marker) =>
-            `Lint error on line ${marker.startLineNumber} columns ${marker.startColumn}-${marker.endColumn}: ${marker.message}`
-        )
-      );
-    }});
-    modifiedEditorRef.current = editor._modifiedEditor
-  }
-
-    const { oldValue, newValue, readOnly } = props;
-    const options = {
-      selectOnLineNumbers: true,
-      renderSideBySide: true,
-      enableSplitViewResizing: false,
-      quickSuggestions: true,
-      scrollbar: {
-        alwaysConsumeMouseWheel: false,
-      },
-      scrollBeyondLastLine: false,
-      automaticLayout: true,
-      readOnly,
-    };
-    const editorTheme = getLocalStorageSettings("editorTheme");
-    return (
-      <DiffEditor
-        language={language}
-        width="100%"
-        height="500px"
-        original={oldValue}
-        modified={newValue}
-        onMount={editorDidMount}
-        options={options}
-        onChange={onChange}
-        theme={editorTheme}
-        alwaysConsumeMouseWheel={false}
-      />
-    );
-}
+  const { oldValue, newValue, readOnly } = props;
+  const options = {
+    selectOnLineNumbers: true,
+    renderSideBySide: true,
+    enableSplitViewResizing: false,
+    quickSuggestions: true,
+    scrollbar: {
+      alwaysConsumeMouseWheel: false,
+    },
+    scrollBeyondLastLine: false,
+    automaticLayout: true,
+    readOnly,
+  };
+  const editorTheme = getLocalStorageSettings("editorTheme");
+  return (
+    <DiffEditor
+      language={language}
+      width="100%"
+      height="500px"
+      original={oldValue}
+      modified={newValue}
+      onMount={editorDidMount}
+      options={options}
+      onChange={onChange}
+      theme={editorTheme}
+      alwaysConsumeMouseWheel={false}
+    />
+  );
+};
 
 // This component requires four props:
 // 1. oldValue = old value for the diff
