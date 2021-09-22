@@ -10,9 +10,15 @@ code {
     monospace;
 }
 
+.inner-container-segment {
+  padding-top: 82px;
+  padding-left: 250px;
+  padding-bottom: 10px;
+}
+
 .inner-container {
   max-width: 1920px;
-  width: 100%;
+  width: 98%;
 }
 
 /*

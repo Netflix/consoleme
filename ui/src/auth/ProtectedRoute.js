@@ -52,8 +52,6 @@ const ProtectedRoute = (props) => {
     return null;
   }
 
-  let marginTop = "72px";
-
   if (
     user?.pages?.header?.custom_header_message_title ||
     user?.pages?.header?.custom_header_message_text
@@ -64,9 +62,6 @@ const ProtectedRoute = (props) => {
       if (!re.test(window.location.pathname)) {
         matchesRoute = false;
       }
-    }
-    if (matchesRoute) {
-      marginTop = "0px";
     }
   }
 
@@ -80,11 +75,8 @@ const ProtectedRoute = (props) => {
       <ConsoleMeHeader />
       <ConsoleMeSidebar />
       <Segment
+        className="inner-container-segment"
         basic
-        style={{
-          marginTop: marginTop,
-          marginLeft: "240px",
-        }}
       >
         <div className="inner-container">
           <Route
