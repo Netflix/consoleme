@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Button, Form, Icon, Message, Segment } from "semantic-ui-react";
-import MonacoEditor from "react-monaco-editor";
-import * as monaco from "monaco-editor/esm/vs/editor/editor.api.js";
+import Editor, { useMonaco } from "@monaco-editor/react";
 import {
   getLocalStorageSettings,
   getMonacoCompletions,
@@ -10,13 +9,6 @@ import {
 import { usePolicyContext } from "./hooks/PolicyProvider";
 import { useAuth } from "../../auth/AuthProviderDefault";
 import "./PolicyMonacoEditor.css";
-
-monaco.languages.registerCompletionItemProvider("json", {
-  triggerCharacters: getMonacoTriggerCharacters(),
-  async provideCompletionItems(model, position) {
-    return await getMonacoCompletions(model, position, monaco);
-  },
-});
 
 const editorOptions = {
   selectOnLineNumbers: true,
@@ -51,7 +43,7 @@ const clearEditorDecorations = ({ editor }) => {
     .map((el) => el.reset());
 };
 
-const addEditorDecorations = ({ editor, errors }) => {
+const AddEditorDecorations = ({ editor, monaco, errors }) => {
   editor.deltaDecorations(
     [],
     errors.map((error) => ({
@@ -77,7 +69,13 @@ const addEditorDecorations = ({ editor, errors }) => {
 // Stub lint error callback, will be setup later
 let onLintError = () => {};
 
-const editorDidMount = (editor) => {
+const editorDidMount = (editor, monaco) => {
+  monaco.languages.registerCompletionItemProvider("json", {
+    triggerCharacters: getMonacoTriggerCharacters(),
+    async provideCompletionItems(model, position) {
+      return await getMonacoCompletions(model, position, monaco);
+    },
+  });
   editor.onDidChangeModelDecorations(() => {
     const model = editor.getModel();
     if (model === null || model.getModeId() !== "json") {
@@ -106,6 +104,7 @@ export const PolicyMonacoEditor = ({
   const { user, sendRequestCommon } = useAuth();
   const { setModalWithAdminAutoApprove } = usePolicyContext();
   const editorRef = useRef();
+  const monaco = useMonaco();
   const editorTheme = getLocalStorageSettings("editorTheme");
   const timeout = useRef(null);
 
@@ -127,12 +126,14 @@ export const PolicyMonacoEditor = ({
         );
         if (errors && typeof errors == "object" && editorRef.current) {
           // Clear all existing decorations otherwise they will add up
-          clearEditorDecorations({ editor: editorRef.current.editor });
-          addEditorDecorations({ editor: editorRef.current.editor, errors });
+          clearEditorDecorations({ editor: editorRef.current });
+          if (monaco) {
+            AddEditorDecorations({ editor: editorRef.current, monaco, errors });
+          }
         }
       }
     },
-    [sendRequestCommon, context]
+    [sendRequestCommon, context] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   useEffect(() => {
@@ -191,6 +192,11 @@ export const PolicyMonacoEditor = ({
     setModalWithAdminAutoApprove(true);
   };
 
+  function handleEditorDidMount(editor, monaco) {
+    editorRef.current = editor;
+    editorDidMount(editor, monaco);
+  }
+
   return (
     <>
       <Message warning attached="top">
@@ -204,15 +210,14 @@ export const PolicyMonacoEditor = ({
           padding: 0,
         }}
       >
-        <MonacoEditor
-          ref={editorRef}
+        <Editor
           height="540px"
-          language="json"
+          defaultLanguage="json"
           theme={editorTheme}
           value={policyDocument}
           onChange={onEditChange}
           options={editorOptions}
-          editorDidMount={editorDidMount}
+          onMount={handleEditorDidMount}
           textAlign="center"
         />
       </Segment>
@@ -270,6 +275,7 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const editorRef = useRef();
   const editorTheme = getLocalStorageSettings("editorTheme");
   const timeout = useRef(null);
+  const monaco = useMonaco();
 
   const [newPolicyName, setNewPolicyName] = useState("");
   const [templateOptions, setTemplateOptions] = useState([
@@ -297,11 +303,13 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
       );
       if (errors && typeof errors == "object" && editorRef.current) {
         // Clear all existing decorations otherwise they will add up
-        clearEditorDecorations({ editor: editorRef.current.editor });
-        addEditorDecorations({ editor: editorRef.current.editor, errors });
+        clearEditorDecorations({ editor: editorRef.current });
+        if (monaco) {
+          AddEditorDecorations({ editor: editorRef.current, monaco, errors });
+        }
       }
     },
-    [sendRequestCommon]
+    [sendRequestCommon] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   useEffect(() => {
@@ -370,9 +378,14 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
 
   const onTemplateChange = (e, { value }) => {
     clearTimeout(timeout);
-    clearEditorDecorations({ editor: editorRef.current.editor });
+    clearEditorDecorations({ editor: editorRef.current });
     setPolicyDocument(JSON.stringify(JSON.parse(value || ""), null, "\t"));
   };
+
+  function handleEditorDidMount(editor, monaco) {
+    editorRef.current = editor;
+    editorDidMount(editor, monaco);
+  }
 
   return (
     <>
@@ -404,15 +417,14 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
           padding: 0,
         }}
       >
-        <MonacoEditor
-          ref={editorRef}
+        <Editor
           height="540px"
-          language="json"
+          defaultLanguage="json"
           theme={editorTheme}
           value={policyDocument}
           onChange={onEditChange}
           options={editorOptions}
-          editorDidMount={editorDidMount}
+          onMount={handleEditorDidMount}
           textAlign="center"
         />
       </Segment>
@@ -463,13 +475,13 @@ export const ReadOnlyPolicyMonacoEditor = ({ policy }) => {
           padding: 0,
         }}
       >
-        <MonacoEditor
+        <Editor
           height="540px"
-          language="json"
+          defaultLanguage="json"
           theme={editorTheme}
           value={JSON.stringify(policy, null, "\t")}
           options={readOnlyEditorOptions}
-          editorDidMount={editorDidMount}
+          onMount={editorDidMount}
           textAlign="center"
         />
       </Segment>
