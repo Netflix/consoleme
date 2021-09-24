@@ -234,7 +234,9 @@ class SelfServiceStep2 extends Component {
                                 <Header as={"h5"}>RESOURCE</Header>
                               </Grid.Column>
                               <Grid.Column style={{ width: "100%" }}>
-                                {permission[key].join(",")}
+                                {typeof permission[key] === "string"
+                                  ? permission[key]
+                                  : permission[key].join(",")}
                               </Grid.Column>
                             </>
                           ) : null}

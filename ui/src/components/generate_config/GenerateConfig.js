@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import * as Survey from "survey-react";
 import "survey-react/survey.css";
 import { questions_json } from "./questions.js";
-import MonacoEditor from "react-monaco-editor";
+import Editor from "@monaco-editor/react";
 import yaml from "js-yaml";
 import { Header, Icon, Message, Popup, Segment } from "semantic-ui-react";
 import "./GenerateConfig.css";
@@ -190,9 +190,9 @@ function GenerateConfig() {
       <Segment.Group>
         {headerContent()}
         {messagesToShow()}
-        <MonacoEditor
+        <Editor
           height="700px"
-          language="yaml"
+          defaultLanguage="yaml"
           width="100%"
           theme={editorTheme}
           value={yaml.dump(results, 4)}
