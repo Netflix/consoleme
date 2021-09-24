@@ -52,7 +52,7 @@ const ProtectedRoute = (props) => {
     return null;
   }
 
-  let marginTop = "72px";
+  let marginTop = "0px";
 
   if (
     user?.pages?.header?.custom_header_message_title ||
@@ -66,7 +66,7 @@ const ProtectedRoute = (props) => {
       }
     }
     if (matchesRoute) {
-      marginTop = "0px";
+      marginTop = "72px";
     }
   }
 
@@ -83,7 +83,6 @@ const ProtectedRoute = (props) => {
         basic
         style={{
           marginTop: marginTop,
-          marginLeft: "240px",
         }}
       >
         <div className="inner-container">
