@@ -341,16 +341,3 @@ class TestAwsLib(TestCase):
         self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
 
         CONFIG.config = old_config
-
-    def test_sanitize_session_name(self):
-        from consoleme.lib.aws import sanitize_session_name
-
-        expected_results = {
-            "user@example.com": "user@example.com",
-            "a" * 128: "a" * 64,
-            "user!@#$%^&*()": "user@",
-        }
-
-        for k, v in expected_results.items():
-            result = sanitize_session_name(k)
-            self.assertEqual(result, v)
