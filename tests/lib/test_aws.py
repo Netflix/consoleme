@@ -458,3 +458,16 @@ class TestAwsLib(TestCase):
         result = remove_temp_policies(role, iam_client)
         self.assertFalse(result)
         iam_client.delete_role_policy.assert_not_called()
+
+    def test_sanitize_session_name(self):
+        from consoleme.lib.aws import sanitize_session_name
+
+        expected_results = {
+            "user@example.com": "user@example.com",
+            "a" * 128: "a" * 64,
+            "user!@#$%^&*()": "user@",
+        }
+
+        for k, v in expected_results.items():
+            result = sanitize_session_name(k)
+            self.assertEqual(result, v)
