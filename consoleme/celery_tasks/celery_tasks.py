@@ -58,7 +58,6 @@ from consoleme.lib.aws import (
     cache_org_structure,
     get_aws_principal_owner,
     get_enabled_regions_for_account,
-    remove_temp_policies,
 )
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
@@ -838,17 +837,17 @@ def cache_iam_resources_for_account(account_id: str) -> Dict[str, Any]:
     if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
-        conn = dict(
+        client = boto3_cached_conn(
+            "iam",
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
-            client_kwargs=config.get("boto3.client_kwargs", {}),
             sts_client_kwargs=dict(
                 region_name=config.region,
                 endpoint_url=f"https://sts.{config.region}.amazonaws.com",
             ),
+            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
-        client = boto3_cached_conn("iam", **conn)
         paginator = client.get_paginator("get_account_authorization_details")
         response_iterator = paginator.paginate()
         all_iam_resources = {}
@@ -953,9 +952,6 @@ def cache_iam_resources_for_account(account_id: str) -> Dict[str, Any]:
         ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
         # Save them:
         for role in iam_roles:
-            if remove_temp_policies(role, client):
-                role = aws.get_iam_role_sync(account_id, role.get("RoleName", conn))
-                async_to_sync(aws.cloudaux_to_aws)(role)
             role_entry = {
                 "arn": role.get("Arn"),
                 "name": role.get("RoleName"),

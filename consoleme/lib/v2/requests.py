@@ -325,9 +325,7 @@ async def generate_request_from_change_model_array(
                 raise InvalidRequestParameter(log_data["message"])
             for inline_policy_change in inline_policy_changes:
                 inline_policy_change.policy_name = await generate_policy_name(
-                    inline_policy_change.policy_name,
-                    user,
-                    inline_policy_change.expiration_date,
+                    inline_policy_change.policy_name, user
                 )
                 await validate_inline_policy_change(
                     inline_policy_change, user, principal_details

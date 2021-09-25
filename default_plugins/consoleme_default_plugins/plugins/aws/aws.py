@@ -71,7 +71,7 @@ class Aws:
         """
         return self.red.hget(self.redis_key, role_arn)
 
-    async def cloudaux_to_aws(self, principal):
+    async def _cloudaux_to_aws(self, principal):
         """Convert the cloudaux get_role/get_user into the get_account_authorization_details equivalent."""
         # Pop out the fields that are not required:
         # Arn and RoleName/UserName will be popped off later:
@@ -193,7 +193,7 @@ class Aws:
         return user
 
     @staticmethod
-    def get_iam_role_sync(account_id, role_name, conn) -> Optional[Dict[str, Any]]:
+    def _get_iam_role_sync(account_id, role_name, conn) -> Optional[Dict[str, Any]]:
         client = boto3_cached_conn(
             "iam",
             account_number=account_id,
@@ -299,7 +299,7 @@ class Aws:
                     tags={"account_id": account_id, "user_arn": user_arn},
                 )
                 raise
-        await self.cloudaux_to_aws(user)
+        await self._cloudaux_to_aws(user)
         return user
 
     async def fetch_iam_role(
@@ -373,7 +373,7 @@ class Aws:
                     "client_kwargs": config.get("boto3.client_kwargs", {}),
                 }
                 if run_sync:
-                    role = self.get_iam_role_sync(account_id, role_name, conn)
+                    role = self._get_iam_role_sync(account_id, role_name, conn)
                 else:
                     role = await self._get_iam_role_async(account_id, role_name, conn)
 
@@ -398,7 +398,7 @@ class Aws:
                     raise
 
             # Format the role for DynamoDB and Redis:
-            await self.cloudaux_to_aws(role)
+            await self._cloudaux_to_aws(role)
             result = {
                 "arn": role.get("Arn"),
                 "name": role.pop("RoleName"),

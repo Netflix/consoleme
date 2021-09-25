@@ -7,9 +7,6 @@ import SelfServiceStep1 from "./SelfServiceStep1";
 import SelfServiceStep2 from "./SelfServiceStep2";
 import SelfServiceStep3 from "./SelfServiceStep3";
 import { SelfServiceStepEnum } from "./SelfServiceEnums";
-
-import { DateTime } from "luxon";
-
 import { arnRegex } from "../../helpers/utils";
 
 class SelfService extends Component {
@@ -28,7 +25,6 @@ class SelfService extends Component {
       includeAccounts: [],
       excludeAccounts: [],
       updated_policy: "",
-      expiration_date: null,
     };
   }
 
@@ -119,18 +115,6 @@ class SelfService extends Component {
         export_to_terraform_enabled: config.export_to_terraform_enabled,
       });
     }
-  }
-
-  handleSetPolicyExpiration(event, data) {
-    // Convert epoch milliseconds to epoch seconds
-    if (!data?.value) {
-      return;
-    }
-    const dateObj = DateTime.fromJSDate(data.value);
-    const dateString = dateObj.toFormat("yyyyMMdd");
-    this.setState({
-      expiration_date: parseInt(dateString),
-    });
   }
 
   handleStepClick(dir) {
@@ -230,7 +214,6 @@ class SelfService extends Component {
       role,
       services,
       updated_policy,
-      expiration_date,
     } = this.state;
 
     let SelfServiceStep = null;
@@ -242,9 +225,6 @@ class SelfService extends Component {
             role={role}
             handleStepClick={this.handleStepClick.bind(this)}
             handleRoleUpdate={this.handleRoleUpdate.bind(this)}
-            handleSetPolicyExpiration={this.handleSetPolicyExpiration.bind(
-              this
-            )}
             {...this.props}
           />
         );
@@ -260,7 +240,6 @@ class SelfService extends Component {
             includeAccounts={includeAccounts}
             excludeAccounts={excludeAccounts}
             updated_policy={updated_policy}
-            expiration_date={expiration_date}
             handleStepClick={this.handleStepClick.bind(this)}
             updatePolicy={this.updatePolicy.bind(this)}
             handlePermissionsUpdate={this.handlePermissionsUpdate.bind(this)}
@@ -284,7 +263,6 @@ class SelfService extends Component {
             services={services}
             permissions={permissions}
             updated_policy={updated_policy}
-            expiration_date={expiration_date}
             handleStepClick={this.handleStepClick.bind(this)}
             admin_bypass_approval_enabled={admin_bypass_approval_enabled}
             export_to_terraform_enabled={export_to_terraform_enabled}

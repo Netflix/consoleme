@@ -40,7 +40,6 @@ class TestUserProfile(AsyncHTTPTestCase):
                     "security_logo": None,
                     "security_url": None,
                     "landing_url": None,
-                    "temp_policy_support": True,
                     "notifications": {"enabled": None, "request_interval": 60},
                 },
                 "user": "user@example.com",
