@@ -11,8 +11,11 @@ code {
 }
 
 .inner-container {
+  width: 110%;
   max-width: 1920px;
-  width: 100%;
+  padding-top: 82px;
+  padding-left: 250px;
+  padding-bottom: 10px;
 }
 
 /*

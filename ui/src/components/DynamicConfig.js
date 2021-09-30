@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import MonacoEditor from "react-monaco-editor";
+import Editor from "@monaco-editor/react";
 import {
   Header,
   Button,
@@ -92,11 +92,11 @@ function ConsoleMeDynamicConfig() {
       {header}
       <Grid centered columns={1}>
         <Grid.Column>
-          <MonacoEditor
-            height="1000"
-            language="yaml"
+          <Editor
+            height="100vh"
+            defaultLanguage="yaml"
             theme={editorTheme}
-            value={config}
+            defaultValue={config}
             onChange={onChange}
             options={options}
             textAlign="center"

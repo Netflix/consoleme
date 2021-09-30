@@ -9,7 +9,7 @@ import {
   Dimmer,
 } from "semantic-ui-react";
 import ReactMarkdown from "react-markdown";
-import MonacoEditor from "react-monaco-editor";
+import Editor from "@monaco-editor/react";
 import { getLocalStorageSettings } from "../../helpers/utils";
 import { useAuth } from "../../auth/AuthProviderDefault";
 import { useNotifications } from "../hooks/notifications";
@@ -143,9 +143,9 @@ export const NotificationsModal = (props) => {
                         activeTargets[notification?.predictable_id] === true
                       }
                     >
-                      <MonacoEditor
-                        height="500"
-                        language="json"
+                      <Editor
+                        height="500px"
+                        defaultLanguage="json"
                         theme={editorTheme}
                         value={JSON.stringify(notification?.details, null, 2)}
                         options={monacoOptions}
