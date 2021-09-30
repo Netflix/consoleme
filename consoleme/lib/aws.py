@@ -2047,8 +2047,6 @@ def sanitize_session_name(unsanitized_session_name):
     """
     This function sanitizes the session name typically passed in an assume_role call, to verify that it's
     """
-    import re
-
     valid_characters_re = re.compile(r"[\w+=,.@-]")
 
     sanitized_session_name = ""
