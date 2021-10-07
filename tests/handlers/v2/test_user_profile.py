@@ -41,6 +41,7 @@ class TestUserProfile(AsyncHTTPTestCase):
                     "security_url": None,
                     "landing_url": None,
                     "notifications": {"enabled": None, "request_interval": 60},
+                    "cloudtrail_denies_policy_generation": True,
                 },
                 "user": "user@example.com",
                 "can_logout": False,
