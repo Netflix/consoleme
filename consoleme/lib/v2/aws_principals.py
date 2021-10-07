@@ -61,12 +61,17 @@ async def get_cloudtrail_details_for_role(arn: str):
     ct_errors = []
 
     for event_string, value in errors_unformatted.items():
-        event_call, resource = event_string.split("|||")
+        event_call = event_string
+        resource = None
+        generated_policy = value.get("generated_policy", None)
+        if "|||" in event_string:
+            event_call, resource = event_string.split("|||")
+
         ct_errors.append(
             CloudTrailError(
                 event_call=event_call,
                 resource=resource,
-                generated_policy=value.get("generated_policy"),
+                generated_policy=generated_policy,
                 count=value.get("count", 0),
             )
         )
