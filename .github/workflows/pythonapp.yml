@@ -36,13 +36,12 @@ jobs:
             musl-dev \
             yarn \
             nodejs
-          python3 -m pip install --upgrade pip
           pip install "setuptools==44.0.0"
-          pip3 install \
+          pip install \
             -r requirements.txt \
             -r requirements-test.txt \
             -r requirements-docs.txt
-          pip3 install -e .
+          pip install .
           yarn --cwd ui install
           yarn --cwd ui build:prod
           terraform -chdir=terraform/central-account/ init

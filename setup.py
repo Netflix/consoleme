@@ -71,6 +71,6 @@ setup(
     },
     cmdclass={"cleanall": CleanAllCommand},
     include_package_data=True,
-    versioning="distance",
+    versioning="dev",
     zip_safe=False,
 )
