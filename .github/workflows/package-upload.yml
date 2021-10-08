@@ -1,4 +1,4 @@
-name: pre-commit
+name: Upload PyPI Package ð
 
 on:
   push:
@@ -17,8 +17,6 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.8
-      - name: Install Terraform
-        uses: hashicorp/setup-terraform@v1
       - name: Install dependencies
         run: |
           curl -sL https://deb.nodesource.com/setup_14.x | sudo bash
@@ -26,26 +24,23 @@ jobs:
           echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
           sudo apt-get update
           sudo apt-get install \
-            libssl-dev \
-            libcurl4-openssl-dev \
-            python3-dev \
-            build-essential \
-            libxml2-dev \
-            libxmlsec1-dev \
-            libxmlsec1-openssl \
-            musl-dev \
             yarn \
             nodejs
-          pip install \
-            -r requirements.txt \
-            -r requirements-test.txt \
-            -r requirements-docs.txt
-          pip install .
           yarn --cwd ui install
           yarn --cwd ui build:prod
-          terraform -chdir=terraform/central-account/ init
-          terraform -chdir=terraform/spoke-accounts/ init
-          pre-commit install
-      - name: Run pre-commit
+      - name: Build Python package
         run: |
-          pre-commit run -a
+          pip install build
+          python -m build --sdist --wheel --outdir dist/ .
+      - name: Publish package to PyPI Test
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+      - name: Publish package to PyPI
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
