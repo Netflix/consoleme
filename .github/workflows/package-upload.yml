@@ -13,6 +13,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - run: git fetch --prune --unshallow --tags
       - name: Set up Python 3.8
         uses: actions/setup-python@v1
         with:
