@@ -78,7 +78,7 @@ class Config:
         # Fall back to Gravatar
         gravatar_url = (
             "https://www.gravatar.com/avatar/"
-            + hashlib.md5(user.lower().encode("utf-8")).hexdigest()
+            + hashlib.md5(user.lower().encode("utf-8")).hexdigest()  # nosec
             + "?"
         )
         gravatar_url += urllib.parse.urlencode({"d": "mp"})
