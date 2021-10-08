@@ -51,3 +51,18 @@ jobs:
       - name: Run pre-commit
         run: |
           pre-commit run -a
+      - name: Build Python package
+        run: |
+          pip install build
+          python -m build --sdist --wheel --outdir dist/ .
+      - name: Publish package to PyPI Test
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      - name: Publish package to PyPI
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
