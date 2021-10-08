@@ -25,16 +25,16 @@ class Config:
                 client = boto3.client("s3")
                 bucket, key = split_s3_path(config_location)
                 obj = client.get_object(Bucket=bucket, Key=key)
-                s3_object_content = obj["Body"].read()
+                config_data = obj["Body"].read()
                 with open(default_save_location, "w") as f:
-                    f.write(s3_object_content.decode())
+                    f.write(config_data.decode())
             elif config_location.startswith("AWS_SECRETS_MANAGER:"):
                 secret_name = "".join(config_location.split("AWS_SECRETS_MANAGER:")[1:])
-                aws_secret_content = get_aws_secret(
+                config_data = get_aws_secret(
                     secret_name, os.environ.get("EC2_REGION", "us-east-1")
                 )
                 with open(default_save_location, "w") as f:
-                    f.write(aws_secret_content)
+                    f.write(config_data)
             else:
                 return config_location
         config_locations: List[str] = [
