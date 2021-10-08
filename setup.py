@@ -48,6 +48,7 @@ setup(
     name="consoleme",
     author="Netflix Security",
     author_email="consoleme-maintainers@netflix.com",
+    description="A central control plane for AWS permissions and access",
     keywords="consoleme",
     url="https://github.com/Netflix/ConsoleMe",
     python_requires=">=3.8",
