@@ -49,3 +49,42 @@ jobs:
       - name: Run pre-commit
         run: |
           pre-commit run -a
+  package:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v2
+      - run: git fetch --prune --unshallow --tags
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Build UI assets
+        run: |
+          curl -sL https://deb.nodesource.com/setup_14.x | sudo bash
+          curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+          echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+          sudo apt-get update
+          sudo apt-get install \
+            yarn \
+            nodejs
+          yarn --cwd ui install
+          yarn --cwd ui build:prod
+      - name: Install build dependencies
+        run: pip install build wheel setupmeta
+      - name: Build Python package
+        run: python -m build --sdist --wheel --outdir dist/ .
+      - name: Publish package to PyPI Test
+        if: github.ref == 'refs/heads/master'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+      - name: Publish package to PyPI
+        if: github.ref == 'refs/heads/master'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
