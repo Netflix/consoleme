@@ -19,7 +19,7 @@ ConsoleMe is extensible and pluggable. We offer a set of basic plugins for authe
 
 ## Running Tasks with Celery
 
-ConsoleMe uses [Celery](https://github.com/celery/celery/) to run various tasks on a schedule or on-demand. These tasks perform various quality of life operations such as data processing and caching but also allow for more advanced actions such as AWS Infrastructure updates and modifications. You can also add your custom celery tasks through the use of an internal plugin set. This means that you can implement internal-only Celery tasks with custom logic curated specifically to your needs. We provide an [example](https://github.com/Netflix/consoleme/blob/master/default_plugins/consoleme_default_plugins/plugins/celery_tasks/celery_tasks.py#L56) of this in our default\_plugins.
+ConsoleMe uses [Celery](https://github.com/celery/celery/) to run various tasks on a schedule or on-demand. These tasks perform various quality of life operations such as data processing and caching but also allow for more advanced actions such as AWS Infrastructure updates and modifications. You can also add your custom celery tasks through the use of an internal plugin set. This means that you can implement internal-only Celery tasks with custom logic curated specifically to your needs. We provide an [example](https://github.com/Netflix/consoleme/blob/master/consoleme/default_plugins/plugins/celery_tasks/celery_tasks.py#L56) of this in our default\_plugins.
 
 ConsoleMe's [open-source celery tasks](https://github.com/Netflix/consoleme/blob/master/consoleme/celery/celery_tasks.py#L1503) are generally used to cache resources across your AWS accounts \(such as IAM roles\) and report Celery metrics. We have tasks that perform the following:
 

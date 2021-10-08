@@ -43,8 +43,8 @@ def get_plugin_by_name(plugin_name: str) -> Any:
 def import_class_by_name(class_full_path: str):
     """
     Import a class by a dot-delimited class name.
-    i.e: import_class("consoleme_default_plugins.plugins.metrics.default_metrics.DefaultMetric")
-        --> <class 'consoleme_default_plugins.plugins.metrics.default_metrics.DefaultMetric'>
+    i.e: import_class("consoleme.default_plugins.plugins.metrics.default_metrics.DefaultMetric")
+        --> <class 'consoleme.default_plugins.plugins.metrics.default_metrics.DefaultMetric'>
     """
 
     d = class_full_path.rfind(".")

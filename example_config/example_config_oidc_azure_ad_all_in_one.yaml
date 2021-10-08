@@ -123,7 +123,7 @@ celery:
 # If you want to retrieve credentials through mutual TLS, you'll need to use something fronting ConsoleMe to do the
 # certificate validation. It should pass down a "Success" header, and a header with the certificate. You'll need to
 # implement your own certificate parsing logic.
-# Refer to consoleme/default_plugins/consoleme_default_plugins/plugins/auth/auth.py
+# Refer to consoleme/default_plugins/plugins/auth/auth.py
 cli_auth:
   certificate_header: certificate_header
   required_headers:
