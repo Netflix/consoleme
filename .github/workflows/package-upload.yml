@@ -30,6 +30,8 @@ jobs:
           yarn --cwd ui build:prod
       - name: Install build dependencies
         run: pip install build wheel setupmeta
+      - name: Check package metadata
+        run: python setup.py explain
       - name: Build Python package
         run: python -m build --sdist --wheel --outdir dist/ .
       - name: Publish package to PyPI Test
