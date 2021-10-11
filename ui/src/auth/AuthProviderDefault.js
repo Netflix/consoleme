@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
       });
 
       // Cloud administrators can override the initial landing URL for users by providing a configuration on the backend
-      if (user?.site_config?.landing_url) {
+      if (user?.site_config?.landing_url && window.location.pathname === "/") {
         history.push(user.site_config.landing_url);
       }
     } catch (error) {
