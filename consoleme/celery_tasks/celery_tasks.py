@@ -2180,11 +2180,6 @@ schedule = {
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
     },
-    "cache_cloudtrail_errors_by_arn": {
-        "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_errors_by_arn",
-        "options": {"expires": 300},
-        "schedule": schedule_1_hour,
-    },
     "cache_resources_from_aws_config_across_accounts": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_resources_from_aws_config_across_accounts",
         "options": {"expires": 300},
@@ -2239,6 +2234,11 @@ if config.get("celery.cache_cloudtrail_denies.enabled"):
         "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_denies",
         "options": {"expires": 300},
         "schedule": schedule_minute,
+    }
+    schedule["cache_cloudtrail_errors_by_arn"] = {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_errors_by_arn",
+        "options": {"expires": 300},
+        "schedule": schedule_1_hour,
     }
 
 
