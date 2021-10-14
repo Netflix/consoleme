@@ -541,6 +541,9 @@ async def get_bucket_location_with_fallback(
             retry_max_attempts=2,
         )
         bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
+        if not bucket_location:
+            # API get_bucket_location returns None for buckets in us-east-1
+            bucket_location = "us-east-1"
         if bucket_location == "EU":
             bucket_location = "eu-west-1"
         if bucket_location == "US":
