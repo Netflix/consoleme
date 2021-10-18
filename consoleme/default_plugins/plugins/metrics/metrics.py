@@ -3,7 +3,7 @@ from consoleme.lib.plugins import import_class_by_name
 
 desired_metric_plugin = config.get(
     "metrics.metrics_plugin",
-    "consoleme_default_plugins.plugins.metrics.default_metrics.DefaultMetric",
+    "consoleme.default_plugins.plugins.metrics.default_metrics.DefaultMetric",
 )
 
 try:

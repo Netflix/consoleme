@@ -16,9 +16,7 @@ CONSOLEME_CONFIG_ENTRYPOINT := $(or ${CONSOLEME_CONFIG_ENTRYPOINT},${CONSOLEME_C
 .PHONY: env_install
 env_install:
 	pip install wheel
-	pip install -e default_plugins ;\
-	pip install -r requirements.txt ;\
-	pip install -r requirements-test.txt ;\
+	pip install -r requirements.txt -r requirements-test.txt
 	pip install -e .
 
 .PHONY: install
@@ -138,7 +136,7 @@ endif
 	packer build --debug -var 'app_archive=consoleme.tar.gz' packer/create_consoleme_ami.json
 
 .PHONY: packer_ubuntu_oss
-packer_ubuntu_oss: ubuntu_redis env_install default_plugins
+packer_ubuntu_oss: ubuntu_redis env_install
 
 .PHONY: ubuntu_redis
 ubuntu_redis:
@@ -153,7 +151,3 @@ endif
 	sudo apt-get install -y redis-server
 	sudo systemctl enable redis-server.service
 	sudo systemctl restart redis-server.service
-
-.PHONY: default_plugins
-default_plugins:
-	pip install -e default_plugins

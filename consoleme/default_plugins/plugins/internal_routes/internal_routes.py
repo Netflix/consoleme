@@ -1,4 +1,4 @@
-from consoleme_default_plugins.plugins.internal_routes.handlers.internal_demo_route import (
+from consoleme.default_plugins.plugins.internal_routes.handlers.internal_demo_route import (
     InternalDemoRouteHandler,
 )
 

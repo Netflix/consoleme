@@ -70,7 +70,7 @@ make install
 
 # The `make install` step runs the following commands, and attempts to create local dynamo tables:
 #
-# pip install -r requirements.txt -r requirements-test.txt -e default_plugins -e .
+# pip install -r requirements.txt -r requirements-test.txt -e .
 # yarn --cwd ui
 # yarn --cwd ui build:prod
 # python scripts/initialize_dynamodb_oss.py

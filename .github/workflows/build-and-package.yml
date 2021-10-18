@@ -1,0 +1,89 @@
+name: Build & Package
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v1
+      - name: Install dependencies
+        run: |
+          curl -sL https://deb.nodesource.com/setup_14.x | sudo bash
+          curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+          echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+          sudo apt-get update
+          sudo apt-get install \
+            libssl-dev \
+            libcurl4-openssl-dev \
+            python3-dev \
+            build-essential \
+            libxml2-dev \
+            libxmlsec1-dev \
+            libxmlsec1-openssl \
+            musl-dev \
+            yarn \
+            nodejs
+          pip install \
+            -r requirements.txt \
+            -r requirements-test.txt \
+            -r requirements-docs.txt
+          pip install .
+          yarn --cwd ui install
+          yarn --cwd ui build:prod
+          terraform -chdir=terraform/central-account/ init
+          terraform -chdir=terraform/spoke-accounts/ init
+          pre-commit install
+      - name: Run pre-commit
+        run: |
+          pre-commit run -a
+  package:
+    runs-on: ubuntu-latest
+    needs: build
+    # Always run on the master branch.
+    # Builds on non-tag refs will be uploaded to PyPI as prerelease versions.
+    if: ${{ github.ref == 'refs/heads/master' && github.repository == 'Netflix/consoleme' }}
+    steps:
+      - uses: actions/checkout@v2
+      - run: git fetch --prune --unshallow --tags
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Build UI assets
+        run: |
+          curl -sL https://deb.nodesource.com/setup_14.x | sudo bash
+          curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+          echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+          sudo apt-get update
+          sudo apt-get install \
+            yarn \
+            nodejs
+          yarn --cwd ui install
+          yarn --cwd ui build:prod
+      - name: Install build dependencies
+        run: pip install build wheel setupmeta
+      - name: Build Python package
+        run: python -m build --sdist --wheel --outdir dist/ .
+      - name: Publish package to PyPI Test
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}

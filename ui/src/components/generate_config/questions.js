@@ -448,7 +448,7 @@ export const questions_json = {
     },
     {
       defaultValue:
-        "consoleme_default_plugins.plugins.metrics.cloudwatch.CloudWatchMetric",
+        "consoleme.default_plugins.plugins.metrics.cloudwatch.CloudWatchMetric",
       name: "metrics.metrics_plugin_PLACEHOLDER_49",
       readOnly: true,
       type: "text",
