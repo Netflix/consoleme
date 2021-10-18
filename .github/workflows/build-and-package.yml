@@ -57,7 +57,9 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && github.repository == 'Netflix/consoleme' }}
     steps:
       - uses: actions/checkout@v2
+      # master builds don't have tags, which breaks setupmeta versioning. This retrieves the tags.
       - run: git fetch --prune --unshallow --tags
+        if: github.ref == 'refs/heads/master'
       - name: Set up Python 3.8
         uses: actions/setup-python@v1
         with:
