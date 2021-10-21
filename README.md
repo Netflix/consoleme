@@ -56,6 +56,7 @@ or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-
 
 ## Third Party Mentions
 
+- [Granting Least Privileges at FollowAnalytics with Repokid, Aardvark and ConsoleMe](https://medium.com/followanalytics/granting-least-privileges-at-followanalytics-with-repokid-aardvark-and-consoleme-895d8daf604a)
 - [Netflix’s ConsoleMe local installation on Linux machine](https://kerneltalks.com/tools/netflixs-consoleme-local-installation-on-linux-machine/)
 - [Improving database security at FollowAnalytics with AWS IAM database authentication and ConsoleMe](https://medium.com/followanalytics/improving-database-security-at-followanalytics-with-aws-iam-database-authentication-and-consoleme-d00ea8a6edef)
 - [Awesome IAM Policy Tools](https://github.com/kdeldycke/awesome-iam#aws-policy-tools)
