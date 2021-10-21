@@ -5,12 +5,12 @@ import time
 from concurrent.futures.thread import ThreadPoolExecutor
 
 from asgiref.sync import async_to_sync
-from consoleme_default.plugins.plugins.celery_tasks import (
-    celery_tasks as default_celery_tasks,
-)
 
 from consoleme.celery_tasks import celery_tasks as celery
 from consoleme.config import config
+from consoleme.default_plugins.plugins.celery_tasks import (
+    celery_tasks as default_celery_tasks,
+)
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
 
 start_time = int(time.time())
