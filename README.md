@@ -1,8 +1,6 @@
 [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-386/)
 [![Discord](https://img.shields.io/discord/730908778299523072?label=Discord&logo=discord&style=flat-square)](https://discord.gg/nQVpNGGkYu)
 
-test ignore
-
 # ConsoleMe
 
 Check out our [quick start guide](https://hawkins.gitbook.io/consoleme/quick-start)
