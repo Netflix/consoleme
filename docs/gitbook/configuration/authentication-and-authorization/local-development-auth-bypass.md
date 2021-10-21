@@ -14,3 +14,8 @@ _development_groups_override:
   - consoleme_admins@example.com
 ```
 
+When bypassing the authentication/authorization flow you will need to ensure you have configured your environment for development:
+```yaml
+environment: dev
+development: true
+```

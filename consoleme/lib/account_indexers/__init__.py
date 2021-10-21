@@ -85,6 +85,9 @@ async def get_cloud_account_model_array(
     for account in all_accounts.accounts:
         if status and account.status.value != status:
             continue
+        if environment and not account.environment:
+            # if we are looking to filter on environment, and account doesn't contain environment information
+            continue
         if environment and account.environment.value != environment:
             continue
         filtered_accounts.accounts.append(account)

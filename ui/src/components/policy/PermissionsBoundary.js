@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Dropdown,
@@ -13,7 +13,7 @@ import {
 import usePermissionsBoundary from "./hooks/usePermissionsBoundary";
 import { JustificationModal } from "./PolicyModals";
 import { useAuth } from "../../auth/AuthProviderDefault";
-import MonacoEditor from "react-monaco-editor";
+import Editor from "@monaco-editor/react";
 import { getLocalStorageSettings } from "../../helpers/utils";
 
 const PermissionsBoundary = () => {
@@ -34,7 +34,6 @@ const PermissionsBoundary = () => {
     attachedPermissionsBoundaryDetails,
     setAttachedPermissionsBoundaryDetails,
   ] = useState(null);
-  const editorRef = useRef();
   const editorTheme = getLocalStorageSettings("editorTheme");
   // available managed policies are only used for rendering. so let's retrieve from here.
   useEffect(() => {
@@ -221,10 +220,9 @@ const PermissionsBoundary = () => {
                     padding: 10,
                   }}
                 >
-                  <MonacoEditor
-                    ref={editorRef}
+                  <Editor
                     height="540px"
-                    language="json"
+                    defaultLanguage="json"
                     theme={editorTheme}
                     value={JSON.stringify(
                       attachedPermissionsBoundaryDetails,

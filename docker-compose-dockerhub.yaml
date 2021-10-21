@@ -24,7 +24,6 @@ services:
       bash -c '
       python scripts/retrieve_or_decode_configuration.py;
       pip install argh watchdog;
-      pip install -e /apps/consoleme/default_plugins;
       watchmedo auto-restart --recursive --pattern="*.py" --directory="." python consoleme/__main__.py &
       FORCE_COLOR=true yarn --cwd /apps/consoleme/ui/ start | cat'
     depends_on:

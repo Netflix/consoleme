@@ -436,7 +436,7 @@ questions:
     friendly_name: Cloudwatch Metric Provider
     friendly_description: Cloudwatch Metric Provider
     type: no_question
-    value: consoleme_default_plugins.plugins.metrics.cloudwatch.CloudWatchMetric
+    value: consoleme.default_plugins.plugins.metrics.cloudwatch.CloudWatchMetric
     depends_on: __metrics_choice
     depends_on_val:
       - CloudWatch Metrics

@@ -86,12 +86,12 @@ schedule = timedelta(seconds=1800)
 
 internal_schedule = {
     "task1": {
-        "task": "consoleme_default_plugins.plugins.celery_tasks.celery_tasks.task_1",
+        "task": "consoleme.default_plugins.plugins.celery_tasks.celery_tasks.task_1",
         "options": {"expires": 4000},
         "schedule": schedule,
     },
     "cache_application_information": {
-        "task": "consoleme_default_plugins.plugins.celery_tasks.celery_tasks.cache_application_information",
+        "task": "consoleme.default_plugins.plugins.celery_tasks.celery_tasks.cache_application_information",
         "options": {"expires": 4000},
         "schedule": schedule,
     },

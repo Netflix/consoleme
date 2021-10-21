@@ -1,6 +1,6 @@
 from typing import Dict, Optional, Union
 
-from consoleme_default_plugins.plugins.metrics.base_metric import Metric
+from consoleme.default_plugins.plugins.metrics.base_metric import Metric
 
 
 class DefaultMetric(Metric):
