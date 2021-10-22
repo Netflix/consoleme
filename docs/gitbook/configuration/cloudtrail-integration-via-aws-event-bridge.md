@@ -26,6 +26,8 @@ After the rules are configured and you are seeing messages in your SQS queues, w
 
 ```text
 celery:
+  cache_cloudtrail_denies:
+    enabled: true
   trigger_credential_mapping_refresh_from_role_changes:
     enabled: true
 event_bridge:
