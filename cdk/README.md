@@ -80,6 +80,8 @@ password for the `jwt_secret` key. You can use the following command to generate
   $ cdk bootstrap --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess
   ```
 
+  The CDK will attempt to bootstrap the main account and all spoke accounts: re-run the bootstrap for each account required with appropriate credentials.
+
 ### Preparing the CDK Environment
 
 At this point you can now synthesize the CloudFormation template for this code.
@@ -104,10 +106,10 @@ $ cdk deploy ConsoleMeECS
 ```
 
 Then, deploy the trust role to the spoke accounts.
-While logged in to each spoke account, deploy `ConsoleMeSpoke` stack:
+While logged in to each spoke account, deploy required `ConsoleMeSpoke-${SPOKE_ACCOUNT_ID}` stacks:
 
 ```
-$ cdk deploy ConsoleMeSpoke
+$ cdk deploy "ConsoleMeSpoke-${SPOKE_ACCOUNT_ID}"
 ```
 
 Don't forget to approve the template and security resources before the deployment.
