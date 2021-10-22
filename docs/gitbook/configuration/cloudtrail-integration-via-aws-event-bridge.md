@@ -25,6 +25,11 @@ The second Event Bridge rule is needed for ConsoleMe to cache new or updated rol
 After the rules are configured and you are seeing messages in your SQS queues, we need to modify ConsoleMe's configuration and restart ConsoleMe's celery scheduler / worker. Add the following configuration, replacing the queue ARNs as appropriate.
 
 ```text
+celery:
+  cache_cloudtrail_denies:
+    enabled: true
+  trigger_credential_mapping_refresh_from_role_changes:
+    enabled: true
 event_bridge:
   detect_role_changes_and_update_cache:
     queue_arn: arn:aws:sqs:{region}:{account_id}:consoleme-cloudtrail-role-events
