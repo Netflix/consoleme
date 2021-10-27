@@ -508,7 +508,7 @@ class Aws:
                                 Condition=dict(
                                     NotIpAddress={"aws:SourceIP": ip_restrictions},
                                     Null={
-                                        "aws:Via": "true",
+                                        "aws:ViaAWSService": "true",
                                         "aws:PrincipalTag/AWSServiceTrust": "true",
                                     },
                                     StringNotLike={
@@ -553,7 +553,7 @@ class Aws:
                                         "aws:SourceIP": custom_ip_restrictions
                                     },
                                     Null={
-                                        "aws:Via": "true",
+                                        "aws:ViaAWSService": "true",
                                         "aws:PrincipalTag/AWSServiceTrust": "true",
                                     },
                                     StringNotLike={
