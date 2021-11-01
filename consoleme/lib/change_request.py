@@ -319,9 +319,12 @@ async def _generate_inline_iam_policy_statement_from_change_generator(
     :param change: ChangeGeneratorModel
     :return: policy_statement: A dictionary representing an inline policy statement.
     """
-    if change.generator_type == "s3":
+    generator_type = change.generator_type
+    if not isinstance(generator_type, str):
+        generator_type = change.generator_type.value
+    if generator_type == "s3":
         policy = await _generate_s3_inline_policy_statement_from_mapping(change)
-    elif change.generator_type == "crud_lookup":
+    elif generator_type == "crud_lookup":
         policy = await _generate_inline_policy_statement_from_policy_sentry(change)
     else:
         policy = await _generate_inline_policy_statement_from_mapping(change)
