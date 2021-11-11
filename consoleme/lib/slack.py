@@ -127,9 +127,6 @@ async def send_slack_notification(payload, payload_id):
     http_client = AsyncHTTPClient(force_instance=True)
     try:
         await http_client.fetch(request=http_req)
-        log_data["message"] = "Slack notification sent"
-        log.debug(log_data)
+        log.debug(f"Slack notifications sent for payload: {payload_id}")
     except (ConnectionError, HTTPClientError) as e:
-        log_data["message"] = "Error occurred sending slack notification"
-        log_data["error"] = str(e)
-        log.error(log_data)
+        log.error(f"Slack notifications could not be sent for payload: {payload_id} due to {str(e)}")
