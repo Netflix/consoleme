@@ -1,7 +1,8 @@
 import sys
+import uuid
+
 import tornado.escape
 import ujson as json
-import uuid
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import HTTPHeaders
 
@@ -28,7 +29,7 @@ def slack_preflight_check(func):
 
 @slack_preflight_check
 async def send_slack_notification_new_policy_request(
-        extended_request: ExtendedRequestModel, admin_approved, approval_probe_approved
+    extended_request: ExtendedRequestModel, admin_approved, approval_probe_approved
 ):
     """
     Sends a notification using specified webhook URL about a new request created
@@ -49,7 +50,7 @@ async def send_slack_notification_new_policy_request(
         "request": extended_request.dict(),
         "admin_approved": admin_approved,
         "approval_probe_approved": approval_probe_approved,
-        "payload_id": payload_id
+        "payload_id": payload_id,
     }
     log.debug(log_data)
 
@@ -68,7 +69,9 @@ async def send_slack_notification(payload, payload_id):
 
     slack_webhook_url = config.get("slack.webhook_url")
     if not slack_webhook_url:
-        log.error(f"Missing webhook URL for slack notification. Not sending payload: {payload_id}")
+        log.error(
+            f"Missing webhook URL for slack notification. Not sending payload: {payload_id}"
+        )
         return
 
     http_headers = HTTPHeaders({"Content-Type": "application/json"})
@@ -84,15 +87,17 @@ async def send_slack_notification(payload, payload_id):
         await http_client.fetch(request=http_req)
         log.debug(f"Slack notifications sent for payload: {payload_id}")
     except (ConnectionError, HTTPClientError) as e:
-        log.error(f"Slack notifications could not be sent for payload: {payload_id} due to {str(e)}")
+        log.error(
+            f"Slack notifications could not be sent for payload: {payload_id} due to {str(e)}"
+        )
 
 
 async def _build_policy_payload(
-        extended_request: ExtendedRequestModel,
-        requester: str,
-        arn: str,
-        admin_approved: bool,
-        approval_probe_approved: bool,
+    extended_request: ExtendedRequestModel,
+    requester: str,
+    arn: str,
+    admin_approved: bool,
+    approval_probe_approved: bool,
 ):
     request_uri = await get_policy_request_uri_v2(extended_request)
     pre_text = "A new request has been created"
