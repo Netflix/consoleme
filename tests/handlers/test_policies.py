@@ -43,7 +43,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
 
         mock_auth.validate_certificate.return_value = create_future(True)
         mock_auth.extract_user_from_certificate.return_value = create_future(
-            {"name": "user@example.com"}
+            {"name": "user@example.com", "type": "user"}
         )
         mock_auth.get_cert_age_seconds.return_value = create_future(100)
         headers = {
