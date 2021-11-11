@@ -1,8 +1,7 @@
 import sys
-import uuid
-
 import tornado.escape
 import ujson as json
+import uuid
 from tornado.httpclient import AsyncHTTPClient, HTTPClientError, HTTPRequest
 from tornado.httputil import HTTPHeaders
 
@@ -15,6 +14,16 @@ log = config.get_logger()
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
+def slack_preflight_check(func):
+    def wrapper(*args, **kwargs):
+        if not config.get("slack.notifications_enabled", False):
+            return
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@slack_preflight_check
 async def send_slack_notification_new_policy_request(
         extended_request: ExtendedRequestModel, admin_approved, approval_probe_approved
 ):
@@ -41,14 +50,41 @@ async def send_slack_notification_new_policy_request(
     }
     log.debug(log_data)
 
-    payload = await get_payload(
+    payload = await _build_policy_payload(
         extended_request, requester, arn, admin_approved, approval_probe_approved
     )
 
     return await send_slack_notification(payload, payload_id)
 
 
-async def get_payload(
+@slack_preflight_check
+async def send_slack_notification(payload, payload_id):
+    """
+    Sends a notification using specified webhook URL about a new request created
+    """
+
+    slack_webhook_url = config.get("slack.webhook_url")
+    if not slack_webhook_url:
+        log.error(f"Missing webhook URL for slack notification. Not sending payload: {payload_id}")
+        return
+
+    http_headers = HTTPHeaders({"Content-Type": "application/json"})
+    http_req = HTTPRequest(
+        url=slack_webhook_url,
+        method="POST",
+        headers=http_headers,
+        body=json.dumps(payload),
+    )
+
+    http_client = AsyncHTTPClient(force_instance=True)
+    try:
+        await http_client.fetch(request=http_req)
+        log.debug(f"Slack notifications sent for payload: {payload_id}")
+    except (ConnectionError, HTTPClientError) as e:
+        log.error(f"Slack notifications could not be sent for payload: {payload_id} due to {str(e)}")
+
+
+async def _build_policy_payload(
         extended_request: ExtendedRequestModel,
         requester: str,
         arn: str,
@@ -101,32 +137,3 @@ async def get_payload(
         ]
     }
     return payload
-
-
-async def send_slack_notification(payload, payload_id):
-    """
-    Sends a notification using specified webhook URL about a new request created
-    """
-    if not config.get("slack.notifications_enabled", False):
-        log.info(f"Slack notifications not enabled. Not sending payload: {payload_id}")
-        return
-
-    slack_webhook_url = config.get("slack.webhook_url")
-    if not slack_webhook_url:
-        log.error(f"Missing webhook URL for slack notification. Not sending payload: {payload_id}")
-        return
-
-    http_headers = HTTPHeaders({"Content-Type": "application/json"})
-    http_req = HTTPRequest(
-        url=slack_webhook_url,
-        method="POST",
-        headers=http_headers,
-        body=json.dumps(payload),
-    )
-
-    http_client = AsyncHTTPClient(force_instance=True)
-    try:
-        await http_client.fetch(request=http_req)
-        log.debug(f"Slack notifications sent for payload: {payload_id}")
-    except (ConnectionError, HTTPClientError) as e:
-        log.error(f"Slack notifications could not be sent for payload: {payload_id} due to {str(e)}")
