@@ -15,9 +15,12 @@ stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 
 def slack_preflight_check(func):
+    async def shortcircuit():
+        return None
+
     def wrapper(*args, **kwargs):
         if not config.get("slack.notifications_enabled", False):
-            return
+            return shortcircuit()
         return func(*args, **kwargs)
 
     return wrapper
