@@ -35,6 +35,10 @@ async def send_slack_notification_new_policy_request(
     Sends a notification using specified webhook URL about a new request created
     """
 
+    if config.get("slack.ignore_auto_admin_policies", False):
+        # Don't send slack notifications for policies that were auto approved due to admin status
+        return None
+
     function = f"{__name__}.{sys._getframe().f_code.co_name}"
     requester = extended_request.requester_email
     arn = extended_request.principal.principal_arn
