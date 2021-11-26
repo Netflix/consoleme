@@ -264,6 +264,11 @@ class UserDynamoHandler(BaseDynamoHandler):
                     "consoleme_api_health_apps",
                 )
             )
+            self.resource_cache_table = self._get_dynamo_table(
+                config.get(
+                    "aws.resource_cache_dynamo_table", "consoleme_resource_cache"
+                )
+            )
             self.cloudtrail_table = self._get_dynamo_table(
                 config.get("aws.cloudtrail_table", "consoleme_cloudtrail")
             )
@@ -292,6 +297,11 @@ class UserDynamoHandler(BaseDynamoHandler):
             else:
                 log.error("Unable to get Dynamo table.", exc_info=True)
                 raise
+
+    def write_resource_cache_data(self, data):
+        self.parallel_write_table(
+            self.resource_cache_table, data, ["resourceId", "resourceType"]
+        )
 
     async def get_dynamic_config_yaml(self) -> bytes:
         """Retrieve dynamic configuration yaml."""

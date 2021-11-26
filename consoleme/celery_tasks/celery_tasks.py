@@ -69,7 +69,7 @@ from consoleme.lib.cloud_credential_authorization_mapping import (
     generate_and_store_reverse_authorization_mapping,
 )
 from consoleme.lib.cloudtrail import CloudTrail
-from consoleme.lib.dynamo import IAMRoleDynamoHandler
+from consoleme.lib.dynamo import IAMRoleDynamoHandler, UserDynamoHandler
 from consoleme.lib.event_bridge.access_denies import (
     detect_cloudtrail_denies_and_update_cache,
 )
@@ -1736,6 +1736,13 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
                 s3_bucket=s3_bucket,
                 s3_key=s3_key,
             )
+
+            if config.get(
+                "celery.cache_resources_from_aws_config_across_accounts.dynamo_enabled",
+                False,
+            ):
+                dynamo = UserDynamoHandler()
+                dynamo.write_resource_cache_data(results)
     else:
         redis_result_set = async_to_sync(retrieve_json_data_from_redis_or_s3)(
             s3_bucket=s3_bucket, s3_key=s3_key

@@ -113,6 +113,43 @@ except ClientError as e:
     ):
         print(f"Unable to create table {table_name}. Error: {e}.")
 
+table_name = "consoleme_resource_cache"
+try:
+    ddb.create_table(
+        TableName=table_name,
+        KeySchema=[
+            {"AttributeName": "resourceId", "KeyType": "HASH"},
+            {"AttributeName": "resourceType", "KeyType": "RANGE"},  # Sort key
+        ],  # Partition key
+        AttributeDefinitions=[
+            {"AttributeName": "resourceId", "AttributeType": "S"},
+            {"AttributeName": "resourceType", "AttributeType": "S"},
+            {"AttributeName": "arn", "AttributeType": "S"},
+        ],
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "arn-index",
+                "KeySchema": [{"AttributeName": "arn", "KeyType": "HASH"}],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {
+                    "ReadCapacityUnits": 123,
+                    "WriteCapacityUnits": 123,
+                },
+            }
+        ],
+        ProvisionedThroughput={"ReadCapacityUnits": 10, "WriteCapacityUnits": 10},
+        StreamSpecification={
+            "StreamEnabled": True,
+            "StreamViewType": "NEW_AND_OLD_IMAGES",
+        },
+    )
+except ClientError as e:
+    if str(e) != (
+        "An error occurred (ResourceInUseException) when calling the CreateTable operation: "
+        "Cannot create preexisting table"
+    ):
+        print(f"Unable to create table {table_name}. Error: {e}.")
+
 table_name = "consoleme_cloudtrail"
 try:
     ddb.create_table(
