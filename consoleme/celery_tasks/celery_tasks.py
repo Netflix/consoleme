@@ -1739,7 +1739,7 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
 
             if config.get(
                 "celery.cache_resources_from_aws_config_across_accounts.dynamo_enabled",
-                False,
+                True,
             ):
                 dynamo = UserDynamoHandler()
                 dynamo.write_resource_cache_data(results)
