@@ -1705,7 +1705,6 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     s3_key = config.get(
         "aws_config_cache.s3.file", "aws_config_cache/cache_{account_id}_v1.json.gz"
     ).format(account_id=account_id)
-    dynamo = UserDynamoHandler()
     # Only query in active region, otherwise get data from DDB
     if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
@@ -1738,7 +1737,12 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
                 s3_key=s3_key,
             )
 
-            dynamo.write_resource_cache_data(results)
+            if config.get(
+                "celery.cache_resources_from_aws_config_across_accounts.dynamo_enabled",
+                True,
+            ):
+                dynamo = UserDynamoHandler()
+                dynamo.write_resource_cache_data(results)
     else:
         redis_result_set = async_to_sync(retrieve_json_data_from_redis_or_s3)(
             s3_bucket=s3_bucket, s3_key=s3_key
