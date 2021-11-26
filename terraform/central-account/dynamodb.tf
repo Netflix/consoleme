@@ -133,37 +133,6 @@ resource "aws_dynamodb_table" "consoleme_requests_global" {
   }
 }
 
-resource "aws_dynamodb_table" "consoleme_resource_cache" {
-  name             = "consoleme_resource_cache"
-  stream_enabled   = true
-  stream_view_type = "NEW_AND_OLD_IMAGES"
-  billing_mode     = "PROVISIONED"
-  read_capacity    = 5
-  write_capacity   = 5
-  hash_key         = "resourceId"
-  range_key        = "resourceType"
-
-  point_in_time_recovery {
-    enabled = true
-  }
-
-  attribute {
-    name = "resourceId"
-    type = "S"
-  }
-
-  attribute {
-    name = "resourceType"
-    type = "S"
-  }
-
-  ttl {
-    attribute_name = "ttl"
-    enabled        = true
-  }
-}
-
-
 resource "aws_dynamodb_table" "consoleme_users_global" {
   name             = "consoleme_users_global"
   stream_enabled   = true

@@ -59,26 +59,6 @@ class DBStack(cdk.NestedStack):
             projection_type=db.ProjectionType.ALL,
         )
 
-        cache_table = db.Table(
-            self,
-            "CacheTable",
-            table_name="consoleme_resource_cache",
-            partition_key=db.Attribute(name="resourceId", type=db.AttributeType.STRING),
-            sort_key=db.Attribute(name="resourceType", type=db.AttributeType.STRING),
-            billing_mode=db.BillingMode.PROVISIONED,
-            read_capacity=10,
-            write_capacity=10,
-            removal_policy=cdk.RemovalPolicy.DESTROY,
-        )
-
-        cache_table.add_global_secondary_index(
-            index_name="arn-index",
-            partition_key=db.Attribute(name="arn", type=db.AttributeType.STRING),
-            read_capacity=123,
-            write_capacity=123,
-            projection_type=db.ProjectionType.ALL,
-        )
-
         db.Table(
             self,
             "CloudTrailTable",
