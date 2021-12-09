@@ -35,6 +35,7 @@ from consoleme.lib.aws import (
     get_resource_from_arn,
     get_resource_policy,
     get_service_from_arn,
+    sanitize_session_name,
 )
 from consoleme.lib.change_request import generate_policy_name
 from consoleme.lib.dynamo import UserDynamoHandler
@@ -887,7 +888,7 @@ async def apply_changes_to_role(
         account_number=account_id,
         region=config.region,
         assume_role=config.get("policies.role_name"),
-        session_name="principal-updater-v2-" + user,
+        session_name=sanitize_session_name("principal-updater-" + user),
         retry_max_attempts=2,
         sts_client_kwargs=dict(
             region_name=config.region,
@@ -1709,7 +1710,7 @@ async def apply_managed_policy_resource_tag_change(
         account_number=resource_account,
         region=config.region,
         assume_role=config.get("policies.role_name"),
-        session_name="tag-updater-v2-" + user,
+        session_name=sanitize_session_name("tag-updater-" + user),
         retry_max_attempts=2,
         sts_client_kwargs=dict(
             region_name=config.region,
@@ -1870,7 +1871,7 @@ async def apply_non_iam_resource_tag_change(
             account_number=resource_account,
             assume_role=config.get("policies.role_name"),
             region=resource_region or config.region,
-            session_name="ConsoleMe_apply_resource_tag_v2",
+            session_name=sanitize_session_name("apply-resource-tag-" + user),
             arn_partition="aws",
             sts_client_kwargs=dict(
                 region_name=config.region,
@@ -2222,7 +2223,7 @@ async def apply_resource_policy_change(
             account_number=resource_account,
             assume_role=config.get("policies.role_name"),
             region=resource_region or config.region,
-            session_name="ConsoleMe_apply_resource_policy_v2",
+            session_name=sanitize_session_name("apply-resource-policy-" + user),
             arn_partition="aws",
             sts_client_kwargs=dict(
                 region_name=config.region,

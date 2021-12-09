@@ -1709,7 +1709,6 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     s3_key = config.get(
         "aws_config_cache.s3.file", "aws_config_cache/cache_{account_id}_v1.json.gz"
     ).format(account_id=account_id)
-    dynamo = UserDynamoHandler()
     # Only query in active region, otherwise get data from DDB
     if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
@@ -1742,7 +1741,12 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
                 s3_key=s3_key,
             )
 
-            dynamo.write_resource_cache_data(results)
+            if config.get(
+                "celery.cache_resources_from_aws_config_across_accounts.dynamo_enabled",
+                True,
+            ):
+                dynamo = UserDynamoHandler()
+                dynamo.write_resource_cache_data(results)
     else:
         redis_result_set = async_to_sync(retrieve_json_data_from_redis_or_s3)(
             s3_bucket=s3_bucket, s3_key=s3_key
@@ -2184,11 +2188,6 @@ schedule = {
         "options": {"expires": 300},
         "schedule": schedule_24_hours,
     },
-    "cache_cloudtrail_errors_by_arn": {
-        "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_errors_by_arn",
-        "options": {"expires": 300},
-        "schedule": schedule_1_hour,
-    },
     "cache_resources_from_aws_config_across_accounts": {
         "task": "consoleme.celery_tasks.celery_tasks.cache_resources_from_aws_config_across_accounts",
         "options": {"expires": 300},
@@ -2243,6 +2242,11 @@ if config.get("celery.cache_cloudtrail_denies.enabled"):
         "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_denies",
         "options": {"expires": 300},
         "schedule": schedule_minute,
+    }
+    schedule["cache_cloudtrail_errors_by_arn"] = {
+        "task": "consoleme.celery_tasks.celery_tasks.cache_cloudtrail_errors_by_arn",
+        "options": {"expires": 300},
+        "schedule": schedule_1_hour,
     }
 
 

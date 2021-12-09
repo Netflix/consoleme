@@ -14,6 +14,7 @@ const MonacoDiffComponent = (props) => {
   const onValueChange = props.onValueChange;
   const modifiedEditorRef = useRef();
   const [language, setLanguage] = useState("json");
+  const [languageDetected, setLanguageDetected] = useState(false);
 
   const onChange = (newValue) => {
     onValueChange(newValue);
@@ -32,10 +33,11 @@ const MonacoDiffComponent = (props) => {
   useEffect(
     () => {
       const { newValue } = props;
-      if (!newValue) return;
+      if (!newValue || languageDetected) return;
       setLanguage(getStringFormat(newValue));
+      setLanguageDetected(true);
     },
-    [] // eslint-disable-line
+    [props.newValue] // eslint-disable-line
   );
 
   const editorDidMount = (editor, monaco) => {

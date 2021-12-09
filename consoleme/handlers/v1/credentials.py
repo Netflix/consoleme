@@ -8,9 +8,11 @@ from marshmallow import Schema, ValidationError, fields, validates_schema
 from consoleme.config import config
 from consoleme.exceptions.exceptions import CertTooOldException
 from consoleme.handlers.base import BaseMtlsHandler
+from consoleme.lib.account_indexers import get_cloud_account_model_array
 from consoleme.lib.crypto import Crypto
 from consoleme.lib.duo import duo_mfa_user
 from consoleme.lib.plugins import get_plugin_by_name
+from consoleme.models import Environment
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
@@ -21,11 +23,15 @@ auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 group_mapping = get_plugin_by_name(
     config.get("plugins.group_mapping", "default_group_mapping")
 )()
+internal_policies = get_plugin_by_name(
+    config.get("plugins.internal_policies", "default_policies")
+)()
 
 
 class CredentialsSchema(Schema):
     requested_role = fields.Str()
     user_role = fields.Boolean(default=False, missing=False)
+    app_name = fields.Str()
     account = fields.Str()
     console_only = fields.Boolean(default=False, missing=False)
     no_ip_restrictions = fields.Boolean(default=False, missing=False)
@@ -34,9 +40,13 @@ class CredentialsSchema(Schema):
     @validates_schema
     def validate_minimum(self, data, *args, **kwargs):
         """Validate that the minimum fields are supplied."""
-        if not data.get("requested_role") and not data.get("user_role"):
+        if (
+            not data.get("requested_role")
+            and not data.get("user_role")
+            and not data.get("app_name")
+        ):
             raise ValidationError(
-                "Must supply either a requested_role, or a user_role/account combo."
+                "Must supply either a requested_role, or a user_role/account combo, or an app_name."
             )
 
         return data
@@ -51,6 +61,17 @@ class CredentialsSchema(Schema):
 
             if not data.get("account"):
                 raise ValidationError("Must specify an account.")
+
+        return data
+
+    @validates_schema
+    def validate_app_name_request(self, data, *args, **kwargs):
+        """Validate that if an app name is provided, then a requested role / user role aren't specified"""
+        if data.get("app_name"):
+            if data.get("requested_role") or data.get("user_role"):
+                raise ValidationError(
+                    "Cannot specify requested_role/user_role and an app name."
+                )
 
         return data
 
@@ -117,6 +138,110 @@ class GetCredentialsHandler(BaseMtlsHandler):
         """Get the requested role to complete the credentials fetching."""
         if request.get("requested_role"):
             return request["requested_role"]
+        elif request.get("app_name"):
+            role_models = await internal_policies.get_roles_associated_with_app(
+                request["app_name"]
+            )
+            if not role_models:
+                stats.count(
+                    "GetCredentialsHandler.post",
+                    tags={
+                        "user": self.user,
+                        "user_role": False,
+                        "app_name": request["app_name"],
+                    },
+                )
+                log_data["message"] = "No matching roles for provided app name."
+                log.warning(log_data)
+                error = {
+                    "code": "900",
+                    "message": "No matching roles for provided app name.",
+                    "request_id": self.request_uuid,
+                }
+                self.set_status(400)
+                self.write(error)
+                await self.finish()
+                return ""
+
+            account_ids = set()
+            # If an account was passed into this function, we can use that
+            if "account" in request:
+                am = await group_mapping.get_account_mappings()
+                if request["account"] in am["ids_to_names"].keys():
+                    # Account ID was passed in directly
+                    account_ids.add(request["account"])
+                else:
+                    # Might be a friendly name, have to check
+                    if not am["names_to_ids"].get(request["account"]):
+                        stats.count(
+                            "GetCredentialsHandler.post.error",
+                            tags={
+                                "user": self.user,
+                                "user_role": False,
+                                "account": request["account"],
+                            },
+                        )
+                        log_data["message"] = "Can't find the passed in account."
+                        log.warning(log_data)
+                        error = {
+                            "code": "906",
+                            "message": "No matching account for provided account.",
+                            "request_id": self.request_uuid,
+                        }
+                        self.set_status(400)
+                        self.write(error)
+                        await self.finish()
+                        return ""
+
+                    account_ids.add(am["names_to_ids"][request["account"]])
+
+            if not account_ids:
+                # no account id was passed in, check to see if we can "smartly" determine the account.
+                # Preference will be given to test accounts
+                filtered_accounts = await get_cloud_account_model_array(
+                    environment=Environment.test.value
+                )
+                # convert to set for O(1) lookup
+                for account in filtered_accounts.accounts:
+                    account_ids.add(account.id)
+
+            potential_arns = []
+            # for all roles associated with app, find the one that is also an account in potential account ids
+            for role in role_models:
+                if role.account_id in account_ids:
+                    potential_arns.append(role.arn)
+
+            if len(potential_arns) != 1:
+                # if length isn't exactly 1, then it's an error either way (0 or more than 1)
+                if len(potential_arns) == 0:
+                    code = "900"
+                    message = "No matching roles"
+                else:
+                    code = "901"
+                    message = "More than one matching role"
+
+                stats.count(
+                    "GetCredentialsHandler.post.error",
+                    tags={
+                        "user": self.user,
+                        "user_role": False,
+                    },
+                )
+                log_data["message"] = message
+                log.warning(log_data)
+                error = {
+                    "code": code,
+                    "message": message,
+                    "request_id": self.request_uuid,
+                }
+                self.set_status(400)
+                self.write(error)
+                await self.finish()
+                return ""
+
+            # if here, then success, we found exactly 1 ARN
+            return potential_arns[0]
+
         else:
             # Check that the account exists:
             am = await group_mapping.get_account_mappings()

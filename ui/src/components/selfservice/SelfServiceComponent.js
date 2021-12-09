@@ -13,6 +13,7 @@ import {
 import DropDownBlockComponent from "../blocks/DropDownBlockComponent";
 import TextInputBlockComponent from "../blocks/TextInputBlockComponent";
 import TypeaheadBlockComponent from "../blocks/TypeaheadBlockComponent";
+import SingleTypeaheadBlockComponent from "../blocks/SingleTypeaheadBlockComponent";
 
 class SelfServiceComponent extends Component {
   constructor(props) {
@@ -185,6 +186,17 @@ class SelfServiceComponent extends Component {
                 sendRequestCommon={this.props.sendRequestCommon}
               />
             </>
+          );
+        case "single_typeahead_input":
+          return (
+            <SingleTypeaheadBlockComponent
+              defaultValue={defaultValue + 1}
+              handleInputUpdate={this.handleInputUpdate.bind(this, input.name)}
+              required={input.required || false}
+              typeahead={input.typeahead_endpoint}
+              label={input.text}
+              sendRequestCommon={this.props.sendRequestCommon}
+            />
           );
         default:
           return <div />;

@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 from cloudaux.aws.sts import boto3_cached_conn
 
 from consoleme.config import config
+from consoleme.lib.aws import sanitize_session_name
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.role_updater.schemas import RoleUpdaterRequest
 
@@ -59,7 +60,7 @@ async def update_role(event):
 
     for d in event:
         arn = d["arn"]
-        aws_session_name = "roleupdater-" + d["requester"]
+        aws_session_name = sanitize_session_name("roleupdater-" + d["requester"])
         account_number = await parse_account_id_from_arn(arn)
         role_name = await parse_role_name_from_arn(arn)
         # TODO: Make configurable

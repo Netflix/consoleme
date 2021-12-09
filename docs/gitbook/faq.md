@@ -4,7 +4,7 @@
 
 You can add new routes or override existing routes in your implementation of ConsoleMe through the use of an internal plugin. ConsoleMe provides a set of default plugins that serve as an example of how you should implement your internal plugins.
 
-Included in the default\_plugins set is a list of [internal routes](https://github.com/Netflix/consoleme/blob/master/default_plugins/consoleme_default_plugins/plugins/internal_routes/internal_routes.py) and an example [web handler](https://github.com/Netflix/consoleme/blob/master/default_plugins/consoleme_default_plugins/plugins/internal_routes/handlers/internal_demo_route.py#L9). The routes defined here will take precedence over ConsoleMe's [default routes](https://github.com/Netflix/consoleme/blob/master/consoleme/routes.py#L91).
+Included in the default\_plugins set is a list of [internal routes](https://github.com/Netflix/consoleme/blob/master/consoleme/default_plugins/consoleme/plugins/internal_routes/internal_routes.py) and an example [web handler](https://github.com/Netflix/consoleme/blob/master/consoleme/default_plugins/plugins/internal_routes/handlers/internal_demo_route.py#L9). The routes defined here will take precedence over ConsoleMe's [default routes](https://github.com/Netflix/consoleme/blob/master/consoleme/routes.py#L91).
 
 ## How can I generate an AMI for ConsoleMe so I can deploy it to EC2?
 

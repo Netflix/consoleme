@@ -271,8 +271,16 @@ async def handle_resource_type_ahead_request(cls):
 
 class ApiResourceTypeAheadHandler(BaseMtlsHandler):
     async def get(self):
-        if self.requester["name"] not in config.get("api_auth.valid_entities", []):
+        requester_type = self.requester.get("type", "")
+        if requester_type == "application":
+            if self.requester["name"] not in config.get("api_auth.valid_entities", []):
+                raise Exception("Call does not originate from a valid API caller")
+        elif requester_type == "user":
+            # TODO: do we need to block contractor access?
+            pass
+        else:
             raise Exception("Call does not originate from a valid API caller")
+
         results = await handle_resource_type_ahead_request(self)
         self.write(json.dumps(results))
 

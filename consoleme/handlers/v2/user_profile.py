@@ -49,6 +49,9 @@ class UserProfileHandler(BaseAPIV1Handler):
                     "site_config.notifications.request_interval", 60
                 ),
             },
+            "cloudtrail_denies_policy_generation": config.get(
+                "celery.cache_cloudtrail_denies.enabled", False
+            ),
         }
 
         custom_page_header: Dict[str, str] = await get_custom_page_header(

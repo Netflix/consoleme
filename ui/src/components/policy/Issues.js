@@ -1,9 +1,11 @@
 import React from "react";
 import { Header, Table } from "semantic-ui-react";
 import { usePolicyContext } from "./hooks/PolicyProvider";
+import { useAuth } from "../../auth/AuthProviderDefault";
 
 const Issues = () => {
   const { resource = {} } = usePolicyContext();
+  const { user } = useAuth();
   let s3 = null;
   let cloudtrail = null;
   let is_s3_resource = false;
@@ -23,27 +25,41 @@ const Issues = () => {
   const cloudTrailErrors = () => {
     if (cloudtrail?.errors?.cloudtrail_errors.length > 0) {
       const rows = [];
-      const header = (
-        <Table.Header>
-          <Table.Row>
-            <Table.HeaderCell>Error Call</Table.HeaderCell>
-            <Table.HeaderCell>Resource</Table.HeaderCell>
-            <Table.HeaderCell>Generated Policy</Table.HeaderCell>
-            <Table.HeaderCell>Count</Table.HeaderCell>
-          </Table.Row>
-        </Table.Header>
-      );
+      let header;
+      if (user?.site_config?.cloudtrail_denies_policy_generation) {
+        header = (
+          <Table.Header>
+            <Table.Row>
+              <Table.HeaderCell>Error Call</Table.HeaderCell>
+              <Table.HeaderCell>Resource</Table.HeaderCell>
+              <Table.HeaderCell>Generated Policy</Table.HeaderCell>
+              <Table.HeaderCell>Count</Table.HeaderCell>
+            </Table.Row>
+          </Table.Header>
+        );
+      } else {
+        header = (
+          <Table.Header>
+            <Table.Row>
+              <Table.HeaderCell>Error Call</Table.HeaderCell>
+              <Table.HeaderCell>Count</Table.HeaderCell>
+            </Table.Row>
+          </Table.Header>
+        );
+      }
 
       cloudtrail.errors.cloudtrail_errors.forEach((error) => {
         rows.push(
           <Table.Row negative>
             <Table.Cell>{error.event_call}</Table.Cell>
-            <Table.Cell>{error.resource}</Table.Cell>
-            <Table.Cell>
-              {error.generated_policy
-                ? JSON.stringify(error.generated_policy)
-                : null}
-            </Table.Cell>
+            {user?.site_config?.cloudtrail_denies_policy_generation &&
+            error.resource ? (
+              <Table.Cell> error.resource </Table.Cell>
+            ) : null}
+            {user?.site_config?.cloudtrail_denies_policy_generation &&
+            error.generated_policy ? (
+              <Table.Cell> JSON.stringify(error.generated_policy) </Table.Cell>
+            ) : null}
             <Table.Cell>{error.count}</Table.Cell>
           </Table.Row>
         );

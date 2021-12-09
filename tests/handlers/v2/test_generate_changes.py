@@ -89,7 +89,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                     "generator_type": "crud_lookup",
                     "resource_arn": "*",
                     "effect": "Allow",
-                    "service": "ssm",
+                    "service_name": "ssm",
                     "action_groups": ["list", "read"],
                 },
             ]
@@ -149,7 +149,7 @@ class TestGenerateChangesHandler(AsyncHTTPTestCase):
                     "generator_type": "crud_lookup",
                     "resource_arn": "*",
                     "effect": "Allow",
-                    "service": "ssm",
+                    "service_name": "ssm",
                     "action_groups": ["list", "read"],
                 },
             ]

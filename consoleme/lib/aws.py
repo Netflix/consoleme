@@ -503,11 +503,11 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         result["TagSet"] = [{"Key": k, "Value": v} for k, v in tags.items()]
     if result.get("CreatedTimestamp"):
         result["created_time"] = datetime.utcfromtimestamp(
-            int(result["CreatedTimestamp"])
+            int(float(result["CreatedTimestamp"]))
         ).isoformat()
     if result.get("LastModifiedTimestamp"):
         result["updated_time"] = datetime.utcfromtimestamp(
-            int(result["LastModifiedTimestamp"])
+            int(float(result["LastModifiedTimestamp"]))
         ).isoformat()
     # Unfortunately, the queue_url we get from our `get_queue_url` call above doesn't match the ID of the queue in
     # AWS Config, so we must hack our own.
@@ -541,6 +541,9 @@ async def get_bucket_location_with_fallback(
             retry_max_attempts=2,
         )
         bucket_location = bucket_location_res.get("LocationConstraint", fallback_region)
+        if not bucket_location:
+            # API get_bucket_location returns None for buckets in us-east-1
+            bucket_location = "us-east-1"
         if bucket_location == "EU":
             bucket_location = "eu-west-1"
         if bucket_location == "US":
@@ -931,7 +934,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
         account_number=create_model.account_id,
         region=config.region,
         assume_role=config.get("policies.role_name"),
-        session_name="create_role_" + username,
+        session_name=sanitize_session_name("create_role_" + username),
         retry_max_attempts=2,
         client_kwargs=config.get("boto3.client_kwargs", {}),
     )
@@ -1104,7 +1107,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
         account_number=clone_model.dest_account_id,
         region=config.region,
         assume_role=config.get("policies.role_name"),
-        session_name="clone_role_" + username,
+        session_name=sanitize_session_name("clone_role_" + username),
         retry_max_attempts=2,
         client_kwargs=config.get("boto3.client_kwargs", {}),
     )
@@ -1363,7 +1366,7 @@ def get_resource_from_arn(arn):
 
 
 def get_service_from_arn(arn):
-    """Given an ARN string, return the service """
+    """Given an ARN string, return the service"""
     result = parse_arn(arn)
     return result["service"]
 
@@ -2102,3 +2105,19 @@ async def get_iam_principal_owner(arn: str, aws: Any) -> Optional[str]:
     elif principal_type == "user":
         principal_details = await aws().fetch_iam_user(account_id, arn)
     return principal_details.get("owner")
+
+
+def sanitize_session_name(unsanitized_session_name):
+    """
+    This function sanitizes the session name typically passed in an assume_role call, to verify that it's
+    """
+    valid_characters_re = re.compile(r"[\w+=,.@-]")
+
+    sanitized_session_name = ""
+    max_length = 64  # Session names have a length limit of 64 characters
+    for char in unsanitized_session_name:
+        if len(sanitized_session_name) == max_length:
+            break
+        if valid_characters_re.match(char):
+            sanitized_session_name += char
+    return sanitized_session_name

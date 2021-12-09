@@ -1,8 +1,10 @@
+from typing import List
+
 import sentry_sdk
 
 from consoleme.config import config
 from consoleme.lib.dynamo import UserDynamoHandler
-from consoleme.models import AppDetailsArray, AppDetailsModel
+from consoleme.models import AppDetailsArray, AppDetailsModel, AwsPrincipalModel
 
 
 class Policies:
@@ -45,6 +47,19 @@ class Policies:
                 )
             )
         return AppDetailsArray(app_details=apps_formatted)
+
+    async def get_roles_associated_with_app(
+        self, app_name: str
+    ) -> List[AwsPrincipalModel]:
+        """
+        This function returns roles associated with an app from configuration. You may want to override this
+        function to pull this information from an authoritative source.
+
+        :param app_name: Name of application
+        :return: List[AwsPrincipalModel]
+        """
+
+        return []
 
 
 def init():
