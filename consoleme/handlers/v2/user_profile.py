@@ -42,6 +42,7 @@ class UserProfileHandler(BaseAPIV1Handler):
             # If site_config.landing_url is set, users will be redirected to the landing URL after authenticating
             # on the frontend.
             "landing_url": config.get("site_config.landing_url"),
+            "temp_policy_support": config.get("policies.temp_policy_support"),
             "notifications": {
                 "enabled": config.get("site_config.notifications.enabled"),
                 "request_interval": config.get(
