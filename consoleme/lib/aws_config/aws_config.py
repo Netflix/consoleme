@@ -61,7 +61,9 @@ def query(
                 region=region,
                 sts_client_kwargs=dict(
                     region_name=config.region,
-                    endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
+                    endpoint_url=config.get(
+                        "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+                    ).format(region=config.region),
                 ),
                 client_kwargs=config.get("boto3.client_kwargs", {}),
             )
