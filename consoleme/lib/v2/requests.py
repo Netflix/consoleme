@@ -890,7 +890,7 @@ async def apply_changes_to_role(
         retry_max_attempts=2,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
     )
@@ -1712,7 +1712,7 @@ async def apply_managed_policy_resource_tag_change(
         retry_max_attempts=2,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
     )
@@ -1873,7 +1873,7 @@ async def apply_non_iam_resource_tag_change(
             arn_partition="aws",
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
@@ -2225,7 +2225,7 @@ async def apply_resource_policy_change(
             arn_partition="aws",
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,

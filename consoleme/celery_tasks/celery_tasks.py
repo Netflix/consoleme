@@ -844,7 +844,7 @@ def cache_iam_resources_for_account(account_id: str) -> Dict[str, Any]:
             region=config.region,
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
         )
@@ -1467,7 +1467,7 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
                 read_only=True,
                 sts_client_kwargs=dict(
                     region_name=config.region,
-                    endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                    endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
                 ),
                 client_kwargs=config.get("boto3.client_kwargs", {}),
             )
@@ -1533,7 +1533,7 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
                 read_only=True,
                 sts_client_kwargs=dict(
                     region_name=config.region,
-                    endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                    endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
                 ),
                 client_kwargs=config.get("boto3.client_kwargs", {}),
             )

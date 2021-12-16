@@ -415,7 +415,7 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
         region=region,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -428,7 +428,7 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
         region=region,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -465,7 +465,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         QueueName=resource_name,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -479,7 +479,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         AttributeNames=["All"],
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -492,7 +492,7 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         QueueUrl=queue_url,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -535,7 +535,7 @@ async def get_bucket_location_with_fallback(
             region=config.region,
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
@@ -581,7 +581,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             region=config.region,
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
@@ -602,7 +602,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             Bucket=bucket_name,
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
@@ -620,7 +620,7 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             Bucket=bucket_name,
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
@@ -2001,7 +2001,7 @@ async def simulate_iam_principal_action(
         assume_role=config.get("policies.role_name"),
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get("aws.sts_endpoint_url","https://sts.{region}.amazonaws.com").format(region=config.region),
         ),
         retry_max_attempts=2,
     )
