@@ -47,7 +47,9 @@ def query(
         return resources
     else:  # Don't use Config aggregator and instead query all the regions on an account
         session = boto3.Session()
-        available_regions = session.get_available_regions("config")
+        available_regions = config.get("aws_config.available_regions", [])
+        if not available_regions:
+            available_regions = session.get_available_regions("config")
         excluded_regions = config.get(
             "api_protect.exclude_regions",
             ["af-south-1", "ap-east-1", "ap-northeast-3", "eu-south-1", "me-south-1"],
