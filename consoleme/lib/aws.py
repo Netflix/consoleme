@@ -1884,6 +1884,67 @@ def allowed_to_sync_role(
     return False
 
 
+def remove_temp_policies(role, iam_client) -> bool:
+    """
+    If this feature is enabled, it will look at inline role policies and remove expired policies if they have been
+    designated as temporary. Policies can be designated as temporary through a certain prefix in the policy name.
+    In the future, we may allow specifying temporary policies by `Sid` or other means.
+
+    :param role: A single AWS IAM role entry in dictionary format as returned by the `get_account_authorization_details`
+        call
+    :return: bool: Whether policies were removed or not
+    """
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+
+    if not config.get("policies.temp_policy_support"):
+        return False
+
+    temp_policy_prefix = config.get("policies.temp_policy_prefix", "cm_delete-on")
+    if not temp_policy_prefix:
+        return False
+    current_dateint = datetime.today().strftime("%Y%m%d")
+
+    log_data = {
+        "function": function,
+        "temp_policy_prefix": temp_policy_prefix,
+        "role_arn": role["Arn"],
+    }
+    policies_removed = False
+    for policy in role["RolePolicyList"]:
+        try:
+            policy_name = policy["PolicyName"]
+            if not policy_name.startswith(temp_policy_prefix):
+                continue
+            expiration_date = policy_name.replace(temp_policy_prefix, "", 1).split("_")[
+                1
+            ]
+            if not current_dateint >= expiration_date:
+                continue
+            log.debug(
+                {
+                    **log_data,
+                    "message": "Deleting temporary policy",
+                    "policy_name": policy_name,
+                }
+            )
+            iam_client.delete_role_policy(
+                RoleName=role["RoleName"], PolicyName=policy_name
+            )
+            policies_removed = True
+        except Exception as e:
+            log.error(
+                {
+                    **log_data,
+                    "message": "Error deleting temporary IAM policy",
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            sentry_sdk.capture_exception()
+
+    return policies_removed
+
+
 def get_aws_principal_owner(role_details: Dict[str, Any]) -> Optional[str]:
     """
     Identifies the owning user/group of an AWS principal based on one or more trusted and configurable principal tags.
