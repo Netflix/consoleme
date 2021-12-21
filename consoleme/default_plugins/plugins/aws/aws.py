@@ -478,7 +478,9 @@ class Aws:
         client = session.client(
             "sts",
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get(
+                "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+            ).format(region=config.region),
         )
 
         ip_restrictions = config.get("aws.ip_restrictions")
