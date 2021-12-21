@@ -8,6 +8,7 @@ pytest = "*"
 
 [packages]
 boto3 = "*"
+pyyaml = "*"
 
 [requires]
 python_version = "3"
