@@ -394,3 +394,13 @@ class SilentException(BaseException):
     def __init__(self, msg=""):
         stats.count("SilentException")
         super().__init__(msg)
+
+
+class InvalidRedirectUrl(BaseException):
+    """
+    Raised when a disallowed redirect URL is provided in the authentication flow
+    """
+
+    def __init__(self, msg=""):
+        stats.count("InvalidRedirectUrl")
+        super().__init__(msg)
