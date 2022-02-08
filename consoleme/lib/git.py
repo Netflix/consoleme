@@ -95,4 +95,5 @@ def store_iam_resources_in_git(
             origin.push("master", force=True)
     except Exception:  # noqa
         sentry_sdk.capture_exception()
-    shutil.rmtree(tempdir)
+    finally:
+        shutil.rmtree(tempdir)
