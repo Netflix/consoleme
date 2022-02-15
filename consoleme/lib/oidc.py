@@ -85,12 +85,7 @@ async def populate_oidc_config():
 
 async def validate_redirect_uri(request, redirect_uri: str):
     """Ensure a redirect URI begins with the ConsoleMe server URL"""
-    protocol = request.request.protocol
-    if "https://" in config.get("url"):
-        # If we're behind a load balancer that terminates tls for us, request.request.protocol will be "http://" and our
-        # oidc redirect will be invalid
-        protocol = "https"
-    base_url = f"{protocol}://{request.request.host}"
+    base_url = config.get("url")
     if not redirect_uri.startswith(base_url):
         raise InvalidRedirectUrl(
             f"invalid redirect url {redirect_uri}, must start with server address {base_url}"
