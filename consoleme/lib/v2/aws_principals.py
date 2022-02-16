@@ -7,7 +7,6 @@ from policy_sentry.util.arns import parse_arn
 
 from consoleme.config import config
 from consoleme.lib.account_indexers import get_account_id_to_name_mapping
-from consoleme.lib.crypto import Crypto
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import get_aws_config_history_url_for_resource
 from consoleme.lib.redis import RedisHandler, redis_get
@@ -26,7 +25,6 @@ from consoleme.models import (
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
-crypto = Crypto()
 auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 internal_policies = get_plugin_by_name(
