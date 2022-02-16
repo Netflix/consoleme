@@ -9,14 +9,12 @@ from consoleme.config import config
 from consoleme.exceptions.exceptions import CertTooOldException
 from consoleme.handlers.base import BaseMtlsHandler
 from consoleme.lib.account_indexers import get_cloud_account_model_array
-from consoleme.lib.crypto import Crypto
 from consoleme.lib.duo import duo_mfa_user
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.models import Environment
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
-crypto = Crypto()
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 internal_config = config.config_plugin
 auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()

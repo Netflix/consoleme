@@ -281,20 +281,8 @@ class Configuration(object):
             return self.log
         if not name:
             name = self.get("application_name", "consoleme")
-        level_c = self.get("logging.level", "debug")
-        if level_c == "info":
-            level = logging.INFO
-        elif level_c == "critical":
-            level = logging.CRITICAL
-        elif level_c == "error":
-            level = logging.ERROR
-        elif level_c == "warning":
-            level = logging.WARNING
-        elif level_c == "debug":
-            level = logging.DEBUG
-        else:
-            # default
-            level = logging.DEBUG
+        level_str: str = self.get("logging.level", "debug")
+        level = logging.getLevelName(level_str.upper())
         filter_c = ContextFilter()
         format_c = self.get(
             "logging.format",
