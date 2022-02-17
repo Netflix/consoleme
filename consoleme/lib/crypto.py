@@ -1,6 +1,6 @@
 import os
 
-from nacl.encoding import Base64Encoder
+from nacl.encoding import Base64Encoder, RawEncoder
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey, VerifyKey
 
@@ -30,7 +30,7 @@ class Crypto:
             msg = "Unable to load signing key"
             log.error(msg, exc_info=True)
             raise Exception(msg)
-        self.signing_key = SigningKey(signing_key_bytes, encoder=Base64Encoder)
+        self.signing_key = SigningKey(signing_key_bytes, encoder=RawEncoder)
         verifying_key_file = config.get("ed25519.verifying_key")
         try:
             with open(verifying_key_file, "rb") as verifying_file:
