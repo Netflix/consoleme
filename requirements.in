@@ -22,13 +22,12 @@ google-cloud-storage
 gunicorn
 hiredis
 idna<3  # Required because moto has it pinned
-ipython
 isodate
 jmespath
 jsonschema
 kombu
 marshmallow
-numpy==1.19.5 # Internal dependency pin
+numpy
 logmatic-python
 lxml
 okta_jwt
