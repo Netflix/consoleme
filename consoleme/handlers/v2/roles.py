@@ -22,7 +22,6 @@ from consoleme.lib.aws import (
     create_iam_role,
     delete_iam_role,
 )
-from consoleme.lib.crypto import Crypto
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.aws_principals import get_eligible_role_details, get_role_details
@@ -35,7 +34,6 @@ from consoleme.models import (
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
-crypto = Crypto()
 auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 group_mapping = get_plugin_by_name(

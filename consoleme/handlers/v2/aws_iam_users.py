@@ -8,14 +8,12 @@ from consoleme.config import config
 from consoleme.handlers.base import BaseAPIV2Handler
 from consoleme.lib.auth import can_delete_iam_principals
 from consoleme.lib.aws import delete_iam_user
-from consoleme.lib.crypto import Crypto
 from consoleme.lib.generic import str2bool
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.v2.aws_principals import get_user_details
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
-crypto = Crypto()
 auth = get_plugin_by_name(config.get("plugins.auth", "default_auth"))()
 aws = get_plugin_by_name(config.get("plugins.aws", "default_aws"))()
 group_mapping = get_plugin_by_name(
