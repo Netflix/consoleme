@@ -4,21 +4,21 @@
 #
 #    pip-compile --no-emit-index-url --output-file=requirements.txt requirements.in
 #
-aiohttp==3.7.4.post0
+aiohttp==3.8.1
     # via aiozipkin
+aiosignal==1.2.0
+    # via aiohttp
 aiozipkin==1.1.0
     # via -r requirements.in
-amqp==5.0.6
+amqp==5.0.9
     # via kombu
-appnope==0.1.2
-    # via ipython
 argcomplete==1.12.3
     # via datamodel-code-generator
 asgiref==3.4.1
     # via -r requirements.in
 astroid==2.7.3
     # via pylint
-async-timeout==3.0.1
+async-timeout==4.0.2
     # via aiohttp
 atlassian-python-api==3.13.2
     # via -r requirements.in
@@ -26,8 +26,6 @@ attrs==21.2.0
     # via
     #   aiohttp
     #   jsonschema
-backcall==0.2.0
-    # via ipython
 bcrypt==3.2.0
     # via -r requirements.in
 beautifulsoup4==4.10.0
@@ -54,7 +52,7 @@ cachetools==4.2.2
     # via google-auth
 cchardet==2.1.7
     # via -r requirements.in
-celery[redis]==5.1.2
+celery[redis]==5.2.3
     # via -r requirements.in
 certifi==2021.5.30
     # via
@@ -68,18 +66,18 @@ cffi==1.14.6
     #   google-crc32c
     #   pynacl
 chardet==4.0.0
+    # via prance
+charset-normalizer==2.0.4
     # via
     #   aiohttp
-    #   prance
-charset-normalizer==2.0.4
-    # via requests
+    #   requests
 click-didyoumean==0.0.3
     # via celery
 click-plugins==1.1.1
     # via celery
 click-repl==0.2.0
     # via celery
-click==7.1.2
+click==8.0.3
     # via
     #   black
     #   celery
@@ -92,14 +90,13 @@ cloudaux==1.9.6
     # via -r requirements.in
 contextlib2==21.6.0
     # via schema
-cryptography==3.4.8
+cryptography==36.0.1
     # via -r requirements.in
 datamodel-code-generator==0.11.12
     # via -r requirements.in
 decorator==4.4.2
     # via
     #   -r requirements.in
-    #   ipython
     #   retry
 deepdiff==5.5.0
     # via -r requirements.in
@@ -123,6 +120,10 @@ email-validator==1.1.3
     # via pydantic
 flagpole==1.1.1
     # via cloudaux
+frozenlist==1.3.0
+    # via
+    #   aiohttp
+    #   aiosignal
 furl==2.1.2
     # via -r requirements.in
 genson==1.2.2
@@ -177,8 +178,6 @@ inflect==5.3.0
     # via datamodel-code-generator
 inflection==0.5.1
     # via cloudaux
-ipython==7.27.0
-    # via -r requirements.in
 isodate==0.6.0
     # via
     #   -r requirements.in
@@ -188,8 +187,6 @@ isort==5.9.3
     # via
     #   datamodel-code-generator
     #   pylint
-jedi==0.18.0
-    # via ipython
 jinja2==3.0.1
     # via datamodel-code-generator
 jmespath==0.10.0
@@ -207,7 +204,7 @@ jsonschema==3.2.0
     #   -r requirements.in
     #   openapi-schema-validator
     #   openapi-spec-validator
-kombu==5.1.0
+kombu==5.2.3
     # via
     #   -r requirements.in
     #   celery
@@ -217,7 +214,7 @@ lazy-object-proxy==1.6.0
     # via astroid
 logmatic-python==0.1.7
     # via -r requirements.in
-lxml==4.6.3
+lxml==4.7.1
     # via
     #   -r requirements.in
     #   python3-saml
@@ -226,8 +223,6 @@ markupsafe==2.0.1
     # via jinja2
 marshmallow==3.13.0
     # via -r requirements.in
-matplotlib-inline==0.1.3
-    # via ipython
 mccabe==0.6.1
     # via pylint
 multidict==5.1.0
@@ -236,7 +231,7 @@ multidict==5.1.0
     #   yarl
 mypy-extensions==0.4.3
     # via black
-numpy==1.19.5
+numpy==1.22.2
     # via
     #   -r requirements.in
     #   pandas
@@ -260,16 +255,10 @@ pandas==1.3.2
     # via -r requirements.in
 parliament==1.4.0
     # via -r requirements.in
-parso==0.8.2
-    # via jedi
 password-strength==0.0.3.post2
     # via -r requirements.in
 pathspec==0.9.0
     # via black
-pexpect==4.8.0
-    # via ipython
-pickleshare==0.7.5
-    # via ipython
 pkgconfig==1.5.5
     # via -r requirements.in
 platformdirs==2.3.0
@@ -287,7 +276,6 @@ presto-python-client==0.8.2
 prompt-toolkit==3.0.20
     # via
     #   click-repl
-    #   ipython
     #   questionary
 protobuf==3.17.3
     # via
@@ -295,8 +283,6 @@ protobuf==3.17.3
     #   googleapis-common-protos
 psutil==5.8.0
     # via redislite
-ptyprocess==0.7.0
-    # via pexpect
 py==1.10.0
     # via retry
 pyasn1-modules==0.2.8
@@ -314,8 +300,6 @@ pydantic[email]==1.8.2
     # via
     #   -r requirements.in
     #   datamodel-code-generator
-pygments==2.10.0
-    # via ipython
 pyjwt==2.1.0
     # via -r requirements.in
 pylint==2.10.2
@@ -344,7 +328,7 @@ python-json-logger==0.1.11
     #   logmatic-python
 python3-saml==1.12.0
     # via -r requirements.in
-pytz==2021.1
+pytz==2021.3
     # via
     #   -r requirements.in
     #   celery
@@ -442,16 +426,11 @@ tomli==1.2.1
     # via black
 tornado==6.1
     # via -r requirements.in
-traitlets==5.1.0
-    # via
-    #   ipython
-    #   matplotlib-inline
 typing-extensions==3.10.0.2
     # via
-    #   aiohttp
     #   black
     #   pydantic
-ujson==4.1.0
+ujson==5.1.0
     # via -r requirements.in
 uritemplate==3.0.1
     # via google-api-python-client

@@ -46,7 +46,7 @@ charset-normalizer==2.0.4
     # via
     #   -c requirements.txt
     #   requests
-click==7.1.2
+click==8.0.3
     # via
     #   -c requirements.txt
     #   black
@@ -54,7 +54,7 @@ coverage==5.5
     # via
     #   -r requirements-test.in
     #   pytest-cov
-cryptography==3.4.8
+cryptography==36.0.1
     # via
     #   -c requirements.txt
     #   moto
@@ -175,9 +175,7 @@ pydocstyle==6.1.1
 pyflakes==2.3.1
     # via flake8
 pygments==2.10.0
-    # via
-    #   -c requirements.txt
-    #   readme-renderer
+    # via readme-renderer
 pyparsing==2.4.7
     # via
     #   -c requirements.txt
@@ -217,7 +215,7 @@ python-dateutil==2.8.2
     #   -c requirements.txt
     #   botocore
     #   moto
-pytz==2021.1
+pytz==2021.3
     # via
     #   -c requirements.txt
     #   moto
