@@ -8,6 +8,21 @@ ConsoleMe is a Python Tornado web application backed by Redis, DynamoDB, and \(o
 
 ![Architecture Diagram](.gitbook/assets/consoleme-diagram-1-.png)
 
+## Hub and Spoke Model
+
+ConsoleMe utilizes a hub and spoke architecture. The "Hub Account" is the account you have ConsoleMe on. 
+The "Hub Role" (also called the "Central Role") is what ConsoleMe uses. This role is directly attached to the
+EC2 instances or ECS/K8s containers that ConsoleMe is running on. There is only one Hub Role per deployment of ConsoleMe.
+
+There should be one "Spoke Role" on each of your AWS accounts, including on the Hub Account. ConsoleMe will use its 
+Hub Role to assume the Spoke Roles across your various accounts to cache resources or update permissions.
+
+The required IAM permissions for the Hub and Spoke roles are [here](prerequisites/required-iam-permissions/README.md).
+
+The one exception to the hub-and-spoke model is when ConsoleMe is brokering credentials to roles, to either provide 
+AWS console access or CLI credentials through Weep. In this case, ConsoleMe's Hub Role needs direct access to assume
+the requested role in order to broker credentials.
+
 ## DynamoDB Tables
 
 ConsoleMe makes use of several DynamoDB tables. If you plan to have a multi-region deployment of ConsoleMe, you must make these DynamoDB tables **global** in your production environment. The configuration of these tables is defined [here](https://github.com/Netflix/consoleme/blob/master/scripts/initialize_dynamodb_oss.py).
