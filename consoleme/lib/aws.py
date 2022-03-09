@@ -943,7 +943,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
         )
 
     default_max_session_duration = config.get(
-        "user_role_creator.default_max_session_duration", 7200
+        "user_role_creator.default_max_session_duration", 3600
     )
 
     if create_model.description:
