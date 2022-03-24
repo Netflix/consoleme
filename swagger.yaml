@@ -1618,6 +1618,9 @@ components:
             managed_policies:
               type: boolean
               default: False
+            max_session_duration:
+              type: boolean
+              default: False
     CreateCloneRequestResponse:
       type: object
       properties:

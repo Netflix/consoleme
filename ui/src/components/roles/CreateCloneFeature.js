@@ -21,6 +21,7 @@ const clone_options = [
   { text: "Inline policies", value: "inline_policies" },
   { text: "Managed Policies", value: "managed_policies" },
   { text: "Tags", value: "tags" },
+  { text: "Max Session Duration", value: "max_session_duration" },
 ];
 
 const clone_default_selected_options = clone_options.map(
@@ -187,6 +188,7 @@ class CreateCloneFeature extends Component {
       description: this.state.description,
       inline_policies: this.state.options.includes("inline_policies"),
       managed_policies: this.state.options.includes("managed_policies"),
+      max_session_duration: this.state.options.includes("max_session_duration"),
     };
 
     const payload = {
