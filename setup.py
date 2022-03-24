@@ -1,8 +1,8 @@
-import distutils.cmd
-import distutils.log
 import os
 from shutil import rmtree
 
+import distutils.cmd
+import distutils.log
 from setuptools import find_packages, setup
 
 
