@@ -91,6 +91,12 @@ cd ui ; yarn start
 # If you follow this step, you should be able to see the UI at http://localhost:3000
 ```
 
+```text
+# (Optional) Run Celery for local development
+cd /home/service/consoleme ; celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=8
+# If you follow this step, you should be able to see Celery is running
+```
+
 > ConsoleMe requires Python 3.8+. If your virtualenv was installed under Python2.x this will blow up. You can usually fix this by uninstalling and reinstalling under python3.x by removing your existing virtualenv and creating a new one with Python 3: `python3 -m venv env`. When the `make install` command is running, it will install all the dependencies, and it will also run ConsoleMe Celery tasks to populate its Redis cache if necessary. This also updates the local DynamoDB instance, which persists data on disk. This command will need to be run anytime you want to update your local cache. In a production environment, you'd be running Celery, which has scheduled tasks that would update your resource cache automatically.
 
 For local, unauthenticated development, the default configuration \([`example_config/example_config_development.yaml`](https://github.com/Netflix/consoleme/blob/master/example_config/example_config_development.yaml) \) will override the user you are authenticated as for development.

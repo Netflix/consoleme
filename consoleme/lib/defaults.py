@@ -193,7 +193,7 @@ permissions_map:
         required: true
     condition:
       StringLike:
-        ses:FromAddress: "{from_address}"
+        ses:FromAddress: "${from_address}"
     action_map:
       - name: send_email
         text: Send Email

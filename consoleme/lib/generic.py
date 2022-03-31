@@ -240,7 +240,8 @@ async def iterate_and_format_dict(d: Dict, replacements: Dict):
             await iterate_and_format_dict(v, replacements)
         else:
             try:
-                d[k] = v.format(**replacements)
+                s = string.Template(v)
+                d[k] = s.safe_substitute(**replacements)
             except KeyError:
                 pass
     return d

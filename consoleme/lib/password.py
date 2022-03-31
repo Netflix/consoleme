@@ -19,7 +19,7 @@ async def wait_after_authentication_failure(user) -> str:
         num_password_failures = 0
     num_password_failures = int(num_password_failures)  # Redis values are strings
     red.setex(redis_key, redix_key_expiration, num_password_failures + 1)
-    await asyncio.sleep(num_password_failures ** 2)
+    await asyncio.sleep(num_password_failures**2)
     next_delay = (num_password_failures + 1) ** 2
     return (
         f"Your next authentication failure will result in a {next_delay} second wait. "
