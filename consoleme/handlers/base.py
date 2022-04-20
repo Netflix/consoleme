@@ -105,7 +105,8 @@ class BaseJSONHandler(TornadoRequestHandler):
         try:
             if config.get("development") and config.get("json_authentication_override"):
                 return config.get("json_authentication_override")
-            tkn_header = self.request.headers["authorization"]
+            header_key = config.get("auth.jwt_header_name", "authorization")
+            tkn_header = self.request.headers[header_key]
         except KeyError:
             raise WebAuthNError(reason="Missing Authorization Header")
         else:
