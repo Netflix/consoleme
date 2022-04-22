@@ -97,6 +97,7 @@ function ConsoleMeDynamicConfig() {
             defaultLanguage="yaml"
             theme={editorTheme}
             defaultValue={config}
+            value={config}
             onChange={onChange}
             options={options}
             textAlign="center"
