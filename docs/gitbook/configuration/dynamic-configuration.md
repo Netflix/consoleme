@@ -41,7 +41,7 @@ group_mapping:
 * We store IAM inline policy permission templates in dynamic configuration. This is where you can add templates that fit your organization's needs, and it will show up in the dropdown menu for the inline policy editor. Here's an example of how you can add templates to your dynamic config:
 
 ```yaml
-permission_tempaltes:
+permission_templates:
     -   key: default
         text: Default Template
         value: |-
