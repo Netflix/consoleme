@@ -341,6 +341,26 @@ class TestAwsLib(TestCase):
 
         self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
 
+        # Allow - allowed_tag_keys exists in role
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_tag_keys": ["testtag"],
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
+
+        # Reject - No tag key
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_tag_keys": ["unknown"],
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), False)
+
         CONFIG.config = old_config
 
     def test_remove_temp_policies(self):

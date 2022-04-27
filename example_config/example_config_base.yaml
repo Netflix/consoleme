@@ -184,9 +184,11 @@ challenge_url:
 # Parameters:
 #  allowed_tags: map[string]string: if non-empty, consoleme will only consider roles tags mapped here
 #  allowed_arns: list[string]:  if non-empty, consoleme will only consider the role arns in this list
+#  allowed_tag_keys: list[string]:  if non-empty, consoleme will only consider roles with a tag key mapped here
 # roles:
 #   allowed_tags: {}
 #   allowed_arns: []
+#   allows_tag_keys: []
 
 # This section provides an opt-out for caching in the policies table on the /policies page. You can
 # opt-out of each resource type that's typically cached. By default, nothing is skipped; everything
