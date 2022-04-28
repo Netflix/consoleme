@@ -32,6 +32,8 @@ const DataTableRowsComponent = ({
     if (column.onClick && column.onClick.action === "redirect") {
       // TODO, change this to useHistory
       setRedirect(entry[column.key] + window.location.search || "");
+    } else if (column.onClick && column.onClick.action === "newtab") {
+      window.open(window.location.origin + entry[column.key] + window.location.search || "")
     }
   };
 
