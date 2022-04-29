@@ -1896,10 +1896,15 @@ def allowed_to_sync_role(
     if role_arn in allowed_arns:
         return True
 
-    # If any allowed_tag_keys exist in the role_tags this condition will pass
-    if allowed_tag_keys and any(
-        x for x in role_tags for y in allowed_tag_keys if x["Key"] == y
-    ):
+    # Convert list of role tag dicts to an array of tag keys
+    # ex:
+    # role_tags = [{'Key': 'consoleme-authorized', 'Value': 'consoleme_admins'},
+    # {'Key': 'Description', 'Value': 'ConsoleMe OSS Demo Role'}]
+    # so: actual_tag_keys = ['consoleme-authorized', 'Description']
+    actual_tag_keys = [d['Key'] for d in role_tags]
+
+    # If any allowed tag key exists in the role's actual_tags this condition will pass
+    if allowed_tag_keys and any(x in allowed_tag_keys for x in actual_tag_keys):
         return True
 
     # Convert list of role tag dicts to a single key/value dict of tags
