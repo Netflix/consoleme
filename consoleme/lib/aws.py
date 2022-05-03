@@ -1849,7 +1849,7 @@ def allowed_to_sync_role(
     This function determines whether ConsoleMe is allowed to sync or otherwise manipulate an IAM role. By default,
     ConsoleMe will sync all roles that it can get its grubby little hands on. However, ConsoleMe administrators can tell
     ConsoleMe to only sync roles with either 1) Specific ARNs, or 2) Specific tag key/value pairs. All configured tags
-    must exist on the role for ConsoleMe to sync it.
+    must exist on the role for ConsoleMe to sync it., or 3) Specific tag keys
 
     Here's an example configuration for a tag-based restriction:
 
@@ -1872,6 +1872,15 @@ def allowed_to_sync_role(
         - arn:aws:iam::333333333333:role/role-name-here-1
     ```
 
+    And another one for an tag key based restriction:
+
+    ```
+    roles:
+      allowed_tag_keys:
+        - cosoleme-authorized
+        - consoleme-authorized-cli-only
+    ```
+
     :param
         arn: The AWS role arn
         role_tags: A dictionary of role tags
@@ -1880,10 +1889,22 @@ def allowed_to_sync_role(
     """
     allowed_tags = config.get("roles.allowed_tags", {})
     allowed_arns = config.get("roles.allowed_arns", [])
-    if not allowed_tags and not allowed_arns:
+    allowed_tag_keys = config.get("roles.allowed_tag_keys", [])
+    if not allowed_tags and not allowed_arns and not allowed_tag_keys:
         return True
 
     if role_arn in allowed_arns:
+        return True
+
+    # Convert list of role tag dicts to an array of tag keys
+    # ex:
+    # role_tags = [{'Key': 'consoleme-authorized', 'Value': 'consoleme_admins'},
+    # {'Key': 'Description', 'Value': 'ConsoleMe OSS Demo Role'}]
+    # so: actual_tag_keys = ['consoleme-authorized', 'Description']
+    actual_tag_keys = [d["Key"] for d in role_tags]
+
+    # If any allowed tag key exists in the role's actual_tags this condition will pass
+    if allowed_tag_keys and any(x in allowed_tag_keys for x in actual_tag_keys):
         return True
 
     # Convert list of role tag dicts to a single key/value dict of tags
