@@ -1901,7 +1901,7 @@ def allowed_to_sync_role(
     # role_tags = [{'Key': 'consoleme-authorized', 'Value': 'consoleme_admins'},
     # {'Key': 'Description', 'Value': 'ConsoleMe OSS Demo Role'}]
     # so: actual_tag_keys = ['consoleme-authorized', 'Description']
-    actual_tag_keys = [d['Key'] for d in role_tags]
+    actual_tag_keys = [d["Key"] for d in role_tags]
 
     # If any allowed tag key exists in the role's actual_tags this condition will pass
     if allowed_tag_keys and any(x in allowed_tag_keys for x in actual_tag_keys):
