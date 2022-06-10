@@ -47,7 +47,7 @@ const DataTableComponent = ({ config }) => {
   };
 
   const rowsPerPage = tableConfig.rowsPerPage || DEFAULT_ROWS_PER_PAGE;
-  const totalPages = parseInt(filteredData.length / rowsPerPage, 10);
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
 
   if (isLoading) {
     return (
