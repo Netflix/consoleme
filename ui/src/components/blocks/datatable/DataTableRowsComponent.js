@@ -33,7 +33,10 @@ const DataTableRowsComponent = ({
       // TODO, change this to useHistory
       setRedirect(entry[column.key] + window.location.search || "");
     } else if (column.onClick && column.onClick.action === "newtab") {
-      window.open(window.location.origin + entry[column.key] + window.location.search || "")
+      window.open(
+        window.location.origin + entry[column.key] + window.location.search ||
+          ""
+      );
     }
   };
 

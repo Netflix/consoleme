@@ -60,8 +60,7 @@ export const questions_json = {
     },
     {
       isRequired: true,
-      name:
-        "cache_accounts_from_aws_organizations.organizations_master_account_id_PLACEHOLDER_6",
+      name: "cache_accounts_from_aws_organizations.organizations_master_account_id_PLACEHOLDER_6",
       title:
         "What should the value be for account ID for the organization (account ID of your AWS organizations master)?",
       type: "text",
@@ -69,8 +68,7 @@ export const questions_json = {
     },
     {
       isRequired: true,
-      name:
-        "cache_accounts_from_aws_organizations.organizations_master_role_to_assume_PLACEHOLDER_7",
+      name: "cache_accounts_from_aws_organizations.organizations_master_role_to_assume_PLACEHOLDER_7",
       title:
         "What should the value be for role for the organization master account (name of the role that consoleme will attempt to assume on your Organizations master account to retrieve account information)?",
       type: "text",
@@ -155,8 +153,7 @@ export const questions_json = {
       __format_text:
         "https://cognito-idp.us-east-1.amazonaws.com/{}/.well-known/openid-configuration",
       isRequired: true,
-      name:
-        "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_15",
+      name: "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_15",
       title:
         "What should the value be for cognito pool ID (Amazon Cognito user pool ID)?",
       type: "text",
@@ -164,8 +161,7 @@ export const questions_json = {
     },
     {
       __extra_details: "list",
-      name:
-        "get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri_PLACEHOLDER_16",
+      name: "get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri_PLACEHOLDER_16",
       title:
         "Please provide a comma-seperated list of jwks_uri (Only required if your metadata URL doesn't return jwks_uri within the JSON)",
       type: "text",
@@ -183,16 +179,14 @@ export const questions_json = {
       defaultValue:
         "https://accounts.google.com/.well-known/openid-configuration",
       isRequired: true,
-      name:
-        "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_18",
+      name: "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_18",
       title: "What should the value be for metadata URL (Google metadata URL)?",
       type: "text",
       visibleIf: "{__auth_choice} = 'ALB Auth - Google'",
     },
     {
       __extra_details: "list",
-      name:
-        "get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri_PLACEHOLDER_19",
+      name: "get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri_PLACEHOLDER_19",
       title:
         "Please provide a comma-seperated list of jwks_uri (Only required if your metadata URL doesn't return jwks_uri within the JSON)",
       type: "text",
@@ -202,8 +196,7 @@ export const questions_json = {
       __format_text:
         "https://{}.okta.com/oauth2/default/.well-known/oauth-authorization-server",
       isRequired: true,
-      name:
-        "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_20",
+      name: "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_20",
       title:
         "What should the value be for Okta Domain (the domain for your Okta, https://<DOMAIN>.okta.com)?",
       type: "text",
@@ -211,8 +204,7 @@ export const questions_json = {
     },
     {
       __extra_details: "list",
-      name:
-        "get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri_PLACEHOLDER_21",
+      name: "get_user_by_aws_alb_auth_settings.access_token_validation.jwks_uri_PLACEHOLDER_21",
       title:
         "Please provide a comma-seperated list of jwks_uri (Only required if your metadata URL doesn't return jwks_uri within the JSON)",
       type: "text",
@@ -220,16 +212,14 @@ export const questions_json = {
     },
     {
       isRequired: true,
-      name:
-        "get_user_by_aws_alb_auth_settings.access_token_validation.client_id_PLACEHOLDER_22",
+      name: "get_user_by_aws_alb_auth_settings.access_token_validation.client_id_PLACEHOLDER_22",
       title: "What should the value be for client ID (Okta Client ID)?",
       type: "text",
       visibleIf: "{__auth_choice} = 'ALB Auth - Okta'",
     },
     {
       isRequired: true,
-      name:
-        "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_23",
+      name: "get_user_by_aws_alb_auth_settings.access_token_validation.metadata_url_PLACEHOLDER_23",
       title:
         "What should the value be for Metadata URL (The URL to your IDP's .well-known/oauth-authorization-server or .well-known/openid-configuration file)?",
       type: "text",
@@ -309,8 +299,7 @@ export const questions_json = {
     },
     {
       defaultValue: true,
-      name:
-        "get_user_by_oidc_settings.get_groups_from_userinfo_endpoint_PLACEHOLDER_33",
+      name: "get_user_by_oidc_settings.get_groups_from_userinfo_endpoint_PLACEHOLDER_33",
       title:
         "Do you want to enable getting groups from OIDC userinfo endpoint? (If we can't find the user's groups in their ID or Access tokens, we can try to get groups from the OIDC userinfo\nendpoint. Should we? (We're desperate at this point!))?",
       type: "boolean",
@@ -456,30 +445,26 @@ export const questions_json = {
     },
     {
       defaultValue: true,
-      name:
-        "cloud_credential_authorization_mapping.role_tags.enabled_PLACEHOLDER_50",
+      name: "cloud_credential_authorization_mapping.role_tags.enabled_PLACEHOLDER_50",
       readOnly: true,
       type: "text",
     },
     {
       defaultValue: true,
-      name:
-        "cloud_credential_authorization_mapping.dynamic_config.enabled_PLACEHOLDER_51",
+      name: "cloud_credential_authorization_mapping.dynamic_config.enabled_PLACEHOLDER_51",
       readOnly: true,
       type: "text",
     },
     {
       defaultValue: false,
-      name:
-        "cloud_credential_authorization_mapping.internal_plugin.enabled_PLACEHOLDER_52",
+      name: "cloud_credential_authorization_mapping.internal_plugin.enabled_PLACEHOLDER_52",
       readOnly: true,
       type: "text",
     },
     {
       __extra_details: "list",
       defaultValue: "consoleme-authorized",
-      name:
-        "cloud_credential_authorization_mapping.role_tags.authorized_groups_tags_PLACEHOLDER_53",
+      name: "cloud_credential_authorization_mapping.role_tags.authorized_groups_tags_PLACEHOLDER_53",
       title:
         "Please provide a comma-seperated list of the tags on an IAM role that indicate the users/groups authorized to get credentials for a role\nin both the ConsoleMe UI and via CLI. You must prevent non-administrative users from modifying\nthese tags via an AWS Service Control Policy on your Organizations Master account. (ConsoleMe uses IAM role tags to determine who gets access to a role. Read more about this feature\nhere: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/role-tagging-recommended)",
       type: "text",
@@ -487,8 +472,7 @@ export const questions_json = {
     {
       __extra_details: "list",
       defaultValue: "consoleme-owner-dl,consoleme-authorized-cli-only",
-      name:
-        "cloud_credential_authorization_mapping.role_tags.authorized_groups_cli_only_tags_PLACEHOLDER_54",
+      name: "cloud_credential_authorization_mapping.role_tags.authorized_groups_cli_only_tags_PLACEHOLDER_54",
       title:
         "Please provide a comma-seperated list of the tags on an IAM role that indicate the users/groups authorized to get credentials for a role\nvia the CLI only. You must prevent non-administrative users from modifying\nthese tags via an AWS Service Control Policy on your Organizations Master account. (ConsoleMe uses IAM role tags to determine who gets access to a role. Read more about this feature\nhere: https://hawkins.gitbook.io/consoleme/configuration/role-credential-authorization/role-tagging-recommended)",
       type: "text",
