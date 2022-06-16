@@ -14,6 +14,9 @@ from consoleme.lib.policies import get_url_for_resource
 from consoleme.lib.timeout import Timeout
 from consoleme.models import DataTableResponse
 
+from consoleme.lib.generic import str2bool
+from consoleme.lib.v2.aws_principals import get_role_details
+
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 log = config.get_logger()
 
@@ -64,6 +67,12 @@ class PoliciesPageConfigHandler(BaseHandler):
                     {
                         "placeholder": "Tech",
                         "key": "technology",
+                        "type": "input",
+                        "style": {"width": "70px"},
+                    },
+                    {
+                        "placeholder": "Users",
+                        "key": "users",
                         "type": "input",
                         "style": {"width": "70px"},
                     },
@@ -120,6 +129,12 @@ class PoliciesHandler(BaseAPIV2Handler):
 
         total_count = len(policies)
 
+        users = ''
+
+        if filters and 'users' in filters:
+            users = filters['users']
+            filters.pop('users')
+
         if filters:
             try:
                 with Timeout(seconds=5):
@@ -147,6 +162,21 @@ class PoliciesHandler(BaseAPIV2Handler):
                         region,
                         resource_name,
                     )
+
+                    force_refresh = str2bool(
+                        self.request.arguments.get("force_refresh", [False])[0]
+                    )
+
+                    if policy["technology"] == "AWS::IAM::Role" and 'csm' in resource_name:
+                        role_details = await get_role_details(
+                            policy["account_id"], resource_name, extended=True, force_refresh=force_refresh
+                        )
+
+                        if len(json.loads(role_details.json())['tags']) > 0:
+                            csm_users = [tag["Value"] for tag in json.loads(role_details.json())['tags'] if tag['Key'] == "consoleme-authorized"]
+                            if len(csm_users) > 0:
+                                policy["users"] = csm_users[0].replace(":", "\n\n")
+
                 except ResourceNotFound:
                     url = ""
                 if url:
@@ -157,7 +187,11 @@ class PoliciesHandler(BaseAPIV2Handler):
                     if "/" in policy["templated"]:
                         link_name = policy["templated"].split("/")[-1]
                         policy["templated"] = f"[{link_name}]({policy['templated']})"
-                policies_to_write.append(policy)
+
+                if users == "":
+                    policies_to_write.append(policy)
+                elif "users" in policy and policy["users"] != "" and users in policy["users"]:
+                    policies_to_write.append(policy)
         else:
             policies_to_write = policies[0:limit]
         filtered_count = len(policies_to_write)
