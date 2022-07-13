@@ -15,7 +15,7 @@ ConsoleMe achieves this through:
 
 ## Extending ConsoleMe
 
-ConsoleMe is extensible and pluggable. We offer a set of basic plugins for authenticating users, determining their groups and eligible roles, and more through the use of default plugins \([consoleme/default\_plugins](https://github.com/Netflix/consoleme/tree/master/consoleme/default_plugins%29%5C). If you need to customize ConsoleMe with internal business logic, we recommend creating a new private repository based on [consoleme/default\_plugins](https://github.com/Netflix/consoleme/tree/master/default_plugins) and modifying the code as appropriate to handle your use cases.
+ConsoleMe is extensible and pluggable. We offer a set of basic plugins for authenticating users, determining their groups and eligible roles, and more through the use of default plugins \([consoleme/default\_plugins](https://github.com/Netflix/consoleme/tree/master/consoleme/default_plugins). If you need to customize ConsoleMe with internal business logic, we recommend creating a new private repository based on [consoleme/default\_plugins](https://github.com/Netflix/consoleme/tree/master/default_plugins) and modifying the code as appropriate to handle your use cases.
 
 ## Running Tasks with Celery
 
