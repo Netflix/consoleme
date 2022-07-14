@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Consoleme OSS - Local Web" type="PythonConfigurationType" factoryName="Python">
-    <module name="consoleme-netflix" />
+    <module name="consoleme" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
