@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.10
+      - name: Set up Python 3.10.5
         uses: actions/setup-python@v1
         with:
-          python-version: 3.10
+          python-version: 3.10.5
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
       - name: Install dependencies
@@ -60,10 +60,10 @@ jobs:
       # master builds don't have tags, which breaks setupmeta versioning. This retrieves the tags.
       - run: git fetch --prune --unshallow --tags
         if: github.ref == 'refs/heads/master'
-      - name: Set up Python 3.10
+      - name: Set up Python 3.10.5
         uses: actions/setup-python@v1
         with:
-          python-version: 3.10
+          python-version: 3.10.5
       - name: Build UI assets
         run: |
           curl -sL https://deb.nodesource.com/setup_14.x | sudo bash
