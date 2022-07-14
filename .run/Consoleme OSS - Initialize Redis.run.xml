@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Consoleme OSS - Initialize Redis" type="PythonConfigurationType" factoryName="Python">
-    <module name="consoleme" />
+    <module name="consoleme-netflix" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>

@@ -43,7 +43,7 @@ class TestUserRegistrationApi(AsyncHTTPTestCase):
 
         body = json.dumps(
             {
-                "username": "testuser5@example.com",
+                "username": "testuser5@example2.com",
                 "password": "testuser5password",
             }
         )
@@ -54,7 +54,7 @@ class TestUserRegistrationApi(AsyncHTTPTestCase):
             {
                 "status": "success",
                 "status_code": 200,
-                "message": "Successfully created user testuser5@example.com.",
+                "message": "Successfully created user testuser5@example2.com.",
             },
         )
 
