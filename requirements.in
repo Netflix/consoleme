@@ -5,7 +5,7 @@ bcrypt # Used for password hash/verification
 bleach
 boto3
 cchardet
-celery[redis]
+celery
 cloudaux
 cryptography
 datamodel-code-generator
@@ -50,7 +50,6 @@ python3-saml
 pytz
 questionary
 redis
-redislite
 requests
 retry
 retrying

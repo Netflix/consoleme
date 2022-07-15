@@ -26,31 +26,15 @@ app = Celery(
     ),
     backend=config.get(
         f"celery.backend.{config.region}",
-        config.get("celery.broker.global", "redis://127.0.0.1:6379/2"),
+        config.get("celery.backend.global"),
     ),
 )
-
-if config.get("redis.use_redislite"):
-    import tempfile
-
-    import redislite
-
-    redislite_db_path = os.path.join(
-        config.get("redis.redislite.db_path", tempfile.NamedTemporaryFile().name)
-    )
-    redislite_client = redislite.Redis(redislite_db_path)
-    redislite_socket_path = f"redis+socket://{redislite_client.socket_file}"
-    app = Celery(
-        "tasks",
-        broker=f"{redislite_socket_path}?virtual_host=1",
-        backend=f"{redislite_socket_path}?virtual_host=2",
-    )
 
 app.conf.result_expires = config.get("celery.result_expires", 60)
 app.conf.worker_prefetch_multiplier = config.get("celery.worker_prefetch_multiplier", 4)
 app.conf.task_acks_late = config.get("celery.task_acks_late", True)
 
-if config.get("celery.purge") and not config.get("redis.use_redislite"):
+if config.get("celery.purge"):
     # Useful to clear celery queue in development
     with Timeout(seconds=5, error_message="Timeout: Are you sure Redis is running?"):
         app.control.purge()
