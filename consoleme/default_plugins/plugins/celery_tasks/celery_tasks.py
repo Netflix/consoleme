@@ -4,7 +4,6 @@ the external tasks
 
 """
 import json
-import os
 from datetime import timedelta
 
 from asgiref.sync import async_to_sync
