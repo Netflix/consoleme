@@ -27,8 +27,8 @@ def get_plugin_by_name(plugin_name: str) -> Any:
     if plugin_name == "default_config":
         initial_exception_message = (
             f"Could not find the specified plugin: {plugin_name}. "
-            "Please install it with `pip install -e default_plugins` "
-            "from the ConsoleMe directory. "
+            "Please install it with `pip install -e consoleme/default_plugins` "
+            "from the ConsoleMe base directory. "
         )
 
     exception_message = (

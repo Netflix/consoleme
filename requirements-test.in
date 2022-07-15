@@ -4,10 +4,11 @@ bandit
 black
 coverage
 docker # Required by moto
+fakeredis
 flake8
 flake8-docstrings
 flake8-import-order
-mock<4 # Mock 4 breaks a bunch of unit tests
+mock
 mockredispy
 moto
 mypy
@@ -20,7 +21,6 @@ pytest-mock
 pytest-timeout
 pytest-tornado
 pytest-xdist
-redislite
 readme_renderer
 tornado
 tox

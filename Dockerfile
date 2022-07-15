@@ -1,5 +1,5 @@
 # Dockerfile should instantiate AWS Project with configurable plugins
-FROM python:3.8
+FROM python:3.10
 MAINTAINER Netflix Security
 WORKDIR /apps/consoleme
 # NODE_OPTIONS meeded to increase memory size of Node for the `yarn build` step. The Monaco Editor
