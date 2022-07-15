@@ -42,7 +42,9 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
         from consoleme.config import config
 
         mock_auth.validate_certificate.return_value = create_future(True)
-        mock_auth.extract_user_from_certificate.return_value = create_future({"name": "user@example.com", "type": "user"})
+        mock_auth.extract_user_from_certificate.return_value = create_future(
+            {"name": "user@example.com", "type": "user"}
+        )
         mock_auth.get_cert_age_seconds.return_value = create_future(100)
         headers = {
             config.get("auth.user_header_name"): "user@example.com",

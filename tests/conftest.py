@@ -951,7 +951,9 @@ def redis(session_mocker):
             os.makedirs(v, exist_ok=True)
     session_mocker.patch("redis.Redis", return_value=fake_redis)
     session_mocker.patch("redis.StrictRedis", return_value=fake_strict_redis)
-    session_mocker.patch("consoleme.lib.redis.redis.StrictRedis", return_value=fake_strict_redis)
+    session_mocker.patch(
+        "consoleme.lib.redis.redis.StrictRedis", return_value=fake_strict_redis
+    )
     session_mocker.patch("consoleme.lib.redis.redis.Redis", return_value=fake_redis)
     session_mocker.patch(
         "consoleme.lib.redis.RedisHandler.redis_sync", return_value=fake_redis

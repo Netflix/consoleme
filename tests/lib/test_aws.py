@@ -10,7 +10,6 @@ import pytz
 import ujson as json
 from mock import patch
 
-
 ROLE = {
     "Arn": "arn:aws:iam::123456789012:role/TestInstanceProfile",
     "RoleName": "TestInstanceProfile",
@@ -105,8 +104,10 @@ class TestAwsLib(TestCase):
             "description": "internal S3 bucket",
         }
         aws_config_resources_test_case_redis_result = {"accountId": "123456789012"}
-        mock_aws_config_resources_redis.return_value = json.dumps(aws_config_resources_test_case_redis_result)
-        
+        mock_aws_config_resources_redis.return_value = json.dumps(
+            aws_config_resources_test_case_redis_result
+        )
+
         result = loop.run_until_complete(
             get_resource_account(aws_config_resources_test_case["arn"])
         )

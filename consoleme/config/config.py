@@ -156,7 +156,6 @@ class Configuration(object):
         # Main thread exited, signal to other threads
         main_exit_flag.set()
 
-
     async def merge_extended_paths(self, extends, dir_path):
         for s in extends:
             extend_config = {}
