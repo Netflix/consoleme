@@ -1,5 +1,5 @@
 """Configuration handling library."""
-import collections
+import collections.abc
 import datetime
 import logging
 import os
@@ -35,7 +35,7 @@ def dict_merge(dct: dict, merge_dct: dict):
         if (
             k in dct
             and isinstance(dct[k], dict)
-            and isinstance(merge_dct[k], collections.Mapping)
+            and isinstance(merge_dct[k], collections.abc.Mapping)
         ):
             dict_merge(dct[k], merge_dct[k])
         else:
