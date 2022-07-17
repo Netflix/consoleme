@@ -11,6 +11,7 @@ subnet_azs          = ["us-east-1a", "us-east-1b"]
 application_admin   = "teamemail@example.com"
 
 allowed_inbound_cidr_blocks = []  // NOTE: Do not open this up to 0.0.0.0/0. Restrict access to your IP address for the demo.
+associate_public_ip_address_to_ec2 = false // Set this to true if you want to provide a public IP to the EC2 instance
 allow_internet_access = false // Set this to true if you want to be able to access the server from the Internet.
 bucket_name_prefix = "your-name-prefix"
 
