@@ -82,8 +82,8 @@ variable "lb_port" {
 # Compute
 variable "associate_public_ip_address_to_ec2" {
   description = "Whether to provide a public IP to the ConsoleMe EC2 instance"
-  default = false
-  type = bool
+  default     = false
+  type        = bool
 }
 
 variable "instance_type" {

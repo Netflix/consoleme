@@ -26,7 +26,7 @@ resource "aws_security_group_rule" "external_ingress_8081" {
 
 # SSH
 resource "aws_security_group_rule" "external_ingress_ssh" {
-  count     = var.associate_public_ip_address_to_ec2 ? 1 : 0
+  count             = var.associate_public_ip_address_to_ec2 ? 1 : 0
   from_port         = 22
   protocol          = "tcp"
   security_group_id = aws_security_group.server.id
