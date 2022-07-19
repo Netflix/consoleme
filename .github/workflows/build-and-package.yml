@@ -11,6 +11,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ASYNC_TEST_TIMEOUT: 120
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.10.5

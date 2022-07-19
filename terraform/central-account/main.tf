@@ -1,13 +1,14 @@
 module "server" {
   source = "git::https://github.com/terraform-aws-modules/terraform-aws-ec2-instance?ref=v2.16.0"
 
-  name                 = module.compute_label.id
-  instance_count       = 1
-  ami                  = data.aws_ami.amazon_linux.id
-  instance_type        = var.instance_type
-  key_name             = var.key_name
-  iam_instance_profile = aws_iam_instance_profile.ConsoleMeInstanceProfile.name
-  subnet_id            = module.network.private_subnets[0]
+  name                        = module.compute_label.id
+  instance_count              = 1
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = var.instance_type
+  key_name                    = var.key_name
+  iam_instance_profile        = aws_iam_instance_profile.ConsoleMeInstanceProfile.name
+  subnet_id                   = var.associate_public_ip_address_to_ec2 ? module.network.public_subnets[0] : module.network.private_subnets[0]
+  associate_public_ip_address = var.associate_public_ip_address_to_ec2
   user_data = templatefile("${path.module}/templates/userdata.sh", tomap({
     bucket                  = aws_s3_bucket.consoleme_files_bucket.bucket
     current_account_id      = data.aws_caller_identity.current.account_id

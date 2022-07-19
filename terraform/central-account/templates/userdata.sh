@@ -25,9 +25,7 @@ systemctl restart rsyslog
 # ---------------------------------------------------------------------------------------------------------------------
 
 sudo yum update -y
-yum -y erase python3
-sudo amazon-linux-extras enable python3.8 # consoleme requires 3.8
-yum -y install git python3.8 python38-pip python38-devel
+yum -y install git python3.9 python3.9-pip python3.9-devel
 yum -y install libcurl-devel
 yum -y install libxml2-devel xmlsec1-devel xmlsec1-openssl-devel libtool-ltdl-devel
 sudo yum install -y gcc-c++
@@ -49,22 +47,22 @@ useradd -r -s /bin/false flower
 usermod -aG flower flower
 mkdir -p /apps/flower
 chown -R flower:flower /apps/flower
-python3.8 -m venv /apps/flower/env --copies
+python3.9 -m venv /apps/flower/env --copies
 source /apps/flower/env/bin/activate
-pip3.8 install flower redis
+pip3.9 install flower redis
 
 # Set up a new Virtualenv in the Consoleme directory
-python3.8 -m venv /apps/consoleme/env
+python3.9 -m venv /apps/consoleme/env
 source /apps/consoleme/env/bin/activate
 chown -R consoleme:consoleme /apps/consoleme
 chown -R consoleme:consoleme /logs
 # Install it
 cd /apps/consoleme
-pip3.8 install xmlsec
+pip3.9 install xmlsec
 
-# Make uses "pip" and "python", assuming they are 3.8, but they actually point to python2 (because yum uses it)
-alias python=python3.8
-alias pip=pip3.8
+# Make uses "pip" and "python", assuming they are 3.9, but they actually point to python2 (because yum uses it)
+alias python=python3.9
+alias pip=pip3.9
 make env_install
 
 make dynamo
@@ -81,7 +79,7 @@ systemctl start redis
 cd /apps/consoleme
 
 # Install nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh > /tmp/nvm-install.sh
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh > /tmp/nvm-install.sh
 chmod +x /tmp/nvm-install.sh
 bash /tmp/nvm-install.sh
 echo 'export NVM_DIR="/root/.nvm"' >> /root/.bashrc
@@ -89,8 +87,8 @@ echo '[ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh"  # This loads nvm' >> /r
 . ~/.nvm/nvm.sh
 . ~/.bashrc
 cd /apps/consoleme
-nvm install 12.18.2
-nvm use 12.18.2
+nvm install 16.16.0
+nvm use 16.16.0
 node -e "console.log('Running Node.js ' + process.version)"
 npm install yarn -g
 yarn --cwd ui
@@ -123,7 +121,7 @@ Restart=always
 RestartSec=1
 User=consoleme
 Group=consoleme
-ExecStart=/usr/bin/env /apps/consoleme/env/bin/python3.8 /apps/consoleme/consoleme/__main__.py
+ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/consoleme/__main__.py
 
 [Install]
 WantedBy=multi-user.target
@@ -144,7 +142,7 @@ RestartSec=1
 WorkingDirectory=/apps/consoleme
 Environment=CONFIG_LOCATION=${CONFIG_LOCATION}
 Environment=EC2_REGION=${region}
-ExecStart=/usr/bin/env /apps/consoleme/env/bin/python3.8 /apps/consoleme/env/bin/celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=15
+ExecStart=/usr/bin/env /apps/consoleme/env/bin/python /apps/consoleme/env/bin/celery -A consoleme.celery_tasks.celery_tasks worker -l DEBUG -B -E --concurrency=15
 
 [Install]
 WantedBy=multi-user.target
@@ -175,7 +173,7 @@ export EC2_REGION=${region}
 EOF
 
 # Run script to decode and write a custom ConsoleMe configuration. This won't do anything unless CONSOLEME_CONFIG_S3 is defined.
-sudo -u consoleme bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/retrieve_or_decode_configuration.py'
+sudo -u consoleme bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python /apps/consoleme/scripts/retrieve_or_decode_configuration.py'
 # Make sure it is listed
 systemctl list-unit-files | grep celery.service
 systemctl list-unit-files | grep consoleme.service
@@ -185,7 +183,7 @@ systemctl enable celery
 systemctl enable consoleme
 systemctl start consoleme
 
-sudo -u consoleme bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python3.8 /apps/consoleme/scripts/initialize_redis_oss.py'
+sudo -u consoleme bash -c '. /home/consoleme/.bashrc ; /apps/consoleme/env/bin/python /apps/consoleme/scripts/initialize_redis_oss.py'
 
 echo "Running custom userdata script"
 ${custom_user_data_script}
