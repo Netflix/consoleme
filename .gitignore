@@ -9,6 +9,7 @@ state.tf
 cdk.out/
 consoleme.tar.gz
 consoleme.zip
+.terraform.lock.hcl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

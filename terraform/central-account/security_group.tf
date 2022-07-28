@@ -1,5 +1,6 @@
 resource "aws_security_group" "server" {
-  vpc_id      = module.network.vpc_id
+  // vpc_id      = module.network.vpc_id
+  vpc_id      = "vpc-02fe0dd4a246e8c91"
   name        = module.security_group_label.id
   description = "Allow ingress from authorized IPs to self, and egress to everywhere."
   tags        = module.security_group_label.tags
@@ -37,7 +38,8 @@ resource "aws_security_group_rule" "external_egress_allow_all" {
 resource "aws_security_group" "lb-sg" {
   name        = "allow_access_to_consoleme"
   description = "Allows access to the load balancer, which forwards to the ConsoleMe server."
-  vpc_id      = module.network.vpc_id
+  // vpc_id      = module.network.vpc_id
+  vpc_id      = "vpc-02fe0dd4a246e8c91"
 
   ingress {
     description = "HTTPS for accessing ConsoleMe"

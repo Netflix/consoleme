@@ -154,7 +154,7 @@ variable "consoleme_instance_profile_name" {
 
 variable "kms_key_alias" {
   description = "The KMS key alias to use for the EBS Volume"
-  default     = "alias/consoleme"
+  default     = "alias/consoleme-dlm"
 }
 
 variable "sync_accounts_from_organizations" {

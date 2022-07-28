@@ -10,7 +10,9 @@ resource "aws_lb" "public-to-private-lb" {
   name               = "consoleme-lb"
   internal           = var.allow_internet_access ? false : true
   load_balancer_type = "application"
-  subnets            = module.network.public_subnets
+  // subnets            = module.network.public_subnets
+  // subnets            = ["10.1.1.128/28", "10.1.1.144/28"]
+  subnets               = ["subnet-0ec24c7427ae51310", "subnet-06e8b7ef514208071"]
   security_groups    = [aws_security_group.lb-sg.id]
 }
 
@@ -18,7 +20,8 @@ resource "aws_lb_target_group" "consoleme-servers" {
   name     = "consoleme-servers"
   port     = 8081 # The port the server listens on
   protocol = "HTTP"
-  vpc_id   = module.network.vpc_id
+  // vpc_id   = module.network.vpc_id
+  vpc_id      = "vpc-02fe0dd4a246e8c91"
 }
 
 resource "aws_lb_target_group_attachment" "test" {

@@ -7,7 +7,9 @@ module "server" {
   instance_type        = var.instance_type
   key_name             = var.key_name
   iam_instance_profile = aws_iam_instance_profile.ConsoleMeInstanceProfile.name
-  subnet_id            = module.network.private_subnets[0]
+  // I think I need to fix/change this
+  subnet_id            = "subnet-0ec24c7427ae51310"
+  // subnet_id            = module.network.private_subnets[0]
   user_data = templatefile("${path.module}/templates/userdata.sh", tomap({
     bucket                  = aws_s3_bucket.consoleme_files_bucket.bucket
     current_account_id      = data.aws_caller_identity.current.account_id
