@@ -10,8 +10,6 @@ import pytz
 import ujson as json
 from mock import patch
 
-from tests.conftest import create_future
-
 ROLE = {
     "Arn": "arn:aws:iam::123456789012:role/TestInstanceProfile",
     "RoleName": "TestInstanceProfile",
@@ -75,7 +73,7 @@ class TestAwsLib(TestCase):
     def test_get_resource_account(self, mock_aws_config_resources_redis):
         from consoleme.lib.aws import get_resource_account
 
-        mock_aws_config_resources_redis.return_value = create_future(None)
+        mock_aws_config_resources_redis.return_value = None
         test_cases = [
             {
                 "arn": "arn:aws:s3:::nope",
@@ -106,9 +104,10 @@ class TestAwsLib(TestCase):
             "description": "internal S3 bucket",
         }
         aws_config_resources_test_case_redis_result = {"accountId": "123456789012"}
-        mock_aws_config_resources_redis.return_value = create_future(
-            json.dumps(aws_config_resources_test_case_redis_result)
+        mock_aws_config_resources_redis.return_value = json.dumps(
+            aws_config_resources_test_case_redis_result
         )
+
         result = loop.run_until_complete(
             get_resource_account(aws_config_resources_test_case["arn"])
         )
@@ -340,6 +339,26 @@ class TestAwsLib(TestCase):
         }
 
         self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
+
+        # Allow - allowed_tag_keys exists in role
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_tag_keys": ["testtag"],
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), True)
+
+        # Reject - No tag key
+        CONFIG.config = {
+            **CONFIG.config,
+            "roles": {
+                "allowed_tag_keys": ["unknown"],
+            },
+        }
+
+        self.assertEqual(allowed_to_sync_role(test_role_arn, test_role_tags), False)
 
         CONFIG.config = old_config
 

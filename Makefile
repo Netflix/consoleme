@@ -49,7 +49,7 @@ redis:
 
 .PHONY: test
 test: clean
-	ASYNC_TEST_TIMEOUT=60 $(pytest)
+	ASYNC_TEST_TIMEOUT=60 CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest)
 
 .PHONY: bandit
 bandit: clean

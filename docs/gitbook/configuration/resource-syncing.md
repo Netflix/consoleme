@@ -25,6 +25,16 @@ roles:
     tag1: value1
     tag2: value2
 ```
+Note that all tag keys and values must match for a role to be allowed.
+
+You can also allow roles based on a list of tag keys. The role will be allowed if any of the tag keys exist against it.
+
+```text
+roles:
+  allowed_tag_keys:
+    - consoleme-authorized
+    - consoleme-authorized-cli-only
+```
 
 Alternatively, you can provide an explicit list of roles you want managed by Consoleme by adding this configuration:
 

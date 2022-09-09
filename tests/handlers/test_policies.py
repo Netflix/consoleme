@@ -68,7 +68,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
             method="GET",
         )
         self.assertEqual(response.code, 400)
-        result = create_future({"123456789012": '["abucket1", "abucket2"]'})
+        result = {"123456789012": '["abucket1", "abucket2"]'}
         mock_retrieve_json_data_from_redis_or_s3.return_value = result
         account_id = "123456789012"
         resource = "s3"
