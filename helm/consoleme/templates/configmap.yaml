@@ -11,6 +11,9 @@ data:
       - config_dynamo.yaml
       - config_redis.yaml
       - config_auth.yaml
+    {{- if .Values.cache_accounts_from_aws_organizations.enabled }}
+      - config_organization.yaml
+    {{- end }}
     {{- if .Values.awsSecretsManager.enabled }}
       - AWS_SECRETS_MANAGER:{{ .Values.awsSecretsManager.name }}
     {{- else }}

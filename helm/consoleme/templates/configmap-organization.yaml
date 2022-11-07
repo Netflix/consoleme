@@ -1,0 +1,28 @@
+{{- if .Values.cache_accounts_from_aws_organizations.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "consoleme.fullname" . }}-config-organization
+  labels:
+    {{- include "consoleme.labels" . | nindent 4 }}
+data:
+  config_organization.yaml: |
+    # ConsoleMe can cache account, org structure, and SCPs from AWS Organizations in one or more accounts
+    cache_accounts_from_aws_organizations:
+    #  # This is the account ID of your AWS organizations master
+      - organizations_master_account_id: "{{ .Values.cache_accounts_from_aws_organizations.organizations_master_account_id }}"
+    #    # This is the name of the role that consoleme will attempt to assume on your Organizations master account to retrieve
+    #    # account information. Ensure that ConsoleMe can assume this role, and that this role has the permissions:
+    #    # organizations:DescribeAccount
+    #    # organizations:DescribeOrganizationalUnit
+    #    # organizations:DescribePolicy
+    #    # organizations:ListAccounts
+    #    # organizations:ListChildren
+    #    # organizations:ListPolicies
+    #    # organizations:ListRoots
+    #    # organizations:ListTargetsForPolicy
+        organizations_master_role_to_assume: "{{ .Values.cache_accounts_from_aws_organizations.organizations_master_role_to_assume }}"
+    
+    cache_cloud_accounts:
+      from_aws_organizations: True
+{{- end }}

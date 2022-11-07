@@ -89,6 +89,12 @@ spec:
               name: consoleme-config-auth
               readOnly: true
               subPath: config_auth.yaml
+            {{- if .Values.cache_accounts_from_aws_organizations.enabled }}
+            - mountPath: /etc/consoleme/config_organization.yaml
+              name: consoleme-config-organization
+              subPath: config_organization.yaml
+              readOnly: true
+            {{- end }}
             - mountPath: /etc/consoleme/config_redis.yaml
               name: consoleme-config-redis
               readOnly: true
@@ -120,6 +126,11 @@ spec:
         - name: consoleme-config-auth
           configMap:
             name: {{ include "consoleme.fullname" . }}-config-auth
+        {{- if .Values.cache_accounts_from_aws_organizations.enabled }}
+        - name: consoleme-config-organization
+          configMap:
+            name: {{ include "consoleme.fullname" . }}-config-organization
+        {{- end }}
         - name: consoleme-config-redis
           configMap:
             name: {{ include "consoleme.fullname" . }}-config-redis
