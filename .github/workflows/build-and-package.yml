@@ -18,7 +18,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v1
         with:
-          python-version: 3.10
+          python-version: "3.10"
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
       - name: Install dependencies
@@ -65,7 +65,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v1
         with:
-          python-version: 3.10
+          python-version: "3.10"
       - name: Build UI assets
         run: |
           curl -sL https://deb.nodesource.com/setup_14.x | sudo bash
