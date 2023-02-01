@@ -63,7 +63,7 @@ or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-
 
 ## Companies that use ConsoleMe (alphabetically sorted)
 
-- [AB180](https://en.ab180.co/)
+- [AB180](https://www.ab180.co/en)
 - [Calm](https://www.calm.com/)
 - [FollowAnalytics](https://followanalytics.com/)
 - [myKaarma](https://mykaarma.com/)
