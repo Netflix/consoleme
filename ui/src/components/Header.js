@@ -16,11 +16,8 @@ import { useNotifications } from "./hooks/notifications";
 
 const ConsoleMeHeader = () => {
   const { user } = useAuth();
-  const {
-    notifications,
-    unreadNotificationCount,
-    GetAndSetNotifications,
-  } = useNotifications();
+  const { notifications, unreadNotificationCount, GetAndSetNotifications } =
+    useNotifications();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 

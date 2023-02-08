@@ -126,9 +126,8 @@ export const NotificationsModal = (props) => {
                       index={true}
                       onClick={() => {
                         let newState = activeTargets;
-                        newState[notification.predictable_id] = !newState[
-                          notification.predictable_id
-                        ];
+                        newState[notification.predictable_id] =
+                          !newState[notification.predictable_id];
                         setActiveTargets({
                           ...activeTargets,
                           ...newState,

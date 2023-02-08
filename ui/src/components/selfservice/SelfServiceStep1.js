@@ -162,14 +162,8 @@ class SelfServiceStep1 extends Component {
 
   render() {
     const { config, role } = this.props;
-    const {
-      isLoading,
-      isRoleLoading,
-      messages,
-      results,
-      value,
-      principal,
-    } = this.state;
+    const { isLoading, isRoleLoading, messages, results, value, principal } =
+      this.state;
     const messagesToShow =
       messages.length > 0 ? (
         <Message negative>
