@@ -224,6 +224,7 @@ aws:
   issuer: YourCompany
   account_number: "<Main AWS account number>"
   region: us-east-1
+  session_duration: 3600
 
 cache_accounts_from_aws_organizations:
   enabled: false

@@ -70,10 +70,10 @@ data:
       {{- toYaml . | nindent 6 }}
     {{- end }}
 
+    {{- with .Values.aws }}
     aws:
-      issuer: {{ .Values.aws.issuer  }}
-      account_number: {{ .Values.aws.account_number  }}
-      region: {{ .Values.aws.region  }}
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
 
     celery:
       active_region: {{ .Values.consoleme.celery.region  }}
