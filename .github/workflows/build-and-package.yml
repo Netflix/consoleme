@@ -15,10 +15,10 @@ jobs:
       ASYNC_TEST_TIMEOUT: 120
     steps:
       - uses: actions/checkout@v2
-      - name: Set up Python 3.10.5
+      - name: Set up Python 3.10.6
         uses: actions/setup-python@v1
         with:
-          python-version: 3.10.5
+          python-version: 3.10.6
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v1
       - name: Install dependencies
@@ -62,10 +62,10 @@ jobs:
       # master builds don't have tags, which breaks setupmeta versioning. This retrieves the tags.
       - run: git fetch --prune --unshallow --tags
         if: github.ref == 'refs/heads/master'
-      - name: Set up Python 3.10.5
+      - name: Set up Python 3.10.6
         uses: actions/setup-python@v1
         with:
-          python-version: 3.10.5
+          python-version: 3.10.6
       - name: Build UI assets
         run: |
           curl -sL https://deb.nodesource.com/setup_14.x | sudo bash
