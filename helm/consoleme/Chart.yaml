@@ -10,6 +10,6 @@ appVersion: "1.16.0"
 
 dependencies:
   - name: redis
-    repository: https://charts.bitnami.com/bitnami
+    repository: https://raw.githubusercontent.com/bitnami/charts/archive-full-index/bitnami
     version: 14.3.1
     condition: redis.deployLocal
