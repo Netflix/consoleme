@@ -34,7 +34,7 @@ for spoke_account_id in spoke_accounts:
         account=spoke_account_id, region=os.getenv("AWS_REGION")
     )
     spoke_stack = ConsolemeSpokeAccountsStack(
-        app, SPOKE_BASE_NAME, env=spoke_environment
+        app, f"{SPOKE_BASE_NAME}-{spoke_account_id}", env=spoke_environment
     )  # Spoke account stack
 
 consoleme_ecs_service_stack = ConsolemeEcsServiceStack(
