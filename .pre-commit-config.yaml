@@ -9,7 +9,7 @@ repos:
       - id: debug-statements
       - id: check-yaml
         exclude: "^docs/gitbook/|^helm/consoleme|cdk/resources/create_config_lambda/config.yaml"
-  - repo: https://gitlab.com/pycqa/flake8
+  - repo: https://github.com/pycqa/flake8
     rev: 3.8.4
     hooks:
       - id: flake8
