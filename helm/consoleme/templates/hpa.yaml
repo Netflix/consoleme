@@ -1,5 +1,5 @@
 {{- if .Values.autoscaling.enabled }}
-apiVersion: autoscaling/v2beta1
+apiVersion: {{ template "apiVersionHPA" . }}
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ include "consoleme.fullname" . }}

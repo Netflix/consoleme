@@ -60,3 +60,14 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Return the appropriate apiVersion for HPA APIs.
+*/}}
+{{- define "apiVersionHPA" -}}
+{{- if semverCompare "< 1.23-0" .Capabilities.KubeVersion.GitVersion -}}
+{{- print "autoscaling/v2beta2" }}
+{{- else if semverCompare ">=1.23-0" .Capabilities.KubeVersion.GitVersion -}}
+{{- print "autoscaling/v2" }}
+{{- end -}}
+{{- end -}}
