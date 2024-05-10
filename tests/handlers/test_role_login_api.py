@@ -1,4 +1,5 @@
 """Docstring in public module."""
+
 import os
 import sys
 from unittest.mock import patch
@@ -63,8 +64,12 @@ class TestRoleLoginApi(AsyncHTTPTestCase):
                 self.body = body
 
         class TestClient:
-            async def fetch(self, url, method="GET", body=None, headers=None, ssl_options=None):
-                return TestResp(code=200, body='{"SigninToken": "testTokenSignin456223"}')
+            async def fetch(
+                self, url, method="GET", body=None, headers=None, ssl_options=None
+            ):
+                return TestResp(
+                    code=200, body='{"SigninToken": "testTokenSignin456223"}'
+                )
 
         mock_client.return_value = TestClient()
         headers = {
