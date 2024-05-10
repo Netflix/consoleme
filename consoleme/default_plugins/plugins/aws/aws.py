@@ -31,12 +31,23 @@ from consoleme.lib.dynamo import IAMRoleDynamoHandler
 from consoleme.lib.plugins import get_plugin_by_name
 from consoleme.lib.policies import send_communications_policy_change_request_v2
 from consoleme.lib.redis import RedisHandler
+from consoleme.lib.access_analyzer import AccessAnalyzer
+from consoleme.models import (
+    Action,
+    ExtendedRequestModel,
+)
+
+
 
 stats = get_plugin_by_name(config.get("plugins.metrics", "default_metrics"))()
 
 log = config.get_logger(__name__)
 
-
+try:
+    accessanalyzer = AccessAnalyzer()
+except Exception as e:  # noqa
+     accessanalyzer = None
+    
 class Aws:
     """The AWS class handles interactions with AWS."""
 
@@ -720,9 +731,134 @@ class Aws:
     def handle_detected_role(role):
         pass
 
-    async def should_auto_approve_policy_v2(self, extended_request, user, user_groups):
-        return {"approved": False}
+    async def should_auto_approve_policy_v2(
+        self, extended_request: ExtendedRequestModel, user: str, user_groups: str
+    ) -> bool: 
+        """Add here the logic to call the check_no_new_access code
 
+        Args:
+            extended_request (_type_): _description_
+            user (_type_): _description_
+            user_groups (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        # It would be something like the following
+        # client = AccessAnalyzer()
+        # client.check_no_new_access(
+        #     new_policy_document="",
+        #     existing_policy_document="",
+        #     policy_type=""
+        #     )
+        function = f"{__name__}.{sys._getframe().f_code.co_name}"
+        log_data = {"function": function, "user": user} 
+        
+        try:
+            if not config.get("dynamic_config.policy_request_autoapprove_probes.enabled"):
+                return {"approved": False}
+            
+            for change in extended_request.changes.changes:
+                account_id = extended_request.principal.principal_arn.split(":")[4]
+                log_data = {
+                    "function": function, 
+                    "requested_policy": extended_request.dict(),
+                    "user": user,
+                    "arn": extended_request.principal.principal_arn,
+                }
+                approving_probe = None
+                # We only support inline policies at this time
+                if change.change_type != "inline_policy":
+                    return {"approved": False}
+                
+                # We only want to analyze attach events
+                print(f"Checking action: {change.action}") 
+                if change.action != Action.attach:
+                    return {"approved": False}
+
+                if not accessanalyzer:
+                    return {"approved": False}
+
+                for probe in config.get(
+                    "dynamic_config.policy_request_autoapprove_probes.probes"
+                ):
+                    log_data["probe"] = probe["name"]
+                    probe_name = probe["name"]
+                    log_data["requested_policy"] = change
+                    log_data["message"] = "Running probe on requested policy"
+                    probe_result = False
+                    requested_policy_text = change.policy.policy_document
+
+                    # Do not approve "Deny" policies automatically
+                    if isinstance(requested_policy_text, dict):
+                        statements = requested_policy_text.get("Statement", [])
+                        for statement in statements:
+                            if not isinstance(statement, dict):
+                                continue
+                            if statement.get("Effect") == "Deny":
+                                return {"approved": False}
+
+                    if isinstance(requested_policy_text, dict):
+                        requested_policy_text = json.dumps(requested_policy_text)
+                    accessanalyzer_result = await sync_to_async(accessanalyzer.check_no_new_access)(
+                        new_policy_document=requested_policy_text,
+                        existing_policy_document=probe["policy"].replace(
+                            "{account_id}", account_id
+                        ),
+                        policy_type="IDENTITY_POLICY"
+                    )
+
+                    comparison = accessanalyzer_result
+
+                    allow_listed = False
+                    allowed_group = False
+
+                     # Probe will fail if ARN account ID is not in the probe's account allow-list. Default allow-list is
+                    # *
+                    for account in probe.get("accounts", {}).get("allowlist", ["*"]):
+                        if account == "*" or account_id == str(account):
+                            allow_listed = True
+                            break
+                     
+                    if not allow_listed:
+                        comparison = "DENIED_BY_ALLOWLIST"
+
+                    # Probe will fail if ARN account ID is in the probe's account blocklist
+                    for account in probe.get("accounts", {}).get("blocklist", []):
+                        if account_id == str(account):
+                            comparison = "DENIED_BY_BLOCKLIST"
+
+                    for group in probe.get("required_user_or_group", ["*"]):
+                        for g in user_groups:
+                            if group == "*" or group == g or group == user:
+                                allowed_group = True
+                                break
+
+                    if comparison == "PASS":
+                        probe_result = True
+                        policy_result = True
+                        approving_probe = probe
+                    log_data["comparison"] = comparison
+                    log_data["probe_result"] = probe_result
+                    log.debug(log_data)
+
+                if not policy_result:
+                    # If one of the policies in the request fails to auto-approve, everything fails
+                    log_data["result"] = False
+                    log_data["message"] = "Successfully ran all probes"
+                    log.debug(log_data)
+                    stats.count(f"{function}.called", tags={"result": False})
+                    return {"approved": False}
+                    
+            log_data["result"] = True
+            log_data["message"] = "Successfully ran all probes"
+            log.debug(log_data)
+            stats.count(f"{function}.called", tags={"result": True})
+            print(f"Checking probe entire: {approving_probe}") 
+            return {"approved": True, "approving_probes": [approving_probe]}
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            return {"approved": False}
 
 def init():
     """Initialize the AWS plugin."""
