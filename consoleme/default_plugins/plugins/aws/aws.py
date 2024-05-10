@@ -744,13 +744,7 @@ class Aws:
         Returns:
             _type_: _description_
         """
-        # It would be something like the following
-        # client = AccessAnalyzer()
-        # client.check_no_new_access(
-        #     new_policy_document="",
-        #     existing_policy_document="",
-        #     policy_type=""
-        #     )
+
         function = f"{__name__}.{sys._getframe().f_code.co_name}"
         log_data = {"function": function, "user": user} 
         
