@@ -1,6 +1,7 @@
 """Docstring in public module."""
 import os
 import sys
+from unittest.mock import patch
 
 import ujson as json
 from tornado.testing import AsyncHTTPTestCase
@@ -52,9 +53,20 @@ class TestRoleLoginApi(AsyncHTTPTestCase):
         self.assertEqual(response_j["type"], "redirect")
         self.assertIn("/?arn=role&warningMessage=", response_j["redirect_url"])
 
-    def test_role_api_success(self):
+    @patch("consoleme.default_plugins.plugins.aws.aws.AsyncHTTPClient")
+    def test_role_api_success(self, mock_client):
         from consoleme.config import config
 
+        class TestResp:
+            def __init__(self, code, body):
+                self.code = code
+                self.body = body
+
+        class TestClient:
+            async def fetch(self, url, method="GET", body=None, headers=None, ssl_options=None):
+                return TestResp(code=200, body='{"SigninToken": "testTokenSignin456223"}')
+
+        mock_client.return_value = TestClient()
         headers = {
             config.get("auth.user_header_name"): "userwithrole@example.com",
             config.get("auth.groups_header_name"): "groupa@example.com",
@@ -67,6 +79,6 @@ class TestRoleLoginApi(AsyncHTTPTestCase):
         self.assertEqual(response_j["reason"], "console_login")
         self.assertEqual(response_j["role"], "arn:aws:iam::123456789012:role/roleA")
         self.assertIn(
-            "https://signin.aws.amazon.com/federation?Action=login&Issuer=YourCompany&Destination=https%3A%2F%2Fus-east-1.console.aws.amazon.com&SigninToken=",
+            "https://signin.aws.amazon.com/federation?Action=login&Issuer=YourCompany&Destination=https%3A%2F%2Fus-east-1.console.aws.amazon.com&SigninToken=testTokenSignin456223",
             response_j["redirect_url"],
         )
