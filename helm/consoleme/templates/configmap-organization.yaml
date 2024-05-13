@@ -22,7 +22,7 @@ data:
     #    # organizations:ListRoots
     #    # organizations:ListTargetsForPolicy
         organizations_master_role_to_assume: "{{ .Values.cache_accounts_from_aws_organizations.organizations_master_role_to_assume }}"
-    
+
     cache_cloud_accounts:
       from_aws_organizations: True
 {{- end }}
