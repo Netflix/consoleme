@@ -138,10 +138,10 @@ async def generate_honeybee_request_from_change_model_array(
                 policy["Statement"].extend(
                     CommentedSeq(change.policy.policy_document["Statement"])
                 )
-                yaml_content["Policies"][i]["Statement"] = (
-                    await minimize_iam_policy_statements(
-                        json.loads(json.dumps(policy["Statement"]))
-                    )
+                yaml_content["Policies"][i][
+                    "Statement"
+                ] = await minimize_iam_policy_statements(
+                    json.loads(json.dumps(policy["Statement"]))
                 )
             if not successfully_merged_statement:
                 yaml_content["Policies"].append(
