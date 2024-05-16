@@ -33,7 +33,7 @@ async def generate_honeybee_request_from_change_model_array(
     repositories_for_request = {}
     primary_principal = None
     t = int(time.time())
-    suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=10))
+    suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=10)) # nosec
     generated_branch_name = f"{user}-{t}-{suffix}"
     policy_name = config.get(
         "generate_honeybee_request_from_change_model_array.policy_name",
@@ -83,17 +83,21 @@ async def generate_honeybee_request_from_change_model_array(
             "main_branch_name"
         ]
 
-        change_file_path = os.path.abspath(f"{repo.working_dir}/{change.principal.resource_identifier}")
+        change_file_path = os.path.abspath(
+            f"{repo.working_dir}/{change.principal.resource_identifier}"
+        )
         clone_wd_path = os.path.abspath(repo.working_dir)
         if os.path.commonprefix((clone_wd_path, change_file_path)) != clone_wd_path:
-            log.exception(f"User attempted to reference a file outside of the repository: {change_file_path} is not within {clone_wd_path}")
+            log.exception(
+                f"User attempted to reference a file outside of the repository: {change_file_path} is not within {clone_wd_path}"
+            )
             raise ValueError("Unable to raise change request for this resource")
 
         try:
             git_client.checkout(
                 f"origin/{main_branch_name}", "--", change.principal.resource_identifier
             )
-        except Exception as e:
+        except Exception:
             log.exception(
                 f"Unable to checkout {main_branch_name} for {change.principal.resource_identifier}"
             )
@@ -132,10 +136,10 @@ async def generate_honeybee_request_from_change_model_array(
                 policy["Statement"].extend(
                     CommentedSeq(change.policy.policy_document["Statement"])
                 )
-                yaml_content["Policies"][i][
-                    "Statement"
-                ] = await minimize_iam_policy_statements(
-                    json.loads(json.dumps(policy["Statement"]))
+                yaml_content["Policies"][i]["Statement"] = (
+                    await minimize_iam_policy_statements(
+                        json.loads(json.dumps(policy["Statement"]))
+                    )
                 )
             if not successfully_merged_statement:
                 yaml_content["Policies"].append(
