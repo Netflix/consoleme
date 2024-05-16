@@ -33,7 +33,7 @@ async def generate_honeybee_request_from_change_model_array(
     repositories_for_request = {}
     primary_principal = None
     t = int(time.time())
-    suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=10)) # nosec
+    suffix = "".join(random.choices(string.ascii_lowercase + string.digits, k=10))  # nosec
     generated_branch_name = f"{user}-{t}-{suffix}"
     policy_name = config.get(
         "generate_honeybee_request_from_change_model_array.policy_name",
