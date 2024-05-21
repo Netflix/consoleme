@@ -32,3 +32,66 @@ export_to_terraform_enabled: true
 # because Weep tends to make an IPv6 request, and the browser makes an IPv4 request.
 challenge_url:
   request_ip_must_match_challenge_creation_ip: false
+
+dynamic_config:
+  policy_request_autoapprove_probes: 
+    enabled: true
+    probes:
+      - name: same_account_sqs
+        required_user_or_group:
+          - "*"
+        description: Automatically approve same-account SQS requests
+        accounts:
+          allowlist:
+            - "*"
+          blocklist:
+            - 1234567
+        policy: |-
+          { 
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Action": [
+                  "sqs:List*",
+                  "sqs:Get*",
+                  "sqs:Send*",
+                  "sqs:ChangeMessageVisibility*",
+                  "sqs:DeleteMessage*",
+                  "sqs:ReceiveMessage*",
+                  "sqs:StartMessageMoveTask",
+                  "sqs:ListMessageMoveTasks",
+                  "sqs:CancelMessageMoveTask"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                  "arn:aws:sqs:*:{account_id}:*"
+                ]
+              }
+            ]
+          }
+      - name: s3_probe
+        required_user_or_group:
+          - 'consoleme_admin@example.com'
+        description: Automatically approve s3 read/write requests made by the S3 team
+        accounts:
+          allowlist:
+            - "*"
+          blocklist:
+            - 1234567
+        policy: |-
+          { 
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Action": [
+                  "s3:Get*",
+                  "s3:List*",
+                  "s3:PutObject*"
+                ],
+                "Effect": "Allow",
+                "Resource": [
+                  "arn:aws:s3:::*"
+                ]
+              }
+            ]
+          }

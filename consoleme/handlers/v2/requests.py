@@ -330,10 +330,12 @@ class RequestHandler(BaseAPIV2Handler):
                                 f"{log_data['function']}.probe_auto_approved",
                                 tags={"user": self.user},
                             )
+                        
                             approving_probes = []
                             for approving_probe in should_auto_approve_request[
                                 "approving_probes"
                             ]:
+                                
                                 approving_probe_comment = CommentModel(
                                     id=str(uuid.uuid4()),
                                     timestamp=int(time.time()),
