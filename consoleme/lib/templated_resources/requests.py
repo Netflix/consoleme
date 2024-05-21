@@ -1,5 +1,8 @@
 import io
 import json
+import os
+import random
+import string
 import time
 
 from ruamel.yaml.comments import CommentedSeq
@@ -30,7 +33,10 @@ async def generate_honeybee_request_from_change_model_array(
     repositories_for_request = {}
     primary_principal = None
     t = int(time.time())
-    generated_branch_name = f"{user}-{t}"
+    suffix = "".join(
+        random.choices(string.ascii_lowercase + string.digits, k=10)  # nosec
+    )
+    generated_branch_name = f"{user}-{t}-{suffix}"
     policy_name = config.get(
         "generate_honeybee_request_from_change_model_array.policy_name",
         "self_service_generated",
@@ -78,10 +84,26 @@ async def generate_honeybee_request_from_change_model_array(
         main_branch_name = repositories_for_request[change.principal.repository_name][
             "main_branch_name"
         ]
-        git_client.checkout(
-            f"origin/{main_branch_name}", change.principal.resource_identifier
+
+        change_file_path = os.path.abspath(
+            f"{repo.working_dir}/{change.principal.resource_identifier}"
         )
-        change_file_path = f"{repo.working_dir}/{change.principal.resource_identifier}"
+        clone_wd_path = os.path.abspath(repo.working_dir)
+        if os.path.commonprefix((clone_wd_path, change_file_path)) != clone_wd_path:
+            log.exception(
+                f"User attempted to reference a file outside of the repository: {change_file_path} is not within {clone_wd_path}"
+            )
+            raise ValueError("Unable to raise change request for this resource")
+
+        try:
+            git_client.checkout(
+                f"origin/{main_branch_name}", "--", change.principal.resource_identifier
+            )
+        except Exception:
+            log.exception(
+                f"Unable to checkout {main_branch_name} for {change.principal.resource_identifier}"
+            )
+            raise ValueError("Unable to raise change request for this resource")
         with open(change_file_path, "r") as f:
             yaml_content = yaml.load(f)
 

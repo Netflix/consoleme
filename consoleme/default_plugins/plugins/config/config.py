@@ -19,6 +19,7 @@ class Config:
         config_location = os.environ.get("CONFIG_LOCATION")
         default_save_location = f"{os.curdir}/consoleme.yaml"
         if config_location:
+            # Pull config from S3 if an S3 URL is provided
             if config_location.startswith("s3://"):
                 import boto3
 
@@ -43,6 +44,7 @@ class Config:
             "/etc/consoleme/config/config.yaml",
             "example_config/example_config_development.yaml",
         ]
+        # Use the first config location that exists from the above list.
         for loc in config_locations:
             if os.path.exists(loc):
                 return loc

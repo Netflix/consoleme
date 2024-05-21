@@ -27,6 +27,7 @@ class Repository:
         await sync_to_async(git.Git(self.tempdir).clone)(*args, **kwargs)
         self.repo = git.Repo(os.path.join(self.tempdir, self.repo_name))
         self.repo.config_writer().set_value("user", "name", "ConsoleMe").release()
+        self.repo.config_writer().set_value("core", "symlinks", "false").release()
         if self.git_email:
             self.repo.config_writer().set_value(
                 "user", "email", self.git_email
