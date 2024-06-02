@@ -135,7 +135,7 @@ genson==1.2.2
     # via datamodel-code-generator
 gitdb==4.0.9
     # via gitpython
-gitpython==3.1.27
+gitpython==3.1.32
     # via -r requirements.in
 google-api-core==2.8.2
     # via
@@ -376,8 +376,6 @@ ruamel-yaml==0.17.21
     # via
     #   -r requirements.in
     #   prance
-ruamel-yaml-clib==0.2.6
-    # via ruamel-yaml
 s3transfer==0.6.0
     # via boto3
 schema==0.7.5
@@ -420,10 +418,6 @@ tenacity==8.0.1
     # via -r requirements.in
 toml==0.10.2
     # via datamodel-code-generator
-tomli==2.0.1
-    # via
-    #   black
-    #   pylint
 tomlkit==0.11.1
     # via pylint
 tornado==6.2
