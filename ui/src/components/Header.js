@@ -104,7 +104,21 @@ const ConsoleMeHeader = () => {
       {
         key: user.user,
         text: user.user,
-        value: user.user,
+        value: (
+          <>
+            <img
+              src={user?.employee_photo_url}
+              alt="profile"
+              height="28px"
+              style={{
+                borderRadius: "50%",
+                verticalAlign: "middle",
+                marginRight: "11px"
+              }}
+            />
+            {user.user}
+          </>
+        ),
         image: { avatar: true, src: user?.employee_photo_url },
       },
       {
@@ -126,6 +140,7 @@ const ConsoleMeHeader = () => {
         inline
         options={dropdownOptions}
         defaultValue={dropdownOptions[0].value}
+        text={dropdownOptions[0].value}
         icon={null}
       />
     );
