@@ -42,6 +42,9 @@ redis:
     global: consoleme-redis
   db: 0
   port: 6379
+  
+tornado:
+  port: 8081  
 ```
 
 4. Upload the config to amazon S3
