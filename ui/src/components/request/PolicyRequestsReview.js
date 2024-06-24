@@ -191,12 +191,8 @@ class PolicyRequestReview extends Component {
                 messages: [response.message],
               });
             } else {
-              const {
-                request,
-                request_config,
-                last_updated,
-                template,
-              } = response;
+              const { request, request_config, last_updated, template } =
+                response;
               this.setState({
                 extendedRequest: JSON.parse(request),
                 requestConfig: request_config,
