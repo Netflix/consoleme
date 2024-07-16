@@ -17,7 +17,7 @@
     "js-yaml": "^4.1.0",
     "json-2-csv": "^3.14.4",
     "lodash": "^4.17.21",
-    "luxon": "^2.0.2",
+    "luxon": "^2.5.2",
     "monaco-editor": ">= 0.25.0 < 1",
     "postcss": ">=8.2.13",
     "prop-types": "^15.6.0",
