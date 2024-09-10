@@ -523,7 +523,7 @@ orderedmultidict==1.0.1
     #   -c requirements.txt
     #   -r requirements.txt
     #   furl
-packaging==21.0
+packaging==24.1
     # via
     #   -c requirements.txt
     #   -r requirements.txt

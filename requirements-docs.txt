@@ -38,7 +38,7 @@ mkdocs-material==7.2.6
     # via -r requirements-docs.in
 mkdocs-material-extensions==1.0.3
     # via mkdocs-material
-packaging==21.0
+packaging==24.1
     # via
     #   -c requirements-test.txt
     #   -c requirements.txt

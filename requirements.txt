@@ -253,7 +253,7 @@ ordered-set==4.0.2
     # via deepdiff
 orderedmultidict==1.0.1
     # via furl
-packaging==21.0
+packaging==24.1
     # via bleach
 pandas==1.3.2
     # via -r requirements.in

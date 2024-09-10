@@ -8,7 +8,7 @@ ENV NODE_OPTIONS="--max-old-space-size=20000"
 ENV SETUPTOOLS_USE_DISTUTILS=stdlib
 
 # Install OS dependencies
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash
 RUN apt clean
 RUN apt update
 RUN apt install -y \
