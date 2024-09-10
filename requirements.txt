@@ -257,7 +257,9 @@ ordered-set==4.1.0
 orderedmultidict==1.0.1
     # via furl
 packaging==24.1
-    # via bleach
+    # via
+    #   marshmallow
+    #   redis
 pandas==1.4.3
     # via -r requirements.in
 parliament==1.5.2
