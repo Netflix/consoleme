@@ -256,7 +256,7 @@ ordered-set==4.1.0
     # via deepdiff
 orderedmultidict==1.0.1
     # via furl
-packaging==21.3
+packaging==24.1
     # via
     #   marshmallow
     #   redis
