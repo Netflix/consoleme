@@ -791,6 +791,10 @@ components:
             An array with a list of extra actions the user wants appended to the policy
           items:
             type: string
+        expiration_date:
+          type: integer
+          example: 20210905
+          description: Date to expire requested policy, in the format of YYYYmmdd
     AdvancedChangeGeneratorModel:
       allOf:
         - $ref: "#/components/schemas/ChangeGeneratorModel"
@@ -1062,6 +1066,10 @@ components:
           default: false
         updated_by:
           type: string
+        expiration_date:
+          type: integer
+          example: 20210905
+          description: Date to expire requested policy, in the format of YYYYmmdd
     GenericFileChangeModel:
       allOf:
         - $ref: "#/components/schemas/ChangeModel"
@@ -1608,6 +1616,9 @@ components:
               type: boolean
               default: False
             managed_policies:
+              type: boolean
+              default: False
+            max_session_duration:
               type: boolean
               default: False
     CreateCloneRequestResponse:

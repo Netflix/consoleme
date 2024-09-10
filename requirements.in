@@ -5,14 +5,13 @@ bcrypt # Used for password hash/verification
 bleach
 boto3
 cchardet
-celery[redis]
+celery
 cloudaux
 cryptography
 datamodel-code-generator
-decorator<5 # Internal requirement has decorator pinned to <5.
+decorator
 deepdiff
 defusedxml
-ed25519
 elasticsearch
 elasticsearch_dsl
 furl
@@ -22,14 +21,14 @@ google-auth-httplib2
 google-cloud-storage
 gunicorn
 hiredis
-idna<3  # Required because moto has it pinned
-ipython
+idna
 isodate
 jmespath
 jsonschema
 kombu
 marshmallow
-numpy==1.19.5 # Internal dependency pin
+mccabe==0.6.1 # pylint==2.14.4 and flake8==4.0.1 require differing versions
+numpy
 logmatic-python
 lxml
 okta_jwt
@@ -44,13 +43,13 @@ pycurl # For AsyncHTTPClient
 pydantic
 pyjwt
 pylint
+PyNaCl
 python-dateutil
-python-json-logger==0.1.11 # Needed until this is merged and new version created: https://github.com/madzak/python-json-logger/pull/113
+python-json-logger
 python3-saml
 pytz
 questionary
 redis
-redislite
 requests
 retry
 retrying

@@ -15,26 +15,27 @@ test_args := --cov-report term-missing
 CONSOLEME_CONFIG_ENTRYPOINT := $(or ${CONSOLEME_CONFIG_ENTRYPOINT},${CONSOLEME_CONFIG_ENTRYPOINT},default_config)
 .PHONY: env_install
 env_install:
-	pip install wheel
-	pip install -r requirements.txt -r requirements-test.txt
+	pip install wheel -r requirements.txt -r requirements-test.txt
 	pip install -e .
 
-.PHONY: install
-install: clean
-	make env_install
+.PHONY: build_ui
+build_ui:
 	yarn --cwd ui
 	yarn --cwd ui build:prod
-	make bootstrap
 
-.PHONY: bootstrap
-bootstrap:
+.PHONY: install
+install: clean env_install build_ui bootstrap
+
+.PHONY: docker_volume
+docker_volume:
 	if docker volume create dynamodb-data; then \
 		echo "Created persistent docker volume for dynamodb."; \
 	else \
 		echo "Unable to configure persistent Dynamo directory. Docker must be installed on this host or container."; \
 	fi
-	make dynamo
-	make redis
+
+.PHONY: bootstrap
+bootstrap: docker_volume dynamo redis
 
 .PHONY: dynamo
 dynamo:
@@ -48,7 +49,7 @@ redis:
 
 .PHONY: test
 test: clean
-	ASYNC_TEST_TIMEOUT=60 CONSOLEME_CONFIG_ENTRYPOINT=$(CONSOLEME_CONFIG_ENTRYPOINT) CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest)
+	ASYNC_TEST_TIMEOUT=60 CONFIG_LOCATION=example_config/example_config_test.yaml $(pytest)
 
 .PHONY: bandit
 bandit: clean
@@ -81,7 +82,7 @@ test-lint: test lint
 
 .PHONY: docs
 docs:
-	make -C docs html
+	$(MAKE) -C docs html
 
 .PHONY: docsopen
 docsopen: docs

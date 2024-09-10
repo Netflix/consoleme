@@ -9,8 +9,8 @@ repos:
       - id: debug-statements
       - id: check-yaml
         exclude: "^docs/gitbook/|^helm/consoleme|cdk/resources/create_config_lambda/config.yaml"
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
     hooks:
       - id: flake8
         args: ["--exclude", "consoleme/models.py"]
@@ -21,17 +21,17 @@ repos:
       - id: seed-isort-config
 
   - repo: https://github.com/timothycrosley/isort
-    rev: "5.6.4" # Use the revision sha / tag you want to point at
+    rev: "5.13.2" # Use the revision sha / tag you want to point at
     hooks:
       - id: isort # Run `isort -rc <filepath>` to autofix
         pass_filenames: true
         args: ["--profile", "black"]
 
   - repo: https://github.com/ambv/black
-    rev: 20.8b1
+    rev: 22.3.0
     hooks:
       - id: black
-        language_version: python3.8
+        language_version: python3.10
 
   - repo: https://github.com/pre-commit/pygrep-hooks
     rev: v1.7.0

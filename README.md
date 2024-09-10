@@ -1,4 +1,4 @@
-[![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-386/)
+[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/release/python-3105/)
 [![Discord](https://img.shields.io/discord/730908778299523072?label=Discord&logo=discord&style=flat-square)](https://discord.gg/nQVpNGGkYu)
 
 # ConsoleMe
@@ -54,6 +54,7 @@ or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-
 
 ## Third Party Mentions
 
+- [Achieving least-privilege at FollowAnalytics with Repokid, Aardvark and ConsoleMe](https://medium.com/followanalytics/granting-least-privileges-at-followanalytics-with-repokid-aardvark-and-consoleme-895d8daf604a)
 - [Netflix’s ConsoleMe local installation on Linux machine](https://kerneltalks.com/tools/netflixs-consoleme-local-installation-on-linux-machine/)
 - [Improving database security at FollowAnalytics with AWS IAM database authentication and ConsoleMe](https://medium.com/followanalytics/improving-database-security-at-followanalytics-with-aws-iam-database-authentication-and-consoleme-d00ea8a6edef)
 - [Awesome IAM Policy Tools](https://github.com/kdeldycke/awesome-iam#aws-policy-tools)
@@ -62,7 +63,7 @@ or [**SAML**](https://hawkins.gitbook.io/consoleme/configuration/authentication-
 
 ## Companies that use ConsoleMe (alphabetically sorted)
 
-- [AB180](https://en.ab180.co/)
+- [AB180](https://www.ab180.co/en)
 - [Calm](https://www.calm.com/)
 - [FollowAnalytics](https://followanalytics.com/)
 - [myKaarma](https://mykaarma.com/)

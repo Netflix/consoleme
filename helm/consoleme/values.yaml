@@ -225,6 +225,11 @@ aws:
   account_number: "<Main AWS account number>"
   region: us-east-1
 
+cache_accounts_from_aws_organizations:
+  enabled: false
+  organizations_master_account_id: '<Organization AWS account number>'
+  organizations_master_role_to_assume: ConsoleMe
+
 cli_auth: {}
 #   certificate_header: certificate_header
 #   required_headers:

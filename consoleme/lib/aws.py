@@ -415,7 +415,9 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
         region=region,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get(
+                "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+            ).format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -428,7 +430,9 @@ async def fetch_sns_topic(account_id: str, region: str, resource_name: str) -> d
         region=region,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get(
+                "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+            ).format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -465,7 +469,9 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         QueueName=resource_name,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get(
+                "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+            ).format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -479,7 +485,9 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         AttributeNames=["All"],
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get(
+                "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+            ).format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -492,7 +500,9 @@ async def fetch_sqs_queue(account_id: str, region: str, resource_name: str) -> d
         QueueUrl=queue_url,
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get(
+                "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+            ).format(region=config.region),
         ),
         client_kwargs=config.get("boto3.client_kwargs", {}),
         retry_max_attempts=2,
@@ -535,7 +545,9 @@ async def get_bucket_location_with_fallback(
             region=config.region,
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get(
+                    "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+                ).format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
@@ -581,7 +593,9 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             region=config.region,
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get(
+                    "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+                ).format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
@@ -602,7 +616,9 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             Bucket=bucket_name,
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get(
+                    "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+                ).format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
@@ -620,7 +636,9 @@ async def fetch_s3_bucket(account_id: str, bucket_name: str) -> dict:
             Bucket=bucket_name,
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get(
+                    "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+                ).format(region=config.region),
             ),
             client_kwargs=config.get("boto3.client_kwargs", {}),
             retry_max_attempts=2,
@@ -923,6 +941,11 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
         raise MissingConfigurationValue(
             "Missing Default Assume Role Policy Configuration"
         )
+
+    default_max_session_duration = config.get(
+        "user_role_creator.default_max_session_duration", 3600
+    )
+
     if create_model.description:
         description = create_model.description
     else:
@@ -944,6 +967,7 @@ async def create_iam_role(create_model: RoleCreationRequestModel, username):
             RoleName=create_model.role_name,
             AssumeRolePolicyDocument=json.dumps(default_trust_policy),
             Description=description,
+            MaxSessionDuration=default_max_session_duration,
             Tags=[],
         )
         results["action_results"].append(
@@ -1085,6 +1109,16 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
             "Missing Default Assume Role Policy Configuration"
         )
 
+    default_max_session_duration = config.get(
+        "user_role_creator.default_max_session_duration", 3600
+    )
+
+    max_session_duration = (
+        role.max_session_duration
+        if clone_model.options.max_session_duration
+        else default_max_session_duration
+    )
+
     if (
         clone_model.options.copy_description
         and role.description is not None
@@ -1117,6 +1151,7 @@ async def clone_iam_role(clone_model: CloneRoleRequestModel, username):
             RoleName=clone_model.dest_role_name,
             AssumeRolePolicyDocument=json.dumps(trust_policy),
             Description=description,
+            MaxSessionDuration=max_session_duration,
             Tags=tags,
         )
         results["action_results"].append(
@@ -1814,7 +1849,7 @@ def allowed_to_sync_role(
     This function determines whether ConsoleMe is allowed to sync or otherwise manipulate an IAM role. By default,
     ConsoleMe will sync all roles that it can get its grubby little hands on. However, ConsoleMe administrators can tell
     ConsoleMe to only sync roles with either 1) Specific ARNs, or 2) Specific tag key/value pairs. All configured tags
-    must exist on the role for ConsoleMe to sync it.
+    must exist on the role for ConsoleMe to sync it., or 3) Specific tag keys
 
     Here's an example configuration for a tag-based restriction:
 
@@ -1837,6 +1872,15 @@ def allowed_to_sync_role(
         - arn:aws:iam::333333333333:role/role-name-here-1
     ```
 
+    And another one for an tag key based restriction:
+
+    ```
+    roles:
+      allowed_tag_keys:
+        - cosoleme-authorized
+        - consoleme-authorized-cli-only
+    ```
+
     :param
         arn: The AWS role arn
         role_tags: A dictionary of role tags
@@ -1845,10 +1889,22 @@ def allowed_to_sync_role(
     """
     allowed_tags = config.get("roles.allowed_tags", {})
     allowed_arns = config.get("roles.allowed_arns", [])
-    if not allowed_tags and not allowed_arns:
+    allowed_tag_keys = config.get("roles.allowed_tag_keys", [])
+    if not allowed_tags and not allowed_arns and not allowed_tag_keys:
         return True
 
     if role_arn in allowed_arns:
+        return True
+
+    # Convert list of role tag dicts to an array of tag keys
+    # ex:
+    # role_tags = [{'Key': 'consoleme-authorized', 'Value': 'consoleme_admins'},
+    # {'Key': 'Description', 'Value': 'ConsoleMe OSS Demo Role'}]
+    # so: actual_tag_keys = ['consoleme-authorized', 'Description']
+    actual_tag_keys = [d["Key"] for d in role_tags]
+
+    # If any allowed tag key exists in the role's actual_tags this condition will pass
+    if allowed_tag_keys and any(x in allowed_tag_keys for x in actual_tag_keys):
         return True
 
     # Convert list of role tag dicts to a single key/value dict of tags
@@ -1864,6 +1920,67 @@ def allowed_to_sync_role(
     if allowed_tags and allowed_tags.items() <= actual_tags.items():
         return True
     return False
+
+
+def remove_temp_policies(role, iam_client) -> bool:
+    """
+    If this feature is enabled, it will look at inline role policies and remove expired policies if they have been
+    designated as temporary. Policies can be designated as temporary through a certain prefix in the policy name.
+    In the future, we may allow specifying temporary policies by `Sid` or other means.
+
+    :param role: A single AWS IAM role entry in dictionary format as returned by the `get_account_authorization_details`
+        call
+    :return: bool: Whether policies were removed or not
+    """
+    function = f"{__name__}.{sys._getframe().f_code.co_name}"
+
+    if not config.get("policies.temp_policy_support"):
+        return False
+
+    temp_policy_prefix = config.get("policies.temp_policy_prefix", "cm_delete-on")
+    if not temp_policy_prefix:
+        return False
+    current_dateint = datetime.today().strftime("%Y%m%d")
+
+    log_data = {
+        "function": function,
+        "temp_policy_prefix": temp_policy_prefix,
+        "role_arn": role["Arn"],
+    }
+    policies_removed = False
+    for policy in role["RolePolicyList"]:
+        try:
+            policy_name = policy["PolicyName"]
+            if not policy_name.startswith(temp_policy_prefix):
+                continue
+            expiration_date = policy_name.replace(temp_policy_prefix, "", 1).split("_")[
+                1
+            ]
+            if not current_dateint >= expiration_date:
+                continue
+            log.debug(
+                {
+                    **log_data,
+                    "message": "Deleting temporary policy",
+                    "policy_name": policy_name,
+                }
+            )
+            iam_client.delete_role_policy(
+                RoleName=role["RoleName"], PolicyName=policy_name
+            )
+            policies_removed = True
+        except Exception as e:
+            log.error(
+                {
+                    **log_data,
+                    "message": "Error deleting temporary IAM policy",
+                    "error": str(e),
+                },
+                exc_info=True,
+            )
+            sentry_sdk.capture_exception()
+
+    return policies_removed
 
 
 def get_aws_principal_owner(role_details: Dict[str, Any]) -> Optional[str]:
@@ -2001,7 +2118,9 @@ async def simulate_iam_principal_action(
         assume_role=config.get("policies.role_name"),
         sts_client_kwargs=dict(
             region_name=config.region,
-            endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+            endpoint_url=config.get(
+                "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+            ).format(region=config.region),
         ),
         retry_max_attempts=2,
     )

@@ -168,7 +168,9 @@ def map_operation_to_api(operation, default):
         "REST.PUT.OBJECT_TAGGING": "s3:PutObjectTagging",
         "REST.PUT.PART": "s3:PutObject",
         "REST.PUT.PUBLIC_ACCESS_BLOCK": "s3:PutBucketPublicAccessBlock",
+        "REST.PUT.REPLICATION": "s3:PutReplicationConfiguration",
         "REST.PUT.VERSIONING": "s3:putbucketversioning",
+        "REST.PUT.WEBSITE": "s3:PutBucketWebsite",
     }
     api_call = operations_map.get(operation)
     if api_call is None:

@@ -41,6 +41,12 @@ celery:
     enabled: true
   cache_cloudtrail_denies:
     enabled: true
+  broker:
+    global: filesystem://.pytest_cache/0
+  broker_transport_options:
+    data_folder_in: .pytest_cache/celery_data_folder_in
+    data_folder_out: .pytest_cache/celery_data_folder_out
+    data_folder_processed: .pytest_cache/celery_data_folder_processed
 event_bridge:
   detect_role_changes_and_update_cache:
     queue_arn: arn:aws:sqs:{region}:123456789012:consoleme-cloudtrail-role-events-test
@@ -84,6 +90,7 @@ user_role_creator:
   default_trust_policy: {}
 
 policies:
+  temp_policy_support: true
   supported_resource_types_for_policy_application:
     - s3
     - sns

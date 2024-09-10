@@ -1,5 +1,5 @@
 """Configuration handling library."""
-import collections
+import collections.abc
 import datetime
 import logging
 import os
@@ -35,7 +35,7 @@ def dict_merge(dct: dict, merge_dct: dict):
         if (
             k in dct
             and isinstance(dct[k], dict)
-            and isinstance(merge_dct[k], collections.Mapping)
+            and isinstance(merge_dct[k], collections.abc.Mapping)
         ):
             dict_merge(dct[k], merge_dct[k])
         else:
@@ -156,24 +156,6 @@ class Configuration(object):
         # Main thread exited, signal to other threads
         main_exit_flag.set()
 
-    def purge_redislite_cache(self):
-        """
-        Purges redislite cache in primary DB periodically. This will force a cache refresh, and it is
-        convenient for cases where you cannot securely run shared Redis (ie: AWS AppRunner)
-        """
-        if not self.get("redis.use_redislite"):
-            return
-        from consoleme.lib.redis import RedisHandler
-
-        red = RedisHandler().redis_sync()
-        while threading.main_thread().is_alive():
-            red.flushdb()
-            # Wait till main exit flag is set OR a fixed timeout
-            if main_exit_flag.wait(
-                timeout=self.get("redis.purge_redislite_cache_interval", 1800)
-            ):
-                break
-
     async def merge_extended_paths(self, extends, dir_path):
         for s in extends:
             extend_config = {}
@@ -243,10 +225,6 @@ class Configuration(object):
         if allow_start_background_threads:
             Timer(0, self.__set_flag_on_main_exit, ()).start()
 
-        if allow_start_background_threads and self.get("redis.use_redislite"):
-            t = Timer(1, self.purge_redislite_cache, ())
-            t.start()
-
         if allow_start_background_threads and self.get("config.load_from_dynamo", True):
             t = Timer(2, self.load_config_from_dynamo_bg_thread, ())
             t.start()
@@ -281,20 +259,8 @@ class Configuration(object):
             return self.log
         if not name:
             name = self.get("application_name", "consoleme")
-        level_c = self.get("logging.level", "debug")
-        if level_c == "info":
-            level = logging.INFO
-        elif level_c == "critical":
-            level = logging.CRITICAL
-        elif level_c == "error":
-            level = logging.ERROR
-        elif level_c == "warning":
-            level = logging.WARNING
-        elif level_c == "debug":
-            level = logging.DEBUG
-        else:
-            # default
-            level = logging.DEBUG
+        level_str: str = self.get("logging.level", "debug")
+        level = logging.getLevelName(level_str.upper())
         filter_c = ContextFilter()
         format_c = self.get(
             "logging.format",
@@ -373,8 +339,6 @@ class Configuration(object):
             "spectator.HttpClient": "WARNING",
             "spectator.Registry": "WARNING",
             "urllib3": "ERROR",
-            "redislite.client": "WARNING",
-            "redislite.configuration": "WARNING",
         }
         for logger, level in self.get("logging_levels", default_logging_levels).items():
             logging.getLogger(logger).setLevel(level)

@@ -10,7 +10,6 @@ command: celery -A consoleme.celery_tasks.celery_tasks worker --loglevel=info -l
 from __future__ import absolute_import
 
 import json  # We use a separate SetEncoder here so we cannot use ujson
-import os
 import sys
 import time
 from datetime import datetime, timedelta
@@ -58,6 +57,7 @@ from consoleme.lib.aws import (
     cache_org_structure,
     get_aws_principal_owner,
     get_enabled_regions_for_account,
+    remove_temp_policies,
 )
 from consoleme.lib.aws_config import aws_config
 from consoleme.lib.cache import (
@@ -116,25 +116,13 @@ app = Celery(
     ),
     backend=config.get(
         f"celery.backend.{config.region}",
-        config.get("celery.broker.global", "redis://127.0.0.1:6379/2"),
+        config.get("celery.backend.global"),
     ),
 )
 
-if config.get("redis.use_redislite"):
-    import tempfile
-
-    import redislite
-
-    redislite_db_path = os.path.join(
-        config.get("redis.redislite.db_path", tempfile.NamedTemporaryFile().name)
-    )
-    redislite_client = redislite.Redis(redislite_db_path)
-    redislite_socket_path = f"redis+socket://{redislite_client.socket_file}"
-    app = Celery(
-        "tasks",
-        broker=f"{redislite_socket_path}?virtual_host=1",
-        backend=f"{redislite_socket_path}?virtual_host=2",
-    )
+broker_transport_options = config.get("celery.broker_transport_options")
+if broker_transport_options:
+    app.conf.update({"broker_transport_options": dict(broker_transport_options)})
 
 app.conf.result_expires = config.get("celery.result_expires", 60)
 app.conf.worker_prefetch_multiplier = config.get("celery.worker_prefetch_multiplier", 4)
@@ -837,17 +825,19 @@ def cache_iam_resources_for_account(account_id: str) -> Dict[str, Any]:
     if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
     ) in ["dev", "test"]:
-        client = boto3_cached_conn(
-            "iam",
+        conn = dict(
             account_number=account_id,
             assume_role=config.get("policies.role_name"),
             region=config.region,
+            client_kwargs=config.get("boto3.client_kwargs", {}),
             sts_client_kwargs=dict(
                 region_name=config.region,
-                endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                endpoint_url=config.get(
+                    "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+                ).format(region=config.region),
             ),
-            client_kwargs=config.get("boto3.client_kwargs", {}),
         )
+        client = boto3_cached_conn("iam", **conn)
         paginator = client.get_paginator("get_account_authorization_details")
         response_iterator = paginator.paginate()
         all_iam_resources = {}
@@ -952,6 +942,9 @@ def cache_iam_resources_for_account(account_id: str) -> Dict[str, Any]:
         ttl: int = int((datetime.utcnow() + timedelta(hours=36)).timestamp())
         # Save them:
         for role in iam_roles:
+            if remove_temp_policies(role, client):
+                role = aws.get_iam_role_sync(account_id, role.get("RoleName", conn))
+                async_to_sync(aws.cloudaux_to_aws)(role)
             role_entry = {
                 "arn": role.get("Arn"),
                 "name": role.get("RoleName"),
@@ -1467,7 +1460,9 @@ def cache_sqs_queues_for_account(account_id: str) -> Dict[str, Union[str, int]]:
                 read_only=True,
                 sts_client_kwargs=dict(
                     region_name=config.region,
-                    endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                    endpoint_url=config.get(
+                        "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+                    ).format(region=config.region),
                 ),
                 client_kwargs=config.get("boto3.client_kwargs", {}),
             )
@@ -1533,7 +1528,9 @@ def cache_sns_topics_for_account(account_id: str) -> Dict[str, Union[str, int]]:
                 read_only=True,
                 sts_client_kwargs=dict(
                     region_name=config.region,
-                    endpoint_url=f"https://sts.{config.region}.amazonaws.com",
+                    endpoint_url=config.get(
+                        "aws.sts_endpoint_url", "https://sts.{region}.amazonaws.com"
+                    ).format(region=config.region),
                 ),
                 client_kwargs=config.get("boto3.client_kwargs", {}),
             )
@@ -1705,7 +1702,6 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
     s3_key = config.get(
         "aws_config_cache.s3.file", "aws_config_cache/cache_{account_id}_v1.json.gz"
     ).format(account_id=account_id)
-    dynamo = UserDynamoHandler()
     # Only query in active region, otherwise get data from DDB
     if config.region == config.get("celery.active_region", config.region) or config.get(
         "environment"
@@ -1738,7 +1734,12 @@ def cache_resources_from_aws_config_for_account(account_id) -> dict:
                 s3_key=s3_key,
             )
 
-            dynamo.write_resource_cache_data(results)
+            if config.get(
+                "celery.cache_resources_from_aws_config_across_accounts.dynamo_enabled",
+                True,
+            ):
+                dynamo = UserDynamoHandler()
+                dynamo.write_resource_cache_data(results)
     else:
         redis_result_set = async_to_sync(retrieve_json_data_from_redis_or_s3)(
             s3_bucket=s3_bucket, s3_key=s3_key

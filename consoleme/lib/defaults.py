@@ -193,7 +193,7 @@ permissions_map:
         required: true
     condition:
       StringLike:
-        ses:FromAddress: "{from_address}"
+        ses:FromAddress: "${from_address}"
     action_map:
       - name: send_email
         text: Send Email
@@ -208,7 +208,7 @@ permissions_map:
       permissions you need, use "Advanced Mode" from the dropdown instead.
     inputs:
       - name: service_name
-        type: typeahead_input
+        type: single_typeahead_input
         text: Service (s3, sqs, sns, rekognition, etc)
         required: true
         typeahead_endpoint: /api/v1/policyuniverse/autocomplete/?only_filter_services=true&prefix={query}

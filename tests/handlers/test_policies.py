@@ -43,7 +43,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
 
         mock_auth.validate_certificate.return_value = create_future(True)
         mock_auth.extract_user_from_certificate.return_value = create_future(
-            {"name": "user@example.com"}
+            {"name": "user@example.com", "type": "user"}
         )
         mock_auth.get_cert_age_seconds.return_value = create_future(100)
         headers = {
@@ -68,7 +68,7 @@ class TestPolicyResourceEditHandler(AsyncHTTPTestCase):
             method="GET",
         )
         self.assertEqual(response.code, 400)
-        result = create_future({"123456789012": '["abucket1", "abucket2"]'})
+        result = {"123456789012": '["abucket1", "abucket2"]'}
         mock_retrieve_json_data_from_redis_or_s3.return_value = result
         account_id = "123456789012"
         resource = "s3"

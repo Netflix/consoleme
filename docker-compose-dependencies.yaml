@@ -17,11 +17,14 @@ services:
     restart: always
     volumes:
       - ./dynamodb-data:/data:delegated
+    environment:
+      - AWS_REGION=${EC2_REGION:-us-east-1}
 
   consoleme-dynamodb_admin:
     container_name: consoleme-dynamodb-admin
     image: aaronshaf/dynamodb-admin:latest
     environment:
       - DYNAMO_ENDPOINT=http://consoleme-dynamodb:8005
+      - AWS_REGION=${EC2_REGION:-us-east-1}
     ports:
       - "8001:8001"

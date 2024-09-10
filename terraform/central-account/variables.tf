@@ -80,9 +80,15 @@ variable "lb_port" {
 }
 
 # Compute
+variable "associate_public_ip_address_to_ec2" {
+  description = "Whether to provide a public IP to the ConsoleMe EC2 instance"
+  default     = false
+  type        = bool
+}
+
 variable "instance_type" {
-  description = "The size of the Ec2 instance. Defaults to t2.medium"
-  default     = "t2.medium"
+  description = "The size of the EC2 instance. Defaults to t4g.medium"
+  default     = "t4g.medium"
 }
 
 variable "volume_size" {
@@ -106,8 +112,8 @@ variable "ec2_ami_owner_filter" {
 }
 
 variable "ec2_ami_name_filter" {
-  description = "The name of the AMI to search for. Defaults to amzn2-ami-hvm-2.0.2020*-x86_64-ebs"
-  default     = "amzn2-ami-hvm-2.0.2020*-x86_64-ebs" # Need a release post Jan 2020 to support IMDSv2
+  description = "The name of the AMI to search for. Defaults to al2022-ami*-arm64"
+  default     = "al2022-ami*-arm64" # Need a release post Jan 2020 to support IMDSv2
   type        = string
 }
 

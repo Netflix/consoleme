@@ -20,8 +20,8 @@ git clone https://github.com/Netflix/consoleme.git ;
 git clone git@github.com:Netflix/consoleme.git ;
 ```
 
-1. Create a suitable configuration or use the samples provided in the repository [here](https://github.com/Netflix/consoleme/tree/master/example_config).
-2. Make sure to have the following lines in your configuration and replace the regions according to your setup if you use the local Redis and dynamodb containers.
+2. Create a suitable configuration or use the samples provided in the repository [here](https://github.com/Netflix/consoleme/tree/master/example_config).
+3. Make sure to have the following lines in your configuration and replace the regions according to your setup if you use the local Redis and dynamodb containers.
 
 ```yaml
 celery:
@@ -44,8 +44,8 @@ redis:
   port: 6379
 ```
 
-1. Upload the config to amazon S3
-2. Create an environment file with the following line
+4. Upload the config to amazon S3
+5. Create an environment file with the following line
 
 ```text
 CONFIG_LOCATION=<S3-URI-of-the-config>
@@ -58,7 +58,7 @@ EC2_REGION=<custom-AWS-region>
 **BEFORE RUNNING THE COMMAND BELOW**: We highly recommend that you put valid AWS credentials for your account in your `~/.aws/credentials` file under the `[default]` profile \([Instructions](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html#cli-configure-files-where)\). The role you use should have the permissions outlined under [Central Account IAM Permissions](../prerequisites/required-iam-permissions/central-account-consolemeinstanceprofile.md). These credentials will be shared with the container, and when you run the second command to populate your Redis cache \(`make redis`\) command using docker exec, the command will attempt to populate your Redis cache with live resources from your account. This will only work if you have valid AWS credentials.
 {% endhint %}
 
-1. To start up ConsoleMe in docker, run the following commands:
+6. To start up ConsoleMe in docker, run the following commands:
 
 ```bash
 # Change to the consoleme directory
