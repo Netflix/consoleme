@@ -250,8 +250,8 @@ async def authenticate_user_by_oidc(request):
                     log.debug(log_data, exc_info=True)
                     groups = []
         else:
-            decoded_id_token = jwt.decode(id_token, verify=jwt_verify)
-            decoded_access_token = jwt.decode(access_token, verify=jwt_verify)
+            decoded_id_token = jwt.decode(id_token, options={"verify_signature": False})
+            decoded_access_token = jwt.decode(access_token, options={"verify_signature": False})
 
         email = email or decoded_id_token.get(
             config.get("get_user_by_oidc_settings.jwt_email_key", "email")
