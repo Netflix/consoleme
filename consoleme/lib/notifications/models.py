@@ -85,7 +85,7 @@ class ConsoleMeUserNotification(BaseModel):
     hidden_for_all: bool = Field(
         False,
         description=(
-            "Notification is `marked as hidden` for all users, and will not appear in the notificaiton list for "
+            "Notification is `marked as hidden` for all users, and will not appear in the notification list for "
             "any user."
         ),
     )
