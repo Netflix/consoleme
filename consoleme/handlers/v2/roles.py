@@ -129,7 +129,7 @@ class RoleConsoleLoginHandler(BaseAPIV2Handler):
             self.write(
                 {
                     "type": "redirect",
-                    "message": log_data["message"],
+                    "message": tornado.escape.xhtml_escape(log_data["message"]),
                     "reason": "multiple_roles",
                     "redirect_url": redirect_url.url,
                 }
