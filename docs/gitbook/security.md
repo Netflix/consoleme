@@ -4,7 +4,7 @@
 
 We ask that you do not report a security issue to our standard GitHub issue tracker.
 
-If you believe you've identified a security issue with ConsoleMe, please report it via our public Netflix bug bounty program at [https://bugcrowd.com/netflix](https://bugcrowd.com/netflix)​
+If you believe you've identified a security issue with ConsoleMe, please report it via our public Netflix bug bounty program at [https://hackerone.com/netflix](https://hackerone.com/netflix)​
 
 Once you've submitted the issue, it will be handled by our triage team, typically within 48 hours.
 
@@ -33,6 +33,5 @@ On the day of disclosure, we will take the following steps:
 
 If a reported issue is particularly time-sensitive – due to a known exploit in the wild, for example – the time between advance notification and public disclosure may be shortened considerably.
 
-The list of people and organizations who receives the advanced notification of security issues is not, and will not, be made public. This list generally consists of high-profile downstream users and is entirely at the discretion of the `ConsoleMe` team.[  
-](https://hawkins.gitbook.io/dispatch/security#reporting-a-security-issue)
+The list of people and organizations who receives the advanced notification of security issues is not, and will not, be made public. This list generally consists of high-profile downstream users and is entirely at the discretion of the `ConsoleMe` [team](https://hawkins.gitbook.io/dispatch/security#reporting-a-security-issue).
 
