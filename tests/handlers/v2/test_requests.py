@@ -718,6 +718,7 @@ Policies:
           - '*'
         Sid: admin"""
         with patch("builtins.open", mock_open(read_data=template_data)):
+            mock_repo.return_value.working_dir = "/tmp"
             response = self.fetch(
                 "/api/v2/request",
                 method="POST",
