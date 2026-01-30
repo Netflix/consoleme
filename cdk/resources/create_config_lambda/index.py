@@ -61,14 +61,13 @@ def on_create(event, context):
 
         spoke_accounts_objects_dict = _build_spoke_accounts_mapping()
 
-        # Generate YAML safely (same structure as before)
+
         spoke_accounts_objects_list_yaml = yaml.safe_dump(
             {"account_ids_to_name": spoke_accounts_objects_dict},
             default_flow_style=False,
             sort_keys=False,
         ).rstrip()
 
-        # Explicit replacement (not format()) to avoid injection
         replacements = {
             "{issuer}": _require_env("ISSUER"),
             "{oidc_metadata_url}": _require_env("OIDC_METADATA_URL"),
