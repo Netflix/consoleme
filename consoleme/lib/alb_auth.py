@@ -146,6 +146,10 @@ async def authenticate_user_by_alb_auth(request):
             groups = token.get(
                 config.get("get_user_by_aws_alb_auth_settings.jwt_groups_key", "groups")
             )
+            
+            if isinstance(groups, str):
+                groups = [groups]
+            
             if groups:
                 break
 
