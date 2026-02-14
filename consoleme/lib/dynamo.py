@@ -251,7 +251,7 @@ class UserDynamoHandler(BaseDynamoHandler):
                 config.get("aws.group_log_dynamo_table", "consoleme_audit_global")
             )
             self.dynamic_config = self._get_dynamo_table(
-                config.get("aws.group_log_dynamo_table", "consoleme_config_global")
+                config.get("aws.dynamic_config_dynamo_table", "consoleme_config_global")
             )
             self.policy_requests_table = self._get_dynamo_table(
                 config.get(
