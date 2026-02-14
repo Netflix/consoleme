@@ -30,10 +30,8 @@ const ManagedPolicy = () => {
 
   const [availableManagedPolicies, setAvailableManagedPolicies] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [
-    attachedManagedPolicyDetails,
-    setAttachedManagedPolicyDetails,
-  ] = useState(null);
+  const [attachedManagedPolicyDetails, setAttachedManagedPolicyDetails] =
+    useState(null);
   const editorTheme = getLocalStorageSettings("editorTheme");
   // available managed policies are only used for rendering. so let's retrieve from here.
   useEffect(() => {

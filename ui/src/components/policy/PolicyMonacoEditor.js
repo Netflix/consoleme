@@ -281,9 +281,8 @@ export const NewPolicyMonacoEditor = ({ addPolicy, setIsNewPolicy }) => {
   const [templateOptions, setTemplateOptions] = useState([
     { key: "default", text: "", value: "{}" },
   ]);
-  const [templateDefaultKey, setTemplateDefaultKey] = useState(
-    "Default Policy"
-  );
+  const [templateDefaultKey, setTemplateDefaultKey] =
+    useState("Default Policy");
 
   const [policyDocument, setPolicyDocument] = useState("");
   const [error, setError] = useState("");

@@ -268,8 +268,22 @@ export const editor_themes = [
   },
 ];
 
+export const sign_in_actions = [
+  {
+    key: "redirect",
+    text: "Redirect",
+    value: "redirect",
+  },
+  {
+    key: "newtab",
+    text: "New Tab",
+    value: "newtab",
+  },
+];
+
 const default_user_settings = {
   editorTheme: "vs-light",
+  signInAction: "redirect",
 };
 
 export const getLocalStorageSettings = (specificSetting = "") => {
@@ -295,4 +309,5 @@ export const setLocalStorageSettings = (settings) => {
   );
 };
 
-export const arnRegex = /^arn:aws:iam::(?<accountId>\d{12}):(?<resourceType>(user|role))\/(.+\/)?(?<resourceName>(.+))/;
+export const arnRegex =
+  /^arn:aws:iam::(?<accountId>\d{12}):(?<resourceType>(user|role))\/(.+\/)?(?<resourceName>(.+))/;

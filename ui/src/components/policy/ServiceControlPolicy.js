@@ -77,9 +77,8 @@ const ServiceControlPolicy = () => {
                             index={true}
                             onClick={() => {
                               let newState = activeTargets;
-                              newState[policy.policy.id] = !newState[
-                                policy.policy.id
-                              ];
+                              newState[policy.policy.id] =
+                                !newState[policy.policy.id];
                               setActiveTargets({
                                 ...activeTargets,
                                 ...newState,

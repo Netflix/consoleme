@@ -9,6 +9,7 @@ import {
 } from "semantic-ui-react";
 import {
   editor_themes,
+  sign_in_actions,
   getLocalStorageSettings,
   setLocalStorageSettings,
 } from "../helpers/utils";
@@ -32,6 +33,13 @@ const SettingsModal = (props) => {
   const updateEditorTheme = (e, data) => {
     const oldSettings = currentSettings;
     oldSettings.editorTheme = data.value;
+    setMessages([]);
+    setCurrentSettings(oldSettings);
+  };
+
+  const updateSignInAction = (e, data) => {
+    const oldSettings = currentSettings;
+    oldSettings.signInAction = data.value;
     setMessages([]);
     setCurrentSettings(oldSettings);
   };
@@ -72,6 +80,21 @@ const SettingsModal = (props) => {
               selection
               onChange={updateDefaultAwsConsoleRegion}
               defaultValue={currentSettings.defaultAwsConsoleRegion}
+            />
+          </Grid.Column>
+        </Grid.Row>
+        <Grid.Row>
+          <Grid.Column width={4} floated="left">
+            Sign-In Action
+          </Grid.Column>
+          <Grid.Column width={8}>
+            <Dropdown
+              fluid
+              placeholder="Sign-In Action"
+              selection
+              onChange={updateSignInAction}
+              defaultValue={currentSettings.signInAction}
+              options={sign_in_actions}
             />
           </Grid.Column>
         </Grid.Row>

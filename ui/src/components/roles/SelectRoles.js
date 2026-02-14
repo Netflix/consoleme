@@ -3,11 +3,13 @@ import { Header } from "semantic-ui-react";
 import ConsoleMeDataTable from "../blocks/datatable/DataTableComponent";
 import ReactMarkdown from "react-markdown";
 import { useAuth } from "../../auth/AuthProviderDefault";
+import { getLocalStorageSettings } from "../../helpers/utils";
 
 const SelectRoles = () => {
   const [pageConfig, setPageConfig] = useState(null);
   const auth = useAuth();
   const { sendRequestCommon } = auth;
+  const userSignInAction = getLocalStorageSettings("signInAction");
 
   useEffect(() => {
     (async () => {
@@ -19,9 +21,15 @@ const SelectRoles = () => {
       if (!data) {
         return;
       }
+      if (
+        userSignInAction &&
+        userSignInAction !== data.tableConfig.columns[0].onClick.action
+      ) {
+        data.tableConfig.columns[0].onClick.action = userSignInAction;
+      }
       setPageConfig(data);
     })();
-  }, [sendRequestCommon]);
+  }, [sendRequestCommon, userSignInAction]);
 
   if (!pageConfig) {
     return null;
